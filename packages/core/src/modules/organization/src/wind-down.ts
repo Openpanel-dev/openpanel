@@ -130,7 +130,10 @@ export async function loadWindDownDeps(logger: Logger): Promise<WindDownDeps> {
   ] = await Promise.all([
     import('@openpanel/db/src/prisma-client'),
     import('../organization.service'),
-    import('../../project/project.service'),
+    // project.service.ts's `getLastEventPerProject` takes `ServiceDeps` now
+    // (M10-004); this file has none, so it reaches the bare,
+    // v1-compat-wrapped, zero-arg spelling instead.
+    import('../../../v1-compat'),
     import('../../../clients/email'),
     import('./win-back-highlight'),
   ]);

@@ -7,8 +7,8 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's conversation functions
-// (DELEGATE PATTERN) — this module has no queue/ClickHouse compute of its
-// own, so there is no `ctx.services.conversation`, same as `assistant`.
+// (DELEGATE PATTERN). `ctx.services.conversation` carries this module's
+// factory the same as every other module now (M10-004).
 //
 // The per-project access ladder itself IS shared: `./src/access.ts` binds
 // core's shared/access.ts ladder to @openpanel/db's real lookups, the same
@@ -17,22 +17,13 @@
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-import {
-  deleteConversation,
-  getConversationById,
-  listConversations,
-  upsertConversationTitle,
-} from './conversation.service';
+import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 
 const LIST_LIMIT_MIN = 1;
 const LIST_LIMIT_MAX = 200;
 const LIST_LIMIT_DEFAULT = 50;
 const TITLE_MIN_LENGTH = 1;
 const TITLE_MAX_LENGTH = 80;
-
-function loadOrganizationService() {
-  return import('@openpanel/core');
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -69,7 +60,7 @@ export const conversationRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return listConversations({
+      return ctx.services.conversation.listConversations({
         projectId: input.projectId,
         userId,
         limit: input.limit,
@@ -80,7 +71,10 @@ export const conversationRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const conv = await getConversationById(input.id, { withMessages: true });
+      const conv = await ctx.services.conversation.getConversationById(
+        input.id,
+        { withMessages: true }
+      );
       if (!conv || conv.userId !== userId) {
         throw new TRPCNotFoundError('Conversation not found');
       }
@@ -111,7 +105,9 @@ export const conversationRouter = createTRPCRouter({
       // If the conversation already exists, enforce ownership. If it
       // doesn't, verify the caller has access to the project being
       // created under before letting the upsert create a fresh row.
-      const conv = await getConversationById(input.id);
+      const conv = await ctx.services.conversation.getConversationById(
+        input.id
+      );
       if (conv) {
         if (conv.userId !== userId) {
           throw new TRPCNotFoundError('Conversation not found');
@@ -128,8 +124,6 @@ export const conversationRouter = createTRPCRouter({
       // client-supplied value here, even if the caller has access to
       // the project (they'd still be able to tag the conversation with
       // an unrelated org id).
-      const { getOrganizationByProjectIdCached } =
-        await loadOrganizationService();
       const organization = await getOrganizationByProjectIdCached(
         input.projectId
       );
@@ -137,7 +131,7 @@ export const conversationRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Project not found');
       }
 
-      return upsertConversationTitle({
+      return ctx.services.conversation.upsertConversationTitle({
         id: input.id,
         title: input.title,
         projectId: input.projectId,
@@ -150,11 +144,13 @@ export const conversationRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const conv = await getConversationById(input.id);
+      const conv = await ctx.services.conversation.getConversationById(
+        input.id
+      );
       if (!conv || conv.userId !== userId) {
         throw new TRPCNotFoundError('Conversation not found');
       }
-      await deleteConversation(input.id);
+      await ctx.services.conversation.deleteConversation(input.id);
       return { success: true };
     }),
 });

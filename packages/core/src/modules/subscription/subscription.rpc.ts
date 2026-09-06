@@ -10,7 +10,8 @@
 // PATTERN), so nothing here is a live regression.
 //
 // `requireOrganizationAdmin` lives in subscription.service.ts, not here —
-// see that file's header.
+// see that file's header. `ctx.services.subscription` carries this module's
+// factory the same as every other module now (M10-004).
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
@@ -20,17 +21,6 @@ import {
   zCheckout,
   zPauseSubscription,
 } from './subscription.constants';
-import {
-  applySaveDiscount,
-  cancelSubscription,
-  checkout,
-  getCurrentSubscriptionProduct,
-  getUsage,
-  listProducts,
-  pauseSubscription,
-  portal,
-  resumeSubscription,
-} from './subscription.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -42,49 +32,76 @@ function requireLogin(userId: string | null | undefined): string {
 export const subscriptionRouter = createTRPCRouter({
   getCurrent: procedure
     .input(z.object({ organizationId: z.string() }))
-    .query(({ input }) => getCurrentSubscriptionProduct(input.organizationId)),
+    .query(({ input, ctx }) =>
+      ctx.services.subscription.getCurrentSubscriptionProduct(
+        input.organizationId
+      )
+    ),
 
   checkout: procedure
     .input(zCheckout)
     .mutation(({ input, ctx }) =>
-      checkout(requireLogin(ctx.session.userId), input, ctx.remoteAddress)
+      ctx.services.subscription.checkout(
+        requireLogin(ctx.session.userId),
+        input,
+        ctx.remoteAddress
+      )
     ),
 
   products: procedure
     .input(z.object({ organizationId: z.string() }))
-    .query(({ input }) => listProducts(input.organizationId)),
+    .query(({ input, ctx }) =>
+      ctx.services.subscription.listProducts(input.organizationId)
+    ),
 
   usage: procedure
     .input(z.object({ organizationId: z.string() }))
-    .query(({ input }) => getUsage(input.organizationId)),
+    .query(({ input, ctx }) =>
+      ctx.services.subscription.getUsage(input.organizationId)
+    ),
 
   cancelSubscription: procedure
     .input(zCancelSubscription)
     .mutation(({ input, ctx }) =>
-      cancelSubscription(requireLogin(ctx.session.userId), input)
+      ctx.services.subscription.cancelSubscription(
+        requireLogin(ctx.session.userId),
+        input
+      )
     ),
 
   pauseSubscription: procedure
     .input(zPauseSubscription)
     .mutation(({ input, ctx }) =>
-      pauseSubscription(requireLogin(ctx.session.userId), input)
+      ctx.services.subscription.pauseSubscription(
+        requireLogin(ctx.session.userId),
+        input
+      )
     ),
 
   resumeSubscription: procedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
-      resumeSubscription(requireLogin(ctx.session.userId), input.organizationId)
+      ctx.services.subscription.resumeSubscription(
+        requireLogin(ctx.session.userId),
+        input.organizationId
+      )
     ),
 
   applySaveDiscount: procedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
-      applySaveDiscount(requireLogin(ctx.session.userId), input.organizationId)
+      ctx.services.subscription.applySaveDiscount(
+        requireLogin(ctx.session.userId),
+        input.organizationId
+      )
     ),
 
   portal: procedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
-      portal(requireLogin(ctx.session.userId), input.organizationId)
+      ctx.services.subscription.portal(
+        requireLogin(ctx.session.userId),
+        input.organizationId
+      )
     ),
 });

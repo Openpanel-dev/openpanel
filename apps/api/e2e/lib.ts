@@ -4,7 +4,7 @@
  * fixtures, polling, and a tiny check/report framework.
  */
 
-import { getClientByIdCached } from '@openpanel/core';
+import { clearClientByIdCache } from '@openpanel/core';
 import { ClientType, chQuery, db } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 
@@ -261,7 +261,7 @@ export async function ensureFixtures() {
       },
       update: { ignoreCorsAndSecret: true, projectId: PROJECT_ID },
     });
-    await getClientByIdCached.clear(CLIENT_ID);
+    await clearClientByIdCache(CLIENT_ID);
     check('fixtures ready', true);
   } catch (error) {
     check('fixtures ready', false, (error as Error).message);

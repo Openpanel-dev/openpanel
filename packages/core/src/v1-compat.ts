@@ -27,11 +27,33 @@
 // what keeps `bun test` runnable offline.
 
 import {
+  disableTotp as authDisableTotp,
+  enableTotp as authEnableTotp,
+  extendSessionCookie as authExtendSessionCookie,
+  getTotpStatus as authGetTotpStatus,
+  regenerateTotpRecoveryCodes as authRegenerateTotpRecoveryCodes,
+  requestPasswordReset as authRequestPasswordReset,
+  resetPasswordWithToken as authResetPasswordWithToken,
+  setupTotp as authSetupTotp,
+  signInWithEmail as authSignInWithEmail,
+  signInWithTotp as authSignInWithTotp,
+  signOutUser as authSignOutUser,
+  signUpWithEmail as authSignUpWithEmail,
   type SignInShareInput,
   signInToShare as signInToShareWithDeps,
 } from './modules/auth/auth.service';
 import { createServices, type ServiceDeps, type Services } from './services';
 import type { ISetCookie } from './shared/cookie';
+
+/** Drops a function type's first (`deps`) parameter — every bare V1-compat
+ *  wrapper below has the same shape: the underlying function's parameters
+ *  minus `deps`, since this seam supplies that one itself. */
+type Tail<T extends readonly unknown[]> = T extends readonly [
+  unknown,
+  ...infer Rest,
+]
+  ? Rest
+  : never;
 
 let registered: Services | undefined;
 let registeredDeps: ServiceDeps | undefined;
@@ -102,6 +124,64 @@ function services(): Promise<Services> {
   return registered
     ? Promise.resolve(registered)
     : fallbackServiceDeps().then(createServices);
+}
+
+/**
+ * The hot-path escape hatches (M10-004): a handful of callers — the ingest
+ * pipeline's client auth, MCP's stateless tool handlers, the chat agent's
+ * Prisma persistence — have a fixed, third-party-owned function signature
+ * with no `Ctx`/`ServiceDeps` slot to add one to. They reach
+ * Postgres/ClickHouse through these instead of `@openpanel/db` directly, so
+ * a requestId minted at `/track` at least reaches AS FAR as this seam
+ * reaches (no further — see this file's header on why that's still "no
+ * worse" than before this wave).
+ */
+export async function compatDb(): Promise<ServiceDeps['db']> {
+  return (await compatServiceDeps()).db;
+}
+export async function compatCh(): Promise<ServiceDeps['ch']> {
+  return (await compatServiceDeps()).ch;
+}
+/**
+ * `subscription.service.ts` (has `deps`, but `deps.db`'s type is the client
+ * instance, not the namespace) and `mcp`'s `dashboard-management.ts` (no
+ * `deps` at all) both need `Prisma.DbNull` — a plain sentinel value, not a
+ * client — to write an explicit SQL NULL onto a nullable Json column. The
+ * namespace lives in the same module as the constructed `db` singleton, so
+ * this seam is the only way to reach it without either module importing
+ * `@openpanel/db` itself.
+ */
+export async function compatPrisma(): Promise<
+  typeof import('@openpanel/db/src/prisma-client').Prisma
+> {
+  return (await import('@openpanel/db/src/prisma-client')).Prisma;
+}
+
+/**
+ * ADR-013 keeps `clix`/`chQuery`/`TABLE_NAMES` alive until the analytics read
+ * path's P7 conversion (one query per task, old-vs-new result sets diffed) —
+ * `project.service.ts`'s two still-unconverted functions and mcp's
+ * `analytics/property-values.ts` reach the query-building helpers here
+ * instead of importing `@openpanel/db` themselves. The CLIENT itself is
+ * still `deps.ch` / `compatCh()`; this is only the pure helpers that live
+ * beside it.
+ */
+export async function compatChHelpers(): Promise<{
+  TABLE_NAMES: typeof import('@openpanel/db/src/clickhouse/client').TABLE_NAMES;
+  chQuery: typeof import('@openpanel/db/src/clickhouse/client').chQuery;
+  convertClickhouseDateToJs: typeof import('@openpanel/db/src/clickhouse/client').convertClickhouseDateToJs;
+  clix: typeof import('@openpanel/db/src/clickhouse/query-builder').clix;
+}> {
+  const [client, queryBuilder] = await Promise.all([
+    import('@openpanel/db/src/clickhouse/client'),
+    import('@openpanel/db/src/clickhouse/query-builder'),
+  ]);
+  return {
+    TABLE_NAMES: client.TABLE_NAMES,
+    chQuery: client.chQuery,
+    convertClickhouseDateToJs: client.convertClickhouseDateToJs,
+    clix: queryBuilder.clix,
+  };
 }
 
 // --- chart -----------------------------------------------------------------
@@ -411,3 +491,284 @@ export function signInToShare(
     signInToShareWithDeps(deps, input, setCookie)
   );
 }
+
+// M10-004: every other bare auth function gained `ServiceDeps` too — same
+// reasoning as `signInToShare` above, each reached through this seam.
+export const signOutUser: (
+  ...args: Tail<Parameters<typeof authSignOutUser>>
+) => ReturnType<typeof authSignOutUser> = (...args) =>
+  compatServiceDeps().then((deps) => authSignOutUser(deps, ...args));
+
+export const signUpWithEmail: (
+  ...args: Tail<Parameters<typeof authSignUpWithEmail>>
+) => ReturnType<typeof authSignUpWithEmail> = (...args) =>
+  compatServiceDeps().then((deps) => authSignUpWithEmail(deps, ...args));
+
+export const signInWithEmail: (
+  ...args: Tail<Parameters<typeof authSignInWithEmail>>
+) => ReturnType<typeof authSignInWithEmail> = (...args) =>
+  compatServiceDeps().then((deps) => authSignInWithEmail(deps, ...args));
+
+export const signInWithTotp: (
+  ...args: Tail<Parameters<typeof authSignInWithTotp>>
+) => ReturnType<typeof authSignInWithTotp> = (...args) =>
+  compatServiceDeps().then((deps) => authSignInWithTotp(deps, ...args));
+
+export const getTotpStatus: (
+  ...args: Tail<Parameters<typeof authGetTotpStatus>>
+) => ReturnType<typeof authGetTotpStatus> = (...args) =>
+  compatServiceDeps().then((deps) => authGetTotpStatus(deps, ...args));
+
+export const setupTotp: (
+  ...args: Tail<Parameters<typeof authSetupTotp>>
+) => ReturnType<typeof authSetupTotp> = (...args) =>
+  compatServiceDeps().then((deps) => authSetupTotp(deps, ...args));
+
+export const enableTotp: (
+  ...args: Tail<Parameters<typeof authEnableTotp>>
+) => ReturnType<typeof authEnableTotp> = (...args) =>
+  compatServiceDeps().then((deps) => authEnableTotp(deps, ...args));
+
+export const disableTotp: (
+  ...args: Tail<Parameters<typeof authDisableTotp>>
+) => ReturnType<typeof authDisableTotp> = (...args) =>
+  compatServiceDeps().then((deps) => authDisableTotp(deps, ...args));
+
+export const regenerateTotpRecoveryCodes: (
+  ...args: Tail<Parameters<typeof authRegenerateTotpRecoveryCodes>>
+) => ReturnType<typeof authRegenerateTotpRecoveryCodes> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    authRegenerateTotpRecoveryCodes(deps, ...args)
+  );
+
+export const resetPasswordWithToken: (
+  ...args: Tail<Parameters<typeof authResetPasswordWithToken>>
+) => ReturnType<typeof authResetPasswordWithToken> = (...args) =>
+  compatServiceDeps().then((deps) => authResetPasswordWithToken(deps, ...args));
+
+export const requestPasswordReset: (
+  ...args: Tail<Parameters<typeof authRequestPasswordReset>>
+) => ReturnType<typeof authRequestPasswordReset> = (...args) =>
+  compatServiceDeps().then((deps) => authRequestPasswordReset(deps, ...args));
+
+export const extendSessionCookie: (
+  ...args: Tail<Parameters<typeof authExtendSessionCookie>>
+) => ReturnType<typeof authExtendSessionCookie> = (...args) =>
+  compatServiceDeps().then((deps) => authExtendSessionCookie(deps, ...args));
+
+// --- client ------------------------------------------------------------
+
+export const getClientById: Services['client']['getClientById'] = (...args) =>
+  services().then((container) => container.client.getClientById(...args));
+export const getClientByIdCached: Services['client']['getClientByIdCached'] = (
+  ...args
+) =>
+  services().then((container) => container.client.getClientByIdCached(...args));
+export const clearClientByIdCache: Services['client']['clearClientByIdCache'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.clearClientByIdCache(...args)
+    );
+export const getClientsByOrganizationId: Services['client']['getClientsByOrganizationId'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.getClientsByOrganizationId(...args)
+    );
+export const getClientsByProjectId: Services['client']['getClientsByProjectId'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.getClientsByProjectId(...args)
+    );
+export const listClientsForOrganization: Services['client']['listClientsForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.listClientsForOrganization(...args)
+    );
+export const getClientForOrganization: Services['client']['getClientForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.getClientForOrganization(...args)
+    );
+export const createClientForOrganization: Services['client']['createClientForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.createClientForOrganization(...args)
+    );
+export const updateClientForOrganization: Services['client']['updateClientForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.updateClientForOrganization(...args)
+    );
+export const deleteClientForOrganization: Services['client']['deleteClientForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.client.deleteClientForOrganization(...args)
+    );
+
+// --- project -------------------------------------------------------------
+
+export const getProjectById: Services['project']['getProjectById'] = (
+  ...args
+) => services().then((container) => container.project.getProjectById(...args));
+export const getProjectByIdCached: Services['project']['getProjectByIdCached'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getProjectByIdCached(...args)
+    );
+export const clearProjectByIdCache: Services['project']['clearProjectByIdCache'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.clearProjectByIdCache(...args)
+    );
+export const getProjectWithClients: Services['project']['getProjectWithClients'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getProjectWithClients(...args)
+    );
+export const getProjects: Services['project']['getProjects'] = (...args) =>
+  services().then((container) => container.project.getProjects(...args));
+export const getProjectEventsCount: Services['project']['getProjectEventsCount'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getProjectEventsCount(...args)
+    );
+export const getLastEventPerProject: Services['project']['getLastEventPerProject'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getLastEventPerProject(...args)
+    );
+export const resolveClientProjectId: Services['project']['resolveClientProjectId'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.resolveClientProjectId(...args)
+    );
+export const getProjectActivationStatus: Services['project']['getProjectActivationStatus'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getProjectActivationStatus(...args)
+    );
+export const listProjectsCore: Services['project']['listProjectsCore'] = (
+  ...args
+) =>
+  services().then((container) => container.project.listProjectsCore(...args));
+export const listProjectsForOrganization: Services['project']['listProjectsForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.listProjectsForOrganization(...args)
+    );
+export const getProjectForOrganization: Services['project']['getProjectForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.getProjectForOrganization(...args)
+    );
+export const createProjectForOrganization: Services['project']['createProjectForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.createProjectForOrganization(...args)
+    );
+export const updateProjectForOrganization: Services['project']['updateProjectForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.updateProjectForOrganization(...args)
+    );
+export const deleteProjectForOrganization: Services['project']['deleteProjectForOrganization'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.deleteProjectForOrganization(...args)
+    );
+export const scheduleProjectDeletion: Services['project']['scheduleProjectDeletion'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.scheduleProjectDeletion(...args)
+    );
+export const cancelProjectDeletion: Services['project']['cancelProjectDeletion'] =
+  (...args) =>
+    services().then((container) =>
+      container.project.cancelProjectDeletion(...args)
+    );
+
+// --- user ------------------------------------------------------------------
+
+export const getUserById: Services['user']['getUserById'] = (...args) =>
+  services().then((container) => container.user.getUserById(...args));
+export const getUserAccount: Services['user']['getUserAccount'] = (...args) =>
+  services().then((container) => container.user.getUserAccount(...args));
+export const listUserDeletionBlockers: Services['user']['listUserDeletionBlockers'] =
+  (...args) =>
+    services().then((container) =>
+      container.user.listUserDeletionBlockers(...args)
+    );
+export const deleteUserAccount: Services['user']['deleteUserAccount'] = (
+  ...args
+) => services().then((container) => container.user.deleteUserAccount(...args));
+export const updateUserProfile: Services['user']['updateUserProfile'] = (
+  ...args
+) => services().then((container) => container.user.updateUserProfile(...args));
+
+// --- subscription ------------------------------------------------------
+
+// `getCurrentSubscriptionProduct` never touched Postgres directly, so it
+// kept its bare signature straight through — no wrapper needed, exported
+// directly from subscription.service.ts on the barrel.
+export const checkout: Services['subscription']['checkout'] = (...args) =>
+  services().then((container) => container.subscription.checkout(...args));
+export const listProducts: Services['subscription']['listProducts'] = (
+  ...args
+) =>
+  services().then((container) => container.subscription.listProducts(...args));
+export const getUsage: Services['subscription']['getUsage'] = (...args) =>
+  services().then((container) => container.subscription.getUsage(...args));
+export const cancelSubscription: Services['subscription']['cancelSubscription'] =
+  (...args) =>
+    services().then((container) =>
+      container.subscription.cancelSubscription(...args)
+    );
+export const pauseSubscription: Services['subscription']['pauseSubscription'] =
+  (...args) =>
+    services().then((container) =>
+      container.subscription.pauseSubscription(...args)
+    );
+export const resumeSubscription: Services['subscription']['resumeSubscription'] =
+  (...args) =>
+    services().then((container) =>
+      container.subscription.resumeSubscription(...args)
+    );
+export const applySaveDiscount: Services['subscription']['applySaveDiscount'] =
+  (...args) =>
+    services().then((container) =>
+      container.subscription.applySaveDiscount(...args)
+    );
+export const portal: Services['subscription']['portal'] = (...args) =>
+  services().then((container) => container.subscription.portal(...args));
+
+// --- salt ------------------------------------------------------------------
+
+// `ingest.service.ts`'s `/track` hot path has no `Ctx` to reach
+// `ctx.services.salt` from — see salt.service.ts's header for why `getSalts`
+// stays bare here instead of gaining a `deps` parameter like every other
+// function in this file.
+export const getSalts: Services['salt']['getSalts'] = () =>
+  services().then((container) => container.salt.getSalts());
+
+// --- conversation ------------------------------------------------------
+
+export const getConversationById: Services['conversation']['getConversationById'] =
+  (...args) =>
+    services().then((container) =>
+      container.conversation.getConversationById(...args)
+    );
+export const listConversations: Services['conversation']['listConversations'] =
+  (...args) =>
+    services().then((container) =>
+      container.conversation.listConversations(...args)
+    );
+export const upsertConversationTitle: Services['conversation']['upsertConversationTitle'] =
+  (...args) =>
+    services().then((container) =>
+      container.conversation.upsertConversationTitle(...args)
+    );
+export const deleteConversation: Services['conversation']['deleteConversation'] =
+  (...args) =>
+    services().then((container) =>
+      container.conversation.deleteConversation(...args)
+    );

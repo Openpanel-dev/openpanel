@@ -8,7 +8,15 @@
  * `request.clientSecretAuth` — the side channel the bot check reads.
  */
 
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 
 const CLIENT_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = 'legacy-event-project';
@@ -32,7 +40,20 @@ const client = {
 
 const getClientByIdCached = mock(async (_id: string) => client);
 
-mock.module('../../client/client.service', () => ({ getClientByIdCached }));
+// M10-004: client-auth.ts reaches `getClientByIdCached` through the
+// v1-compat singleton now (its own header explains why) — mocked at that
+// specifier, spread-actual so the rest of the seam (`createServices` et al.,
+// which `services.ts`'s own import of `client.service.ts` still needs) stays
+// intact.
+const realV1Compat = { ...(await import('../../../v1-compat')) };
+mock.module('../../../v1-compat', () => ({
+  ...realV1Compat,
+  getClientByIdCached,
+}));
+
+afterAll(() => {
+  mock.module('../../../v1-compat', () => realV1Compat);
+});
 
 let validateIngestRequest: typeof import('./client-auth').validateIngestRequest;
 

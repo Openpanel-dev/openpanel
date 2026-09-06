@@ -1,14 +1,22 @@
 // Moved from @openpanel/auth (M4-007): token issuance/hashing, argon2
 // password hashing, TOTP, the OAuth clients and cookie helpers. The
 // Prisma-touching half — creating, validating and invalidating a `sessions`
-// row — moved here too (M8-005, `./src/login-session.ts`), lazily loading
-// @openpanel/db's Prisma client the same way `loadRegistration` below does,
-// so there is no static core -> db edge.
+// row — moved here too (M8-005, `./src/login-session.ts`).
 //
 // M10-002 (docs/TECH_DEBT.md §5b): the permission ladder (`shared/access.ts`)
 // is bound to its real lookups exactly here, once, instead of once per module
 // in a `modules/*/src/access.ts` copy — see `getAccessChecks` below for the
 // binding itself.
+//
+// M10-004: every module in this wave, INCLUDING auth's own remaining lazy
+// imports, moves to `ServiceDeps`. `signUpWithEmail`/`signInWithEmail`/TOTP/
+// password-reset/OAuth-callback all take `deps` now and reach Postgres as
+// `deps.db`; `./src/login-session.ts` and `./src/registration.ts` do the
+// same and are plain static imports here (neither cycles back to this file).
+// `packages/trpc`'s still-live router calls every one of these bare (no
+// `ServiceDeps`); those reach `createServices` through the v1-compat
+// singleton instead (see v1-compat.ts's header) — `auth.rpc.ts` already
+// carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
@@ -139,7 +147,10 @@ export function getAccessChecks(): Promise<AccessChecks<IProjectAccess>> {
   if (!accessChecksPromise) {
     accessChecksPromise = Promise.all([
       loadAccessLookups(),
-      import('../project/project.service'),
+      // project.service.ts's own `getProjectById` takes `ServiceDeps` now
+      // (M10-004) — this singleton has none, so it reaches the bare,
+      // v1-compat-wrapped spelling instead (see that file's header).
+      import('../../v1-compat'),
     ]).then(
       ([
         { getProjectAccess, canWriteProject, getOrganizationAccess },
@@ -225,17 +236,17 @@ export function createAuthService(_deps: ServiceDeps): AuthService {
 // PATTERN: both V1's trpc router and this package's own auth.rpc.ts call
 // these same functions).
 //
-// db/session/registration/share access is LAZY, not a static top-level
-// import — see user.service.ts's header for the full reasoning (constructing
-// @openpanel/db's clients at import time spawns a pino-pretty transport
-// worker thread per `bun test --isolate` file). `loadShare` points at
-// `../share/share.service` directly since M6-004 — share.service.ts
-// statically imports this file's own `hashPassword`, so the two are mutually
-// lazy/eager by design, not a live cycle.
+// Session/registration access is `deps.db`, via static imports of
+// `./src/login-session` and `./src/registration` (M10-004) — neither cycles
+// back to this file, so there is nothing to keep lazy there. `loadShare`
+// stays a lazy, dynamic import of `../share/share.service`: share.service.ts
+// statically imports this file's own `hashPassword`, so the two ARE a real
+// cycle (M6-004), unlike the other two.
 //
-// None of these functions take a `TrpcContext`/`Ctx`: they take exactly the
-// primitives they touch (`setCookie`, `cookies.get`, `logger`), so this file
-// has no dependency on the rpc layer that calls it.
+// None of these functions take a `TrpcContext`/`Ctx` directly — they take a
+// `deps: ServiceDeps` plus exactly the other primitives they touch
+// (`setCookie`, `cookies.get`, `logger`), so this file has no dependency on
+// the rpc layer that calls it.
 
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
@@ -244,6 +255,12 @@ import { decrypt, encrypt } from '../../shared/encryption';
 import { generateSecureId } from '../../shared/id';
 import { connectUserToOrganization } from '../organization/organization.service';
 import { getUserAccount } from '../user/user.service';
+import {
+  createSession,
+  invalidateSession,
+  validateSessionToken,
+} from './src/login-session';
+import { getIsRegistrationAllowed } from './src/registration';
 
 const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
@@ -257,18 +274,6 @@ export type AuthProvider = 'email' | 'google' | 'github';
  *  so this file has no import from the rpc/http layer that calls it. */
 interface CookieReader {
   get(name: string): string | undefined;
-}
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadAuthSession() {
-  return import('./src/login-session');
-}
-
-function loadRegistration() {
-  return import('@openpanel/core');
 }
 
 // GENUINE CYCLE, kept lazy: `../share/share.service` statically imports this
@@ -293,13 +298,15 @@ function dashboardUrl(): string {
  * swallow and log the error instead of rethrowing.
  */
 async function consumeInviteForUser(
+  deps: ServiceDeps,
   userId: string,
   inviteId: string,
   logger: Pick<Logger, 'error'>
 ): Promise<void> {
   try {
-    const db = await loadDb();
-    const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await deps.db.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
     await connectUserToOrganization({ user, inviteId });
   } catch (error) {
     logger.error(
@@ -310,13 +317,13 @@ async function consumeInviteForUser(
 }
 
 export async function signOutUser(
+  deps: ServiceDeps,
   setCookie: ISetCookie,
   sessionId: string | null | undefined
 ): Promise<void> {
   deleteSessionTokenCookie(setCookie);
   if (sessionId) {
-    const { invalidateSession } = await loadAuthSession();
-    await invalidateSession(sessionId);
+    await invalidateSession(deps, sessionId);
   }
 }
 
@@ -375,23 +382,25 @@ export interface SignUpEmailInput {
 }
 
 export async function signUpWithEmail(
+  deps: ServiceDeps,
   input: SignUpEmailInput,
   setCookie: ISetCookie
 ) {
-  const { getIsRegistrationAllowed } = await loadRegistration();
-  const isRegistrationAllowed = await getIsRegistrationAllowed(input.inviteId);
+  const isRegistrationAllowed = await getIsRegistrationAllowed(
+    deps,
+    input.inviteId
+  );
   if (!isRegistrationAllowed) {
     throw new TRPCAccessError('Registrations are not allowed');
   }
 
   const provider = 'email';
-  const db = await loadDb();
-  const existing = await getUserAccount({ email: input.email, provider });
+  const existing = await getUserAccount(deps, { email: input.email, provider });
   if (existing) {
     throw new TRPCNotFoundError('User already exists');
   }
 
-  const createdUser = await db.user.create({
+  const createdUser = await deps.db.user.create({
     data: {
       id: generateSecureId('user'),
       email: input.email,
@@ -413,9 +422,8 @@ export async function signUpWithEmail(
     });
   }
 
-  const { createSession } = await loadAuthSession();
   const token = generateSessionToken();
-  const session = await createSession(token, createdUser.id);
+  const session = await createSession(deps, token, createdUser.id);
   setSessionTokenCookie(setCookie, token, session.expiresAt);
   return session;
 }
@@ -429,12 +437,16 @@ export interface SignInEmailInput {
 export type SignInEmailResult = { type: 'totp_required' } | { type: 'email' };
 
 export async function signInWithEmail(
+  deps: ServiceDeps,
   input: SignInEmailInput,
   setCookie: ISetCookie,
   logger: Pick<Logger, 'error'>
 ): Promise<SignInEmailResult> {
   const password = input.password.trim();
-  const user = await getUserAccount({ email: input.email, provider: 'email' });
+  const user = await getUserAccount(deps, {
+    email: input.email,
+    provider: 'email',
+  });
 
   if (!user) {
     throw new TRPCNotFoundError('User does not exists');
@@ -455,11 +467,12 @@ export async function signInWithEmail(
     throw new TRPCAccessError('Incorrect email or password');
   }
 
-  const db = await loadDb();
-  const totp = await db.userTotp.findUnique({ where: { userId: user.id } });
+  const totp = await deps.db.userTotp.findUnique({
+    where: { userId: user.id },
+  });
   if (totp?.enabledAt) {
     const challengeId = generateSecureId('2fa');
-    await db.twoFactorChallenge.create({
+    await deps.db.twoFactorChallenge.create({
       data: {
         id: challengeId,
         userId: user.id,
@@ -481,14 +494,13 @@ export async function signInWithEmail(
     return { type: 'totp_required' };
   }
 
-  const { createSession } = await loadAuthSession();
   const token = generateSessionToken();
-  const session = await createSession(token, user.id);
+  const session = await createSession(deps, token, user.id);
   setSessionTokenCookie(setCookie, token, session.expiresAt);
   setLastAuthProviderCookie(setCookie, 'email');
 
   if (input.inviteId) {
-    await consumeInviteForUser(user.id, input.inviteId, logger);
+    await consumeInviteForUser(deps, user.id, input.inviteId, logger);
   }
 
   return { type: 'email' };
@@ -499,6 +511,7 @@ export interface SignInTotpInput {
 }
 
 export async function signInWithTotp(
+  deps: ServiceDeps,
   input: SignInTotpInput,
   cookies: CookieReader,
   setCookie: ISetCookie,
@@ -509,24 +522,23 @@ export async function signInWithTotp(
     throw new TRPCAccessError('No active two-factor challenge');
   }
 
-  const db = await loadDb();
-  const challenge = await db.twoFactorChallenge.findUnique({
+  const challenge = await deps.db.twoFactorChallenge.findUnique({
     where: { id: challengeId },
   });
 
   if (!challenge || challenge.expiresAt < new Date()) {
     if (challenge) {
-      await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
+      await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
     }
     setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
     throw new TRPCAccessError('Two-factor challenge has expired');
   }
 
-  const totp = await db.userTotp.findUnique({
+  const totp = await deps.db.userTotp.findUnique({
     where: { userId: challenge.userId },
   });
   if (!totp?.enabledAt) {
-    await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
+    await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
     setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
     throw new TRPCAccessError('Two-factor is not enabled');
   }
@@ -544,7 +556,7 @@ export async function signInWithTotp(
     });
     if (result.valid) {
       valid = true;
-      await db.userTotp.update({
+      await deps.db.userTotp.update({
         where: { userId: challenge.userId },
         data: { recoveryCodes: result.remaining },
       });
@@ -555,29 +567,27 @@ export async function signInWithTotp(
     throw new TRPCAccessError('Invalid code');
   }
 
-  await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
+  await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
   setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
 
-  const { createSession } = await loadAuthSession();
   const token = generateSessionToken();
-  const session = await createSession(token, challenge.userId);
+  const session = await createSession(deps, token, challenge.userId);
   setSessionTokenCookie(setCookie, token, session.expiresAt);
   setLastAuthProviderCookie(setCookie, 'email');
 
   const inviteId = cookies.get(INVITE_COOKIE);
   if (inviteId) {
-    await consumeInviteForUser(challenge.userId, inviteId, logger);
+    await consumeInviteForUser(deps, challenge.userId, inviteId, logger);
     setCookie(INVITE_COOKIE, '', { maxAge: 0 });
   }
 
   return { type: 'email' };
 }
 
-export async function getTotpStatus(userId: string) {
-  const db = await loadDb();
+export async function getTotpStatus(deps: ServiceDeps, userId: string) {
   const [totp, emailAccount] = await Promise.all([
-    db.userTotp.findUnique({ where: { userId } }),
-    db.account.findFirst({
+    deps.db.userTotp.findUnique({ where: { userId } }),
+    deps.db.account.findFirst({
       where: { userId, provider: 'email' },
       select: { id: true },
     }),
@@ -590,9 +600,8 @@ export async function getTotpStatus(userId: string) {
   };
 }
 
-export async function setupTotp(userId: string) {
-  const db = await loadDb();
-  const emailAccount = await db.account.findFirst({
+export async function setupTotp(deps: ServiceDeps, userId: string) {
+  const emailAccount = await deps.db.account.findFirst({
     where: { userId, provider: 'email' },
     select: { id: true },
   });
@@ -601,14 +610,14 @@ export async function setupTotp(userId: string) {
       'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.'
     );
   }
-  const existing = await db.userTotp.findUnique({ where: { userId } });
+  const existing = await deps.db.userTotp.findUnique({ where: { userId } });
   if (existing?.enabledAt) {
     throw new TRPCAccessError(
       'Two-factor is already enabled. Disable it first to re-configure.'
     );
   }
 
-  const user = await db.user.findUniqueOrThrow({
+  const user = await deps.db.user.findUniqueOrThrow({
     where: { id: userId },
     select: { email: true },
   });
@@ -617,7 +626,7 @@ export async function setupTotp(userId: string) {
   const otpauthUrl = buildOtpauthUrl({ secret, accountName: user.email });
   const qrDataUrl = await generateQrDataUrl(otpauthUrl);
 
-  await db.userTotp.upsert({
+  await deps.db.userTotp.upsert({
     where: { userId },
     create: { userId, secret: encrypt(secret), recoveryCodes: [] },
     update: { secret: encrypt(secret), recoveryCodes: [], enabledAt: null },
@@ -626,9 +635,12 @@ export async function setupTotp(userId: string) {
   return { otpauthUrl, qrDataUrl, secret };
 }
 
-export async function enableTotp(userId: string, code: string) {
-  const db = await loadDb();
-  const totp = await db.userTotp.findUnique({ where: { userId } });
+export async function enableTotp(
+  deps: ServiceDeps,
+  userId: string,
+  code: string
+) {
+  const totp = await deps.db.userTotp.findUnique({ where: { userId } });
   if (!totp) {
     throw new TRPCNotFoundError('Start two-factor setup first');
   }
@@ -644,7 +656,7 @@ export async function enableTotp(userId: string, code: string) {
   const recoveryCodes = generateRecoveryCodes();
   const hashed = await hashRecoveryCodes(recoveryCodes);
 
-  await db.userTotp.update({
+  await deps.db.userTotp.update({
     where: { userId },
     data: { enabledAt: new Date(), recoveryCodes: hashed },
   });
@@ -652,9 +664,12 @@ export async function enableTotp(userId: string, code: string) {
   return { recoveryCodes };
 }
 
-export async function disableTotp(userId: string, code: string) {
-  const db = await loadDb();
-  const totp = await db.userTotp.findUnique({ where: { userId } });
+export async function disableTotp(
+  deps: ServiceDeps,
+  userId: string,
+  code: string
+) {
+  const totp = await deps.db.userTotp.findUnique({ where: { userId } });
   if (!totp?.enabledAt) {
     throw new TRPCAccessError('Two-factor is not enabled');
   }
@@ -670,17 +685,17 @@ export async function disableTotp(userId: string, code: string) {
     throw new TRPCAccessError('Invalid code');
   }
 
-  await db.userTotp.delete({ where: { userId } });
-  await db.twoFactorChallenge.deleteMany({ where: { userId } });
+  await deps.db.userTotp.delete({ where: { userId } });
+  await deps.db.twoFactorChallenge.deleteMany({ where: { userId } });
   return { disabled: true };
 }
 
 export async function regenerateTotpRecoveryCodes(
+  deps: ServiceDeps,
   userId: string,
   code: string
 ) {
-  const db = await loadDb();
-  const totp = await db.userTotp.findUnique({ where: { userId } });
+  const totp = await deps.db.userTotp.findUnique({ where: { userId } });
   if (!totp?.enabledAt) {
     throw new TRPCAccessError('Two-factor is not enabled');
   }
@@ -690,7 +705,7 @@ export async function regenerateTotpRecoveryCodes(
   }
   const recoveryCodes = generateRecoveryCodes();
   const hashed = await hashRecoveryCodes(recoveryCodes);
-  await db.userTotp.update({
+  await deps.db.userTotp.update({
     where: { userId },
     data: { recoveryCodes: hashed },
   });
@@ -703,10 +718,10 @@ export interface ResetPasswordInput {
 }
 
 export async function resetPasswordWithToken(
+  deps: ServiceDeps,
   input: ResetPasswordInput
 ): Promise<true> {
-  const db = await loadDb();
-  const resetPassword = await db.resetPassword.findUnique({
+  const resetPassword = await deps.db.resetPassword.findUnique({
     where: { id: input.token },
   });
 
@@ -717,31 +732,38 @@ export async function resetPasswordWithToken(
     throw new TRPCNotFoundError('Reset password expired');
   }
 
-  await db.account.update({
+  await deps.db.account.update({
     where: { id: resetPassword.accountId },
     data: { password: await hashPassword(input.password) },
   });
-  await db.resetPassword.delete({ where: { id: input.token } });
+  await deps.db.resetPassword.delete({ where: { id: input.token } });
 
   return true;
 }
 
-export async function requestPasswordReset(input: {
-  email: string;
-}): Promise<true> {
-  const user = await getUserAccount({ email: input.email, provider: 'email' });
+export async function requestPasswordReset(
+  deps: ServiceDeps,
+  input: {
+    email: string;
+  }
+): Promise<true> {
+  const user = await getUserAccount(deps, {
+    email: input.email,
+    provider: 'email',
+  });
   // Deliberately not found-vs-found: V1 always returns `true` here so the
   // endpoint cannot be used to enumerate registered emails.
   if (!user?.account.id) {
     return true;
   }
 
-  const db = await loadDb();
-  await db.resetPassword.deleteMany({ where: { accountId: user.account.id } });
+  await deps.db.resetPassword.deleteMany({
+    where: { accountId: user.account.id },
+  });
 
   const token = generateSecureId('pw');
   const expiresAt = new Date(Date.now() + RESET_PASSWORD_TTL_MS);
-  await db.resetPassword.create({
+  await deps.db.resetPassword.create({
     data: { id: token, expiresAt, accountId: user.account.id },
   });
 
@@ -754,6 +776,7 @@ export async function requestPasswordReset(input: {
 }
 
 export async function extendSessionCookie(
+  deps: ServiceDeps,
   cookies: CookieReader,
   hasSession: boolean,
   setCookie: ISetCookie
@@ -763,8 +786,7 @@ export async function extendSessionCookie(
     return { extended: false };
   }
 
-  const { validateSessionToken } = await loadAuthSession();
-  const session = await validateSessionToken(token);
+  const session = await validateSessionToken(deps, token);
 
   if (session.session) {
     setSessionTokenCookie(setCookie, token, session.session.expiresAt);
@@ -976,12 +998,12 @@ export interface CompleteOAuthCallbackInput {
  * find-or-create the account and issue a session.
  */
 export async function completeOAuthCallback(
+  deps: ServiceDeps,
   input: CompleteOAuthCallbackInput
 ): Promise<void> {
   const { provider, oauthUser, inviteId, setCookie, logger } = input;
-  const db = await loadDb();
 
-  const account = await db.account.findFirst({
+  const account = await deps.db.account.findFirst({
     where: {
       OR: [
         { provider, providerId: oauthUser.id },
@@ -993,7 +1015,7 @@ export async function completeOAuthCallback(
   });
 
   if (account) {
-    await completeExistingOAuthUser({
+    await completeExistingOAuthUser(deps, {
       account,
       oauthUser,
       provider,
@@ -1004,7 +1026,7 @@ export async function completeOAuthCallback(
     return;
   }
 
-  await completeNewOAuthUser({
+  await completeNewOAuthUser(deps, {
     oauthUser,
     provider,
     inviteId,
@@ -1013,56 +1035,57 @@ export async function completeOAuthCallback(
   });
 }
 
-async function completeExistingOAuthUser({
-  account,
-  oauthUser,
-  provider,
-  inviteId,
-  setCookie,
-  logger,
-}: {
-  account: { id: string; userId: string };
-  oauthUser: OAuthUser;
-  provider: 'github' | 'google';
-  inviteId: string | null | undefined;
-  setCookie: ISetCookie;
-  logger: Pick<Logger, 'error'>;
-}) {
-  const db = await loadDb();
-  const { createSession } = await loadAuthSession();
+async function completeExistingOAuthUser(
+  deps: ServiceDeps,
+  {
+    account,
+    oauthUser,
+    provider,
+    inviteId,
+    setCookie,
+    logger,
+  }: {
+    account: { id: string; userId: string };
+    oauthUser: OAuthUser;
+    provider: 'github' | 'google';
+    inviteId: string | null | undefined;
+    setCookie: ISetCookie;
+    logger: Pick<Logger, 'error'>;
+  }
+) {
   const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, account.userId);
+  const session = await createSession(deps, sessionToken, account.userId);
 
-  await db.account.update({
+  await deps.db.account.update({
     where: { id: account.id },
     data: { provider, providerId: oauthUser.id, email: oauthUser.email },
   });
 
   if (inviteId) {
-    await consumeInviteForUser(account.userId, inviteId, logger);
+    await consumeInviteForUser(deps, account.userId, inviteId, logger);
   }
 
   setSessionTokenCookie(setCookie, sessionToken, session.expiresAt);
   setLastAuthProviderCookie(setCookie, provider);
 }
 
-async function completeNewOAuthUser({
-  oauthUser,
-  provider,
-  inviteId,
-  setCookie,
-  logger,
-}: {
-  oauthUser: OAuthUser;
-  provider: 'github' | 'google';
-  inviteId: string | null | undefined;
-  setCookie: ISetCookie;
-  logger: Pick<Logger, 'error'>;
-}) {
-  const db = await loadDb();
-  const { getIsRegistrationAllowed } = await loadRegistration();
-
-  const existingUser = await db.user.findFirst({
+async function completeNewOAuthUser(
+  deps: ServiceDeps,
+  {
+    oauthUser,
+    provider,
+    inviteId,
+    setCookie,
+    logger,
+  }: {
+    oauthUser: OAuthUser;
+    provider: 'github' | 'google';
+    inviteId: string | null | undefined;
+    setCookie: ISetCookie;
+    logger: Pick<Logger, 'error'>;
+  }
+) {
+  const existingUser = await deps.db.user.findFirst({
     where: { email: oauthUser.email },
   });
   if (existingUser) {
@@ -1075,7 +1098,7 @@ async function completeNewOAuthUser({
   // Enforce the self-hosting registration policy here rather than before the
   // IdP redirect — this is the first point where we know the user is new, so
   // returning users are never caught by it.
-  if (!(await getIsRegistrationAllowed(inviteId))) {
+  if (!(await getIsRegistrationAllowed(deps, inviteId))) {
     // Deliberately no `oauthUser` here — this rejects people who are not
     // users, so their email and name shouldn't land in application logs.
     throw new OAuthCallbackError('Registrations are not allowed', {
@@ -1084,7 +1107,7 @@ async function completeNewOAuthUser({
     });
   }
 
-  const user = await db.user.create({
+  const user = await deps.db.user.create({
     data: {
       email: oauthUser.email,
       firstName: oauthUser.firstName,
@@ -1106,9 +1129,8 @@ async function completeNewOAuthUser({
     }
   }
 
-  const { createSession } = await loadAuthSession();
   const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, user.id);
+  const session = await createSession(deps, sessionToken, user.id);
   setSessionTokenCookie(setCookie, sessionToken, session.expiresAt);
   setLastAuthProviderCookie(setCookie, provider);
 }

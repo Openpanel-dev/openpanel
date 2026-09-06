@@ -15,13 +15,6 @@
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
 import { zCreateProject, zUpdateProject } from './project.constants';
-import {
-  createProjectForOrganization,
-  deleteProjectForOrganization,
-  getProjectForOrganization,
-  listProjectsForOrganization,
-  updateProjectForOrganization,
-} from './project.service';
 
 const idParams = z.object({ id: z.string() });
 
@@ -29,8 +22,10 @@ export const projectRoutes = defineRoutes((app) =>
   app
     .get(
       '/manage/projects',
-      async ({ client }) => ({
-        data: await listProjectsForOrganization(client.organizationId),
+      async ({ client, ctx }) => ({
+        data: await ctx.services.project.listProjectsForOrganization(
+          client.organizationId
+        ),
       }),
       {
         clientAuth: { allow: ['root'], label: 'Manage' },
@@ -39,8 +34,8 @@ export const projectRoutes = defineRoutes((app) =>
     )
     .get(
       '/manage/projects/:id',
-      async ({ client, params, status }) => {
-        const project = await getProjectForOrganization(
+      async ({ client, ctx, params, status }) => {
+        const project = await ctx.services.project.getProjectForOrganization(
           params.id,
           client.organizationId
         );
@@ -60,15 +55,18 @@ export const projectRoutes = defineRoutes((app) =>
     )
     .post(
       '/manage/projects',
-      async ({ body, client }) => {
+      async ({ body, client, ctx }) => {
         const { project, client: firstClient } =
-          await createProjectForOrganization(client.organizationId, {
-            name: body.name,
-            domain: body.domain,
-            cors: body.cors,
-            crossDomain: body.crossDomain,
-            types: body.types,
-          });
+          await ctx.services.project.createProjectForOrganization(
+            client.organizationId,
+            {
+              name: body.name,
+              domain: body.domain,
+              cors: body.cors,
+              crossDomain: body.crossDomain,
+              types: body.types,
+            }
+          );
         return { data: { ...project, client: firstClient } };
       },
       {
@@ -79,8 +77,8 @@ export const projectRoutes = defineRoutes((app) =>
     )
     .patch(
       '/manage/projects/:id',
-      async ({ body, client, params, status }) => {
-        const project = await updateProjectForOrganization(
+      async ({ body, client, ctx, params, status }) => {
+        const project = await ctx.services.project.updateProjectForOrganization(
           params.id,
           client.organizationId,
           body
@@ -102,8 +100,8 @@ export const projectRoutes = defineRoutes((app) =>
     )
     .delete(
       '/manage/projects/:id',
-      async ({ client, params, status }) => {
-        const deleted = await deleteProjectForOrganization(
+      async ({ client, ctx, params, status }) => {
+        const deleted = await ctx.services.project.deleteProjectForOrganization(
           params.id,
           client.organizationId
         );

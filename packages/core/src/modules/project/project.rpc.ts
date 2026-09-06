@@ -7,8 +7,8 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's project functions (DELEGATE
-// PATTERN) — this module has no queue/cron of its own, so there is no
-// `ctx.services.project`, same as `user`/`conversation`.
+// PATTERN). `ctx.services.project` carries this module's factory the same
+// as every other module now (M10-004).
 //
 // The project-access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
@@ -17,16 +17,6 @@ import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
-import {
-  cancelProjectDeletion,
-  createProjectForOrganization,
-  getProjectActivationStatus,
-  getProjectById,
-  getProjects,
-  getProjectWithClients,
-  scheduleProjectDeletion,
-  updateProjectForOrganization,
-} from './project.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -47,7 +37,7 @@ export const projectRouter = createTRPCRouter({
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
-      return getProjectWithClients(projectId);
+      return ctx.services.project.getProjectWithClients(projectId);
     }),
 
   // Powers the activation checklist on the project overview: has the project
@@ -64,7 +54,7 @@ export const projectRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      return getProjectActivationStatus(projectId);
+      return ctx.services.project.getProjectActivationStatus(projectId);
     }),
 
   list: procedure
@@ -74,7 +64,7 @@ export const projectRouter = createTRPCRouter({
       if (organizationId === null) {
         return [];
       }
-      return getProjects({ organizationId, userId });
+      return ctx.services.project.getProjects({ organizationId, userId });
     }),
 
   update: procedure.input(zProjectUpdate).mutation(async ({ input, ctx }) => {
@@ -85,18 +75,22 @@ export const projectRouter = createTRPCRouter({
       level: 'write',
     });
 
-    const project = await getProjectById(input.id);
+    const project = await ctx.services.project.getProjectById(input.id);
     if (!project) {
       throw new TRPCForbiddenError('Project not found');
     }
 
-    return updateProjectForOrganization(input.id, project.organizationId, {
-      name: input.name,
-      domain: input.domain,
-      cors: input.cors,
-      crossDomain: input.crossDomain,
-      allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
-    });
+    return ctx.services.project.updateProjectForOrganization(
+      input.id,
+      project.organizationId,
+      {
+        name: input.name,
+        domain: input.domain,
+        cors: input.cors,
+        crossDomain: input.crossDomain,
+        allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
+      }
+    );
   }),
 
   create: procedure
@@ -118,16 +112,17 @@ export const projectRouter = createTRPCRouter({
         );
       }
 
-      const { project, client } = await createProjectForOrganization(
-        input.organizationId,
-        {
-          name: input.project,
-          domain: input.domain,
-          cors: input.cors,
-          crossDomain: false,
-          types: [],
-        }
-      );
+      const { project, client } =
+        await ctx.services.project.createProjectForOrganization(
+          input.organizationId,
+          {
+            name: input.project,
+            domain: input.domain,
+            cors: input.cors,
+            crossDomain: false,
+            types: [],
+          }
+        );
 
       return { ...project, client };
     }),
@@ -143,7 +138,7 @@ export const projectRouter = createTRPCRouter({
         message: 'Only organization admins can delete projects',
       });
 
-      await scheduleProjectDeletion(input.projectId);
+      await ctx.services.project.scheduleProjectDeletion(input.projectId);
       return true;
     }),
 
@@ -157,7 +152,7 @@ export const projectRouter = createTRPCRouter({
         message: 'Only organization admins can cancel a project deletion',
       });
 
-      await cancelProjectDeletion(input.projectId);
+      await ctx.services.project.cancelProjectDeletion(input.projectId);
       return true;
     }),
 });

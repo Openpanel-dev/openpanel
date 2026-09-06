@@ -1,11 +1,16 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getDashboardById, getId, getProjectById } from '@openpanel/core';
-import { db, Prisma } from '@openpanel/db';
 import { zReport } from '@openpanel/validation';
 import { z } from 'zod';
 import type { McpAuthContext } from '../auth';
 import { dashboardBaseUrl } from './dashboard-links';
-import { projectIdSchema, resolveProjectId, withErrorHandling } from './shared';
+import {
+  loadCompatDb,
+  loadCompatPrisma,
+  projectIdSchema,
+  resolveProjectId,
+  withErrorHandling,
+} from './shared';
 
 const reportSchema = zReport
   .omit({ projectId: true, limit: true, offset: true })
@@ -134,7 +139,11 @@ function reportUrl(
   return `${dashboardBaseUrl()}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
-function reportData(report: z.infer<typeof reportSchema>) {
+// `dbNull` is `Prisma.DbNull` (an explicit SQL NULL on a nullable Json
+// column), threaded in as `unknown` rather than importing `@openpanel/db`
+// here — same shape notification.service.ts's `isValidPayload` uses for the
+// same sentinel. Callers resolve it via `loadCompatPrisma()` (./shared).
+function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   return {
     name: report.name,
     events: report.series,
@@ -148,7 +157,7 @@ function reportData(report: z.infer<typeof reportSchema>) {
     previous: report.previous ?? false,
     unit: report.unit ?? null,
     metric: report.metric,
-    options: report.options ?? Prisma.DbNull,
+    options: report.options ?? dbNull,
     visibleSeries: report.visibleSeries ?? [],
     startDate: report.range === 'custom' ? report.startDate : null,
     endDate: report.range === 'custom' ? report.endDate : null,
@@ -163,7 +172,11 @@ async function requireDashboard(projectId: string, dashboardId: string) {
   return dashboard;
 }
 
-async function requireReport(projectId: string, reportId: string) {
+async function requireReport(
+  db: Awaited<ReturnType<typeof loadCompatDb>>,
+  projectId: string,
+  reportId: string
+) {
   const report = await db.report.findFirst({
     where: { id: reportId, projectId },
   });
@@ -261,6 +274,7 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
         const dashboard = await requireDashboard(projectId, dashboardId);
         const reports = await db.report.findMany({
@@ -305,6 +319,7 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, name }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
         const project = await getProjectById(projectId);
         if (!project) {
@@ -342,6 +357,7 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, dashboardId, name }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
         await requireDashboard(projectId, dashboardId);
         const dashboard = await db.dashboard.update({
@@ -372,6 +388,7 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, dashboardId, forceDelete }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
         const dashboard = await requireDashboard(projectId, dashboardId);
 
@@ -444,13 +461,15 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, dashboardId, report }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
+        const { DbNull } = await loadCompatPrisma();
         const projectId = await resolveProjectId(context, inputProjectId);
         const dashboard = await requireDashboard(projectId, dashboardId);
         const created = await db.report.create({
           data: {
             projectId: dashboard.projectId,
             dashboardId,
-            ...reportData(report),
+            ...reportData(report, DbNull),
           },
         });
 
@@ -470,11 +489,13 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, reportId, report }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
+        const { DbNull } = await loadCompatPrisma();
         const projectId = await resolveProjectId(context, inputProjectId);
-        await requireReport(projectId, reportId);
+        await requireReport(db, projectId, reportId);
         const updated = await db.report.update({
           where: { id: reportId },
-          data: reportData(report),
+          data: reportData(report, DbNull),
         });
 
         return {
@@ -492,8 +513,9 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, reportId }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
-        await requireReport(projectId, reportId);
+        await requireReport(db, projectId, reportId);
         const deleted = await db.report.delete({ where: { id: reportId } });
 
         return {
@@ -512,8 +534,10 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, reportId }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
+        const { DbNull } = await loadCompatPrisma();
         const projectId = await resolveProjectId(context, inputProjectId);
-        const report = await requireReport(projectId, reportId);
+        const report = await requireReport(db, projectId, reportId);
         const duplicate = await db.report.create({
           data: {
             projectId: report.projectId,
@@ -530,7 +554,7 @@ export function registerDashboardManagementTools(
             previous: report.previous,
             unit: report.unit,
             metric: report.metric,
-            options: report.options ?? Prisma.DbNull,
+            options: report.options ?? DbNull,
             visibleSeries: report.visibleSeries,
             startDate: report.startDate,
             endDate: report.endDate,
@@ -556,8 +580,9 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, reportId, layout }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
-        await requireReport(projectId, reportId);
+        await requireReport(db, projectId, reportId);
         return db.reportLayout.upsert({
           where: { reportId },
           create: { reportId, ...layout },
@@ -577,6 +602,7 @@ export function registerDashboardManagementTools(
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
         const projectId = await resolveProjectId(context, inputProjectId);
         await requireDashboard(projectId, dashboardId);
         const result = await db.reportLayout.deleteMany({

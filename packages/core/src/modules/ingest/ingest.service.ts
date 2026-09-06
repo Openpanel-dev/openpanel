@@ -36,7 +36,21 @@ import {
   identifyProfile,
   upsertProfile,
 } from '../profile/profile.service';
-import { getSalts } from '../salt/salt.service';
+
+// M10-004: salt.service.ts's `getSalts` moved inside `createSaltService(deps)`
+// so its LRU survives across calls; this hot path has no `Ctx` to reach
+// `ctx.services.salt` from, so it reads the v1-compat singleton instead — see
+// v1-compat.ts's header and salt.service.ts's. GENUINE CYCLE, kept lazy:
+// services.ts -> ingest.service.ts (this file) -> v1-compat.ts -> services.ts;
+// the dynamic import is what keeps it a cycle ESM can evaluate, same as
+// auth.service.ts's `loadShare()`.
+function loadSalt() {
+  return import('../../v1-compat');
+}
+function getSalts() {
+  return loadSalt().then((m) => m.getSalts());
+}
+
 import { convertClickhouseDateToJs } from '../session/src/dates';
 import type {
   DeprecatedPostEventPayload,

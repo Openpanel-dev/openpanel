@@ -1,8 +1,16 @@
-// salt.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: the
-// mock is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// The subject is built over a fake `ServiceDeps` (M10-004), so Postgres needs
+// no module mock at all — `deps.db` IS the fake below, same idiom as
+// reference.service.test.ts. `@openpanel/redis`'s `cacheable` is still
+// stubbed (module-level `getSalts` binds it at this file's first import), so
+// `rotateSalt`'s `getSalts.clear()` never reaches a real Redis connection —
+// same reasoning as before this wave, just without the `@openpanel/db` mock.
+//
+// `getSalts` itself stays untested here: it is bare (no `deps` argument)
+// because ingest.service.ts's hot path calls it with none — see the module
+// header — and its `cacheable(...)` wrapping binds at this module's
+// first-ever evaluation, which a bare (non `--isolate`) `bun test` run does
+// not let this file control. `fetchSalts` (the uncached read it wraps) is
+// exercised directly instead.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
@@ -57,12 +65,6 @@ const $transaction = mock(
     fn({ salt: saltDelegate })
 );
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { salt: saltDelegate, $transaction },
-}));
-
 // Bypasses the Redis cache-aside entirely, same as organization.service.test.ts's
 // `cacheableStub` — this module's own logic is exercised directly, caching is
 // @openpanel/redis's concern. Only the `cacheable(name, fn, ttl)` overload
@@ -89,9 +91,15 @@ afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
 });
 
-let subject: typeof import('./salt.service');
+let subject: import('./salt.service').SaltService;
+let fetchSalts: typeof import('./salt.service').fetchSalts;
 beforeAll(async () => {
-  subject = await import('./salt.service');
+  const mod = await import('./salt.service');
+  fetchSalts = mod.fetchSalts;
+  const deps = {
+    db: { salt: saltDelegate, $transaction },
+  } as unknown as import('../../services').ServiceDeps;
+  subject = mod.createSaltService(deps);
 });
 
 beforeEach(() => {
@@ -117,19 +125,17 @@ test('createInitialSalts is a no-op once a salt already exists', async () => {
   expect(saltStore[0]?.salt).toBe('existing');
 });
 
-// `fetchSalts` is the uncached read `getSalts` wraps — asserted directly
-// rather than through `getSalts` itself, because `getSalts`'s `cacheable(...)`
-// wrapping is bound at this module's first-ever evaluation, which a bare
-// (non `--isolate`) `bun test` run does not let this file control (see the
-// module header). `createInitialSalts`'s own tests above already exercise
-// the same "does a salt exist" branch through the production call path.
 test('fetchSalts returns current + previous, newest first', async () => {
   resetStore([
     { salt: 'older', createdAt: new Date('2024-01-01T00:00:00Z') },
     { salt: 'newer', createdAt: new Date('2024-01-02T00:00:00Z') },
   ]);
 
-  await expect(subject.fetchSalts()).resolves.toEqual({
+  await expect(
+    fetchSalts({
+      db: { salt: saltDelegate },
+    } as unknown as import('../../services').ServiceDeps)
+  ).resolves.toEqual({
     current: 'newer',
     previous: 'older',
   });
@@ -138,7 +144,11 @@ test('fetchSalts returns current + previous, newest first', async () => {
 test('fetchSalts falls back previous to current when only one salt exists', async () => {
   resetStore([{ salt: 'only-one', createdAt: new Date() }]);
 
-  await expect(subject.fetchSalts()).resolves.toEqual({
+  await expect(
+    fetchSalts({
+      db: { salt: saltDelegate },
+    } as unknown as import('../../services').ServiceDeps)
+  ).resolves.toEqual({
     current: 'only-one',
     previous: 'only-one',
   });
@@ -147,7 +157,11 @@ test('fetchSalts falls back previous to current when only one salt exists', asyn
 test('fetchSalts throws when the table is empty', async () => {
   resetStore([]);
 
-  await expect(subject.fetchSalts()).rejects.toThrow('No salt found');
+  await expect(
+    fetchSalts({
+      db: { salt: saltDelegate },
+    } as unknown as import('../../services').ServiceDeps)
+  ).rejects.toThrow('No salt found');
 });
 
 test('rotateSalt adds a salt and prunes everything except it and the previous newest', async () => {

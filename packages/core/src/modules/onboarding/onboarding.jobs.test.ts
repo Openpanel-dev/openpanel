@@ -49,6 +49,14 @@ function stubJobCtx(
     export: {} as Services['export'],
     share: {} as Services['share'],
     reference: {} as Services['reference'],
+    client: {} as Services['client'],
+    project: {} as Services['project'],
+    user: {} as Services['user'],
+    subscription: {} as Services['subscription'],
+    salt: {} as Services['salt'],
+    conversation: {} as Services['conversation'],
+    assistant: {} as Services['assistant'],
+    mcp: {} as Services['mcp'],
   };
   return {
     db: {} as AppDeps['db'],

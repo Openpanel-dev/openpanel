@@ -3,10 +3,10 @@
 // not yet reachable — main.ts does not mount `dashboardRoutes` until a real
 // `AppDeps` exists (P3/P4/P8).
 //
-// `mcp.service` is loaded dynamically for the same reason assistant.routes.ts
-// gives for `assistant.service`: a static top-level import here reaches
-// `@openpanel/db`, which races `@openpanel/db`'s own circular
-// `buffers/base-buffer.ts` -> `@openpanel/core` import.
+// `ctx.services.mcp` carries this module's factory the same as every other
+// module now (M10-004) — `mcp.service.ts`'s own header explains why that
+// file is now safe to reach through `ctx.services` instead of this route's
+// former one-off `loadMcpService()`.
 //
 // Rate limiting (V1: 60/min via Fastify's activateRateLimiter) is not wired
 // here yet — nothing reaches this route until dashboardRoutes mounts, so it
@@ -18,23 +18,15 @@
 
 import { defineRoutes } from '../../http/define';
 
-function loadMcpService() {
-  return import('./mcp.service');
-}
-
 export const mcpRoutes = defineRoutes((app) =>
-  app.post('/mcp', async ({ body, query, request, set }) => {
-    const { extractToken, handleStatelessMcpRequest } = await loadMcpService();
-
-    const token = extractToken(
+  app.post('/mcp', async ({ body, ctx, query, request, set }) => {
+    const token = ctx.services.mcp.extractToken(
       query as Record<string, string>,
       request.headers.get('authorization') ?? undefined
     );
 
-    const { status, body: responseBody } = await handleStatelessMcpRequest(
-      token,
-      body
-    );
+    const { status, body: responseBody } =
+      await ctx.services.mcp.handleStatelessMcpRequest(token, body);
     set.status = status;
     return responseBody;
   })

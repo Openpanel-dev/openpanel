@@ -1,31 +1,18 @@
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  mock,
-} from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import type { ServiceDeps } from '../../../services';
+import { getIsRegistrationAllowed } from './registration';
 
 const mockUserCount = mock(async () => 5);
 const mockInviteFindUnique = mock(
   async (): Promise<{ id: string } | null> => null
 );
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
+const deps = {
   db: {
     user: { count: mockUserCount },
     invite: { findUnique: mockInviteFindUnique },
   },
-}));
-
-let getIsRegistrationAllowed: typeof import('./registration').getIsRegistrationAllowed;
-beforeAll(async () => {
-  ({ getIsRegistrationAllowed } = await import('./registration'));
-});
+} as unknown as ServiceDeps;
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -46,7 +33,7 @@ describe('getIsRegistrationAllowed', () => {
     process.env.ALLOW_REGISTRATION = undefined;
     delete process.env.ALLOW_REGISTRATION;
 
-    expect(await getIsRegistrationAllowed()).toBe(true);
+    expect(await getIsRegistrationAllowed(deps)).toBe(true);
     expect(mockUserCount).not.toHaveBeenCalled();
   });
 
@@ -54,13 +41,13 @@ describe('getIsRegistrationAllowed', () => {
     process.env.ALLOW_REGISTRATION = 'false';
     mockUserCount.mockResolvedValue(0);
 
-    expect(await getIsRegistrationAllowed()).toBe(true);
+    expect(await getIsRegistrationAllowed(deps)).toBe(true);
   });
 
   it('blocks a new user with no invite when registration is disabled', async () => {
     process.env.ALLOW_REGISTRATION = 'false';
 
-    expect(await getIsRegistrationAllowed()).toBe(false);
+    expect(await getIsRegistrationAllowed(deps)).toBe(false);
   });
 
   it('allows a new user holding a valid invite when registration is disabled', async () => {
@@ -68,7 +55,7 @@ describe('getIsRegistrationAllowed', () => {
     process.env.ALLOW_INVITATION = 'true';
     mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
 
-    expect(await getIsRegistrationAllowed('invite-1')).toBe(true);
+    expect(await getIsRegistrationAllowed(deps, 'invite-1')).toBe(true);
   });
 
   it('blocks an unknown invite id', async () => {
@@ -76,7 +63,7 @@ describe('getIsRegistrationAllowed', () => {
     process.env.ALLOW_INVITATION = 'true';
     mockInviteFindUnique.mockResolvedValue(null);
 
-    expect(await getIsRegistrationAllowed('nope')).toBe(false);
+    expect(await getIsRegistrationAllowed(deps, 'nope')).toBe(false);
   });
 
   it('blocks a valid invite when invitations are disabled', async () => {
@@ -84,13 +71,13 @@ describe('getIsRegistrationAllowed', () => {
     process.env.ALLOW_INVITATION = 'false';
     mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
 
-    expect(await getIsRegistrationAllowed('invite-1')).toBe(false);
+    expect(await getIsRegistrationAllowed(deps, 'invite-1')).toBe(false);
     expect(mockInviteFindUnique).not.toHaveBeenCalled();
   });
 
   it('allows open self-hosted registration', async () => {
     process.env.ALLOW_REGISTRATION = 'true';
 
-    expect(await getIsRegistrationAllowed()).toBe(true);
+    expect(await getIsRegistrationAllowed(deps)).toBe(true);
   });
 });

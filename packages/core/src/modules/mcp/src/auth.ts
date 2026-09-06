@@ -1,11 +1,19 @@
 import { createHash } from 'node:crypto';
-import { getClientByIdCached } from '@openpanel/core';
-import { ClientType } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
 import { createLogger } from '../../../clients/logger';
 import { verifyPassword } from '../../../shared/crypto';
 
 const logger = createLogger({ name: 'mcp:auth' });
+
+// GENUINE CYCLE, kept lazy: `mcp.service.ts` statically imports this file
+// (`extractToken` must stay synchronous — its own caller doesn't await it),
+// and this package's barrel (`@openpanel/core`) transitively reaches
+// services.ts, which registers `createMcpService`. services.ts -> mcp.service.ts
+// -> this file -> @openpanel/core (index.ts) -> v1-compat.ts -> services.ts;
+// the dynamic import is what keeps it a cycle ESM can evaluate.
+function loadClientService() {
+  return import('@openpanel/core');
+}
 
 export interface McpAuthContext {
   /**
@@ -80,6 +88,7 @@ export async function authenticateToken(
     throw new McpAuthError('Client secret is required');
   }
 
+  const { getClientByIdCached } = await loadClientService();
   const client = await getClientByIdCached(clientId);
   if (!client) {
     logger.warn({ clientId }, 'MCP auth: client not found');
@@ -97,7 +106,7 @@ export async function authenticateToken(
     );
   }
 
-  if (client.type === ClientType.write) {
+  if (client.type === 'write') {
     logger.warn({ clientId }, 'MCP auth: write-only client rejected');
     throw new McpAuthError(
       'Write-only clients cannot use MCP — use a read or root client'
@@ -125,7 +134,7 @@ export async function authenticateToken(
     throw new McpAuthError('Invalid credentials');
   }
 
-  const isRoot = client.type === ClientType.root;
+  const isRoot = client.type === 'root';
 
   return {
     projectId: isRoot ? null : (client.projectId ?? null),

@@ -454,3 +454,170 @@ dependencies cruised.` (was 241.)
   (web/nextjs/react-native/express leak `@openpanel/*`, sdk is clean); every
   other stage is `OK`, including `pnpm test`, `golden/compare.sh`
   (`passed: 137/137`, zero diffs) and `contracts/auth/run.sh`.
+
+### 2026-09-06 — M10-004, the account path (auth, client, project, user, subscription, salt, conversation, assistant, mcp) onto `createXService(deps)`
+
+Ran by: ralph (M10-004 implement task, docs/TECH_DEBT.md §4 steps 1/2/5 and
+§5a, continuing M10-003).
+
+**Shape.** All nine modules now expose exactly one
+`createXService(deps: ServiceDeps): XService`, registered in `services.ts`.
+`auth.service.ts` already had `createAuthService` from M10-002 (bound to the
+access ladder, independent of `deps`) — this wave finishes it: every OTHER
+lazy `@openpanel/db` load in the file (sign-up/sign-in/TOTP/reset-password/
+OAuth-callback) now takes `deps` too, and `./src/login-session.ts` /
+`./src/registration.ts` reach Postgres as `deps.db` with no lazy loader left.
+`assistant` and `mcp` needed a factory for the first time; both were a bag of
+loosely-related exports, not a services-shaped file, before this wave.
+
+**Two modules that were never going to fit the mechanical pattern.**
+
+- **`assistant.service.ts`** re-exported `chatApp`/`chatRunContext` as
+  eager `export ... from './src/app'` / `'./src/run-context'` — a static
+  re-export, which means importing this file AT ALL constructs the whole
+  Better Agent app (one `defineAgent` per whitelisted chat model). Registering
+  `createAssistantService` in `services.ts` would have made that run at
+  PROCESS BOOT (services.ts's own module evaluation) instead of on the first
+  real chat/filter-command request. Fixed by moving the lazy-loader index.ts
+  used to hide this (`loadAssistant()`/`getChatApp()`/`getChatRunContext()`)
+  INTO `assistant.service.ts` itself, so the file is cheap to import
+  regardless of who imports it; index.ts's own copy of that mechanism is
+  deleted, replaced by a plain re-export now that it's safe. `deps` goes
+  unused in the factory — nothing here touches Postgres directly.
+- **`mcp.service.ts`** statically imported `./src/auth` (fine, fixed below)
+  and `./src/server` (`registerAllTools`, ~20 tool files, several importing
+  `@openpanel/core` for cross-module functions) — reached only via a dynamic
+  `loadMcp()` in index.ts before this wave, for exactly the reason
+  `assistant`'s TDZ hazard note already named for this file. `./src/server`
+  stays behind a lazy loader inside `mcp.service.ts`; `./src/auth` is a plain
+  import again because its own `@openpanel/core` reach (below) is now lazy
+  too, so nothing static is left to protect against. `handleStatelessMcpRequest`
+  /`extractToken` keep their exact bare signature — both are called directly
+  by their own tests with no `deps` argument, a hard contract this wave does
+  not touch — so `McpService`'s two methods are thin, deps-ignoring binds.
+
+**Bare hot-path callers with no `Ctx` to give a `deps` — the pattern this wave
+generalizes from `v1-compat.ts`'s v1-compat seam to core's OWN internals.**
+`getProjectByIdCached`/`getClientByIdCached` (ingest's `/track` auth,
+`http/client-auth.ts`'s `/export`+`/import`+`/manage` tier, MCP's token auth)
+and `getSalts` (ingest's device-id resolution) all have their L1 LRU cache
+built INSIDE their `createXService(deps)` closure now, which only stays a
+cross-request singleton through the v1-compat seam (`registered`, built once
+at boot) — not through `ctx.services`, which is one Ctx per request. Every one
+of these callers has no `Ctx`/`ServiceDeps` of its own, so they reach the
+cache through `v1-compat.ts` (`compatDb()`/`compatCh()` for the couple of
+third-party-signature callers — `@better-agent/core`'s `ConversationStore`,
+`@modelcontextprotocol/sdk`'s tool handlers — that can't carry a wrapped
+service method at all). `getClientByIdCached`/`getProjectByIdCached` also
+gained a `clearClientByIdCache`/`clearProjectByIdCache` service method, since
+the LRU's `.clear()` isn't part of the plain `(id) => Promise<...>` shape
+`ServiceDeps`-free callers expect.
+
+One of these (`ingest/src/incoming-event-handler.ts`) carried a **stale
+constraint**: a comment mandating a *static* import of `project.service.ts`
+"so a dynamic edge into project.service doesn't become its own rolldown chunk
+... external in apps/worker's bundle". `apps/worker` no longer exists (M9) and
+`apps/api` ships with no bundler at all (`apps/api/package.json` has no
+`build` script — ADR-010) — the constraint the comment protected against is
+gone, so the file now uses the same "GENUINE CYCLE, kept lazy" dynamic import
+as everywhere else in this wave.
+
+**Correction (post-review): there is no "no import-time cost" exception to
+acceptance criterion 2.** The first pass through this wave left four plain,
+top-level value imports of `@openpanel/db` standing — `subscription.service.ts`
+and mcp's `dashboard-management.ts` each imported `Prisma` (for the
+`Prisma.DbNull` sentinel), and mcp's `analytics/property-values.ts` imported
+`TABLE_NAMES`/`clix` — and this section originally excused all four, plus
+`project.service.ts`'s two still-`clix` functions, as "scoped exceptions"
+under ADR-013. That was wrong on the acceptance criterion's own terms: ADR-013
+grants time to convert ClickHouse query BODIES to the `sql` tag (one query per
+P7 task, diffed); it says nothing about the criterion's separate,
+unconditional "no `@openpanel/db` import in these nine modules" rule, and a
+gap no ADR actually covers is `BLOCKED`, not self-exempted (CLAUDE.md). Fixed
+by extending the v1-compat seam instead of arguing the rule away:
+
+- `v1-compat.ts` gained `compatPrisma()` (the `Prisma` namespace — a value,
+  not a client, but still `@openpanel/db`) and `compatChHelpers()` (`clix`,
+  `TABLE_NAMES`, `chQuery`, `convertClickhouseDateToJs` — the query-building
+  helpers that ADR-013 leaves in place beside `deps.ch`, the actual client).
+  Both are lazy, same as `compatDb`/`compatCh`.
+- `subscription.service.ts` and `project.service.ts` reach them through a
+  local `loadCompatPrisma`/`loadChHelpers` lazy loader (GENUINE CYCLE: both
+  are statically imported by `services.ts`, which `v1-compat.ts` statically
+  imports back for `createServices`). mcp's `dashboard-management.ts` and
+  `analytics/property-values.ts` reach them via `./shared`'s
+  `loadCompatPrisma`/`loadCompatChHelpers` (no cycle — mcp's tool tree is
+  already behind `mcp.service.ts`'s own lazy loader).
+- `project.service.ts`'s `getLastEventPerProject` also had an actual bug this
+  surfaced: it built its own ClickHouse client from `@openpanel/db` instead of
+  using the `deps.ch` already sitting unused in its (underscore-prefixed)
+  `_deps` parameter. Now it does.
+- `dashboard-management.ts`'s `reportData()` helper takes the resolved
+  `DbNull` sentinel as an `unknown` parameter rather than importing `Prisma`
+  for its type — the same shape `notification.service.ts`'s `isValidPayload`
+  already uses for the identical sentinel-comparison problem.
+
+No query TEXT changed; only which module reaches the query-building helpers
+did.
+
+**`v1-compat.ts` grew, not just from this wave's nine modules.** Fixing the
+above meant every OTHER core module that reached one of these nine bare (no
+`deps`) also needed its import repointed at `v1-compat.ts`:
+`shared/access-lookups.ts` (`getProjectById`), `onboarding.service.ts`
+(`getUserById`), `dashboard.service.ts` (`getProjectById` — this one already
+had `deps` in scope, so it's a straight parameter pass, no new v1-compat
+wrapper), `export.service.ts`'s `resolveInsightsProjectId` (~35 call sites in
+`export.routes.ts`, none carrying `deps`), `session/src/usage.ts` and
+`organization/src/wind-down.ts`/`misc/src/data-health.ts` (`getLastEventPerProject`,
+zero-arg shape preserved). None of these files are in this task's scope
+globs by name; all of them needed a one-line import-target fix to keep
+compiling once their target's signature gained `deps` — the same category of
+necessary wiring M10-003's `auth.rpc.ts`/`chart.rpc.ts` touch-ups were.
+
+**Test-isolation hazard found and fixed, not just avoided.** Two tests
+(`mcp/src/tools/dashboard-management.test.ts`,
+`mcp/src/tools/analytics/page-performance.test.ts`) mock
+`@openpanel/db/src/prisma-client` / `.../clickhouse/client` directly and rely
+on `v1-compat.ts`'s fallback to pick the mock up — but that fallback is a
+process-lifetime memoized singleton (`v1-compat.ts`'s own `fallback` promise),
+so under a bare (non-`--isolate`) `bun test` run an EARLIER file that already
+resolved it (against ITS OWN mock, or the real db) leaves it wrong for every
+later file. Both now call `resetV1CompatServicesForTests()` in `beforeAll`
+(before importing the subject) and `afterAll` (so they don't do the same
+thing to files after them) — this is the reset the memoized-singleton pattern
+already existed for, just not previously needed by anything reaching the
+fallback through a *different* module's mock.
+
+**`pnpm run check:deps`** (`.dependency-cruiser.cjs`, both rules unchanged at
+their landed `warn` severity):
+
+| Rule | Before (M10-003) | After (M10-004) | Delta |
+|---|---:|---:|---:|
+| `core-uses-ctx-not-db-internals` | 160 | **135** | **−25** |
+| `core-no-self-barrel` | 62 | **59** | **−3** |
+
+Exit `0` either way (`warn`, not `error`):
+`x 194 dependency violations (0 errors, 194 warnings). 1991 modules, 8036
+dependencies cruised.` (was 222.) The residual `core-uses-ctx-not-db-internals`
+hits inside this wave's nine modules are all `.test.ts` files that mock
+`@openpanel/db` directly (`mcp/src/tools/dashboard-management.test.ts`,
+`mcp/src/tools/analytics/{profiles,page-performance}.test.ts`,
+`mcp/mcp.service.test.ts` — pre-existing pattern, unrelated to this wave);
+none of the nine modules' `*.service.ts`/`*.rpc.ts`/`*.routes.ts` files import
+`@openpanel/db` as a value any more (`import type` for a handful of Prisma
+model types is not a value import — it is erased, so it carries no
+import-time cost and is not what this rule or the acceptance criterion
+target). The residual `core-no-self-barrel` hits inside `mcp`/`assistant` are
+entirely the ~40 untouched tool files reaching `@openpanel/core` for
+cross-module functions — real, but out of this wave's scope (fixing them
+means rewriting every tool file's imports to relative paths, not wiring a
+service factory).
+
+**Verification, all run by ralph on 2026-09-06:**
+
+- `pnpm run typecheck` — all 25 workspaces, `Done`.
+- `cd packages/core && bun test --isolate`: **1457 pass, 12 skip, 0 fail**,
+  `Ran 1469 tests across 149 files. [100.93s]`.
+- `cd packages/core && bun test` (bare, no `--isolate`): **1457 pass, 12 skip,
+  0 fail**, `Ran 1469 tests across 149 files. [34.00s]`.
+- `pnpm run check:deps` — the table above.

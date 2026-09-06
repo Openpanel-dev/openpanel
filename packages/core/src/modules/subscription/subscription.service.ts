@@ -8,23 +8,19 @@
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
 // do: every mutating procedure in this module gates on it first, before
-// touching Polar. Every exported function here is still called directly by
-// `packages/trpc`'s LIVE V1 router with nothing but a `userId` (DELEGATE
-// PATTERN), so these can't take a `ctx`/`deps`; `requireOrganizationAdmin`
-// comes from auth.service.ts's single, lazily-memoized `getAccessChecks()`
-// (M10-002) instead.
+// touching Polar. `requireOrganizationAdmin` comes from auth.service.ts's
+// single, lazily-memoized `getAccessChecks()` (M10-002) — independent of
+// `ServiceDeps`, so it needs no change here.
 //
-// db access and `getCache` are LAZY (`loadDb`/`loadCache` below), not a
-// static top-level import — see organization.service.ts's header for the db
-// half (constructing @openpanel/db's clients at import time would spawn a
-// pino-pretty transport worker thread per test file). `getCache` hit the same
-// barrel chain from the other direction: a static
-// `import { getCache } from '@openpanel/redis'` here broke every core test
-// that partially mocks `@openpanel/redis` (no `getCache` export) and reaches
-// this module through @openpanel/db's re-export shims (project.service.ts /
-// notification.service.ts -> @openpanel/core's barrel -> here), e.g.
-// organization.service.test.ts's `connectUserToOrganization` path via
-// access.service.ts.
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()`/`loadPrisma()` lazy loaders are gone.
+// `Prisma.DbNull` (the JSON-column null sentinel) has no home on `deps` — it
+// is a plain value on the namespace, not the client — so it is reached
+// through v1-compat.ts's `compatPrisma()` instead of importing
+// `@openpanel/db` here. `packages/trpc`'s still-live router calls every
+// function here bare (no `ServiceDeps`); those reach `createServices` through
+// the v1-compat singleton too — `subscription.routes.ts`'s own
+// `/webhook/polar` route already carries a `Ctx`.
 
 import {
   applySubscriptionDiscount,
@@ -40,10 +36,12 @@ import {
   unpauseSubscription,
   validatePolarEvent,
 } from '@openpanel/payments';
+import { getCache, publishEvent } from '@openpanel/redis';
 import { addMonths, subDays } from 'date-fns';
 import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
 import { getAccessChecks } from '../auth/auth.service';
 import {
   getOrganizationBillingEventsCountSerieCached,
@@ -58,21 +56,17 @@ import {
   zCancellationReason,
 } from './subscription.constants';
 
+// GENUINE CYCLE, kept lazy: `services.ts` statically imports this file for
+// `createSubscriptionService`, and `v1-compat.ts` statically imports
+// `services.ts` for `createServices` — so `loadCompatPrisma` reaches
+// `v1-compat.ts` through a dynamic `import()`, not a static one.
+function loadCompatPrisma() {
+  return import('../../v1-compat').then((m) => m.compatPrisma());
+}
+
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const DEFAULT_USAGE_WINDOW_DAYS = 30;
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadPrisma() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.Prisma);
-}
-
-function loadCache() {
-  return import('@openpanel/redis').then((m) => m.getCache);
-}
 
 export async function getCurrentSubscriptionProduct(organizationId: string) {
   const organization = await getOrganizationById(organizationId);
@@ -85,6 +79,7 @@ export async function getCurrentSubscriptionProduct(organizationId: string) {
 }
 
 export async function checkout(
+  deps: ServiceDeps,
   userId: string,
   input: ICheckout,
   ipAddress: string | undefined
@@ -95,10 +90,11 @@ export async function checkout(
     organizationId: input.organizationId,
   });
 
-  const db = await loadDb();
   const [user, organization] = await Promise.all([
-    db.user.findFirstOrThrow({ where: { id: userId } }),
-    db.organization.findFirstOrThrow({ where: { id: input.organizationId } }),
+    deps.db.user.findFirstOrThrow({ where: { id: userId } }),
+    deps.db.organization.findFirstOrThrow({
+      where: { id: input.organizationId },
+    }),
   ]);
 
   // A paused (or pause-scheduled) subscription still exists in Polar — a
@@ -147,14 +143,11 @@ export async function checkout(
   return { url: checkoutSession.url };
 }
 
-export async function listProducts(organizationId: string) {
-  const db = await loadDb();
-  const organization = await db.organization.findUniqueOrThrow({
+export async function listProducts(deps: ServiceDeps, organizationId: string) {
+  const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
     select: { subscriptionPeriodEventsCount: true },
   });
-
-  const getCache = await loadCache();
 
   return (
     await getCache(
@@ -175,9 +168,8 @@ export async function listProducts(organizationId: string) {
   });
 }
 
-export async function getUsage(organizationId: string) {
-  const db = await loadDb();
-  const organization = await db.organization.findUniqueOrThrow({
+export async function getUsage(deps: ServiceDeps, organizationId: string) {
+  const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
     include: { projects: { select: { id: true } } },
   });
@@ -200,6 +192,7 @@ export async function getUsage(organizationId: string) {
 }
 
 export async function cancelSubscription(
+  deps: ServiceDeps,
   userId: string,
   input: ICancelSubscription
 ) {
@@ -223,8 +216,7 @@ export async function cancelSubscription(
   // delayed delivery can't lose the reason — or leave `canceledAt` unset,
   // which would make the plan-change path skip reactivation and silently
   // keep the cancellation scheduled.
-  const db = await loadDb();
-  await db.organization.update({
+  await deps.db.organization.update({
     where: { id: input.organizationId },
     data: {
       subscriptionCancelReason: input.reason,
@@ -240,6 +232,7 @@ export async function cancelSubscription(
 }
 
 export async function pauseSubscription(
+  deps: ServiceDeps,
   userId: string,
   input: IPauseSubscription
 ) {
@@ -269,8 +262,7 @@ export async function pauseSubscription(
   await pausePolarSubscription(organization.subscriptionId, resumesAt);
 
   // Optimistic mirror — the subscription.updated webhook confirms it.
-  const db = await loadDb();
-  await db.organization.update({
+  await deps.db.organization.update({
     where: { id: input.organizationId },
     data: {
       subscriptionPauseAtPeriodEnd: true,
@@ -282,6 +274,7 @@ export async function pauseSubscription(
 }
 
 export async function resumeSubscription(
+  deps: ServiceDeps,
   userId: string,
   organizationId: string
 ) {
@@ -303,8 +296,7 @@ export async function resumeSubscription(
     throw new TRPCBadRequestError('Subscription is not paused');
   }
 
-  const db = await loadDb();
-  await db.organization.update({
+  await deps.db.organization.update({
     where: { id: organizationId },
     data: {
       subscriptionPauseAtPeriodEnd: false,
@@ -316,6 +308,7 @@ export async function resumeSubscription(
 }
 
 export async function applySaveDiscount(
+  deps: ServiceDeps,
   userId: string,
   organizationId: string
 ) {
@@ -336,8 +329,7 @@ export async function applySaveDiscount(
   // conditional update lets exactly one concurrent request through. Roll
   // the claim back if Polar rejects, so a transient failure doesn't burn
   // the offer.
-  const db = await loadDb();
-  const claimed = await db.organization.updateMany({
+  const claimed = await deps.db.organization.updateMany({
     where: { id: organizationId, subscriptionSaveDiscountAppliedAt: null },
     data: { subscriptionSaveDiscountAppliedAt: new Date() },
   });
@@ -348,7 +340,7 @@ export async function applySaveDiscount(
   try {
     await applySubscriptionDiscount(organization.subscriptionId, discountId);
   } catch (error) {
-    await db.organization.updateMany({
+    await deps.db.organization.updateMany({
       where: { id: organizationId },
       data: { subscriptionSaveDiscountAppliedAt: null },
     });
@@ -474,9 +466,13 @@ function diffOrganizationFields(
   return changes;
 }
 
-async function clearOrganizationCache(organizationId: string) {
-  const db = await loadDb();
-  const projects = await db.project.findMany({ where: { organizationId } });
+async function clearOrganizationCache(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  const projects = await deps.db.project.findMany({
+    where: { organizationId },
+  });
   for (const project of projects) {
     await getOrganizationByProjectIdCached.clear(project.id);
   }
@@ -490,6 +486,7 @@ async function clearOrganizationCache(organizationId: string) {
  * reactivations, plan changes and payment-state changes in one place.
  */
 async function syncSubscriptionToOrg(
+  deps: ServiceDeps,
   data: PolarSubscriptionData,
   eventType: string,
   logger: Logger
@@ -497,8 +494,7 @@ async function syncSubscriptionToOrg(
   const metadata = subscriptionMetadataSchema.parse(data.metadata);
   const isCanceled = data.status === 'canceled';
 
-  const db = await loadDb();
-  const organization = await db.organization.findUniqueOrThrow({
+  const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: metadata.organizationId },
   });
 
@@ -563,7 +559,7 @@ async function syncSubscriptionToOrg(
     );
   }
 
-  const Prisma = await loadPrisma();
+  const { DbNull } = await loadCompatPrisma();
 
   const updateData = {
     subscriptionId: data.id,
@@ -588,8 +584,7 @@ async function syncSubscriptionToOrg(
     subscriptionCancelComment: data.customerCancellationComment ?? null,
     subscriptionPauseAtPeriodEnd: data.pauseAtPeriodEnd,
     subscriptionResumesAt: data.resumesAt,
-    subscriptionDiscount:
-      toSubscriptionDiscount(data.discount) ?? Prisma.DbNull,
+    subscriptionDiscount: toSubscriptionDiscount(data.discount) ?? DbNull,
     // Stable tenure anchor: keep the stored value while the subscription id is
     // unchanged; a new subscription (re-subscribe) restarts tenure.
     subscriptionFirstStartedAt:
@@ -627,14 +622,13 @@ async function syncSubscriptionToOrg(
     TRACKED_SUBSCRIPTION_FIELDS
   );
 
-  await db.organization.update({
+  await deps.db.organization.update({
     where: { id: metadata.organizationId },
     data: updateData,
   });
 
-  await clearOrganizationCache(metadata.organizationId);
+  await clearOrganizationCache(deps, metadata.organizationId);
 
-  const { publishEvent } = await import('@openpanel/redis');
   await publishEvent('organization', 'subscription_updated', {
     organizationId: metadata.organizationId,
   });
@@ -662,6 +656,7 @@ async function syncSubscriptionToOrg(
  * this module's own Elysia route (via `request.text()`) both preserve this.
  */
 export async function handlePolarWebhookEvent(
+  deps: ServiceDeps,
   rawBody: string | Buffer,
   headers: Record<string, string>,
   logger: Logger
@@ -712,7 +707,7 @@ export async function handlePolarWebhookEvent(
   }
 
   try {
-    await dispatchPolarWebhookEvent(event, eventCtx, logger);
+    await dispatchPolarWebhookEvent(deps, event, eventCtx, logger);
   } catch (err) {
     logger.error(
       { err, ...eventCtx },
@@ -723,6 +718,7 @@ export async function handlePolarWebhookEvent(
 }
 
 async function dispatchPolarWebhookEvent(
+  deps: ServiceDeps,
   event: PolarEvent,
   eventCtx: {
     eventType: string;
@@ -753,13 +749,12 @@ async function dispatchPolarWebhookEvent(
         .object({ organizationId: z.string() })
         .parse(event.data.metadata);
 
-      const db = await loadDb();
-      const previous = await db.organization.findUnique({
+      const previous = await deps.db.organization.findUnique({
         where: { id: metadata.organizationId },
         select: { subscriptionPeriodEventsCount: true },
       });
 
-      await db.organization.update({
+      await deps.db.organization.update({
         where: { id: metadata.organizationId },
         data: {
           subscriptionPeriodEventsCount: 0,
@@ -770,7 +765,7 @@ async function dispatchPolarWebhookEvent(
         },
       });
 
-      await clearOrganizationCache(metadata.organizationId);
+      await clearOrganizationCache(deps, metadata.organizationId);
 
       logger.info(
         {
@@ -794,11 +789,69 @@ async function dispatchPolarWebhookEvent(
     case 'subscription.canceled':
     case 'subscription.revoked':
     case 'subscription.past_due': {
-      await syncSubscriptionToOrg(event.data, event.type, logger);
+      await syncSubscriptionToOrg(deps, event.data, event.type, logger);
       return;
     }
     default: {
       logger.info(eventCtx, 'polar webhook: unhandled event type, acking');
     }
   }
+}
+
+export interface SubscriptionService {
+  getCurrentSubscriptionProduct(
+    organizationId: string
+  ): ReturnType<typeof getCurrentSubscriptionProduct>;
+  checkout(
+    userId: string,
+    input: ICheckout,
+    ipAddress: string | undefined
+  ): ReturnType<typeof checkout>;
+  listProducts(organizationId: string): ReturnType<typeof listProducts>;
+  getUsage(organizationId: string): ReturnType<typeof getUsage>;
+  cancelSubscription(
+    userId: string,
+    input: ICancelSubscription
+  ): ReturnType<typeof cancelSubscription>;
+  pauseSubscription(
+    userId: string,
+    input: IPauseSubscription
+  ): ReturnType<typeof pauseSubscription>;
+  resumeSubscription(
+    userId: string,
+    organizationId: string
+  ): ReturnType<typeof resumeSubscription>;
+  applySaveDiscount(
+    userId: string,
+    organizationId: string
+  ): ReturnType<typeof applySaveDiscount>;
+  portal(userId: string, organizationId: string): ReturnType<typeof portal>;
+  handlePolarWebhookEvent(
+    rawBody: string | Buffer,
+    headers: Record<string, string>,
+    logger: Logger
+  ): Promise<void>;
+}
+
+export function createSubscriptionService(
+  deps: ServiceDeps
+): SubscriptionService {
+  return {
+    getCurrentSubscriptionProduct,
+    checkout: (userId, input, ipAddress) =>
+      checkout(deps, userId, input, ipAddress),
+    listProducts: (organizationId) => listProducts(deps, organizationId),
+    getUsage: (organizationId) => getUsage(deps, organizationId),
+    cancelSubscription: (userId, input) =>
+      cancelSubscription(deps, userId, input),
+    pauseSubscription: (userId, input) =>
+      pauseSubscription(deps, userId, input),
+    resumeSubscription: (userId, organizationId) =>
+      resumeSubscription(deps, userId, organizationId),
+    applySaveDiscount: (userId, organizationId) =>
+      applySaveDiscount(deps, userId, organizationId),
+    portal,
+    handlePolarWebhookEvent: (rawBody, headers, logger) =>
+      handlePolarWebhookEvent(deps, rawBody, headers, logger),
+  };
 }

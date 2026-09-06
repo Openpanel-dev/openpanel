@@ -26,8 +26,16 @@ import {
   getOrganizationById,
   getOrganizationEventsCount,
 } from '../organization/organization.service';
-import { getUserById } from '../user/user.service';
 import type { IOnboardingProject } from './onboarding.constants';
+
+// user.service.ts's `getUserById` now takes `ServiceDeps` (M10-004), which
+// this file's own still-lazy `loadDb()` functions don't carry — reached
+// through v1-compat.ts's bare re-export instead. GENUINE CYCLE, kept lazy:
+// services.ts -> onboarding.service.ts (this file) -> v1-compat.ts ->
+// services.ts; the dynamic import is what keeps it a cycle ESM can evaluate.
+function loadUserService() {
+  return import('../../v1-compat');
+}
 
 const TRIAL_DURATION_IN_DAYS = 30;
 // Generous trial allowance so trialing orgs never get flagged as
@@ -97,7 +105,7 @@ async function createOrGetOnboardingOrganization(
     }),
     db.member.create({
       data: {
-        email: (await getUserById(userId)).email,
+        email: (await (await loadUserService()).getUserById(userId)).email,
         organizationId,
         role: 'org:admin',
         userId,

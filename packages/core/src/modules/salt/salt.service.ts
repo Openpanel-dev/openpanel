@@ -3,25 +3,22 @@
 // and cron dispatch (rotateSalt, exported there as `salt`) stay the LIVE call
 // sites (DELEGATE PATTERN); packages/db keeps a re-export shim.
 //
-// db access is LAZY (`loadDb` below), narrowed to `@openpanel/db/src/prisma-client`
-// — this module is pulled into the eager barrel via ingest.service.ts, which
-// resolves salts on every /track call, and a static import of the full
-// @openpanel/db barrel here would spawn a pino-pretty transport worker per
-// `bun test --isolate` file (see organization.service.ts's header for the
-// fuller reasoning).
+// M10-004: reaches Postgres as `deps.db`, no `@openpanel/db` import left.
+// `main.ts` passes its own `deps` to `createInitialSalts` at boot;
+// `salt.jobs.ts`'s handler passes its `JobCtx` (a `ServiceDeps` by
+// construction) to `rotateSalt`.
 //
-// `getSalts` wraps `fetchSalts` in `cacheable(...)` — called once, eagerly,
-// at this module's first evaluation. `createInitialSalts` deliberately calls
-// the raw `fetchSalts` rather than `getSalts`: under a bare (non `--isolate`)
-// `bun test` run this module's first evaluation can be forced by an unrelated
-// earlier test file (anything eagerly reaching ingest.service.ts or the
-// jobs registry), which permanently binds `getSalts`'s caching to whatever
-// `@openpanel/redis` was at that moment — the same reason
-// organization.service.test.ts never exercises its own `cacheable`-wrapped
-// exports. `fetchSalts` never touches `@openpanel/redis`, so it stays
-// deterministic regardless of evaluation order.
+// `getSalts` is built ONCE per `createSaltService(deps)` call — its
+// `cacheable(...)` L1 LRU must survive across calls to stay useful. That
+// holds for the two places that matter: `ctx.services.salt` (one Ctx per
+// request, but nothing hot-path reads it that way yet) and the v1-compat
+// singleton (`registered`, built exactly once at boot by
+// `setV1CompatServices`) that `ingest.service.ts`'s `/track` hot path reads
+// through — see v1-compat.ts's header. `generateNewSalt` clears the SAME
+// closure's cache, which is why it lives inside the factory too.
 
 import { cacheable } from '@openpanel/redis';
+import type { ServiceDeps } from '../../services';
 import { generateSalt } from '../../shared/crypto';
 
 const SALT_CACHE_NAME = 'op:salt';
@@ -40,18 +37,18 @@ export interface Salts {
   previous: string;
 }
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
+/** Only Postgres — narrowed so `main.ts`'s `AppDeps` (which has no `queues`
+ *  yet at the point it calls `createInitialSalts`) satisfies it with no
+ *  cast. */
+type SaltDeps = Pick<ServiceDeps, 'db'>;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** The uncached read `getSalts` wraps — also boot's own existence check. */
-export async function fetchSalts(): Promise<Salts> {
-  const db = await loadDb();
-  const [curr, prev] = await db.salt.findMany({
+export async function fetchSalts(deps: SaltDeps): Promise<Salts> {
+  const [curr, prev] = await deps.db.salt.findMany({
     orderBy: { createdAt: 'desc' },
     take: SALT_HISTORY_SIZE,
   });
@@ -63,75 +60,90 @@ export async function fetchSalts(): Promise<Salts> {
   return { current: curr.salt, previous: prev?.salt ?? curr.salt };
 }
 
-export const getSalts = cacheable(
-  SALT_CACHE_NAME,
-  fetchSalts,
-  SALT_CACHE_TTL_SECONDS
-);
-
 /** Boot bootstrap: creates the first two salts the first time this ever runs. */
-export async function createInitialSalts(retryCount = 0): Promise<void> {
+export async function createInitialSalts(
+  deps: SaltDeps,
+  retryCount = 0
+): Promise<void> {
   try {
     // Uncached: boot has nothing worth reusing a stale answer for.
-    await fetchSalts();
+    await fetchSalts(deps);
   } catch (error) {
     if (!(error instanceof Error && error.message === NO_SALT_FOUND_MESSAGE)) {
       if (retryCount >= MAX_RETRIES) {
         throw new Error(`Failed to create salts after ${MAX_RETRIES} attempts`);
       }
       await sleep(BASE_RETRY_DELAY_MS * 2 ** retryCount);
-      await createInitialSalts(retryCount + 1);
+      await createInitialSalts(deps, retryCount + 1);
       return;
     }
 
-    const db = await loadDb();
-    await db.salt.create({
+    await deps.db.salt.create({
       data: {
         salt: generateSalt(),
         createdAt: new Date(Date.now() - INITIAL_PREVIOUS_SALT_BACKDATE_MS),
       },
     });
-    await db.salt.create({ data: { salt: generateSalt() } });
+    await deps.db.salt.create({ data: { salt: generateSalt() } });
   }
 }
 
-async function generateNewSalt() {
-  const db = await loadDb();
-  const created = await db.$transaction(async (tx) => {
-    const existingSalts = await tx.salt.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: SALT_HISTORY_SIZE,
+export interface SaltService {
+  getSalts(): Promise<Salts>;
+  createInitialSalts(): Promise<void>;
+  rotateSalt(): Promise<{ salt: string; createdAt: Date }>;
+}
+
+export function createSaltService(deps: ServiceDeps): SaltService {
+  const getSalts = cacheable(
+    SALT_CACHE_NAME,
+    () => fetchSalts(deps),
+    SALT_CACHE_TTL_SECONDS
+  );
+
+  async function generateNewSalt() {
+    const created = await deps.db.$transaction(async (tx) => {
+      const existingSalts = await tx.salt.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: SALT_HISTORY_SIZE,
+      });
+
+      const newSalt = await tx.salt.create({ data: { salt: generateSalt() } });
+
+      // Keep the new salt + the previous newest (if any).
+      const previousNewest = existingSalts[0];
+      const saltsToKeep = previousNewest
+        ? [newSalt.salt, previousNewest.salt]
+        : [newSalt.salt];
+
+      await tx.salt.deleteMany({ where: { salt: { notIn: saltsToKeep } } });
+
+      return newSalt;
     });
 
-    const newSalt = await tx.salt.create({ data: { salt: generateSalt() } });
+    await getSalts.clear();
 
-    // Keep the new salt + the previous newest (if any).
-    const previousNewest = existingSalts[0];
-    const saltsToKeep = previousNewest
-      ? [newSalt.salt, previousNewest.salt]
-      : [newSalt.salt];
-
-    await tx.salt.deleteMany({ where: { salt: { notIn: saltsToKeep } } });
-
-    return newSalt;
-  });
-
-  await getSalts.clear();
-
-  return created;
-}
-
-/** Daily rotation: the `salt` cron job's body. */
-export async function rotateSalt(
-  retryCount = 0
-): ReturnType<typeof generateNewSalt> {
-  try {
-    return await generateNewSalt();
-  } catch (error) {
-    if (retryCount >= MAX_RETRIES) {
-      throw error;
-    }
-    await sleep(BASE_RETRY_DELAY_MS * 2 ** retryCount);
-    return rotateSalt(retryCount + 1);
+    return created;
   }
+
+  /** Daily rotation: the `salt` cron job's body. */
+  async function rotateSalt(
+    retryCount = 0
+  ): ReturnType<typeof generateNewSalt> {
+    try {
+      return await generateNewSalt();
+    } catch (error) {
+      if (retryCount >= MAX_RETRIES) {
+        throw error;
+      }
+      await sleep(BASE_RETRY_DELAY_MS * 2 ** retryCount);
+      return rotateSalt(retryCount + 1);
+    }
+  }
+
+  return {
+    getSalts: () => getSalts(),
+    createInitialSalts: () => createInitialSalts(deps),
+    rotateSalt: () => rotateSalt(),
+  };
 }

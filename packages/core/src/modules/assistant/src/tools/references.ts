@@ -1,6 +1,10 @@
-import { db } from '@openpanel/db';
 import { z } from 'zod';
-import { chatTool, resolveDateRange, truncateRows } from './helpers';
+import {
+  chatTool,
+  loadCompatDb,
+  resolveDateRange,
+  truncateRows,
+} from './helpers';
 
 /**
  * References are manual annotations the user adds — e.g.
@@ -45,6 +49,7 @@ export const listReferences = chatTool(
       endDate: endDate ?? context.pageContext?.filters?.endDate,
     });
 
+    const db = await loadCompatDb();
     const rows = await db.reference.findMany({
       where: {
         projectId: context.projectId,
@@ -103,6 +108,7 @@ export const getReferencesAround = chatTool(
     const start = new Date(target.getTime() - before * 86_400_000);
     const end = new Date(target.getTime() + after * 86_400_000);
 
+    const db = await loadCompatDb();
     const rows = await db.reference.findMany({
       where: {
         projectId: context.projectId,

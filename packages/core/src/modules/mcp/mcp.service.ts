@@ -9,19 +9,44 @@
 //
 // MCP is the one module the wave map allows to change its endpoint surface —
 // every other module in this wave preserves its V1 contract byte-for-byte.
+//
+// M10-004: `createMcpService(deps)` lands here, which means THIS FILE is now
+// statically imported by services.ts. `./src/server`'s `registerAllTools`
+// pulls in ~20 tool files that reach this package's own barrel
+// (`@openpanel/core`) for cross-module functions, so it stays behind a lazy
+// loader — a static top-level import would make services.ts's own module
+// evaluation re-enter that barrel mid-evaluation, the exact TDZ hazard
+// index.ts's header used to document for this file before it was reached
+// only through a dynamic import. `./src/auth` stays a plain static import:
+// `extractToken` is synchronous today (`mcp.routes.ts` doesn't await it) and
+// auth.ts no longer reaches the barrel at its own top level (M10-004, see
+// that file's header) — nothing left to make lazy. `deps` is unused:
+// `handleStatelessMcpRequest`'s signature is a hard contract (its own tests
+// call it with none) and its tool tree already reaches Postgres/ClickHouse
+// through the v1-compat singleton, the same way every other bare, no-`Ctx`
+// caller in this wave does.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { createLogger } from '../../clients/logger';
+import type { ServiceDeps } from '../../services';
 import {
   authenticateToken,
+  extractToken,
   type McpAuthContext,
   McpAuthError,
 } from './src/auth';
-import { createMcpServer } from './src/server';
 
 export type { McpAuthContext } from './src/auth';
 export { extractToken, McpAuthError } from './src/auth';
+
+let _server: Promise<typeof import('./src/server')> | undefined;
+function loadServer() {
+  if (!_server) {
+    _server = import('./src/server');
+  }
+  return _server;
+}
 
 const logger = createLogger({ name: 'mcp' });
 
@@ -91,6 +116,7 @@ async function runOnEphemeralServer(
   message: JSONRPCMessage,
   isInitializeRequest: boolean
 ): Promise<JSONRPCMessage> {
+  const { createMcpServer } = await loadServer();
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
   const server = createMcpServer(context);
@@ -168,4 +194,22 @@ function logToolResult(
     { tool: name, durationMs: Date.now() - start, isError: isError ?? false },
     'MCP tool result'
   );
+}
+
+export interface McpService {
+  extractToken(
+    query: Record<string, unknown>,
+    authHeader: string | undefined
+  ): ReturnType<typeof extractToken>;
+  handleStatelessMcpRequest(
+    token: string | undefined,
+    body: unknown
+  ): Promise<McpHttpResult>;
+}
+
+export function createMcpService(_deps: ServiceDeps): McpService {
+  return {
+    extractToken,
+    handleStatelessMcpRequest,
+  };
 }

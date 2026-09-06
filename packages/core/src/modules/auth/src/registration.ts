@@ -1,11 +1,10 @@
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
+// M10-004: reaches Postgres as `deps.db`; the `loadDb()` lazy loader is gone.
+
+import type { ServiceDeps } from '../../../services';
+
+/** Only Postgres — narrowed so any of this module's several callers, none of
+ *  which carry a full `ServiceDeps`, satisfy it with no cast. */
+type RegistrationDeps = Pick<ServiceDeps, 'db'>;
 
 /**
  * Whether a *new* user may be created right now.
@@ -15,16 +14,18 @@ function loadDb() {
  * OAuth redirect) would reject returning users too, since we cannot tell a
  * sign-in from a sign-up at that stage.
  */
-export async function getIsRegistrationAllowed(inviteId?: string | null) {
+export async function getIsRegistrationAllowed(
+  deps: RegistrationDeps,
+  inviteId?: string | null
+) {
   // ALLOW_REGISTRATION is always undefined in cloud
   if (process.env.ALLOW_REGISTRATION === undefined) {
     return true;
   }
 
-  const db = await loadDb();
   // Self-hosting logic
   // 1. First user is always allowed
-  const count = await db.user.count();
+  const count = await deps.db.user.count();
   if (count === 0) {
     return true;
   }
@@ -35,7 +36,7 @@ export async function getIsRegistrationAllowed(inviteId?: string | null) {
       return false;
     }
 
-    const invite = await db.invite.findUnique({
+    const invite = await deps.db.invite.findUnique({
       where: {
         id: inviteId,
       },

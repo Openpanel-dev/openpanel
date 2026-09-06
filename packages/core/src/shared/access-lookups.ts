@@ -10,13 +10,25 @@
 // services.ts pull this module into the eager barrel chain nearly every core
 // test file reaches, and constructing @openpanel/db's clients at import time
 // would spawn a pino-pretty transport worker thread per test file).
+//
+// M10-004: `project.service.ts`'s `getProjectById` now takes `ServiceDeps`,
+// which this file has none of — reached through the v1-compat singleton
+// instead (see v1-compat.ts's header). GENUINE CYCLE, kept lazy: auth.service.ts
+// -> this file (via `access-lookups`) is already lazy on the OTHER side;
+// v1-compat.ts -> services.ts -> project.service.ts has no edge back to this
+// file, but `getAccessChecks()` in auth.service.ts reaches both this file and
+// project.service.ts, so a static import here risks the same evaluation-order
+// hazard `getAccessChecks()`'s own header warns about.
 
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
-import { getProjectById } from '../modules/project/project.service';
 
 function loadDb() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+}
+
+function loadProjectService() {
+  return import('../v1-compat');
 }
 
 export interface IProjectAccess {
@@ -57,7 +69,9 @@ export const getProjectAccess = cacheable(
   }): Promise<IProjectAccess | null> => {
     try {
       // Check if user has access to the project
-      const project = await getProjectById(projectId);
+      const project = await (await loadProjectService()).getProjectById(
+        projectId
+      );
       if (!project?.organizationId) {
         return null;
       }

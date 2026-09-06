@@ -9,7 +9,15 @@ import { sendEmail } from '../../../clients/email';
 import { createLogger, type ILogger } from '../../../clients/logger';
 import type { Logger } from '../../../logger';
 import { getOrganizationBillingEventsCount } from '../../organization/organization.service';
-import { getProjectEventsCount } from '../../project/project.service';
+
+// project.service.ts's `getProjectEventsCount` takes `ServiceDeps` now
+// (M10-004); this file has none (its own db access is the lazy `loadDb()`
+// below), so it reaches the bare, v1-compat-wrapped spelling instead.
+// GENUINE CYCLE, kept lazy: services.ts -> session.service.ts -> this file
+// -> v1-compat.ts -> services.ts.
+function loadProjectService() {
+  return import('../../../v1-compat');
+}
 
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
@@ -73,6 +81,7 @@ export const updateEventsCount = cacheable(async function updateEventsCount(
 
   const organizationEventsCount =
     await getOrganizationBillingEventsCount(organization);
+  const { getProjectEventsCount } = await loadProjectService();
   const projectEventsCount = await getProjectEventsCount(projectId);
 
   if (projectEventsCount) {

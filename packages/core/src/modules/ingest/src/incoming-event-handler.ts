@@ -30,11 +30,20 @@ import {
   type IServiceEvent,
 } from '../../event/event.service';
 import { matchEvent } from '../../notification/notification.service';
-// Static, not lazy: a dynamic edge into project.service becomes its own
-// rolldown chunk, which stops `hashPassword` (and with it the @node-rs/argon2
-// native addon, external in apps/worker's bundle) from being shaken out of
-// the worker build.
-import { getProjectByIdCached } from '../../project/project.service';
+
+// project.service.ts's `getProjectByIdCached` takes `ServiceDeps` now
+// (M10-004), and its `.clear()` LRU-invalidation must hit the SAME cache
+// instance ingest/http/mcp all read — see that file's header — so this
+// reaches the v1-compat singleton instead. Previously a STATIC import for a
+// rolldown-chunking reason tied to apps/worker's bundle: apps/worker is
+// gone (M9) and apps/api ships with no bundler at all (ADR-010), so that
+// constraint no longer applies — GENUINE CYCLE, kept lazy, same as every
+// other one in this wave: services.ts -> ingest.service.ts -> this file ->
+// v1-compat.ts -> services.ts.
+function loadProjectService() {
+  return import('../../../v1-compat');
+}
+
 import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
@@ -110,11 +119,13 @@ export async function loadIncomingEventDeps(
   enqueueSessionEnd: (input: EnqueueSessionEndInput) => Promise<unknown>,
   overrides: Partial<IncomingEventDeps> = {}
 ): Promise<IncomingEventDeps> {
-  const [{ sessionBuffer }, { db }, notifications] = await Promise.all([
-    loadDbBuffers(),
-    import('@openpanel/db/src/prisma-client'),
-    import('@openpanel/queue/src/notification-dispatch'),
-  ]);
+  const [{ sessionBuffer }, { db }, notifications, projectService] =
+    await Promise.all([
+      loadDbBuffers(),
+      import('@openpanel/db/src/prisma-client'),
+      import('@openpanel/queue/src/notification-dispatch'),
+      loadProjectService(),
+    ]);
   return {
     logger,
     sessions: sessionBuffer,
@@ -122,13 +133,13 @@ export async function loadIncomingEventDeps(
     checkNotificationRulesForEvent:
       notifications.checkNotificationRulesForEvent,
     projects: {
-      getCached: getProjectByIdCached,
+      getCached: projectService.getProjectByIdCached,
       markFirstEvent: async (projectId) => {
         await db.project.updateMany({
           where: { id: projectId, firstEventAt: null },
           data: { firstEventAt: new Date() },
         });
-        await getProjectByIdCached.clear(projectId);
+        await projectService.clearProjectByIdCache(projectId);
       },
     },
     enqueueSessionEnd,

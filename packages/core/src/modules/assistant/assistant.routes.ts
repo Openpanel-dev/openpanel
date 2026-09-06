@@ -16,9 +16,13 @@
 // project-access check below — `chatApp.handler` gets the original,
 // unconsumed `request` so it can re-read the body itself.
 //
-// Everything below is dynamically imported, not statically — index.ts's
-// header explains why a static import of this barrel or `./assistant.service`
-// here would race this module's own evaluation.
+// `@openpanel/core` (the self barrel) stays dynamically imported, not
+// statically — `loadCore()` below reaches deep into the barrel for
+// cross-module functions, and a static import here would race this
+// package's own evaluation the way index.ts's header documents for
+// `mcp.service.ts`. `./assistant.service` itself is cheap either way now
+// (M10-004, see that file's header) — kept dynamic anyway for symmetry with
+// `loadCore()`.
 
 import { defineRoutes } from '../../http/define';
 
@@ -42,7 +46,11 @@ export const assistantRoutes = defineRoutes((app) =>
         return status(401, { message: 'Sign in required' });
       }
 
-      const { chatApp, chatRunContext } = await loadAssistant();
+      const { getChatApp, getChatRunContext } = await loadAssistant();
+      const [chatApp, chatRunContext] = await Promise.all([
+        getChatApp(),
+        getChatRunContext(),
+      ]);
 
       // Parse the URL tail that comes after `/ai/agents/`. Examples:
       //   "claude-sonnet-4-5/run"               → run

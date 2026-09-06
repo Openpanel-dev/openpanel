@@ -19,14 +19,20 @@ import type {
 } from '@openpanel/validation';
 import { path } from 'ramda';
 import { verifyPassword } from '../../../shared/crypto';
+import type { IServiceClientWithProject } from '../../client/client.service';
 import { headerValue, type IngestHeaders } from './headers';
 
 export type { IngestHeaders } from './headers';
 
-import {
-  getClientByIdCached,
-  type IServiceClientWithProject,
-} from '../../client/client.service';
+// M10-004: `getClientByIdCached`'s L1 LRU now lives inside
+// `createClientService(deps)` (see that file's header), reached here through
+// the v1-compat singleton — this ingest hot path has no `Ctx` of its own.
+// GENUINE CYCLE, kept lazy: services.ts -> ingest.service.ts -> this file ->
+// v1-compat.ts -> services.ts; the dynamic import is what keeps it a cycle
+// ESM can evaluate.
+function loadClientService() {
+  return import('../../../v1-compat');
+}
 
 const CLIENT_ID_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -144,7 +150,9 @@ export async function validateIngestRequest({
     return refuse('Ingestion: Client ID must be a valid UUIDv4');
   }
 
-  const client = await getClientByIdCached(clientId);
+  const client = await (await loadClientService()).getClientByIdCached(
+    clientId
+  );
 
   if (!client) {
     return refuse('Ingestion: Invalid client id');

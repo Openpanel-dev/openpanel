@@ -4,6 +4,10 @@
 
 import type { Ctx } from './context';
 import {
+  type AssistantService,
+  createAssistantService,
+} from './modules/assistant/assistant.service';
+import {
   type AuthService,
   createAuthService,
 } from './modules/auth/auth.service';
@@ -12,9 +16,17 @@ import {
   createChartService,
 } from './modules/chart/chart.service';
 import {
+  type ClientService,
+  createClientService,
+} from './modules/client/client.service';
+import {
   type CohortService,
   createCohortService,
 } from './modules/cohort/cohort.service';
+import {
+  type ConversationService,
+  createConversationService,
+} from './modules/conversation/conversation.service';
 import {
   createDashboardService,
   type DashboardService,
@@ -44,6 +56,7 @@ import {
   createInsightService,
   type InsightService,
 } from './modules/insight/insight.service';
+import { createMcpService, type McpService } from './modules/mcp/mcp.service';
 import {
   createMiscService,
   type MiscService,
@@ -65,6 +78,10 @@ import {
   type ProfileService,
 } from './modules/profile/profile.service';
 import {
+  createProjectService,
+  type ProjectService,
+} from './modules/project/project.service';
+import {
   createReferenceService,
   type ReferenceService,
 } from './modules/reference/reference.service';
@@ -73,6 +90,10 @@ import {
   type ReportService,
 } from './modules/report/report.service';
 import {
+  createSaltService,
+  type SaltService,
+} from './modules/salt/salt.service';
+import {
   createSessionService,
   type SessionService,
 } from './modules/session/session.service';
@@ -80,6 +101,14 @@ import {
   createShareService,
   type ShareService,
 } from './modules/share/share.service';
+import {
+  createSubscriptionService,
+  type SubscriptionService,
+} from './modules/subscription/subscription.service';
+import {
+  createUserService,
+  type UserService,
+} from './modules/user/user.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -117,6 +146,14 @@ export interface Services {
   export: ExportService;
   share: ShareService;
   reference: ReferenceService;
+  client: ClientService;
+  project: ProjectService;
+  user: UserService;
+  subscription: SubscriptionService;
+  salt: SaltService;
+  conversation: ConversationService;
+  assistant: AssistantService;
+  mcp: McpService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -144,5 +181,13 @@ export function createServices(deps: ServiceDeps): Services {
     export: createExportService(deps),
     share: createShareService(deps),
     reference: createReferenceService(deps),
+    client: createClientService(deps),
+    project: createProjectService(deps),
+    user: createUserService(deps),
+    subscription: createSubscriptionService(deps),
+    salt: createSaltService(deps),
+    conversation: createConversationService(deps),
+    assistant: createAssistantService(deps),
+    mcp: createMcpService(deps),
   };
 }

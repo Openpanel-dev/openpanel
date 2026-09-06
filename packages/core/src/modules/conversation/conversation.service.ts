@@ -3,17 +3,15 @@
 // apps/api's live chat route and this package's own assistant.routes.ts stub
 // both still reach these through `@openpanel/db`'s barrel.
 //
-// db access is LAZY, not a static top-level import — see insight.service.ts's
-// header for the full reasoning (jobs.registry.ts and services.ts pull this
-// module into the eager barrel chain nearly every core test file reaches, and
-// constructing @openpanel/db's clients at import time would spawn a
-// pino-pretty transport worker thread per test file).
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` lazy loader is gone.
 
 import type {
   ChatMessage,
   Conversation,
   Prisma,
 } from '@openpanel/db/src/prisma-client';
+import type { ServiceDeps } from '../../services';
 
 export type IServiceConversation = Conversation;
 export type IServiceChatMessage = ChatMessage;
@@ -23,33 +21,31 @@ export type IServiceConversationWithMessages = Prisma.ConversationGetPayload<{
 
 const DEFAULT_LIST_LIMIT = 50;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 export async function getConversationById(
+  deps: ServiceDeps,
   id: string,
   options: { withMessages?: boolean } = {}
 ): Promise<IServiceConversation | IServiceConversationWithMessages | null> {
-  const db = await loadDb();
   if (options.withMessages) {
-    return db.conversation.findUnique({
+    return deps.db.conversation.findUnique({
       where: { id },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
       },
     });
   }
-  return db.conversation.findUnique({ where: { id } });
+  return deps.db.conversation.findUnique({ where: { id } });
 }
 
-export async function listConversations(input: {
-  projectId: string;
-  userId: string;
-  limit?: number;
-}): Promise<IServiceConversation[]> {
-  const db = await loadDb();
-  return db.conversation.findMany({
+export async function listConversations(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    userId: string;
+    limit?: number;
+  }
+): Promise<IServiceConversation[]> {
+  return deps.db.conversation.findMany({
     where: {
       projectId: input.projectId,
       userId: input.userId,
@@ -67,15 +63,17 @@ export async function listConversations(input: {
  * This upsert makes that race harmless — the row ends up with the
  * right owner + title regardless of which side finishes first.
  */
-export async function upsertConversationTitle(input: {
-  id: string;
-  title: string;
-  projectId: string;
-  organizationId: string;
-  userId: string;
-}): Promise<IServiceConversation> {
-  const db = await loadDb();
-  return db.conversation.upsert({
+export async function upsertConversationTitle(
+  deps: ServiceDeps,
+  input: {
+    id: string;
+    title: string;
+    projectId: string;
+    organizationId: string;
+    userId: string;
+  }
+): Promise<IServiceConversation> {
+  return deps.db.conversation.upsert({
     where: { id: input.id },
     create: {
       id: input.id,
@@ -88,7 +86,35 @@ export async function upsertConversationTitle(input: {
   });
 }
 
-export async function deleteConversation(id: string): Promise<void> {
-  const db = await loadDb();
-  await db.conversation.delete({ where: { id } });
+export async function deleteConversation(
+  deps: ServiceDeps,
+  id: string
+): Promise<void> {
+  await deps.db.conversation.delete({ where: { id } });
+}
+
+export interface ConversationService {
+  getConversationById(
+    id: string,
+    options?: { withMessages?: boolean }
+  ): ReturnType<typeof getConversationById>;
+  listConversations(
+    input: Parameters<typeof listConversations>[1]
+  ): Promise<IServiceConversation[]>;
+  upsertConversationTitle(
+    input: Parameters<typeof upsertConversationTitle>[1]
+  ): Promise<IServiceConversation>;
+  deleteConversation(id: string): Promise<void>;
+}
+
+export function createConversationService(
+  deps: ServiceDeps
+): ConversationService {
+  return {
+    getConversationById: (id, options) =>
+      getConversationById(deps, id, options),
+    listConversations: (input) => listConversations(deps, input),
+    upsertConversationTitle: (input) => upsertConversationTitle(deps, input),
+    deleteConversation: (id) => deleteConversation(deps, id),
+  };
 }

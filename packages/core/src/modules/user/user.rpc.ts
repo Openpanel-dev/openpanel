@@ -7,18 +7,14 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's user functions (DELEGATE PATTERN) —
-// this module has no queue/cron of its own, so there is no
-// `ctx.services.user`, same as `conversation`.
+// `ctx.services.user` carries this module's factory the same as every other
+// module now (M10-004); it has no queue/cron of its own, same as
+// `conversation`.
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { deleteSessionTokenCookie } from '../auth/auth.service';
-import {
-  deleteUserAccount,
-  listUserDeletionBlockers,
-  updateUserProfile,
-} from './user.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -30,12 +26,12 @@ function requireLogin(userId: string | null | undefined): string {
 export const userRouter = createTRPCRouter({
   deletionBlockers: procedure.query(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
-    return listUserDeletionBlockers(userId);
+    return ctx.services.user.listUserDeletionBlockers(userId);
   }),
 
   delete: procedure.mutation(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
-    await deleteUserAccount(userId);
+    await ctx.services.user.deleteUserAccount(userId);
     deleteSessionTokenCookie(ctx.setCookie);
     return true;
   }),
@@ -49,7 +45,7 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      return updateUserProfile({ userId, ...input });
+      return ctx.services.user.updateUserProfile({ userId, ...input });
     }),
 
   debugPostCookie: procedure

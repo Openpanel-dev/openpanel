@@ -56,7 +56,7 @@ function requireLogin(userId: string | null | undefined): string {
 
 export const authRouter = createTRPCRouter({
   signOut: procedure.mutation(async ({ ctx }) => {
-    await signOutUser(ctx.setCookie, ctx.session?.session?.id);
+    await signOutUser(ctx, ctx.setCookie, ctx.session?.session?.id);
   }),
 
   signInOAuth: procedure
@@ -65,58 +65,63 @@ export const authRouter = createTRPCRouter({
 
   signUpEmail: procedure
     .input(zSignUpEmail)
-    .mutation(({ input, ctx }) => signUpWithEmail(input, ctx.setCookie)),
+    .mutation(({ input, ctx }) => signUpWithEmail(ctx, input, ctx.setCookie)),
 
   signInEmail: procedure
     .input(zSignInEmail)
     .mutation(({ input, ctx }) =>
-      signInWithEmail(input, ctx.setCookie, ctx.logger)
+      signInWithEmail(ctx, input, ctx.setCookie, ctx.logger)
     ),
 
   signInTotp: procedure
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(({ input, ctx }) =>
-      signInWithTotp(input, ctx.cookies, ctx.setCookie, ctx.logger)
+      signInWithTotp(ctx, input, ctx.cookies, ctx.setCookie, ctx.logger)
     ),
 
   totpStatus: procedure.query(({ ctx }) =>
-    getTotpStatus(requireLogin(ctx.session.userId))
+    getTotpStatus(ctx, requireLogin(ctx.session.userId))
   ),
 
   totpSetup: procedure.mutation(({ ctx }) =>
-    setupTotp(requireLogin(ctx.session.userId))
+    setupTotp(ctx, requireLogin(ctx.session.userId))
   ),
 
   totpEnable: procedure
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
-      enableTotp(requireLogin(ctx.session.userId), input.code)
+      enableTotp(ctx, requireLogin(ctx.session.userId), input.code)
     ),
 
   totpDisable: procedure
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(({ input, ctx }) =>
-      disableTotp(requireLogin(ctx.session.userId), input.code)
+      disableTotp(ctx, requireLogin(ctx.session.userId), input.code)
     ),
 
   totpRegenerateRecoveryCodes: procedure
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
-      regenerateTotpRecoveryCodes(requireLogin(ctx.session.userId), input.code)
+      regenerateTotpRecoveryCodes(
+        ctx,
+        requireLogin(ctx.session.userId),
+        input.code
+      )
     ),
 
   resetPassword: procedure
     .input(zResetPassword)
-    .mutation(({ input }) => resetPasswordWithToken(input)),
+    .mutation(({ input, ctx }) => resetPasswordWithToken(ctx, input)),
 
   requestResetPassword: procedure
     .input(zRequestResetPassword)
-    .mutation(({ input }) => requestPasswordReset(input)),
+    .mutation(({ input, ctx }) => requestPasswordReset(ctx, input)),
 
   session: procedure.query(({ ctx }) => ctx.session),
 
   extendSession: procedure.mutation(({ ctx }) =>
     extendSessionCookie(
+      ctx,
       ctx.cookies,
       Boolean(ctx.session.session),
       ctx.setCookie

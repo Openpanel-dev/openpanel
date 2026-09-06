@@ -1,10 +1,10 @@
-// user.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// The subject is built by its factory over a fake `ServiceDeps` (M10-004), so
+// Postgres needs no module mock at all — `deps.db` IS the fake below, same
+// idiom as reference.service.test.ts.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { beforeEach, expect, mock, test } from 'bun:test';
+import type { ServiceDeps } from '../../services';
+import { createUserService } from './user.service';
 
 interface FakeUser {
   id: string;
@@ -90,16 +90,9 @@ const organization = {
   ),
 };
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
+const subject = createUserService({
   db: { user, organization },
-}));
-
-let subject: typeof import('./user.service');
-beforeAll(async () => {
-  subject = await import('./user.service');
-});
+} as unknown as ServiceDeps);
 
 beforeEach(() => {
   userStore.clear();

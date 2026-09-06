@@ -10,15 +10,26 @@
 // too, so V1's controller and core's own client.routes.ts share one
 // implementation (DELEGATE PATTERN).
 //
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// project.service.ts's header for the full reasoning. No dependency on
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` lazy loader is gone. No dependency on
 // project.service.ts here (the reverse direction exists, for cache
 // invalidation) — project-ownership checks below query `db.project`
 // directly, matching V1's manage.controller.ts exactly.
+//
+// `getClientByIdCached` lives INSIDE `createClientService(deps)` rather than
+// at module scope: its `cacheable(...)` L1 LRU must survive across calls to
+// stay useful, which only holds if the closure it is built in is a
+// singleton. `ctx.services.client` is one Ctx per request, so this cache is
+// only actually a cross-call singleton through the v1-compat seam
+// (`registered`, built exactly once at boot) — see v1-compat.ts's header —
+// which is what `ingest/src/client-auth.ts`, `http/client-auth.ts` and
+// `mcp/src/auth.ts` read through, on the ingest hot path, with no `Ctx` of
+// their own to carry `ServiceDeps`.
 
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
+import type { ServiceDeps } from '../../services';
 import { hashPassword } from '../auth/auth.service';
 
 export type IServiceClient = Client;
@@ -28,13 +39,13 @@ export type IServiceClientWithProject = Prisma.ClientGetPayload<{
   };
 }>;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
+const FIVE_MINUTES_IN_SECONDS = 60 * 5;
 
-export async function getClientsByOrganizationId(organizationId: string) {
-  const db = await loadDb();
-  return db.client.findMany({
+export async function getClientsByOrganizationId(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  return deps.db.client.findMany({
     where: {
       organizationId,
     },
@@ -48,9 +59,11 @@ export async function getClientsByOrganizationId(organizationId: string) {
 }
 
 /** trpc client.list — no access check of its own, ported verbatim. */
-export async function getClientsByProjectId(projectId: string) {
-  const db = await loadDb();
-  return db.client.findMany({
+export async function getClientsByProjectId(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  return deps.db.client.findMany({
     where: {
       projectId,
     },
@@ -58,10 +71,10 @@ export async function getClientsByProjectId(projectId: string) {
 }
 
 export async function getClientById(
+  deps: ServiceDeps,
   id: string
 ): Promise<IServiceClientWithProject | null> {
-  const db = await loadDb();
-  return db.client.findUnique({
+  return deps.db.client.findUnique({
     where: { id },
     include: {
       project: true,
@@ -69,22 +82,15 @@ export async function getClientById(
   });
 }
 
-const FIVE_MINUTES_IN_SECONDS = 60 * 5;
-export const getClientByIdCached = cacheable(
-  getClientById,
-  FIVE_MINUTES_IN_SECONDS
-);
-
 // --- /manage REST CRUD (apps/api/src/controllers/manage.controller.ts) ---
 
 export async function listClientsForOrganization(
+  deps: ServiceDeps,
   organizationId: string,
   projectId?: string
 ) {
-  const db = await loadDb();
-
   if (projectId) {
-    const project = await db.project.findFirst({
+    const project = await deps.db.project.findFirst({
       where: { id: projectId, organizationId },
     });
     if (!project) {
@@ -92,7 +98,7 @@ export async function listClientsForOrganization(
     }
   }
 
-  return db.client.findMany({
+  return deps.db.client.findMany({
     where: {
       organizationId,
       ...(projectId ? { projectId } : {}),
@@ -104,11 +110,11 @@ export async function listClientsForOrganization(
 }
 
 export async function getClientForOrganization(
+  deps: ServiceDeps,
   id: string,
   organizationId: string
 ) {
-  const db = await loadDb();
-  return db.client.findFirst({
+  return deps.db.client.findFirst({
     where: {
       id,
       organizationId,
@@ -121,87 +127,147 @@ export interface CreatedClient {
   secret: string;
 }
 
-export async function createClientForOrganization(
-  organizationId: string,
-  input: {
-    name: string;
-    projectId?: string | null;
-    type?: 'read' | 'write' | 'root';
-  }
-): Promise<CreatedClient | null> {
-  const db = await loadDb();
+export interface ClientService {
+  getClientsByOrganizationId(
+    organizationId: string
+  ): ReturnType<typeof getClientsByOrganizationId>;
+  getClientsByProjectId(
+    projectId: string
+  ): ReturnType<typeof getClientsByProjectId>;
+  getClientById(id: string): ReturnType<typeof getClientById>;
+  getClientByIdCached(id: string): Promise<IServiceClientWithProject | null>;
+  /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. Its
+   *  own create/update/delete already call this; `project.service.ts`
+   *  reaches it too, through the v1-compat singleton, to invalidate a
+   *  project's clients on a project mutation — see that file's header. */
+  clearClientByIdCache(id: string): Promise<number>;
+  listClientsForOrganization(
+    organizationId: string,
+    projectId?: string
+  ): ReturnType<typeof listClientsForOrganization>;
+  getClientForOrganization(
+    id: string,
+    organizationId: string
+  ): ReturnType<typeof getClientForOrganization>;
+  createClientForOrganization(
+    organizationId: string,
+    input: {
+      name: string;
+      projectId?: string | null;
+      type?: 'read' | 'write' | 'root';
+    }
+  ): Promise<CreatedClient | null>;
+  updateClientForOrganization(
+    id: string,
+    organizationId: string,
+    input: { name?: string }
+  ): Promise<IServiceClient | null>;
+  deleteClientForOrganization(
+    id: string,
+    organizationId: string
+  ): Promise<boolean>;
+}
 
-  if (input.projectId) {
-    const project = await db.project.findFirst({
-      where: { id: input.projectId, organizationId },
+export function createClientService(deps: ServiceDeps): ClientService {
+  /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
+  const getClientByIdCached = cacheable(
+    (id: string) => getClientById(deps, id),
+    FIVE_MINUTES_IN_SECONDS
+  );
+
+  async function createClientForOrganization(
+    organizationId: string,
+    input: {
+      name: string;
+      projectId?: string | null;
+      type?: 'read' | 'write' | 'root';
+    }
+  ): Promise<CreatedClient | null> {
+    if (input.projectId) {
+      const project = await deps.db.project.findFirst({
+        where: { id: input.projectId, organizationId },
+      });
+      if (!project) {
+        return null;
+      }
+    }
+
+    const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    const client = await deps.db.client.create({
+      data: {
+        organizationId,
+        projectId: input.projectId || null,
+        name: input.name,
+        type: input.type || 'write',
+        secret: await hashPassword(secret),
+      },
     });
-    if (!project) {
+
+    await getClientByIdCached.clear(client.id);
+
+    return { client, secret };
+  }
+
+  async function updateClientForOrganization(
+    id: string,
+    organizationId: string,
+    input: { name?: string }
+  ): Promise<IServiceClient | null> {
+    const existing = await deps.db.client.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!existing) {
       return null;
     }
+
+    const updateData: Prisma.ClientUpdateInput = {};
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+
+    const client = await deps.db.client.update({
+      where: { id },
+      data: updateData,
+    });
+
+    await getClientByIdCached.clear(client.id);
+
+    return client;
   }
 
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-  const client = await db.client.create({
-    data: {
-      organizationId,
-      projectId: input.projectId || null,
-      name: input.name,
-      type: input.type || 'write',
-      secret: await hashPassword(secret),
-    },
-  });
+  async function deleteClientForOrganization(
+    id: string,
+    organizationId: string
+  ): Promise<boolean> {
+    const client = await deps.db.client.findFirst({
+      where: { id, organizationId },
+    });
 
-  await getClientByIdCached.clear(client.id);
+    if (!client) {
+      return false;
+    }
 
-  return { client, secret };
-}
+    await deps.db.client.delete({ where: { id } });
+    await getClientByIdCached.clear(id);
 
-export async function updateClientForOrganization(
-  id: string,
-  organizationId: string,
-  input: { name?: string }
-): Promise<IServiceClient | null> {
-  const db = await loadDb();
-
-  const existing = await db.client.findFirst({
-    where: { id, organizationId },
-  });
-
-  if (!existing) {
-    return null;
+    return true;
   }
 
-  const updateData: Prisma.ClientUpdateInput = {};
-  if (input.name !== undefined) {
-    updateData.name = input.name;
-  }
-
-  const client = await db.client.update({
-    where: { id },
-    data: updateData,
-  });
-
-  await getClientByIdCached.clear(client.id);
-
-  return client;
-}
-
-export async function deleteClientForOrganization(
-  id: string,
-  organizationId: string
-): Promise<boolean> {
-  const db = await loadDb();
-
-  const client = await db.client.findFirst({
-    where: { id, organizationId },
-  });
-
-  if (!client) {
-    return false;
-  }
-
-  await db.client.delete({ where: { id } });
-  await getClientByIdCached.clear(id);
-
-  return true;
+  return {
+    getClientsByOrganizationId: (organizationId) =>
+      getClientsByOrganizationId(deps, organizationId),
+    getClientsByProjectId: (projectId) =>
+      getClientsByProjectId(deps, projectId),
+    getClientById: (id) => getClientById(deps, id),
+    getClientByIdCached: (id) => getClientByIdCached(id),
+    clearClientByIdCache: (id) => getClientByIdCached.clear(id),
+    listClientsForOrganization: (organizationId, projectId) =>
+      listClientsForOrganization(deps, organizationId, projectId),
+    getClientForOrganization: (id, organizationId) =>
+      getClientForOrganization(deps, id, organizationId),
+    createClientForOrganization,
+    updateClientForOrganization,
+    deleteClientForOrganization,
+  };
 }

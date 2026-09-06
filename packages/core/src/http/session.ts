@@ -28,7 +28,7 @@ export const SESSION_COOKIE_NAME = 'session';
 const DEMO_ALS_SESSION_ID = '1';
 
 export async function resolveSession(
-  _deps: AppDeps,
+  deps: AppDeps,
   cookies: CookieJar,
   _headers: Headers
 ): Promise<Session | null> {
@@ -37,7 +37,7 @@ export async function resolveSession(
   try {
     const result = await runWithAlsSession(
       token ? decodeSessionToken(token) : DEMO_ALS_SESSION_ID,
-      () => validateSessionToken(token ?? null)
+      () => validateSessionToken(deps, token ?? null)
     );
     return result.userId === null ? null : result;
   } catch {

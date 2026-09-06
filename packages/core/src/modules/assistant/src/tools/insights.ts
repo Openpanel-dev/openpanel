@@ -1,6 +1,5 @@
-import { db } from '@openpanel/db';
 import { z } from 'zod';
-import { chatTool, truncateRows } from './helpers';
+import { chatTool, loadCompatDb, truncateRows } from './helpers';
 
 export const listInsights = chatTool(
   {
@@ -20,6 +19,7 @@ export const listInsights = chatTool(
     }),
   },
   async ({ limit, moduleKey, severity, direction }, context) => {
+    const db = await loadCompatDb();
     const insights = await db.projectInsight.findMany({
       where: {
         projectId: context.projectId,
@@ -63,6 +63,7 @@ export const explainInsight = chatTool(
     }),
   },
   async ({ insightId }, context) => {
+    const db = await loadCompatDb();
     const insight = await db.projectInsight.findFirst({
       where: { id: insightId, projectId: context.projectId },
     });
@@ -89,6 +90,7 @@ export const findRelatedInsights = chatTool(
     }),
   },
   async ({ insightId, limit }, context) => {
+    const db = await loadCompatDb();
     const insight = await db.projectInsight.findFirst({
       where: { id: insightId, projectId: context.projectId },
     });

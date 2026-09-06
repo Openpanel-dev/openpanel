@@ -8,11 +8,11 @@ import {
   getReportsByDashboardId,
   getSettingsForProject,
 } from '@openpanel/core';
-import { db } from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
+  loadCompatDb,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -157,6 +157,7 @@ export function registerReportTools(
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
+        const db = await loadCompatDb();
         const dashboards = await db.dashboard.findMany({
           where: { projectId },
           orderBy: { createdAt: 'desc' },

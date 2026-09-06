@@ -1,4 +1,12 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 
 const mockGetTopPages = mock();
 const mockGetSettingsForProject = mock(() =>
@@ -36,7 +44,24 @@ mock.module('@openpanel/db/src/clickhouse/client', () => ({
 let registerPagePerformanceTools: typeof import('./page-performance').registerPagePerformanceTools;
 
 beforeAll(async () => {
+  // `loadCompatCh` (../shared) reaches ClickHouse through v1-compat.ts's
+  // memoized fallback singleton — a process-lifetime cache once resolved,
+  // so an earlier test file's `bun test` (no `--isolate`) run can have
+  // already resolved it against a DIFFERENT `@openpanel/db/src/clickhouse/client`
+  // mock (or none at all). Reset it so this file's own mock above is what
+  // gets picked up.
+  const { resetV1CompatServicesForTests } = await import(
+    '../../../../../v1-compat'
+  );
+  resetV1CompatServicesForTests();
   ({ registerPagePerformanceTools } = await import('./page-performance'));
+});
+
+afterAll(async () => {
+  const { resetV1CompatServicesForTests } = await import(
+    '../../../../../v1-compat'
+  );
+  resetV1CompatServicesForTests();
 });
 
 function makeServer() {

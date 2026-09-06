@@ -62,10 +62,13 @@ export interface DataHealthDeps {
 export async function loadDataHealthDeps(
   logger: Logger
 ): Promise<DataHealthDeps> {
+  // project.service.ts's `getLastEventPerProject` takes `ServiceDeps` now
+  // (M10-004); this file has no `deps` of its own (just the bare `db` above),
+  // so it reaches the bare, v1-compat-wrapped, zero-arg spelling instead.
   const [{ db }, { getLastEventPerProject }, { sendEmail }] = await Promise.all(
     [
       import('@openpanel/db/src/prisma-client'),
-      import('../../project/project.service'),
+      import('../../../v1-compat'),
       import('../../../clients/email'),
     ]
   );

@@ -17,7 +17,6 @@
 // already used" (M9-004, which mounted this surface).
 
 import { defineRoutes } from '../../http/define';
-import { handlePolarWebhookEvent } from './subscription.service';
 
 export const subscriptionRoutes = defineRoutes((app) =>
   app.post(
@@ -27,7 +26,11 @@ export const subscriptionRoutes = defineRoutes((app) =>
       const headers = Object.fromEntries(request.headers);
 
       try {
-        await handlePolarWebhookEvent(rawBody, headers, ctx.logger);
+        await ctx.services.subscription.handlePolarWebhookEvent(
+          rawBody,
+          headers,
+          ctx.logger
+        );
       } catch {
         return status(500, 'Error');
       }

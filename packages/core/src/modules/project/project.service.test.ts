@@ -1,10 +1,14 @@
-// project.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import. `getProjectEventsCount` / `getLastEventPerProject`
-// (ClickHouse) are a verbatim port with unchanged SQL — executed against
+// The subject is built by its factory over a fake `ServiceDeps` (M10-004), so
+// Postgres needs no module mock at all — `deps.db` IS the fake below, same
+// idiom as reference.service.test.ts. `getProjectEventsCount` /
+// `getLastEventPerProject` (ClickHouse) stay a verbatim, still-lazy-loaded
+// port with unchanged SQL (ADR-013 converts them in P7) — executed against
 // local ClickHouse for this task's verification, not re-tested here.
+//
+// `../../v1-compat` is still mocked: `createProjectForOrganization`/
+// `updateProjectForOrganization` invalidate a project's clients through the
+// v1-compat singleton (see project.service.ts's header), which this test
+// has no real `AppDeps` to build.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
@@ -167,19 +171,19 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { project, report, member },
-}));
-
-mock.module('@openpanel/core', () => ({
+mock.module('../../shared/slug-id', () => ({
   getId: async (_table: string, name: string) => `${name}-slug`,
 }));
 
-let subject: typeof import('./project.service');
+const clearClientByIdCache = mock(async () => 0);
+mock.module('../../v1-compat', () => ({ clearClientByIdCache }));
+
+let subject: import('./project.service').ProjectService;
 beforeAll(async () => {
-  subject = await import('./project.service');
+  const { createProjectService } = await import('./project.service');
+  subject = createProjectService({
+    db: { project, report, member },
+  } as unknown as import('../../services').ServiceDeps);
 });
 
 beforeEach(() => {

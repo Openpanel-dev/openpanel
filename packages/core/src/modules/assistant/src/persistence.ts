@@ -2,16 +2,14 @@ import type { ConversationStore } from '@better-agent/core';
 import type { ConversationItem } from '@better-agent/core/providers';
 import { chatRunContext } from './run-context';
 
-// db access is LAZY, not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file — and, per
-// this module's own history, race @openpanel/db's other eager imports:
-// event-buffer.test.ts et al. saw `BotBuffer extends BaseBuffer` resolve to
-// `undefined` before this lazy load was added).
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+// `ConversationStore`'s `load`/`save` signatures are @better-agent/core's own
+// interface — betterAgent calls them with no `Ctx`/`ServiceDeps` to thread
+// through, so db access stays a lazy singleton, same as the other bare
+// hot-path callers in this wave (M10-004, see v1-compat.ts's header) rather
+// than a direct `@openpanel/db` import. GENUINE CYCLE, kept lazy: services.ts
+// -> assistant.service.ts -> this file -> v1-compat.ts -> services.ts.
+function loadCompatDb() {
+  return import('../../../v1-compat').then((m) => m.compatDb());
 }
 
 /**
@@ -60,7 +58,7 @@ function itemToRow(conversationId: string, item: ConversationItem) {
 
 export const prismaConversationStore: ConversationStore = {
   async load({ conversationId }) {
-    const db = await loadDb();
+    const db = await loadCompatDb();
     const conv = await db.conversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -85,7 +83,7 @@ export const prismaConversationStore: ConversationStore = {
       );
     }
 
-    const db = await loadDb();
+    const db = await loadCompatDb();
     await db.$transaction(async (tx) => {
       await tx.conversation.upsert({
         where: { id: conversationId },

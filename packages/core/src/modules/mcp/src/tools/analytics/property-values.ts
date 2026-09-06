@@ -1,9 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { EVENT_COLUMNS } from '@openpanel/core';
-import { ch, clix, TABLE_NAMES } from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
+  loadCompatCh,
+  loadCompatChHelpers,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -75,6 +76,10 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
+        const [ch, { clix, TABLE_NAMES }] = await Promise.all([
+          loadCompatCh(),
+          loadCompatChHelpers(),
+        ]);
         // GROUP BY rather than DISTINCT so the epv_keys projection can serve
         // this (a multi-column DISTINCT cannot be matched against an
         // aggregating projection); `name` tie-breaks the ORDER BY so the
@@ -124,6 +129,10 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName, propertyKey, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
+        const [ch, { clix, TABLE_NAMES }] = await Promise.all([
+          loadCompatCh(),
+          loadCompatChHelpers(),
+        ]);
         const take = limit ?? DEFAULT_VALUE_LIMIT;
         // The MV holds one row per (property, value, day), so the same value
         // recurs across the window — dedupe before counting against the limit,

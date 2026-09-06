@@ -7,8 +7,8 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's client functions (DELEGATE
-// PATTERN) — this module has no queue/cron of its own, so there is no
-// `ctx.services.client`, same as `user`/`conversation`.
+// PATTERN). `ctx.services.client` carries this module's factory the same as
+// every other module now (M10-004).
 //
 // The permission ladder itself is bound once, in auth.service.ts (M10-002);
 // every procedure here reaches it through `ctx.services.auth`.
@@ -16,13 +16,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
-import {
-  createClientForOrganization,
-  deleteClientForOrganization,
-  getClientById,
-  getClientsByProjectId,
-  updateClientForOrganization,
-} from './client.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -34,10 +27,10 @@ function requireLogin(userId: string | null | undefined): string {
 export const clientRouter = createTRPCRouter({
   list: procedure
     .input(z.object({ projectId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       // Ported verbatim: V1's `client.list` reads by projectId with no
       // access check of its own (packages/trpc/src/routers/client.ts).
-      return getClientsByProjectId(input.projectId);
+      return ctx.services.client.getClientsByProjectId(input.projectId);
     }),
 
   update: procedure
@@ -52,14 +45,16 @@ export const clientRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this client');
       }
 
-      const client = await getClientById(input.id);
+      const client = await ctx.services.client.getClientById(input.id);
       if (!client) {
         throw new TRPCForbiddenError('Client not found');
       }
 
-      return updateClientForOrganization(input.id, client.organizationId, {
-        name: input.name,
-      });
+      return ctx.services.client.updateClientForOrganization(
+        input.id,
+        client.organizationId,
+        { name: input.name }
+      );
     }),
 
   create: procedure
@@ -82,11 +77,14 @@ export const clientRouter = createTRPCRouter({
         message: 'Only organization admins can create API clients',
       });
 
-      const created = await createClientForOrganization(input.organizationId, {
-        name: input.name,
-        projectId: input.projectId,
-        type: input.type,
-      });
+      const created = await ctx.services.client.createClientForOrganization(
+        input.organizationId,
+        {
+          name: input.name,
+          projectId: input.projectId,
+          type: input.type,
+        }
+      );
 
       if (!created) {
         throw new TRPCForbiddenError(
@@ -101,7 +99,7 @@ export const clientRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const client = await getClientById(input.id);
+      const client = await ctx.services.client.getClientById(input.id);
 
       if (!client?.organizationId) {
         throw new TRPCForbiddenError('You do not have access to this client');
@@ -114,7 +112,10 @@ export const clientRouter = createTRPCRouter({
         message: 'Only organization admins can delete API clients',
       });
 
-      await deleteClientForOrganization(input.id, client.organizationId);
+      await ctx.services.client.deleteClientForOrganization(
+        input.id,
+        client.organizationId
+      );
       return true;
     }),
 });

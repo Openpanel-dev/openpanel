@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getSettingsForProject, PagesService } from '@openpanel/core';
-import { ch } from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
+  loadCompatCh,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -73,6 +73,7 @@ export function registerPagePerformanceTools(
         // shares one module registry without `--isolate` — see AGENTS.md),
         // permanently defeating this file's own mocks whenever the
         // integration suite imports it first.
+        const ch = await loadCompatCh();
         const pagesService = new PagesService(ch);
 
         const pages = await pagesService.getTopPages({

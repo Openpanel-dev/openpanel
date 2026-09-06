@@ -3,22 +3,18 @@
 // browser's cookie). Not to be confused with session.service.ts's ClickHouse
 // visitor sessions.
 //
-// Originally split at the Prisma boundary (M4-007) on the belief that a
-// static `@openpanel/db` import here would cycle with db's own (static)
-// `@openpanel/core` imports. `loadDb()` below is the same lazy pattern
-// salt.service.ts and registration.ts already use to reach db's Prisma
-// client with no such cycle — auth.service.ts's own `loadAuthSession()`
-// already reached this file that way, so the move only changes where the
-// file lives, not how its caller loads it.
-//
-// db access is LAZY, not a static top-level import — see salt.service.ts's
-// header for the full reasoning (jobs.registry.ts and services.ts pull this
-// module into the eager barrel chain nearly every core test file reaches,
-// and constructing @openpanel/db's clients at import time would spawn a
-// pino-pretty transport worker thread per test file).
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` lazy loader is gone. `http/session.ts`'s
+// `resolveSession` already carried an (until-now-unused) `AppDeps` for
+// exactly this.
 
 import type { Session, User } from '@openpanel/db/src/prisma-client';
+import type { ServiceDeps } from '../../../services';
 import { decodeSessionToken, hashSessionToken } from './token';
+
+/** Only Postgres — narrowed so `AppDeps` (http/session.ts, before
+ *  `ServiceDeps.queues` exists) satisfies it with no cast. */
+type LoginSessionDeps = Pick<ServiceDeps, 'db'>;
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const SESSION_RENEWAL_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
@@ -35,15 +31,11 @@ export const EMPTY_SESSION: SessionValidationResult = {
   userId: null,
 };
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 export async function createSession(
+  deps: LoginSessionDeps,
   token: string,
   userId: string
 ): Promise<Session> {
-  const db = await loadDb();
   const session: Session = {
     id: hashSessionToken(token),
     userId,
@@ -51,17 +43,17 @@ export async function createSession(
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  await db.session.create({
+  await deps.db.session.create({
     data: session,
   });
   return session;
 }
 
 export async function createDemoSession(
+  deps: LoginSessionDeps,
   userId: string
 ): Promise<SessionValidationResult> {
-  const db = await loadDb();
-  const user = await db.user.findUniqueOrThrow({
+  const user = await deps.db.user.findUniqueOrThrow({
     where: {
       id: userId,
     },
@@ -81,10 +73,11 @@ export async function createDemoSession(
 }
 
 export async function validateSessionToken(
+  deps: LoginSessionDeps,
   token: string | null | undefined
 ): Promise<SessionValidationResult> {
   if (process.env.DEMO_USER_ID) {
-    return createDemoSession(process.env.DEMO_USER_ID);
+    return createDemoSession(deps, process.env.DEMO_USER_ID);
   }
 
   if (!token) {
@@ -94,8 +87,7 @@ export async function validateSessionToken(
   if (!sessionId) {
     return EMPTY_SESSION;
   }
-  const db = await loadDb();
-  const result = await db.session.findUnique({
+  const result = await deps.db.session.findUnique({
     where: {
       id: sessionId,
     },
@@ -108,7 +100,7 @@ export async function validateSessionToken(
   }
   const { user, ...session } = result;
   if (Date.now() >= session.expiresAt.getTime()) {
-    await db.session.delete({ where: { id: sessionId } });
+    await deps.db.session.delete({ where: { id: sessionId } });
     return EMPTY_SESSION;
   }
   if (
@@ -116,7 +108,7 @@ export async function validateSessionToken(
     session.expiresAt.getTime() - SESSION_RENEWAL_THRESHOLD_MS
   ) {
     session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-    await db.session.update({
+    await deps.db.session.update({
       where: {
         id: session.id,
       },
@@ -128,7 +120,9 @@ export async function validateSessionToken(
   return { session, user, userId: user.id };
 }
 
-export async function invalidateSession(sessionId: string): Promise<void> {
-  const db = await loadDb();
-  await db.session.delete({ where: { id: sessionId } });
+export async function invalidateSession(
+  deps: LoginSessionDeps,
+  sessionId: string
+): Promise<void> {
+  await deps.db.session.delete({ where: { id: sessionId } });
 }

@@ -56,15 +56,17 @@ let getOverrideDeviceId: typeof import('./ingest.service').getOverrideDeviceId;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
 
-// The profile and salt modules are spread and then overridden by name:
-// event.service imports more of profile.service than ingest.service does
-// (and salt.service exports fetchSalts/createInitialSalts/rotateSalt besides
-// getSalts), so a factory returning only the overrides makes the rest vanish
-// under `--isolate`. Overriding `identifyProfile` (not just `upsertProfile`)
-// is what keeps the identify path off Postgres and the profile buffer —
-// profile.service calls its own local `upsertProfile`, not the exported
-// binding.
-let realSaltService: typeof import('../salt/salt.service');
+// The profile module is spread and then overridden by name: event.service
+// imports more of profile.service than ingest.service does. Overriding
+// `identifyProfile` (not just `upsertProfile`) is what keeps the identify
+// path off Postgres and the profile buffer — profile.service calls its own
+// local `upsertProfile`, not the exported binding.
+//
+// M10-004: ingest.service.ts reaches `getSalts` through the v1-compat
+// singleton (salt.service.ts's own cache now lives inside
+// `createSaltService(deps)`, not at module scope — see both files' headers),
+// so that's the specifier mocked here, spread-actual like the rest.
+let realV1Compat: typeof import('../../v1-compat');
 beforeAll(async () => {
   const profile = await import('../profile/profile.service');
   mock.module('../profile/profile.service', () => ({
@@ -73,21 +75,15 @@ beforeAll(async () => {
     upsertProfile,
     getProfileById,
   }));
-  realSaltService = { ...(await import('../salt/salt.service')) };
-  mock.module('../salt/salt.service', () => ({ ...realSaltService, getSalts }));
+  realV1Compat = { ...(await import('../../v1-compat')) };
+  mock.module('../../v1-compat', () => ({ ...realV1Compat, getSalts }));
   ({ getOverrideDeviceId, handleReplay, ingestTrack } = await import(
     './ingest.service'
   ));
 });
 
-// salt.service.ts's own rotateSalt calls the exported `getSalts` internally
-// (to invalidate its cache), so leaving this file's fake `getSalts` — which
-// has no `.clear()` — in the module registry after these tests finish breaks
-// salt.service.test.ts's own `rotateSalt` assertions under a bare (non
-// `--isolate`) `bun test` run, which shares one module registry across every
-// file in the run.
 afterAll(() => {
-  mock.module('../salt/salt.service', () => realSaltService);
+  mock.module('../../v1-compat', () => realV1Compat);
 });
 
 const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>

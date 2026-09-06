@@ -51,7 +51,7 @@ export const authRoutes = defineRoutes((app) =>
         try {
           assertOAuthState('github', query.state, storedState);
           const oauthUser = await fetchGithubOAuthUser(query.code);
-          await completeOAuthCallback({
+          await completeOAuthCallback(ctx, {
             provider: 'github',
             oauthUser,
             inviteId,
@@ -90,7 +90,7 @@ export const authRoutes = defineRoutes((app) =>
             query.code,
             codeVerifier
           );
-          await completeOAuthCallback({
+          await completeOAuthCallback(ctx, {
             provider: 'google',
             oauthUser,
             inviteId,

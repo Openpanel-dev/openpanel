@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { db } from '@openpanel/db';
 import type { McpAuthContext } from '../auth';
-import { withErrorHandling } from './shared';
+import { loadCompatDb, withErrorHandling } from './shared';
 
 export function registerProjectTools(
   server: McpServer,
@@ -15,6 +14,8 @@ export function registerProjectTools(
     {},
     async () =>
       withErrorHandling(async () => {
+        const db = await loadCompatDb();
+
         if (context.clientType === 'root') {
           const projects = await db.project.findMany({
             where: { organizationId: context.organizationId },

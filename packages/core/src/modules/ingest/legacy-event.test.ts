@@ -60,22 +60,20 @@ mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let ingestLegacyEvent: typeof import('./ingest.service').ingestLegacyEvent;
 
-// The salt module is spread and then overridden by name: it exports
-// fetchSalts/createInitialSalts/rotateSalt besides getSalts, so a factory
-// returning only the override makes the rest vanish.
-let realSaltService: typeof import('../salt/salt.service');
+// M10-004: ingest.service.ts reaches `getSalts` through the v1-compat
+// singleton now (salt.service.ts's own cache moved inside
+// `createSaltService(deps)` — see both files' headers), so that's the
+// specifier mocked here, spread-actual like everywhere else this seam is
+// overridden.
+let realV1Compat: typeof import('../../v1-compat');
 beforeAll(async () => {
-  realSaltService = { ...(await import('../salt/salt.service')) };
-  mock.module('../salt/salt.service', () => ({ ...realSaltService, getSalts }));
+  realV1Compat = { ...(await import('../../v1-compat')) };
+  mock.module('../../v1-compat', () => ({ ...realV1Compat, getSalts }));
   ({ ingestLegacyEvent } = await import('./ingest.service'));
 });
 
-// salt.service.ts's own rotateSalt calls the exported `getSalts` internally (to
-// invalidate its cache), so leaving this file's fake — which has no `.clear()`
-// — in the module registry breaks salt.service.test.ts under a bare (non
-// `--isolate`) `bun test`, which shares one registry across the whole run.
 afterAll(() => {
-  mock.module('../salt/salt.service', () => realSaltService);
+  mock.module('../../v1-compat', () => realV1Compat);
 });
 
 const produced: { payload: IncomingEventPayload; partitionKey: string }[] = [];

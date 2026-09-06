@@ -18,13 +18,6 @@
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
-import {
-  createClientForOrganization,
-  deleteClientForOrganization,
-  getClientForOrganization,
-  listClientsForOrganization,
-  updateClientForOrganization,
-} from './client.service';
 
 const idParams = z.object({ id: z.string() });
 const listQuery = z.object({ projectId: z.string().optional() });
@@ -43,8 +36,8 @@ export const clientRoutes = defineRoutes((app) =>
   app
     .get(
       '/manage/clients',
-      async ({ client, query, status }) => {
-        const clients = await listClientsForOrganization(
+      async ({ client, ctx, query, status }) => {
+        const clients = await ctx.services.client.listClientsForOrganization(
           client.organizationId,
           query.projectId
         );
@@ -64,8 +57,8 @@ export const clientRoutes = defineRoutes((app) =>
     )
     .get(
       '/manage/clients/:id',
-      async ({ client, params, status }) => {
-        const found = await getClientForOrganization(
+      async ({ client, ctx, params, status }) => {
+        const found = await ctx.services.client.getClientForOrganization(
           params.id,
           client.organizationId
         );
@@ -85,8 +78,8 @@ export const clientRoutes = defineRoutes((app) =>
     )
     .post(
       '/manage/clients',
-      async ({ body, client, status }) => {
-        const created = await createClientForOrganization(
+      async ({ body, client, ctx, status }) => {
+        const created = await ctx.services.client.createClientForOrganization(
           client.organizationId,
           body
         );
@@ -108,8 +101,8 @@ export const clientRoutes = defineRoutes((app) =>
     )
     .patch(
       '/manage/clients/:id',
-      async ({ body, client, params, status }) => {
-        const updated = await updateClientForOrganization(
+      async ({ body, client, ctx, params, status }) => {
+        const updated = await ctx.services.client.updateClientForOrganization(
           params.id,
           client.organizationId,
           body
@@ -131,8 +124,8 @@ export const clientRoutes = defineRoutes((app) =>
     )
     .delete(
       '/manage/clients/:id',
-      async ({ client, params, status }) => {
-        const deleted = await deleteClientForOrganization(
+      async ({ client, ctx, params, status }) => {
+        const deleted = await ctx.services.client.deleteClientForOrganization(
           params.id,
           client.organizationId
         );

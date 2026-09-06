@@ -525,7 +525,7 @@ async function main() {
       consumer = await startIngestConsumer(deps);
     }
 
-    await createInitialSalts();
+    await createInitialSalts(deps);
   } else if (roleConsumes) {
     logger.warn('Workers are disabled');
   }

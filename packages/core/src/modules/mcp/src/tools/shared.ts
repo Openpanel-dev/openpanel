@@ -6,6 +6,39 @@ import type { McpAuthContext } from '../auth';
 const logger = createLogger({ name: 'mcp' });
 
 /**
+ * MCP's tool handlers have a fixed signature from `@modelcontextprotocol/sdk`
+ * — there is no `Ctx`/`ServiceDeps` parameter to thread through, so the few
+ * tools that still touch Postgres/ClickHouse directly (`projects.ts`,
+ * `dashboard-management.ts`, `analytics/property-values.ts`,
+ * `analytics/page-performance.ts`, `analytics/reports.ts`) reach them through
+ * the v1-compat singleton instead of `@openpanel/db` (M10-004, see
+ * v1-compat.ts's header) — the same pattern every other bare, no-`Ctx`
+ * caller in this wave uses.
+ */
+export async function loadCompatDb() {
+  return (await import('../../../../v1-compat')).compatDb();
+}
+
+export async function loadCompatCh() {
+  return (await import('../../../../v1-compat')).compatCh();
+}
+
+/** `dashboard-management.ts`'s only need from `@openpanel/db`: the
+ *  `Prisma.DbNull` sentinel for an explicit SQL NULL on a nullable Json
+ *  column, not a client — same seam as `loadCompatDb`/`loadCompatCh`. */
+export async function loadCompatPrisma() {
+  return (await import('../../../../v1-compat')).compatPrisma();
+}
+
+/** `analytics/property-values.ts` still builds its query with `clix`/
+ *  `TABLE_NAMES` (ADR-013 converts the analytics read path one query per P7
+ *  task) — the query-building helpers, not the client (`loadCompatCh`
+ *  covers that), reached the same way. */
+export async function loadCompatChHelpers() {
+  return (await import('../../../../v1-compat')).compatChHelpers();
+}
+
+/**
  * Resolve the effective projectId from context + optional tool input.
  * Thin adapter so tool files don't repeat the full argument object every call.
  */

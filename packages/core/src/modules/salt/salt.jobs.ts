@@ -9,14 +9,13 @@
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 import type { SchedulerDefinition } from '../../jobs/schedulers';
-import { rotateSalt } from './salt.service';
 
 /** This module's fragment of the `cron` queue's jobs. */
 export const saltCronJobs = {
   salt: defineJob({
     payload: z.null(),
-    handler: async () => {
-      await rotateSalt();
+    handler: async ({ ctx }) => {
+      await ctx.services.salt.rotateSalt();
     },
   }),
 };

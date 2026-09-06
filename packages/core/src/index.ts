@@ -204,58 +204,28 @@ export {
 export { registerDefaultMetrics } from './metrics';
 // Moved from apps/api/src/agents/* + packages/trpc/src/agents/filter-command.ts
 // (M5-005) — apps/api's `/ai/agents/*` Fastify wrapper and packages/trpc's
-// overview router call these.
-//
-// Loaded via dynamic import, NOT a static re-export like every other service
-// on this barrel: packages/db/src/buffers/index.ts imports `@openpanel/core`
-// eagerly (it is the V1 delegate over `createBuffers`), and this module's own
-// chain reaches deep into `@openpanel/db` (the Prisma-backed conversation
-// store, ~30 analytics/report tool functions). A static re-export here would
-// make THIS barrel's own evaluation re-enter `@openpanel/db` while that
-// package is still mid-evaluation, and a class the re-entering module extends
-// is then an `undefined` TDZ binding that never got the chance to fill in.
-// `chatApp` and `chatRunContext` are one-time-per-process values, so
-// callers resolve them once (apps/api's Fastify wrapper does so inside its
-// own already-async route registration) and keep the reference.
+// overview router call these. M10-004: `assistant.service.ts` keeps all of
+// `./src/app`/`./src/run-context`/`./src/filter-command` behind its OWN
+// lazy loaders now (see that file's header) — needed so `createAssistantService`
+// can be registered in services.ts without constructing the whole Better
+// Agent app at process boot — which is what makes a plain static re-export
+// safe here too. `getChatApp`/`getChatRunContext`/`runFilterCommand` are
+// one-time-per-process values, so callers resolve them once (apps/api's
+// Fastify wrapper does so inside its own already-async route registration)
+// and keep the reference.
 export type {
+  AssistantService,
   ChatApp,
   ChatRunContext,
   FilterCommandResult,
+  RunFilterCommandInput,
 } from './modules/assistant/assistant.service';
-// Slack's OAuth token-exchange wire contract (M6-006) — not integration
-// config (stays out of the `*.constants` subpath, see
-// modules/integration/src/slack-contract.ts's header), but apps/api's
-// webhook controller still needs it to validate Slack's `oauth.v2.access`
-// response, the same way it reaches slackInstaller above.
-export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
-
-import type { PageContext } from './modules/assistant/assistant.constants';
-
-let _assistant:
-  | Promise<typeof import('./modules/assistant/assistant.service')>
-  | undefined;
-function loadAssistant() {
-  if (!_assistant) {
-    _assistant = import('./modules/assistant/assistant.service');
-  }
-  return _assistant;
-}
-
-export async function getChatApp() {
-  return (await loadAssistant()).chatApp;
-}
-export async function getChatRunContext() {
-  return (await loadAssistant()).chatRunContext;
-}
-export async function runFilterCommand(input: {
-  query: string;
-  projectId: string;
-  pageContext?: PageContext;
-  timezone: string;
-}) {
-  const { runFilterCommand: run } = await loadAssistant();
-  return run(input);
-}
+export {
+  createAssistantService,
+  getChatApp,
+  getChatRunContext,
+  runFilterCommand,
+} from './modules/assistant/assistant.service';
 // Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks and
 // @openpanel/trpc's auth/share/user/gsc routers call these directly, the same
 // way they reach the other dissolved leaf packages here. `hashPassword` is
@@ -286,21 +256,16 @@ export {
   buildOtpauthUrl,
   COOKIE_MAX_AGE,
   COOKIE_OPTIONS,
-  completeOAuthCallback,
   consumeRecoveryCode,
   createAuthService,
   decodeSessionToken,
   deleteSessionTokenCookie,
-  disableTotp,
-  enableTotp,
-  extendSessionCookie,
   fetchGithubOAuthUser,
   fetchGoogleOAuthUser,
   generateQrDataUrl,
   generateRecoveryCodes,
   generateSessionToken,
   generateTotpSecret,
-  getTotpStatus,
   github,
   google,
   googleGsc,
@@ -310,16 +275,8 @@ export {
   normalizeRecoveryCode,
   OAuthCallbackError,
   parseCookieDomain,
-  regenerateTotpRecoveryCodes,
-  requestPasswordReset,
-  resetPasswordWithToken,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
-  setupTotp,
-  signInWithEmail,
-  signInWithTotp,
-  signOutUser,
-  signUpWithEmail,
   startOAuthSignIn,
   verifyPasswordHash,
   verifyTotpCode,
@@ -443,21 +400,12 @@ export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // service here. packages/db/src/services/clients.service.ts stays a
 // re-export shim.
 export type {
+  ClientService,
   CreatedClient,
   IServiceClient,
   IServiceClientWithProject,
 } from './modules/client/client.service';
-export {
-  createClientForOrganization,
-  deleteClientForOrganization,
-  getClientById,
-  getClientByIdCached,
-  getClientForOrganization,
-  getClientsByOrganizationId,
-  getClientsByProjectId,
-  listClientsForOrganization,
-  updateClientForOrganization,
-} from './modules/client/client.service';
+export { createClientService } from './modules/client/client.service';
 // Dissolved from @openpanel/db's services/cohort.service.ts (M5-003) —
 // packages/trpc's cohort router and apps/worker's cohort job files call
 // these directly, the same way V1 reaches every other dissolved service
@@ -485,16 +433,12 @@ export {
 // keeps a re-export shim (unlike cohort, M5-003): both non-trpc call sites
 // still reach it through `@openpanel/db`'s barrel.
 export type {
+  ConversationService,
   IServiceChatMessage,
   IServiceConversation,
   IServiceConversationWithMessages,
 } from './modules/conversation/conversation.service';
-export {
-  deleteConversation,
-  getConversationById,
-  listConversations,
-  upsertConversationTitle,
-} from './modules/conversation/conversation.service';
+export { createConversationService } from './modules/conversation/conversation.service';
 // Dissolved from @openpanel/db's services/dashboard.service.ts, plus V1's
 // dashboard router mutation bodies (M7-006) — packages/trpc's dashboard
 // router, apps/api's insights controller and the mcp/assistant tools call
@@ -662,6 +606,27 @@ export {
   testIntegrationConnection,
   upsertIntegration,
 } from './modules/integration/integration.service';
+// Slack's OAuth token-exchange wire contract (M6-006) — not integration
+// config (stays out of the `*.constants` subpath, see
+// modules/integration/src/slack-contract.ts's header), but apps/api's
+// webhook controller still needs it to validate Slack's `oauth.v2.access`
+// response, the same way it reaches slackInstaller above.
+export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
+// packages/mcp absorbed whole (M5-007) — ADR-015 entry 2: stateless-only, so
+// there is no SessionManager to manage. `mcp.service.ts` keeps its own
+// tool tree (`./src/server`) behind a lazy loader (M10-004, see that file's
+// header), which is what makes THIS a safe static export now — unlike the
+// `getChatApp`-style TDZ hazard this barrel used to route around here.
+export type {
+  McpAuthContext,
+  McpHttpResult,
+  McpService,
+} from './modules/mcp/mcp.service';
+export {
+  createMcpService,
+  extractToken,
+  handleStatelessMcpRequest,
+} from './modules/mcp/mcp.service';
 // Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
 // "rules + dispatch stay together") — packages/trpc's notification router
 // and apps/worker's notification job call these directly, the same way V1
@@ -858,25 +823,9 @@ export type {
   IServiceProject,
   IServiceProjectWithClients,
   ProjectActivationStatus,
+  ProjectService,
 } from './modules/project/project.service';
-export {
-  cancelProjectDeletion,
-  createProjectForOrganization,
-  deleteProjectForOrganization,
-  getLastEventPerProject,
-  getProjectActivationStatus,
-  getProjectById,
-  getProjectByIdCached,
-  getProjectEventsCount,
-  getProjectForOrganization,
-  getProjects,
-  getProjectWithClients,
-  listProjectsCore,
-  listProjectsForOrganization,
-  resolveClientProjectId,
-  scheduleProjectDeletion,
-  updateProjectForOrganization,
-} from './modules/project/project.service';
+export { createProjectService } from './modules/project/project.service';
 // The six ClickHouse queries moved from packages/trpc/src/routers/realtime.ts
 // (M6-007) — packages/trpc's realtime router calls these directly, the same
 // way V1 reaches every other dissolved service here. The `/live` websocket
@@ -1039,60 +988,31 @@ export { createShareService } from './modules/share/share.service';
 // map: subscription owns "S"+"C") — packages/trpc's subscription router and
 // apps/api's webhook controller call these directly, the same way V1 reaches
 // every other dissolved service here.
+export type { SubscriptionService } from './modules/subscription/subscription.service';
 export {
-  applySaveDiscount,
-  cancelSubscription,
-  checkout,
+  createSubscriptionService,
   getCurrentSubscriptionProduct,
-  getUsage,
-  handlePolarWebhookEvent,
-  listProducts,
-  pauseSubscription,
-  portal,
-  resumeSubscription,
   toSubscriptionDiscount,
 } from './modules/subscription/subscription.service';
 // Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
 // packages/trpc's auth/onboarding routers call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same
 // way they reach every other dissolved service here.
-export type { IServiceUser } from './modules/user/user.service';
-export {
-  deleteUserAccount,
-  getUserAccount,
-  getUserById,
-  listUserDeletionBlockers,
-  updateUserProfile,
-} from './modules/user/user.service';
+export type { UserService } from './modules/user/user.service';
+export { createUserService } from './modules/user/user.service';
 
-// packages/mcp absorbed whole (M5-007) — apps/api's mcp.router.ts is the one
-// external caller, delegating the streamable-HTTP POST protocol here
-// (DELEGATE PATTERN). ADR-015 entry 2: stateless-only, so there is no
-// SessionManager to manage.
-//
-// Loaded via dynamic import, NOT a static re-export, for the same reason
-// `getChatApp`/`runFilterCommand` above are: `mcp.service` reaches this same
-// barrel (auth's client lookup, every analytics tool, all moved onto
-// `@openpanel/core` directly since M9-CLEANUP-001). A static export here
-// would make this barrel's own evaluation re-enter itself mid-evaluation —
-// observed as a `PagesService` TDZ ReferenceError two modules away, in a tool
-// file that never otherwise runs at import time.
-let _mcp: Promise<typeof import('./modules/mcp/mcp.service')> | undefined;
-function loadMcp() {
-  if (!_mcp) {
-    _mcp = import('./modules/mcp/mcp.service');
-  }
-  return _mcp;
-}
+import {
+  extractToken as mcpExtractToken,
+  handleStatelessMcpRequest as mcpHandleStatelessMcpRequest,
+} from './modules/mcp/mcp.service';
 
 export async function handleMcpRequest(
   query: Record<string, unknown>,
   authHeader: string | undefined,
   body: unknown
 ): Promise<{ status: number; body: unknown }> {
-  const { extractToken, handleStatelessMcpRequest } = await loadMcp();
-  const token = extractToken(query, authHeader);
-  return handleStatelessMcpRequest(token, body);
+  const token = mcpExtractToken(query, authHeader);
+  return mcpHandleStatelessMcpRequest(token, body);
 }
 export { isShuttingDown, setShuttingDown } from './modules/health/src/shutdown';
 // Dissolved from @openpanel/db's services/import.service.ts +
@@ -1234,14 +1154,16 @@ export {
   runPingCron,
 } from './modules/misc/misc.service';
 // Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts (M8-004) — apps/worker's boot
-// (createInitialSalts) and cron dispatch (rotateSalt) call these directly,
-// the same way V1 reaches every other dissolved service here.
-export type { Salts } from './modules/salt/salt.service';
+// apps/worker/src/jobs/cron.salt.ts (M8-004) — `main.ts` calls
+// `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s cron handler
+// and everything else reach `rotateSalt`/`getSalts` through
+// `ctx.services.salt` / the v1-compat singleton instead (M10-004, see
+// salt.service.ts's header — `getSalts` is the one export still bare here,
+// for the same reason it's bare on the v1-compat seam).
+export type { SaltService, Salts } from './modules/salt/salt.service';
 export {
   createInitialSalts,
-  getSalts,
-  rotateSalt,
+  createSaltService,
 } from './modules/salt/salt.service';
 // Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
 // (M5-001) — apps/worker's insight job files and packages/trpc's insight
@@ -1375,30 +1297,52 @@ export {
 } from './shared/safe-fetch';
 export { getId } from './shared/slug-id';
 export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';
-// The V1 compat seam (v1-compat.ts): the bare, deps-free spellings of the
-// chart / report / dashboard / share / reference functions, kept for
+// The V1 compat seam (v1-compat.ts): the bare, deps-free spellings of every
+// module whose functions gained a `ServiceDeps` first parameter, kept for
 // `packages/trpc`'s still-live routers and the mcp/assistant tool runtimes,
 // which have no `Ctx` to carry `ServiceDeps`. Everything with a `Ctx` uses
 // `ctx.services.*` instead. Deleted whole with `packages/trpc` at P10.
 export {
   AggregateChartEngine,
+  applySaveDiscount,
   buildFunnelBase,
   ChartEngine,
+  cancelProjectDeletion,
+  cancelSubscription,
+  checkout,
+  clearClientByIdCache,
+  compatCh,
+  compatDb,
+  createClientForOrganization,
   createDashboard,
+  createProjectForOrganization,
   createReference,
   createReport,
   createShareDashboard,
   createShareOverview,
   createShareReport,
+  deleteClientForOrganization,
+  deleteConversation,
   deleteDashboard,
+  deleteProjectForOrganization,
   deleteReference,
   deleteReport,
+  deleteUserAccount,
+  disableTotp,
   duplicateReport,
+  enableTotp,
   executeAggregateChart,
   executeChart,
+  extendSessionCookie,
   getChartBucketProfiles,
   getChartPropertyValues,
   getChartReferences,
+  getClientById,
+  getClientByIdCached,
+  getClientForOrganization,
+  getClientsByOrganizationId,
+  getClientsByProjectId,
+  getConversationById,
   getConversion,
   getConversionChart,
   getDashboardById,
@@ -1410,7 +1354,15 @@ export {
   getFunnelCore,
   getFunnelProfileIds,
   getFunnelStepProfiles,
+  getLastEventPerProject,
+  getProjectActivationStatus,
+  getProjectById,
+  getProjectByIdCached,
   getProjectCard,
+  getProjectEventsCount,
+  getProjectForOrganization,
+  getProjects,
+  getProjectWithClients,
   getReferenceById,
   getReferenceByIdOrThrow,
   getReportById,
@@ -1425,6 +1377,7 @@ export {
   getRetentionSeries,
   getRollingActiveUsers,
   getRollingActiveUsersCore,
+  getSalts,
   getSankey,
   getSankeyChart,
   getShareByProjectId,
@@ -1440,22 +1393,49 @@ export {
   getShareReportById,
   getShareReportByReportId,
   getShareReportSettings,
+  getTotpStatus,
+  getUsage,
+  getUserAccount,
+  getUserById,
   getUserFlowCore,
   getWeeklyRetentionSeriesCore,
   listChartEvents,
   listChartProperties,
+  listClientsForOrganization,
+  listConversations,
   listDashboardsCore,
+  listProducts,
+  listProjectsCore,
+  listProjectsForOrganization,
   listReferences,
   listReportsCore,
+  listUserDeletionBlockers,
   moveReport,
+  pauseSubscription,
+  portal,
+  regenerateTotpRecoveryCodes,
+  requestPasswordReset,
+  resetPasswordWithToken,
   resetReportLayouts,
   resetV1CompatServicesForTests,
+  resolveClientProjectId,
+  resumeSubscription,
+  scheduleProjectDeletion,
+  setupTotp,
   setV1CompatServices,
   signInToShare,
+  signInWithEmail,
+  signInWithTotp,
+  signOutUser,
+  signUpWithEmail,
+  updateClientForOrganization,
   updateDashboard,
+  updateProjectForOrganization,
   updateReference,
   updateReport,
   updateReportLayout,
+  updateUserProfile,
+  upsertConversationTitle,
   V1_COMPAT_REQUEST_ID,
   validateOverviewShareAccess,
   validateReportAccess,

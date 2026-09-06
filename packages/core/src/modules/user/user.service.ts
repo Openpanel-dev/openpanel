@@ -3,44 +3,45 @@
 // ported) still reach `getUserById`/`getUserAccount`/`IServiceUser` through
 // @openpanel/db's barrel, same shape as packages/db/src/gsc.ts since M5-002.
 //
-// db access is LAZY, not a static top-level import — see insight.service.ts's
-// header for the full reasoning (jobs.registry.ts and services.ts pull this
-// module into the eager barrel chain nearly every core test file reaches, and
-// constructing @openpanel/db's clients at import time would spawn a
-// pino-pretty transport worker thread per test file).
-//
-// No `UserService` / `createUserService` here: this module has no queue or
-// cron of its own (module map: user is R,S only), so there is nothing that
-// needs a Ctx-bound container — same shape as conversation.service.ts.
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` lazy loader is gone. `onboarding.service.ts`'s
+// own `getUserById` call and `packages/trpc`'s bare calls have no `deps` to
+// hand it, so they reach these through v1-compat.ts's bare re-exports
+// instead (see v1-compat.ts's header) — `auth.service.ts` calls
+// `getUserAccount` directly since it already carries `deps` itself.
 
+import type { User } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
 
 export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-export async function getUserById(id: string) {
-  const db = await loadDb();
-  return db.user.findUniqueOrThrow({
+// Explicit `Promise<User>` return type, not inferred: Prisma's
+// `findUniqueOrThrow` returns a chainable "fluent" client (PromiseLike, plus
+// relation-loading methods), which trips up `Services['user']['getUserById']`
+// in v1-compat.ts — a `.then(...)` wrapping a bare fluent type there can't
+// unify with the plain `Promise<User>` the interface declares.
+export function getUserById(deps: ServiceDeps, id: string): Promise<User> {
+  return deps.db.user.findUniqueOrThrow({
     where: {
       id,
     },
   });
 }
 
-export async function getUserAccount({
-  email,
-  provider,
-  providerId,
-}: {
-  email: string;
-  provider: string;
-  providerId?: string;
-}) {
-  const db = await loadDb();
-  const res = await db.user.findFirst({
+export async function getUserAccount(
+  deps: ServiceDeps,
+  {
+    email,
+    provider,
+    providerId,
+  }: {
+    email: string;
+    provider: string;
+    providerId?: string;
+  }
+) {
+  const res = await deps.db.user.findFirst({
     where: {
       email: {
         equals: email,
@@ -79,10 +80,10 @@ export interface UserDeletionBlocker {
  * any of these exist.
  */
 export async function listUserDeletionBlockers(
+  deps: ServiceDeps,
   userId: string
 ): Promise<UserDeletionBlocker[]> {
-  const db = await loadDb();
-  const organizations = await db.organization.findMany({
+  const organizations = await deps.db.organization.findMany({
     where: { createdByUserId: userId },
   });
   return organizations
@@ -103,8 +104,11 @@ export async function listUserDeletionBlockers(
  * set to null (SetNull); any org left without an org:admin member is then
  * removed by the organization module's `delete` cron.
  */
-export async function deleteUserAccount(userId: string): Promise<void> {
-  const blockers = await listUserDeletionBlockers(userId);
+export async function deleteUserAccount(
+  deps: ServiceDeps,
+  userId: string
+): Promise<void> {
+  const blockers = await listUserDeletionBlockers(deps, userId);
 
   if (blockers.length > 0) {
     throw new TRPCBadRequestError(
@@ -114,17 +118,18 @@ export async function deleteUserAccount(userId: string): Promise<void> {
     );
   }
 
-  const db = await loadDb();
-  await db.user.delete({ where: { id: userId } });
+  await deps.db.user.delete({ where: { id: userId } });
 }
 
-export async function updateUserProfile(input: {
-  userId: string;
-  firstName: string;
-  lastName: string;
-}) {
-  const db = await loadDb();
-  return db.user.update({
+export async function updateUserProfile(
+  deps: ServiceDeps,
+  input: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+  }
+) {
+  return deps.db.user.update({
     where: {
       id: input.userId,
     },
@@ -133,4 +138,27 @@ export async function updateUserProfile(input: {
       lastName: input.lastName,
     },
   });
+}
+
+export interface UserService {
+  getUserById(id: string): ReturnType<typeof getUserById>;
+  getUserAccount(
+    args: Parameters<typeof getUserAccount>[1]
+  ): ReturnType<typeof getUserAccount>;
+  listUserDeletionBlockers(userId: string): Promise<UserDeletionBlocker[]>;
+  deleteUserAccount(userId: string): Promise<void>;
+  updateUserProfile(
+    input: Parameters<typeof updateUserProfile>[1]
+  ): ReturnType<typeof updateUserProfile>;
+}
+
+export function createUserService(deps: ServiceDeps): UserService {
+  return {
+    getUserById: (id) => getUserById(deps, id),
+    getUserAccount: (args) => getUserAccount(deps, args),
+    listUserDeletionBlockers: (userId) =>
+      listUserDeletionBlockers(deps, userId),
+    deleteUserAccount: (userId) => deleteUserAccount(deps, userId),
+    updateUserProfile: (input) => updateUserProfile(deps, input),
+  };
 }

@@ -1,8 +1,10 @@
-// client.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// The subject is built by its factory over a fake `ServiceDeps` (M10-004), so
+// Postgres needs no module mock at all — `deps.db` IS the fake below, same
+// idiom as reference.service.test.ts. `@openpanel/redis` is still stubbed:
+// `getClientByIdCached` calls `cacheable(...)` inside `createClientService`
+// itself now (not at this module's import time), but the binding is
+// resolved at `client.service.ts`'s own import time, so the mock must still
+// land before that import — hence the `await import` in `beforeAll`.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
@@ -135,15 +137,12 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { project, client },
-}));
-
-let subject: typeof import('./client.service');
+let subject: import('./client.service').ClientService;
 beforeAll(async () => {
-  subject = await import('./client.service');
+  const { createClientService } = await import('./client.service');
+  subject = createClientService({
+    db: { project, client },
+  } as unknown as import('../../services').ServiceDeps);
 });
 
 beforeEach(() => {

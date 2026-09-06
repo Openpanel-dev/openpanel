@@ -4,28 +4,23 @@
 // / `getProjectByIdCached` through the same relative path, and
 // apps/api/src/utils/auth.ts reaches them through @openpanel/db's barrel;
 // auth.service.ts's permission ladder (M10-002) reaches `getProjectById`
-// through a lazy dynamic import, same reasoning as this file's own `load*`
-// below — same shape as packages/db/src/services/organization.service.ts
-// since M6-001.
+// through `shared/access-lookups.ts`, which — with no `ServiceDeps` of its
+// own to carry — reaches it through the v1-compat singleton instead
+// (M10-004, see v1-compat.ts's header).
 //
-// The /manage REST CRUD bodies (apps/api/src/controllers/manage.controller.ts's
-// listProjects/getProject/createProject/updateProject/deleteProject) move
-// here too, so V1's controller and core's own project.routes.ts share one
-// implementation (DELEGATE PATTERN).
+// M10-004: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` lazy loader is gone. `getProjectByIdCached` lives
+// INSIDE `createProjectService(deps)` for the same reason
+// `getClientByIdCached` does in client.service.ts — see that file's header.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// rpc.router.ts pull this module into the eager barrel chain nearly every
-// core test file reaches, and constructing @openpanel/db's clients at import
-// time would spawn a pino-pretty transport worker thread per test file).
-//
-// ClickHouse queries here still go through clix/sqlstring, not the `sql`
-// tag: ADR-013 converts the analytics read path one query per P7 task, and
-// this module's queries haven't been converted yet.
+// ClickHouse queries here still build with clix/sqlstring/chQuery, not raw
+// `sql` fragments: ADR-013 converts the analytics read path one query per P7
+// task, and this module's two queries (`getProjectEventsCount`/
+// `getLastEventPerProject`) haven't been converted yet — see `loadChHelpers`'s
+// own comment below. The CLIENT is `deps.ch` either way.
 
 import crypto from 'node:crypto';
 import { stripTrailingSlash } from '@openpanel/common';
-import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import type {
   Prisma,
   Project,
@@ -34,8 +29,37 @@ import type {
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
 import { TRPCBadRequestError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
+import { getId } from '../../shared/slug-id';
 import { hashPassword } from '../auth/auth.service';
-import { getClientByIdCached } from '../client/client.service';
+
+// `getProjectEventsCount` and `getLastEventPerProject` still build their
+// query with clix/sqlstring/`chQuery`, not raw `sql` fragments — converting
+// the query BODIES is ADR-013's P7 task (one query per task, with an
+// old-vs-new result-set diff), not this wave's; `chQuery` also does its own
+// retry/round-robin and Int-meta coercion (ClickHouse's JSON format returns
+// every Int*/UInt* column as a string) that would otherwise have to be
+// reimplemented by hand. The CLIENT is `deps.ch`, same as everywhere else in
+// this file; only the pure helper functions (`clix`, `TABLE_NAMES`,
+// `chQuery`, `convertClickhouseDateToJs`) come from `@openpanel/db`, and —
+// same as `loadClientService` below — that reach is through the v1-compat
+// singleton, not a direct import: services.ts -> project.service.ts (this
+// file) -> v1-compat.ts -> services.ts is a genuine cycle, kept lazy.
+function loadChHelpers() {
+  return import('../../v1-compat').then((m) => m.compatChHelpers());
+}
+
+// GENUINE CYCLE, kept lazy: `createClientForOrganization`/
+// `updateClientForOrganization` invalidate a project's clients' cache
+// entries, and that cache now lives inside `createClientService(deps)` (see
+// that file's header) — reached here through the v1-compat singleton so
+// every caller invalidates the SAME cache instance, the one `ingest`/`http`/
+// `mcp` actually read. services.ts -> project.service.ts (this file) ->
+// v1-compat.ts -> services.ts; the dynamic import is what keeps it a cycle
+// ESM can evaluate.
+function loadClientService() {
+  return import('../../v1-compat');
+}
 
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
@@ -44,21 +68,10 @@ export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
   };
 }>;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
+const DAY_IN_SECONDS = 60 * 60 * 24;
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadIdService() {
-  return import('@openpanel/core').then((m) => m.getId);
-}
-
-export async function getProjectById(id: string) {
-  const db = await loadDb();
-  const res = await db.project.findUnique({
+export async function getProjectById(deps: ServiceDeps, id: string) {
+  const res = await deps.db.project.findUnique({
     where: {
       id,
     },
@@ -71,13 +84,8 @@ export async function getProjectById(id: string) {
   return res;
 }
 
-const DAY_IN_SECONDS = 60 * 60 * 24;
-/** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
-export const getProjectByIdCached = cacheable(getProjectById, DAY_IN_SECONDS);
-
-export async function getProjectWithClients(id: string) {
-  const db = await loadDb();
-  const res = await db.project.findUnique({
+export async function getProjectWithClients(deps: ServiceDeps, id: string) {
+  const res = await deps.db.project.findUnique({
     where: {
       id,
     },
@@ -93,20 +101,22 @@ export async function getProjectWithClients(id: string) {
   return res;
 }
 
-export async function getProjects({
-  organizationId,
-  userId,
-}: {
-  organizationId: string;
-  userId: string | null;
-}) {
+export async function getProjects(
+  deps: ServiceDeps,
+  {
+    organizationId,
+    userId,
+  }: {
+    organizationId: string;
+    userId: string | null;
+  }
+) {
   if (!userId) {
     return [];
   }
 
-  const db = await loadDb();
   const [projects, members, access] = await Promise.all([
-    db.project.findMany({
+    deps.db.project.findMany({
       where: {
         organizationId,
       },
@@ -114,13 +124,13 @@ export async function getProjects({
         eventsCount: 'desc',
       },
     }),
-    db.member.findMany({
+    deps.db.member.findMany({
       where: {
         userId,
         organizationId,
       },
     }),
-    db.projectAccess.findMany({
+    deps.db.projectAccess.findMany({
       where: {
         userId,
         organizationId,
@@ -161,8 +171,11 @@ export async function getProjects({
  * low on a 1.46B-event project) — acceptable for this display/onboarding
  * counter.
  */
-export const getProjectEventsCount = async (projectId: string) => {
-  const { chQuery, TABLE_NAMES } = await loadChClient();
+export const getProjectEventsCount = async (
+  _deps: ServiceDeps,
+  projectId: string
+) => {
+  const { chQuery, TABLE_NAMES } = await loadChHelpers();
   const res = await chQuery<{ count: number }>(
     `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
@@ -176,9 +189,12 @@ export const getProjectEventsCount = async (projectId: string) => {
  * rows instead of the raw events table. Projects with no events are absent
  * from the map.
  */
-export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
-  const { ch, TABLE_NAMES, convertClickhouseDateToJs } = await loadChClient();
-  const res = await clix(ch)
+export const getLastEventPerProject = async (
+  deps: ServiceDeps
+): Promise<Map<string, Date>> => {
+  const { clix, TABLE_NAMES, convertClickhouseDateToJs } =
+    await loadChHelpers();
+  const res = await clix(deps.ch)
     .select<{ project_id: string; last_event_at: string }>([
       'project_id',
       'max(created_at) AS last_event_at',
@@ -206,17 +222,20 @@ export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
  * Throws if the project is not found or does not belong to the organization.
  * Use this as the single source of truth for projectId resolution across the API and MCP.
  */
-export async function resolveClientProjectId({
-  clientType,
-  clientProjectId,
-  organizationId,
-  inputProjectId,
-}: {
-  clientType: 'read' | 'root';
-  clientProjectId: string | null;
-  organizationId: string;
-  inputProjectId: string | undefined;
-}): Promise<string> {
+export async function resolveClientProjectId(
+  deps: ServiceDeps,
+  {
+    clientType,
+    clientProjectId,
+    organizationId,
+    inputProjectId,
+  }: {
+    clientType: 'read' | 'root';
+    clientProjectId: string | null;
+    organizationId: string;
+    inputProjectId: string | undefined;
+  }
+): Promise<string> {
   if (clientType !== 'root') {
     if (!clientProjectId) {
       throw new Error('Client is not associated with a project');
@@ -230,8 +249,7 @@ export async function resolveClientProjectId({
     );
   }
 
-  const db = await loadDb();
-  const project = await db.project.findFirst({
+  const project = await deps.db.project.findFirst({
     where: { id: inputProjectId, organizationId },
     select: { id: true },
   });
@@ -255,10 +273,10 @@ export interface ProjectActivationStatus {
 
 /** Powers the activation checklist on the project overview (trpc project.activationStatus). */
 export async function getProjectActivationStatus(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<ProjectActivationStatus> {
-  const db = await loadDb();
-  const project = await db.project.findUniqueOrThrow({
+  const project = await deps.db.project.findUniqueOrThrow({
     where: { id: projectId },
     select: {
       firstEventAt: true,
@@ -269,8 +287,8 @@ export async function getProjectActivationStatus(
   });
 
   const [reportCount, memberCount] = await Promise.all([
-    db.report.count({ where: { projectId } }),
-    db.member.count({ where: { organizationId: project.organizationId } }),
+    deps.db.report.count({ where: { projectId } }),
+    deps.db.member.count({ where: { organizationId: project.organizationId } }),
   ]);
 
   return {
@@ -284,14 +302,16 @@ export async function getProjectActivationStatus(
   };
 }
 
-export async function listProjectsCore(input: {
-  clientType: 'root' | 'read';
-  organizationId: string;
-  projectId: string | null;
-}) {
-  const db = await loadDb();
+export async function listProjectsCore(
+  deps: ServiceDeps,
+  input: {
+    clientType: 'root' | 'read';
+    organizationId: string;
+    projectId: string | null;
+  }
+) {
   if (input.clientType === 'root') {
-    const projects = await db.project.findMany({
+    const projects = await deps.db.project.findMany({
       where: { organizationId: input.organizationId },
       orderBy: { eventsCount: 'desc' },
       select: {
@@ -307,7 +327,7 @@ export async function listProjectsCore(input: {
   }
 
   const project = input.projectId
-    ? await db.project.findUnique({
+    ? await deps.db.project.findUnique({
         where: { id: input.projectId },
         select: {
           id: true,
@@ -333,9 +353,11 @@ export interface CreatedProjectClient {
   secret: string;
 }
 
-export async function listProjectsForOrganization(organizationId: string) {
-  const db = await loadDb();
-  return db.project.findMany({
+export async function listProjectsForOrganization(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  return deps.db.project.findMany({
     where: {
       organizationId,
       deleteAt: null,
@@ -347,11 +369,11 @@ export async function listProjectsForOrganization(organizationId: string) {
 }
 
 export async function getProjectForOrganization(
+  deps: ServiceDeps,
   id: string,
   organizationId: string
 ) {
-  const db = await loadDb();
-  return db.project.findFirst({
+  return deps.db.project.findFirst({
     where: {
       id,
       organizationId,
@@ -359,179 +381,272 @@ export async function getProjectForOrganization(
   });
 }
 
-export async function createProjectForOrganization(
-  organizationId: string,
-  input: {
-    name: string;
-    domain?: string | null;
-    cors: string[];
-    crossDomain: boolean;
-    types: ProjectType[];
-  }
-): Promise<{ project: IServiceProject; client: CreatedProjectClient | null }> {
-  const db = await loadDb();
-  const getId = await loadIdService();
-
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-  const project = await db.project.create({
-    data: {
-      id: await getId('project', input.name),
-      organizationId,
-      name: input.name,
-      domain: input.domain ? stripTrailingSlash(input.domain) : null,
-      cors: input.cors.map((c) => stripTrailingSlash(c)),
-      crossDomain: input.crossDomain ?? false,
-      allowUnsafeRevenueTracking: false,
-      filters: [],
-      types: input.types,
-      clients: {
-        create: {
-          organizationId,
-          name: 'First client',
-          type: 'write',
-          secret: await hashPassword(secret),
-        },
-      },
-    },
-    include: {
-      clients: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  });
-
-  await Promise.all([
-    getProjectByIdCached.clear(project.id),
-    ...project.clients.map((client) => getClientByIdCached.clear(client.id)),
-  ]);
-
-  return {
-    project,
-    client: project.clients[0] ? { id: project.clients[0].id, secret } : null,
-  };
-}
-
-export async function updateProjectForOrganization(
-  id: string,
-  organizationId: string,
-  input: {
-    name?: string;
-    domain?: string | null;
-    cors?: string[];
-    crossDomain?: boolean;
-    allowUnsafeRevenueTracking?: boolean;
-  }
-): Promise<IServiceProject | null> {
-  const db = await loadDb();
-
-  const existing = await db.project.findFirst({
-    where: { id, organizationId },
-    include: { clients: { select: { id: true } } },
-  });
-
-  if (!existing) {
-    return null;
-  }
-
-  const updateData: Prisma.ProjectUpdateInput = {};
-  if (input.name !== undefined) {
-    updateData.name = input.name;
-  }
-  if (input.domain !== undefined) {
-    updateData.domain = input.domain ? stripTrailingSlash(input.domain) : null;
-  }
-  if (input.cors !== undefined) {
-    updateData.cors = input.cors.map((c) => stripTrailingSlash(c));
-  }
-  if (input.crossDomain !== undefined) {
-    updateData.crossDomain = input.crossDomain;
-  }
-  if (input.allowUnsafeRevenueTracking !== undefined) {
-    updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
-  }
-
-  const project = await db.project.update({
-    where: { id },
-    data: updateData,
-  });
-
-  await Promise.all([
-    getProjectByIdCached.clear(project.id),
-    ...existing.clients.map((client) => getClientByIdCached.clear(client.id)),
-  ]);
-
-  return project;
-}
-
 // Grace period between a scheduled deletion and the `delete` cron sweeping it
 // up — matches V1's `addHours(new Date(), 24)` (trpc) and the manage
 // controller's `Date.now() + 24 * 60 * 60 * 1000` (REST), same duration.
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 
-export async function deleteProjectForOrganization(
-  id: string,
-  organizationId: string
-): Promise<boolean> {
-  const db = await loadDb();
-
-  const project = await db.project.findFirst({
-    where: { id, organizationId },
-  });
-
-  if (!project) {
-    return false;
-  }
-
-  await db.project.update({
-    where: { id },
-    data: {
-      deleteAt: new Date(Date.now() + DELETE_GRACE_PERIOD_MS),
-    },
-  });
-
-  await getProjectByIdCached.clear(id);
-
-  return true;
+export interface ProjectService {
+  getProjectById(id: string): ReturnType<typeof getProjectById>;
+  getProjectByIdCached(id: string): ReturnType<typeof getProjectById>;
+  /** Invalidates a single id in `getProjectByIdCached`'s L1 LRU + Redis —
+   *  `ingest/src/incoming-event-handler.ts` reaches it, through the
+   *  v1-compat singleton, right after marking a project's first event. */
+  clearProjectByIdCache(id: string): Promise<number>;
+  getProjectWithClients(id: string): ReturnType<typeof getProjectWithClients>;
+  getProjects(
+    input: Parameters<typeof getProjects>[1]
+  ): ReturnType<typeof getProjects>;
+  getProjectEventsCount(
+    projectId: string
+  ): ReturnType<typeof getProjectEventsCount>;
+  getLastEventPerProject(): ReturnType<typeof getLastEventPerProject>;
+  resolveClientProjectId(
+    input: Parameters<typeof resolveClientProjectId>[1]
+  ): ReturnType<typeof resolveClientProjectId>;
+  getProjectActivationStatus(
+    projectId: string
+  ): ReturnType<typeof getProjectActivationStatus>;
+  listProjectsCore(
+    input: Parameters<typeof listProjectsCore>[1]
+  ): ReturnType<typeof listProjectsCore>;
+  listProjectsForOrganization(
+    organizationId: string
+  ): ReturnType<typeof listProjectsForOrganization>;
+  getProjectForOrganization(
+    id: string,
+    organizationId: string
+  ): ReturnType<typeof getProjectForOrganization>;
+  createProjectForOrganization(
+    organizationId: string,
+    input: {
+      name: string;
+      domain?: string | null;
+      cors: string[];
+      crossDomain: boolean;
+      types: ProjectType[];
+    }
+  ): Promise<{ project: IServiceProject; client: CreatedProjectClient | null }>;
+  updateProjectForOrganization(
+    id: string,
+    organizationId: string,
+    input: {
+      name?: string;
+      domain?: string | null;
+      cors?: string[];
+      crossDomain?: boolean;
+      allowUnsafeRevenueTracking?: boolean;
+    }
+  ): Promise<IServiceProject | null>;
+  deleteProjectForOrganization(
+    id: string,
+    organizationId: string
+  ): Promise<boolean>;
+  scheduleProjectDeletion(id: string): Promise<void>;
+  cancelProjectDeletion(id: string): Promise<void>;
 }
 
-// --- trpc project.delete / project.cancelDeletion ---
-// Caller has already been proven a project (or organization) admin by
-// requireProjectAdmin, so unlike the /manage functions above these take no
-// organizationId and do no ownership re-check.
+export function createProjectService(deps: ServiceDeps): ProjectService {
+  /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
+  const getProjectByIdCached = cacheable(
+    (id: string) => getProjectById(deps, id),
+    DAY_IN_SECONDS
+  );
 
-export async function scheduleProjectDeletion(id: string): Promise<void> {
-  const db = await loadDb();
-  await db.project.update({
-    where: { id },
-    data: { deleteAt: new Date(Date.now() + DELETE_GRACE_PERIOD_MS) },
-  });
-}
-
-export async function cancelProjectDeletion(id: string): Promise<void> {
-  const db = await loadDb();
-
-  const project = await db.project.findUnique({
-    where: { id },
-    select: {
-      organization: {
-        select: { deleteAt: true },
+  async function createProjectForOrganization(
+    organizationId: string,
+    input: {
+      name: string;
+      domain?: string | null;
+      cors: string[];
+      crossDomain: boolean;
+      types: ProjectType[];
+    }
+  ): Promise<{
+    project: IServiceProject;
+    client: CreatedProjectClient | null;
+  }> {
+    const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    const project = await deps.db.project.create({
+      data: {
+        id: await getId('project', input.name),
+        organizationId,
+        name: input.name,
+        domain: input.domain ? stripTrailingSlash(input.domain) : null,
+        cors: input.cors.map((c) => stripTrailingSlash(c)),
+        crossDomain: input.crossDomain ?? false,
+        allowUnsafeRevenueTracking: false,
+        filters: [],
+        types: input.types,
+        clients: {
+          create: {
+            organizationId,
+            name: 'First client',
+            type: 'write',
+            secret: await hashPassword(secret),
+          },
+        },
       },
-    },
-  });
+      include: {
+        clients: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
 
-  // If the whole organization is scheduled for deletion, this project's
-  // deletion is part of it and can only be cancelled at the organization
-  // level. Cancelling it here would leave the organization unable to delete.
-  if (project?.organization?.deleteAt) {
-    throw new TRPCBadRequestError(
-      'This organization is scheduled for deletion. Cancel the deletion from the organization settings.'
-    );
+    const clientService = await loadClientService();
+    await Promise.all([
+      getProjectByIdCached.clear(project.id),
+      ...project.clients.map((client) =>
+        clientService.clearClientByIdCache(client.id)
+      ),
+    ]);
+
+    return {
+      project,
+      client: project.clients[0] ? { id: project.clients[0].id, secret } : null,
+    };
   }
 
-  await db.project.update({
-    where: { id },
-    data: { deleteAt: null },
-  });
+  async function updateProjectForOrganization(
+    id: string,
+    organizationId: string,
+    input: {
+      name?: string;
+      domain?: string | null;
+      cors?: string[];
+      crossDomain?: boolean;
+      allowUnsafeRevenueTracking?: boolean;
+    }
+  ): Promise<IServiceProject | null> {
+    const existing = await deps.db.project.findFirst({
+      where: { id, organizationId },
+      include: { clients: { select: { id: true } } },
+    });
+
+    if (!existing) {
+      return null;
+    }
+
+    const updateData: Prisma.ProjectUpdateInput = {};
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+    if (input.domain !== undefined) {
+      updateData.domain = input.domain
+        ? stripTrailingSlash(input.domain)
+        : null;
+    }
+    if (input.cors !== undefined) {
+      updateData.cors = input.cors.map((c) => stripTrailingSlash(c));
+    }
+    if (input.crossDomain !== undefined) {
+      updateData.crossDomain = input.crossDomain;
+    }
+    if (input.allowUnsafeRevenueTracking !== undefined) {
+      updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
+    }
+
+    const project = await deps.db.project.update({
+      where: { id },
+      data: updateData,
+    });
+
+    const clientService = await loadClientService();
+    await Promise.all([
+      getProjectByIdCached.clear(project.id),
+      ...existing.clients.map((client) =>
+        clientService.clearClientByIdCache(client.id)
+      ),
+    ]);
+
+    return project;
+  }
+
+  async function deleteProjectForOrganization(
+    id: string,
+    organizationId: string
+  ): Promise<boolean> {
+    const project = await deps.db.project.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!project) {
+      return false;
+    }
+
+    await deps.db.project.update({
+      where: { id },
+      data: {
+        deleteAt: new Date(Date.now() + DELETE_GRACE_PERIOD_MS),
+      },
+    });
+
+    await getProjectByIdCached.clear(id);
+
+    return true;
+  }
+
+  // --- trpc project.delete / project.cancelDeletion ---
+  // Caller has already been proven a project (or organization) admin by
+  // requireProjectAdmin, so unlike the /manage functions above these take no
+  // organizationId and do no ownership re-check.
+
+  async function scheduleProjectDeletion(id: string): Promise<void> {
+    await deps.db.project.update({
+      where: { id },
+      data: { deleteAt: new Date(Date.now() + DELETE_GRACE_PERIOD_MS) },
+    });
+  }
+
+  async function cancelProjectDeletion(id: string): Promise<void> {
+    const project = await deps.db.project.findUnique({
+      where: { id },
+      select: {
+        organization: {
+          select: { deleteAt: true },
+        },
+      },
+    });
+
+    // If the whole organization is scheduled for deletion, this project's
+    // deletion is part of it and can only be cancelled at the organization
+    // level. Cancelling it here would leave the organization unable to delete.
+    if (project?.organization?.deleteAt) {
+      throw new TRPCBadRequestError(
+        'This organization is scheduled for deletion. Cancel the deletion from the organization settings.'
+      );
+    }
+
+    await deps.db.project.update({
+      where: { id },
+      data: { deleteAt: null },
+    });
+  }
+
+  return {
+    getProjectById: (id) => getProjectById(deps, id),
+    getProjectByIdCached: (id) => getProjectByIdCached(id),
+    clearProjectByIdCache: (id) => getProjectByIdCached.clear(id),
+    getProjectWithClients: (id) => getProjectWithClients(deps, id),
+    getProjects: (input) => getProjects(deps, input),
+    getProjectEventsCount: (projectId) =>
+      getProjectEventsCount(deps, projectId),
+    getLastEventPerProject: () => getLastEventPerProject(deps),
+    resolveClientProjectId: (input) => resolveClientProjectId(deps, input),
+    getProjectActivationStatus: (projectId) =>
+      getProjectActivationStatus(deps, projectId),
+    listProjectsCore: (input) => listProjectsCore(deps, input),
+    listProjectsForOrganization: (organizationId) =>
+      listProjectsForOrganization(deps, organizationId),
+    getProjectForOrganization: (id, organizationId) =>
+      getProjectForOrganization(deps, id, organizationId),
+    createProjectForOrganization,
+    updateProjectForOrganization,
+    deleteProjectForOrganization,
+    scheduleProjectDeletion,
+    cancelProjectDeletion,
+  };
 }

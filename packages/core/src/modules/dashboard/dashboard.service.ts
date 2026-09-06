@@ -95,7 +95,7 @@ export async function createDashboard(
     projectId: string;
   }
 ): Promise<Dashboard> {
-  const project = await getProjectById(input.projectId);
+  const project = await getProjectById(deps, input.projectId);
 
   if (!project) {
     throw new TRPCNotFoundError('Project not found');
