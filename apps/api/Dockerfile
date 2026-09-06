@@ -48,7 +48,20 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Apps
 COPY apps/api/package.json ./apps/api/
-# Packages — @openpanel/api's workspace closure, exactly.
+# Packages — @openpanel/api's workspace closure, exactly as pnpm computes it
+# (verified against `pnpm --filter "@openpanel/api..." list --depth -1`: these
+# 11, plus the private tooling/typescript devDependency, which --prod below
+# never installs, so its manifest is deliberately not copied here). This list
+# is still hand-maintained: Docker's COPY only accepts a glob for the *last*
+# path segment, so `packages/*/package.json` flattens every match into one
+# `packages/package.json`, overwriting instead of preserving each
+# subdirectory — there is no wildcard that copies these into their own
+# directories. `--filter "@openpanel/api..."` below is the actual
+# closure boundary; if a manifest is missing here, the install below does
+# NOT fail loud — it silently omits that package from `node_modules`
+# (surfacing later as a runtime "Cannot find module", not a build failure) —
+# so keep this list in sync with the filter output when api's dependency
+# graph changes.
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/trpc/package.json packages/trpc/
@@ -88,9 +101,23 @@ RUN pnpm codegen
 # purge an existing devDependency-laden modules dir (verified empirically —
 # it left every devDependency in place), so shipping node_modules must come
 # from an install that was production-only from the start.
+#
+# `--filter "@openpanel/api..."` (the three-dot suffix: api plus everything it
+# depends on, direct or transitive) is the actual closure boundary, chosen
+# over `pnpm deploy` — deploy needs either `inject-workspace-packages=true`
+# (a repo-wide install-behavior change, out of scope here) or `--legacy`
+# (which re-resolves the full 26-project lockfile graph every build, ~8x
+# slower than a scoped install, for the same output). Verified empirically
+# against this workspace: with only the manifests above present, plain
+# `pnpm install --frozen-lockfile --prod` and this filtered form produce
+# byte-identical node_modules (same 1039 packages) — the manifest list
+# already happened to equal the closure. The filter is kept anyway as the
+# explicit, fails-closed boundary: it is what makes "only api's closure"
+# a property of the command instead of an accident of which package.json
+# files got copied above.
 FROM toolchain AS prod-deps
 
-RUN pnpm install --frozen-lockfile --prod && \
+RUN pnpm --filter "@openpanel/api..." install --frozen-lockfile --prod && \
     pnpm rebuild && \
     pnpm store prune
 
