@@ -109,7 +109,8 @@ export interface SessionEndDeps extends SessionRuntime {
   notifications: {
     getRules(projectId: string): Promise<INotificationRuleCached[]>;
     hasFunnelRules(rules: INotificationRuleCached[]): boolean;
-    /** Lives in @openpanel/queue — it enqueues through the notification queue. */
+    /** notification/src/notification-dispatch.ts — it enqueues through the
+     *  notification queue. */
     checkFunnelRules(events: IServiceEvent[]): Promise<unknown>;
   };
 }

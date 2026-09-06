@@ -30,7 +30,6 @@ function stubDeps(): AppDeps {
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
-    produceIncomingEvent: () => Promise.resolve(),
     logger: stubLogger(),
     config: { selfHosted: true },
   };

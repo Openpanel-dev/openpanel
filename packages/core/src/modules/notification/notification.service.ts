@@ -3,16 +3,12 @@
 // moves here too, from apps/worker/src/jobs/notification.ts (DELEGATE
 // PATTERN: that file becomes a thin wrapper calling `deliverNotification`).
 //
-// What does NOT move: `createNotification` / `triggerNotification` /
-// `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
-// the BullMQ-producer orchestration around a rule match. `@openpanel/queue`
-// imports `@openpanel/core` for its logger (packages/queue/src/queues.ts), so
-// core cannot import `@openpanel/queue` back without a real package cycle —
-// same constraint gsc.service.ts and cohort.service.ts document for their own
-// enqueue wrappers. Those four functions stay in
-// packages/db/src/services/notification.service.ts, now built on the rule
-// matching, templates, cache and constants exported below instead of holding
-// their own copies.
+// `createNotification` / `triggerNotification` / `checkNotificationRulesForEvent`
+// / `checkNotificationRulesForSessionEnd` — the BullMQ-producer orchestration
+// around a rule match — live in this module's own `src/notification-dispatch.ts`
+// since M11-003, built on the rule matching, templates, cache and constants
+// exported below. They are a separate file only so the enqueue side is not
+// dragged into every import of this one.
 //
 // db/ch access is LAZY (`load*` below), not a static top-level import — see
 // insight.service.ts's header for the full reasoning (jobs.registry.ts and

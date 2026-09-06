@@ -992,3 +992,119 @@ existed to leak.
   implement one.
 - `verification/harness stop`, then `verification/full.sh` — green, with the
   documented pre-P11 `contracts/sdk/dist-gate.sh` exception.
+
+### 2026-09-06 — M11-003, `packages/queue`'s Kafka transport and notification dispatch move into core; `queues.ts` / `buffers.ts` do NOT (out of scope)
+
+Ran by: ralph (M11-003 implement task).
+
+**Survey, before the move** — every import of `@openpanel/queue` outside
+`packages/queue` (`grep -rnE "from '@openpanel/queue" --include=*.ts`):
+
+| File | Symbols |
+|---|---|
+| `apps/api/src/main.ts` | `assertKafkaConfigured`, `createKafkaEventsConsumer`, `KAFKA_EVENTS_TOPIC`, `KAFKA_HANDLER_MAX_ATTEMPTS`, `KAFKA_HANDLER_RETRY_INITIAL_MS`, `KAFKA_HANDLER_RETRY_MAX_MS`, `KAFKA_PARTITIONS_CONCURRENT`, `kafkaLogger`, `produceDeadLetterEvent`, `produceIncomingEvent` (10, from the barrel) + `checkNotificationRulesForEvent` (deep, `@openpanel/queue/src/notification-dispatch`) |
+| `apps/api/e2e/lag-monitor.ts` | `createKafkaAdmin`, `disconnectKafka`, `KAFKA_BROKERS`, `KAFKA_CONSUMER_GROUP`, `KAFKA_EVENTS_TOPIC`, `sampleConsumerGroupLag` |
+| `apps/api/e2e/legacy-job-proof.ts` | `produceIncomingEvent` |
+| `packages/core/src/modules/session/session.jobs.ts` | `checkNotificationRulesForSessionEnd` (lazy `import('@openpanel/queue/src/notification-dispatch')`) |
+| `packages/core/src/buffers/lazy-db-buffers.ts` | the buffer singletons (lazy `import('@openpanel/queue/src/buffers')`), reached only by `modules/widget/widget.rpc.ts` |
+| `packages/db/scripts/check-sessions.ts` | `sessionsQueue` |
+| `packages/db/scripts/drain-old-session-jobs.ts` | `sessionsQueue` |
+| `packages/db/scripts/migrate-sessions.ts` | `sessionsQueue`, `EventsQueuePayloadCreateSessionEnd` |
+| `packages/trpc/src/routers/cohort.ts` | `cohortComputeQueue` |
+| `packages/trpc/src/routers/gsc.ts` | `gscQueue` |
+| `packages/trpc/src/routers/import.ts` | `importQueue` |
+| `packages/trpc/src/routers/overview.ts` | `eventBuffer` (deep, `@openpanel/queue/src/buffers`) |
+| `packages/trpc/src/routers/widget.ts` | `eventBuffer` (deep, `@openpanel/queue/src/buffers`) |
+
+**What moved.** `src/kafka.ts` → `packages/core/src/modules/ingest/src/kafka.ts`
+and `src/notification-dispatch.ts` →
+`packages/core/src/modules/notification/src/notification-dispatch.ts`. Both are
+the same file: `diff` against `HEAD` shows only repointed imports, plus two
+edits with reasons —
+
+- `DeadLetterMessage` was declared twice (once in `kafka.ts`, once in
+  `consumer.ts`, structurally identical by design); now that they are siblings
+  `kafka.ts` imports the consumer's.
+- `produceIncomingEvent`'s parameter changed from
+  `EventsQueuePayloadIncomingEvent['payload']` to core's own
+  `IncomingEventPayload`. The wire format is unchanged: a temporary
+  `[A] extends [B] ? [B] extends [A]` assertion compiled clean in both
+  directions against `@openpanel/queue`'s type.
+- `triggerNotification` enqueues through core's registry
+  (`queues.notification.sendNotification`) rather than a second
+  `new Queue('notification')` — same Redis key, same job name, same
+  `{payload, meta}` envelope (`golden/queue-keys/check.sh` still matches the
+  V1 goldens), and it became `async` because the registry producer is.
+
+Every Kafka constant is byte-identical after the move — topic
+(`process.env.KAFKA_EVENTS_TOPIC || 'events'`), DLQ
+(`|| \`${KAFKA_EVENTS_TOPIC}-dlq\``), group
+(`|| 'openpanel-events'`), and the 15 `Number.parseInt` bounds — verified by
+`diff -u` of the two files' bodies.
+
+**The `AppDeps.produceIncomingEvent` injection is retired.** It existed only
+because `@openpanel/queue` imports `@openpanel/core` for its logger, so core
+could not import the producer back (`context.ts`'s own comment). With
+`kafka.ts` in core, `ingest.routes.ts` imports the sibling directly. The
+producer stays an *argument* to `ingest.service.ts` — that seam is now about
+letting a test assert what was produced without a broker, not about a package
+cycle, and `ingest.service.test.ts` / `legacy-event.test.ts` still use it.
+
+**`buffers/lazy-db-buffers.ts` is deleted**; its one core caller
+(`widget.rpc.ts`'s `loadEventBuffer`) reads `ctx.buffers.event`.
+
+**The three orphan `packages/db/scripts` are deleted** — `check-sessions.ts`,
+`drain-old-session-jobs.ts`, `migrate-sessions.ts`, all V1 session-migration
+tooling. `grep -rn 'check-sessions\|drain-old-session-jobs\|migrate-sessions'`
+over `*.json`/`*.ts`/`*.md`/`*.sh` returns nothing outside the files
+themselves; `packages/db/package.json`'s only `scripts/*` entry is
+`duplicate-events` → `find-duplicate-events.ts`, untouched.
+
+**NOT done, and why — `packages/queue/src/queues.ts` and `src/buffers.ts` stay.**
+The task asked for both to be deleted. They cannot be, inside this task's
+declared scope (`packages/core/**`, `packages/queue/**`,
+`packages/db/scripts/**`, `apps/api/**`, `docs/**`): five
+`packages/trpc/src/routers/*` files import them (the last five rows of the
+survey above), and `packages/trpc/**` is not in scope. Deleting the two files
+without touching those routers fails `pnpm run typecheck`; touching them is
+the out-of-scope edit. **This needs either a scope extension to
+`packages/trpc/src/routers/{cohort,gsc,import,overview,widget}.ts` or a
+follow-up task**, and it is not a mechanical repoint — the three queue call
+sites become `ctx.services.cohort.enqueueCompute` / `ctx.queues.gsc...` /
+`ctx.services.import.enqueue`, which changes `import.ts`'s `jobId` handling
+and `cohort.ts`'s procedure signatures. `packages/queue/index.ts` no longer
+re-exports `./src/kafka`; what remains behind the barrel is exactly what trpc
+still consumes.
+
+Also still declared, unused: `@openpanel/queue` in `apps/api/package.json`,
+`packages/core/package.json` and `packages/db/package.json` — no file in any
+of the three imports it any more. Removing the manifest entries belongs with
+M11-004's deletion of the package.
+
+**Verification, all run by ralph on 2026-09-06:**
+
+- `pnpm run typecheck` — all 25 workspaces, `Done`.
+- `pnpm test` — 13 files, **205 passed**.
+- `cd packages/core && bun test` (bare) — **1466 pass, 12 skip, 0 fail**,
+  `Ran 1478 tests across 151 files. [12.59s]`, `real 0m12.652s`, and it
+  EXITS: moving `kafka.ts` into core constructs no Kafka client at import
+  time (`getKafka()` is lazy; only `assertKafkaConfigured` reads
+  `KAFKA_BROKERS`, and nothing calls it at module scope).
+- `pnpm run check:deps` — `no dependency violations found (2321 modules,
+  10072 dependencies cruised)`, both rules still at `error`.
+- `bash apps/api/e2e/boot-proof.sh` — all checks passed, all three ROLEs.
+- `verification/golden/queue-keys/check.sh` — `OK - 7x2 queue keys and 20
+  scheduler ids derived from the V2 registry match the V1 goldens`.
+- `verification/harness start` → `cd apps/api && pnpm run e2e:sessions`:
+  **29/29 checks passed** (Kafka produce → consume is the path under test) →
+  `pnpm run e2e:legacy-jobs`: **all checks passed** → `harness stop`.
+- `verification/full.sh` — `FULL: green`.
+
+One incidental find, recorded not fixed: `usage.ts`'s static
+`import { getOrganizationBillingEventsCount } from '../../../v1-compat'` had
+to become part of the existing lazy `loadProjectService()` call. `jobs.registry.ts`
+reaches this file (`session.jobs.ts` → `session-end` → `usage`), and that one
+static edge pulls `services.ts` and all 36 services into the registry's import
+graph, which builds a ClickHouse client at import time — `queue-keys/check.sh`
+fails outright without the change (confirmed by reverting the file alone and
+re-running it).

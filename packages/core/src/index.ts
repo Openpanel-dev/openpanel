@@ -533,15 +533,6 @@ export {
   extractToken,
   handleStatelessMcpRequest,
 } from './modules/mcp/mcp.service';
-// Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
-// "rules + dispatch stay together") — packages/trpc's notification router
-// and apps/worker's notification job call these directly, the same way V1
-// reaches every other dissolved service here. `createNotification` /
-// `triggerNotification` / `checkNotificationRulesForEvent` /
-// `checkNotificationRulesForSessionEnd` — the BullMQ-producer orchestration
-// around a rule match — moved to `@openpanel/queue/src/notification-dispatch.ts`
-// (M9-CLEANUP-001, packages/db's final-surface shrink), not here: core still
-// cannot import `@openpanel/queue` back without a real package cycle.
 export type {
   INotificationPayload,
   INotificationRuleCached,
@@ -561,6 +552,14 @@ export {
   notificationTemplateEvent,
   notificationTemplateFunnel,
 } from './modules/notification/notification.service';
+// Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
+// "rules + dispatch stay together"). `createNotification` /
+// `triggerNotification` / `checkNotificationRulesForEvent` /
+// `checkNotificationRulesForSessionEnd` — the BullMQ-producer orchestration
+// around a rule match — came home from @openpanel/queue at M11-003 and now
+// live in this module's own src/notification-dispatch.ts. Only the one the
+// Kafka message handler is bound to at boot needs to leave the package.
+export { checkNotificationRulesForEvent } from './modules/notification/src/notification-dispatch';
 // New module (M6-003) — the onboarding-project mutation and the onboarding
 // email drip, neither of which had a packages/db/src/services/* home to move
 // from. packages/trpc's onboarding router and apps/worker's onboarding cron
@@ -882,10 +881,10 @@ export {
   summarizeBotSignals,
   validateIngestRequest,
 } from './modules/ingest/ingest.service';
-// The Kafka consumer and its per-message handler (M8-003). apps/worker's
-// events.kafka-consumer.ts / events.incoming-event.ts are thin delegates that
-// hand in the kafkajs client, the topic/group names and their own registry's
-// counters — none of which this package spells, so they stay byte-identical.
+// The Kafka consumer and its per-message handler (M8-003), which take the
+// kafkajs client, the topic/group names and the retry bounds as arguments —
+// the injection seam that used to cross a package boundary and now just
+// crosses two files.
 export type {
   ConsumerLogger,
   ConsumerMetrics,
@@ -921,6 +920,45 @@ export {
   incomingEvent,
 } from './modules/ingest/src/incoming-event-handler';
 export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
+// The Kafka transport itself (M11-003): producer, consumer factory, admin/lag
+// sampling and every topic/group/retry constant, moved from
+// @openpanel/queue's kafka.ts unchanged. It constructs no client at import
+// time, so the barrel stays offline-importable.
+export type {
+  Admin,
+  ConsumerGroupLag,
+  EachBatchPayload,
+  KafkaMessage,
+  PartitionLag,
+} from './modules/ingest/src/kafka';
+export {
+  assertKafkaConfigured,
+  createKafkaAdmin,
+  createKafkaEventsConsumer,
+  disconnectKafka,
+  KAFKA_BROKERS,
+  KAFKA_CONNECTION_TIMEOUT_MS,
+  KAFKA_CONSUMER_GROUP,
+  KAFKA_EVENTS_DLQ_TOPIC,
+  KAFKA_EVENTS_TOPIC,
+  KAFKA_HANDLER_MAX_ATTEMPTS,
+  KAFKA_HANDLER_RETRY_INITIAL_MS,
+  KAFKA_HANDLER_RETRY_MAX_MS,
+  KAFKA_HEARTBEAT_INTERVAL_MS,
+  KAFKA_MAX_MESSAGES_PER_PARTITION,
+  KAFKA_MAX_WAIT_MS,
+  KAFKA_MIN_MESSAGES,
+  KAFKA_PARTITIONS_CONCURRENT,
+  KAFKA_PRODUCER_INITIAL_RETRY_MS,
+  KAFKA_PRODUCER_MAX_RETRY_MS,
+  KAFKA_PRODUCER_RETRIES,
+  KAFKA_REQUEST_TIMEOUT_MS,
+  KAFKA_SESSION_TIMEOUT_MS,
+  kafkaLogger,
+  produceDeadLetterEvent,
+  produceIncomingEvent,
+  sampleConsumerGroupLag,
+} from './modules/ingest/src/kafka';
 export type {
   DailyInsightCandidate,
   GetReferrerSpikesInput,

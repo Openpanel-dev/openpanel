@@ -34,16 +34,19 @@ import { createHmac } from 'node:crypto';
 import {
   type AppDeps,
   appRouter,
+  assertKafkaConfigured,
   BULL_BOARD_BASE_PATH,
   type BufferDeps,
   bullBoardRoutes,
   COOKIE_OPTIONS,
+  checkNotificationRulesForEvent,
   clearProjectByIdCache,
   corsDelegator,
   createBuffers,
   createClients,
   createIncomingEventHandler,
   createInitialSalts,
+  createKafkaEventsConsumer,
   createProducers,
   createTrpcFetchHandler,
   dashboardRoutes,
@@ -53,9 +56,16 @@ import {
   getProjectByIdCached,
   type HttpCtx,
   ingestConsumerMetrics,
+  KAFKA_EVENTS_TOPIC,
+  KAFKA_HANDLER_MAX_ATTEMPTS,
+  KAFKA_HANDLER_RETRY_INITIAL_MS,
+  KAFKA_HANDLER_RETRY_MAX_MS,
+  KAFKA_PARTITIONS_CONCURRENT,
   type KafkaConsumerHandle,
+  kafkaLogger,
   markEventsActivity,
   opsRoutes,
+  produceDeadLetterEvent,
   publicApiRoutes,
   type QueueDefinition,
   type QueueProducerHandle,
@@ -79,19 +89,6 @@ import {
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
 import { db } from '@openpanel/db/src/prisma-client';
-import {
-  assertKafkaConfigured,
-  createKafkaEventsConsumer,
-  KAFKA_EVENTS_TOPIC,
-  KAFKA_HANDLER_MAX_ATTEMPTS,
-  KAFKA_HANDLER_RETRY_INITIAL_MS,
-  KAFKA_HANDLER_RETRY_MAX_MS,
-  KAFKA_PARTITIONS_CONCURRENT,
-  kafkaLogger,
-  produceDeadLetterEvent,
-  produceIncomingEvent,
-} from '@openpanel/queue';
-import { checkNotificationRulesForEvent } from '@openpanel/queue/src/notification-dispatch';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
@@ -206,9 +203,6 @@ function buildDeps(): AppDeps {
     clients: createClients(),
     buffers: createBuffers(bufferDeps(producers)),
     producers,
-    // @openpanel/queue's Kafka producer, injected because core cannot import
-    // it back (M8-002). It dies with that package at M9-003.
-    produceIncomingEvent,
     logger,
     config: { selfHosted: config.SELF_HOSTED },
   };
@@ -277,9 +271,9 @@ function bootServiceDeps(
 
 /**
  * The Kafka events consumer. The kafkajs client, the topic, the consumer
- * group, the DLQ producer and the retry bounds all come from
- * `@openpanel/queue`, which is what keeps those names byte-identical across
- * the cutover — core never spells one (see modules/ingest/src/consumer.ts).
+ * group, the DLQ producer and the retry bounds all come from core's own
+ * `modules/ingest/src/kafka.ts` (M11-003) — still passed in as arguments, so
+ * `consumer.ts` spells none of those names itself.
  */
 async function startIngestConsumer(
   deps: AppDeps
@@ -296,9 +290,9 @@ async function startIngestConsumer(
     batch: {
       // One Ctx per message, scoped to the requestId the producer stamped
       // into the envelope (M10-006). The two bindings a work scope cannot
-      // supply are resolved here, once: the notification dispatch lives in
-      // @openpanel/queue (core cannot import it back) and the project cache
-      // is the boot-registered singleton ingest/http/mcp share.
+      // supply are resolved here, once: the notification dispatch has no Ctx
+      // slot in its signature, and the project cache is the boot-registered
+      // singleton ingest/http/mcp share.
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
         getCachedProject: getProjectByIdCached,

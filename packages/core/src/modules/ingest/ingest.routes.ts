@@ -43,6 +43,10 @@ import {
 } from './ingest.service';
 import { toIngestHeaders } from './src/headers';
 import { recordLegacyEventRequest } from './src/ingest.metrics';
+// The Kafka producer is a sibling now (M11-003), not an `AppDeps` field:
+// kafka.ts moved into this module, so there is nothing left for main.ts to
+// inject. It still constructs no client at import time.
+import { produceIncomingEvent } from './src/kafka';
 
 const TAGS = ['Track'];
 const LEGACY_EVENT_TAGS = ['Event'];
@@ -174,7 +178,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent: deps.produceIncomingEvent,
+                produceIncomingEvent,
                 deps: ctx,
               }
             );
@@ -244,7 +248,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent: deps.produceIncomingEvent,
+                produceIncomingEvent,
                 deps: ctx,
               }
             );

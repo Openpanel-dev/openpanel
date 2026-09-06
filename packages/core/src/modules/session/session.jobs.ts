@@ -65,11 +65,10 @@ const sessionEndPayload = z.custom<SessionEndJobData>(
 /**
  * The session-end job's dependencies, bound to the run's own ctx.
  *
- * Two lookups stay dynamic. `checkNotificationRulesForSessionEnd` lives in
- * `@openpanel/queue`, which imports `@openpanel/core` back — a real package
- * cycle (notification.service.ts's header). The rule cache is reached the same
- * way only to keep notification.service.ts out of jobs.registry.ts's eager
- * import graph, which every core test file walks.
+ * Two lookups stay dynamic, both for the same reason now that
+ * notification-dispatch.ts has moved into core (M11-003): keeping
+ * notification.service.ts — and the dispatch module built on it — out of
+ * jobs.registry.ts's eager import graph, which every core test file walks.
  */
 async function sessionEndDeps(
   ctx: Ctx,
@@ -78,7 +77,7 @@ async function sessionEndDeps(
   const [notifications, { checkNotificationRulesForSessionEnd }] =
     await Promise.all([
       import('../notification/notification.service'),
-      import('@openpanel/queue/src/notification-dispatch'),
+      import('../notification/src/notification-dispatch'),
     ]);
 
   return {

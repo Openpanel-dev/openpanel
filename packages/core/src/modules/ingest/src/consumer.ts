@@ -4,10 +4,9 @@
 // bounded in-consumer retry, and a dead-letter topic on exhaustion.
 //
 // The kafkajs client, the topic/consumer-group names, the DLQ producer and
-// the retry bounds are all INJECTED. They still live in @openpanel/queue,
-// which imports @openpanel/core for its logger, so core cannot import it back
-// without a package cycle (see ingest.service.ts's header). Injection is also
-// what keeps those names byte-identical: this file never spells one.
+// the retry bounds are all INJECTED, and stay so now that they live one
+// directory away in ./kafka.ts (M11-003): injection is what keeps those names
+// byte-identical, because this file never spells one.
 
 import type {
   Consumer,
@@ -32,10 +31,10 @@ const RETRY_BACKOFF_FACTOR = 2;
 export type DeadLetterReason = 'parse_error' | 'handler_error';
 
 /**
- * What the consumer hands to the dead-letter producer. Structurally identical
- * to @openpanel/queue's `DeadLetterMessage`: the value stays the producer's
- * original bytes, so a DLQ message can be replayed onto the events topic
- * unchanged.
+ * What the consumer hands to the dead-letter producer (./kafka.ts's
+ * `produceDeadLetterEvent` is the one implementation): the value stays the
+ * producer's original bytes, so a DLQ message can be replayed onto the events
+ * topic unchanged.
  */
 export interface DeadLetterMessage {
   key: Buffer | null;

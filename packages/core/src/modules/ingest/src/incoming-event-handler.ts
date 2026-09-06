@@ -101,9 +101,9 @@ export interface IncomingEventDeps {
  */
 export interface IncomingEventBindings {
   /**
-   * BullMQ-producer orchestration, which lives in `@openpanel/queue` —
-   * a package that imports `@openpanel/core` back, so core cannot reach it
-   * (notification.service.ts's header).
+   * BullMQ-producer orchestration (notification/src/notification-dispatch.ts).
+   * Injected rather than imported so the hot path's per-message handler keeps
+   * the notification module out of its own import graph.
    */
   checkNotificationRulesForEvent(
     payload: IServiceCreateEventPayload

@@ -8,7 +8,6 @@ import type { Buffers } from './buffers/create-buffers';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
-import type { IncomingEventProducer } from './modules/ingest/src/incoming-event';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
@@ -53,14 +52,6 @@ export interface AppDeps {
   clients: ServiceClients;
   buffers: Buffers;
   producers: QueueProducerHandle;
-  /**
-   * The events transport. `produceIncomingEvent` still lives in
-   * @openpanel/queue, which imports core for its logger, so core cannot
-   * import it back (M8-002); main.ts supplies it. It stays injected until
-   * @openpanel/queue dies at P9 — M8-003 moved the consumer, not the
-   * producer, and the consumer takes its kafkajs client the same way.
-   */
-  produceIncomingEvent: IncomingEventProducer;
   logger: Logger;
   config: RuntimeFlags;
 }

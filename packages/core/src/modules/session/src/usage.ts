@@ -8,13 +8,19 @@ import { cacheable } from '@openpanel/redis';
 import { sendEmail } from '../../../clients/email';
 import { createLogger, type ILogger } from '../../../clients/logger';
 import type { Logger } from '../../../logger';
-import { getOrganizationBillingEventsCount } from '../../../v1-compat';
 
 // project.service.ts's `getProjectEventsCount` takes `ServiceDeps` now
 // (M10-004); this file has none (its own db access is the lazy `loadDb()`
 // below), so it reaches the bare, v1-compat-wrapped spelling instead.
 // GENUINE CYCLE, kept lazy: services.ts -> session.service.ts -> this file
 // -> v1-compat.ts -> services.ts.
+//
+// EVERY v1-compat symbol this file uses goes through here, never a static
+// import: jobs.registry.ts reaches this file (session.jobs.ts -> session-end
+// -> usage), and one static edge to v1-compat pulls services.ts and all 36
+// services into the registry's import graph — which builds a ClickHouse
+// client at import time and breaks the offline contract
+// verification/golden/queue-keys/check.sh depends on.
 function loadProjectService() {
   return import('../../../v1-compat');
 }
@@ -84,9 +90,10 @@ export const updateEventsCount = cacheable(async function updateEventsCount(
     return;
   }
 
+  const { getOrganizationBillingEventsCount, getProjectEventsCount } =
+    await loadProjectService();
   const organizationEventsCount =
     await getOrganizationBillingEventsCount(organization);
-  const { getProjectEventsCount } = await loadProjectService();
   const projectEventsCount = await getProjectEventsCount(projectId);
 
   if (projectEventsCount) {

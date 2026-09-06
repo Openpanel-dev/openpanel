@@ -1,8 +1,9 @@
 /**
  * Kafka consumer-group lag sampling for the stress harness — the backpressure
  * story a throughput number alone hides. Wraps the admin-API primitives in
- * `@openpanel/queue`; a fast API can outrun its consumer for a while without
- * a single failed request, and this is the only place that would show it.
+ * `@openpanel/core`'s ingest module; a fast API can outrun its consumer for a
+ * while without a single failed request, and this is the only place that would
+ * show it.
  */
 
 import {
@@ -12,7 +13,7 @@ import {
   KAFKA_CONSUMER_GROUP,
   KAFKA_EVENTS_TOPIC,
   sampleConsumerGroupLag,
-} from '@openpanel/queue';
+} from '@openpanel/core';
 
 export interface LagSummary {
   sampleCount: number;

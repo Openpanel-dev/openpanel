@@ -25,7 +25,6 @@
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
-import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { Ctx } from '../../context';
 import {
   createTRPCRouter,
@@ -39,10 +38,6 @@ import { zWidgetOptions, zWidgetType } from '../report/report.constants';
 
 const uid = new ShortUniqueId({ length: 6 });
 const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
-
-function loadEventBuffer() {
-  return loadDbBuffers().then((m) => m.eventBuffer);
-}
 
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
@@ -191,7 +186,7 @@ export const widgetRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Invalid widget type');
       }
 
-      const eventBuffer = await loadEventBuffer();
+      const eventBuffer = ctx.buffers.event;
 
       return {
         projectId: widget.projectId,

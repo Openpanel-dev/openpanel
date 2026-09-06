@@ -186,7 +186,6 @@ function stubDeps() {
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
-    produceIncomingEvent: () => Promise.resolve(),
     logger: bindingLogger(lines),
     config: { selfHosted: false },
   };
@@ -368,7 +367,6 @@ function chartDeps() {
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
-    produceIncomingEvent: () => Promise.resolve(),
     logger: chartLogger(lines),
     config: { selfHosted: false },
   };
@@ -554,7 +552,6 @@ function ingestDeps() {
     clients: {} as AppDeps['clients'],
     buffers,
     producers: producers as unknown as QueueProducerHandle,
-    produceIncomingEvent: () => Promise.resolve(),
     logger: ingestLogger(lines),
     config: { selfHosted: false },
   };

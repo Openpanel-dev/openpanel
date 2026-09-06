@@ -40,7 +40,6 @@ import {
   queues,
   startWorkers,
 } from '@openpanel/core';
-import { produceIncomingEvent } from '@openpanel/queue';
 import { Redis } from '@openpanel/redis';
 import pino from 'pino';
 
@@ -57,7 +56,7 @@ interface LegacyCase {
   queue: QueueKey;
   /** The BullMQ job name V1 put on the wire. */
   wireName: string;
-  /** V1's job data, verbatim (packages/queue/src/queues.ts). */
+  /** V1's job data, verbatim (was packages/queue/src/queues.ts). */
   data: unknown;
   /** The V2 job the compat hook must resolve it to. */
   expectJob: string;
@@ -286,7 +285,6 @@ async function main() {
     clients: undefined as unknown as AppDeps['clients'],
     buffers,
     producers,
-    produceIncomingEvent,
     logger,
     config: { selfHosted: false },
   };

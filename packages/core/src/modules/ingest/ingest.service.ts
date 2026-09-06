@@ -8,11 +8,10 @@
 // codes and bodies, so the pipeline returns a `TrackOutcome` and V1 maps it
 // back onto the exact `HttpError`s and replies it produced before.
 //
-// The Kafka producer is INJECTED. `produceIncomingEvent` still lives in
-// @openpanel/queue, which imports @openpanel/core for its logger — core
-// cannot import it back without a real package cycle (see
-// cohort.service.ts's header). M8-003 moves the producer into core and the
-// injection point becomes an AppDeps field.
+// The Kafka producer is INJECTED. Since M11-003 `produceIncomingEvent` is a
+// sibling (./src/kafka.ts), so the injection is no longer a package-cycle
+// workaround and no longer travels through `AppDeps` — it stays an argument
+// only so a test can assert on what was produced without a broker.
 
 import { generateId } from '@openpanel/common';
 import { assocPath, pathOr, pick } from 'ramda';

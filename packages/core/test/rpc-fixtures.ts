@@ -93,7 +93,6 @@ export function stubHttpCtx(
     clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
-    produceIncomingEvent: () => Promise.resolve(),
     logger,
     config: { selfHosted: false },
   };

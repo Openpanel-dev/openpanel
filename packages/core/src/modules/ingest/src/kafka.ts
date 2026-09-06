@@ -1,4 +1,16 @@
-import { createLogger } from '@openpanel/core';
+// Moved from packages/queue/src/kafka.ts (M11-003), byte-for-byte apart from
+// the three repointed imports and the de-duplicated `DeadLetterMessage` below.
+// What kept it out of core was the import direction, not the code: it lived
+// in @openpanel/queue, a package that imports @openpanel/core for its logger,
+// so core could not import it back. Moving the file takes it out of that
+// cycle — `createLogger` is a sibling now, and both the producer and the
+// consumer sit in the module that owns the transport (ADR-004: Kafka is the
+// sole events transport — no topic, group or envelope changes with the move).
+//
+// NOTHING here constructs a Kafka client at import time: `getKafka()` is lazy
+// and only `assertKafkaConfigured` reads the broker list eagerly, so core
+// stays importable with no broker and `bun test` still runs offline.
+
 import {
   type Admin,
   type Consumer,
@@ -7,7 +19,11 @@ import {
   logLevel,
   type Producer,
 } from 'kafkajs';
-import type { EventsQueuePayloadIncomingEvent } from './queues';
+import { createLogger } from '../../../clients/logger';
+// One definition, not two: the consumer already declares the dead-letter
+// message shape it hands to this producer, and both files are now siblings.
+import type { DeadLetterMessage } from './consumer';
+import type { IncomingEventPayload } from './incoming-event';
 
 export type { Admin, EachBatchPayload, KafkaMessage } from 'kafkajs';
 
@@ -241,7 +257,7 @@ const send = async (topic: string, message: OutgoingMessage): Promise<void> => {
 };
 
 export const produceIncomingEvent = async (
-  payload: EventsQueuePayloadIncomingEvent['payload'],
+  payload: IncomingEventPayload,
   partitionKey: string
 ): Promise<void> =>
   send(KAFKA_EVENTS_TOPIC, {
@@ -252,17 +268,6 @@ export const produceIncomingEvent = async (
 // Why the reason/error/coordinates travel as headers and not in the value: the
 // value stays the producer's original bytes, so a DLQ message can be replayed
 // onto the events topic unchanged.
-export interface DeadLetterMessage {
-  key: Buffer | null;
-  value: Buffer | null;
-  headers?: IHeaders;
-  topic: string;
-  partition: number;
-  offset: string;
-  reason: string;
-  error: string;
-}
-
 export const produceDeadLetterEvent = async (
   message: DeadLetterMessage
 ): Promise<void> =>
