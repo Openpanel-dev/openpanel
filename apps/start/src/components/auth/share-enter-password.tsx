@@ -1,12 +1,15 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ISignInShare, zSignInShare } from '@openpanel/validation';
+import {
+  type ISignInShare,
+  zSignInShare,
+} from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { PublicPageCard } from '../public-page-card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function ShareEnterPassword({
   shareId,
@@ -24,7 +27,7 @@ export function ShareEnterPassword({
       onError() {
         toast.error('Incorrect password');
       },
-    }),
+    })
   );
   const form = useForm<ISignInShare>({
     resolver: zodResolver(zSignInShare),
@@ -52,15 +55,15 @@ export function ShareEnterPassword({
 
   return (
     <PublicPageCard
-      title={`${typeLabel} is locked`}
       description={`Please enter correct password to access this ${typeLabel.toLowerCase()}`}
+      title={`${typeLabel} is locked`}
     >
-      <form onSubmit={onSubmit} className="col gap-4">
+      <form className="col gap-4" onSubmit={onSubmit}>
         <Input
           {...form.register('password')}
-          type="password"
           placeholder="Enter your password"
           size="large"
+          type="password"
         />
         <Button type="submit">Get access</Button>
       </form>

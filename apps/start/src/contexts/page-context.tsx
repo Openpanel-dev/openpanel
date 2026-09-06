@@ -1,7 +1,17 @@
+import type {
+  PageContextPage,
+  PageContext as ValidatedPageContext,
+} from '@openpanel/core/modules/assistant/assistant.constants';
+import type {
+  IChartEventFilter,
+  IChartRange,
+  IInterval,
+  IReportInput,
+} from '@openpanel/core/modules/report/report.constants';
 import {
+  createContext,
   type MutableRefObject,
   type ReactNode,
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -9,14 +19,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import type {
-  IChartEventFilter,
-  IChartRange,
-  IInterval,
-  IReportInput,
-  PageContext as ValidatedPageContext,
-  PageContextPage,
-} from '@openpanel/validation';
 
 export type { PageContextPage };
 
@@ -24,8 +26,9 @@ export type { PageContextPage };
  * What the chat backend needs to know about "what the user is currently
  * looking at".
  *
- * Same wire shape as `ValidatedPageContext` from `@openpanel/validation`,
- * but with stricter typing for `filters` / `reportDraft`. The validation
+ * Same wire shape as `ValidatedPageContext` from
+ * `@openpanel/core`'s assistant.constants, but with stricter typing for
+ * `filters` / `reportDraft`. The validation
  * schema keeps those loose (`z.record(unknown)`) because Zod can't narrow
  * `IChartEventFilter` / `IReportInput` at the boundary; the server
  * re-narrows in `apps/api/src/agents/tools/helpers.ts`.
@@ -70,7 +73,7 @@ export function PageContextProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ context, setContext, ref }),
-    [context, setContext],
+    [context, setContext]
   );
 
   return (

@@ -1,6 +1,4 @@
-import { usePageContextValue } from '@/contexts/page-context';
-import { cn } from '@/utils/cn';
-import { timeWindows } from '@openpanel/constants';
+import { timeWindows } from '@openpanel/core/modules/report/report.constants';
 import {
   Building2Icon,
   GanttChartIcon,
@@ -14,6 +12,8 @@ import {
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
+import { usePageContextValue } from '@/contexts/page-context';
+import { cn } from '@/utils/cn';
 
 /**
  * Small banner shown at the top of the chat body explaining what
@@ -24,7 +24,9 @@ import {
  */
 export function ChatContextWidget() {
   const ctx = usePageContextValue();
-  if (!ctx) return null;
+  if (!ctx) {
+    return null;
+  }
 
   const meta = PAGE_META[ctx.page];
   const Icon = meta?.icon ?? WallpaperIcon;
@@ -53,32 +55,39 @@ export function ChatContextWidget() {
         operator?: string;
         value?: unknown[];
       };
-      if (!filter.name) continue;
-      const op = filter.operator && filter.operator !== 'is'
-        ? ` ${filter.operator}`
-        : '';
-      const value = Array.isArray(filter.value)
-        ? filter.value.join(', ')
-        : '';
+      if (!filter.name) {
+        continue;
+      }
+      const op =
+        filter.operator && filter.operator !== 'is'
+          ? ` ${filter.operator}`
+          : '';
+      const value = Array.isArray(filter.value) ? filter.value.join(', ') : '';
       chips.push(`${filter.name}${op}${value ? `: ${value}` : ''}`);
     }
   }
 
   // Entity ids on detail pages
-  if (ctx.ids?.profileId) chips.push('Profile');
-  if (ctx.ids?.sessionId) chips.push('Session');
-  if (ctx.ids?.groupId) chips.push('Group');
-  if (ctx.ids?.reportId) chips.push('Report');
+  if (ctx.ids?.profileId) {
+    chips.push('Profile');
+  }
+  if (ctx.ids?.sessionId) {
+    chips.push('Session');
+  }
+  if (ctx.ids?.groupId) {
+    chips.push('Group');
+  }
+  if (ctx.ids?.reportId) {
+    chips.push('Report');
+  }
 
   return (
     <div className="mx-3 mt-3 mb-1 rounded-lg border bg-card/95 px-3 py-2">
       <div className="flex items-start gap-2">
-        <Icon className="size-3.5 mt-0.5 text-muted-foreground shrink-0" />
-        <div className="min-w-0 flex-1 col gap-1">
-          <div className="text-sm text-muted-foreground">
-            Assistant context
-          </div>
-          <div className="text-sm font-medium text-foreground/90">
+        <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+        <div className="col min-w-0 flex-1 gap-1">
+          <div className="text-muted-foreground text-sm">Assistant context</div>
+          <div className="font-medium text-foreground/90 text-sm">
             {pageLabel}
           </div>
           {chips.length > 0 && (
@@ -99,7 +108,7 @@ function ContextChip({ children }: { children: React.ReactNode }) {
     <span
       className={cn(
         'inline-flex items-center rounded-md border bg-muted/40 px-1.5 py-0.5',
-        'text-[11px] leading-none text-muted-foreground',
+        'text-[11px] text-muted-foreground leading-none'
       )}
     >
       {children}
@@ -107,10 +116,7 @@ function ContextChip({ children }: { children: React.ReactNode }) {
   );
 }
 
-const PAGE_META: Record<
-  string,
-  { label: string; icon: LucideIcon }
-> = {
+const PAGE_META: Record<string, { label: string; icon: LucideIcon }> = {
   overview: { label: 'Overview', icon: WallpaperIcon },
   insights: { label: 'Insights', icon: TrendingUpDownIcon },
   pages: { label: 'Pages', icon: LayersIcon },

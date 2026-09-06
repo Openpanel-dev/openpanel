@@ -1,3 +1,12 @@
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
+import { SearchIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { round } from '../../../utils/math';
+import { SerieIcon } from '../common/serie-icon';
+import { SerieName } from '../common/serie-name';
+import { useReportChartContext } from '../context';
+import { DeltaChip } from '@/components/delta-chip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,18 +26,6 @@ import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
-import { SearchIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-import { round } from '@openpanel/common';
-import { NOT_SET_VALUE } from '@openpanel/constants';
-
-import { DeltaChip } from '@/components/delta-chip';
-import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
-import { SerieIcon } from '../common/serie-icon';
-import { SerieName } from '../common/serie-name';
-import { useReportChartContext } from '../context';
 
 type SortOption =
   | 'count-desc'
@@ -61,7 +58,7 @@ export function Chart({ data }: Props) {
   // Calculate original ranks (based on count descending - default sort)
   const seriesWithOriginalRank = useMemo(() => {
     const sortedByCount = [...allSeriesWithIndex].sort(
-      (a, b) => b.metrics.sum - a.metrics.sum,
+      (a, b) => b.metrics.sum - a.metrics.sum
     );
     const rankMap = new Map<string, number>();
     sortedByCount.forEach((serie, idx) => {
@@ -81,7 +78,7 @@ export function Chart({ data }: Props) {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((serie) =>
-        serie.names.some((name) => name.toLowerCase().includes(query)),
+        serie.names.some((name) => name.toLowerCase().includes(query))
       );
     }
 
@@ -119,23 +116,23 @@ export function Chart({ data }: Props) {
   return (
     <div className={cn('w-full', isEditMode && 'card')}>
       {isEditMode && (
-        <div className="flex items-center gap-3 p-4 border-b border-def-200 dark:border-def-800">
+        <div className="flex items-center gap-3 border-def-200 border-b p-4 dark:border-def-800">
           <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              type="text"
-              placeholder="Filter by name"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by name"
               size="sm"
+              type="text"
+              value={searchQuery}
             />
           </div>
           <Select
-            value={sortBy}
             onValueChange={(value) => setSortBy(value as SortOption)}
+            value={sortBy}
           >
-            <SelectTrigger size="sm" className="w-[180px]">
+            <SelectTrigger className="w-[180px]" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -165,34 +162,36 @@ export function Chart({ data }: Props) {
             const color = getChartColor(serie.index);
             const percentOfTotal = round(
               (serie.metrics.sum / totalSum) * 100,
-              1,
+              1
             );
 
             return (
               <div
-                key={serie.id}
                 className={cn(
-                  'group relative px-4 py-3 transition-colors overflow-hidden',
-                  isClickable && 'cursor-pointer',
+                  'group relative overflow-hidden px-4 py-3 transition-colors',
+                  isClickable && 'cursor-pointer'
                 )}
-                role={isClickable ? 'button' : undefined}
-                tabIndex={isClickable ? 0 : undefined}
+                key={serie.id}
                 onClick={() => {
                   if (isClickable && !isDropDownEnabled) {
                     onClick?.(serie);
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (!isClickable || isDropDownEnabled) return;
+                  if (!isClickable || isDropDownEnabled) {
+                    return;
+                  }
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onClick?.(serie);
                   }
                 }}
+                role={isClickable ? 'button' : undefined}
+                tabIndex={isClickable ? 0 : undefined}
               >
                 {/* Subtle accent glow */}
                 <div
-                  className="pointer-events-none absolute -left-10 -top-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
+                  className="pointer-events-none absolute -top-10 -left-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
                   style={{
                     background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
                   }}
@@ -214,7 +213,7 @@ export function Chart({ data }: Props) {
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: color }}
                           />
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
                             Rank {serie.originalRank}
                           </span>
                         </div>
@@ -241,7 +240,7 @@ export function Chart({ data }: Props) {
                             <div
                               className={cn(
                                 'min-w-0',
-                                isDropDownEnabled && 'cursor-pointer',
+                                isDropDownEnabled && 'cursor-pointer'
                               )}
                               {...(isClickable && !isDropDownEnabled
                                 ? {
@@ -253,8 +252,8 @@ export function Chart({ data }: Props) {
                                 : {})}
                             >
                               <SerieName
+                                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-sm tracking-tight"
                                 name={serie.names}
-                                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold tracking-tight"
                               />
                             </div>
                           </DropdownMenuTrigger>
@@ -269,7 +268,7 @@ export function Chart({ data }: Props) {
                                   }}
                                 >
                                   {item.icon && (
-                                    <item.icon size={16} className="mr-2" />
+                                    <item.icon className="mr-2" size={16} />
                                   )}
                                   {item.title}
                                 </DropdownMenuItem>
@@ -282,18 +281,18 @@ export function Chart({ data }: Props) {
 
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <div className="flex items-center gap-2">
-                        <div className="text-base font-semibold font-mono tracking-tight">
+                        <div className="font-mono font-semibold text-base tracking-tight">
                           {number.format(serie.metrics.sum)}
                         </div>
                         {previous && serie.metrics.previous?.[metric] && (
                           <DeltaChip
+                            size="sm"
                             variant={
                               serie.metrics.previous[metric].state ===
                               'positive'
                                 ? 'inc'
                                 : 'dec'
                             }
-                            size="sm"
                           >
                             {serie.metrics.previous[metric].diff?.toFixed(1)}%
                           </DeltaChip>

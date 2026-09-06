@@ -10,15 +10,15 @@ import type { ChatApp } from '@openpanel/core';
  * About the import: `ChatApp = typeof chatApp` is the full Better
  * Agent-inferred application type, which inherently binds to the
  * server-side agent definition (models, tools, context). It can't be
- * moved into `@openpanel/validation` without dragging the entire agent
- * definition (DB services, providers, etc.) along with it. It is
+ * moved into `@openpanel/core`'s assistant.constants without dragging the
+ * entire agent definition (DB services, providers, etc.) along with it. It is
  * type-only, erased at build time — no runtime coupling, which is what
  * keeps it inside ADR-008's rule that only `*.constants.ts` may be
  * VALUE-imported here. It used to reach `apps/api/src/agents/app`
  * relatively; M9-004 deleted that wrapper and core's barrel exports the
  * type. The shared schemas (context, client tool inputs, model
- * whitelist) live in `@openpanel/validation` so only this one type
- * import crosses the app boundary.
+ * whitelist) live in `@openpanel/core`'s assistant.constants so only this
+ * one type import crosses the app boundary.
  */
 export type AppClient = ReturnType<typeof createClient<ChatApp>>;
 

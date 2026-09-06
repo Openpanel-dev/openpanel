@@ -1,4 +1,7 @@
-import type { IChartRange, IInterval } from '@openpanel/validation';
+import type {
+  IChartRange,
+  IInterval,
+} from '@openpanel/core/modules/report/report.constants';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AlertCircleIcon, ChevronsUpDownIcon, SearchIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';

@@ -1,24 +1,22 @@
-import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
-import type { IChartData } from '@/trpc/client';
-import { cn } from '@/utils/cn';
+import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart, Tooltip } from 'recharts';
-
-import type { IChartMetric } from '@openpanel/validation';
-
+import {
+  getDiffIndicator,
+  PreviousDiffIndicator,
+} from '../common/previous-diff-indicator';
+import { SerieName } from '../common/serie-name';
+import { useReportChartContext } from '../context';
 import {
   ChartTooltipContainer,
   ChartTooltipHeader,
   ChartTooltipItem,
 } from '@/components/charts/chart-tooltip';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import type { IChartData } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
 import { getChartColor } from '@/utils/theme';
-import {
-  PreviousDiffIndicator,
-  getDiffIndicator,
-} from '../common/previous-diff-indicator';
-import { SerieName } from '../common/serie-name';
-import { useReportChartContext } from '../context';
 
 interface MetricCardProps {
   serie: IChartData['series'][number];
@@ -34,7 +32,7 @@ const TooltipContent = (props: { payload?: any[] }) => {
       {props.payload?.map((item) => {
         const { date, count } = item.payload;
         return (
-          <div key={item.id} className="col gap-2">
+          <div className="col gap-2" key={item.id}>
             <ChartTooltipHeader>
               <div>{formatDate(new Date(date))}</div>
             </ChartTooltipHeader>
@@ -85,36 +83,36 @@ export function MetricCard({
     previous?.state,
     '#6ee7b7', // green
     '#fda4af', // red
-    '#93c5fd', // blue
+    '#93c5fd' // blue
   );
 
   return (
     <div
       className={cn(
         'group relative p-4 hover:z-10',
-        isEditMode && 'card h-auto',
+        isEditMode && 'card h-auto'
       )}
       key={serie.id}
     >
       <div
         className={cn(
-          'absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-100 transition-opacity duration-300 group-hover:opacity-100',
+          'absolute top-0 -right-1 bottom-0 -left-1 z-0 opacity-100 transition-opacity duration-300 group-hover:opacity-100'
         )}
       >
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart
-              width={width}
-              height={height / 4}
               data={serie.data}
+              height={height / 4}
               style={{ marginTop: (height / 4) * 3 }}
+              width={width}
             >
               <defs>
                 <linearGradient
                   id={`colorUv${serie.id}`}
                   x1="0"
-                  y1="0"
                   x2="0"
+                  y1="0"
                   y2="1"
                 >
                   <stop offset="0%" stopColor={graphColors} stopOpacity={0.2} />
@@ -128,26 +126,26 @@ export function MetricCard({
               <Tooltip content={TooltipContent} />
               <Area
                 dataKey="count"
-                type="step"
                 fill={`url(#colorUv${serie.id})`}
                 fillOpacity={1}
+                isAnimationActive={false}
                 stroke={graphColors}
                 strokeWidth={1}
-                isAnimationActive={false}
+                type="step"
               />
             </AreaChart>
           )}
         </AutoSizer>
       </div>
       <MetricCardNumber
-        label={<SerieName name={serie.names} />}
-        value={renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
         enhancer={
           <PreviousDiffIndicator
             {...previous}
-            className="text-sm text-muted-foreground"
+            className="text-muted-foreground text-sm"
           />
         }
+        label={<SerieName name={serie.names} />}
+        value={renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
       />
     </div>
   );
@@ -172,7 +170,7 @@ export function MetricCardNumber({
         </div>
       </div>
       <div className="flex items-end justify-between gap-4">
-        <div className="truncate font-mono text-3xl font-bold">{value}</div>
+        <div className="truncate font-bold font-mono text-3xl">{value}</div>
         {enhancer}
       </div>
     </div>

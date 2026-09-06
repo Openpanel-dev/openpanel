@@ -3,7 +3,7 @@ import type {
   ChatClientToolHandlers,
   SetEventNamesFilterInput,
   SetPropertyFiltersInput,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/assistant/assistant.constants';
 
 /**
  * Client-side handlers for tools the LLM can invoke to mutate page
@@ -22,8 +22,8 @@ import type {
  * After mutating the URL we dispatch a `popstate` event so nuqs picks
  * up the change without a hook subscription on our side.
  *
- * Handler types come from `@openpanel/validation` (shared with the
- * server's tool schemas) so the map stays in sync with the Zod inputs
+ * Handler types come from `@openpanel/core`'s assistant.constants (shared
+ * with the server's tool schemas) so the map stays in sync with the Zod inputs
  * without crossing the app boundary for its type.
  */
 

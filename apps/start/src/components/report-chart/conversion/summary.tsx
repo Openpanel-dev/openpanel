@@ -1,6 +1,3 @@
-import type { RouterOutputs } from '@/trpc/client';
-import type React from 'react';
-import { useMemo } from 'react';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -10,13 +7,18 @@ import {
   Target,
   Trophy,
 } from 'lucide-react';
-
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { formatDate } from '@/utils/date';
-import { average, sum } from '@openpanel/common';
+import type React from 'react';
+import { useMemo } from 'react';
+import { average, sum } from '../../../utils/math';
 import { useReportChartContext } from '../context';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import type { RouterOutputs } from '@/trpc/client';
+import { formatDate } from '@/utils/date';
 
-const SUMMARY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const SUMMARY_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   Flow: GitBranch,
   'Average conversion rate': Percent,
   'Total conversions': Target,
@@ -46,7 +48,7 @@ export function Summary({ data }: Props) {
             }
             return maxInSerie;
           },
-          { rate: 0, serieIndex, dataIndex: 0 },
+          { rate: 0, serieIndex, dataIndex: 0 }
         );
 
         return serieMax.rate > acc.rate ? serieMax : acc;
@@ -55,7 +57,7 @@ export function Summary({ data }: Props) {
         rate: 0,
         serieIndex: 0,
         dataIndex: 0,
-      },
+      }
     );
   }, [data.current]);
 
@@ -69,7 +71,7 @@ export function Summary({ data }: Props) {
             }
             return minInSerie;
           },
-          { rate: 100, serieIndex, dataIndex: 0 },
+          { rate: 100, serieIndex, dataIndex: 0 }
         );
 
         return serieMin.rate < acc.rate ? serieMin : acc;
@@ -78,7 +80,7 @@ export function Summary({ data }: Props) {
         rate: 100,
         serieIndex: 0,
         dataIndex: 0,
-      },
+      }
     );
   }, [data.current]);
   const bestConversionRate =
@@ -95,27 +97,27 @@ export function Summary({ data }: Props) {
       const averageRate = average(serie.data.map((item) => item.rate));
       return averageRate > acc.averageRate ? { serie, averageRate } : acc;
     },
-    { serie: data.current[0], averageRate: 0 },
+    { serie: data.current[0], averageRate: 0 }
   );
   const worstAverageConversionRateMatch = data.current.reduce(
     (acc, serie) => {
       const averageRate = average(serie.data.map((item) => item.rate));
       return averageRate < acc.averageRate ? { serie, averageRate } : acc;
     },
-    { serie: data.current[0], averageRate: 100 },
+    { serie: data.current[0], averageRate: 100 }
   );
 
   const averageConversionRate = average(
     data.current.map((serie) => {
       return average(serie.data.map((item) => item.rate));
-    }, 0),
+    }, 0)
   );
 
   const averageConversionRatePrevious =
     average(
       data.previous?.map((serie) => {
         return average(serie.data.map((item) => item.rate));
-      }) ?? [],
+      }) ?? []
     ) ?? 0;
 
   const sumConversions = data.current.reduce((acc, serie) => {
@@ -146,13 +148,13 @@ export function Summary({ data }: Props) {
           name: 'Previous period average conversion rate',
           value: number.formatWithUnit(
             averageConversionRatePrevious / 100,
-            '%',
+            '%'
           ),
         },
         {
           name: 'Previous period total conversions',
           value: sumConversionsPrevious ?? 0,
-        },
+        }
       );
     }
     if (hasManySeries && bestAverageConversionRateMatch) {
@@ -208,10 +210,10 @@ export function Summary({ data }: Props) {
           const Icon = SUMMARY_ICONS[item.name];
           return (
             <div
+              className="card row items-center justify-between gap-4 p-4 py-3 font-medium"
               key={item.name}
-              className="card row items-center justify-between p-4 py-3 font-medium gap-4"
             >
-              <span className="text-muted-foreground row items-center gap-2">
+              <span className="row items-center gap-2 text-muted-foreground">
                 {Icon != null && <Icon className="size-4 shrink-0" />}
                 {item.name}
               </span>

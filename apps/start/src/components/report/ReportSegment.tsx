@@ -1,5 +1,5 @@
-import { chartSegments } from '@openpanel/constants';
-import type { IChartEventSegment } from '@openpanel/validation';
+import type { IChartEventSegment } from '@openpanel/core/modules/report/report.constants';
+import { chartSegments } from '@openpanel/core/modules/report/report.constants';
 import {
   ActivityIcon,
   Building2Icon,

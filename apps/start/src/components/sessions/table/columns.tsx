@@ -1,7 +1,7 @@
-import { round } from '@openpanel/common';
 import type { IServiceSession } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Video } from 'lucide-react';
+import { round } from '../../../utils/math';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
@@ -48,9 +48,9 @@ export function useColumns() {
           <div className="row items-center gap-2">
             <ProjectLink
               className="font-medium"
-              to="/sessions/$sessionId"
               params={{ sessionId: session.id }}
               title={session.id}
+              to="/sessions/$sessionId"
             >
               {session.id.slice(0, 8)}...
             </ProjectLink>
@@ -58,10 +58,10 @@ export function useColumns() {
               <ProjectLink
                 aria-label="View replay"
                 className="text-muted-foreground hover:text-foreground"
-                to="/sessions/$sessionId"
-                params={{ sessionId: session.id }}
                 hash="replay"
+                params={{ sessionId: session.id }}
                 title="View replay"
+                to="/sessions/$sessionId"
               >
                 <Video className="size-4" />
               </ProjectLink>
@@ -80,8 +80,8 @@ export function useColumns() {
           return (
             <ProjectLink
               className="row items-center gap-2 font-medium hover:underline"
-              to="/profiles/$profileId"
               params={{ profileId: session.profile.id }}
+              to="/profiles/$profileId"
             >
               <ProfileAvatar size="sm" {...session.profile} />
               {getProfileName(session.profile)}
@@ -91,8 +91,8 @@ export function useColumns() {
         return (
           <ProjectLink
             className="font-medium font-mono"
-            to="/profiles/$profileId"
             params={{ profileId: session.profileId }}
+            to="/profiles/$profileId"
           >
             {session.profileId}
           </ProjectLink>
@@ -283,13 +283,15 @@ export function useColumns() {
       size: 200,
       cell: ({ row }) => {
         const { groups } = row.original;
-        if (!groups?.length) return null;
+        if (!groups?.length) {
+          return null;
+        }
         return (
           <div className="flex flex-wrap gap-1">
             {groups.map((g) => (
               <span
+                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
                 key={g}
-                className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
               >
                 {g}
               </span>

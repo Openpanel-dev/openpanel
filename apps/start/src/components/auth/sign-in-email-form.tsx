@@ -1,14 +1,13 @@
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zSignInEmail } from '@openpanel/validation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useRouter } from '@tanstack/react-router';
+import { zSignInEmail } from '@openpanel/core/modules/auth/auth.constants';
+import { useMutation } from '@tanstack/react-query';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
@@ -16,7 +15,10 @@ type IForm = z.infer<typeof validator>;
 export function SignInEmailForm({
   isLastUsed,
   inviteId,
-}: { isLastUsed?: boolean; inviteId?: string }) {
+}: {
+  isLastUsed?: boolean;
+  inviteId?: string;
+}) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
@@ -31,7 +33,7 @@ export function SignInEmailForm({
       onError(error) {
         toast.error(error.message);
       },
-    }),
+    })
   );
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -48,38 +50,38 @@ export function SignInEmailForm({
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
+    <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
       <InputWithLabel
         {...form.register('email')}
+        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
         error={form.formState.errors.email?.message}
         label="Email"
-        className="bg-def-100/50 border-def-300 focus:border-highlight focus:ring-highlight/20"
       />
       <InputWithLabel
         {...form.register('password')}
+        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
         error={form.formState.errors.password?.message}
         label="Password"
         type="password"
-        className="bg-def-100/50 border-def-300 focus:border-highlight focus:ring-highlight/20"
       />
       <div className="relative">
-        <Button type="submit" size="lg" className="w-full">
+        <Button className="w-full" size="lg" type="submit">
           Sign in
         </Button>
         {isLastUsed && (
-          <span className="absolute -top-2 right-3 text-[10px] font-medium bg-highlight text-white px-1.5 py-0.5 rounded-full leading-none">
+          <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
             Used last time
           </span>
         )}
       </div>
       <button
-        type="button"
+        className="mt-2 text-center text-muted-foreground text-sm transition-colors duration-200 hover:text-highlight hover:underline"
         onClick={() =>
           pushModal('RequestPasswordReset', {
             email: form.getValues('email'),
           })
         }
-        className="text-sm text-muted-foreground hover:text-highlight hover:underline transition-colors duration-200 text-center mt-2"
+        type="button"
       >
         Forgot password?
       </button>

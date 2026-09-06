@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { curveMonotoneX } from '@visx/curve';
 import { DollarSignIcon } from 'lucide-react';

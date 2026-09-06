@@ -1,3 +1,10 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateS3ExportIntegration } from '@openpanel/core/modules/integration/integration.constants';
+import { useMutation } from '@tanstack/react-query';
+import { mergeDeepRight, path } from 'ramda';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,13 +17,6 @@ import {
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateS3ExportIntegration } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { path, mergeDeepRight } from 'ramda';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type IForm = z.infer<typeof zCreateS3ExportIntegration>;
 
@@ -66,7 +66,7 @@ export function S3ExportIntegrationForm({
           kmsKeyId: '',
         },
       },
-      defaultValues ?? {},
+      defaultValues ?? {}
     ),
     resolver: zodResolver(zCreateS3ExportIntegration),
   });
@@ -77,7 +77,7 @@ export function S3ExportIntegrationForm({
       onError(error) {
         toast.error(error.message || 'Failed to create integration');
       },
-    }),
+    })
   );
 
   const testMutation = useMutation(
@@ -92,11 +92,14 @@ export function S3ExportIntegrationForm({
       onError(error) {
         toast.error(error.message || 'Failed to test connection');
       },
-    }),
+    })
   );
 
   const authMode = useWatch({ control: form.control, name: 'config.authMode' });
-  const encryption = useWatch({ control: form.control, name: 'config.encryption' });
+  const encryption = useWatch({
+    control: form.control,
+    name: 'config.encryption',
+  });
 
   const handleSubmit = (values: IForm) => {
     mutation.mutate(values);
@@ -108,24 +111,25 @@ export function S3ExportIntegrationForm({
 
   const handleTest = () => {
     const values = form.getValues();
-    if (!values.config.bucket || !values.config.region) {
+    if (!(values.config.bucket && values.config.region)) {
       return toast.error('Bucket and Region are required');
     }
     if (values.config.authMode === 'iam_role' && !values.config.roleArn) {
       return toast.error('IAM Role ARN is required');
     }
-    if (values.config.authMode === 'access_key') {
-      if (!values.config.accessKeyId || !values.config.secretAccessKey) {
-        return toast.error('Access Key ID and Secret Access Key are required');
-      }
+    if (
+      values.config.authMode === 'access_key' &&
+      !(values.config.accessKeyId && values.config.secretAccessKey)
+    ) {
+      return toast.error('Access Key ID and Secret Access Key are required');
     }
     testMutation.mutate(values);
   };
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit, handleError)}
       className="col gap-4"
+      onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
         label="Name"
@@ -151,10 +155,10 @@ export function S3ExportIntegrationForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col gap-1.5">
-          <label className="text-sm font-medium">Region</label>
+          <label className="font-medium text-sm">Region</label>
           <Controller
-            name="config.region"
             control={form.control}
+            name="config.region"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
@@ -173,10 +177,10 @@ export function S3ExportIntegrationForm({
         </div>
 
         <div className="col gap-1.5">
-          <label className="text-sm font-medium">Format</label>
+          <label className="font-medium text-sm">Format</label>
           <Controller
-            name="config.format"
             control={form.control}
+            name="config.format"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
@@ -184,7 +188,7 @@ export function S3ExportIntegrationForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="jsonl_gzip">JSONL (gzip)</SelectItem>
-                  <SelectItem value="parquet" disabled>
+                  <SelectItem disabled value="parquet">
                     Parquet (coming soon)
                   </SelectItem>
                 </SelectContent>
@@ -196,10 +200,10 @@ export function S3ExportIntegrationForm({
 
       {/* Auth Mode Selector */}
       <div className="col gap-1.5">
-        <label className="text-sm font-medium">Authentication Mode</label>
+        <label className="font-medium text-sm">Authentication Mode</label>
         <Controller
-          name="config.authMode"
           control={form.control}
+          name="config.authMode"
           render={({ field }) => (
             <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger>
@@ -207,7 +211,9 @@ export function S3ExportIntegrationForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="iam_role">IAM Role (AWS)</SelectItem>
-                <SelectItem value="access_key">Access Keys (R2, MinIO, Spaces)</SelectItem>
+                <SelectItem value="access_key">
+                  Access Keys (R2, MinIO, Spaces)
+                </SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -226,14 +232,20 @@ export function S3ExportIntegrationForm({
             label="IAM Role ARN"
             placeholder="arn:aws:iam::123456789012:role/OpenPanelExportRole"
             {...form.register('config.roleArn')}
-            error={path(['config', 'roleArn', 'message'], form.formState.errors)}
+            error={path(
+              ['config', 'roleArn', 'message'],
+              form.formState.errors
+            )}
           />
 
           <InputWithLabel
             label="External ID (optional)"
             placeholder="Optional external ID for cross-account access"
             {...form.register('config.externalId')}
-            error={path(['config', 'externalId', 'message'], form.formState.errors)}
+            error={path(
+              ['config', 'externalId', 'message'],
+              form.formState.errors
+            )}
           />
         </>
       )}
@@ -245,9 +257,12 @@ export function S3ExportIntegrationForm({
             label="Endpoint URL (optional)"
             placeholder="https://your-account-id.r2.cloudflarestorage.com"
             {...form.register('config.endpoint')}
-            error={path(['config', 'endpoint', 'message'], form.formState.errors)}
+            error={path(
+              ['config', 'endpoint', 'message'],
+              form.formState.errors
+            )}
           />
-          <p className="text-muted-foreground -mt-2 text-xs">
+          <p className="-mt-2 text-muted-foreground text-xs">
             Required for R2, MinIO, etc. Leave empty for AWS S3.
           </p>
 
@@ -256,20 +271,26 @@ export function S3ExportIntegrationForm({
               label="Access Key ID"
               placeholder="AKIAIOSFODNN7EXAMPLE"
               {...form.register('config.accessKeyId')}
-              error={path(['config', 'accessKeyId', 'message'], form.formState.errors)}
+              error={path(
+                ['config', 'accessKeyId', 'message'],
+                form.formState.errors
+              )}
             />
             <InputWithLabel
               label="Secret Access Key"
-              type="password"
               placeholder={
                 defaultValues?.id
                   ? 'Leave blank to keep the current key'
                   : 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
               }
+              type="password"
               // Stored secrets are never sent back to the browser, so an edit
               // starts blank and blank means "keep the stored key".
               {...form.register('config.secretAccessKey')}
-              error={path(['config', 'secretAccessKey', 'message'], form.formState.errors)}
+              error={path(
+                ['config', 'secretAccessKey', 'message'],
+                form.formState.errors
+              )}
             />
           </div>
         </>
@@ -277,10 +298,10 @@ export function S3ExportIntegrationForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col gap-1.5">
-          <label className="text-sm font-medium">Encryption</label>
+          <label className="font-medium text-sm">Encryption</label>
           <Controller
-            name="config.encryption"
             control={form.control}
+            name="config.encryption"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
@@ -303,7 +324,7 @@ export function S3ExportIntegrationForm({
             {...form.register('config.kmsKeyId')}
             error={path(
               ['config', 'kmsKeyId', 'message'],
-              form.formState.errors,
+              form.formState.errors
             )}
           />
         )}
@@ -311,14 +332,14 @@ export function S3ExportIntegrationForm({
 
       <div className="row gap-4">
         <Button
+          disabled={testMutation.isPending}
+          onClick={handleTest}
           type="button"
           variant="outline"
-          onClick={handleTest}
-          disabled={testMutation.isPending}
         >
           {testMutation.isPending ? 'Testing...' : 'Test connection'}
         </Button>
-        <Button type="submit" className="flex-1" disabled={mutation.isPending}>
+        <Button className="flex-1" disabled={mutation.isPending} type="submit">
           {mutation.isPending
             ? 'Saving...'
             : defaultValues?.id

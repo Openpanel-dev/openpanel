@@ -1,17 +1,12 @@
-import { ColorSquare } from '@/components/color-square';
-import { Combobox } from '@/components/ui/combobox';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useEventProperties } from '@/hooks/use-event-properties';
-import { useDispatch, useSelector } from '@/redux';
+import type { IChartBreakdown } from '@openpanel/core/modules/report/report.constants';
 import { ChevronsUpDownIcon, SplitIcon } from 'lucide-react';
-
-import type { IChartBreakdown } from '@openpanel/validation';
-
-import { Button } from '@/components/ui/button';
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
+import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
+import { useDispatch, useSelector } from '@/redux';
 
 export function ReportBreakdowns() {
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
@@ -35,7 +30,7 @@ export function ReportBreakdowns() {
       <div className="flex flex-col gap-4">
         {selectedBreakdowns.map((item, index) => {
           return (
-            <div key={item.name} className="rounded-lg border bg-def-100">
+            <div className="rounded-lg border bg-def-100" key={item.name}>
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <PropertiesCombobox
@@ -45,19 +40,19 @@ export function ReportBreakdowns() {
                       changeBreakdown({
                         ...item,
                         name: action.value,
-                      }),
+                      })
                     );
                   }}
                 >
                   {(setOpen) => (
                     <Button
-                      variant={'outline'}
-                      onClick={() => setOpen((prev) => !prev)}
-                      size={'sm'}
                       autoHeight
                       className="flex-1"
+                      onClick={() => setOpen((prev) => !prev)}
+                      size={'sm'}
+                      variant={'outline'}
                     >
-                      <div className="row w-full gap-2 items-center">
+                      <div className="row w-full items-center gap-2">
                         <SplitIcon className="size-4" />
                         {item.name === 'cohort' ? 'Cohorts' : item.name}
                       </div>
@@ -77,19 +72,19 @@ export function ReportBreakdowns() {
             dispatch(
               addBreakdown({
                 name: action.value,
-              }),
+              })
             );
           }}
         >
           {(setOpen) => (
             <Button
-              variant={'outline'}
-              onClick={() => setOpen((prev) => !prev)}
-              size={'sm'}
               autoHeight
               className="flex-1"
+              onClick={() => setOpen((prev) => !prev)}
+              size={'sm'}
+              variant={'outline'}
             >
-              <div className="row w-full gap-2 items-center">
+              <div className="row w-full items-center gap-2">
                 <SplitIcon className="size-4" />
                 Select breakdown
               </div>

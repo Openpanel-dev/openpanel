@@ -1,9 +1,7 @@
+import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import { ModalContent, ModalHeader } from './Modal/Container';
 import { ReportChart } from '@/components/report-chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-import type { IReport } from '@openpanel/validation';
-
-import { ModalContent, ModalHeader } from './Modal/Container';
 
 type Props = {
   chart: IReport;

@@ -1,3 +1,10 @@
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import { useQuery } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useEffect, useMemo, useState } from 'react';
+import { popModal } from '.';
+import { ModalHeader } from './Modal/Container';
+import { ScrollableModal, useScrollableModal } from './Modal/scrollable-modal';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
@@ -13,39 +20,32 @@ import { useTRPC } from '@/integrations/trpc/react';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
-import type { IReportInput } from '@openpanel/validation';
-import { useQuery } from '@tanstack/react-query';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { useEffect, useMemo, useState } from 'react';
-import { popModal } from '.';
-import { ModalHeader } from './Modal/Container';
-import { ScrollableModal, useScrollableModal } from './Modal/scrollable-modal';
 
 const ProfileItem = ({ profile }: { profile: any }) => {
   return (
     <ProjectLink
-      preload={false}
-      to="/profiles/$profileId"
-      params={{ profileId: profile.id }}
-      title={getProfileName(profile, false)}
-      className="col gap-2 rounded-lg border p-2 bg-card"
+      className="col gap-2 rounded-lg border bg-card p-2"
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey) {
           return;
         }
         popModal();
       }}
+      params={{ profileId: profile.id }}
+      preload={false}
+      title={getProfileName(profile, false)}
+      to="/profiles/$profileId"
     >
-      <div className="row gap-2 items-center">
+      <div className="row items-center gap-2">
         <ProfileAvatar {...profile} />
         <div className="flex-1">
           <div className="font-medium">{getProfileName(profile)}</div>
         </div>
       </div>
 
-      <div className="row gap-4 text-sm overflow-hidden">
+      <div className="row gap-4 overflow-hidden text-sm">
         {profile.properties.country && (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={profile.properties.country} />
             <span>
               {profile.properties.country}
@@ -54,13 +54,13 @@ const ProfileItem = ({ profile }: { profile: any }) => {
           </div>
         )}
         {profile.properties.os && (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={profile.properties.os} />
             <span>{profile.properties.os}</span>
           </div>
         )}
         {profile.properties.browser && (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={profile.properties.browser} />
             <span>{profile.properties.browser}</span>
           </div>
@@ -129,8 +129,8 @@ function ProfileList({ profiles }: { profiles: any[] }) {
         const profile = profiles[virtualItem.index];
         return (
           <div
-            key={profile.id}
             data-index={virtualItem.index}
+            key={profile.id}
             ref={virtualizer.measureElement}
             style={{
               position: 'absolute',
@@ -193,25 +193,29 @@ interface ChartUsersViewProps {
 function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
   const trpc = useTRPC();
   const [selectedSerieId, setSelectedSerieId] = useState<string | null>(
-    report.series[0]?.id || null,
+    report.series[0]?.id || null
   );
   const [selectedBreakdownId, setSelectedBreakdownId] = useState<string | null>(
-    null,
+    null
   );
 
   const selectedReportSerie = useMemo(
     () => report.series.find((s) => s.id === selectedSerieId),
-    [report.series, selectedSerieId],
+    [report.series, selectedSerieId]
   );
 
   // Get all chart series that match the selected report serie
   const matchingChartSeries = useMemo(() => {
-    if (!selectedSerieId || !chartData) return [];
+    if (!(selectedSerieId && chartData)) {
+      return [];
+    }
     return chartData.series.filter((s) => s.event.id === selectedSerieId);
   }, [chartData?.series, selectedSerieId]);
 
   const selectedBreakdown = useMemo(() => {
-    if (!selectedBreakdownId) return null;
+    if (!selectedBreakdownId) {
+      return null;
+    }
     return matchingChartSeries.find((s) => s.id === selectedBreakdownId);
   }, [matchingChartSeries, selectedBreakdownId]);
 
@@ -225,7 +229,7 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
     trpc.chart.getProfiles.queryOptions(
       {
         projectId: report.projectId,
-        date: date,
+        date,
         series:
           selectedReportSerie && selectedReportSerie.type === 'event'
             ? [
@@ -243,8 +247,8 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
       },
       {
         enabled: !!selectedReportSerie && selectedReportSerie.type === 'event',
-      },
-    ),
+      }
+    )
   );
 
   return (
@@ -252,14 +256,14 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
       header={
         <div>
           <ModalHeader
-            title="View Users"
             text={`Users who performed actions on ${new Date(date).toLocaleDateString()}`}
+            title="View Users"
           />
           {report.series.length > 0 && (
             <div className="col md:row gap-2">
               <Select
-                value={selectedSerieId || ''}
                 onValueChange={handleSerieChange}
+                value={selectedSerieId || ''}
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Select Serie" />
@@ -277,8 +281,8 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
 
               {matchingChartSeries.length > 1 && (
                 <Select
-                  value={selectedBreakdownId || ''}
                   onValueChange={(value) => setSelectedBreakdownId(value)}
+                  value={selectedBreakdownId || ''}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select Breakdown" />
@@ -289,7 +293,7 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
                       .map((serie) => (
                         <SelectItem key={serie.id} value={serie.id}>
                           {Object.values(serie.event.breakdowns ?? {}).join(
-                            ', ',
+                            ', '
                           )}
                           <DropdownMenuShortcut className="ml-auto">
                             ({serie.data.find((d) => d.date === date)?.count})
@@ -318,7 +322,11 @@ interface FunnelUsersViewProps {
   breakdownValues?: string[];
 }
 
-function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersViewProps) {
+function FunnelUsersView({
+  report,
+  stepIndex,
+  breakdownValues,
+}: FunnelUsersViewProps) {
   const trpc = useTRPC();
   const [showDropoffs, setShowDropoffs] = useState(false);
 
@@ -335,10 +343,10 @@ function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersView
                 ...item,
                 filters: [...(report.globalFilters ?? []), ...item.filters],
               }
-            : item,
+            : item
         ),
-        stepIndex: stepIndex,
-        showDropoffs: showDropoffs,
+        stepIndex,
+        showDropoffs,
         funnelWindow:
           report.options?.type === 'funnel'
             ? report.options.funnelWindow
@@ -348,12 +356,12 @@ function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersView
             ? report.options.funnelGroup
             : undefined,
         breakdowns: report.breakdowns,
-        breakdownValues: breakdownValues,
+        breakdownValues,
       },
       {
         enabled: stepIndex !== undefined,
-      },
-    ),
+      }
+    )
   );
 
   const isLastStep = stepIndex === report.series.length - 1;
@@ -363,36 +371,36 @@ function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersView
       header={
         <div className="flex flex-col gap-2">
           <ModalHeader
-            title="View Users"
             text={
               showDropoffs
                 ? `Users who dropped off after step ${stepIndex + 1} of ${report.series.length}`
                 : `Users who completed step ${stepIndex + 1} of ${report.series.length} in the funnel`
             }
+            title="View Users"
           />
           {!isLastStep && (
             <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={() => setShowDropoffs(false)}
                 className={cn(
-                  'px-3 py-1.5 text-sm rounded-md transition-colors',
-                  !showDropoffs
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                  'rounded-md px-3 py-1.5 text-sm transition-colors',
+                  showDropoffs
+                    ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    : 'bg-primary text-primary-foreground'
                 )}
+                onClick={() => setShowDropoffs(false)}
+                type="button"
               >
                 Completed
               </button>
               <button
-                type="button"
-                onClick={() => setShowDropoffs(true)}
                 className={cn(
-                  'px-3 py-1.5 text-sm rounded-md transition-colors',
+                  'rounded-md px-3 py-1.5 text-sm transition-colors',
                   showDropoffs
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 )}
+                onClick={() => setShowDropoffs(true)}
+                type="button"
               >
                 Dropped Off
               </button>
@@ -427,15 +435,19 @@ type ViewChartUsersProps =
 export default function ViewChartUsers(props: ViewChartUsersProps) {
   if (props.type === 'funnel') {
     return (
-      <FunnelUsersView report={props.report} stepIndex={props.stepIndex} breakdownValues={props.breakdownValues} />
+      <FunnelUsersView
+        breakdownValues={props.breakdownValues}
+        report={props.report}
+        stepIndex={props.stepIndex}
+      />
     );
   }
 
   return (
     <ChartUsersView
       chartData={props.chartData}
-      report={props.report}
       date={props.date}
+      report={props.report}
     />
   );
 }

@@ -1,5 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/core';
-import type { ICancellationReason } from '@openpanel/validation';
+import type { ICancellationReason } from '@openpanel/core/modules/subscription/subscription.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';

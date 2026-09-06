@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { emailCategories } from '@openpanel/constants';
+import { emailCategories } from '@openpanel/core/modules/email/email.constants';
 import {
   useMutation,
   useQueryClient,

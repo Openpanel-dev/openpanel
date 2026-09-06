@@ -1,13 +1,3 @@
-import type {
-  CohortDefinition,
-  IImportConfig,
-  IProjectAccessGrant,
-  IIntegrationConfig,
-  INotificationRuleConfig,
-  IProjectFilters,
-  IWidgetOptions,
-  InsightPayload,
-} from '@openpanel/validation';
 // `IClickhouseEvent`/`IClickhouseBotEvent`/`IClickhouseProfile`/
 // `INotificationPayload` all moved to @openpanel/core (M9-CLEANUP-001,
 // packages/db's final-surface shrink) — the three local re-export shims that
@@ -25,6 +15,14 @@ import type {
   IClickhouseProfile,
   INotificationPayload,
 } from '@openpanel/core';
+import type { CohortDefinition } from '@openpanel/core/modules/cohort/cohort.constants';
+import type { IImportConfig } from '@openpanel/core/modules/import/import.constants';
+import type { InsightPayload } from '@openpanel/core/modules/insight/insight.constants';
+import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
+import type { INotificationRuleConfig } from '@openpanel/core/modules/notification/notification.constants';
+import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
+import type { IProjectFilters } from '@openpanel/core/modules/project/project.constants';
+import type { IWidgetOptions } from '@openpanel/core/modules/report/report.constants';
 
 declare global {
   namespace PrismaJson {

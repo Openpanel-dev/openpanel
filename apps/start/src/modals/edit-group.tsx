@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { IServiceGroup } from '@openpanel/core';
-import { zUpdateGroup } from '@openpanel/validation';
+import { zUpdateGroup } from '@openpanel/core/modules/group/group.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';

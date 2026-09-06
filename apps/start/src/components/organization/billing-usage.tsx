@@ -1,4 +1,3 @@
-import { sum } from '@openpanel/common';
 import type { IServiceOrganization } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
@@ -11,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { sum } from '../../utils/math';
 import { BarShapeBlue } from '../charts/common-bar';
 import {
   useXAxisProps,

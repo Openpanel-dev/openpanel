@@ -1,17 +1,9 @@
-import { ColorSquare } from '@/components/color-square';
-import { ComboboxEvents } from '@/components/ui/combobox-events';
-import { Input } from '@/components/ui/input';
-import { InputEnter } from '@/components/ui/input-enter';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useDebounceFn } from '@/hooks/use-debounce-fn';
-import { useEventNames } from '@/hooks/use-event-names';
-import { useDispatch, useSelector } from '@/redux';
-import { alphabetIds } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventItem,
   IChartFormula,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
+import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import {
   addSerie,
   changeEvent,
@@ -21,6 +13,13 @@ import {
 import type { ReportEventMoreProps } from './ReportEventMore';
 import { ReportEventMore } from './ReportEventMore';
 import { ReportSeriesItem } from './ReportSeriesItem';
+import { ColorSquare } from '@/components/color-square';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
+import { Input } from '@/components/ui/input';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useDebounceFn } from '@/hooks/use-debounce-fn';
+import { useEventNames } from '@/hooks/use-event-names';
+import { useDispatch, useSelector } from '@/redux';
 
 export function ReportFixedEvents({
   numberOfEvents,
@@ -50,7 +49,7 @@ export function ReportFixedEvents({
           return dispatch(
             removeEvent({
               id: 'type' in event ? event.id : (event as IChartEvent).id,
-            }),
+            })
           );
         }
         case 'duplicate': {
@@ -87,16 +86,15 @@ export function ReportFixedEvents({
           // If no event exists at this index, render an empty slot
           if (!event) {
             return (
-              <div key={slotId} className="rounded-lg border bg-def-100">
+              <div className="rounded-lg border bg-def-100" key={slotId}>
                 <div className="flex items-center gap-2 p-2">
                   <ColorSquare>
                     <span className="block">{alphabetIds[index]}</span>
                   </ColorSquare>
                   <ComboboxEvents
                     className="flex-1"
-                    searchable
+                    items={eventNames}
                     multiple={isSelectManyEvents as false}
-                    value={''}
                     onChange={(value) => {
                       if (isSelectManyEvents) {
                         dispatch(
@@ -111,7 +109,7 @@ export function ReportFixedEvents({
                                 value: [value],
                               },
                             ],
-                          }),
+                          })
                         );
                       } else {
                         dispatch(
@@ -120,12 +118,13 @@ export function ReportFixedEvents({
                             name: value,
                             segment: 'event',
                             filters: [],
-                          }),
+                          })
                         );
                       }
                     }}
-                    items={eventNames}
                     placeholder="Select event"
+                    searchable
+                    value={''}
                   />
                 </div>
               </div>
@@ -139,18 +138,46 @@ export function ReportFixedEvents({
 
           return (
             <ReportSeriesItem
-              key={event.id}
+              className="rounded-lg border bg-def-100"
               event={event}
               index={index}
-              showSegment={showSegment}
-              showAddFilter={showAddFilter}
               isSelectManyEvents={isSelectManyEvents}
-              className="rounded-lg border bg-def-100"
+              key={event.id}
+              showAddFilter={showAddFilter}
+              showSegment={showSegment}
             >
               <ComboboxEvents
                 className="flex-1"
-                searchable
+                items={eventNames}
                 multiple={isSelectManyEvents as false}
+                onChange={(value) => {
+                  dispatch(
+                    changeEvent(
+                      Array.isArray(value)
+                        ? {
+                            id: event.id,
+                            type: 'event',
+                            segment: 'user',
+                            filters: [
+                              {
+                                name: 'name',
+                                operator: 'is',
+                                value,
+                              },
+                            ],
+                            name: '*',
+                          }
+                        : {
+                            ...event,
+                            type: 'event',
+                            name: value,
+                            filters: [],
+                          }
+                    )
+                  );
+                }}
+                placeholder="Select event"
+                searchable
                 value={
                   (isSelectManyEvents
                     ? ((
@@ -164,42 +191,9 @@ export function ReportFixedEvents({
                         }
                       ).name) as any
                 }
-                onChange={(value) => {
-                  dispatch(
-                    changeEvent(
-                      Array.isArray(value)
-                        ? {
-                            id: event.id,
-                            type: 'event',
-                            segment: 'user',
-                            filters: [
-                              {
-                                name: 'name',
-                                operator: 'is',
-                                value: value,
-                              },
-                            ],
-                            name: '*',
-                          }
-                        : {
-                            ...event,
-                            type: 'event',
-                            name: value,
-                            filters: [],
-                          },
-                    ),
-                  );
-                }}
-                items={eventNames}
-                placeholder="Select event"
               />
               {showDisplayNameInput && (
                 <Input
-                  placeholder={
-                    (event as IChartEventItem & { type: 'event' }).name
-                      ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
-                      : 'Display name'
-                  }
                   defaultValue={
                     (event as IChartEventItem & { type: 'event' }).displayName
                   }
@@ -211,6 +205,11 @@ export function ReportFixedEvents({
                       displayName: e.target.value,
                     });
                   }}
+                  placeholder={
+                    (event as IChartEventItem & { type: 'event' }).name
+                      ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
+                      : 'Display name'
+                  }
                 />
               )}
               <ReportEventMore onClick={handleMore(event)} />

@@ -14,7 +14,7 @@ import {
 } from '@/components/report/report-item';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { timeWindows } from '@openpanel/constants';
+import { timeWindows } from '@openpanel/core/modules/report/report.constants';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';

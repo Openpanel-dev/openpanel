@@ -1,13 +1,3 @@
-import type { PayloadAction } from '@reduxjs/toolkit';
-import { createSlice } from '@reduxjs/toolkit';
-
-import { shortId } from '@openpanel/common';
-import {
-  getDefaultIntervalByDates,
-  getDefaultIntervalByRange,
-  isHourIntervalEnabledByRange,
-  isMinuteIntervalEnabledByRange,
-} from '@openpanel/constants';
 import type {
   IChartBreakdown,
   IChartEventFilter,
@@ -19,10 +9,19 @@ import type {
   IInterval,
   IReport,
   IReportOptions,
-  UnionOmit,
   zCriteria,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
+import {
+  getDefaultIntervalByDates,
+  getDefaultIntervalByRange,
+  isHourIntervalEnabledByRange,
+  isMinuteIntervalEnabledByRange,
+} from '@openpanel/core/modules/report/report.constants';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import type { z } from 'zod';
+import { shortId } from '../../utils/math';
+import type { UnionOmit } from '../../utils/union-omit';
 
 type InitialState = IReport & {
   id?: string;
@@ -96,7 +95,7 @@ export const reportSlice = createSlice({
     // Series (Events and Formulas)
     addSerie: (
       state,
-      action: PayloadAction<UnionOmit<IChartEventItem, 'id'>>,
+      action: PayloadAction<UnionOmit<IChartEventItem, 'id'>>
     ) => {
       state.dirty = true;
       state.series.push({
@@ -126,7 +125,7 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id?: string;
-      }>,
+      }>
     ) => {
       state.dirty = true;
       state.series = state.series.filter((event) => {
@@ -152,7 +151,7 @@ export const reportSlice = createSlice({
     // Breakdowns
     addBreakdown: (
       state,
-      action: PayloadAction<Omit<IChartBreakdown, 'id'>>,
+      action: PayloadAction<Omit<IChartBreakdown, 'id'>>
     ) => {
       state.dirty = true;
       state.breakdowns.push({
@@ -164,11 +163,11 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id?: string;
-      }>,
+      }>
     ) => {
       state.dirty = true;
       state.breakdowns = state.breakdowns.filter(
-        (event) => event.id !== action.payload.id,
+        (event) => event.id !== action.payload.id
       );
     },
     changeBreakdown: (state, action: PayloadAction<IChartBreakdown>) => {
@@ -189,13 +188,13 @@ export const reportSlice = createSlice({
     removeGlobalFilter: (state, action: PayloadAction<{ id?: string }>) => {
       state.dirty = true;
       state.globalFilters = state.globalFilters.filter(
-        (filter) => filter.id !== action.payload.id,
+        (filter) => filter.id !== action.payload.id
       );
     },
     changeGlobalFilter: (state, action: PayloadAction<IChartEventFilter>) => {
       state.dirty = true;
       state.globalFilters = state.globalFilters.map((filter) =>
-        filter.id === action.payload.id ? action.payload : filter,
+        filter.id === action.payload.id ? action.payload : filter
       );
     },
 
@@ -256,7 +255,7 @@ export const reportSlice = createSlice({
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
-        state.endDate,
+        state.endDate
       );
       if (interval) {
         state.interval = interval;
@@ -270,7 +269,7 @@ export const reportSlice = createSlice({
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
-        state.endDate,
+        state.endDate
       );
       if (interval) {
         state.interval = interval;
@@ -346,7 +345,7 @@ export const reportSlice = createSlice({
     },
     changeSankeyMode(
       state,
-      action: PayloadAction<'between' | 'after' | 'before'>,
+      action: PayloadAction<'between' | 'after' | 'before'>
     ) {
       state.dirty = true;
       if (!state.options) {
@@ -413,7 +412,7 @@ export const reportSlice = createSlice({
     },
     reorderEvents(
       state,
-      action: PayloadAction<{ fromIndex: number; toIndex: number }>,
+      action: PayloadAction<{ fromIndex: number; toIndex: number }>
     ) {
       state.dirty = true;
       const { fromIndex, toIndex } = action.payload;
@@ -422,10 +421,7 @@ export const reportSlice = createSlice({
         state.series.splice(toIndex, 0, movedEvent);
       }
     },
-    changeVisibleSeries(
-      state,
-      action: PayloadAction<string[] | undefined>,
-    ) {
+    changeVisibleSeries(state, action: PayloadAction<string[] | undefined>) {
       state.dirty = true;
       state.visibleSeries = action.payload;
     },

@@ -1,6 +1,6 @@
 // import resolveConfig from 'tailwindcss/resolveConfig';
 
-import { chartColors } from '@openpanel/constants';
+import { chartColors } from '@openpanel/core/modules/report/report.constants';
 
 // import tailwinConfig from '../../tailwind.config';
 

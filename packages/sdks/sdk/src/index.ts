@@ -5,10 +5,10 @@
 // rollup-plugin-dts (tsup's dts bundler) cannot inline a type that resolves
 // through that map's `*` pattern: it leaves an unresolvable
 // `@openpanel/core/...` reference in dist/index.d.ts, which breaks for every
-// consumer since core isn't published. A plain deep import into
-// `@openpanel/validation` hits the same wall one hop later, since that
-// package now just re-exports core's. Keeping a literal copy here is what
-// keeps this package's shipped .d.ts self-contained. The SDK wire contract
+// consumer since core isn't published. A plain deep import into any
+// workspace-internal shim package hits the same wall one hop later, since
+// those packages now just re-export core's. Keeping a literal copy here is
+// what keeps this package's shipped .d.ts self-contained. The SDK wire contract
 // tests (verification/contracts/sdk) exercise both sides at runtime, so a
 // drift shows up as a behavioral failure even without a type-level check.
 import { Api } from './api';

@@ -1,10 +1,9 @@
-import { useDispatch, useSelector } from '@/redux';
-import { shortId } from '@openpanel/common';
 import { FilterIcon, type LucideIcon } from 'lucide-react';
-
+import { shortId } from '../../../utils/math';
 import { addGlobalFilter } from '../reportSlice';
-import { PropertiesCombobox } from './PropertiesCombobox';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';
+import { PropertiesCombobox } from './PropertiesCombobox';
+import { useDispatch, useSelector } from '@/redux';
 
 export function ReportGlobalFilters() {
   const globalFilters = useSelector((state) => state.report.globalFilters);
@@ -13,7 +12,7 @@ export function ReportGlobalFilters() {
   return (
     <div>
       <h3 className="mb-2 font-medium">Global filters</h3>
-      <p className="mb-2 text-sm text-muted-foreground">
+      <p className="mb-2 text-muted-foreground text-sm">
         Applied to every series in this report.
       </p>
       <div className="rounded-lg border bg-def-100">
@@ -26,7 +25,7 @@ export function ReportGlobalFilters() {
                 isCohortAction &&
                 globalFilters.some(
                   (f) =>
-                    f.operator === 'inCohort' || f.operator === 'notInCohort',
+                    f.operator === 'inCohort' || f.operator === 'notInCohort'
                 )
               ) {
                 return;
@@ -47,16 +46,13 @@ export function ReportGlobalFilters() {
                         operator: 'is',
                         value: [],
                         type: 'string',
-                      },
-                ),
+                      }
+                )
               );
             }}
           >
             {(setOpen) => (
-              <SmallButton
-                onClick={() => setOpen((p) => !p)}
-                icon={FilterIcon}
-              >
+              <SmallButton icon={FilterIcon} onClick={() => setOpen((p) => !p)}>
                 Add filter
               </SmallButton>
             )}
@@ -67,8 +63,8 @@ export function ReportGlobalFilters() {
           <div className="flex flex-col divide-y overflow-hidden rounded-b-lg">
             {globalFilters.map((filter) => (
               <GlobalFilterItem
-                key={filter.id ?? filter.name}
                 filter={filter}
+                key={filter.id ?? filter.name}
               />
             ))}
           </div>
@@ -88,11 +84,11 @@ function SmallButton({
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
+      className="flex min-w-0 items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-left font-medium text-sm leading-none"
       type="button"
-      className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none text-left min-w-0"
       {...props}
     >
-      <Icon size={12} className="shrink-0" />
+      <Icon className="shrink-0" size={12} />
       <span className="truncate">{children}</span>
     </button>
   );

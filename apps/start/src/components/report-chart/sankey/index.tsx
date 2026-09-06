@@ -1,14 +1,12 @@
-import { useTRPC } from '@/integrations/trpc/react';
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
-
-import type { IReportInput } from '@openpanel/validation';
-
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportSankeyChart() {
   const {
@@ -46,7 +44,7 @@ export function ReportSankeyChart() {
   const res = useQuery(
     trpc.chart.sankey.queryOptions(input, {
       enabled: !isLazyLoading && input.series.length > 0,
-    }),
+    })
   );
 
   if (isLazyLoading || res.isLoading) {

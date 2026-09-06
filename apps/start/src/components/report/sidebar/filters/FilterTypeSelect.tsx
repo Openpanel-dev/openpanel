@@ -1,8 +1,8 @@
+import type { IChartFilterValueType } from '@openpanel/core/modules/report/report.constants';
+import { filterValueTypes } from '@openpanel/core/modules/report/report.constants';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { mapKeys } from '@/utils/object-to-zod-enums';
-import { filterValueTypes } from '@openpanel/constants';
-import type { IChartFilterValueType } from '@openpanel/validation';
 
 interface FilterTypeSelectProps {
   value: IChartFilterValueType | undefined;
@@ -19,19 +19,19 @@ export function FilterTypeSelect({
   children,
 }: FilterTypeSelectProps) {
   const trigger = children ?? (
-    <Button variant="outline" className="whitespace-nowrap">
+    <Button className="whitespace-nowrap" variant="outline">
       {filterValueTypes[value ?? 'string']}
     </Button>
   );
 
   return (
     <DropdownMenuComposed
-      onChange={onChange}
       items={mapKeys(filterValueTypes).map((key) => ({
         value: key,
         label: filterValueTypes[key],
       }))}
       label="Value type"
+      onChange={onChange}
     >
       {trigger}
     </DropdownMenuComposed>

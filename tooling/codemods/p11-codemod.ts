@@ -7,18 +7,24 @@
  * docs/P11_DISSOLUTION_MAP.md verbatim. A row's `to` is the default target;
  * `toByConsumer[<workspace>]` overrides it for one workspace.
  *
- * Two things it does that a sed cannot:
+ * Three things it does that a sed cannot:
  *  - one import statement fans out to several targets (packages/db/src/types.ts
  *    splits eight ways), so statements are regrouped by target;
  *  - per-symbol `type` keywords are preserved exactly as written. A `type`
  *    keyword can sit on a runtime binding used only in `z.infer<typeof x>`;
  *    dropping it promotes an erased import into a real one and changes the
- *    bundle (ADR-008 risk 4).
+ *    bundle (ADR-008 risk 4);
+ *  - a named re-export (`export { X } from '@openpanel/validation'`) is
+ *    rewritten the same way an import is — same clause grammar, same
+ *    per-symbol targets.
  *
- * Usage: bun tooling/codemods/p11-repoint-imports.ts <file...>
+ * Idempotent: a rewritten specifier no longer matches DYING, so a second run
+ * over the same files changes nothing.
+ *
+ * Usage: bun tooling/codemods/p11-codemod.ts <file...>
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 
 interface MapRow {
@@ -43,14 +49,24 @@ for (const row of MAP) {
 const DYING = ['validation', 'constants', 'common', 'json']
   .map((name) => `@openpanel/${name}`)
   .join('|');
+// Matches both `import { … } from '…'` and the named re-export form
+// `export { … } from '…'` — same clause grammar, same per-symbol targets.
 const IMPORT_STATEMENT = new RegExp(
-  `import\\s+(type\\s+)?\\{([^}]*)\\}\\s*from\\s*'(${DYING})';`,
+  `(import|export)\\s+(type\\s+)?\\{([^}]*)\\}\\s*from\\s*'(${DYING})';`,
   'g'
 );
 
-/** `packages/core`, `apps/start`, … — the key `toByConsumer` is written in. */
+/**
+ * `packages/core`, `apps/start`, `packages/sdks/express`, … — the key
+ * `toByConsumer` is written in. A fixed segment count breaks on the
+ * doubly-nested SDK packages, so this walks up to the nearest package.json.
+ */
 function workspaceOf(file: string): string {
-  return relative(REPO_ROOT, file).split('/').slice(0, 2).join('/');
+  let dir = dirname(resolve(REPO_ROOT, file));
+  while (dir !== REPO_ROOT && !existsSync(resolve(dir, 'package.json'))) {
+    dir = dirname(dir);
+  }
+  return relative(REPO_ROOT, dir);
 }
 
 function targetSpecifier(target: string, file: string): string {
@@ -101,12 +117,16 @@ function parseBindings(clause: string, statementIsType: boolean): Binding[] {
     });
 }
 
-function render(bindings: Binding[], specifier: string): string {
+function render(
+  keyword: string,
+  bindings: Binding[],
+  specifier: string
+): string {
   const allType = bindings.every((b) => b.isType);
   const list = bindings
     .map((b) => (allType || !b.isType ? b.text : `type ${b.text}`))
     .join(', ');
-  return `import ${allType ? 'type ' : ''}{ ${list} } from '${specifier}';`;
+  return `${keyword} ${allType ? 'type ' : ''}{ ${list} } from '${specifier}';`;
 }
 
 let changedFiles = 0;
@@ -116,7 +136,7 @@ for (const file of process.argv.slice(2)) {
   const source = readFileSync(file, 'utf8');
   const next = source.replace(
     IMPORT_STATEMENT,
-    (statement, typeKeyword, clause, from) => {
+    (statement, keyword, typeKeyword, clause, from) => {
       const byTarget = new Map<string, Binding[]>();
       for (const binding of parseBindings(clause, Boolean(typeKeyword))) {
         const row = rows.get(`${from}\t${binding.symbol}`);
@@ -129,7 +149,7 @@ for (const file of process.argv.slice(2)) {
         byTarget.set(specifier, [...(byTarget.get(specifier) ?? []), binding]);
       }
       return [...byTarget.entries()]
-        .map(([specifier, bindings]) => render(bindings, specifier))
+        .map(([specifier, bindings]) => render(keyword, bindings, specifier))
         .join('\n');
     }
   );

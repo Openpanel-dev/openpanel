@@ -1,21 +1,12 @@
-import { countries } from '@/translations/countries';
-import type { RouterOutputs } from '@/trpc/client';
-import { cn } from '@/utils/cn';
-import type { InsightPayload } from '@openpanel/validation';
-import { pushModal } from '@/modals';
-import {
-  ArrowDown,
-  ArrowUp,
-  FilterIcon,
-  RotateCcwIcon,
-  SparklesIcon,
-} from 'lucide-react';
-import { last } from 'ramda';
+import { FilterIcon, RotateCcwIcon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { pushModal } from '@/modals';
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 
 function formatWindowKind(windowKind: string): string {
   switch (windowKind) {
@@ -46,7 +37,7 @@ export function InsightCard({
 
   // Pick what to display: prefer share if available (geo/devices), else primaryMetric
   const [metricIndex, setMetricIndex] = useState(
-    availableMetrics.findIndex(([key]) => key === payload?.primaryMetric),
+    availableMetrics.findIndex(([key]) => key === payload?.primaryMetric)
   );
   const currentMetricKey = availableMetrics[metricIndex][0];
   const currentMetricEntry = availableMetrics[metricIndex][1];
@@ -66,8 +57,12 @@ export function InsightCard({
 
   // Format metric values
   const formatValue = (value: number | null): string => {
-    if (value == null) return '-';
-    if (metricUnit === 'ratio') return `${(value * 100).toFixed(1)}%`;
+    if (value == null) {
+      return '-';
+    }
+    if (metricUnit === 'ratio') {
+      return `${(value * 100).toFixed(1)}%`;
+    }
     return Math.round(value).toLocaleString();
   };
 
@@ -84,7 +79,7 @@ export function InsightCard({
       dimensions[0]?.key === 'device'
     ) {
       return (
-        <span className="capitalize flex items-center gap-2">
+        <span className="flex items-center gap-2 capitalize">
           <SerieIcon name={dimensions[0]?.value} /> {insight.displayName}
         </span>
       );
@@ -107,22 +102,22 @@ export function InsightCard({
   return (
     <div
       className={cn(
-        'card p-4 h-full flex flex-col hover:bg-def-50 transition-colors group/card',
-        className,
+        'card group/card flex h-full flex-col p-4 transition-colors hover:bg-def-50',
+        className
       )}
     >
       <div
         className={cn(
-          'row justify-between h-4 items-center',
-          onFilter && 'group-hover/card:hidden',
+          'row h-4 items-center justify-between',
+          onFilter && 'group-hover/card:hidden'
         )}
       >
-        <Badge variant="outline" className="-ml-2">
+        <Badge className="-ml-2" variant="outline">
           {formatWindowKind(insight.windowKind)}
         </Badge>
         {/* Severity: subtle dot instead of big pill */}
         {insight.severityBand && (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             <span
               className={cn(
                 'h-2 w-2 rounded-full',
@@ -130,7 +125,7 @@ export function InsightCard({
                   ? 'bg-red-500'
                   : insight.severityBand === 'moderate'
                     ? 'bg-yellow-500'
-                    : 'bg-blue-500',
+                    : 'bg-blue-500'
               )}
             />
             <span className="text-[11px] text-muted-foreground capitalize">
@@ -140,42 +135,40 @@ export function InsightCard({
         )}
       </div>
       {onFilter && (
-        <div className="row group-hover/card:flex hidden h-4 justify-between gap-2">
+        <div className="row hidden h-4 justify-between gap-2 group-hover/card:flex">
           {availableMetrics.length > 1 ? (
             <button
-              type="button"
-              className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize"
               onClick={() =>
                 setMetricIndex((metricIndex + 1) % availableMetrics.length)
               }
+              type="button"
             >
               <RotateCcwIcon className="size-2" />
               Show{' '}
               {metricKeyToLabel(
-                availableMetrics[
-                  (metricIndex + 1) % availableMetrics.length
-                ][0],
+                availableMetrics[(metricIndex + 1) % availableMetrics.length][0]
               )}
             </button>
           ) : (
             <div />
           )}
           <button
-            type="button"
-            className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
+            className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize"
             onClick={onFilter}
+            type="button"
           >
             Filter <FilterIcon className="size-2" />
           </button>
         </div>
       )}
-      <div className="font-semibold text-sm leading-snug line-clamp-2 mt-2">
+      <div className="mt-2 line-clamp-2 font-semibold text-sm leading-snug">
         {renderTitle()}
       </div>
 
       {/* AI plain-language summary (Tier-1 enrichment) */}
       {insight.aiSummary && (
-        <p className="text-xs text-muted-foreground leading-snug line-clamp-3 mt-1">
+        <p className="mt-1 line-clamp-3 text-muted-foreground text-xs leading-snug">
           {insight.aiSummary}
         </p>
       )}
@@ -184,18 +177,18 @@ export function InsightCard({
       <div className="mt-auto pt-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[11px] text-muted-foreground mb-1">
+            <div className="mb-1 text-[11px] text-muted-foreground">
               {metricLabel}
             </div>
 
             <div className="col gap-1">
-              <div className="text-2xl font-semibold tracking-tight">
+              <div className="font-semibold text-2xl tracking-tight">
                 {formatValue(currentValue)}
               </div>
 
               {/* Inline compare, smaller */}
               {compareValue != null && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   vs {formatValue(compareValue)}
                 </div>
               )}
@@ -204,15 +197,15 @@ export function InsightCard({
 
           {/* Delta chip */}
           <DeltaChip
-            variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
             size="sm"
+            variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
           >
             {deltaText}
           </DeltaChip>
         </div>
 
         <Button
-          className="-ml-2 mt-2 h-7 self-start px-2 text-muted-foreground text-xs"
+          className="mt-2 -ml-2 h-7 self-start px-2 text-muted-foreground text-xs"
           icon={SparklesIcon}
           onClick={() => pushModal('InsightDetails', { insight })}
           size="sm"

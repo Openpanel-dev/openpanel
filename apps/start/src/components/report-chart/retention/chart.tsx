@@ -1,6 +1,3 @@
-import type { RouterOutputs } from '@/trpc/client';
-import { cn } from '@/utils/cn';
-import { getChartColor } from '@/utils/theme';
 import {
   Area,
   CartesianGrid,
@@ -11,11 +8,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-import { average, round } from '@openpanel/common';
+import { average, round } from '../../../utils/math';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { useReportChartContext } from '../context';
 import { RetentionTooltip } from './tooltip';
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
 
 interface Props {
   data: RouterOutputs['chart']['cohort'];
@@ -49,24 +48,24 @@ export function Chart({ data }: Props) {
         <ResponsiveContainer>
           <ComposedChart data={rechartData}>
             <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={true}
               className="stroke-border"
+              horizontal={true}
+              strokeDasharray="3 3"
+              vertical={true}
             />
             <YAxis {...yAxisProps} dataKey="retentionRate" domain={[0, 100]} />
             <XAxis
               {...xAxisProps}
-              dataKey="days"
               allowDuplicatedCategory
-              scale="linear"
-              tickFormatter={(value) => value.toString()}
-              tickCount={31}
+              dataKey="days"
               interval={0}
+              scale="linear"
+              tickCount={31}
+              tickFormatter={(value) => value.toString()}
             />
             <Tooltip content={<RetentionTooltip />} />
             <defs>
-              <linearGradient id={'color'} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={'color'} x1="0" x2="0" y1="0" y2="1">
                 <stop
                   offset="0%"
                   stopColor={getChartColor(0)}
@@ -80,27 +79,27 @@ export function Chart({ data }: Props) {
               </linearGradient>
             </defs>
             <ReferenceLine
-              y={averageRetentionRate}
-              stroke={getChartColor(1)}
-              strokeWidth={2}
-              strokeDasharray="3 3"
-              strokeOpacity={0.5}
-              strokeLinecap="round"
               label={{
                 value: `Average (${round(averageRetentionRate, 2)} %)`,
                 fill: getChartColor(1),
                 position: 'insideBottomRight',
                 fontSize: 12,
               }}
+              stroke={getChartColor(1)}
+              strokeDasharray="3 3"
+              strokeLinecap="round"
+              strokeOpacity={0.5}
+              strokeWidth={2}
+              y={averageRetentionRate}
             />
             <Area
               dataKey="percentage"
               fill={'url(#color)'}
-              type={'monotone'}
-              isAnimationActive={false}
-              strokeWidth={2}
-              stroke={getChartColor(0)}
               fillOpacity={0.1}
+              isAnimationActive={false}
+              stroke={getChartColor(0)}
+              strokeWidth={2}
+              type={'monotone'}
             />
           </ComposedChart>
         </ResponsiveContainer>

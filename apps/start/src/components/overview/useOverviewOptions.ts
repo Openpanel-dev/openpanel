@@ -1,3 +1,10 @@
+import type { IChartRange } from '@openpanel/core/modules/report/report.constants';
+import {
+  getDefaultIntervalByDates,
+  getDefaultIntervalByRange,
+  intervals,
+  timeWindows,
+} from '@openpanel/core/modules/report/report.constants';
 import { differenceInCalendarMonths } from 'date-fns';
 import {
   parseAsInteger,
@@ -5,31 +12,23 @@ import {
   parseAsStringEnum,
   useQueryState,
 } from 'nuqs';
-
 import { useCookieStore } from '@/hooks/use-cookie-store';
 import { mapKeys } from '@/utils/object-to-zod-enums';
-import {
-  getDefaultIntervalByDates,
-  getDefaultIntervalByRange,
-  intervals,
-  timeWindows,
-} from '@openpanel/constants';
-import type { IChartRange } from '@openpanel/validation';
 
 const nuqsOptions = { history: 'push' } as const;
 
 export function useOverviewOptions() {
   const [startDate, setStartDate] = useQueryState(
     'start',
-    parseAsString.withOptions(nuqsOptions),
+    parseAsString.withOptions(nuqsOptions)
   );
   const [endDate, setEndDate] = useQueryState(
     'end',
-    parseAsString.withOptions(nuqsOptions),
+    parseAsString.withOptions(nuqsOptions)
   );
   const [cookieRange, setCookieRange] = useCookieStore<IChartRange>(
     'range',
-    '7d',
+    '7d'
   );
   const [range, setRange] = useQueryState(
     'range',
@@ -38,14 +37,14 @@ export function useOverviewOptions() {
       .withOptions({
         ...nuqsOptions,
         clearOnDefault: false,
-      }),
+      })
   );
   const [overrideInterval, setInterval] = useQueryState(
     'overrideInterval',
     parseAsStringEnum(mapKeys(intervals)).withOptions({
       ...nuqsOptions,
       clearOnDefault: false,
-    }),
+    })
   );
 
   const interval =
@@ -55,7 +54,7 @@ export function useOverviewOptions() {
 
   const [metric, setMetric] = useQueryState(
     'metric',
-    parseAsInteger.withDefault(0).withOptions(nuqsOptions),
+    parseAsInteger.withDefault(0).withOptions(nuqsOptions)
   );
 
   return {

@@ -1,5 +1,5 @@
-import { getDefaultIntervalByDates } from '@openpanel/constants';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import { getDefaultIntervalByDates } from '@openpanel/core/modules/report/report.constants';
 import { endOfDay, subMonths } from 'date-fns';
 import { CheckIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';

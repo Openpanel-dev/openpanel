@@ -1,16 +1,16 @@
+import type { IChartEventFilter } from '@openpanel/core/modules/report/report.constants';
 import { FilterIcon, type LucideIcon, SlidersHorizontal } from 'lucide-react';
-import type { IChartEventFilter } from '@openpanel/validation';
+import { ModalHeader } from './Modal/Container';
+import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
+import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import {
   PropertiesCombobox,
   type PropertiesComboboxCategory,
 } from '@/components/report/sidebar/PropertiesCombobox';
-import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
-import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { SheetContent } from '@/components/ui/sheet';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { cn } from '@/utils/cn';
-import { ModalHeader } from './Modal/Container';
 
 export interface TableFiltersProps {
   /** URL query-string key the filters are stored under (matches useTableFilters). */
@@ -30,7 +30,7 @@ const Heading = ({
 }) => (
   <div className="row items-center gap-2">
     <Icon className="size-4" />
-    <h2 className="text-sm font-medium">{title}</h2>
+    <h2 className="font-medium text-sm">{title}</h2>
   </div>
 );
 
@@ -59,9 +59,11 @@ export default function TableFilters({
       // Only one cohort filter at a time — multi-cohort OR semantics already
       // live inside a single filter's cohortIds array.
       const hasCohort = filters.some(
-        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort',
+        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort'
       );
-      if (hasCohort) return;
+      if (hasCohort) {
+        return;
+      }
       setFilters([
         ...filters,
         {
@@ -92,9 +94,9 @@ export default function TableFilters({
       <ModalHeader title={title} />
       <Heading icon={SlidersHorizontal} title="Filters" />
       <div className="flex flex-col gap-2">
-        <div className={cn('bg-card rounded-lg border')}>
+        <div className={cn('rounded-lg border bg-card')}>
           {filters.length === 0 && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-muted-foreground text-sm">
               No filters selected
             </div>
           )}
@@ -106,12 +108,8 @@ export default function TableFilters({
               return (
                 <PureCohortFilterItem
                   className="border-t p-4 first:border-0"
-                  key={filter.id ?? filter.name}
                   filter={filter}
-                  onRemove={removeFilter}
-                  onChangeOperator={(operator, original) =>
-                    setFilter({ ...original, operator })
-                  }
+                  key={filter.id ?? filter.name}
                   onChangeCohort={(cohortIds, original) => {
                     // Write both cohort fields so legacy consumers reading
                     // `cohortId` keep working. Name stays stable as `cohort`
@@ -123,6 +121,10 @@ export default function TableFilters({
                       cohortIds,
                     });
                   }}
+                  onChangeOperator={(operator, original) =>
+                    setFilter({ ...original, operator })
+                  }
+                  onRemove={removeFilter}
                 />
               );
             }
@@ -130,12 +132,8 @@ export default function TableFilters({
               <PureFilterItem
                 className="border-t p-4 first:border-0"
                 eventName="screen_view"
-                key={filter.id ?? filter.name}
                 filter={filter}
-                onRemove={removeFilter}
-                onChangeValue={(value, original) =>
-                  setFilter({ ...original, value })
-                }
+                key={filter.id ?? filter.name}
                 onChangeOperator={(operator, original) =>
                   setFilter({
                     ...original,
@@ -143,6 +141,10 @@ export default function TableFilters({
                     value: original.value.filter(Boolean).slice(0, 1),
                   })
                 }
+                onChangeValue={(value, original) =>
+                  setFilter({ ...original, value })
+                }
+                onRemove={removeFilter}
               />
             );
           })}
@@ -150,11 +152,11 @@ export default function TableFilters({
         <PropertiesCombobox categories={categories} onSelect={addFilter}>
           {(setOpen) => (
             <Button
-              onClick={() => setOpen((p) => !p)}
-              variant="outline"
-              size="lg"
               className="w-full"
               icon={FilterIcon}
+              onClick={() => setOpen((p) => !p)}
+              size="lg"
+              variant="outline"
             >
               Add filter
             </Button>

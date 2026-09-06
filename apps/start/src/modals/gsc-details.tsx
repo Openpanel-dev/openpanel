@@ -1,4 +1,7 @@
-import type { IChartRange, IInterval } from '@openpanel/validation';
+import type {
+  IChartRange,
+  IInterval,
+} from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import {
   CartesianGrid,
@@ -133,7 +136,8 @@ export default function GscDetails(props: Props) {
             return { origin: url.origin, path: url.pathname + url.search };
           } catch {
             return {
-              origin: typeof window !== 'undefined' ? window.location.origin : '',
+              origin:
+                typeof window !== 'undefined' ? window.location.origin : '',
               path: value,
             };
           }

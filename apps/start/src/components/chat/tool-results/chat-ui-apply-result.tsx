@@ -1,4 +1,4 @@
-import { timeWindows } from '@openpanel/constants';
+import { timeWindows } from '@openpanel/core/modules/report/report.constants';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ToolResultProps } from './types';
@@ -73,8 +73,8 @@ export function SetEventNamesFilterResult({ part }: ToolResultProps) {
 
 function AppliedChip({ children }: { children: ReactNode }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-sm text-foreground/80">
-      <CheckIcon className="size-3.5 text-emerald-500 shrink-0" />
+    <div className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-foreground/80 text-sm">
+      <CheckIcon className="size-3.5 shrink-0 text-emerald-500" />
       <span className="truncate">{children}</span>
     </div>
   );

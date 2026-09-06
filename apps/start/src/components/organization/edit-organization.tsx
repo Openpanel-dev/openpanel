@@ -1,16 +1,15 @@
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/trpc/client';
+import type { IServiceOrganization } from '@openpanel/core';
+import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import type { IServiceOrganization } from '@openpanel/core';
-import { zEditOrganization } from '@openpanel/validation';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { useTRPC } from '@/integrations/trpc/react';
+import { handleError } from '@/trpc/client';
 
 const validator = zEditOrganization;
 
@@ -44,7 +43,7 @@ export default function EditOrganization({
         queryClient.invalidateQueries(trpc.organization.get.pathFilter());
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -57,7 +56,7 @@ export default function EditOrganization({
         <WidgetHead className="flex items-center justify-between">
           <span className="title">Details</span>
         </WidgetHead>
-        <WidgetBody className="gap-4 col">
+        <WidgetBody className="col gap-4">
           <InputWithLabel
             className="flex-1"
             label="Name"
@@ -65,28 +64,28 @@ export default function EditOrganization({
             defaultValue={organization?.name}
           />
           <Controller
-            name="timezone"
             control={control}
+            name="timezone"
             render={({ field }) => (
               <WithLabel label="Timezone">
                 <Combobox
-                  placeholder="Select timezone"
+                  className="w-full"
                   items={Intl.supportedValuesOf('timeZone').map((item) => ({
                     value: item,
                     label: item,
                   }))}
-                  value={field.value}
                   onChange={field.onChange}
-                  className="w-full"
+                  placeholder="Select timezone"
+                  value={field.value}
                 />
               </WithLabel>
             )}
           />
           <Button
+            className="self-end"
+            disabled={!formState.isDirty}
             size="sm"
             type="submit"
-            disabled={!formState.isDirty}
-            className="self-end"
           >
             Save
           </Button>

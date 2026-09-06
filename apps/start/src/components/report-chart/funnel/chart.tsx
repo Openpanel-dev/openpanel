@@ -1,5 +1,4 @@
-import { getPreviousMetric } from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
+import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { ChevronRightIcon, InfoIcon, UsersIcon } from 'lucide-react';
 import { useCallback } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { getPreviousMetric } from '../../../utils/math';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { SerieIcon } from '../common/serie-icon';
@@ -469,7 +469,9 @@ export function Chart({
     return (
       <div className="mt-4 -mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
         {visibleBreakdowns.map((breakdown, idx) => {
-          const stableIndex = data.current.findIndex((b) => b.id === breakdown.id);
+          const stableIndex = data.current.findIndex(
+            (b) => b.id === breakdown.id
+          );
           const colorIndex = stableIndex >= 0 ? stableIndex : idx;
           return (
             <div
@@ -568,7 +570,7 @@ export function Chart({
             {hasBreakdowns &&
               visibleBreakdowns.map((item, breakdownIndex) => {
                 const stableIndex = data.current.findIndex(
-                  (b) => b.id === item.id,
+                  (b) => b.id === item.id
                 );
                 const colorIndex =
                   stableIndex >= 0 ? stableIndex : breakdownIndex;
@@ -727,16 +729,16 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         return (
           <div className="row gap-2" key={key}>
             <div
-              className="w-[3px] rounded-full shrink-0"
+              className="w-[3px] shrink-0 rounded-full"
               style={{
                 background: getChartColor(colorIndex),
               }}
             />
-            <div className="col flex-1 gap-1 min-w-0">
+            <div className="col min-w-0 flex-1 gap-1">
               <div className="flex items-center gap-1">
                 <ChartName breakdowns={variant.breakdowns ?? []} />
               </div>
-              <div className="flex items-center justify-between gap-4 font-mono font-medium">
+              <div className="flex items-center justify-between gap-4 font-medium font-mono">
                 <div className="col gap-0.5">
                   <span>
                     {number.formatWithUnit(variant.step.percent / 100, '%')}

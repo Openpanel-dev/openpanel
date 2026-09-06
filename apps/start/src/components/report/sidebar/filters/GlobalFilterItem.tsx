@@ -1,18 +1,14 @@
-import { useDispatch } from '@/redux';
-import { getOperatorsForType } from '@openpanel/constants';
 import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
   IChartFilterValueType,
-} from '@openpanel/validation';
-
-import {
-  changeGlobalFilter,
-  removeGlobalFilter,
-} from '../../reportSlice';
+} from '@openpanel/core/modules/report/report.constants';
+import { getOperatorsForType } from '@openpanel/core/modules/report/report.constants';
+import { changeGlobalFilter, removeGlobalFilter } from '../../reportSlice';
 import { PureCohortFilterItem } from './CohortFilterItem';
 import { PureFilterItem } from './FilterItem';
+import { useDispatch } from '@/redux';
 
 interface GlobalFilterItemProps {
   filter: IChartEventFilter;
@@ -33,27 +29,27 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
 
   const onChangeValue = (
     value: IChartEventFilterValue[],
-    item: IChartEventFilter,
+    item: IChartEventFilter
   ) => {
     dispatch(changeGlobalFilter({ ...item, value }));
   };
 
   const onChangeOperator = (
     operator: IChartEventFilterOperator,
-    item: IChartEventFilter,
+    item: IChartEventFilter
   ) => {
     dispatch(
       changeGlobalFilter({
         ...item,
         value: item.value ? item.value.filter(Boolean).slice(0, 1) : [],
         operator,
-      }),
+      })
     );
   };
 
   const onChangeType = (
     type: IChartFilterValueType,
-    item: IChartEventFilter,
+    item: IChartEventFilter
   ) => {
     const allowed = getOperatorsForType(type);
     const operator = (allowed as readonly string[]).includes(item.operator)
@@ -71,7 +67,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
             : item.value
               ? item.value.filter(Boolean).slice(0, 1)
               : [],
-      }),
+      })
     );
   };
 
@@ -83,7 +79,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
         name: firstId ? `cohort:${firstId}` : item.name,
         cohortId: firstId,
         cohortIds,
-      }),
+      })
     );
   };
 
@@ -93,24 +89,24 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
   if (isCohortFilter) {
     return (
       <PureCohortFilterItem
-        filter={filter}
-        onRemove={onRemove}
-        onChangeOperator={onChangeOperator}
-        onChangeCohort={onChangeCohort}
         className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+        filter={filter}
+        onChangeCohort={onChangeCohort}
+        onChangeOperator={onChangeOperator}
+        onRemove={onRemove}
       />
     );
   }
 
   return (
     <PureFilterItem
-      filter={filter}
+      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
       eventName="*"
-      onRemove={onRemove}
-      onChangeValue={onChangeValue}
+      filter={filter}
       onChangeOperator={onChangeOperator}
       onChangeType={onChangeType}
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+      onChangeValue={onChangeValue}
+      onRemove={onRemove}
     />
   );
 }

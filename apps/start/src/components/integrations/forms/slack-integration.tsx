@@ -1,14 +1,14 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateSlackIntegration } from '@openpanel/core/modules/integration/integration.constants';
+import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateSlackIntegration } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type IForm = z.infer<typeof zCreateSlackIntegration>;
 
@@ -39,7 +39,7 @@ export function SlackIntegrationForm({
       onError() {
         toast.error('Failed to create integration');
       },
-    }),
+    })
   );
 
   const handleSubmit = (values: IForm) => {
@@ -52,8 +52,8 @@ export function SlackIntegrationForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit, handleError)}
       className="col gap-4"
+      onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
         label="Name"

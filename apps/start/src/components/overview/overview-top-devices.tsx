@@ -1,12 +1,7 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useMemo, useState } from 'react';
-
-import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IChartType } from '@openpanel/validation';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
+import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
@@ -23,6 +18,9 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 interface OverviewTopDevicesProps {
   projectId: string;
@@ -68,10 +66,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top devices',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -105,10 +103,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top browser',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -149,10 +147,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top Browser Version',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -186,10 +184,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top OS',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -230,10 +228,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top OS version',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -267,10 +265,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top Brands',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -311,10 +309,10 @@ export default function OverviewTopDevices({
           ],
           chartType,
           lineType: 'monotone',
-          interval: interval,
+          interval,
           name: 'Top Models',
-          range: range,
-          previous: previous,
+          range,
+          previous,
           metric: 'sum',
         },
       },
@@ -333,7 +331,7 @@ export default function OverviewTopDevices({
       column: widget.key,
       startDate,
       endDate,
-    }),
+    })
   );
 
   const seriesQuery = useQuery(
@@ -350,8 +348,8 @@ export default function OverviewTopDevices({
       },
       {
         enabled: view === 'chart',
-      },
-    ),
+      }
+    )
   );
 
   const filteredData = useMemo(() => {
@@ -372,13 +370,13 @@ export default function OverviewTopDevices({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {view === 'chart' ? (
@@ -398,19 +396,18 @@ export default function OverviewTopDevices({
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              data={filteredData}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],
                 render(item) {
                   return (
-                    <div className="row items-center gap-2 min-w-0 relative">
+                    <div className="row relative min-w-0 items-center gap-2">
                       <SerieIcon name={item.name || NOT_SET_VALUE} />
                       <button
-                        type="button"
                         className="truncate"
                         onClick={() => {
                           setFilter(widget.key, item.name);
                         }}
+                        type="button"
                       >
                         {item.name || 'Not set'}
                       </button>
@@ -418,6 +415,7 @@ export default function OverviewTopDevices({
                   );
                 },
               }}
+              data={filteredData}
             />
           )}
         </WidgetBody>

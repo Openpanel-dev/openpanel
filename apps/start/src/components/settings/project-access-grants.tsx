@@ -1,3 +1,4 @@
+import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import {
   Select,
@@ -6,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IProjectAccessGrant } from '@openpanel/validation';
 
 interface ProjectAccessGrantsProps {
   value: IProjectAccessGrant[];
@@ -35,47 +35,47 @@ export function ProjectAccessGrants({
             projectId,
             // Write is the default: restricting someone is the deliberate act.
             level: 'write' as const,
-          },
-      ),
+          }
+      )
     );
   };
 
   const handleLevelChange = (projectId: string, level: 'read' | 'write') => {
     onChange(
       value.map((grant) =>
-        grant.projectId === projectId ? { ...grant, level } : grant,
-      ),
+        grant.projectId === projectId ? { ...grant, level } : grant
+      )
     );
   };
 
   return (
     <div className="col gap-2">
       <ComboboxAdvanced
-        placeholder="Restrict access to projects"
-        value={selectedIds}
-        onChange={(ids) => handleSelectionChange(ids as string[])}
         items={projects.map((project) => ({
           label: project.name,
           value: project.id,
         }))}
+        onChange={(ids) => handleSelectionChange(ids as string[])}
+        placeholder="Restrict access to projects"
+        value={selectedIds}
       />
 
       {value.length > 0 && (
         <div className="col divide-y rounded-lg border">
           {value.map((grant) => (
             <div
-              key={grant.projectId}
               className="row items-center justify-between gap-2 p-2"
+              key={grant.projectId}
             >
               <span className="truncate text-sm">
                 {projects.find((project) => project.id === grant.projectId)
                   ?.name ?? grant.projectId}
               </span>
               <Select
-                value={grant.level}
                 onValueChange={(level) =>
                   handleLevelChange(grant.projectId, level as 'read' | 'write')
                 }
+                value={grant.level}
               >
                 <SelectTrigger className="w-36 shrink-0">
                   <SelectValue />

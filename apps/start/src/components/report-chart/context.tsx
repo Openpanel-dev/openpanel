@@ -1,8 +1,10 @@
+import type {
+  IChartSerie,
+  IReportInput,
+} from '@openpanel/core/modules/report/report.constants';
 import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-
-import type { IChartSerie, IReportInput } from '@openpanel/validation';
 
 export type ReportChartContextType = {
   options: Partial<{
@@ -45,7 +47,7 @@ export const useReportChartContext = () => {
   const ctx = useContext(context);
   if (!ctx) {
     throw new Error(
-      'useReportChartContext must be used within a ReportChartProvider',
+      'useReportChartContext must be used within a ReportChartProvider'
     );
   }
   return ctx;

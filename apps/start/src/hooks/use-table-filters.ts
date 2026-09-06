@@ -1,9 +1,7 @@
+import type { IChartEventFilter } from '@openpanel/core/modules/report/report.constants';
 import type { Options as NuqsOptions } from 'nuqs';
 import { useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';
-
-import type { IChartEventFilter } from '@openpanel/validation';
-
 import { eventQueryFiltersParser } from './use-event-query-filters';
 
 const nuqsOptions = { history: 'push' } as const;
@@ -15,22 +13,19 @@ const nuqsOptions = { history: 'push' } as const;
  */
 export function useTableFilters(
   key = 'f',
-  options: NuqsOptions = {},
-): [
-  IChartEventFilter[],
-  (next: IChartEventFilter[]) => void,
-] {
+  options: NuqsOptions = {}
+): [IChartEventFilter[], (next: IChartEventFilter[]) => void] {
   const [rawFilters, setFilters] = useQueryState(
     key,
     eventQueryFiltersParser.withDefault([]).withOptions({
       ...nuqsOptions,
       ...options,
-    }),
+    })
   );
 
   const filters = useMemo<IChartEventFilter[]>(
     () => rawFilters as unknown as IChartEventFilter[],
-    [rawFilters],
+    [rawFilters]
   );
 
   const setAll = useCallback(
@@ -48,10 +43,10 @@ export function useTableFilters(
             ? { cohortIds: filter.cohortIds }
             : {}),
           ...(filter.cohortId ? { cohortId: filter.cohortId } : {}),
-        })),
+        }))
       );
     },
-    [setFilters],
+    [setFilters]
   );
 
   return [filters, setAll];

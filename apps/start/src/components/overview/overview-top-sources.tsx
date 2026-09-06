@@ -1,10 +1,6 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useMemo, useState } from 'react';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
-import { NOT_SET_VALUE } from '@openpanel/constants';
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
@@ -21,6 +17,9 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 interface OverviewTopSourcesProps {
   projectId: string;
@@ -79,7 +78,7 @@ export default function OverviewTopSources({
       column: widget.key,
       startDate,
       endDate,
-    }),
+    })
   );
 
   const seriesQuery = useQuery(
@@ -96,8 +95,8 @@ export default function OverviewTopSources({
       },
       {
         enabled: view === 'chart',
-      },
-    ),
+      }
+    )
   );
 
   const filteredData = useMemo(() => {
@@ -118,13 +117,13 @@ export default function OverviewTopSources({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {view === 'chart' ? (
@@ -144,26 +143,25 @@ export default function OverviewTopSources({
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              data={filteredData}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],
                 render(item) {
                   return (
-                    <div className="row items-center gap-2 min-w-0 relative">
+                    <div className="row relative min-w-0 items-center gap-2">
                       <SerieIcon name={item.name || NOT_SET_VALUE} />
                       <button
-                        type="button"
                         className="truncate"
                         onClick={() => {
                           if (widget.key.startsWith('utm_')) {
                             setFilter(
                               `properties.__query.${widget.key}`,
-                              item.name,
+                              item.name
                             );
                           } else {
                             setFilter(widget.key, item.name);
                           }
                         }}
+                        type="button"
                       >
                         {(item.name || 'Direct / Not set')
                           .replace(/https?:\/\//, '')
@@ -173,6 +171,7 @@ export default function OverviewTopSources({
                   );
                 },
               }}
+              data={filteredData}
             />
           )}
         </WidgetBody>

@@ -1,34 +1,33 @@
-import { ColorSquare } from '@/components/color-square';
-import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
-import { FilterTypeSelect } from '@/components/report/sidebar/filters/FilterTypeSelect';
-import { RenderDots } from '@/components/ui/RenderDots';
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
-import { ComboboxEvents } from '@/components/ui/combobox-events';
-import { InputEnter } from '@/components/ui/input-enter';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useEventNames } from '@/hooks/use-event-names';
-import { usePropertyValues } from '@/hooks/use-property-values';
-import { useDispatch } from '@/redux';
-import { getOperatorsForType } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
   IChartFilterValueType,
-} from '@openpanel/validation';
-
+} from '@openpanel/core/modules/report/report.constants';
+import { getOperatorsForType } from '@openpanel/core/modules/report/report.constants';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
+import { ColorSquare } from '@/components/color-square';
+import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
+import { FilterTypeSelect } from '@/components/report/sidebar/filters/FilterTypeSelect';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
+import { InputEnter } from '@/components/ui/input-enter';
+import { RenderDots } from '@/components/ui/RenderDots';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useEventNames } from '@/hooks/use-event-names';
+import { usePropertyValues } from '@/hooks/use-property-values';
+import { useDispatch } from '@/redux';
 
 // Client-side sanity check: can this raw value possibly match the chosen cast
 // type? Mirrors the SQL casts in packages/db filter-cast.ts. Returns an error
 // message to show inline, or undefined when valid (or empty / untyped).
 function validateFilterValue(
   value: string,
-  type: IChartFilterValueType | undefined,
+  type: IChartFilterValueType | undefined
 ): string | undefined {
   if (!value) {
     return undefined;
@@ -59,17 +58,17 @@ interface PureFilterProps {
   onRemove: (filter: IChartEventFilter) => void;
   onChangeValue: (
     value: IChartEventFilterValue[],
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => void;
   onChangeOperator: (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => void;
   // Optional: surfaces the cast-type select. Callers that don't pass it (the
   // overview/table/cohort modals) simply don't render the control.
   onChangeType?: (
     type: IChartFilterValueType,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => void;
   className?: string;
   immediateInput?: boolean;
@@ -82,13 +81,13 @@ export function FilterItem({ filter, event }: FilterProps) {
         ...event,
         filters: event.filters.filter((item) => item.id !== id),
         type: 'event',
-      }),
+      })
     );
   };
 
   const onChangeValue = (
     value: IChartEventFilterValue[],
-    { id }: IChartEventFilter,
+    { id }: IChartEventFilter
   ) => {
     dispatch(
       changeEvent({
@@ -104,13 +103,13 @@ export function FilterItem({ filter, event }: FilterProps) {
 
           return item;
         }),
-      }),
+      })
     );
   };
 
   const onChangeOperator = (
     operator: IChartEventFilterOperator,
-    { id }: IChartEventFilter,
+    { id }: IChartEventFilter
   ) => {
     dispatch(
       changeEvent({
@@ -127,13 +126,13 @@ export function FilterItem({ filter, event }: FilterProps) {
 
           return item;
         }),
-      }),
+      })
     );
   };
 
   const onChangeType = (
     type: IChartFilterValueType,
-    { id }: IChartEventFilter,
+    { id }: IChartEventFilter
   ) => {
     dispatch(
       changeEvent({
@@ -149,7 +148,7 @@ export function FilterItem({ filter, event }: FilterProps) {
           // like onChangeOperator does, since the input shape may change).
           const allowed = getOperatorsForType(type);
           const operator = (allowed as readonly string[]).includes(
-            item.operator,
+            item.operator
           )
             ? item.operator
             : allowed[0]!;
@@ -166,20 +165,20 @@ export function FilterItem({ filter, event }: FilterProps) {
                   : [],
           };
         }),
-      }),
+      })
     );
   };
 
   const dispatch = useDispatch();
   return (
     <PureFilterItem
-      filter={filter}
+      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
       eventName={event.name}
-      onRemove={onRemove}
-      onChangeValue={onChangeValue}
+      filter={filter}
       onChangeOperator={onChangeOperator}
       onChangeType={onChangeType}
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+      onChangeValue={onChangeValue}
+      onRemove={onRemove}
     />
   );
 }
@@ -211,13 +210,11 @@ export function PureFilterItem({
   // Only the free-text input path (gt/gte/lt/lte) carries a single typed value
   // we can validate inline; is/isNot use a multi-value combobox.
   const usesTypedInput =
-    showTypeSelect &&
-    filter.operator !== 'is' &&
-    filter.operator !== 'isNot';
+    showTypeSelect && filter.operator !== 'is' && filter.operator !== 'isNot';
   const valueError = usesTypedInput
     ? validateFilterValue(
         filter.value[0] != null ? String(filter.value[0]) : '',
-        filter.type,
+        filter.type
       )
     : undefined;
 
@@ -265,11 +262,9 @@ export function PureFilterItem({
         <Combobox
           className="flex-1"
           items={BOOLEAN_VALUE_ITEMS}
-          value={
-            filter.value[0] === undefined ? null : String(filter.value[0])
-          }
           onChange={(v) => changeFilterValue([v])}
           placeholder="Yes / No"
+          value={filter.value[0] === undefined ? null : String(filter.value[0])}
         />
       );
     }
@@ -279,10 +274,10 @@ export function PureFilterItem({
         <ComboboxEvents
           className="flex-1"
           items={eventNames}
-          value={filter.value[0] ? String(filter.value[0]) : null}
           onChange={(v: string) => changeFilterValue([v])}
           placeholder="Select event"
           searchable
+          value={filter.value[0] ? String(filter.value[0]) : null}
         />
       );
     }
@@ -290,21 +285,21 @@ export function PureFilterItem({
     if (filter.operator === 'is' || filter.operator === 'isNot') {
       return (
         <ComboboxAdvanced
-          items={valuesCombobox}
-          value={filter.value}
           className="flex-1"
+          items={valuesCombobox}
           onChange={changeFilterValue}
           placeholder="Select..."
+          value={filter.value}
         />
       );
     }
 
     return (
       <InputEnter
-        value={filter.value[0] ? String(filter.value[0]) : ''}
-        onChangeValue={(value) => changeFilterValue([value])}
-        immediate={immediateInput}
         error={valueError}
+        immediate={immediateInput}
+        onChangeValue={(value) => changeFilterValue([value])}
+        value={filter.value[0] ? String(filter.value[0]) : ''}
       />
     );
   };
@@ -315,24 +310,21 @@ export function PureFilterItem({
         <ColorSquare className="bg-emerald-500">
           <SlidersHorizontal size={10} />
         </ColorSquare>
-        <div className="flex flex-1 ">
+        <div className="flex flex-1">
           <RenderDots truncate>{filter.name}</RenderDots>
         </div>
-        <Button variant="ghost" size="sm" onClick={removeFilter}>
+        <Button onClick={removeFilter} size="sm" variant="ghost">
           <Trash size={16} />
         </Button>
       </div>
       <div className="flex gap-1">
         {showTypeSelect && (
-          <FilterTypeSelect
-            value={filter.type}
-            onChange={changeFilterType}
-          />
+          <FilterTypeSelect onChange={changeFilterType} value={filter.type} />
         )}
         <FilterOperatorSelect
-          value={filter.operator}
           onChange={changeFilterOperator}
           type={filter.type}
+          value={filter.operator}
         />
         {renderValueControl()}
       </div>

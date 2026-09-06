@@ -1,6 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zResetPassword } from '@openpanel/validation';
+import { zResetPassword } from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
@@ -8,6 +7,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { useTRPC } from '@/integrations/trpc/react';
 
 const validator = zResetPassword;
 type IForm = z.infer<typeof validator>;
@@ -26,7 +26,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       onError(error) {
         toast.error(error.message);
       },
-    }),
+    })
   );
 
   const form = useForm<IForm>({
@@ -44,17 +44,17 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <div className="col gap-8">
       <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+        <h1 className="mb-2 font-bold text-3xl text-foreground">
           Reset your password
         </h1>
         <p className="text-muted-foreground">
           Already have an account?{' '}
-          <a href="/login" className="underline">
+          <a className="underline" href="/login">
             Sign in
           </a>
         </p>
       </div>
-      <form onSubmit={onSubmit} className="col gap-6">
+      <form className="col gap-6" onSubmit={onSubmit}>
         <InputWithLabel
           label="New password"
           placeholder="New password"

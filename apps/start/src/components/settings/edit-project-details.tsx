@@ -1,3 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { IServiceProjectWithClients } from '@openpanel/core';
+import { zProject } from '@openpanel/core/modules/project/project.constants';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { SaveIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import AnimateHeight from '@/components/animate-height';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
@@ -8,15 +17,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceProjectWithClients } from '@openpanel/core';
-import { zProject } from '@openpanel/validation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { SaveIcon } from 'lucide-react';
-import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type Props = { project: IServiceProjectWithClients };
 
@@ -53,15 +53,15 @@ export default function EditProjectDetails({ project }: Props) {
         queryClient.invalidateQueries(
           trpc.project.list.queryFilter({
             organizationId: project.organizationId,
-          }),
+          })
         );
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.queryFilter({
             projectId: project.id,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   const onSubmit = (values: IForm) => {
@@ -92,19 +92,19 @@ export default function EditProjectDetails({ project }: Props) {
   };
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Details</span>
       </WidgetHead>
       <WidgetBody>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
+        <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <InputWithLabel
             label="Name"
             {...form.register('name')}
             defaultValue={project.name}
           />
 
-          <div className="-mb-2 flex gap-2 items-center justify-between">
+          <div className="-mb-2 flex items-center justify-between gap-2">
             <Label className="mb-0">Domain</Label>
             <Switch checked={hasDomain} onCheckedChange={setHasDomain} />
           </div>
@@ -113,26 +113,21 @@ export default function EditProjectDetails({ project }: Props) {
               placeholder="https://example.com"
               {...form.register('domain')}
               className="mb-4"
-              error={form.formState.errors.domain?.message}
               defaultValue={project.domain ?? ''}
+              error={form.formState.errors.domain?.message}
             />
 
             <Controller
-              name="cors"
               control={form.control}
+              name="cors"
               render={({ field }) => (
                 <WithLabel
-                  label="Allowed domains"
                   error={form.formState.errors.cors?.message}
+                  label="Allowed domains"
                 >
                   <TagInput
                     {...field}
                     error={form.formState.errors.cors?.message}
-                    placeholder="Add a domain"
-                    value={field.value ?? []}
-                    renderTag={(tag) =>
-                      tag === '*' ? 'Allow all domains' : tag
-                    }
                     onChange={(newValue) => {
                       field.onChange(
                         newValue.map((item) => {
@@ -145,24 +140,29 @@ export default function EditProjectDetails({ project }: Props) {
                             return trimmed;
                           }
                           return `https://${trimmed}`;
-                        }),
+                        })
                       );
                     }}
+                    placeholder="Add a domain"
+                    renderTag={(tag) =>
+                      tag === '*' ? 'Allow all domains' : tag
+                    }
+                    value={field.value ?? []}
                   />
                 </WithLabel>
               )}
             />
             <Controller
-              name="crossDomain"
               control={form.control}
+              name="crossDomain"
               render={({ field }) => {
                 return (
-                  <WithLabel label="Cross domain support" className="mt-4">
+                  <WithLabel className="mt-4" label="Cross domain support">
                     <CheckboxInput
-                      ref={field.ref}
-                      onBlur={field.onBlur}
                       defaultChecked={field.value}
+                      onBlur={field.onBlur}
                       onCheckedChange={field.onChange}
+                      ref={field.ref}
                     >
                       <div>Enable cross domain support</div>
                       <div className="font-normal text-muted-foreground">
@@ -176,16 +176,16 @@ export default function EditProjectDetails({ project }: Props) {
           </AnimateHeight>
 
           <Controller
-            name="allowUnsafeRevenueTracking"
             control={form.control}
+            name="allowUnsafeRevenueTracking"
             render={({ field }) => {
               return (
                 <WithLabel label="Revenue tracking">
                   <CheckboxInput
-                    ref={field.ref}
-                    onBlur={field.onBlur}
                     defaultChecked={field.value}
+                    onBlur={field.onBlur}
                     onCheckedChange={field.onChange}
+                    ref={field.ref}
                   >
                     <div>Allow "unsafe" revenue tracking</div>
                     <div className="font-normal text-muted-foreground">
@@ -198,10 +198,10 @@ export default function EditProjectDetails({ project }: Props) {
           />
 
           <Button
+            className="self-start"
+            icon={SaveIcon}
             loading={mutation.isPending}
             type="submit"
-            icon={SaveIcon}
-            className="self-start"
           >
             Save
           </Button>

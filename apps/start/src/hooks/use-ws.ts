@@ -1,8 +1,7 @@
 import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
-
-import { getSuperJson } from '@openpanel/json';
+import { getSuperJson } from '../utils/super-json';
 import { useAppContext } from './use-app-context';
 
 type UseWSOptions = {
@@ -15,7 +14,7 @@ type UseWSOptions = {
 export default function useWS<T>(
   path: string,
   onMessage: (event: T) => void,
-  options?: UseWSOptions,
+  options?: UseWSOptions
 ) {
   const context = useAppContext();
   const ws = context.apiUrl.replace(/^https/, 'wss').replace(/^http/, 'ws');
@@ -39,7 +38,9 @@ export default function useWS<T>(
   }, [options?.debounce?.delay, options?.debounce?.maxWait]);
 
   useEffect(() => {
-    if (baseUrl === `${ws}${path}`) return;
+    if (baseUrl === `${ws}${path}`) {
+      return;
+    }
     setBaseUrl(`${ws}${path}`);
   }, [path, baseUrl, ws]);
 

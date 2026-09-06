@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button';
-import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import type {
+  IChartEventFilterOperator,
+  IChartFilterValueType,
+} from '@openpanel/core/modules/report/report.constants';
 import {
   getOperatorsForType,
   operators,
   operatorsShort,
-} from '@openpanel/constants';
-import type {
-  IChartEventFilterOperator,
-  IChartFilterValueType,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
+import { Button } from '@/components/ui/button';
+import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 
 interface FilterOperatorSelectProps {
   value: IChartEventFilterOperator;
@@ -26,14 +26,13 @@ export function FilterOperatorSelect({
   children,
 }: FilterOperatorSelectProps) {
   const trigger = children ?? (
-    <Button variant="outline" className="whitespace-nowrap">
+    <Button className="whitespace-nowrap" variant="outline">
       {operatorsShort[value]}
     </Button>
   );
 
   return (
     <DropdownMenuComposed
-      onChange={onChange}
       items={getOperatorsForType(type).map((key) => ({
         value: key,
         label: operatorsShort[key],
@@ -43,6 +42,7 @@ export function FilterOperatorSelect({
           operatorsShort[key] === operators[key] ? undefined : operators[key],
       }))}
       label="Operator"
+      onChange={onChange}
     >
       {trigger}
     </DropdownMenuComposed>

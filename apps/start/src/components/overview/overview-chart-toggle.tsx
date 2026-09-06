@@ -1,8 +1,6 @@
+import type { IChartType } from '@openpanel/core/modules/report/report.constants';
 import { BarChartIcon, LineChartIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
-
-import type { IChartType } from '@openpanel/validation';
-
 import { Button } from '../ui/button';
 
 interface Props {
@@ -12,11 +10,11 @@ interface Props {
 export function OverviewChartToggle({ chartType, setChartType }: Props) {
   return (
     <Button
-      size={'icon'}
-      variant={'ghost'}
       onClick={() => {
         setChartType((p) => (p === 'linear' ? 'bar' : 'linear'));
       }}
+      size={'icon'}
+      variant={'ghost'}
     >
       {chartType === 'bar' ? (
         <LineChartIcon size={16} />

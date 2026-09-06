@@ -1,8 +1,6 @@
-import { cn } from '@/utils/cn';
-
-import { DEFAULT_ASPECT_RATIO } from '@openpanel/constants';
-
+import { DEFAULT_ASPECT_RATIO } from '@openpanel/core/modules/report/report.constants';
 import { useReportChartContext } from './context';
+import { cn } from '@/utils/cn';
 
 interface AspectContainerProps {
   children: React.ReactNode;

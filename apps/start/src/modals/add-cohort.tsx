@@ -1,3 +1,11 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { CohortDefinition } from '@openpanel/core/modules/cohort/cohort.constants';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
 import { ButtonContainer } from '@/components/button-container';
 import { CohortCriteriaBuilder } from '@/components/cohort/cohort-criteria-builder';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
@@ -7,15 +15,6 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CohortDefinition } from '@openpanel/validation';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-
-import { popModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
@@ -55,7 +54,7 @@ export default function AddCohort() {
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -86,17 +85,17 @@ export default function AddCohort() {
 
         <div className="flex items-center gap-2">
           <Controller
-            name="isStatic"
             control={control}
+            name="isStatic"
             render={({ field }) => (
               <Switch
-                id="isStatic"
                 checked={field.value}
+                id="isStatic"
                 onCheckedChange={field.onChange}
               />
             )}
           />
-          <Label htmlFor="isStatic" className="cursor-pointer text-sm mb-0">
+          <Label className="mb-0 cursor-pointer text-sm" htmlFor="isStatic">
             Freeze snapshot (don&apos;t auto-refresh)
           </Label>
         </div>
@@ -104,8 +103,8 @@ export default function AddCohort() {
         <div>
           <Label className="mb-2 block">Cohort Criteria</Label>
           <Controller
-            name="definition"
             control={control}
+            name="definition"
             render={({ field }) => (
               <CohortCriteriaBuilder
                 definition={field.value as CohortDefinition}
@@ -116,10 +115,10 @@ export default function AddCohort() {
         </div>
 
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Create
           </Button>
         </ButtonContainer>

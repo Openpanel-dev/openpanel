@@ -1,17 +1,14 @@
-import { ButtonContainer } from '@/components/button-container';
-import { Button } from '@/components/ui/button';
-import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
+import type { IServiceMember } from '@openpanel/core';
+import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-import type { IServiceMember } from '@openpanel/core';
-import type { IProjectAccessGrant } from '@openpanel/validation';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { ButtonContainer } from '@/components/button-container';
+import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
+import { Button } from '@/components/ui/button';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type EditMemberProps = IServiceMember;
 
@@ -29,7 +26,7 @@ export default function EditMember(member: EditMemberProps) {
   const [access, setAccess] = useState<IProjectAccessGrant[]>(toGrants);
 
   const projectsQuery = useQuery(
-    trpc.project.list.queryOptions({ organizationId: member.organizationId }),
+    trpc.project.list.queryOptions({ organizationId: member.organizationId })
   );
 
   const mutation = useMutation(
@@ -44,7 +41,7 @@ export default function EditMember(member: EditMemberProps) {
         queryClient.invalidateQueries(trpc.organization.members.pathFilter());
         popModal();
       },
-    }),
+    })
   );
 
   const projects = projectsQuery.data ?? [];
@@ -63,24 +60,24 @@ export default function EditMember(member: EditMemberProps) {
 
       <div className="col gap-4">
         <ProjectAccessGrants
-          value={access}
           onChange={setAccess}
           projects={projects}
+          value={access}
         />
 
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
           <Button
+            disabled={mutation.isPending}
             onClick={() =>
               mutation.mutate({
                 userId: member.user!.id,
                 organizationId: member.organizationId,
-                access: access,
+                access,
               })
             }
-            disabled={mutation.isPending}
           >
             Save
           </Button>

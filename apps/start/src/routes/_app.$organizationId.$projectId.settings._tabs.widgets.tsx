@@ -8,10 +8,7 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import type {
-  IRealtimeWidgetOptions,
-  IWidgetType,
-} from '@openpanel/validation';
+import type { IRealtimeWidgetOptions, IWidgetType } from '@openpanel/core/modules/report/report.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ExternalLinkIcon } from 'lucide-react';

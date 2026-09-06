@@ -1,14 +1,8 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useMemo, useState } from 'react';
-
-import type { IChartType } from '@openpanel/validation';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
-import { countries } from '@/translations/countries';
-import { NOT_SET_VALUE } from '@openpanel/constants';
+import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
@@ -30,6 +24,10 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
+import { countries } from '@/translations/countries';
 
 interface OverviewTopGeoProps {
   projectId: string;
@@ -72,7 +70,7 @@ export default function OverviewTopGeo({
       column: widget.key,
       startDate,
       endDate,
-    }),
+    })
   );
 
   const seriesQuery = useQuery(
@@ -89,8 +87,8 @@ export default function OverviewTopGeo({
       },
       {
         enabled: view === 'chart',
-      },
-    ),
+      }
+    )
   );
 
   const filteredData = useMemo(() => {
@@ -105,7 +103,7 @@ export default function OverviewTopGeo({
         item.prefix?.toLowerCase().includes(queryLower) ||
         countries[item.name as keyof typeof countries]
           ?.toLowerCase()
-          .includes(queryLower),
+          .includes(queryLower)
     );
   }, [query.data, searchQuery]);
 
@@ -118,13 +116,13 @@ export default function OverviewTopGeo({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {view === 'chart' ? (
@@ -144,17 +142,15 @@ export default function OverviewTopGeo({
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              data={filteredData}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],
                 render(item) {
                   return (
-                    <div className="row items-center gap-2 min-w-0 relative">
+                    <div className="row relative min-w-0 items-center gap-2">
                       <SerieIcon
                         name={item.prefix || item.name || NOT_SET_VALUE}
                       />
                       <button
-                        type="button"
                         className="truncate"
                         onClick={() => {
                           if (widget.key === 'country') {
@@ -164,9 +160,10 @@ export default function OverviewTopGeo({
                           }
                           setFilter(widget.key, item.name);
                         }}
+                        type="button"
                       >
                         {item.prefix && (
-                          <span className="mr-1 row inline-flex items-center gap-1">
+                          <span className="row mr-1 inline-flex items-center gap-1">
                             <span>
                               {countries[
                                 item.prefix as keyof typeof countries
@@ -185,6 +182,7 @@ export default function OverviewTopGeo({
                   );
                 },
               }}
+              data={filteredData}
             />
           )}
         </WidgetBody>
@@ -199,13 +197,13 @@ export default function OverviewTopGeo({
           />
           <div className="flex-1" />
           <OverviewViewToggle />
-          <span className="text-sm text-muted-foreground pr-2 ml-2">
+          <span className="ml-2 pr-2 text-muted-foreground text-sm">
             Geo data provided by{' '}
             <a
-              href="https://ipdata.co"
-              target="_blank"
-              rel="noopener noreferrer nofollow"
               className="hover:underline"
+              href="https://ipdata.co"
+              rel="noopener noreferrer nofollow"
+              target="_blank"
             >
               MaxMind
             </a>

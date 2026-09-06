@@ -8,7 +8,7 @@ import DeleteOrganization from '@/components/settings/delete-organization';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
-import { zEditOrganization } from '@openpanel/validation';
+import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';

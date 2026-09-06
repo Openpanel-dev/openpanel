@@ -1,8 +1,8 @@
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import { differenceInHours, getISOWeek } from 'date-fns';
 import { motion, useSpring } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { differenceInHours, getISOWeek } from 'date-fns';
-import type { IInterval } from '@openpanel/validation';
 import {
   type TooltipData,
   useChartHover,
@@ -37,7 +37,7 @@ export function OPDatePill({ interval }: OPDatePillProps) {
     setMounted(true);
   }, []);
 
-  if (!mounted || !containerRef.current || !tooltipData) {
+  if (!(mounted && containerRef.current && tooltipData)) {
     return null;
   }
 
@@ -73,18 +73,20 @@ function OPDatePillInner({
         xAccessor(tooltipData.point),
         interval ?? 'day',
         data,
-        xAccessor,
+        xAccessor
       ),
-    [tooltipData, data, xAccessor, interval],
+    [tooltipData, data, xAccessor, interval]
   );
 
   // Stable across hovers — depends only on chart dimensions.
   const maxWidth = useMemo(
     () => Math.max(120, width - margin.left - margin.right),
-    [width, margin.left, margin.right],
+    [width, margin.left, margin.right]
   );
 
-  if (!label) return null;
+  if (!label) {
+    return null;
+  }
 
   return createPortal(
     <motion.div
@@ -96,11 +98,11 @@ function OPDatePillInner({
         maxWidth,
       }}
     >
-      <div className="rounded-full bg-foreground px-2.5 py-1 text-[11px] font-medium tracking-tight text-background shadow-md whitespace-nowrap">
+      <div className="whitespace-nowrap rounded-full bg-foreground px-2.5 py-1 font-medium text-[11px] text-background tracking-tight shadow-md">
         {label}
       </div>
     </motion.div>,
-    container,
+    container
   );
 }
 
@@ -128,7 +130,7 @@ function formatPillDate(
   date: Date,
   interval: IInterval,
   data: Record<string, unknown>[],
-  xAccessor: (d: Record<string, unknown>) => Date,
+  xAccessor: (d: Record<string, unknown>) => Date
 ): string {
   const first = data[0] ? xAccessor(data[0]) : date;
   const last = data[data.length - 1] ? xAccessor(data[data.length - 1]!) : date;
@@ -139,13 +141,19 @@ function formatPillDate(
 
   switch (interval) {
     case 'minute':
-      if (spanHours <= 1) return time;
-      if (spanHours <= 24) return time;
+      if (spanHours <= 1) {
+        return time;
+      }
+      if (spanHours <= 24) {
+        return time;
+      }
       return `${dayMonth} ${time}`;
 
     case 'hour':
       // ≤ ~25h span → single day, show only the hour
-      if (spanHours <= 25) return `${pad(date.getHours())}:00`;
+      if (spanHours <= 25) {
+        return `${pad(date.getHours())}:00`;
+      }
       // Otherwise include the date
       return `${dayMonth} ${pad(date.getHours())}:00`;
 

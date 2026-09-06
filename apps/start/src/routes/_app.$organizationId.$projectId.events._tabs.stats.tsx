@@ -9,7 +9,7 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 
-import type { IChartEventItem } from '@openpanel/validation';
+import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
 
 import { createFileRoute } from '@tanstack/react-router';
 

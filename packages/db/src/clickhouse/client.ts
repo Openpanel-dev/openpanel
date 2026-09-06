@@ -5,7 +5,7 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import sqlstring from 'sqlstring';
 import { createLogger } from '../logger';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
@@ -16,7 +16,10 @@ export { createClient } from '@clickhouse/client';
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
-import { getSafeJson } from '@openpanel/json';
+// Reached by relative path, not the `@openpanel/core` barrel: core depends on
+// this package (@openpanel/db), so importing the barrel here would pull core's
+// entire module graph into packages/db for one leaf JSON helper.
+import { getSafeJson } from '../../../core/src/shared/json';
 
 // All three LogParams types are exported by the client
 interface LogParams {

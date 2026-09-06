@@ -1,13 +1,13 @@
-import { getPreviousMetric } from '@openpanel/common';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { type ReactNode, useMemo } from 'react';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { getPreviousMetric } from '../../utils/math';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { useChart } from './chart-context';
 import type { ChartMarker } from './markers/marker-group';
-import type { OPReferrerSpikeItem } from './op-referrer-spikes';
 import { type OPReferenceItem, toChartMarkers } from './op-references';
+import type { OPReferrerSpikeItem } from './op-referrer-spikes';
 import { ChartTooltip, type ChartTooltipProps } from './tooltip/chart-tooltip';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
@@ -200,20 +200,20 @@ function useReferencesForHoveredPoint(
 }
 
 function useSpikeForHoveredPoint(
-  spikes: OPReferrerSpikeItem[] | null,
+  spikes: OPReferrerSpikeItem[] | null
 ): OPReferrerSpikeItem | null {
   const { tooltipData, data, xAccessor } = useChart();
 
   const nearestIndices = useMemo(
     () =>
       computeNearestIndices(spikes ?? [], data, xAccessor, (s) =>
-        typeof s.date === 'string' ? new Date(s.date) : s.date,
+        typeof s.date === 'string' ? new Date(s.date) : s.date
       ),
-    [spikes, data, xAccessor],
+    [spikes, data, xAccessor]
   );
 
   return useMemo(() => {
-    if (!tooltipData || !spikes || spikes.length === 0) {
+    if (!(tooltipData && spikes) || spikes.length === 0) {
       return null;
     }
     const hoveredIndex = tooltipData.index;
@@ -235,7 +235,7 @@ function computeNearestIndices<T>(
   items: T[],
   data: Record<string, unknown>[],
   xAccessor: (d: Record<string, unknown>) => Date,
-  getDate: (item: T) => Date,
+  getDate: (item: T) => Date
 ): number[] {
   if (items.length === 0 || data.length === 0) {
     return [];
@@ -251,7 +251,9 @@ function computeNearestIndices<T>(
     let minDiff = Number.POSITIVE_INFINITY;
     for (let i = 0; i < dataTimes.length; i++) {
       const t = dataTimes[i]!;
-      if (Number.isNaN(t)) continue;
+      if (Number.isNaN(t)) {
+        continue;
+      }
       const diff = Math.abs(t - target);
       if (diff < minDiff) {
         minDiff = diff;
@@ -273,16 +275,18 @@ function OPAnnotationsBlock({
 }) {
   const visibleRefs = references.slice(0, referencesLimit);
   const hiddenRefs = Math.max(0, references.length - referencesLimit);
-  if (visibleRefs.length === 0 && !spike) return null;
+  if (visibleRefs.length === 0 && !spike) {
+    return null;
+  }
 
   return (
     <div className="col mt-1 gap-2 border-border border-t pt-2">
       {visibleRefs.map((marker) => (
         <OPAnnotationRow
-          key={marker.title}
-          icon={marker.icon}
-          title={marker.title}
           description={marker.description}
+          icon={marker.icon}
+          key={marker.title}
+          title={marker.title}
         />
       ))}
       {hiddenRefs > 0 && (
@@ -318,9 +322,9 @@ function OPSpikeAnnotation({ spike }: { spike: OPReferrerSpikeItem }) {
 
   return (
     <OPAnnotationRow
+      description={description}
       icon={<SerieIcon fill name={spike.referrer_name} />}
       title={`Spike from ${spike.referrer_name}`}
-      description={description}
     />
   );
 }

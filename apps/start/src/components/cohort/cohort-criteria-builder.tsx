@@ -1,20 +1,22 @@
+import type {
+  CohortDefinition,
+  EventBasedCohortDefinition,
+  EventCriteria,
+  PropertyBasedCohortDefinition,
+} from '@openpanel/core/modules/cohort/cohort.constants';
+import type {
+  IChartEventFilter,
+  IChartEventFilterOperator,
+  IChartEventFilterValue,
+} from '@openpanel/core/modules/report/report.constants';
+import { PlusIcon, TrashIcon } from 'lucide-react';
+import { PureFilterItem } from '../report/sidebar/filters/FilterItem';
+import { PropertiesCombobox } from '../report/sidebar/PropertiesCombobox';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
-import type {
-  CohortDefinition,
-  EventBasedCohortDefinition,
-  EventCriteria,
-  IChartEventFilter,
-  IChartEventFilterOperator,
-  IChartEventFilterValue,
-  PropertyBasedCohortDefinition,
-} from '@openpanel/validation';
-import { PlusIcon, TrashIcon } from 'lucide-react';
-import { PureFilterItem } from '../report/sidebar/filters/FilterItem';
-import { PropertiesCombobox } from '../report/sidebar/PropertiesCombobox';
 
 interface CohortCriteriaBuilderProps {
   definition: CohortDefinition;
@@ -46,18 +48,18 @@ export function CohortCriteriaBuilder({
     <div className="flex flex-col gap-4">
       <div className="flex gap-2">
         <Button
+          className="flex-1"
+          onClick={() => handleTypeChange('event')}
           type="button"
           variant={definition.type === 'event' ? 'default' : 'outline'}
-          onClick={() => handleTypeChange('event')}
-          className="flex-1"
         >
           Event-based
         </Button>
         <Button
+          className="flex-1"
+          onClick={() => handleTypeChange('property')}
           type="button"
           variant={definition.type === 'property' ? 'default' : 'outline'}
-          onClick={() => handleTypeChange('property')}
-          className="flex-1"
         >
           Property-based
         </Button>
@@ -66,8 +68,8 @@ export function CohortCriteriaBuilder({
       {definition.type === 'event' && (
         <EventBasedBuilder
           definition={definition}
-          onChange={onChange}
           eventNames={eventNames}
+          onChange={onChange}
         />
       )}
 
@@ -129,7 +131,7 @@ function EventBasedBuilder({
       criteria: {
         ...definition.criteria,
         events: definition.criteria.events.map((e, i) =>
-          i === index ? criteria : e,
+          i === index ? criteria : e
         ),
       },
     });
@@ -145,16 +147,16 @@ function EventBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Match</span>
+        <span className="text-muted-foreground text-sm">Match</span>
         <DropdownMenuComposed
-          onChange={updateOperator}
           items={[
             { value: 'or', label: 'Any of these events' },
             { value: 'and', label: 'All of these events' },
           ]}
           label="Operator"
+          onChange={updateOperator}
         >
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             {definition.criteria.operator === 'or' ? 'Any' : 'All'}
           </Button>
         </DropdownMenuComposed>
@@ -162,19 +164,19 @@ function EventBasedBuilder({
 
       {definition.criteria.events.map((eventCriteria, index) => (
         <EventCriteriaItem
-          key={index}
           criteria={eventCriteria}
+          eventNames={eventNames}
+          key={index}
           onChange={(criteria) => updateEventCriteria(index, criteria)}
           onRemove={() => removeEventCriteria(index)}
-          eventNames={eventNames}
         />
       ))}
 
       <Button
+        icon={PlusIcon}
+        onClick={addEventCriteria}
         type="button"
         variant="outline"
-        onClick={addEventCriteria}
-        icon={PlusIcon}
       >
         Add event criteria
       </Button>
@@ -219,26 +221,24 @@ function EventCriteriaItem({
 
   const updateFilterValue = (
     value: IChartEventFilterValue[],
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...criteria,
       filters: criteria.filters.map((f) =>
-        f.id === filter.id ? { ...f, value } : f,
+        f.id === filter.id ? { ...f, value } : f
       ),
     });
   };
 
   const updateFilterOperator = (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...criteria,
       filters: criteria.filters.map((f) =>
-        f.id === filter.id
-          ? { ...f, operator, value: f.value.slice(0, 1) }
-          : f,
+        f.id === filter.id ? { ...f, operator, value: f.value.slice(0, 1) } : f
       ),
     });
   };
@@ -247,32 +247,38 @@ function EventCriteriaItem({
     <div className="rounded border p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex-1">
-          <label className="mb-1 block text-sm font-medium">Event</label>
+          <label className="mb-1 block font-medium text-sm">Event</label>
           <ComboboxAdvanced
+            className="w-full"
             items={eventNames}
-            value={criteria.name ? [criteria.name] : []}
             onChange={(values) =>
               onChange({ ...criteria, name: String(values[0] ?? '') })
             }
             placeholder="Select event..."
-            className="w-full"
+            value={criteria.name ? [criteria.name] : []}
           />
         </div>
         <Button
+          className="mt-6"
+          onClick={onRemove}
+          size="sm"
           type="button"
           variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="mt-6"
         >
           <TrashIcon size={16} />
         </Button>
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block text-sm font-medium">Frequency</label>
+        <label className="mb-1 block font-medium text-sm">Frequency</label>
         <div className="flex gap-2">
           <DropdownMenuComposed
+            items={[
+              { value: 'gte', label: 'At least' },
+              { value: 'eq', label: 'Exactly' },
+              { value: 'lte', label: 'At most' },
+            ]}
+            label="Operator"
             onChange={(operator) =>
               onChange({
                 ...criteria,
@@ -282,23 +288,16 @@ function EventCriteriaItem({
                 },
               })
             }
-            items={[
-              { value: 'gte', label: 'At least' },
-              { value: 'eq', label: 'Exactly' },
-              { value: 'lte', label: 'At most' },
-            ]}
-            label="Operator"
           >
-            <Button variant="outline" size="sm">
+            <Button size="sm" variant="outline">
               {criteria.frequency?.operator === 'gte' && 'At least'}
               {criteria.frequency?.operator === 'eq' && 'Exactly'}
               {criteria.frequency?.operator === 'lte' && 'At most'}
             </Button>
           </DropdownMenuComposed>
           <input
-            type="number"
+            className="w-20 rounded border px-2 py-1 text-sm"
             min="1"
-            value={criteria.frequency?.count ?? 1}
             onChange={(e) =>
               onChange({
                 ...criteria,
@@ -308,19 +307,26 @@ function EventCriteriaItem({
                 },
               })
             }
-            className="w-20 rounded border px-2 py-1 text-sm"
+            type="number"
+            value={criteria.frequency?.count ?? 1}
           />
-          <span className="flex items-center text-sm text-muted-foreground">
+          <span className="flex items-center text-muted-foreground text-sm">
             times
           </span>
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block text-sm font-medium">Timeframe</label>
+        <label className="mb-1 block font-medium text-sm">Timeframe</label>
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <DropdownMenuComposed
+              items={[
+                { value: 'relative', label: 'Last' },
+                { value: 'since', label: 'Since' },
+                { value: 'between', label: 'Between' },
+              ]}
+              label="Type"
               onChange={(type) => {
                 if (type === 'relative') {
                   onChange({
@@ -332,8 +338,7 @@ function EventCriteriaItem({
                     ...criteria,
                     timeframe: {
                       type: 'absolute',
-                      start:
-                        new Date().toISOString().split('T')[0] ?? '',
+                      start: new Date().toISOString().split('T')[0] ?? '',
                     },
                   });
                 } else {
@@ -352,14 +357,8 @@ function EventCriteriaItem({
                   });
                 }
               }}
-              items={[
-                { value: 'relative', label: 'Last' },
-                { value: 'since', label: 'Since' },
-                { value: 'between', label: 'Between' },
-              ]}
-              label="Type"
             >
-              <Button variant="outline" size="sm">
+              <Button size="sm" variant="outline">
                 {criteria.timeframe.type === 'relative'
                   ? 'Last'
                   : criteria.timeframe.type === 'absolute' &&
@@ -370,12 +369,6 @@ function EventCriteriaItem({
             </DropdownMenuComposed>
             {criteria.timeframe.type === 'relative' ? (
               <DropdownMenuComposed
-                onChange={(value) =>
-                  onChange({
-                    ...criteria,
-                    timeframe: { type: 'relative', value },
-                  })
-                }
                 items={[
                   { value: '7d', label: '7 days' },
                   { value: '30d', label: '30 days' },
@@ -384,8 +377,14 @@ function EventCriteriaItem({
                   { value: '365d', label: '365 days' },
                 ]}
                 label="Period"
+                onChange={(value) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: { type: 'relative', value },
+                  })
+                }
               >
-                <Button variant="outline" size="sm">
+                <Button size="sm" variant="outline">
                   {criteria.timeframe.value === '7d' && '7 days'}
                   {criteria.timeframe.value === '30d' && '30 days'}
                   {criteria.timeframe.value === '90d' && '90 days'}
@@ -393,79 +392,79 @@ function EventCriteriaItem({
                   {criteria.timeframe.value === '365d' && '365 days'}
                 </Button>
               </DropdownMenuComposed>
-            ) : !criteria.timeframe.end ? (
+            ) : criteria.timeframe.end ? null : (
               <input
-                type="date"
-                value={criteria.timeframe.start}
+                className="rounded border px-2 py-1 text-sm"
                 onChange={(e) =>
                   onChange({
                     ...criteria,
                     timeframe: { type: 'absolute', start: e.target.value },
                   })
                 }
-                className="rounded border px-2 py-1 text-sm"
+                type="date"
+                value={criteria.timeframe.start}
               />
-            ) : null}
+            )}
           </div>
-          {criteria.timeframe.type === 'absolute' &&
-            criteria.timeframe.end && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={criteria.timeframe.start}
-                  onChange={(e) =>
-                    onChange({
-                      ...criteria,
-                      timeframe: {
-                        type: 'absolute',
-                        start: e.target.value,
-                        end: criteria.timeframe.type === 'absolute'
+          {criteria.timeframe.type === 'absolute' && criteria.timeframe.end && (
+            <div className="flex items-center gap-2">
+              <input
+                className="flex-1 rounded border px-2 py-1 text-sm"
+                onChange={(e) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start: e.target.value,
+                      end:
+                        criteria.timeframe.type === 'absolute'
                           ? criteria.timeframe.end
                           : undefined,
-                      },
-                    })
-                  }
-                  className="flex-1 rounded border px-2 py-1 text-sm"
-                />
-                <span className="text-sm text-muted-foreground">to</span>
-                <input
-                  type="date"
-                  value={criteria.timeframe.end}
-                  onChange={(e) =>
-                    onChange({
-                      ...criteria,
-                      timeframe: {
-                        type: 'absolute',
-                        start:
-                          criteria.timeframe.type === 'absolute'
-                            ? criteria.timeframe.start
-                            : '',
-                        end: e.target.value,
-                      },
-                    })
-                  }
-                  className="flex-1 rounded border px-2 py-1 text-sm"
-                />
-              </div>
-            )}
+                    },
+                  })
+                }
+                type="date"
+                value={criteria.timeframe.start}
+              />
+              <span className="text-muted-foreground text-sm">to</span>
+              <input
+                className="flex-1 rounded border px-2 py-1 text-sm"
+                onChange={(e) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start:
+                        criteria.timeframe.type === 'absolute'
+                          ? criteria.timeframe.start
+                          : '',
+                      end: e.target.value,
+                    },
+                  })
+                }
+                type="date"
+                value={criteria.timeframe.end}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {criteria.filters.length > 0 && (
         <div className="mb-2">
-          <label className="mb-2 block text-sm font-medium">
+          <label className="mb-2 block font-medium text-sm">
             Event Filters
           </label>
           <div className="space-y-2">
             {criteria.filters.map((filter) => (
               <PureFilterItem
-                key={filter.id}
+                className="rounded border p-2"
                 eventName={criteria.name}
                 filter={filter}
-                onRemove={removeFilter}
-                onChangeValue={updateFilterValue}
+                key={filter.id}
                 onChangeOperator={updateFilterOperator}
-                className="rounded border p-2"
+                onChangeValue={updateFilterValue}
+                onRemove={removeFilter}
               />
             ))}
           </div>
@@ -473,20 +472,20 @@ function EventCriteriaItem({
       )}
 
       <PropertiesCombobox
+        categories={['event']}
         event={{ name: criteria.name, id: 'cohort-event' } as never}
         onSelect={(action) => {
           addFilter(action.value);
         }}
-        categories={['event']}
       >
         {(setOpen) => (
           <Button
+            disabled={!criteria.name}
+            icon={PlusIcon}
+            onClick={() => setOpen(true)}
+            size="sm"
             type="button"
             variant="outline"
-            size="sm"
-            onClick={() => setOpen(true)}
-            icon={PlusIcon}
-            disabled={!criteria.name}
           >
             Add filter
           </Button>
@@ -529,7 +528,7 @@ function PropertyBasedBuilder({
       criteria: {
         ...definition.criteria,
         properties: definition.criteria.properties.filter(
-          (f) => f.id !== filter.id,
+          (f) => f.id !== filter.id
         ),
       },
     });
@@ -537,14 +536,14 @@ function PropertyBasedBuilder({
 
   const updatePropertyFilterValue = (
     value: IChartEventFilterValue[],
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...definition,
       criteria: {
         ...definition.criteria,
         properties: definition.criteria.properties.map((f) =>
-          f.id === filter.id ? { ...f, value } : f,
+          f.id === filter.id ? { ...f, value } : f
         ),
       },
     });
@@ -552,7 +551,7 @@ function PropertyBasedBuilder({
 
   const updatePropertyFilterOperator = (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...definition,
@@ -561,7 +560,7 @@ function PropertyBasedBuilder({
         properties: definition.criteria.properties.map((f) =>
           f.id === filter.id
             ? { ...f, operator, value: f.value.slice(0, 1) }
-            : f,
+            : f
         ),
       },
     });
@@ -577,16 +576,16 @@ function PropertyBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Match</span>
+        <span className="text-muted-foreground text-sm">Match</span>
         <DropdownMenuComposed
-          onChange={updateOperator}
           items={[
             { value: 'or', label: 'Any of these properties' },
             { value: 'and', label: 'All of these properties' },
           ]}
           label="Operator"
+          onChange={updateOperator}
         >
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             {definition.criteria.operator === 'or' ? 'Any' : 'All'}
           </Button>
         </DropdownMenuComposed>
@@ -596,30 +595,30 @@ function PropertyBasedBuilder({
         <div className="space-y-2">
           {definition.criteria.properties.map((filter) => (
             <PureFilterItem
-              key={filter.id}
+              className="rounded border p-2"
               eventName=""
               filter={filter}
-              onRemove={removePropertyFilter}
-              onChangeValue={updatePropertyFilterValue}
+              key={filter.id}
               onChangeOperator={updatePropertyFilterOperator}
-              className="rounded border p-2"
+              onChangeValue={updatePropertyFilterValue}
+              onRemove={removePropertyFilter}
             />
           ))}
         </div>
       )}
 
       <PropertiesCombobox
+        categories={['profile']}
         onSelect={(action) => {
           addPropertyFilter(action.value);
         }}
-        categories={['profile']}
       >
         {(setOpen) => (
           <Button
+            icon={PlusIcon}
+            onClick={() => setOpen(true)}
             type="button"
             variant="outline"
-            onClick={() => setOpen(true)}
-            icon={PlusIcon}
           >
             Add property filter
           </Button>

@@ -1,3 +1,11 @@
+import { timeWindows } from '@openpanel/core/modules/report/report.constants';
+import { useRouter } from '@tanstack/react-router';
+import {
+  CopyIcon,
+  LayoutPanelTopIcon,
+  MoreHorizontal,
+  Trash,
+} from 'lucide-react';
 import { ReportChart } from '@/components/report-chart';
 import {
   DropdownMenu,
@@ -7,31 +15,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
-import {
-  CopyIcon,
-  LayoutPanelTopIcon,
-  MoreHorizontal,
-  Trash,
-} from 'lucide-react';
-
-import { timeWindows } from '@openpanel/constants';
-
-import { useRouter } from '@tanstack/react-router';
 
 export function ReportItemSkeleton() {
   return (
-    <div className="card h-full flex flex-col animate-pulse">
-      <div className="flex items-center justify-between border-b border-border p-4">
+    <div className="card flex h-full animate-pulse flex-col">
+      <div className="flex items-center justify-between border-border border-b p-4">
         <div className="flex-1">
-          <div className="h-5 w-32 bg-muted rounded mb-2" />
-          <div className="h-4 w-24 bg-muted/50 rounded" />
+          <div className="mb-2 h-5 w-32 rounded bg-muted" />
+          <div className="h-4 w-24 rounded bg-muted/50" />
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-muted rounded" />
-          <div className="w-8 h-8 bg-muted rounded" />
+          <div className="h-8 w-8 rounded bg-muted" />
+          <div className="h-8 w-8 rounded bg-muted" />
         </div>
       </div>
-      <div className="p-4 flex-1 flex items-center justify-center aspect-video" />
+      <div className="flex aspect-video flex-1 items-center justify-center p-4" />
     </div>
   );
 }
@@ -63,15 +61,15 @@ export function ReportItem({
   const chartRange = report.range;
 
   return (
-    <div className="card h-full flex flex-col">
-      <div className="flex items-center hover:bg-muted/50 justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100">
+    <div className="card flex h-full flex-col">
+      <div className="flex items-center justify-between border-border border-b p-4 leading-none hover:bg-muted/50 [&_svg]:hover:opacity-100">
         <div
-          className="flex-1 cursor-pointer -m-4 p-4"
+          className="-m-4 flex-1 cursor-pointer p-4"
           onClick={(event) => {
             if (event.metaKey) {
               window.open(
                 `/${organizationId}/${projectId}/reports/${report.id}`,
-                '_blank',
+                '_blank'
               );
               return;
             }
@@ -101,7 +99,7 @@ export function ReportItem({
         >
           <div className="font-medium">{report.name}</div>
           {chartRange !== null && (
-            <div className="mt-2 flex gap-2 ">
+            <div className="mt-2 flex gap-2">
               <span
                 className={
                   (chartRange !== range && range !== null) ||
@@ -126,13 +124,13 @@ export function ReportItem({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">
+          <div className="drag-handle cursor-move rounded p-2 hover:bg-muted">
             <svg
-              width="16"
+              className="opacity-30 hover:opacity-100"
+              fill="currentColor"
               height="16"
               viewBox="0 0 16 16"
-              fill="currentColor"
-              className="opacity-30 hover:opacity-100"
+              width="16"
             >
               <circle cx="4" cy="4" r="1.5" />
               <circle cx="4" cy="8" r="1.5" />
@@ -153,7 +151,7 @@ export function ReportItem({
                   onDuplicate(report.id);
                 }}
               >
-                <CopyIcon size={16} className="mr-2" />
+                <CopyIcon className="mr-2" size={16} />
                 Duplicate
               </DropdownMenuItem>
               {onMove && (
@@ -163,7 +161,7 @@ export function ReportItem({
                     onMove(report.id);
                   }}
                 >
-                  <LayoutPanelTopIcon size={16} className="mr-2" />
+                  <LayoutPanelTopIcon className="mr-2" size={16} />
                   Move to dashboard
                 </DropdownMenuItem>
               )}
@@ -175,7 +173,7 @@ export function ReportItem({
                     onDelete(report.id);
                   }}
                 >
-                  <Trash size={16} className="mr-2" />
+                  <Trash className="mr-2" size={16} />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuGroup>
@@ -185,8 +183,8 @@ export function ReportItem({
       </div>
       <div
         className={cn(
-          'p-4 overflow-auto flex-1',
-          report.chartType === 'metric' && 'p-0',
+          'flex-1 overflow-auto p-4',
+          report.chartType === 'metric' && 'p-0'
         )}
       >
         <ReportChart
@@ -221,12 +219,12 @@ export function ReportItemReadOnly({
   const chartRange = report.range;
 
   return (
-    <div className="card h-full flex flex-col">
-      <div className="flex items-center justify-between border-b border-border p-4 leading-none">
+    <div className="card flex h-full flex-col">
+      <div className="flex items-center justify-between border-border border-b p-4 leading-none">
         <div className="flex-1">
           <div className="font-medium">{report.name}</div>
           {chartRange !== null && (
-            <div className="mt-2 flex gap-2 ">
+            <div className="mt-2 flex gap-2">
               <span
                 className={
                   (chartRange !== range && range !== null) ||
@@ -253,8 +251,8 @@ export function ReportItemReadOnly({
       </div>
       <div
         className={cn(
-          'p-4 overflow-auto flex-1',
-          report.chartType === 'metric' && 'p-0',
+          'flex-1 overflow-auto p-4',
+          report.chartType === 'metric' && 'p-0'
         )}
       >
         <ReportChart

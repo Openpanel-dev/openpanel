@@ -1,13 +1,14 @@
-import { ClockIcon } from 'lucide-react';
-
+import type {
+  IChartRange,
+  IChartType,
+  IInterval,
+} from '@openpanel/core/modules/report/report.constants';
 import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
-} from '@openpanel/constants';
-
-import { cn } from '@/utils/cn';
-import type { IChartRange, IChartType, IInterval } from '@openpanel/validation';
-import { differenceInDays, isSameDay } from 'date-fns';
+} from '@openpanel/core/modules/report/report.constants';
+import { differenceInDays } from 'date-fns';
+import { ClockIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { CommandShortcut } from '../ui/command';
 import {
@@ -20,6 +21,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { cn } from '@/utils/cn';
 
 interface ReportIntervalProps {
   className?: string;
@@ -97,9 +99,9 @@ export function ReportInterval({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          icon={ClockIcon}
           className={cn('justify-start', className)}
+          icon={ClockIcon}
+          variant="outline"
         >
           {items.find((item) => item.value === interval)?.label || 'Interval'}
         </Button>
@@ -115,9 +117,9 @@ export function ReportInterval({
         <DropdownMenuGroup>
           {items.map((item) => (
             <DropdownMenuItem
+              disabled={item.disabled}
               key={item.value}
               onClick={() => onChange(item.value as IInterval)}
-              disabled={item.disabled}
             >
               {item.label}
               {item.value === interval && (

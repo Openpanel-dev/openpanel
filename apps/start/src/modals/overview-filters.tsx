@@ -1,30 +1,36 @@
+import type {
+  IChartEventFilter,
+  IChartEventFilterOperator,
+  IChartEventFilterValue,
+} from '@openpanel/core/modules/report/report.constants';
+import {
+  FilterIcon,
+  GanttChartIcon,
+  GlobeIcon,
+  type LucideIcon,
+  SlidersHorizontal,
+  SparklesIcon,
+  XIcon,
+} from 'lucide-react';
+import type { Options as NuqsOptions } from 'nuqs';
+import { ModalHeader } from './Modal/Container';
+import { OriginFilter } from '@/components/overview/filters/origin-filter';
+import { OverviewAICommand } from '@/components/overview/overview-ai-command';
 import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
+import { PropertiesCombobox } from '@/components/report/sidebar/PropertiesCombobox';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { SheetContent } from '@/components/ui/sheet';
+import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { useProfileValues } from '@/hooks/use-profile-values';
-import { FilterIcon, GanttChartIcon, GlobeIcon, LucideIcon, SlidersHorizontal, SparklesIcon, XIcon } from 'lucide-react';
-import type { Options as NuqsOptions } from 'nuqs';
-
-import type {
-  IChartEventFilter,
-  IChartEventFilterOperator,
-  IChartEventFilterValue,
-} from '@openpanel/validation';
-
-import { OriginFilter } from '@/components/overview/filters/origin-filter';
-import { OverviewAICommand } from '@/components/overview/overview-ai-command';
-import { PropertiesCombobox } from '@/components/report/sidebar/PropertiesCombobox';
-import { ComboboxEvents } from '@/components/ui/combobox-events';
-import { useAppParams } from '@/hooks/use-app-params';
 import { cn } from '@/utils/cn';
-import { ModalHeader } from './Modal/Container';
 
 export interface OverviewFiltersProps {
   nuqsOptions?: NuqsOptions;
@@ -32,13 +38,17 @@ export interface OverviewFiltersProps {
   mode?: 'events' | 'profile';
 }
 
-const Seperator = () => <div className="h-px bg-border -mx-6" />
-const Heading = ({ title, icon: Icon }: { title: string, icon: LucideIcon }) => (
+const Seperator = () => <div className="-mx-6 h-px bg-border" />;
+const Heading = ({
+  title,
+  icon: Icon,
+}: {
+  title: string;
+  icon: LucideIcon;
+}) => (
   <div className="row items-center gap-2">
     <Icon className="size-4" />
-    <h2 className="text-sm font-medium">
-      {title}
-    </h2>
+    <h2 className="font-medium text-sm">{title}</h2>
   </div>
 );
 
@@ -69,8 +79,8 @@ export default function OverviewFilters({
               ...(updated.cohortIds ? { cohortIds: updated.cohortIds } : {}),
               ...(updated.cohortId ? { cohortId: updated.cohortId } : {}),
             }
-          : f,
-      ),
+          : f
+      )
     );
   };
   return (
@@ -85,31 +95,27 @@ export default function OverviewFilters({
         <Seperator />
         {enableEventsFilter && (
           <>
-        <Heading icon={GanttChartIcon} title="Events" />
-          <ComboboxEvents
-            size="lg"
-            className="w-full"
-            value={event}
-            onChange={setEvent}
-            multiple
-            items={eventNames}
-            placeholder="Select event"
-            maxDisplayItems={2}
-            searchable
+            <Heading icon={GanttChartIcon} title="Events" />
+            <ComboboxEvents
+              className="w-full"
+              items={eventNames}
+              maxDisplayItems={2}
+              multiple
+              onChange={setEvent}
+              placeholder="Select event"
+              searchable
+              size="lg"
+              value={event}
             />
             <Seperator />
           </>
         )}
       </div>
-        <Heading icon={SlidersHorizontal} title="Filters" />
+      <Heading icon={SlidersHorizontal} title="Filters" />
       <div className="flex flex-col gap-2">
-        <div
-          className={cn(
-            'bg-card rounded-lg border',
-          )}
-        >
+        <div className={cn('rounded-lg border bg-card')}>
           {selectedFilters.length === 0 && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-muted-foreground text-sm">
               No filters selected
             </div>
           )}
@@ -118,12 +124,8 @@ export default function OverviewFilters({
               return (
                 <PureCohortFilterItem
                   className="border-t p-4 first:border-0"
-                  key={filter.id ?? filter.name}
                   filter={filter}
-                  onRemove={(target) => removeFilter(target.name)}
-                  onChangeOperator={(operator, original) =>
-                    updateCohortFilter({ ...original, operator })
-                  }
+                  key={filter.id ?? filter.name}
                   onChangeCohort={(cohortIds, original) =>
                     updateCohortFilter({
                       ...original,
@@ -131,6 +133,10 @@ export default function OverviewFilters({
                       cohortIds,
                     })
                   }
+                  onChangeOperator={(operator, original) =>
+                    updateCohortFilter({ ...original, operator })
+                  }
+                  onRemove={(target) => removeFilter(target.name)}
                 />
               );
             }
@@ -138,16 +144,16 @@ export default function OverviewFilters({
               <PureFilterItem
                 className="border-t p-4 first:border-0"
                 eventName="screen_view"
-                key={filter.name}
                 filter={filter}
-                onRemove={() => {
-                  setFilter(filter.name, [], filter.operator);
+                key={filter.name}
+                onChangeOperator={(operator) => {
+                  setFilter(filter.name, filter.value, operator);
                 }}
                 onChangeValue={(value) => {
                   setFilter(filter.name, value, filter.operator);
                 }}
-                onChangeOperator={(operator) => {
-                  setFilter(filter.name, filter.value, operator);
+                onRemove={() => {
+                  setFilter(filter.name, [], filter.operator);
                 }}
               />
             );
@@ -177,7 +183,9 @@ export default function OverviewFilters({
               // Only one cohort filter at a time; OR-semantics live inside
               // the filter's cohortIds array.
               const hasCohort = filters.some(isCohortFilter);
-              if (hasCohort) return;
+              if (hasCohort) {
+                return;
+              }
               setFilters((prev) => [
                 ...prev,
                 {
@@ -195,11 +203,11 @@ export default function OverviewFilters({
         >
           {(setOpen) => (
             <Button
-              onClick={() => setOpen((p) => !p)}
-              variant="outline"
-              size="lg"
               className="w-full"
               icon={FilterIcon}
+              onClick={() => setOpen((p) => !p)}
+              size="lg"
+              variant="outline"
             >
               Add filter
             </Button>
@@ -219,7 +227,7 @@ export function FilterOptionProfile({
   setFilter: (
     name: string,
     value: IChartEventFilterValue,
-    operator: IChartEventFilterOperator,
+    operator: IChartEventFilterOperator
   ) => void;
 }) {
   const values = useProfileValues(projectId, filter.name);
@@ -229,20 +237,20 @@ export function FilterOptionProfile({
       <div>{filter.name}</div>
       <Combobox
         className="flex-1"
-        onChange={(value) => setFilter(filter.name, value, filter.operator)}
-        placeholder={'Select a value'}
         items={values.map((value) => ({
           value,
           label: value,
         }))}
+        onChange={(value) => setFilter(filter.name, value, filter.operator)}
+        placeholder={'Select a value'}
         value={String(filter.value[0] ?? '')}
       />
       <Button
-        size="icon"
-        variant="ghost"
         onClick={() =>
           setFilter(filter.name, filter.value[0] ?? '', filter.operator)
         }
+        size="icon"
+        variant="ghost"
       >
         <XIcon />
       </Button>

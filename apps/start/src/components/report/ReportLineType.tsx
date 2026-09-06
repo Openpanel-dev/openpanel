@@ -1,11 +1,9 @@
-import { useDispatch, useSelector } from '@/redux';
-import { objectToZodEnums } from '@/utils/object-to-zod-enums';
+import { lineTypes } from '@openpanel/core/modules/report/report.constants';
 import { Tv2Icon } from 'lucide-react';
-
-import { lineTypes } from '@openpanel/constants';
-
 import { Combobox } from '../ui/combobox';
 import { changeLineType } from './reportSlice';
+import { useDispatch, useSelector } from '@/redux';
+import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 
 interface ReportLineTypeProps {
   className?: string;
@@ -19,22 +17,23 @@ export function ReportLineType({ className }: ReportLineTypeProps) {
     chartType !== 'conversion' &&
     chartType !== 'linear' &&
     chartType !== 'area'
-  )
+  ) {
     return null;
+  }
 
   return (
     <Combobox
-      icon={Tv2Icon}
       className={className}
-      placeholder="Line type"
-      onChange={(value) => {
-        dispatch(changeLineType(value));
-      }}
-      value={type}
+      icon={Tv2Icon}
       items={objectToZodEnums(lineTypes).map((key) => ({
         label: lineTypes[key],
         value: key,
       }))}
+      onChange={(value) => {
+        dispatch(changeLineType(value));
+      }}
+      placeholder="Line type"
+      value={type}
     />
   );
 }

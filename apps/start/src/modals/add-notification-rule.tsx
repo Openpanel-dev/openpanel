@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { shortId } from '@openpanel/common';
-import { isKind, zCreateNotificationRule } from '@openpanel/validation';
+import { isKind } from '@openpanel/core/modules/integration/integration.constants';
+import { zCreateNotificationRule } from '@openpanel/core/modules/notification/notification.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+import { shortId } from '../utils/math';
 import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
 import { ColorSquare } from '@/components/color-square';
@@ -100,7 +101,7 @@ export default function AddNotificationRule({ rule }: Props) {
   // Only notification sinks belong in a rule — export integrations (S3/GCS)
   // come back from the same list endpoint but have nothing to deliver to.
   const integrations = (integrationsQuery.data ?? []).filter((integration) =>
-    isKind(integration.config, 'notification'),
+    isKind(integration.config, 'notification')
   );
 
   return (

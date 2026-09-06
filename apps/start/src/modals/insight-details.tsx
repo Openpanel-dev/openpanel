@@ -1,3 +1,7 @@
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import { useMutation } from '@tanstack/react-query';
+import { SparklesIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { DeltaChip } from '@/components/delta-chip';
 import { ReportChart } from '@/components/report-chart';
 import { Badge } from '@/components/ui/badge';
@@ -5,10 +9,6 @@ import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import type { IReportInput } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { SparklesIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 type Insight = RouterOutputs['insight']['list'][number];
 type Explanation = RouterOutputs['insight']['explain'];
@@ -35,7 +35,7 @@ function SeverityDot({ band }: { band: string }) {
             ? 'bg-red-500'
             : band === 'moderate'
               ? 'bg-yellow-500'
-              : 'bg-blue-500',
+              : 'bg-blue-500'
         )}
       />
       <span className="text-muted-foreground text-xs capitalize">{band}</span>
@@ -57,7 +57,9 @@ function buildInsightReport(insight: Insight): IReportInput | null {
       operator: 'is' as const,
       value: [d.value],
     }));
-  if (filters.length === 0) return null;
+  if (filters.length === 0) {
+    return null;
+  }
 
   const range = insight.windowKind === 'yesterday' ? '7d' : '30d';
 
@@ -96,7 +98,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
   const mutation = useMutation(
     trpc.insight.explain.mutationOptions({
       onSuccess: (data) => setExplanation(data),
-    }),
+    })
   );
 
   // Fetch the explanation once when the sheet opens.
@@ -129,7 +131,9 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
         <div className="flex flex-col gap-2 pr-8">
           <div className="flex items-center gap-2">
             <Badge variant="outline">{formatWindow(insight.windowKind)}</Badge>
-            {insight.severityBand && <SeverityDot band={insight.severityBand} />}
+            {insight.severityBand && (
+              <SeverityDot band={insight.severityBand} />
+            )}
           </div>
           <SheetTitle className="text-lg leading-snug">
             {insight.displayName || insight.title}
@@ -161,7 +165,11 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
           <DeltaChip
             size="sm"
             variant={
-              direction === 'up' ? 'inc' : direction === 'down' ? 'dec' : 'default'
+              direction === 'up'
+                ? 'inc'
+                : direction === 'down'
+                  ? 'dec'
+                  : 'default'
             }
           >
             {deltaText}

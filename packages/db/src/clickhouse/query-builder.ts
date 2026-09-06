@@ -1,5 +1,5 @@
 import type { ClickHouseClient, ResponseJSON } from '@clickhouse/client';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import sqlstring from 'sqlstring';
 
 type SqlValue = string | number | boolean | Date | null | Expression;
@@ -75,7 +75,8 @@ export class Query<T = any> {
   private _transform?: Record<string, (item: T) => any>;
   private _union?: Query;
   private _dateRegex = /\d{4}-\d{2}-\d{2}([\s:\d.]+)?/g;
-  private _dateValueRegex = /^(?:[a-zA-Z]\w*\()?\d{4}-\d{2}-\d{2}(?:[\s:\d.]+)?\)?$/;
+  private _dateValueRegex =
+    /^(?:[a-zA-Z]\w*\()?\d{4}-\d{2}-\d{2}(?:[\s:\d.]+)?\)?$/;
   constructor(
     private client: ClickHouseClient,
     private timezone: string
@@ -342,7 +343,9 @@ export class Query<T = any> {
   }
 
   rawJoin(sql: string): this {
-    if (this._skipNext) return this;
+    if (this._skipNext) {
+      return this;
+    }
     this._rawJoins.push(sql);
     return this;
   }

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zOnboardingProject } from '@openpanel/validation';
+import { zOnboardingProject } from '@openpanel/core/modules/onboarding/onboarding.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import {

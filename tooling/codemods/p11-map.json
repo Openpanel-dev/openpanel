@@ -371,7 +371,7 @@
 {"from":"@openpanel/common","symbol":"parseSearchParams","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
 {"from":"@openpanel/common","symbol":"parsePath","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
 {"from":"@openpanel/common","symbol":"isSameDomain","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
-{"from":"@openpanel/json","symbol":"getSafeJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false,"toByConsumer":{"packages/db":"@openpanel/core"}},
+{"from":"@openpanel/json","symbol":"getSafeJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false},
 {"from":"@openpanel/json","symbol":"getSuperJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/super-json.ts","packages/redis":"packages/redis/json.ts"}},
 {"from":"@openpanel/json","symbol":"setSuperJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false,"toByConsumer":{"packages/redis":"packages/redis/json.ts"}}
 ]
