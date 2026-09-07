@@ -6,7 +6,7 @@ anything.
 ## Safety
 
 Your world is exactly two directories: this repository and
-`/data/apps/rewrite-openpanel` (the controller). Do not read, list, or modify
+`/home/deploy/rewrite-openpanel` (the controller). Do not read, list, or modify
 anything else on this machine.
 
 Never use production credentials — production does not exist on this machine,
@@ -18,7 +18,7 @@ and nothing here should reach it. Local Postgres / ClickHouse / Redis only.
   ClickHouse (8123) are already running on localhost, started by another user.
   Do not try to start, stop or install them.
 - **No sudo.** Anything needing root is a human task. Say so; do not attempt it.
-- Writes are confined to this repo and `/data/apps/rewrite-openpanel`. Every
+- Writes are confined to this repo and `/home/deploy/rewrite-openpanel`. Every
   other path on the box is read-only to you.
 
 ## Commands
@@ -27,7 +27,7 @@ and nothing here should reach it. Local Postgres / ClickHouse / Redis only.
 pnpm install
 pnpm codegen        # prisma client; needs .env
 pnpm run typecheck
-pnpm run lint
+pnpm check          # ultracite + check:deps
 pnpm test
 ```
 
@@ -43,18 +43,18 @@ count. When replacing a query, diff the old and new result sets on the same data
 
 Local is a single node; production is 2 shards x 2 replicas. Before editing any
 query against a `Distributed` table read
-`/data/apps/rewrite-openpanel/docs/ENVIRONMENT.md` - a plain `IN (subquery)` on a
+`/home/deploy/rewrite-openpanel/docs/ENVIRONMENT.md` - a plain `IN (subquery)` on a
 distributed table silently returns per-shard results.
 
 ## Architecture
 
-Architecture decisions live in `/data/apps/rewrite-openpanel/decisions`.
+Architecture decisions live in `/home/deploy/rewrite-openpanel/decisions`.
 **Accepted ADRs are binding.** If you need a decision no accepted ADR covers,
 stop and say `BLOCKED: needs ADR — <question>`. Do not decide it yourself.
 
-The target architecture is `/data/apps/rewrite-openpanel/docs/TARGET_ARCHITECTURE.md`.
+The target architecture is `/home/deploy/rewrite-openpanel/docs/TARGET_ARCHITECTURE.md`.
 The documented behaviour of the system you are replacing is in
-`/data/apps/rewrite-openpanel/docs/current/`. Read the relevant document before
+`/home/deploy/rewrite-openpanel/docs/current/`. Read the relevant document before
 changing that area — it exists so you do not have to rediscover it.
 
 ## Ralph
@@ -62,9 +62,9 @@ changing that area — it exists so you do not have to rediscover it.
 Do not modify:
 
 ```
-/data/apps/rewrite-openpanel/plan/tasks.json
-/data/apps/rewrite-openpanel/state
-/data/apps/rewrite-openpanel/verification
+/home/deploy/rewrite-openpanel/plan/tasks.json
+/home/deploy/rewrite-openpanel/state
+/home/deploy/rewrite-openpanel/verification
 ```
 
 The orchestrator owns task state and owns the definition of "passing".

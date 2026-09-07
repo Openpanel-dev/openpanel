@@ -48,7 +48,7 @@ test('the golden table covers exactly the queues the registry declares', () => {
   ).toEqual(golden);
 });
 
-test('braces appear only under QUEUE_CLUSTER — the divergence from fika', () => {
+test('braces appear only under QUEUE_CLUSTER', () => {
   expect(queueKey('cron')).toBe('cron');
   expect(queueKey('cron', {})).toBe('cron');
   expect(queueKey('cron', { cluster: false })).toBe('cron');

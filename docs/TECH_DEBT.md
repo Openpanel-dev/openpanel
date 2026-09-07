@@ -1339,3 +1339,32 @@ once-qualified, no dashes, no backticks) cannot spell either name. **If a
 future task widens `sql.id` to accept a backtick-quoted, multi-part name,
 these two rows and `compiled.ts` with them can go.** That is the standing exit
 condition; recorded here, not done in M12-009 (out of its scope).
+
+## Root scripts (M12-010)
+
+Every `--filter <name>` in the root `package.json` verified against the
+workspace it selects and the script that workspace actually exports.
+`gen:bots` pointed at `api`, which has no such script — the generator has
+always lived in `core`; fixed to match `gen:referrers`, which was already
+correct. `dev` assumed a `testing` script existed on every dev-facing
+workspace (a V1-era convention); only `apps/api` still has one, so
+`pnpm -r --parallel testing` silently ran nothing but the API. Fixed to start
+`apps/api` and `apps/start`'s dashboard explicitly, on non-colliding ports
+(both default to 3000) — verified with a real 10s boot (Kafka consumer joined,
+7 BullMQ workers started, cron upserted, Vite ready) and a clean `SIGTERM`
+shutdown, 2026-09-07.
+
+| Script | Target workspace(s) | Target script | Exists |
+|---|---|---|---|
+| `gen:bots` | `core` | `gen:bots` | yes |
+| `gen:referrers` | `core` | `gen:referrers` | yes |
+| `dev` | `api` (testing), `start` (dev) | `testing`, `dev` | yes |
+| `dev:public` | `public` | `dev` | yes |
+| `db:codegen` | `db` | `codegen` | yes |
+| `codegen` | `db`, `core` | `codegen` (both) | yes |
+| `migrate` | `db` | `migrate` | yes |
+| `migrate:deploy` | `db` | `migrate:deploy` | yes |
+
+`typecheck`, `check`, `check:workspace`, `check:deps` and `fix` run across the
+whole workspace (`pnpm -r` / no filter) and name no specific package, so they
+are not in this table.

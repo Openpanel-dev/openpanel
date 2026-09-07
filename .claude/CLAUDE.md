@@ -12,22 +12,22 @@ Openpanel is an open-source web/product analytics platform (Mixpanel alternative
 
 ```bash
 # Development
-pnpm dev                    # Run all services (api, worker, dashboard) in parallel
+pnpm dev                    # Run apps/api (ROLE=all, port 3333) + apps/start dashboard (port 3000) in parallel
 pnpm dev:public             # Run public/docs site only
 pnpm dock:up / dock:down    # Start/stop Docker (PostgreSQL, Redis, ClickHouse)
 
 # Code quality
-pnpm check                  # Lint check (Biome via Ultracite)
+pnpm check                  # Lint (Biome via Ultracite) + dependency-cruiser (check:deps)
 pnpm fix                    # Auto-fix lint/format issues
 pnpm typecheck              # Typecheck all packages
 
 # Testing
-pnpm test                   # Run all tests (vitest)
-pnpm vitest run <path>      # Run a single test file
-# Workspace: packages/* and apps/* (excluding apps/start)
+pnpm test                        # vitest run — packages/* and apps/* (excluding apps/start, packages/core)
+cd packages/core && bun test     # core's own suite (ADR-010; bun:test cannot run under vitest)
+pnpm vitest run <path>           # Run a single vitest test file
 
 # Database
-pnpm codegen                # Generate Prisma types + geo data
+pnpm codegen                # Generate the Prisma client + core's geo/bot/ASN data
 pnpm migrate                # Run Prisma migrations (dev)
 pnpm migrate:deploy         # Deploy migrations (production - never run this)
 
@@ -42,37 +42,35 @@ pnpm dock:redis             # Redis CLI
 
 | App | Stack | Port | Purpose |
 |-----|-------|------|---------|
-| `apps/api` | Fastify + tRPC | 3333 | REST/RPC API server |
-| `apps/start` | TanStack Start (Vite + React 19) | 3000 | Dashboard SPA |
+| `apps/api` | Elysia on Bun, `ROLE=api\|worker\|all` | 3000 (`API_PORT`) | REST/tRPC API, BullMQ workers, Kafka ingest consumer — one process, role-gated |
+| `apps/start` | TanStack Start (Vite + React 19) | 3000 (dev default; run alongside `apps/api` needs a distinct `API_PORT`) | Dashboard SPA |
 | `apps/public` | Next.js 16 + Fumadocs | - | Marketing/docs site |
-| `apps/worker` | Express + BullMQ | 9999 | Background job processor |
+
+The standalone worker app is gone — M9 merged it into `apps/api`, selected at boot by `ROLE`.
 
 ### Key Packages
 
 | Package | Purpose |
 |---------|---------|
-| `packages/db` | Prisma ORM (PostgreSQL) + ClickHouse client |
-| `packages/trpc` | tRPC router definitions, context, middleware |
-| `packages/auth` | Authentication (Arctic OAuth, Oslo sessions, argon2) |
-| `packages/queue` | BullMQ + GroupMQ job queue definitions |
-| `packages/redis` | Redis client + LRU caching |
-| `packages/validation` | Zod schemas shared across apps |
-| `packages/common` | Shared utilities (date-fns, ua-parser, nanoid) |
+| `packages/core` | The backend: every module (`<name>.rpc.ts` / `.routes.ts` / `.jobs.ts` / `.service.ts`), the tRPC router, Elysia route surfaces, the BullMQ job registry, auth macros, the ClickHouse `sql` tag consumer code, shared utilities. `apps/api` is a thin shell that mounts it |
+| `packages/db` | Prisma ORM (PostgreSQL) + ClickHouse client, the `sql` tagged-template query builder, migrations |
+| `packages/redis` | Redis client (Bun `RedisClient`) + caching, locks, pub/sub |
 | `packages/email` | React Email templates via Resend |
+| `packages/payments` | Billing/subscription integration |
 | `packages/sdks/*` | Client SDKs (web, react, next, express, react-native, etc.) |
 
 ### Data Flow
 
-1. **Event ingestion**: Client SDKs → `apps/api` (track routes) → Redis queue
-2. **Processing**: `apps/worker` picks up jobs from BullMQ, batches events into ClickHouse
-3. **Dashboard queries**: `apps/start` → tRPC → `apps/api` → ClickHouse (analytics) / PostgreSQL (config)
-4. **Real-time**: WebSocket via Fastify, pub/sub via Redis
+1. **Event ingestion**: Client SDKs → `apps/api` `/track` → Kafka/Redpanda topic `events`
+2. **Processing**: `apps/api`'s Kafka consumer (any non-`api` role) batches events into ClickHouse
+3. **Dashboard queries**: `apps/start` → tRPC (fetch adapter) → `apps/api` → ClickHouse (analytics) / PostgreSQL (config)
+4. **Real-time**: WebSocket via Elysia, pub/sub via Redis
 
 ### Three-Database Strategy
 
 - **PostgreSQL**: Relational data (users, orgs, projects, dashboards). Managed by Prisma.
 - **ClickHouse**: Analytics event storage (OLAP). High-volume reads/writes.
-- **Redis**: Caching, job queues (BullMQ), rate limiting, pub/sub.
+- **Redis**: Caching, BullMQ job queues, rate limiting, pub/sub.
 
 ### Dashboard (apps/start)
 
@@ -80,7 +78,7 @@ Uses TanStack Router with file-based routing (`src/routes/`). State management v
 
 ### API (apps/api)
 
-Fastify server with tRPC integration. Route files in `src/routes/`. Hooks for IP extraction, request logging, timestamps. Built with `tsdown`.
+Elysia on Bun, mounting `@openpanel/core`'s routers. No bundler — `bun run src/main.ts` runs the TypeScript directly (ADR-010). `main.ts` boots deps, `app.ts` wires the four Elysia scopes (root, dashboard, public API, ops); `ROLE` selects whether workers, schedulers and the Kafka consumer also start in this process.
 ---
 
 ## Core Principles

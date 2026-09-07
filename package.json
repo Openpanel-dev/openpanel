@@ -8,7 +8,7 @@
   "packageManager": "pnpm@11.23.0",
   "scripts": {
     "test": "vitest run",
-    "gen:bots": "pnpm -r --filter api gen:bots",
+    "gen:bots": "pnpm -r --filter core gen:bots",
     "gen:referrers": "pnpm -r --filter core gen:referrers",
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
@@ -18,7 +18,7 @@
     "codegen": "pnpm -r --filter db --filter core run codegen",
     "migrate": "pnpm -r --filter db run migrate",
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
-    "dev": "pnpm -r --parallel testing",
+    "dev": "pnpm --filter api run testing & pnpm --filter start run dev & wait",
     "dev:public": "pnpm -r --filter public dev",
     "typecheck": "pnpm -r --no-bail typecheck",
     "update-simple-git-hooks": "npx simple-git-hooks",
