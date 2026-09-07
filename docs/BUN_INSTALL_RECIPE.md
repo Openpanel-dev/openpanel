@@ -302,6 +302,16 @@ bun run --filter testbed  postinstall
 Naming them is a feature: it makes the set of scripts this repo runs a list in
 one file rather than a property of a resolver's defaults.
 
+> **Superseded in part by M13-002.** The policy is right; the *home* is not the
+> command line. The gates and `verification/full.sh` run a bare
+> `bun install --frozen-lockfile` with no flags of ours, so the flag would be
+> off exactly where it matters. Both settings live in the root `bunfig.toml`
+> instead (`[install] ignoreScripts = true` and `linker = "isolated"`), which
+> makes every install command — flagged or bare — obey them. The two
+> workspace-own `postinstall`s are now invoked by the scripts that need their
+> output, and `bun run postinstall:workspaces` runs both explicitly. See
+> *Lifecycle scripts: `bunfig.toml`, not a flag* below.
+
 ---
 
 ## 3. Every `package.json` script that shells out to `pnpm`
@@ -329,7 +339,7 @@ pattern" — which is what replaces `pnpm -r --filter`.
 | `dev:public` | `pnpm -r --filter public dev` | `bun run --filter public dev` |
 | `typecheck` | `pnpm -r --no-bail typecheck` | `bun run --filter '*' typecheck` — **behaviour gap:** `--no-bail` makes pnpm typecheck every workspace and report all failures. Bun has no `--no-bail`. If it stops at the first failure, the script must keep going by construction (a loop over the workspace list, collecting exit codes) or the gate silently narrows to "the first package that fails" |
 | `check:workspace` | `pnpm dlx sherif@latest` | `bunx sherif@<pinned>` — pin it while touching it (ADR-014 benchmark item 13; it is unpinned today) |
-| `check:deps` | `NODE_PATH=$PWD/node_modules pnpm dlx --package dependency-cruiser@18.2.0 depcruise …` | `NODE_PATH=$PWD/node_modules bunx --package dependency-cruiser@18.2.0 depcruise …` |
+| `check:deps` | `NODE_PATH=$PWD/node_modules pnpm dlx --package dependency-cruiser@18.2.0 depcruise …` | ~~`bunx --package dependency-cruiser@18.2.0 depcruise …`~~ — **the one row this translation gets wrong.** `bunx` cannot give dependency-cruiser TypeScript, so every `import type` edge stops being `type-only` and the gate returns 82 false errors. M13-002 replaced it with `bun tooling/scripts/check-deps.ts`; see *`check:deps` is the one script that is not a `bunx`* below |
 | `check` | `ultracite check && pnpm run check:deps` | `ultracite check && bun run check:deps` |
 
 ### `apps/api/package.json`
@@ -516,3 +526,273 @@ What is **never** the fix:
   install command is what makes that re-resolve an error instead of a silent
   rewrite — and it is the successor to `verifyDepsBeforeRun: false`, which has
   no bun analogue.
+
+---
+
+# M13-002 — the swap, as executed
+
+Everything below was executed on this box on **2026-09-07**, by the M13-002
+implement task, on Bun **1.4.0** and pnpm **11.23.0**. Every number is from a
+run recorded here; nothing is carried over from the M13-001 survey.
+
+The stop rule did **not** fire. Every gate ADR-014 names is green under the bun
+tree, `verification/full.sh` included. One of them — the SDK dist gate — needed
+a one-line controller fix first, for a reason worth knowing before you write any
+script against this tree; see *pnpm can no longer run a script inside this tree*
+below.
+
+## What bun's `overrides` actually do — measured, not assumed
+
+Four properties, each established by installing this tree and reading the
+result. They are what the table in the next section is built on, and three of
+them are counter-intuitive enough to be worth writing down.
+
+1. **Overrides apply to `peerDependencies`.** Nine of the eleven initial drift
+   rows were peers pnpm auto-installed and bun resolved differently; six were
+   fixed by a plain `"<name>": "<version>"` override.
+2. **A `name@spec` key matches when the *requested* range is a SUBSET of the
+   key's range.** Key `prisma@^5.1.1` matched the two `^5.1.1` devDeps and left
+   `packages/db`'s `prisma: 6.14.0` alone. Key `next@^12.0.0` did **not** match
+   a request of `^12.0.0 || … || ^16.0.0` (the union is not a subset of
+   `^12.0.0`), while a key spelled as that whole union **did** match a request
+   of `16.0.7`. So the key must be a superset of the request; it is not an
+   intersection test.
+3. **Two keys that both match one request cancel — for the whole package
+   name.** With `next@16.0.7` and `next@^12.0.0 || … || ^16.0.0` both present,
+   *neither* applied to *either* importer. This is why §"the three exact pins"
+   below could not be an override.
+4. **A new override is only honoured on a fresh resolve.** Adding an override
+   and re-running `bun install` against an existing `bun.lock` left already-
+   locked peers at their old versions; `nuxt`, `expo-application` and
+   `react-native` only moved after `rm bun.lock`. Anyone adding a row here must
+   delete the lockfile, not amend it.
+
+Two forms were tried and do **not** work on Bun 1.4.0: `overrides` declared in a
+workspace member's own `package.json` (silently ignored — verified against
+`packages/sdks/nextjs`), and yarn-style path keys in `resolutions`
+(`"@openpanel/nextjs/next"` — silently ignored).
+
+## Overrides
+
+Every row, with the breakage it fixes. Rows 1–5 are carried over from
+`pnpm-workspace.yaml`; rows 6–15 are new in M13-002 and each cites the failure
+it was added for. The one pnpm row that is **not** here is
+`"@nuxt/vite-builder>seroval": 1.4.0` — see §1.1 above; it is dropped because
+bun cannot express a parent-scoped override, and it is proven moot by
+`cd packages/sdks/nuxt && bun run build` succeeding under the global
+`seroval: 1.3.2` pin (run 2026-09-07, `✔ Build succeeded for nuxt`, 4.14 kB).
+
+| # | Override | Breakage it fixes |
+|---|---|---|
+| 1 | `rolldown: 1.0.0-beta.43` | Carried from pnpm. **Now inert** — no package in `bun.lock` requests `rolldown` (tsdown was deleted in M12). Kept because ADR-017 rules the register frozen: "the `rolldown` override … stays on purpose" |
+| 2 | `esm-env: npm:esm-env-runtime@^0.1.0` | Carried. Resolves to `esm-env-runtime@0.1.1`. Without it `@number-flow/react`'s `import "esm-env"` is `ERR_MODULE_NOT_FOUND` at first SSR render. Proven by `p13-ssr.sh`'s in-bundle assertion (`BROWSER=false, NODE=true, DEV=false`) |
+| 3 | `seroval: 1.3.2` | Carried. The dashboard pin. `bun.lock` contains exactly one `seroval@1.3.2` and one `seroval-plugins@1.3.2` — no 1.4.x anywhere. Proven by `p13-ssr.sh` (`/login` 152348 bytes, `/onboarding` 156301 bytes, dashboard log clean) |
+| 4 | `seroval-plugins: 1.3.2` | Carried, same failure as row 3 |
+| 5 | `embla-carousel: 8.0.0-rc22` | Carried. `AutoplayType` vs `CreatePluginType`; the failure mode is `apps/start` failing to typecheck. Proven by `start` PASS in `bun run typecheck` |
+| 6 | `express: 4.19.2` | `packages/sdks/express`'s peer `express: ^4.17.0 \|\| ^5.0.0` resolved to **5.2.1**; the snapshot has 4.19.2. Drift row |
+| 7 | `prisma@^5.1.1: 5.9.1` | The two ADR-017 rule 2 carve-out devDeps (`packages/redis`, `packages/sdks/_info`) resolved to **5.22.0**; the snapshot has 5.9.1. Spec-scoped so `packages/db`'s `prisma: 6.14.0` is untouched — the declared `^5.1.1` ranges are **not** edited, which is what rule 2 forbids |
+| 8 | `h3: 1.15.4` | `packages/sdks/nuxt`'s peer `h3: ^1.0.0` resolved to **1.15.11**. Drift row |
+| 9 | `nuxt: 4.2.2` | `packages/sdks/nuxt`'s peer `nuxt: ^3.0.0 \|\| ^4.0.0` resolved to **4.5.2**. Drift row |
+| 10 | `react-native: 0.73.6` | `packages/sdks/react-native`'s peer `react-native: *` resolved to **0.87.1**. Drift row |
+| 11 | `expo-application: 5.3.1` | Same package's peer `5 - 7` resolved to **7.0.8**. Drift row |
+| 12 | `expo-constants: 15.4.5` | Same package's peer `14 - 18` resolved to **18.0.14**. Drift row |
+| 13 | `framer-motion@^12.40.0: 12.40.0` | With `motion`'s `framer-motion: ^12.40.0` free, bun took **12.43.0**, which requests `motion-dom: ^12.43.0` and drags row 14's single copy forward. pnpm resolved this edge to 12.40.0 |
+| 14 | `motion-dom@^12.23.23: 12.40.0` | **`cd apps/public && bun run build` failed**: `Attempted import error: 'activeAnimations' is not exported from 'motion-dom'`, from `framer-motion@12.23.25/dist/es/projection/node/create-projection-node.mjs`, traced through `HTMLProjectionNode.mjs` → `use-instant-layout-transition.mjs` → `src/components/navbar.tsx`; `Build failed because of webpack errors`. pnpm carried four `motion-dom` copies (11.18.1 / 12.23.23 / 12.38.0 / 12.40.0); bun collapses the whole 12.x line onto one, and it chose 12.43.0. Measured on this box: `activeAnimations` is exported by 12.23.23, 12.38.0 and 12.40.0 and **absent** in 12.43.0, so 12.40.0 is the one version that satisfies every 12.x requester here. Subset matching (property 2) makes the single `^12.23.23` key cover `^12.38.0` and `^12.40.0` too |
+| 15 | `lucide-react@^1.7.0: 0.555.0` | **`apps/public` failed to typecheck** with a ~40-line `fumadocs-core` structural mismatch ending in `Types have separate declarations of a private property 'flattenPathToFullPath'`, between `fumadocs-core@16.7.11+3b8a98ceba1412f0` and `fumadocs-core@16.7.11+18a2f888045eb88b`. Same version, two peer-hashed copies, differing in exactly one entry: which `lucide-react` filled `fumadocs-core`'s **optional** peer `lucide-react: "*"` — `0.555.0` (apps/public's own pin) for apps/public + `fumadocs-mdx`, `1.42.0` for `fumadocs-ui` + `fumadocs-openapi`. pnpm resolved that optional peer to 0.555.0 for *every* consumer and produced ONE `fumadocs-core`; bun resolves it per scope. Forcing the `^1.7.0` requesters onto the same 0.555.0 collapses the two instances. **Residual risk, stated:** `fumadocs-ui`/`fumadocs-openapi` now run a lucide-react a major below what they declare. The webpack build is the check — it reports every unresolved named import (that is how row 14 was found) and reported none for lucide-react across 242 generated pages |
+| 16 | `vue: 3.5.25` | **`packages/sdks/nuxt` failed to typecheck**: `src/runtime/plugin.client.ts(11,16): error TS2664: Invalid module name in augmentation, module '@vue/runtime-core' cannot be found.` `nuxt@4.2.2` resolved `vue` to **3.5.42** under bun (pnpm: 3.5.25), which put `@vue/runtime-core@3.5.42` in the tree beside the `3.5.25` the package declares as a devDep, and the augmentation resolved to neither. Pinning `vue` back to pnpm's 3.5.25 leaves exactly one `@vue/runtime-core` |
+
+## The three exact pins, and why they are not overrides
+
+`packages/sdks/nextjs` gains three **devDependencies** at exact versions:
+
+```jsonc
+"next": "15.0.3", "react": "19.1.1", "react-dom": "19.1.1"
+```
+
+Its `peerDependencies` are **not** touched — the published contract is byte
+identical. These three are the versions pnpm's `auto-install-peers` put in
+`packages/sdks/nextjs/node_modules`, and they are already recorded as such in
+`tooling/gates/p13-lock-snapshot.json`. Bun instead deduped them onto
+`apps/public`'s `next: 16.0.7` and the catalog's `react`/`react-dom: 19.2.3`.
+
+An override cannot express this. The only `name@spec` key that matches the
+peer's request (`^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0`) is a
+superset of it, and every such superset also matches `apps/public`'s `16.0.7`
+(property 2) — measured: the union key moved `apps/public` to 15.0.3 and
+`apps/testbed` to react 19.1.1, trading three drift rows for three others.
+Adding a second, narrower key to exempt them cancels both (property 3). A
+workspace-level `overrides` block and a yarn path key are both ignored.
+
+So the mechanism is the other one the task allows: an **exact pin**, declaring
+in the manifest what pnpm did implicitly. It is the smallest change that makes
+`p13-drift.sh --assert` exit 0, and it is worth flagging to a reviewer as the
+one row in this swap that adds declarations rather than constraining
+resolution.
+
+## `packageManager` is removed, not repointed to bun
+
+The field is **deleted** from the root `package.json` rather than rewritten to
+`bun@1.4.0`.
+
+`packageManager` is corepack's field, and corepack shims npm/pnpm/yarn — it has
+never installed or dispatched bun. Leaving `pnpm@11.23.0` there after the swap
+would be a lie a `corepack enable` would act on; writing `bun@1.4.0` would name
+a value nothing on this box reads, and ADR-016 rule 5 is explicit that *"an
+unasserted exact pin is worse than a range, because it reads as a guarantee and
+is not one"*. Bun's version pin already has a home a build actually reads —
+`apps/api/Dockerfile:4`'s `ARG BUN_VERSION=1.4.0`, feeding
+`oven/bun:${BUN_VERSION}-slim` — so a second copy in `package.json` would add a
+drift site and no enforcement. (ADR-016 also names a `.bun-version` file; that
+file does not exist in this tree. Creating it is outside M13-002's scope —
+recorded in `docs/TECH_DEBT.md`.)
+
+`bunx sherif@1.13.0` (`check:workspace`) notices: its `root-package-manager-field`
+rule wants the field present. That is the only row the deletion adds — sherif
+goes from **25 issues (19 errors)** at `HEAD` to **26 (20)** here, both measured
+on 2026-09-07 with the same pinned sherif. The other 19 are pre-existing
+declared-range facts ADR-017 freezes, so this script was already red and is not
+a gate anything passes today.
+
+## `check:deps` is the one script that is not a `bunx`
+
+`pnpm dlx X` -> `bunx X` is right everywhere except here, and it is worth
+knowing why before someone "simplifies" it back.
+
+dependency-cruiser only tags an edge `type-only` when it can load the
+TypeScript compiler, and `type-only` is exactly what
+`.dependency-cruiser.cjs`'s `core-uses-ctx-not-db-internals` exempts
+(`dependencyTypesNot: ['type-only']`). It resolves `typescript` — its own
+*optional peer* — from its own directory, an ESM lookup that `NODE_PATH` cannot
+influence at all. `pnpm dlx` satisfied that by accident: pnpm auto-installs
+optional peers, so the dlx sandbox contained TypeScript next to the cruiser.
+
+Measured on this box on 2026-09-07, same tree, same config, `depcruise --info`
+plus the full cruise over `apps/start packages`:
+
+| runner | `typescript` found | result |
+|---|---|---|
+| `pnpm dlx --package dependency-cruiser@18.2.0` | `typescript@5.9.3` | `no dependency violations found (2703 modules, 18121 dependencies)` |
+| `bunx --package dependency-cruiser@18.2.0` | `-` | **82 errors** (2695 modules, 17845 dependencies) |
+| `npx --yes --package dependency-cruiser@18.2.0` | `-` | 82 errors |
+| `npx --yes -p dependency-cruiser@18.2.0 -p typescript@5.9.3` | `-` | 82 errors |
+
+All 82 are `import type` lines the rule allows. The failure is silent and it is
+the wrong direction — a gate that goes red on correct code. It is also **not**
+caused by the installer: `bunx` produces the same 82 on a pnpm-installed tree
+(verified by restoring `HEAD` and re-running).
+
+So `check:deps` is `bun tooling/scripts/check-deps.ts`, which installs
+`dependency-cruiser@18.2.0` and `typescript@5.9.3` **together, hoisted**, into
+`node_modules/.cache/depcruise` and runs the tool from there. Both versions are
+exact — this gate's answer must not move because a patch release shipped. It
+reproduces `pnpm dlx`'s numbers exactly (`2703 modules, 18121 dependencies`,
+zero violations) and the temp install is a no-op after the first run.
+
+## Lifecycle scripts: `bunfig.toml`, not a flag
+
+The recipe's §2 policy is `--ignore-scripts` on every install command. **That is
+not sufficient**, because the gates and `verification/full.sh` run a *bare*
+`bun install --frozen-lockfile` with no flags of ours. The policy therefore
+lives in the root `bunfig.toml`:
+
+```toml
+[install]
+ignoreScripts = true
+linker = "isolated"
+```
+
+Both keys were verified to be honoured on Bun 1.4.0 before being relied on —
+unknown keys in `bunfig.toml` are *silently ignored* (the same trap
+`packages/core/bunfig.toml` records for `[test] isolate`), so "it is in the
+file" is not evidence:
+
+- `ignoreScripts`: a scratch package depending on `simple-git-hooks@2.12.1`
+  (default-trusted) fails its postinstall under `--linker=isolated` with a bare
+  `bun install`; with `[install] ignoreScripts = true` the same install exits 0
+  and runs nothing. Identical to passing `--ignore-scripts`.
+- `linker`: a scratch install with only `[install] linker = "isolated"` produced
+  `node_modules/.bun/`, the isolated layout.
+
+`trustedDependencies` is absent, per ADR-014 amendment 2. Note for the record
+that `bun pm ls --trusted` is **not** empty on this tree — it prints
+`simple-git-hooks@2.12.1`, because that package is on bun's 367-entry default
+list. ADR-014's benchmark item 6 asked for that command to be empty; the
+honest reading is that the list is not the enforcement point and never was.
+`ignoreScripts` is, and the observable fact it asked for — no dependency build
+script runs — holds: a full install prints no lifecycle script output, and
+`sharp`, `prisma`, `esbuild`, `msgpackr-extract` and `workerd` are all
+installed with their install scripts unrun, exactly as under pnpm.
+
+The two **workspace-own** postinstalls that pnpm did run (`apps/public`'s
+`fumadocs-mdx`, `apps/testbed`'s `node scripts/copy-op1.mjs`) are suppressed by
+the same setting, and both generate gitignored build inputs. Each is now
+invoked by the script that needs its output (`apps/public`'s `build` /
+`preview` / `deploy`, which already did this in `typecheck`; `apps/testbed`'s
+`build` / `dev`), so a package is buildable straight after an install with no
+follow-up step to remember. `bun run postinstall:workspaces` runs both
+explicitly for anyone who wants the pnpm-era behaviour back.
+
+## `jiti` is gone from every script (ADR-019 row 7b)
+
+`apps/api` invoked `jiti` in three scripts and **never declared it** — pnpm's
+layout happened to make the binary reachable. Under `--linker=isolated` it is
+not: `bun run e2e:sessions` fails with `Error: spawn jiti ENOENT`. That is the
+phantom dependency the isolated layout exists to surface, and ADR-019 row 7b
+(**ADOPT**, P12) already rules the fix: `jiti X.ts` → `bun X.ts`. Applied to
+`apps/api`'s `test:manage` / `e2e:sessions` / `e2e:sessions:stress` and to
+`tooling/publish`'s `publish`, alongside the `packages/db` and `packages/core`
+entries the recipe's §3 table already listed.
+
+The `jiti` **devDependency** in `packages/core` and `packages/db` stays
+declared. Deleting it is ADR-017 rule 2's separate CLEAN task, and removing it
+here would make `p13-drift.sh` report it `missing`.
+
+## `typecheck` and the missing `--no-bail`
+
+`pnpm -r --no-bail typecheck` had no bun equivalent (recipe §3 flagged it).
+Root `typecheck` is now `bun tooling/scripts/typecheck-workspaces.ts`, which
+expands the same three workspace globs, runs every package that declares a
+`typecheck` script (17 of them) at CPU-count concurrency, prints each result,
+and exits 1 listing every failure — the "keep going by construction" the recipe
+asked for.
+
+## pnpm can no longer run a script inside this tree — and one gate needed that
+
+Recorded because it cost two blocked attempts and it will surprise the next
+person: after this swap, **any** invocation of `pnpm run <script>` inside this
+repo fails before it does any work. pnpm 11 verifies `node_modules` against the
+workspace before running a script and re-installs on mismatch — that is what
+`pnpm-workspace.yaml`'s `verifyDepsBeforeRun: false` suppressed, and that file
+is deleted. The implicit install then dies on
+
+```
+[ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC] No catalog entry '@types/node' was found for catalog 'default'
+```
+
+because `catalog:` now resolves from the root `package.json`'s `workspaces.catalog`,
+which pnpm does not read.
+
+`verification/contracts/sdk/dist-gate.sh` shelled out to a hardcoded
+`pnpm run build` and was the sole failing item in `verification/full.sh` for
+exactly this reason. It is a **controller** file — out of this task's scope —
+and the operator has since given it the same `bun.lock` detection
+`full.sh:12-19` carries. Both now pass on this tree:
+
+```
+verification/contracts/sdk/dist-gate.sh   → DIST GATE: all 5 checked package(s) clean   (rc=0, 2026-09-07)
+verification/full.sh                      → FULL: green                                  (rc=0, 2026-09-07)
+```
+
+Three repo-side workarounds were tried during the blocked attempts and all
+three are dead ends; they are listed so nobody re-spends them:
+
+| attempt | result |
+|---|---|
+| `.npmrc` (`verify-deps-before-run=false`, via `NPM_CONFIG_USERCONFIG`) | ignored — the implicit `pnpm install` still fired |
+| env var `npm_config_verify_deps_before_run=false` | ignored — `pnpm config get verify-deps-before-run` prints `undefined` |
+| a per-SDK `pnpm-workspace.yaml` in each package directory | works, and is rejected: it re-introduces pnpm config to a repo that just removed it, to satisfy a stale line in a protected script |
+
+The rule that generalises: a script that wants to build or run something in
+this tree invokes `bun`, not `pnpm`. Every caller inside the repo now does. The
+three Dockerfiles still name `pnpm-lock.yaml` (M13-003) and CI still installs
+pnpm (M13-004); both fail this way until they are converted.

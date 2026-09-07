@@ -21,6 +21,9 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/react": "catalog:",
+    "next": "15.0.3",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "tsup": "7.3.0",
     "typescript": "catalog:"
   }

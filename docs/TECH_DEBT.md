@@ -1523,3 +1523,115 @@ devDependency, and drop the last `&& vitest run` from the root `test` script.
 Also left alone, out of scope: `CLAUDE.md:31` and `.claude/CLAUDE.md:25` still
 describe `pnpm test` as "vitest run — packages/* and apps/* (excluding
 apps/start, packages/core)", which this task made false.
+
+## M13-002 — pnpm → `bun install --linker=isolated` (2026-09-07)
+
+The installer swap (ADR-014, P13). `pnpm-workspace.yaml`, `pnpm-lock.yaml` and
+`patches/` are gone; `bun.lock` is committed; every `package.json` script is off
+pnpm. The stop rule did not fire. Full reasoning, the overrides table and the
+measured bun-override semantics are in `docs/BUN_INSTALL_RECIPE.md`
+(*M13-002 — the swap, as executed*).
+
+### Install wall time and `node_modules` size
+
+Both installers measured on this box on **2026-09-07** by the M13-002 implement
+task, on the **same tree** (the manifests were already pinned by M13-001), and
+in the same way: all 20 workspace `node_modules` directories removed first, the
+installer's own global cache left warm, timed with `/usr/bin/time -f %e`. The
+pnpm side was measured by stashing the swap so the tree was exactly `HEAD`
+(`pnpm-workspace.yaml` + `pnpm-lock.yaml` + `patches/` present, root
+`packageManager: pnpm@11.23.0`), then restored. pnpm self-selected **11.23.0**
+from that field; the binary otherwise on PATH here is 11.24.0. Size is
+`du -csh` over those same 20 directories.
+
+| | pnpm 11.23.0 | Bun 1.4.0 |
+|---|---:|---:|
+| install, cold `node_modules` + warm global cache | `pnpm install --frozen-lockfile` — **8.60s**, **8.09s** (two runs) | `bun install --frozen-lockfile` — **2.89s**, **2.66s** (two runs) |
+| install, warm (no-op re-run) | **0.43s** | **0.14s** |
+| `node_modules`, all 20 directories | **3.0G** | **3.9G** |
+| files under `node_modules` | 212 145 | 197 975 |
+| packages | `resolved 3313, reused 3184, downloaded 0, added 3313` | `3002 packages installed` (3053 installs / 3429 packages per `--frozen-lockfile`) |
+| global cache backing it | `~/.local/share/pnpm/store` — 9.4G | `~/.bun/install/cache` — 5.7G |
+
+Bun installs this tree **~3× faster** cold (2.66-2.89s vs 8.09-8.60s) and leaves
+a **~30% larger** `node_modules` from **7% fewer files**.
+
+The size figure is the honest one to quote but it is not a
+like-for-like disk claim: both installers hardlink from their own global cache,
+`du` charges each inode to whichever tree it walks first, and the two caches are
+different sizes. Nothing here has been measured *inside an image* — that is
+M13-003's number, and it is the one that matters for deployment.
+
+### `p13-drift.sh --report`, final
+
+```
+workspace package         dependency                        snapshot        installed
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
+TOTAL: 0 drifted of 416 direct dependencies across 20 workspace packages
+```
+
+Zero, against `tooling/gates/p13-lock-snapshot.json` — the record of what pnpm
+had resolved, and the only such record left now that `pnpm-lock.yaml` is
+deleted. A bare `bun install` on the pinned tree started at **11 drifted**: nine
+`peerDependencies` pnpm auto-installed and bun resolved differently, plus the
+two ADR-017 rule 2 `prisma: ^5.1.1` carve-outs. Six peers and both prisma rows
+were closed with `overrides`; the last three (`packages/sdks/nextjs`'s `next`,
+`react`, `react-dom`) with exact devDependency pins, because bun's override key
+space cannot scope a version to one importer — see the recipe.
+
+### Known debt this swap leaves behind
+
+- **pnpm cannot run a script inside this tree any more, and one controller gate
+  had to learn that.** Two earlier M13-002 attempts blocked on
+  `verification/contracts/sdk/dist-gate.sh`, which shelled out to a hardcoded
+  `pnpm run build`: with `pnpm-workspace.yaml` gone, pnpm 11 fires an implicit
+  install inside each SDK directory (the `verifyDepsBeforeRun: false` that
+  suppressed it died with that file) and dies on
+  `ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC`, because `catalog:` now resolves
+  from the root `package.json`, where pnpm does not look. The operator fixed the
+  gate to detect `bun.lock` exactly as `full.sh:12-19` does, and it is green
+  (`DIST GATE: all 5 checked package(s) clean`, `FULL: green`). Recorded because
+  the property generalises and will bite again: **any** script that invokes
+  `pnpm` against this repo now fails at the deps check, not at the work. Every
+  in-repo caller is off pnpm; the Dockerfiles are M13-003's and CI is M13-004's.
+- **`check:deps` deviates from the `pnpm dlx` -> `bunx` translation, on
+  purpose.** `bunx` (and `npx`) cannot give dependency-cruiser the TypeScript
+  compiler it needs to tag an edge `type-only`, which is the exemption
+  `core-uses-ctx-not-db-internals` is built on; under `bunx` the gate returns
+  82 false errors on `import type` lines. It is not an installer problem —
+  `bunx` returns the same 82 on a pnpm-installed tree. The script is now
+  `bun tooling/scripts/check-deps.ts`, which installs the cruiser and
+  `typescript@5.9.3` hoisted into `node_modules/.cache/depcruise`; it reproduces
+  pnpm's numbers exactly (2703 modules, 18121 dependencies, zero violations).
+  The debt is the shape, not the result: a repo-local dev tool is being fetched
+  at gate time because ADR-017 forbids declaring it. Declaring
+  `dependency-cruiser` as a root devDependency would delete this script; that is
+  a register question, not a P13 one.
+- **`packageManager` is gone and nothing replaced it as an asserted pin.** It
+  was deleted rather than repointed to `bun@1.4.0` (reasoning in the recipe).
+  ADR-016 rule 5 wants the Bun pin asserted in three places: `.bun-version`,
+  `scripts/doctor.sh`, and a boot log line. Only `apps/api/Dockerfile:4`'s
+  `ARG BUN_VERSION=1.4.0` exists today — there is no `.bun-version` file in the
+  tree and `scripts/doctor.sh` has no bun check. Creating them is outside
+  M13-002's scope (it touches neither a manifest nor the lockfile); it belongs
+  with M13-003's Dockerfile work or a CLEAN task.
+- **The root `package-lock.json` is still tracked.** ADR-014 says it should be
+  deleted in the same commit as the lockfile swap ("tracked, stale, and a trap
+  for any scanner or contributor running `npm ci`"). It is outside M13-002's
+  scope globs, so it survives; it is one `git rm` for whoever owns the next P13
+  task.
+- **`overrides` row 1, `rolldown: 1.0.0-beta.43`, is now inert** — nothing in
+  `bun.lock` requests rolldown since M12 deleted tsdown. Kept because ADR-017
+  freezes the register; worth deleting the day that register is reopened.
+- **`packages/core` and `packages/db` still declare a `jiti` devDependency** that
+  no script invokes any more (ADR-019 row 7b is otherwise complete: every
+  `jiti X.ts` is now `bun X.ts`). Deleting the two declarations is ADR-017
+  rule 2's separate CLEAN task; doing it here would make `p13-drift.sh` report
+  them `missing`.
+- **`bun pm ls --trusted` is not empty** (it prints `simple-git-hooks@2.12.1`,
+  which is on bun's 367-entry default-trusted list). ADR-014 benchmark item 6
+  asked for that command to be empty. It cannot be: the list is not the
+  enforcement point. `[install] ignoreScripts = true` in `bunfig.toml` is, and
+  the property the item was really after — no dependency build script runs, as
+  under pnpm's twelve `allowBuilds: false` — does hold.

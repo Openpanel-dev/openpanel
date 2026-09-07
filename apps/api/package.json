@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "ROLE=all dotenv -e ../../.env -- bun --watch src/main.ts",
-    "testing": "API_PORT=3333 pnpm dev",
+    "testing": "API_PORT=3333 bun run dev",
     "dev:worker": "ROLE=worker dotenv -e ../../.env -- bun --watch src/main.ts",
     "start": "bun run src/main.ts",
-    "test:manage": "jiti scripts/test-manage-api.ts",
-    "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-e2e.ts",
-    "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-stress.ts",
+    "test:manage": "bun scripts/test-manage-api.ts",
+    "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- bun e2e/session-e2e.ts",
+    "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- bun e2e/session-stress.ts",
     "e2e:legacy-jobs": "bash e2e/legacy-job-proof.sh",
     "test": "bun test --isolate",
     "typecheck": "tsc --noEmit"

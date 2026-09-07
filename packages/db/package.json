@@ -4,12 +4,12 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "codegen": "pnpm with-env prisma generate && jiti prisma/prisma-json-types.ts",
-    "migrate": "pnpm with-env prisma migrate dev",
-    "migrate:deploy:code": "pnpm --filter @openpanel/core run migrate:deploy:code",
-    "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
-    "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
-    "duplicate-events": "pnpm with-env jiti ./scripts/find-duplicate-events.ts",
+    "codegen": "bun run with-env prisma generate && bun prisma/prisma-json-types.ts",
+    "migrate": "bun run with-env prisma migrate dev",
+    "migrate:deploy:code": "bun run --filter @openpanel/core migrate:deploy:code",
+    "migrate:deploy:db": "bun run with-env prisma migrate deploy",
+    "migrate:deploy": "bun run migrate:deploy:db && bun run migrate:deploy:code",
+    "duplicate-events": "bun run with-env bun ./scripts/find-duplicate-events.ts",
     "test": "bun test --isolate",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"

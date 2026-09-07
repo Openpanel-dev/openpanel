@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "publish": "jiti publish.ts",
+    "publish": "bun publish.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

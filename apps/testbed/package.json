@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3100",
-    "build": "tsc && vite build",
+    "dev": "node scripts/copy-op1.mjs && vite --port 3100",
+    "build": "node scripts/copy-op1.mjs && tsc && vite build",
     "postinstall": "node scripts/copy-op1.mjs"
   },
   "dependencies": {
