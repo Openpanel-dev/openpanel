@@ -1,3 +1,4 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../../shared/ch-tables';
 import type {
@@ -18,67 +19,63 @@ import {
 
 const DELIMITER = '|||';
 
+/** clix inlined the value; `sign = 1` is the sessions table's live-row
+ *  predicate and now binds like every other value. */
+const ACTIVE_SESSION_SIGN = sql.param('Int8', 1);
+
 async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
   currentMap: Map<string, number>;
   baselineMap: Map<string, number>;
   totalCurrent: number;
   totalBaseline: number;
 }> {
+  const sessions = sql.id(TABLE_NAMES.sessions);
+  const projectId = sql.string(ctx.projectId);
+  const curStart = sql.dateTime64(formatClickhouseDate(ctx.window.start));
+  const curEnd = sql.dateTime64(
+    formatClickhouseDate(getEndOfDay(ctx.window.end))
+  );
+  const baseStart = sql.dateTime64(
+    formatClickhouseDate(ctx.window.baselineStart)
+  );
+  const baseEnd = sql.dateTime64(
+    formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd))
+  );
+
   if (ctx.window.kind === 'yesterday') {
     const [currentResults, baselineResults, totals] = await Promise.all([
-      ctx
-        .clix()
-        .select<{ entry_origin: string; entry_path: string; cnt: number }>([
-          'entry_origin',
-          'entry_path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', ctx.projectId)
-        .where('sign', '=', 1)
-        .where('created_at', 'BETWEEN', [
-          ctx.window.start,
-          getEndOfDay(ctx.window.end),
-        ])
-        .groupBy(['entry_origin', 'entry_path'])
-        .execute(),
-      ctx
-        .clix()
-        .select<{
-          date: string;
-          entry_origin: string;
-          entry_path: string;
-          cnt: number;
-        }>([
-          'toDate(created_at) as date',
-          'entry_origin',
-          'entry_path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', ctx.projectId)
-        .where('sign', '=', 1)
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.baselineEnd),
-        ])
-        .groupBy(['date', 'entry_origin', 'entry_path'])
-        .execute(),
-      ctx
-        .clix()
-        .select<{ cur_total: number }>([
-          ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
-          ),
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', ctx.projectId)
-        .where('sign', '=', 1)
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.end),
-        ])
-        .execute(),
+      ctx.runQuery<{
+        entry_origin: string;
+        entry_path: string;
+        cnt: number;
+      }>(sql`
+        SELECT entry_origin, entry_path, count(*) as cnt
+        FROM ${sessions}
+        WHERE project_id = ${projectId}
+          AND sign = ${ACTIVE_SESSION_SIGN}
+          AND created_at BETWEEN ${curStart} AND ${curEnd}
+        GROUP BY entry_origin, entry_path
+      `),
+      ctx.runQuery<{
+        date: string;
+        entry_origin: string;
+        entry_path: string;
+        cnt: number;
+      }>(sql`
+        SELECT toDate(created_at) as date, entry_origin, entry_path, count(*) as cnt
+        FROM ${sessions}
+        WHERE project_id = ${projectId}
+          AND sign = ${ACTIVE_SESSION_SIGN}
+          AND created_at BETWEEN ${baseStart} AND ${baseEnd}
+        GROUP BY date, entry_origin, entry_path
+      `),
+      ctx.runQuery<{ cur_total: number }>(sql`
+        SELECT countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur_total
+        FROM ${sessions}
+        WHERE project_id = ${projectId}
+          AND sign = ${ACTIVE_SESSION_SIGN}
+          AND created_at BETWEEN ${baseStart} AND ${curEnd}
+      `),
     ]);
 
     const currentMap = buildLookupMap(
@@ -102,56 +99,27 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
   }
 
-  const curStart = formatClickhouseDate(ctx.window.start);
-  const curEnd = formatClickhouseDate(getEndOfDay(ctx.window.end));
-  const baseStart = formatClickhouseDate(ctx.window.baselineStart);
-  const baseEnd = formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd));
-
   const [results, totals] = await Promise.all([
-    ctx
-      .clix()
-      .select<{
-        entry_origin: string;
-        entry_path: string;
-        cur: number;
-        base: number;
-      }>([
-        'entry_origin',
-        'entry_path',
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
-        ),
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
-        ),
-      ])
-      .from(TABLE_NAMES.sessions)
-      .where('project_id', '=', ctx.projectId)
-      .where('sign', '=', 1)
-      .where('created_at', 'BETWEEN', [
-        ctx.window.baselineStart,
-        getEndOfDay(ctx.window.end),
-      ])
-      .groupBy(['entry_origin', 'entry_path'])
-      .execute(),
-    ctx
-      .clix()
-      .select<{ cur_total: number; base_total: number }>([
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
-        ),
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
-        ),
-      ])
-      .from(TABLE_NAMES.sessions)
-      .where('project_id', '=', ctx.projectId)
-      .where('sign', '=', 1)
-      .where('created_at', 'BETWEEN', [
-        ctx.window.baselineStart,
-        getEndOfDay(ctx.window.end),
-      ])
-      .execute(),
+    ctx.runQuery<{
+      entry_origin: string;
+      entry_path: string;
+      cur: number;
+      base: number;
+    }>(sql`
+      SELECT entry_origin, entry_path, countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur, countIf(created_at BETWEEN ${baseStart} AND ${baseEnd}) as base
+      FROM ${sessions}
+      WHERE project_id = ${projectId}
+        AND sign = ${ACTIVE_SESSION_SIGN}
+        AND created_at BETWEEN ${baseStart} AND ${curEnd}
+      GROUP BY entry_origin, entry_path
+    `),
+    ctx.runQuery<{ cur_total: number; base_total: number }>(sql`
+      SELECT countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur_total, countIf(created_at BETWEEN ${baseStart} AND ${baseEnd}) as base_total
+      FROM ${sessions}
+      WHERE project_id = ${projectId}
+        AND sign = ${ACTIVE_SESSION_SIGN}
+        AND created_at BETWEEN ${baseStart} AND ${curEnd}
+    `),
   ]);
 
   const currentMap = buildLookupMap(

@@ -1,3 +1,4 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../../shared/ch-tables';
 import type {
@@ -18,62 +19,58 @@ import {
 
 const DELIMITER = '|||';
 
+/** clix inlined the value; the pageview event name now binds. */
+const SCREEN_VIEW_EVENT = sql.string('screen_view');
+
 async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
   currentMap: Map<string, number>;
   baselineMap: Map<string, number>;
   totalCurrent: number;
   totalBaseline: number;
 }> {
+  const events = sql.id(TABLE_NAMES.events);
+  const projectId = sql.string(ctx.projectId);
+  const curStart = sql.dateTime64(formatClickhouseDate(ctx.window.start));
+  const curEnd = sql.dateTime64(
+    formatClickhouseDate(getEndOfDay(ctx.window.end))
+  );
+  const baseStart = sql.dateTime64(
+    formatClickhouseDate(ctx.window.baselineStart)
+  );
+  const baseEnd = sql.dateTime64(
+    formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd))
+  );
+
   if (ctx.window.kind === 'yesterday') {
     const [currentResults, baselineResults, totals] = await Promise.all([
-      ctx
-        .clix()
-        .select<{ origin: string; path: string; cnt: number }>([
-          'origin',
-          'path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', ctx.projectId)
-        .where('name', '=', 'screen_view')
-        .where('created_at', 'BETWEEN', [
-          ctx.window.start,
-          getEndOfDay(ctx.window.end),
-        ])
-        .groupBy(['origin', 'path'])
-        .execute(),
-      ctx
-        .clix()
-        .select<{ date: string; origin: string; path: string; cnt: number }>([
-          'toDate(created_at) as date',
-          'origin',
-          'path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', ctx.projectId)
-        .where('name', '=', 'screen_view')
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.baselineEnd),
-        ])
-        .groupBy(['date', 'origin', 'path'])
-        .execute(),
-      ctx
-        .clix()
-        .select<{ cur_total: number }>([
-          ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
-          ),
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', ctx.projectId)
-        .where('name', '=', 'screen_view')
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.end),
-        ])
-        .execute(),
+      ctx.runQuery<{ origin: string; path: string; cnt: number }>(sql`
+        SELECT origin, path, count(*) as cnt
+        FROM ${events}
+        WHERE project_id = ${projectId}
+          AND name = ${SCREEN_VIEW_EVENT}
+          AND created_at BETWEEN ${curStart} AND ${curEnd}
+        GROUP BY origin, path
+      `),
+      ctx.runQuery<{
+        date: string;
+        origin: string;
+        path: string;
+        cnt: number;
+      }>(sql`
+        SELECT toDate(created_at) as date, origin, path, count(*) as cnt
+        FROM ${events}
+        WHERE project_id = ${projectId}
+          AND name = ${SCREEN_VIEW_EVENT}
+          AND created_at BETWEEN ${baseStart} AND ${baseEnd}
+        GROUP BY date, origin, path
+      `),
+      ctx.runQuery<{ cur_total: number }>(sql`
+        SELECT countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur_total
+        FROM ${events}
+        WHERE project_id = ${projectId}
+          AND name = ${SCREEN_VIEW_EVENT}
+          AND created_at BETWEEN ${baseStart} AND ${curEnd}
+      `),
     ]);
 
     const currentMap = buildLookupMap(
@@ -97,51 +94,27 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
   }
 
-  const curStart = formatClickhouseDate(ctx.window.start);
-  const curEnd = formatClickhouseDate(getEndOfDay(ctx.window.end));
-  const baseStart = formatClickhouseDate(ctx.window.baselineStart);
-  const baseEnd = formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd));
-
   const [results, totals] = await Promise.all([
-    ctx
-      .clix()
-      .select<{ origin: string; path: string; cur: number; base: number }>([
-        'origin',
-        'path',
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
-        ),
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
-        ),
-      ])
-      .from(TABLE_NAMES.events)
-      .where('project_id', '=', ctx.projectId)
-      .where('name', '=', 'screen_view')
-      .where('created_at', 'BETWEEN', [
-        ctx.window.baselineStart,
-        getEndOfDay(ctx.window.end),
-      ])
-      .groupBy(['origin', 'path'])
-      .execute(),
-    ctx
-      .clix()
-      .select<{ cur_total: number; base_total: number }>([
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
-        ),
-        ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
-        ),
-      ])
-      .from(TABLE_NAMES.events)
-      .where('project_id', '=', ctx.projectId)
-      .where('name', '=', 'screen_view')
-      .where('created_at', 'BETWEEN', [
-        ctx.window.baselineStart,
-        getEndOfDay(ctx.window.end),
-      ])
-      .execute(),
+    ctx.runQuery<{
+      origin: string;
+      path: string;
+      cur: number;
+      base: number;
+    }>(sql`
+      SELECT origin, path, countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur, countIf(created_at BETWEEN ${baseStart} AND ${baseEnd}) as base
+      FROM ${events}
+      WHERE project_id = ${projectId}
+        AND name = ${SCREEN_VIEW_EVENT}
+        AND created_at BETWEEN ${baseStart} AND ${curEnd}
+      GROUP BY origin, path
+    `),
+    ctx.runQuery<{ cur_total: number; base_total: number }>(sql`
+      SELECT countIf(created_at BETWEEN ${curStart} AND ${curEnd}) as cur_total, countIf(created_at BETWEEN ${baseStart} AND ${baseEnd}) as base_total
+      FROM ${events}
+      WHERE project_id = ${projectId}
+        AND name = ${SCREEN_VIEW_EVENT}
+        AND created_at BETWEEN ${baseStart} AND ${curEnd}
+    `),
   ]);
 
   const currentMap = buildLookupMap(

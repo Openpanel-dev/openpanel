@@ -1,4 +1,5 @@
-import { createCachedClix } from './cached-clix';
+import type { ChScope } from '../../../shared/ch-query';
+import { createStatementCache } from './cached-query';
 import { materialDecision } from './material';
 import { defaultImpactScore, severityBand } from './scoring';
 import type {
@@ -79,11 +80,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
 export function createEngine(args: {
   store: InsightStore;
   modules: InsightModule[];
-  db: any;
+  /** The scope's ClickHouse client + logger; every module query runs on it. */
+  deps: ChScope;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
   config: EngineConfig;
 }) {
-  const { store, modules, db, config } = args;
+  const { store, modules, deps, config } = args;
   const logger = args.logger ?? console;
 
   function isProjectOldEnoughForWindow(
@@ -120,14 +122,13 @@ export function createEngine(args: {
           }
           // Initialize cache for this module+window combination.
           // Cache is automatically garbage collected when context goes out of scope.
-          const cache = new Map<string, any>();
+          const cache = new Map<string, unknown>();
           ctx = {
             projectId,
             window,
-            db,
             now,
             logger: projLogger,
-            clix: createCachedClix(db, cache),
+            runQuery: createStatementCache(deps, cache),
           };
         } catch (e) {
           projLogger.error('[insights] failed to create compute context', {

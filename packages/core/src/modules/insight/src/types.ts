@@ -1,4 +1,5 @@
 import type { InsightPayload } from '../insight.constants';
+import type { StatementRunner } from './cached-query';
 
 export type Cadence = 'daily';
 
@@ -16,15 +17,14 @@ export interface WindowRange {
 export interface ComputeContext {
   projectId: string;
   window: WindowRange;
-  db: any; // your DB client
   now: Date;
   logger: Pick<Console, 'info' | 'warn' | 'error'>;
   /**
-   * Cached clix function that automatically caches query results based on query hash.
-   * This eliminates duplicate queries within the same module+window context.
-   * Use this instead of importing clix directly to benefit from automatic caching.
+   * Runs a bound `SqlStatement`, memoised on the rendered text PLUS its params
+   * within this module+window context. Modules read ClickHouse only through
+   * this — it is the only handle they get.
    */
-  clix: ReturnType<typeof import('./cached-clix').createCachedClix>;
+  runQuery: StatementRunner;
 }
 
 export interface ComputeResult {

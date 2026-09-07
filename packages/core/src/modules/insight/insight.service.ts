@@ -15,9 +15,10 @@
 // intra-package lazy imports (engine, store, detection modules) kept lazy for
 // their own import cost, not for a client's.
 //
-// ClickHouse queries here still go through clix, not the `sql` tag: ADR-013
-// converts the analytics read path one query per P7 task, and this module's
-// queries haven't been converted yet.
+// M12-007: the engine and its five detection modules run on the `sql` tag
+// (ADR-013); `createEngine` therefore takes the scope's deps rather than a bare
+// ClickHouse client, so the requestId reaches every module statement.
+// `legacy-scan.ts` is the last clix holdout in this module (M12-008).
 
 import { getRedisCache } from '@openpanel/redis';
 import {
@@ -231,7 +232,6 @@ export async function runProjectInsights(
   }
 ): Promise<void> {
   const { projectId, date, logger } = args;
-  const ch = deps.ch;
   const [{ createEngine }, insightStore, detectionModules] = await Promise.all([
     loadEngine(),
     loadStore(deps),
@@ -247,7 +247,7 @@ export async function runProjectInsights(
       detectionModules.geoModule,
       detectionModules.devicesModule,
     ],
-    db: ch,
+    deps,
     config: DEFAULT_ENGINE_CONFIG,
   });
 
