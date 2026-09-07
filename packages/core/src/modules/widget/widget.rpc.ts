@@ -18,11 +18,22 @@
 // file reaches and reaching @openpanel/redis at import time breaks a test that
 // partially mocks that package — see subscription.service.ts's header.
 //
-// `clix` is a value import and stays one: it is a pure query BUILDER that
-// takes the client as its first argument (`clix(ctx.ch, timezone)`), not a
-// connection — same standing as ADR-013's `sql` tag (see shared/ch-query.ts).
+// M12-008: the five ClickHouse statements moved off clix onto the ADR-013
+// `sql` tag. The conversion changes how values reach the server and nothing
+// else — each statement renders byte-identically to the clix output it
+// replaces, with `projectId` bound as a `{pN:String}` param and the two
+// `LIMIT`s as `{pN:UInt64}`. The `now() - INTERVAL ...` windows were
+// `clix.exp()` raw expressions and stay raw SQL text, parentheses included
+// (clix wrapped an Expression comparand in `(...)`, query-builder.ts:134).
+// clix sent its constructor timezone as `clickhouse_settings.session_timezone`
+// (`:562`); every statement here was built with the project's timezone, so
+// `chQuery` is given the same value. The V1-vs-V2 result-set proof is
+// `widget.sql.proof.md` beside this file.
+//
+// `sql` is a value import and stays one: it is a compile-time template tag
+// holding no client and no request scope (see shared/ch-query.ts).
 
-import { clix } from '@openpanel/db/src/clickhouse/query-builder';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import type { Ctx } from '../../context';
@@ -32,12 +43,18 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
 import { zWidgetOptions, zWidgetType } from '../report/report.constants';
 
 const uid = new ShortUniqueId({ length: 6 });
 const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
+const REALTIME_TOP_LIST_LIMIT = 10;
+
+const EVENTS_TABLE = sql.id(TABLE_NAMES.events);
+/** `clix.exp('now() - INTERVAL 30 MINUTE')`, parenthesised as clix rendered it. */
+const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
 
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
@@ -214,7 +231,6 @@ export const widgetRouter = createTRPCRouter({
 
       const { projectId } = widget;
       const { timezone } = await getSettingsForProject(ctx, projectId);
-      const ch = ctx.ch;
       const getCache = await loadCache();
 
       // Cache for 5 minutes since this queries 30 days of data
@@ -223,13 +239,11 @@ export const widgetRouter = createTRPCRouter({
         cacheKey,
         BADGE_CACHE_TTL_SECONDS,
         async () => {
-          const uniqueVisitorsQuery = clix(ch, timezone)
-            .select<{ count: number }>(['uniq(profile_id) as count'])
-            .from(TABLE_NAMES.events)
-            .where('project_id', '=', projectId)
-            .where('created_at', '>=', clix.exp('now() - INTERVAL 30 DAY'));
-
-          const result = await uniqueVisitorsQuery.execute();
+          const result = await chQuery<{ count: number }>(
+            ctx,
+            sql`SELECT uniq(profile_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND created_at >= (now() - INTERVAL 30 DAY)`,
+            { session_timezone: timezone }
+          );
           return result[0]?.count || 0;
         }
       );
@@ -270,96 +284,52 @@ export const widgetRouter = createTRPCRouter({
       }
 
       const { timezone } = await getSettingsForProject(ctx, projectId);
-      const ch = ctx.ch;
 
       // Always fetch live count and histogram
-      const totalSessionsQuery = clix(ch, timezone)
-        .select<{ total_sessions: number }>([
-          'uniq(session_id) as total_sessions',
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', projectId)
-        .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'));
+      const settings = { session_timezone: timezone };
+      const totalSessionsStatement = sql`SELECT uniq(session_id) as total_sessions FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW}`;
 
-      const minuteCountsQuery = clix(ch, timezone)
-        .select<{
-          minute: string;
-          session_count: number;
-          visitor_count: number;
-        }>([
-          `${clix.toStartOf('created_at', 'minute')} as minute`,
-          'uniq(session_id) as session_count',
-          'uniq(profile_id) as visitor_count',
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', projectId)
-        .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
-        .groupBy(['minute'])
-        .orderBy('minute', 'ASC')
-        .fill(
-          clix.exp('toStartOfMinute(now() - INTERVAL 30 MINUTE)'),
-          clix.exp('toStartOfMinute(now())'),
-          clix.exp('INTERVAL 1 MINUTE')
-        );
+      const minuteCountsStatement = sql`SELECT toStartOfMinute(created_at) as minute, uniq(session_id) as session_count, uniq(profile_id) as visitor_count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} GROUP BY minute ORDER BY minute ASC WITH FILL FROM toStartOfMinute(now() - INTERVAL 30 MINUTE) TO toStartOfMinute(now()) STEP INTERVAL 1 MINUTE`;
 
       // Conditionally fetch countries
       const countriesQueryPromise = options.countries
-        ? clix(ch, timezone)
-            .select<{
-              country: string;
-              count: number;
-            }>(['country', 'uniq(session_id) as count'])
-            .from(TABLE_NAMES.events)
-            .where('project_id', '=', projectId)
-            .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
-            .where('country', '!=', '')
-            .where('country', 'IS NOT NULL')
-            .groupBy(['country'])
-            .orderBy('count', 'DESC')
-            .limit(10)
-            .execute()
+        ? chQuery<{ country: string; count: number }>(
+            ctx,
+            sql`SELECT country, uniq(session_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} AND country != '' AND country IS NOT NULL GROUP BY country ORDER BY count DESC LIMIT ${sql.uint64(REALTIME_TOP_LIST_LIMIT)}`,
+            settings
+          )
         : Promise.resolve<Array<{ country: string; count: number }>>([]);
 
       // Conditionally fetch referrers
       const referrersQueryPromise = options.referrers
-        ? clix(ch, timezone)
-            .select<{ referrer: string; count: number }>([
-              'referrer_name as referrer',
-              'uniq(session_id) as count',
-            ])
-            .from(TABLE_NAMES.events)
-            .where('project_id', '=', projectId)
-            .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
-            .where('referrer_name', '!=', '')
-            .where('referrer_name', 'IS NOT NULL')
-            .groupBy(['referrer_name'])
-            .orderBy('count', 'DESC')
-            .limit(10)
-            .execute()
+        ? chQuery<{ referrer: string; count: number }>(
+            ctx,
+            sql`SELECT referrer_name as referrer, uniq(session_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} AND referrer_name != '' AND referrer_name IS NOT NULL GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(REALTIME_TOP_LIST_LIMIT)}`,
+            settings
+          )
         : Promise.resolve<Array<{ referrer: string; count: number }>>([]);
 
       // Conditionally fetch paths
       const pathsQueryPromise = options.paths
-        ? clix(ch, timezone)
-            .select<{ path: string; count: number }>([
-              'path',
-              'uniq(session_id) as count',
-            ])
-            .from(TABLE_NAMES.events)
-            .where('project_id', '=', projectId)
-            .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
-            .where('path', '!=', '')
-            .where('path', 'IS NOT NULL')
-            .groupBy(['path'])
-            .orderBy('count', 'DESC')
-            .limit(10)
-            .execute()
+        ? chQuery<{ path: string; count: number }>(
+            ctx,
+            sql`SELECT path, uniq(session_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} AND path != '' AND path IS NOT NULL GROUP BY path ORDER BY count DESC LIMIT ${sql.uint64(REALTIME_TOP_LIST_LIMIT)}`,
+            settings
+          )
         : Promise.resolve<Array<{ path: string; count: number }>>([]);
 
       const [totalSessions, minuteCounts, countries, referrers, paths] =
         await Promise.all([
-          totalSessionsQuery.execute(),
-          minuteCountsQuery.execute(),
+          chQuery<{ total_sessions: number }>(
+            ctx,
+            totalSessionsStatement,
+            settings
+          ),
+          chQuery<{
+            minute: string;
+            session_count: number;
+            visitor_count: number;
+          }>(ctx, minuteCountsStatement, settings),
           countriesQueryPromise,
           referrersQueryPromise,
           pathsQueryPromise,

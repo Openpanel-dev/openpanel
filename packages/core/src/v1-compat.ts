@@ -380,13 +380,18 @@ export async function compatPrisma(): Promise<
 }
 
 /**
- * ADR-013 keeps `clix`/`chQuery`/`TABLE_NAMES` alive until the analytics read
- * path's conversion (one query per task, old-vs-new result sets diffed) —
+ * ADR-013 keeps `chQuery`/`TABLE_NAMES` alive until the analytics read path's
+ * conversion (one query per task, old-vs-new result sets diffed) —
  * `misc.service.ts`'s still-unconverted queries reach the query-building
  * helpers here instead of importing `@openpanel/db` themselves. The CLIENT
  * itself is still `deps.ch` / `compatCh()`; this is only the pure helpers
  * that live beside it. (M12-006 converted the other two callers,
  * `project.service.ts` and mcp's `analytics/property-values.ts`.)
+ *
+ * M12-008 dropped the `clix` member: `legacy-scan.ts` and `widget.rpc.ts` were
+ * its last consumers in core, and nothing destructured it from here any more.
+ * Core no longer reaches the builder at all, which is what lets M12-009 delete
+ * `query-builder.ts`.
  */
 export async function compatChHelpers(): Promise<{
   TABLE_NAMES: typeof import('@openpanel/db/src/clickhouse/client').TABLE_NAMES;
@@ -394,19 +399,14 @@ export async function compatChHelpers(): Promise<{
   convertClickhouseDateToJs: typeof import('@openpanel/db/src/clickhouse/client').convertClickhouseDateToJs;
   formatClickhouseDate: typeof import('@openpanel/db/src/clickhouse/client').formatClickhouseDate;
   toNullIfDefaultMinDate: typeof import('@openpanel/db/src/clickhouse/client').toNullIfDefaultMinDate;
-  clix: typeof import('@openpanel/db/src/clickhouse/query-builder').clix;
 }> {
-  const [client, queryBuilder] = await Promise.all([
-    import('@openpanel/db/src/clickhouse/client'),
-    import('@openpanel/db/src/clickhouse/query-builder'),
-  ]);
+  const client = await import('@openpanel/db/src/clickhouse/client');
   return {
     TABLE_NAMES: client.TABLE_NAMES,
     chQuery: client.chQuery,
     convertClickhouseDateToJs: client.convertClickhouseDateToJs,
     formatClickhouseDate: client.formatClickhouseDate,
     toNullIfDefaultMinDate: client.toNullIfDefaultMinDate,
-    clix: queryBuilder.clix,
   };
 }
 
