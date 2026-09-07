@@ -36,7 +36,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         startDate: START,
         endDate: END,
         interval: 'day',
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
   });
@@ -48,7 +48,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         startDate: START,
         endDate: END,
         interval: 'day',
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
   });
@@ -60,7 +60,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         startDate: START,
         endDate: END,
         interval: 'week',
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
     await explain(
@@ -69,7 +69,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         startDate: START,
         endDate: END,
         interval: 'month',
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
   });
@@ -81,8 +81,8 @@ describe('overview.sql — parses against ClickHouse', () => {
         startDate: START,
         endDate: END,
         interval: 'day',
-        rawSessionFilterWhere: '',
-        rawEventFilterWhere: '',
+        rawSessionFilterWhere: null,
+        rawEventFilterWhere: null,
       })
     );
   });
@@ -93,7 +93,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         limit: 20,
       })
     );
@@ -107,7 +107,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         endDate: END,
         mode: 'entry',
         limit: 20,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte: null,
       })
     );
@@ -118,7 +118,7 @@ describe('overview.sql — parses against ClickHouse', () => {
       projectId: PROJECT_ID,
       startDate: START,
       endDate: END,
-      rawFilterWhere: '',
+      rawFilterWhere: null,
     });
     await explain(
       OV.topEntryExitQuery({
@@ -127,7 +127,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         endDate: END,
         mode: 'exit',
         limit: 20,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte,
       })
     );
@@ -142,7 +142,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         column: 'country',
         prefixColumn: null,
         limit: 1000,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte: null,
       })
     );
@@ -157,7 +157,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         column: 'region',
         prefixColumn: 'country',
         limit: 1000,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte: null,
       })
     );
@@ -172,7 +172,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         interval: 'day',
         column: 'referrer',
         prefixColumn: null,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte: null,
       })
     );
@@ -180,7 +180,7 @@ describe('overview.sql — parses against ClickHouse', () => {
       projectId: PROJECT_ID,
       startDate: START,
       endDate: END,
-      rawFilterWhere: '',
+      rawFilterWhere: null,
     });
     await explain(
       OV.topGenericSeriesTimeSeriesQuery({
@@ -190,7 +190,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         interval: 'day',
         column: 'referrer',
         prefixColumn: null,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte,
       })
     );
@@ -202,7 +202,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         steps: 5,
         topEntries: 3,
       })
@@ -215,9 +215,12 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         steps: 5,
-        topEntryPages: ['https://a.example.com/', 'https://a.example.com/pricing'],
+        topEntryPages: [
+          'https://a.example.com/',
+          'https://a.example.com/pricing',
+        ],
       })
     );
   });
@@ -228,7 +231,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         excludeEvents: ['session_start', 'session_end', 'screen_view'],
       })
     );
@@ -237,7 +240,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         excludeEvents: [],
       })
     );
@@ -249,7 +252,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
   });
@@ -260,7 +263,7 @@ describe('overview.sql — parses against ClickHouse', () => {
         projectId: PROJECT_ID,
         startDate: START,
         endDate: END,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
       })
     );
   });
@@ -283,7 +286,7 @@ describe('overview.sql — sql.id() identifier whitelists (R3)', () => {
         column: 'password',
         prefixColumn: null,
         limit: 10,
-        rawFilterWhere: '',
+        rawFilterWhere: null,
         distinctSessionsCte: null,
       })
     ).toThrow();

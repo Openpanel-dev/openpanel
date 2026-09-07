@@ -17,7 +17,10 @@ import {
   getSelectPropertyKey,
   isKnownEventField,
 } from './src/field-resolution';
-import { getEventFiltersWhereClause } from './src/filter-where';
+import {
+  getEventFiltersWhereClause,
+  joinFilterClauses,
+} from './src/filter-where';
 import { runQuery } from './src/run-query';
 
 /** Default funnel window, in hours, when the report does not set one. */
@@ -157,12 +160,12 @@ export async function getConversion(
   // qualifier ClickHouse fails with "ambiguous identifier 'properties'"
   // whenever a step filters on properties.X while a breakdown is on
   // profile.properties.Y.
-  const whereA = Object.values(
+  const whereA = joinFilterClauses(
     getEventFiltersWhereClause(eventA.filters, projectId, 'events')
-  ).join(' AND ');
-  const whereB = Object.values(
+  );
+  const whereB = joinFilterClauses(
     getEventFiltersWhereClause(eventB.filters, projectId, 'events')
-  ).join(' AND ');
+  );
 
   const results = await runQuery<ConversionRow>(
     deps,

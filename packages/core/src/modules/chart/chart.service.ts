@@ -18,6 +18,7 @@
 // ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
 // compile-time template tag, no client and no request scope.
 
+import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
 import {
@@ -808,7 +809,7 @@ export interface ChartService {
   getRawWhereClause(
     type: 'events' | 'sessions',
     filters: IChartEventFilter[]
-  ): string;
+  ): SqlFragment | null;
   getSankeyChart(input: IReportInput): ReturnType<typeof getSankeyChart>;
   getSankey(
     input: Parameters<typeof getSankey>[1]

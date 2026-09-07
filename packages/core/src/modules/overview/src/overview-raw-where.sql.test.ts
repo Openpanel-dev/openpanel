@@ -3,11 +3,12 @@
  * remapping). Moved from packages/db/src/services/overview-sql.test.ts
  * (M8-005) alongside its subject, which moved to core in M7-005 — same
  * pattern as the chart cases moving to chart.sql.test.ts with theirs
- * (M7-003). `getRawWhereClause` itself is still clix/sqlstring-based
- * (pre-ADR-013); the rest of the overview module's queries already run
+ * (M7-003). M12-002 put `getRawWhereClause` on the `sql` tag, so these
+ * assertions read the rendered statement AND its bound params instead of one
+ * escaped string; the rest of the overview module's queries already run
  * through overview.sql.ts, covered by overview.sql.test.ts. M10-005 turned it
  * from a class method into a module function — it never needed a client,
- * being pure string building.
+ * being pure fragment building.
  *
  * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local
  * ClickHouse instance. EXPLAIN parses the query, resolves columns, and builds
@@ -22,6 +23,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ch } from '@openpanel/db/src/clickhouse/client';
+import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { getRawWhereClause } from '../overview.service';
 
 const PROJECT_ID = 'test-sql-validation';
@@ -29,10 +31,20 @@ const PROJECT_ID = 'test-sql-validation';
 let chReachable = false;
 let logSpy: ReturnType<typeof spyOn>;
 
-async function explain(sql: string): Promise<void> {
+async function explain(
+  query: string,
+  queryParams: Record<string, unknown>
+): Promise<void> {
   // EXPLAIN runs the parser + analyzer and builds the query plan, which
   // catches UNKNOWN_IDENTIFIER and AMBIGUOUS_IDENTIFIER. It does not execute.
-  await ch.command({ query: `EXPLAIN ${sql}` });
+  await ch.command({ query: `EXPLAIN ${query}`, query_params: queryParams });
+}
+
+/** The clause plus the values it binds — both halves of a converted filter. */
+function rendered(where: SqlFragment | null) {
+  return (
+    where ?? { toStatement: () => ({ query: '', query_params: {} }) }
+  ).toStatement();
 }
 
 beforeAll(async () => {
@@ -64,37 +76,46 @@ const itCH = (name: string, fn: () => Promise<void>) =>
 
 describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   it('rewrites utm_* to properties[__query.utm_*] for the events table', () => {
-    const where = getRawWhereClause('events', [
-      { name: 'utm_source', operator: 'is', value: ['awn'] },
-    ]);
-    expect(where).toContain("properties['__query.utm_source']");
-    expect(where).not.toMatch(/(?<![._\w])utm_source\s*=/);
+    const { query, query_params } = rendered(
+      getRawWhereClause('events', [
+        { name: 'utm_source', operator: 'is', value: ['awn'] },
+      ])
+    );
+    expect(query).toContain("properties['__query.utm_source']");
+    expect(query).not.toMatch(/(?<![._\w])utm_source\s*=/);
+    expect(query_params).toEqual({ p1: 'awn' });
   });
 
   it('keeps utm_* as a top-level column for the sessions table', () => {
-    const where = getRawWhereClause('sessions', [
-      { name: 'utm_source', operator: 'is', value: ['awn'] },
-    ]);
-    expect(where).toMatch(/(?<![._\w])utm_source\s*=/);
-    expect(where).not.toContain("properties['__query.utm_source']");
+    const { query, query_params } = rendered(
+      getRawWhereClause('sessions', [
+        { name: 'utm_source', operator: 'is', value: ['awn'] },
+      ])
+    );
+    expect(query).toMatch(/(?<![._\w])utm_source\s*=/);
+    expect(query).not.toContain("properties['__query.utm_source']");
+    expect(query_params).toEqual({ p1: 'awn' });
   });
 
   it('drops non-whitelisted filters', () => {
     const where = getRawWhereClause('events', [
       { name: 'malicious_column', operator: 'is', value: ['x'] },
     ]);
-    expect(where).toBe('');
+    expect(where).toBeNull();
   });
 
   itCH(
     'events utm_source filter parses against real events table',
     async () => {
-      const where = getRawWhereClause('events', [
-        { name: 'utm_source', operator: 'is', value: ['awn'] },
-      ]);
-      expect(where).toBeTruthy();
+      const { query, query_params } = rendered(
+        getRawWhereClause('events', [
+          { name: 'utm_source', operator: 'is', value: ['awn'] },
+        ])
+      );
+      expect(query).toBeTruthy();
       await explain(
-        `SELECT count() FROM events WHERE project_id = '${PROJECT_ID}' AND ${where}`
+        `SELECT count() FROM events WHERE project_id = '${PROJECT_ID}' AND ${query}`,
+        query_params
       );
     }
   );
@@ -102,12 +123,15 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   itCH(
     'sessions utm_source filter parses against real sessions table',
     async () => {
-      const where = getRawWhereClause('sessions', [
-        { name: 'utm_source', operator: 'is', value: ['awn'] },
-      ]);
-      expect(where).toBeTruthy();
+      const { query, query_params } = rendered(
+        getRawWhereClause('sessions', [
+          { name: 'utm_source', operator: 'is', value: ['awn'] },
+        ])
+      );
+      expect(query).toBeTruthy();
       await explain(
-        `SELECT count() FROM sessions WHERE project_id = '${PROJECT_ID}' AND ${where}`
+        `SELECT count() FROM sessions WHERE project_id = '${PROJECT_ID}' AND ${query}`,
+        query_params
       );
     }
   );

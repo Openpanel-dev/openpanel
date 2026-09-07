@@ -53,9 +53,9 @@ export interface ConversionQueryInput {
   funnelWindowSeconds: number;
   firstEventName: string;
   secondEventName: string;
-  /** Compiled filter text per step (`''` when the step has no filters). */
-  firstEventWhere: string;
-  secondEventWhere: string;
+  /** Compiled filters per step (`null` when the step has no filters). */
+  firstEventWhere: SqlFragment | null;
+  secondEventWhere: SqlFragment | null;
   /** Compiled `<expr> as b_<index>` breakdown selects. */
   breakdownSelects: string[];
   /** Compiled breakdown expressions, as written in the inner GROUP BY. */
@@ -67,9 +67,9 @@ export interface ConversionQueryInput {
   cohortJoins: string[];
 }
 
-function stepCondition(name: string, where: string): SqlFragment {
+function stepCondition(name: string, where: SqlFragment | null): SqlFragment {
   return where
-    ? sql`(events.name = ${sql.string(name)} AND ${compiledText(where)})`
+    ? sql`(events.name = ${sql.string(name)} AND ${where})`
     : sql`events.name = ${sql.string(name)}`;
 }
 

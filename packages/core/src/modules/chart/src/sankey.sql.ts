@@ -54,7 +54,7 @@ const MIN_PATH_LENGTH = 2;
 export interface SankeyEvent {
   name: string;
   /** Compiled filter clauses for this event's session CTE. */
-  whereClause: string;
+  whereClause: SqlFragment | null;
 }
 
 export interface SankeyPathsInput {
@@ -99,7 +99,7 @@ function sessionEventCte(
   input: SankeyPathsInput
 ): SqlFragment {
   const filters = event.whereClause
-    ? sql` AND ${compiledText(event.whereClause)}`
+    ? sql` AND ${event.whereClause}`
     : sql.empty;
   return sql`SELECT session_id FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(input.projectId)} AND name = ${sql.string(event.name)} AND created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})${filters} GROUP BY session_id`;
 }

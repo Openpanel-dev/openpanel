@@ -29,7 +29,11 @@ import type {
   IChartEvent,
   IInterval,
 } from '../../report/report.constants';
-import { compiledText, compiledTextWithProfileRefs } from './compiled';
+import {
+  compiledText,
+  compiledTextWithProfileRefs,
+  fragmentWithProfileRefs,
+} from './compiled';
 import { formatClickhouseDate } from './dates';
 import {
   CHART_TABLE,
@@ -322,6 +326,8 @@ function chartBody({
     ...breakdowns,
     ...metricRef,
   ]);
+  // field-resolution.ts still renders text (M12-003); filter-where.ts no
+  // longer does, so its clauses take the fragment-level rewrite instead.
   const spliced = (text: string) =>
     compiledTextWithProfileRefs(text, profileProps.keys);
 
@@ -349,7 +355,7 @@ function chartBody({
     EVENTS_ALIAS
   );
   for (const [key, clause] of Object.entries(compiledFilters)) {
-    where[key] = spliced(clause);
+    where[key] = fragmentWithProfileRefs(clause, profileProps.keys);
   }
   where.projectId = sql`project_id = ${sql.string(projectId)}`;
 
@@ -760,7 +766,7 @@ export function chartBucketProfilesQuery(
   for (const [key, clause] of Object.entries(
     getEventFiltersWhereClause(event.filters, projectId)
   )) {
-    where[key] = compiledText(clause);
+    where[key] = clause;
   }
   where.projectId = sql`project_id = ${sql.string(projectId)}`;
   where.dateRange = bucketEquals(interval, bucketDate);

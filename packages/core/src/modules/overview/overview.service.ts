@@ -15,7 +15,10 @@ import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
 import { average, sum } from '../../shared/math';
 import { convertClickhouseDateToJs } from '../chart/src/dates';
-import { getEventFiltersWhereClause } from '../chart/src/filter-where';
+import {
+  getEventFiltersWhereClause,
+  joinFilterClauses,
+} from '../chart/src/filter-where';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import { chartColors, zTimeInterval } from '../report/report.constants';
@@ -318,7 +321,10 @@ function sessionsFilterMode(params: {
   projectId: string;
   startDate: string;
   endDate: string;
-}): { rawFilterWhere: string; distinctSessionsCte: SqlFragment | null } {
+}): {
+  rawFilterWhere: SqlFragment | null;
+  distinctSessionsCte: SqlFragment | null;
+} {
   if (!isPageFilter(params.filters)) {
     return {
       rawFilterWhere: getRawWhereClause('sessions', params.filters),
@@ -326,7 +332,7 @@ function sessionsFilterMode(params: {
     };
   }
   return {
-    rawFilterWhere: '',
+    rawFilterWhere: null,
     distinctSessionsCte: distinctSessionsQuery({
       projectId: params.projectId,
       startDate: params.startDate,
@@ -535,7 +541,7 @@ async function getMetricsWithPageFilter(
 export function getRawWhereClause(
   type: 'events' | 'sessions',
   filters: IChartEventFilter[]
-) {
+): SqlFragment | null {
   const where = getEventFiltersWhereClause(
     filters.flatMap((item) => {
       if (!WHITELISTED_FILTERS.includes(item.name)) {
@@ -577,7 +583,7 @@ export function getRawWhereClause(
     type
   );
 
-  return Object.values(where).join(' AND ');
+  return joinFilterClauses(where);
 }
 
 export async function getTopPages(
@@ -1368,7 +1374,7 @@ export interface OverviewService {
   getRawWhereClause(
     type: 'events' | 'sessions',
     filters: IChartEventFilter[]
-  ): string;
+  ): SqlFragment | null;
   getMetrics(input: IGetMetricsInput): ReturnType<typeof getMetrics>;
   getTopPages(input: IGetTopPagesInput): ReturnType<typeof getTopPages>;
   getTopEntryExit(

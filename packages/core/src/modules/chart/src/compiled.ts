@@ -1,14 +1,17 @@
 // The ONE place the chart module splices pre-compiled SQL text.
 //
-// field-resolution.ts and filter-where.ts are V1's field resolver and filter
-// compiler, still rendering sqlstring-escaped text: ADR-013 leaves the shared
-// compilers as they are ("two behaviours, not two builders") until funnel,
-// conversion, sankey, retention and overview (M7-004/M7-005) stop splicing
-// them into text builders. Every chart-level value is bound in chart.sql.ts;
-// only the compilers' output crosses here, through the same `SqlFragment`
-// constructor `sql.id` uses — one grep away from deletion, not a `sql.raw()`.
+// field-resolution.ts is V1's field resolver, still rendering sqlstring-escaped
+// text: ADR-013 leaves it as it is until its own conversion (M12-003). Every
+// chart-level value is bound in chart.sql.ts and every filter value is bound by
+// filter-where.ts (M12-002); only the field resolver's output still crosses
+// here, through the same `SqlFragment` constructor `sql.id` uses — one grep away
+// from deletion, not a `sql.raw()`.
 
-import { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import {
+  isSqlFragment,
+  SqlFragment,
+  type SqlSlot,
+} from '@openpanel/db/src/clickhouse/sql';
 import { rewriteProfilePropertyRefs } from './field-resolution';
 
 export function compiledText(text: string): SqlFragment {
@@ -27,4 +30,27 @@ export function compiledTextWithProfileRefs(
   return compiledText(
     rewriteProfilePropertyRefs(text, profilePropertyKeys as string[])
   );
+}
+
+/**
+ * The same rewrite over a fragment: it runs on the literal parts only and
+ * never on a slot, so a bound value can no longer be rewritten even in
+ * principle. That is the property `compiledTextWithProfileRefs` relied on
+ * being true by accident of escaping; here it is true by construction.
+ */
+export function fragmentWithProfileRefs(
+  fragment: SqlFragment,
+  profilePropertyKeys: readonly string[]
+): SqlFragment {
+  if (profilePropertyKeys.length === 0) {
+    return fragment;
+  }
+  const keys = profilePropertyKeys as string[];
+  const strings = fragment.strings.map((literal) =>
+    rewriteProfilePropertyRefs(literal, keys)
+  );
+  const slots: SqlSlot[] = fragment.slots.map((slot) =>
+    isSqlFragment(slot) ? fragmentWithProfileRefs(slot, keys) : slot
+  );
+  return new SqlFragment(strings, slots);
 }

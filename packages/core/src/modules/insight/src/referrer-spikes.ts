@@ -1,12 +1,16 @@
 // M10-009: the ClickHouse CLIENT is `deps.ch` (the boot scope's round-robin
 // proxy), so the requestId minted at the edge reaches these queries (ADR-018).
-// `clix` stays a value import: it is a pure query BUILDER that takes the
-// client as its first argument, not a connection — same standing as ADR-013's
-// `sql` tag (see shared/ch-query.ts). Table names and the date helper are
-// core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
-import { clix } from '@openpanel/db/src/clickhouse/query-builder';
+// Table names and the date helper are core's own copies
+// (shared/ch-tables.ts, shared/ch-dates.ts).
+//
+// M12-002 converted these three queries off clix: `getRawWhereClause` now
+// returns a `SqlFragment` carrying bound params, and clix's `.execute()` has
+// no `query_params` slot to carry them through. clix always sent
+// `session_timezone` (query-builder.ts:562) — `chQuery` gets the same value.
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
+import { chQuery } from '../../../shared/ch-query';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import { overviewService } from '../../../v1-compat';
 import type {
@@ -77,36 +81,62 @@ export interface GetReferrerSpikesInput {
   timezone: string;
 }
 
+/** clix's `toStartOf` (query-builder.ts:717) — the timezone arg was unused. */
+function bucketStart(interval: IInterval): SqlFragment {
+  switch (interval) {
+    case 'minute':
+      return sql`toStartOfMinute(created_at)`;
+    case 'hour':
+      return sql`toStartOfHour(created_at)`;
+    case 'day':
+      return sql`toStartOfDay(created_at)`;
+    case 'week':
+      return sql`toStartOfWeek(toDateTime(created_at))`;
+    case 'month':
+      return sql`toStartOfMonth(toDateTime(created_at))`;
+    default:
+      throw new Error(`Unsupported referrer-spike interval: ${interval}`);
+  }
+}
+
+/** The window every one of the three queries shares. */
+function sessionWindow(
+  projectId: string,
+  startDate: string,
+  endDate: string
+): SqlFragment {
+  return sql`project_id = ${sql.string(projectId)} AND created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})`;
+}
+
+/** `getRawWhereClause`'s output, already bound — clix appended it the same way. */
+function andFilters(where: SqlFragment | null): SqlFragment {
+  return where ? sql` AND ${where}` : sql.empty;
+}
+
 export async function getReferrerSpikes(
   deps: ServiceDeps,
   input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
-  const ch = deps.ch;
   const { projectId, filters, startDate, endDate, interval, timezone } = input;
-  const filtersWhere = overviewService.getRawWhereClause('sessions', filters);
+  const filtersWhere = andFilters(
+    overviewService.getRawWhereClause('sessions', filters)
+  );
+  const window = sessionWindow(projectId, startDate, endDate);
+  const bucket = bucketStart(interval);
+  const sessionsTable = sql.id(TABLE_NAMES.sessions);
+  const settings = { session_timezone: timezone };
 
   // Step 1: top non-direct referrers by total range volume. Bounds the
   // expensive per-bucket query — long-tail referrers can't produce
   // meaningful spikes anyway because they fail the absolute floor.
-  const topReferrers = await clix(ch, timezone)
-    .select<{ referrer_name: string; total: number }>([
-      'referrer_name',
-      'sum(sign) AS total',
-    ])
-    .from(TABLE_NAMES.sessions, true)
-    .where('project_id', '=', projectId)
-    .where('created_at', 'BETWEEN', [
-      clix.datetime(startDate, 'toDateTime'),
-      clix.datetime(endDate, 'toDateTime'),
-    ])
-    .where('referrer_name', '!=', '')
-    .where('referrer_name', 'IS NOT NULL')
-    .rawWhere(filtersWhere)
-    .groupBy(['referrer_name'])
-    .having('sum(sign)', '>=', MIN_SESSIONS_FLOOR)
-    .orderBy('total', 'DESC')
-    .limit(MAX_REFERRERS)
-    .execute();
+  const topReferrers = await chQuery<{
+    referrer_name: string;
+    total: number;
+  }>(
+    deps,
+    sql`SELECT referrer_name, sum(sign) AS total FROM ${sessionsTable} FINAL WHERE ${window} AND referrer_name != '' AND referrer_name IS NOT NULL${filtersWhere} GROUP BY referrer_name HAVING sum(sign) >= ${sql.uint64(MIN_SESSIONS_FLOOR)} ORDER BY total DESC LIMIT ${sql.uint64(MAX_REFERRERS)}`,
+    settings
+  );
 
   if (topReferrers.length === 0) {
     return [];
@@ -116,48 +146,28 @@ export async function getReferrerSpikes(
 
   // Step 2: per-bucket sessions for top referrers + bucket totals (including
   // direct traffic) for the share-of-bucket denominator. Run in parallel.
-  const [spikeRows, bucketTotalRows] = await Promise.all([
-    clix(ch, timezone)
-      .select<{ date: string; referrer_name: string; sessions: number }>([
-        `${clix.toStartOf('created_at', interval as any, timezone)} AS date`,
-        'referrer_name',
-        'sum(sign) AS sessions',
-      ])
-      .from(TABLE_NAMES.sessions, true)
-      .where('project_id', '=', projectId)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ])
-      .where('referrer_name', 'IN', referrerNames)
-      .rawWhere(filtersWhere)
-      .groupBy(['date', 'referrer_name'])
-      .having('sum(sign)', '>', 0)
-      .orderBy('date', 'ASC')
-      .transform({
-        date: (item) => convertClickhouseDateToJs(item.date).toISOString(),
-      })
-      .execute(),
-
-    clix(ch, timezone)
-      .select<{ date: string; total: number }>([
-        `${clix.toStartOf('created_at', interval as any, timezone)} AS date`,
-        'sum(sign) AS total',
-      ])
-      .from(TABLE_NAMES.sessions, true)
-      .where('project_id', '=', projectId)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ])
-      .rawWhere(filtersWhere)
-      .groupBy(['date'])
-      .having('sum(sign)', '>', 0)
-      .transform({
-        date: (item) => convertClickhouseDateToJs(item.date).toISOString(),
-      })
-      .execute(),
+  const [spikeRowsRaw, bucketTotalRowsRaw] = await Promise.all([
+    chQuery<{ date: string; referrer_name: string; sessions: number }>(
+      deps,
+      sql`SELECT ${bucket} AS date, referrer_name, sum(sign) AS sessions FROM ${sessionsTable} FINAL WHERE ${window} AND referrer_name IN ${sql.array('String', referrerNames)}${filtersWhere} GROUP BY date, referrer_name HAVING sum(sign) > 0 ORDER BY date ASC`,
+      settings
+    ),
+    chQuery<{ date: string; total: number }>(
+      deps,
+      sql`SELECT ${bucket} AS date, sum(sign) AS total FROM ${sessionsTable} FINAL WHERE ${window}${filtersWhere} GROUP BY date HAVING sum(sign) > 0`,
+      settings
+    ),
   ]);
+
+  // clix's `.transform({ date })` (query-builder.ts:546) ran per row.
+  const spikeRows = spikeRowsRaw.map((row) => ({
+    ...row,
+    date: convertClickhouseDateToJs(row.date).toISOString(),
+  }));
+  const bucketTotalRows = bucketTotalRowsRaw.map((row) => ({
+    ...row,
+    date: convertClickhouseDateToJs(row.date).toISOString(),
+  }));
 
   // Bail when the range doesn't have enough buckets to form a stable baseline.
   // Median over <5 points is meaningless and produces noisy spikes.

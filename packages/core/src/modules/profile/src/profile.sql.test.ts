@@ -5,6 +5,7 @@
 // local prod-copy (M7-002 report), not here — these run offline.
 
 import { describe, expect, test } from 'bun:test';
+import { compiledFilterClauses } from './filter-clauses';
 import {
   findProfilesQuery,
   PROFILE_COLUMNS,
@@ -157,7 +158,9 @@ describe('profileListQuery', () => {
       offset: 100,
       search: 'ann',
       isExternal: true,
-      filterClauses: { f0: "(properties['plan'] = 'pro')" },
+      filterClauses: compiledFilterClauses({
+        f0: "(properties['plan'] = 'pro')",
+      }),
     }).toStatement();
     const text = collapse(query);
 
@@ -178,7 +181,7 @@ describe('profileListQuery', () => {
       projectId: PROJECT_ID,
       search: 'ann',
       isExternal: false,
-      filterClauses: { f0: "(email != '')" },
+      filterClauses: compiledFilterClauses({ f0: "(email != '')" }),
     };
     const page = collapse(
       profileListQuery({ ...list, take: 1, offset: 0 }).toStatement().query
@@ -226,7 +229,7 @@ describe('findProfilesQuery', () => {
       inactiveDays: 7,
       minSessions: 3,
       performedEvent: HOSTILE,
-      filterClauses: { f0: '(1 = 1)' },
+      filterClauses: compiledFilterClauses({ f0: '(1 = 1)' }),
     }).toStatement();
     const text = collapse(query);
 

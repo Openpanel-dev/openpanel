@@ -188,9 +188,7 @@ export function retentionCohortQuery(
   }
   if (filters.length > 0) {
     baseConditions.push(
-      ...Object.values(getEventFiltersWhereClause(filters, projectId)).map(
-        compiledText
-      )
+      ...Object.values(getEventFiltersWhereClause(filters, projectId))
     );
   }
   const baseWhere = sql.join(baseConditions, ' AND ');

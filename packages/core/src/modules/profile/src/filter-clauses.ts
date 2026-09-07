@@ -1,23 +1,34 @@
 // The ONE place this module splices pre-compiled filter SQL.
 //
-// `buildFilterWhere` (../../chart/src/table-filter-where.ts) is
-// V1's filter compiler and still emits sqlstring-escaped SQL text: ADR-013
-// leaves the filter compilers as they are ("two behaviours, not two builders")
-// until the shared filter compiler converts to fragments. Until then a
-// `sql`-tag query that takes `IChartEventFilter[]` has to splice that text,
-// and it does so here — through the same `SqlFragment` constructor `sql.id`
-// uses — so the bridge is one grep away from deletion when the compiler moves,
-// rather than a `sql.raw()` that would outlive it.
+// `buildFilterWhere` (../../chart/src/table-filter-where.ts) is V1's
+// sessions/profiles/events-table filter compiler and still emits
+// sqlstring-escaped SQL text; ADR-013 converts it in M12-003. Until then its
+// output crosses into a fragment here — through the same `SqlFragment`
+// constructor `sql.id` uses — so the bridge is one grep away from deletion
+// when the compiler moves, rather than a `sql.raw()` that would outlive it.
+// `getEventFiltersWhereClause` (../../chart/src/filter-where.ts) already
+// returns fragments (M12-002) and needs no bridge.
 
 import { SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 
-export type CompiledFilterClauses = Record<string, string>;
+export type CompiledFilterClauses = Record<string, SqlFragment>;
+
+/** Bridge `buildFilterWhere`'s compiled TEXT into fragments. */
+export function compiledFilterClauses(
+  clauses: Record<string, string>
+): CompiledFilterClauses {
+  const compiled: CompiledFilterClauses = {};
+  for (const [key, clause] of Object.entries(clauses)) {
+    compiled[key] = new SqlFragment([clause], []);
+  }
+  return compiled;
+}
 
 /** Each compiled clause is already parenthesised by the compiler. */
 export function compiledFilterFragments(
   clauses: CompiledFilterClauses
 ): SqlFragment[] {
-  return Object.values(clauses).map((clause) => new SqlFragment([clause], []));
+  return Object.values(clauses);
 }
 
 export function spliceCompiledFilters(

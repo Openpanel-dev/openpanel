@@ -125,9 +125,9 @@ function dateRangeWhere(
   return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
 }
 
-/** `getRawWhereClause`'s output — pre-compiled text, spliced verbatim. */
-function rawWhere(where: string): SqlFragment {
-  return where ? sql`AND ${compiledText(where)}` : sql.empty;
+/** `getRawWhereClause`'s output — already a bound fragment, or nothing. */
+function rawWhere(where: SqlFragment | null): SqlFragment {
+  return where ? sql`AND ${where}` : sql.empty;
 }
 
 // --- revenue -----------------------------------------------------------------
@@ -137,7 +137,7 @@ export interface RevenueQueryInput {
   startDate: string;
   endDate: string;
   interval: IInterval;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 export function revenueQuery(input: RevenueQueryInput): SqlFragment {
@@ -163,7 +163,7 @@ export interface SessionMetricsQueryInput {
   startDate: string;
   endDate: string;
   interval: IInterval;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 export function sessionMetricsQuery(
@@ -198,8 +198,8 @@ export interface PageFilterMetricsQueryInput {
   startDate: string;
   endDate: string;
   interval: IInterval;
-  rawSessionFilterWhere: string;
-  rawEventFilterWhere: string;
+  rawSessionFilterWhere: SqlFragment | null;
+  rawEventFilterWhere: SqlFragment | null;
 }
 
 function rollupDateLiteral(interval: IInterval): SqlFragment {
@@ -292,7 +292,7 @@ export interface TopPagesQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
   limit: number;
 }
 
@@ -322,7 +322,7 @@ export interface DistinctSessionsQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 export function distinctSessionsQuery(
@@ -363,7 +363,7 @@ export interface TopEntryExitQueryInput {
   mode: 'entry' | 'exit';
   limit: number;
   /** Mutually exclusive with `distinctSessionsCte`, exactly as V1's `withDistinctSessionsIfNeeded`. */
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
   distinctSessionsCte: SqlFragment | null;
 }
 
@@ -429,7 +429,7 @@ export interface TopGenericQueryInput {
   prefixColumn: string | null;
   limit: number;
   /** Mutually exclusive with `distinctSessionsCte`, exactly as V1's `withDistinctSessionsIfNeeded`. */
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
   distinctSessionsCte: SqlFragment | null;
 }
 
@@ -496,7 +496,7 @@ export interface TopGenericSeriesTimeSeriesInput {
   column: string;
   prefixColumn: string | null;
   /** Always applied — unlike the top-items query, V1 applies this unconditionally. */
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
   /** Additionally applied on top of `rawFilterWhere` when the caller has a page filter. */
   distinctSessionsCte: SqlFragment | null;
 }
@@ -528,7 +528,7 @@ export interface OrderedEventsQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
@@ -637,7 +637,7 @@ export interface TopEventsQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
   excludeEvents: string[];
 }
 
@@ -665,7 +665,7 @@ export interface TopLinkOutQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 export function topLinkOutQuery(input: TopLinkOutQueryInput): SqlFragment {
@@ -690,7 +690,7 @@ export interface MapDataQueryInput {
   projectId: string;
   startDate: string;
   endDate: string;
-  rawFilterWhere: string;
+  rawFilterWhere: SqlFragment | null;
 }
 
 export function mapDataQuery(input: MapDataQueryInput): SqlFragment {

@@ -21,6 +21,7 @@ import {
   topOriginsQuery,
   topPagesQuery,
 } from './event.sql';
+import { compiledFilterClauses } from './filter-clauses';
 
 const PROJECT_ID = 'proj-1';
 const HOSTILE = "x' OR 1=1 --";
@@ -117,7 +118,7 @@ describe('eventListQuery', () => {
       startDate: START,
       endDate: END,
       events: ['a', HOSTILE],
-      filterClauses: { f0: "(path = '/')" },
+      filterClauses: compiledFilterClauses({ f0: "(path = '/')" }),
       conversionNames: ['signup'],
     }).toStatement();
 
@@ -181,7 +182,7 @@ describe('eventsCountQuery', () => {
       startDate: START,
       endDate: END,
       events: ['a'],
-      filterClauses: { f0: "(path = '/')" },
+      filterClauses: compiledFilterClauses({ f0: "(path = '/')" }),
       joins: NO_FILTER_JOINS,
     }).toStatement();
 
@@ -301,7 +302,7 @@ describe('queryEventsQuery', () => {
       equals: { browser: 'Firefox', path: HOSTILE, country: 'SE' },
       properties: { [HOSTILE]: 'v' },
       dateRange: { start: '2026-08-01 00:00:00', end: '2026-08-31 23:59:59' },
-      filterClauses: { f0: '(1 = 1)' },
+      filterClauses: compiledFilterClauses({ f0: '(1 = 1)' }),
       limit: 10,
     }).toStatement();
 

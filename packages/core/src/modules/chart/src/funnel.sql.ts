@@ -27,7 +27,11 @@ import type {
   IChartBreakdown,
   IChartEvent,
 } from '../../report/report.constants';
-import { compiledText, compiledTextWithProfileRefs } from './compiled';
+import {
+  compiledText,
+  compiledTextWithProfileRefs,
+  fragmentWithProfileRefs,
+} from './compiled';
 import {
   buildInlineCohortJoin,
   CHART_TABLE,
@@ -142,11 +146,7 @@ export function funnelStepConditions(
     // profile.properties.Y.
     const filters = Object.values(
       getEventFiltersWhereClause(event.filters, projectId, 'events')
-    )
-      .filter(Boolean)
-      .map((clause) =>
-        compiledTextWithProfileRefs(clause, profilePropertyKeys)
-      );
+    ).map((clause) => fragmentWithProfileRefs(clause, profilePropertyKeys));
     return sql.join(
       [...filters, sql`events.name = ${sql.string(event.name)}`],
       ' AND '

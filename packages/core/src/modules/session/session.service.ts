@@ -25,6 +25,10 @@ import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
 import {
+  type CompiledFilterClauses,
+  compiledFilterClauses,
+} from './src/filter-clauses';
+import {
   hasSessionListLookback,
   querySessionsQuery,
   type SessionDistinctField,
@@ -226,15 +230,17 @@ async function compileSessionFilters(
   filters: IChartEventFilter[] | undefined,
   projectId: string,
   range: { startDate?: Date; endDate?: Date }
-) {
+): Promise<CompiledFilterClauses> {
   if (!filters?.length) {
     return {};
   }
   const { buildFilterWhere } = await loadFilterCompiler();
-  return buildFilterWhere(filters, projectId, {
-    ...SESSION_FILTER_TABLE,
-    ...range,
-  });
+  return compiledFilterClauses(
+    buildFilterWhere(filters, projectId, {
+      ...SESSION_FILTER_TABLE,
+      ...range,
+    })
+  );
 }
 
 function emptyProfile(profileId: string, projectId: string): IServiceProfile {
