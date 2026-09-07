@@ -5,7 +5,7 @@
 // local prod-copy (M7-001 report), not here — these tests run offline.
 
 import { describe, expect, test } from 'bun:test';
-import { compiledFilterClauses } from './filter-clauses';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import {
   hasSessionListLookback,
   querySessionsQuery,
@@ -80,10 +80,10 @@ describe('sessionListQuery', () => {
       endDate: new Date('2026-07-31T23:59:59Z'),
       profileId: 'user-1',
       search: 'checkout',
-      filterClauses: compiledFilterClauses({
-        f0: "country = 'SE'",
-        f1: "device = 'mobile'",
-      }),
+      filterClauses: {
+        f0: sql`country = 'SE'`,
+        f1: sql`device = 'mobile'`,
+      },
     }).toStatement();
     const text = collapse(query);
 

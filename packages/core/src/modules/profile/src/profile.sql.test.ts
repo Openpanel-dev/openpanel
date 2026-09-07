@@ -5,7 +5,7 @@
 // local prod-copy (M7-002 report), not here — these run offline.
 
 import { describe, expect, test } from 'bun:test';
-import { compiledFilterClauses } from './filter-clauses';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import {
   findProfilesQuery,
   PROFILE_COLUMNS,
@@ -158,9 +158,7 @@ describe('profileListQuery', () => {
       offset: 100,
       search: 'ann',
       isExternal: true,
-      filterClauses: compiledFilterClauses({
-        f0: "(properties['plan'] = 'pro')",
-      }),
+      filterClauses: { f0: sql`(properties['plan'] = 'pro')` },
     }).toStatement();
     const text = collapse(query);
 
@@ -181,7 +179,7 @@ describe('profileListQuery', () => {
       projectId: PROJECT_ID,
       search: 'ann',
       isExternal: false,
-      filterClauses: compiledFilterClauses({ f0: "(email != '')" }),
+      filterClauses: { f0: sql`(email != '')` },
     };
     const page = collapse(
       profileListQuery({ ...list, take: 1, offset: 0 }).toStatement().query
@@ -229,7 +227,7 @@ describe('findProfilesQuery', () => {
       inactiveDays: 7,
       minSessions: 3,
       performedEvent: HOSTILE,
-      filterClauses: compiledFilterClauses({ f0: '(1 = 1)' }),
+      filterClauses: { f0: sql`(1 = 1)` },
     }).toStatement();
     const text = collapse(query);
 

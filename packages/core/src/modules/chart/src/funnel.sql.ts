@@ -27,11 +27,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
 } from '../../report/report.constants';
-import {
-  compiledText,
-  compiledTextWithProfileRefs,
-  fragmentWithProfileRefs,
-} from './compiled';
+import { compiledText, fragmentWithProfileRefs } from './compiled';
 import {
   buildInlineCohortJoin,
   CHART_TABLE,
@@ -52,6 +48,9 @@ export type FunnelGroup = (typeof FUNNEL_GROUPS)[number];
 
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
+
+/** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
+const EVENTS_ALIAS = 'events';
 
 /** Profile columns the funnel's profiles CTE may expose beyond `properties`. */
 const JOINABLE_PROFILE_COLUMNS = [
@@ -177,7 +176,7 @@ function breakdownSelects(
     const cohortName = cohortId
       ? input.cohortMetadata.get(cohortId)?.name
       : undefined;
-    const expression = compiledTextWithProfileRefs(
+    const expression = fragmentWithProfileRefs(
       getSelectPropertyKey(
         breakdown.name,
         input.projectId,
@@ -207,7 +206,7 @@ function profileCteColumns(
   input: FunnelBaseInput,
   profileFilters: string[],
   profileKeys: { keys: string[]; needsFullMap: boolean }
-): string[] {
+): SqlFragment[] {
   const profileBreakdowns = input.breakdowns.filter((breakdown) =>
     breakdown.name.startsWith('profile.')
   );
@@ -229,7 +228,12 @@ function profileCteColumns(
     }
   }
 
-  const columns = Array.from(fields);
+  // ADR-013 R3: the breakdown-derived names are vetted above, the
+  // filter-derived ones are not — V1 spliced both unchecked, `sql.id`
+  // validates the shape and throws instead of inlining.
+  const columns: SqlFragment[] = Array.from(fields).map((field) =>
+    sql.id(field)
+  );
   const referencesProperties =
     profileFilters.some((filter) => filter.startsWith('properties')) ||
     profileBreakdowns.some((breakdown) =>
@@ -307,7 +311,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const columns = profileCteColumns(input, profileFilters, profileKeys);
   const profileJoin =
     columns.length > 0
-      ? sql` LEFT JOIN (SELECT ${compiledText(columns.join(', '))} FROM ${sql.id(CHART_TABLE.profiles)} FINAL
+      ? sql` LEFT JOIN (SELECT ${sql.join(columns, ', ')} FROM ${sql.id(CHART_TABLE.profiles)} FINAL
           WHERE project_id = ${sql.string(projectId)}) as profile ON profile.id = events.profile_id`
       : sql.empty;
   const groupJoin = needsGroupArrayJoin
@@ -320,7 +324,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     cohortIds.length > 0
       ? sql` ${sql.join(
           cohortIds.map((cohortId) =>
-            compiledText(buildInlineCohortJoin(cohortId, projectId, 'events'))
+            buildInlineCohortJoin(cohortId, projectId, EVENTS_ALIAS)
           ),
           ' '
         )}`

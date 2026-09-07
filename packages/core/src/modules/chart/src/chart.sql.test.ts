@@ -76,11 +76,36 @@ async function getAggregateChartSql(input: LooseAggregateInput) {
 interface Rendered {
   sql: string;
   params: Record<string, unknown>;
+  /**
+   * `sql` with every `{pN:Type}` substituted back to the literal V1 emitted.
+   * Since M12-003 the field resolver binds `properties[<key>]` keys too, so
+   * an assertion about the SHAPE of a map access reads this; an assertion
+   * about what is bound reads `sql`/`params`.
+   */
+  text: string;
+}
+
+const PLACEHOLDER = /\{(p\d+):[^}]+\}/g;
+
+function literal(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `(${value.map(literal).join(', ')})`;
+  }
+  if (typeof value === 'string') {
+    return `'${value.replace(/'/g, "\\'")}'`;
+  }
+  return String(value);
 }
 
 function render(fragment: SqlFragment): Rendered {
   const { query, query_params } = fragment.toStatement();
-  return { sql: query, params: query_params };
+  return {
+    sql: query,
+    params: query_params,
+    text: query.replace(PLACEHOLDER, (_match, name: string) =>
+      literal(query_params[name])
+    ),
+  };
 }
 
 async function explain({ sql, params }: Rendered): Promise<void> {
@@ -147,8 +172,8 @@ describe('getChartSql', () => {
 
     // Every map access on the events table must be aliased — the `_g` join
     // also exposes a `properties` column, so the bare form is ambiguous.
-    expect(rendered.sql).not.toMatch(/(?<![._\w])properties\[/);
-    expect(rendered.sql).toContain("e.properties['__query.utm_source']");
+    expect(rendered.text).not.toMatch(/(?<![._\w])properties\[/);
+    expect(rendered.text).toContain("e.properties['__query.utm_source']");
 
     await explain(rendered);
   });
@@ -236,7 +261,7 @@ describe('getChartSql', () => {
       breakdowns: [],
       ...base,
     });
-    expect(rendered.sql).toContain("e.properties['revenue_amount']");
+    expect(rendered.text).toContain("e.properties['revenue_amount']");
     await explain(rendered);
   });
 
@@ -328,9 +353,9 @@ describe('getChartSql', () => {
       breakdowns: [],
       ...base,
     });
-    expect(rendered.sql).toContain("properties['__query.utm_source']");
+    expect(rendered.text).toContain("properties['__query.utm_source']");
     // The unqualified `utm_source = …` form would fail with UNKNOWN_IDENTIFIER.
-    expect(rendered.sql).not.toMatch(/(?<![._\w])utm_source\s*=/);
+    expect(rendered.text).not.toMatch(/(?<![._\w])utm_source\s*=/);
     await explain(rendered);
   });
 
@@ -401,7 +426,7 @@ describe('getAggregateChartSql', () => {
       breakdowns: [breakdown('properties.__query.utm_source')],
       ...base,
     });
-    expect(rendered.sql).toContain("e.properties['__query.utm_source']");
+    expect(rendered.text).toContain("e.properties['__query.utm_source']");
     await explain(rendered);
   });
 });
@@ -415,26 +440,26 @@ describe('profile-property narrowing', () => {
   };
 
   it('projects only the referenced keys as scalar columns in the profile CTE', async () => {
-    const { sql } = await getChartSql({
+    const { text } = await getChartSql({
       event: event({ filters: [profileFilter] }),
       breakdowns: [breakdown('profile.properties.experiment')],
       ...base,
     });
 
     // The CTE selects one scalar column per referenced key...
-    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
-    expect(sql).toContain(
+    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(text).toContain(
       "properties['experiment'] as `profile.properties.experiment`"
     );
     // ...instead of every profile's whole Map...
-    expect(sql).not.toContain('properties as "profile.properties"');
+    expect(text).not.toContain('properties as "profile.properties"');
     // ...and every ref in the query is rewritten to the scalar alias.
-    expect(sql).not.toContain("profile.properties['plan']");
-    expect(sql).not.toContain("profile.properties['experiment']");
+    expect(text).not.toContain("profile.properties['plan']");
+    expect(text).not.toContain("profile.properties['experiment']");
   });
 
   it('falls back to the full Map for wildcard refs', async () => {
-    const { sql } = await getChartSql({
+    const { text } = await getChartSql({
       event: event({
         filters: [
           {
@@ -450,11 +475,11 @@ describe('profile-property narrowing', () => {
     });
 
     // mapExtractKeyLike needs the whole Map, so it must stay selected.
-    expect(sql).toContain('properties as "profile.properties"');
+    expect(text).toContain('properties as "profile.properties"');
   });
 
   it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {
-    const { sql } = await getChartSql({
+    const { text } = await getChartSql({
       event: event({
         filters: [
           {
@@ -471,12 +496,12 @@ describe('profile-property narrowing', () => {
 
     // The unsafe key keeps its original Map access against the full Map —
     // it must never be embedded in a backtick-quoted alias.
-    expect(sql).toContain('properties as "profile.properties"');
-    expect(sql).not.toContain('as `profile.properties.plan`tier`');
+    expect(text).toContain('properties as "profile.properties"');
+    expect(text).not.toContain('as `profile.properties.plan`tier`');
   });
 
   it('collects the math-metric property too', async () => {
-    const { sql } = await getChartSql({
+    const { text } = await getChartSql({
       event: event({
         segment: 'property_average',
         property: 'profile.properties.age',
@@ -488,14 +513,14 @@ describe('profile-property narrowing', () => {
 
     // The metric's key must be narrowed alongside the filter's — otherwise
     // the metric keeps reading the Map that narrowing just removed.
-    expect(sql).toContain("properties['age'] as `profile.properties.age`");
-    expect(sql).not.toContain("profile.properties['age']");
+    expect(text).toContain("properties['age'] as `profile.properties.age`");
+    expect(text).not.toContain("profile.properties['age']");
   });
 
   it('creates the profile join for a metric-only profile property', async () => {
     // No profile filter or breakdown — the metric alone must still create
     // the CTE and join, or its scalar alias resolves against nothing.
-    const { sql } = await getChartSql({
+    const { text } = await getChartSql({
       event: event({
         segment: 'property_average',
         property: 'profile.properties.age',
@@ -505,8 +530,8 @@ describe('profile-property narrowing', () => {
       ...base,
     });
 
-    expect(sql).toContain('LEFT ANY JOIN profile ON profile.id = profile_id');
-    expect(sql).toContain("properties['age'] as `profile.properties.age`");
+    expect(text).toContain('LEFT ANY JOIN profile ON profile.id = profile_id');
+    expect(text).toContain("properties['age'] as `profile.properties.age`");
   });
 
   it('metric-only profile property parses and resolves', async () => {

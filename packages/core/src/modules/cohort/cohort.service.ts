@@ -35,6 +35,7 @@
 // module's own rpc mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
 import { chQuery } from '../../shared/ch-query';
@@ -809,15 +810,15 @@ export async function listCohortMemberProfiles(
   }
 ): Promise<{ data: IServiceProfile[]; count: number }> {
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
-  const { profileSearchSql } = await import('../profile/profile.service');
+  const { profileSearchCondition } = await import('../profile/profile.service');
   // M10-005: `getProfiles` takes `ServiceDeps` now and this function has none
   // — packages/trpc's cohort router still calls it bare — so it reaches the
   // v1-compat spelling. Converting this module is its own task.
   const { getProfiles } = await import('../../v1-compat');
 
   const offset = Math.max(0, (cursor ?? 0) * take);
-  const searchClause = profileSearchSql(search);
-  const searchCondition = searchClause ? `AND ${searchClause}` : '';
+  const searchClause = profileSearchCondition(search);
+  const searchCondition = searchClause ? sql`AND ${searchClause}` : sql.empty;
 
   const extraConditions = filters?.length
     ? Object.values(
@@ -829,24 +830,27 @@ export async function listCohortMemberProfiles(
       )
     : [];
   const extraConditionSql = extraConditions.length
-    ? `AND ${extraConditions.join(' AND ')}`
-    : '';
+    ? sql`AND ${sql.join(extraConditions, ' AND ')}`
+    : sql.empty;
 
+  // M12-003: converted with `buildFilterWhere`, which now returns fragments.
+  // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
+  // written (docs/ENVIRONMENT.md).
   const rows = await chQuery<{ id: string; total_count: number }>(
     deps,
-    `
+    sql`
     SELECT id, count() OVER () AS total_count
-    FROM ${TABLE.profiles} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(TABLE.profiles)} FINAL
+    WHERE project_id = ${sql.string(projectId)}
       AND id IN (
-        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
+        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+        WHERE cohort_id = ${sql.string(cohortId)}
+          AND project_id = ${sql.string(projectId)}
       )
       ${searchCondition}
       ${extraConditionSql}
     ORDER BY created_at DESC
-    LIMIT ${take} OFFSET ${offset}
+    LIMIT ${sql.uint64(take)} OFFSET ${sql.uint64(offset)}
   `
   );
 

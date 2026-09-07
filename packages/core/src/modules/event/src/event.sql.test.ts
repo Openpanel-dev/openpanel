@@ -5,6 +5,7 @@
 // (these run offline); it is recorded per query in event.sql.proof.md.
 
 import { describe, expect, test } from 'bun:test';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import {
   botEventsCountQuery,
   botEventsQuery,
@@ -21,7 +22,6 @@ import {
   topOriginsQuery,
   topPagesQuery,
 } from './event.sql';
-import { compiledFilterClauses } from './filter-clauses';
 
 const PROJECT_ID = 'proj-1';
 const HOSTILE = "x' OR 1=1 --";
@@ -118,7 +118,7 @@ describe('eventListQuery', () => {
       startDate: START,
       endDate: END,
       events: ['a', HOSTILE],
-      filterClauses: compiledFilterClauses({ f0: "(path = '/')" }),
+      filterClauses: { f0: sql`(path = '/')` },
       conversionNames: ['signup'],
     }).toStatement();
 
@@ -182,7 +182,7 @@ describe('eventsCountQuery', () => {
       startDate: START,
       endDate: END,
       events: ['a'],
-      filterClauses: compiledFilterClauses({ f0: "(path = '/')" }),
+      filterClauses: { f0: sql`(path = '/')` },
       joins: NO_FILTER_JOINS,
     }).toStatement();
 
@@ -302,7 +302,7 @@ describe('queryEventsQuery', () => {
       equals: { browser: 'Firefox', path: HOSTILE, country: 'SE' },
       properties: { [HOSTILE]: 'v' },
       dateRange: { start: '2026-08-01 00:00:00', end: '2026-08-31 23:59:59' },
-      filterClauses: compiledFilterClauses({ f0: '(1 = 1)' }),
+      filterClauses: { f0: sql`(1 = 1)` },
       limit: 10,
     }).toStatement();
 

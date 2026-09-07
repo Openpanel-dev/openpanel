@@ -5,16 +5,21 @@
 // `group.name`, `cohort:<id>`, `has_profile`) becomes a ClickHouse
 // expression, plus the profile-CTE narrowing helpers.
 //
-// These render TEXT with sqlstring on purpose. They are the SELECT/JOIN half
-// of the filter compiler that funnel, conversion, sankey, retention and
-// overview (M7-004/M7-005) still splice into their own builders, and ADR-013
-// leaves the shared compilers as they are until their last consumer converts
-// ("two behaviours, not two builders"). chart.sql.ts splices their output
-// through compiled.ts — the one bridge — and binds every chart-level value
-// (project id, event name, dates, timezone, cohort ids/names, limits) itself.
+// M12-003 converted every resolver onto the `sql` tag: each one returns a
+// `SqlFragment` whose values — cohort ids, cohort labels, project ids and the
+// `properties[...]` map keys — bind as `{pN:Type}` params, and whose
+// identifiers go through `sql.id`. Callers interpolate the fragment directly;
+// nothing wraps it in `compiledText` any more.
+//
+// The one piece of text this file still builds is the backtick-quoted CTE
+// alias `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`),
+// which is an identifier `sql.id` cannot express — three dot-separated parts —
+// and which `collectProfilePropertyKeys` already guards. It goes through
+// `compiled.ts`, the module's one text seam.
 
-import sqlstring from 'sqlstring';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartBreakdown } from '../../report/report.constants';
+import { compiledText } from './compiled';
 
 export const CHART_TABLE = {
   events: 'events',
@@ -94,10 +99,38 @@ const EVENT_UTM_BARE_COLUMNS = new Set<string>([
 
 const NUMERIC_EVENT_COLUMNS = ['duration', 'revenue', 'longitude', 'latitude'];
 
+/** The all-cohorts breakdown's JOIN alias and its fallback label. */
+const ALL_COHORTS_DEFAULT_ALIAS = '_all_cohorts';
+const ALL_COHORTS_UNKNOWN_LABEL = 'Unknown';
+
+/** Labels a single-cohort breakdown falls back to when the cohort has no name. */
+const IN_COHORT_LABEL = 'In Cohort';
+const NOT_IN_COHORT_LABEL = 'Not In Cohort';
+
 const PROFILE_CTE_SCALAR_FIELDS = [
   'email',
   'first_name',
   'last_name',
+  'created_at',
+  'last_seen_at',
+];
+
+/** Everything `collectProfileCteFields` can return — `sql.id`'s closed set. */
+export const PROFILE_CTE_FIELDS = [
+  'id',
+  'properties',
+  ...PROFILE_CTE_SCALAR_FIELDS,
+];
+
+// Top-level profiles columns `profile.<field>` may select, in V1's order. Same
+// set as PROFILE_COLUMNS in ./table-filter-where.ts, which resolves the filter
+// side; keep the two in sync.
+const PROFILE_SELECT_COLUMNS = [
+  'id',
+  'first_name',
+  'last_name',
+  'email',
+  'avatar',
   'created_at',
   'last_seen_at',
 ];
@@ -160,8 +193,14 @@ export interface CohortMetadata {
   name: string;
 }
 
-export function getCohortCteName(cohortId: string): string {
-  return `\`cohort-${cohortId}\``;
+/**
+ * The CTE name a single-cohort breakdown declares. Backtick-quoted because the
+ * id contains dashes, which `sql.id` rejects, so it goes through the module's
+ * one text seam. Callers must validate the id first — chart.sql.ts builds the
+ * same name behind `assertCohortId`.
+ */
+export function getCohortCteName(cohortId: string): SqlFragment {
+  return compiledText(`\`cohort-${cohortId}\``);
 }
 
 export function getCohortAlias(cohortId: string): string {
@@ -171,12 +210,12 @@ export function getCohortAlias(cohortId: string): string {
 export function buildCohortMembershipQuery(
   cohortId: string,
   projectId: string
-): string {
-  return `
+): SqlFragment {
+  return sql`
     SELECT profile_id
-    FROM ${CHART_TABLE.cohortMembers} FINAL
-    WHERE cohort_id = ${sqlstring.escape(cohortId)}
-      AND project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL
+    WHERE cohort_id = ${sql.string(cohortId)}
+      AND project_id = ${sql.string(projectId)}
   `;
 }
 
@@ -184,10 +223,10 @@ export function buildInlineCohortJoin(
   cohortId: string,
   projectId: string,
   tableAlias: string
-): string {
+): SqlFragment {
   const cohortAlias = getCohortAlias(cohortId);
   const cohortQuery = buildCohortMembershipQuery(cohortId, projectId);
-  return `LEFT ANY JOIN (${cohortQuery}) AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${tableAlias}.profile_id`;
+  return sql`LEFT ANY JOIN (${cohortQuery}) AS ${sql.id(cohortAlias)} ON ${sql.id(`${cohortAlias}.profile_id`)} = ${sql.id(`${tableAlias}.profile_id`)}`;
 }
 
 export function extractCohortId(breakdownName: string): string | null {
@@ -201,24 +240,30 @@ export function isAllCohortsBreakdown(breakdownName: string): boolean {
   return breakdownName === 'cohort';
 }
 
-export function buildAllCohortsMembershipQuery(projectId: string): string {
-  return `
+export function buildAllCohortsMembershipQuery(projectId: string): SqlFragment {
+  return sql`
     SELECT profile_id, cohort_id
-    FROM ${CHART_TABLE.cohortMembers} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL
+    WHERE project_id = ${sql.string(projectId)}
   `;
 }
 
 export function buildAllCohortsLabelExpr(
   cohorts: CohortMetadata[],
-  alias = '_all_cohorts'
-): string {
+  alias = ALL_COHORTS_DEFAULT_ALIAS
+): SqlFragment {
   if (cohorts.length === 0) {
-    return "'Unknown'";
+    return sql`${sql.string(ALL_COHORTS_UNKNOWN_LABEL)}`;
   }
-  const ids = cohorts.map((c) => sqlstring.escape(c.id)).join(', ');
-  const names = cohorts.map((c) => sqlstring.escape(c.name)).join(', ');
-  return `transform(${alias}.cohort_id, [${ids}], [${names}], 'Unknown')`;
+  const ids = sql.array(
+    'String',
+    cohorts.map((c) => c.id)
+  );
+  const names = sql.array(
+    'String',
+    cohorts.map((c) => c.name)
+  );
+  return sql`transform(${sql.id(`${alias}.cohort_id`)}, ${ids}, ${names}, ${sql.string(ALL_COHORTS_UNKNOWN_LABEL)})`;
 }
 
 /**
@@ -263,73 +308,84 @@ export function transformPropertyKey(property: string) {
 
 // Returns a SQL expression for a group property via the _g JOIN alias
 // property format: "group.name", "group.type", "group.properties.plan"
-export function getGroupPropertySql(property: string): string {
+export function getGroupPropertySql(property: string): SqlFragment {
   const withoutPrefix = property.replace(/^group\./, '');
   if (withoutPrefix === 'name') {
-    return '_g.name';
+    return sql`_g.name`;
   }
   if (withoutPrefix === 'type') {
-    return '_g.type';
+    return sql`_g.type`;
   }
   if (withoutPrefix.startsWith('properties.')) {
     const propKey = withoutPrefix.replace(/^properties\./, '');
-    return `_g.properties[${sqlstring.escape(propKey)}]`;
+    return sql`_g.properties[${sql.string(propKey)}]`;
   }
-  return '_group_id';
+  return sql`_group_id`;
 }
 
 // Returns the SELECT expression when querying the groups table directly (no join alias).
 // Use for fetching distinct values for group.* properties.
-export function getGroupPropertySelect(property: string): string {
+export function getGroupPropertySelect(property: string): SqlFragment {
   const withoutPrefix = property.replace(/^group\./, '');
   if (withoutPrefix === 'name') {
-    return 'name';
+    return sql`name`;
   }
   if (withoutPrefix === 'type') {
-    return 'type';
+    return sql`type`;
   }
   if (withoutPrefix === 'id') {
-    return 'id';
+    return sql`id`;
   }
   if (withoutPrefix.startsWith('properties.')) {
     const propKey = withoutPrefix.replace(/^properties\./, '');
-    return `properties[${sqlstring.escape(propKey)}]`;
+    return sql`properties[${sql.string(propKey)}]`;
   }
-  return 'id';
+  return sql`id`;
 }
 
 // Returns the SELECT expression when querying the profiles table directly (no join alias).
 // Use for fetching distinct values for profile.* properties.
 // Lists the same profiles columns as PROFILE_COLUMNS in filter-where.service.ts,
 // which resolves profile.* on the filter side; keep the two in sync.
-export function getProfilePropertySelect(property: string): string {
+export function getProfilePropertySelect(property: string): SqlFragment {
   const withoutPrefix = property.replace(/^profile\./, '');
-  if (withoutPrefix === 'id') {
-    return 'id';
-  }
-  if (withoutPrefix === 'first_name') {
-    return 'first_name';
-  }
-  if (withoutPrefix === 'last_name') {
-    return 'last_name';
-  }
-  if (withoutPrefix === 'email') {
-    return 'email';
-  }
-  if (withoutPrefix === 'avatar') {
-    return 'avatar';
-  }
-  if (withoutPrefix === 'created_at') {
-    return 'created_at';
-  }
-  if (withoutPrefix === 'last_seen_at') {
-    return 'last_seen_at';
+  if (PROFILE_SELECT_COLUMNS.includes(withoutPrefix)) {
+    return sql.id(withoutPrefix, PROFILE_SELECT_COLUMNS);
   }
   if (withoutPrefix.startsWith('properties.')) {
     const propKey = withoutPrefix.replace(/^properties\./, '');
-    return `properties[${sqlstring.escape(propKey)}]`;
+    return sql`properties[${sql.string(propKey)}]`;
   }
-  return 'id';
+  return sql`id`;
+}
+
+/** The `properties` / `profile.properties` map prefixes, longest match wins. */
+const PROPERTY_MAP_PREFIXES = ['properties', 'profile.properties'];
+
+function matchPropertyMapPrefix(property: string): string | undefined {
+  return PROPERTY_MAP_PREFIXES.find((pattern) =>
+    property.startsWith(`${pattern}.`)
+  );
+}
+
+/**
+ * True when `getSelectPropertyKey` renders an ARRAY expression rather than a
+ * scalar. V1 decided this by testing the rendered TEXT for a `%`, which is
+ * reachable two ways: the wildcard branch emits `transformPropertyKey`'s
+ * pattern, and a NON-wildcard key containing a literal `%` also matched. Both
+ * are reproduced here — including the second, which is a V1 defect
+ * (`properties.a%b` is treated as an array and fails at ClickHouse).
+ */
+export function isWildcardPropertyKey(rawProperty: string): boolean {
+  const property = normalizeEventField(rawProperty);
+  const match = matchPropertyMapPrefix(property);
+  if (!match) {
+    return false;
+  }
+  if (property.includes('*')) {
+    return transformPropertyKey(property).includes('%');
+  }
+  return property.replace(new RegExp(`^${match}.`), '').includes('%');
 }
 
 export function getSelectPropertyKey(
@@ -344,7 +400,7 @@ export function getSelectPropertyKey(
    * `_g` join), otherwise ClickHouse rejects with "ambiguous identifier".
    */
   eventsAlias?: string
-) {
+): SqlFragment {
   // Map camelCase aliases (`referrerName` → `referrer_name`) and bare UTM
   // names (`utm_source` → `properties.__query.utm_source`) into their
   // canonical form before doing any pattern matching. The fallback at the
@@ -356,15 +412,15 @@ export function getSelectPropertyKey(
 
   if (extractedCohortId && projectId) {
     const cohortAlias = getCohortAlias(extractedCohortId);
-    const inLabel = cohortName ? sqlstring.escape(cohortName) : "'In Cohort'";
-    const notInLabel = cohortName
-      ? sqlstring.escape(`Not ${cohortName}`)
-      : "'Not In Cohort'";
-    return `if(notEmpty(${cohortAlias}.profile_id), ${inLabel}, ${notInLabel})`;
+    const inLabel = sql.string(cohortName ?? IN_COHORT_LABEL);
+    const notInLabel = sql.string(
+      cohortName ? `Not ${cohortName}` : NOT_IN_COHORT_LABEL
+    );
+    return sql`if(notEmpty(${sql.id(`${cohortAlias}.profile_id`)}), ${inLabel}, ${notInLabel})`;
   }
 
   if (property === 'has_profile') {
-    return "if(profile_id != device_id, 'true', 'false')";
+    return sql`if(profile_id != device_id, 'true', 'false')`;
   }
 
   // Handle group properties — requires ARRAY JOIN + _g JOIN to be present in query
@@ -372,27 +428,27 @@ export function getSelectPropertyKey(
     return getGroupPropertySql(property);
   }
 
-  const propertyPatterns = ['properties', 'profile.properties'];
-
-  const match = propertyPatterns.find((pattern) =>
-    property.startsWith(`${pattern}.`)
-  );
+  const match = matchPropertyMapPrefix(property);
   if (!match) {
-    return property;
+    // Not a map access: a top-level column, or a name the caller has already
+    // vetted with `isKnownEventField`. `sql.id` throws on anything else
+    // rather than inlining it (ADR-013 R3).
+    return sql.id(property);
   }
 
   // Only the events table's bare `properties` map needs aliasing —
   // `profile.properties` already routes through the profile join alias.
-  const aliasPrefix =
-    match === 'properties' && eventsAlias ? `${eventsAlias}.` : '';
+  const map = sql.id(
+    match === 'properties' && eventsAlias ? `${eventsAlias}.${match}` : match
+  );
 
   if (property.includes('*')) {
-    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${aliasPrefix}${match}, ${sqlstring.escape(
+    return sql`arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${map}, ${sql.string(
       transformPropertyKey(property)
     )})))`;
   }
 
-  return `${aliasPrefix}${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
+  return sql`${map}[${sql.string(property.replace(new RegExp(`^${match}.`), ''))}]`;
 }
 
 // --- profile-property CTE narrowing (perf) ---------------------------------
@@ -440,31 +496,18 @@ export function collectProfilePropertyKeys(refs: { name: string }[]): {
 export function profilePropertiesCteSelect(
   keys: string[],
   needsFullMap: boolean
-): string {
+): SqlFragment {
+  // The alias has three dot-separated parts, so it is text, not `sql.id`.
+  // `collectProfilePropertyKeys` already rejects the two characters that
+  // could break out of the backticks.
   const cols = keys.map(
-    (k) => `properties[${sqlstring.escape(k)}] as \`profile.properties.${k}\``
+    (k) =>
+      sql`properties[${sql.string(k)}] as ${compiledText(`\`profile.properties.${k}\``)}`
   );
   if (needsFullMap || cols.length === 0) {
-    cols.push('properties as "profile.properties"');
+    cols.push(sql`properties as "profile.properties"`);
   }
-  return cols.join(', ');
-}
-
-// Rewrite `profile.properties['<key>']` -> `` `profile.properties.<key>` ``
-// for the narrowed keys. Matches the raw render from getSelectPropertyKey /
-// the filter builders; never matches the CTE's own `properties['<key>']`,
-// which has no `profile.` prefix. No-op when keys is empty.
-export function rewriteProfilePropertyRefs(
-  sql: string,
-  keys: string[]
-): string {
-  let out = sql;
-  for (const k of keys) {
-    out = out
-      .split(`profile.properties['${k}']`)
-      .join(`\`profile.properties.${k}\``);
-  }
-  return out;
+  return sql.join(cols, ', ');
 }
 
 /**

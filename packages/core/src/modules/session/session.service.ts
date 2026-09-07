@@ -24,10 +24,7 @@ import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
-import {
-  type CompiledFilterClauses,
-  compiledFilterClauses,
-} from './src/filter-clauses';
+import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
   hasSessionListLookback,
   querySessionsQuery,
@@ -235,12 +232,10 @@ async function compileSessionFilters(
     return {};
   }
   const { buildFilterWhere } = await loadFilterCompiler();
-  return compiledFilterClauses(
-    buildFilterWhere(filters, projectId, {
-      ...SESSION_FILTER_TABLE,
-      ...range,
-    })
-  );
+  return buildFilterWhere(filters, projectId, {
+    ...SESSION_FILTER_TABLE,
+    ...range,
+  });
 }
 
 function emptyProfile(profileId: string, projectId: string): IServiceProfile {

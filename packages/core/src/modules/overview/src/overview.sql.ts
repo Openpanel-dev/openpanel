@@ -6,12 +6,10 @@
 // builder's result set was diffed against V1's on the local prod-copy; the
 // statements, params, row counts and timings are in overview.sql.proof.md.
 //
-// The event filter compiler still renders text (chart module's
-// filter-where.ts); its output is spliced through `compiledText`, same as
-// chart/funnel/retention/sankey/conversion until this module stops needing it
-// (ADR-013 leaves the compiler as-is "until funnel, conversion, sankey,
-// retention and overview stop splicing its output into text builders" —
-// unchanged by this task).
+// Both filter compilers and the field resolver return fragments now (M12-002,
+// M12-003) and are interpolated directly. `compiledText` is left with one job
+// here: the `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is
+// SQL syntax, not a value.
 //
 // `toStartOf`/`toInterval`/`datetime` reproduce V1's `clix` static helpers
 // verbatim (query-builder.ts) rather than chart.sql.ts's own `intervalBucket`:
@@ -669,7 +667,7 @@ export interface TopLinkOutQueryInput {
 }
 
 export function topLinkOutQuery(input: TopLinkOutQueryInput): SqlFragment {
-  const hrefKey = compiledText(getSelectPropertyKey('properties.href'));
+  const hrefKey = getSelectPropertyKey('properties.href');
   return sql`
     SELECT ${hrefKey} as href, count() as count
     FROM events

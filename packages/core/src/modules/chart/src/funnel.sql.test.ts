@@ -91,11 +91,35 @@ function normalize(query: string): string {
 interface Rendered {
   sql: string;
   params: Record<string, unknown>;
+  /**
+   * `sql` with every placeholder substituted back to the literal V1 emitted.
+   * Since M12-003 the field resolver binds `properties[<key>]` keys and cohort
+   * labels too, so an assertion about the SHAPE of the expression reads this.
+   */
+  text: string;
+}
+
+const PLACEHOLDER = /\{(p\d+):[^}]+\}/g;
+
+function literal(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `(${value.map(literal).join(', ')})`;
+  }
+  if (typeof value === 'string') {
+    return `'${value.replace(/'/g, "\\'")}'`;
+  }
+  return String(value);
 }
 
 function render(fragment: SqlFragment): Rendered {
   const { query, query_params } = fragment.toStatement();
-  return { sql: normalize(query), params: query_params };
+  return {
+    sql: normalize(query),
+    params: query_params,
+    text: query.replace(PLACEHOLDER, (_match, name: string) =>
+      literal(query_params[name])
+    ),
+  };
 }
 
 async function explain(fragment: SqlFragment): Promise<void> {
@@ -142,6 +166,9 @@ async function chartStatement(overrides: BaseOverrides = {}) {
 const chartSql = async (breakdowns: IChartBreakdown[]) =>
   render(await chartStatement({ breakdowns })).sql;
 
+const chartText = async (breakdowns: IChartBreakdown[]) =>
+  render(await chartStatement({ breakdowns })).text;
+
 const originalNonStrict = process.env.FUNNEL_NON_STRICT_ORDERING;
 function setNonStrictOrdering(value: string | undefined) {
   if (value === undefined) {
@@ -167,11 +194,11 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
     const statement = await profilesStatement({
       breakdowns: [breakdown('profile.properties.plan')],
     });
-    const { sql } = render(statement);
+    const { sql, text } = render(statement);
 
     // The breakdown is narrowed to a scalar alias selected by the profile
     // join, so both the join and the aliased column must exist.
-    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
     expect(sql).toMatch(/as profile/);
     expect(sql).toContain('profile.id = events.profile_id');
     await explain(statement);
@@ -221,13 +248,14 @@ describe('funnel.sql / buildFunnelBase — cohort breakdowns', () => {
     const statement = await profilesStatement({
       breakdowns: [breakdown(`cohort:${COHORT_ID}`)],
     });
-    const { sql } = render(statement);
+    const { sql, text } = render(statement);
 
     // The breakdown renders `cohort_<id>.profile_id`, so its join must exist.
     const alias = `cohort_${COHORT_ID.replace(/-/g, '_')}`;
     expect(sql).toContain(`${alias}.profile_id`);
     expect(sql).toContain(`AS ${alias}`);
-    expect(sql).toContain('Power users');
+    // The cohort label is a bound value now.
+    expect(text).toContain('Power users');
     await explain(statement);
   });
 });
@@ -331,7 +359,9 @@ describe('funnel.sql / buildFunnelBase — breakdown attribution', () => {
   // sequence never connects and downstream steps show 0.
   it('attributes event-property breakdowns at the entry step', async () => {
     const sql = await chartSql([breakdown('properties.experiment')]);
-    expect(sql).toContain("argMinIf(properties['experiment'], created_at,");
+    expect(await chartText([breakdown('properties.experiment')])).toContain(
+      "argMinIf(properties['experiment'], created_at,"
+    );
     // The windowFunnel aggregation groups by the primary key only; b_0 is an
     // aggregate, not a grouping key. (The outer chart GROUP BY level, b_0 is
     // unaffected.)
@@ -419,17 +449,17 @@ describe('funnel.sql / profile-property narrowing', () => {
       series: seriesWithProfileFilter,
       breakdowns: [breakdown('profile.properties.experiment')],
     });
-    const { sql } = render(statement);
+    const { text } = render(statement);
 
-    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
-    expect(sql).toContain(
+    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(text).toContain(
       "properties['experiment'] as `profile.properties.experiment`"
     );
-    expect(sql).not.toContain('properties as "profile.properties"');
+    expect(text).not.toContain('properties as "profile.properties"');
     // Conditions (windowFunnel + pre-filter) and the breakdown expression are
     // rewritten to the scalar aliases.
-    expect(sql).not.toContain("profile.properties['plan']");
-    expect(sql).not.toContain("profile.properties['experiment']");
+    expect(text).not.toContain("profile.properties['plan']");
+    expect(text).not.toContain("profile.properties['experiment']");
   });
 
   it('leaves funnels without profile-property refs untouched', async () => {

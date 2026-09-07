@@ -81,9 +81,11 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
         { name: 'utm_source', operator: 'is', value: ['awn'] },
       ])
     );
-    expect(query).toContain("properties['__query.utm_source']");
+    // M12-003: the map KEY binds too, so the shape is asserted on the
+    // statement and the key on the params.
+    expect(query).toContain('properties[{p1:String}]');
     expect(query).not.toMatch(/(?<![._\w])utm_source\s*=/);
-    expect(query_params).toEqual({ p1: 'awn' });
+    expect(query_params).toEqual({ p1: '__query.utm_source', p2: 'awn' });
   });
 
   it('keeps utm_* as a top-level column for the sessions table', () => {
@@ -93,7 +95,7 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
       ])
     );
     expect(query).toMatch(/(?<![._\w])utm_source\s*=/);
-    expect(query).not.toContain("properties['__query.utm_source']");
+    expect(query).not.toContain('properties[');
     expect(query_params).toEqual({ p1: 'awn' });
   });
 

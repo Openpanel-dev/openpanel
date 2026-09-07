@@ -65,10 +65,7 @@ import {
   topOriginsQuery,
   topPagesQuery,
 } from './src/event.sql';
-import {
-  type CompiledFilterClauses,
-  compiledFilterClauses,
-} from './src/filter-clauses';
+import type { CompiledFilterClauses } from './src/filter-clauses';
 
 export {
   EVENT_LIST_COLUMNS,
@@ -1092,12 +1089,10 @@ export async function queryEventsCore(
   let filterClauses: CompiledFilterClauses = {};
   if (input.filters?.length) {
     const { buildFilterWhere } = await loadFilterCompiler();
-    filterClauses = compiledFilterClauses(
-      buildFilterWhere(
-        input.filters,
-        input.projectId,
-        QUERY_EVENTS_FILTER_TARGET
-      )
+    filterClauses = buildFilterWhere(
+      input.filters,
+      input.projectId,
+      QUERY_EVENTS_FILTER_TARGET
     );
   }
   return chQuery<IClickhouseEvent>(

@@ -29,11 +29,7 @@ import type {
   IChartEvent,
   IInterval,
 } from '../../report/report.constants';
-import {
-  compiledText,
-  compiledTextWithProfileRefs,
-  fragmentWithProfileRefs,
-} from './compiled';
+import { compiledText, fragmentWithProfileRefs } from './compiled';
 import { formatClickhouseDate } from './dates';
 import {
   CHART_TABLE,
@@ -47,6 +43,7 @@ import {
   isAllCohortsBreakdown,
   isKnownEventField,
   isNumericColumn,
+  PROFILE_CTE_FIELDS,
   profilePropertiesCteSelect,
 } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';
@@ -268,18 +265,20 @@ function profileCteSelectField(
   field: string,
   profileKeys: string[],
   needsFullMap: boolean
-): string {
-  if (field === 'id') {
-    return 'id as "profile.id"';
-  }
+): SqlFragment {
   if (field === 'properties') {
     return profilePropertiesCteSelect(profileKeys, needsFullMap);
   }
-  return `${field} as "profile.${field}"`;
+  // The alias is `"profile.<field>"` — two dots, so text, not `sql.id`.
+  // `collectProfileCteFields` only ever yields a name from its own closed set.
+  return sql`${sql.id(field, PROFILE_CTE_FIELDS)} as ${compiledText(`"profile.${field}"`)}`;
 }
 
-function profileCte(selectFields: string[], projectId: string): SqlFragment {
-  return sql`SELECT ${compiledText(selectFields.join(', '))}
+function profileCte(
+  selectFields: SqlFragment[],
+  projectId: string
+): SqlFragment {
+  return sql`SELECT ${sql.join(selectFields, ', ')}
       FROM ${sql.id(CHART_TABLE.profiles)} FINAL
       WHERE project_id = ${sql.string(projectId)}`;
 }
@@ -294,8 +293,6 @@ interface ChartBody {
   where: Parts;
   select: Parts;
   profileKeys: string[];
-  /** Compiled (text) expressions go through this so V1's profile-ref rewrite still applies. */
-  spliced: (text: string) => SqlFragment;
 }
 
 /**
@@ -326,11 +323,6 @@ function chartBody({
     ...breakdowns,
     ...metricRef,
   ]);
-  // field-resolution.ts still renders text (M12-003); filter-where.ts no
-  // longer does, so its clauses take the fragment-level rewrite instead.
-  const spliced = (text: string) =>
-    compiledTextWithProfileRefs(text, profileProps.keys);
-
   const ctes: Parts = {};
   const joins: Parts = {};
 
@@ -392,7 +384,6 @@ function chartBody({
     where,
     select,
     profileKeys: profileProps.keys,
-    spliced,
   };
 }
 
@@ -402,12 +393,12 @@ function breakdownLabel(
     allCohorts,
     cohortMetadata,
     projectId,
-    spliced,
+    profileKeys,
   }: Pick<
     ChartSeriesQueryInput,
     'allCohorts' | 'cohortMetadata' | 'projectId'
   > &
-    Pick<ChartBody, 'spliced'>
+    Pick<ChartBody, 'profileKeys'>
 ): SqlFragment {
   if (isAllCohortsBreakdown(breakdown.name)) {
     return allCohortsLabelExpr(allCohorts);
@@ -416,14 +407,15 @@ function breakdownLabel(
   if (cohortId) {
     return cohortBreakdownLabel(cohortId, cohortMetadata.get(cohortId)?.name);
   }
-  return spliced(
+  return fragmentWithProfileRefs(
     getSelectPropertyKey(
       breakdown.name,
       projectId,
       undefined,
       undefined,
       EVENTS_ALIAS
-    )
+    ),
+    profileKeys
   );
 }
 
@@ -437,7 +429,7 @@ function addBreakdownLabels(
     const key = `label_${index + 1}`;
     const label = breakdownLabel(breakdown, {
       ...input,
-      spliced: body.spliced,
+      profileKeys: body.profileKeys,
     });
     body.select[key] = sql`${label} as ${compiledText(key)}`;
     groupBy[key] = compiledText(key);
@@ -464,14 +456,15 @@ function countExpression(
   }
   const mathFunction = MATH_FUNCTION_BY_SEGMENT[event.segment];
   if (mathFunction && event.property) {
-    const propertyKey = body.spliced(
+    const propertyKey = fragmentWithProfileRefs(
       getSelectPropertyKey(
         event.property,
         metricProjectId,
         undefined,
         undefined,
         EVENTS_ALIAS
-      )
+      ),
+      body.profileKeys
     );
     const aggregate = compiledText(mathFunction);
     if (isNumericColumn(event.property)) {
@@ -686,31 +679,29 @@ export function eventPropertyValuesQuery(
 /** Distinct values of a `profile.*` field straight off the profiles table. */
 export function profilePropertyValuesQuery(
   projectId: string,
-  selectExpression: string
+  expression: SqlFragment
 ): SqlFragment {
-  const expression = compiledText(selectExpression);
   return sql`SELECT distinct ${expression} as values FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${expression} != '' AND ${expression} IS NOT NULL ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
 
 /** Distinct values of a `group.*` field straight off the groups table. */
 export function groupPropertyValuesQuery(
   projectId: string,
-  selectExpression: string
+  expression: SqlFragment
 ): SqlFragment {
-  const expression = compiledText(selectExpression);
   return sql`SELECT distinct ${expression} as values FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND deleted = 0 AND ${expression} != '' AND ${expression} IS NOT NULL ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
 
 /** Distinct values of an events column / property over the last six months. */
 export function eventFieldValuesQuery(
   projectId: string,
-  selectExpression: string,
+  selectExpression: SqlFragment,
   event: string
 ): SqlFragment {
   // V1 only skipped the name clause for `*` — an empty event name filters on ''.
   const eventName =
     event !== '*' ? sql` AND name = ${sql.string(event)}` : sql.empty;
-  return sql`SELECT distinct ${compiledText(selectExpression)} as values FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(projectId)} AND created_at > (now() - INTERVAL 6 MONTH)${eventName} ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
+  return sql`SELECT distinct ${selectExpression} as values FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(projectId)} AND created_at > (now() - INTERVAL 6 MONTH)${eventName} ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
 
 // --- getProfiles ------------------------------------------------------------
@@ -794,7 +785,7 @@ export function chartBucketProfilesQuery(
   }
 
   for (const [key, value] of Object.entries(breakdowns)) {
-    const propertyKey = compiledText(getSelectPropertyKey(key, projectId));
+    const propertyKey = getSelectPropertyKey(key, projectId);
     where[`breakdown_${key}`] = sql`${propertyKey} = ${sql.string(value)}`;
   }
 

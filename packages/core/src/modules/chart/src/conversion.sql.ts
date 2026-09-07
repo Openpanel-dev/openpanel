@@ -4,9 +4,10 @@
 // window and the interval bucket bound as `{pN:Type}` parameters instead of
 // inlined literals. Result-set proof: conversion.sql.proof.md.
 //
-// The field resolver and filter compiler still render text (see compiled.ts);
-// their output — breakdown expressions, per-step filter clauses and the
-// cohort joins — is spliced, everything else is bound.
+// The field resolver and both filter compilers return fragments (M12-002,
+// M12-003); their output — breakdown expressions, per-step filter clauses and
+// the cohort joins — is interpolated directly. `compiledText` is left with the
+// `b_<index>` aliases this file generates itself.
 //
 // Cluster note (docs/ENVIRONMENT.md): `events`, `profiles` and `groups` are
 // Distributed on Cloud. The profile / group / cohort joins keep V1's exact
@@ -57,14 +58,14 @@ export interface ConversionQueryInput {
   firstEventWhere: SqlFragment | null;
   secondEventWhere: SqlFragment | null;
   /** Compiled `<expr> as b_<index>` breakdown selects. */
-  breakdownSelects: string[];
+  breakdownSelects: SqlFragment[];
   /** Compiled breakdown expressions, as written in the inner GROUP BY. */
-  breakdownExpressions: string[];
+  breakdownExpressions: SqlFragment[];
   /** Profile columns to select in the LEFT ANY JOIN, or [] for no join. */
   profileJoinFields: string[];
   needsGroupArrayJoin: boolean;
   /** Compiled cohort join clauses. */
-  cohortJoins: string[];
+  cohortJoins: SqlFragment[];
 }
 
 function stepCondition(name: string, where: SqlFragment | null): SqlFragment {
@@ -128,11 +129,11 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
 
   const innerBreakdownSelects =
     breakdownSelects.length > 0
-      ? sql`${sql.join(breakdownSelects.map(compiledText))},`
+      ? sql`${sql.join(breakdownSelects)},`
       : sql.empty;
   const innerBreakdownGroupBy =
     breakdownExpressions.length > 0
-      ? sql`, ${sql.join(breakdownExpressions.map(compiledText))}`
+      ? sql`, ${sql.join(breakdownExpressions)}`
       : sql.empty;
 
   return sql`SELECT ${outerSelect} FROM (
@@ -148,7 +149,7 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
         FROM ${sql.id(CHART_TABLE.events)}
         ${profileJoin(profileJoinFields, projectId)}
         ${groupJoin(needsGroupArrayJoin, projectId)}
-        ${sql.join(cohortJoins.map(compiledText), ' ')}
+        ${sql.join(cohortJoins, ' ')}
         WHERE project_id = ${sql.string(projectId)}
           AND events.name IN ${sql.array('String', [firstEventName, secondEventName])}
           AND created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})

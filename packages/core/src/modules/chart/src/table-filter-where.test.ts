@@ -1,7 +1,11 @@
 /**
  * Unit tests for `buildFilterWhere`.
  *
- * These are pure string tests — no ClickHouse needed. The interesting part is
+ * No ClickHouse needed. Since M12-003 the compiler returns bound
+ * `SqlFragment`s, so each clause is rendered through `toStatement()` and its
+ * params substituted back in: what the assertions say is unchanged, a value
+ * that used to appear as an escaped literal now appears in `query_params`.
+ * The interesting part is
  * the `profile.*` branch: the field name arrives from the caller (saved
  * report, URL state, raw API call) and used to be concatenated into the SQL
  * text as-is, so a name that was not a column produced whatever SQL the caller
@@ -12,6 +16,7 @@
 
 import { describe, expect, it } from 'bun:test';
 import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
+import type { SqlParamValue } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';
 import {
   buildFilterWhere,
@@ -50,11 +55,55 @@ const filter = (
     ...overrides,
   }) as IChartEventFilter;
 
+const compile = (table: keyof typeof CONTEXTS, filters: IChartEventFilter[]) =>
+  buildFilterWhere(filters, PROJECT_ID, CONTEXTS[table]!);
+
+/**
+ * Render every compiled clause with its params substituted back in, so the
+ * expectations below stay the SQL a reader can paste into ClickHouse.
+ */
 const build = (
   table: keyof typeof CONTEXTS,
   filters: IChartEventFilter[]
-): Record<string, string> =>
-  buildFilterWhere(filters, PROJECT_ID, CONTEXTS[table]!);
+): Record<string, string> => {
+  const rendered: Record<string, string> = {};
+  for (const [key, fragment] of Object.entries(compile(table, filters))) {
+    rendered[key] = substitute(fragment.toStatement());
+  }
+  return rendered;
+};
+
+const paramsOf = (
+  table: keyof typeof CONTEXTS,
+  filters: IChartEventFilter[]
+): Record<string, SqlParamValue>[] =>
+  Object.values(compile(table, filters)).map(
+    (fragment) => fragment.toStatement().query_params
+  );
+
+const PLACEHOLDER = /\{(p\d+):[^}]+\}/g;
+
+function substitute({
+  query,
+  query_params,
+}: {
+  query: string;
+  query_params: Record<string, SqlParamValue>;
+}): string {
+  return query.replace(PLACEHOLDER, (_match, name: string) =>
+    literal(query_params[name])
+  );
+}
+
+function literal(value: SqlParamValue | undefined): string {
+  if (Array.isArray(value)) {
+    return `(${value.map((item) => literal(item as SqlParamValue)).join(', ')})`;
+  }
+  if (typeof value === 'string') {
+    return `'${value.replace(/'/g, "\\'")}'`;
+  }
+  return String(value);
+}
 
 /** What `buildProfileClause` wraps `inner` in for a given table. */
 const profileWrap = (table: keyof typeof CONTEXTS, inner: string): string =>
@@ -111,10 +160,13 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
   });
 
   it('escapes a quote in a properties key', () => {
-    const where = build(table, [
+    const filters = [
       filter({ name: "profile.properties.pl'an", value: ['pro'] }),
-    ]);
+    ];
+    const where = build(table, filters);
     expect(where.f0).toBe(profileWrap(table, "properties['pl\\'an'] = 'pro'"));
+    // The key is a bound param now, so the quote never reaches the SQL text.
+    expect(Object.values(paramsOf(table, filters)[0]!)).toContain("pl'an");
   });
 
   it.each(REJECTED_NAMES)('drops the unknown profile field %j', (name) => {

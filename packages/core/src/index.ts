@@ -453,9 +453,9 @@ export { emailCategories } from './modules/email/email.constants';
 // assistant/mcp tools call these directly, the same way V1 reaches every
 // other dissolved service here. `packages/db`'s re-export shims for these
 // three files are gone (M9-CLEANUP-001) — every caller now imports this
-// barrel directly, and `profileSearchSql` (cohort.service's one addition atop
-// the shim) moved to profile/src/profile.sql.ts alongside its sibling
-// `profileSearchCondition`.
+// barrel directly. `profileSearchSql` (cohort.service's one addition atop the
+// shim) died with M12-003: its only caller now composes a `sql` fragment and
+// uses `profileSearchCondition`.
 export type {
   EventListSelect,
   GetEventListOptions,

@@ -105,6 +105,7 @@ export {
   getAggregateChartSql,
   getChartSql,
 } from './src/chart-statement';
+export { rewriteProfilePropertyRefs } from './src/compiled';
 export { executeAggregateChart, executeChart } from './src/engine/execute';
 export {
   evaluateFormula,
@@ -139,7 +140,6 @@ export {
   isNumericColumn,
   normalizeEventField,
   profilePropertiesCteSelect,
-  rewriteProfilePropertyRefs,
   transformPropertyKey,
 } from './src/field-resolution';
 export {

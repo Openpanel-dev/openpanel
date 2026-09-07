@@ -29,10 +29,7 @@ import {
   formatClickhouseDate,
   toNullIfDefaultMinDate,
 } from './src/dates';
-import {
-  type CompiledFilterClauses,
-  compiledFilterClauses,
-} from './src/filter-clauses';
+import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
   findProfilesQuery,
   powerUsersQuery,
@@ -52,7 +49,7 @@ import {
   profileValuesQuery,
 } from './src/profile.sql';
 
-export { profileSearchCondition, profileSearchSql } from './src/profile.sql';
+export { profileSearchCondition } from './src/profile.sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;
@@ -190,9 +187,7 @@ async function compileProfileFilters(
     return {};
   }
   const { buildFilterWhere } = await loadFilterCompiler();
-  return compiledFilterClauses(
-    buildFilterWhere(filters, projectId, PROFILE_FILTER_TARGET)
-  );
+  return buildFilterWhere(filters, projectId, PROFILE_FILTER_TARGET);
 }
 
 export async function getProfileMetrics(

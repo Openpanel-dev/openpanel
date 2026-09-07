@@ -2,9 +2,8 @@
 // V1's event filter compiler (`getEventFiltersWhereClause`), converted onto the
 // `sql` tag (M12-002): every VALUE binds as a `{name:Type}` param and every
 // identifier goes through `sql.id` or a static fragment. The column expression
-// for a `properties.*` / `group.*` filter still comes from field-resolution.ts,
-// which renders text until M12-003 converts it — that is the only thing left
-// crossing `compiled.ts`.
+// for a `properties.*` / `group.*` filter comes from field-resolution.ts, which
+// returns a fragment of its own since M12-003 and is interpolated directly.
 
 import {
   type SqlFragment,
@@ -14,7 +13,6 @@ import {
 import { stripLeadingAndTrailingSlashes } from '../../../shared/string';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { getCohortIds } from '../../report/report.constants';
-import { compiledText } from './compiled';
 import {
   CHART_TABLE,
   EVENT_FIELD_ALIASES,
@@ -22,6 +20,7 @@ import {
   getGroupPropertySql,
   getSelectPropertyKey,
   isNumericColumn,
+  isWildcardPropertyKey,
   normalizeEventField,
 } from './field-resolution';
 import {
@@ -141,7 +140,7 @@ export function getEventFiltersWhereClause(
 
     // Handle group. prefixed filters (requires ARRAY JOIN + _g JOIN in query)
     if (name.startsWith('group.') && projectId) {
-      const whereFrom = compiledText(getGroupPropertySql(name));
+      const whereFrom = getGroupPropertySql(name);
       if (hasTypedCast(filter.type) && isTypedOperator(operator)) {
         where[id] = buildTypedClauseFragment(
           whereFrom,
@@ -232,15 +231,14 @@ export function getEventFiltersWhereClause(
       name.startsWith('properties.') ||
       name.startsWith('profile.properties.')
     ) {
-      const propertyKey = getSelectPropertyKey(
+      const whereFrom = getSelectPropertyKey(
         name,
         undefined,
         undefined,
         undefined,
         eventsAlias
       );
-      const isWildcard = propertyKey.includes('%');
-      const whereFrom = compiledText(propertyKey);
+      const isWildcard = isWildcardPropertyKey(name);
 
       // Typed cast (number/date/datetime/boolean) short-circuit. Casts both the
       // column and each value so e.g. `>= '2019-01-01'` compares as dates

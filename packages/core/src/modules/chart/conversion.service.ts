@@ -3,12 +3,14 @@
 // byte-equivalent to V1 in src/conversion.sql.proof.md; V1's
 // conversion.service is a re-export shim onto this module (DELEGATE PATTERN).
 
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps } from '../../services';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { fetchCohortsMetadata } from './src/chart-statement';
+import { compiledText } from './src/compiled';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
 import {
   buildInlineCohortJoin,
@@ -132,7 +134,7 @@ export async function getConversion(
     );
   });
   const breakdownSelects = breakdownExpressions.map(
-    (expression, index) => `${expression} as b_${index}`
+    (expression, index) => sql`${expression} as ${compiledText(`b_${index}`)}`
   );
 
   const events = onlyReportEvents(mergedSeries);

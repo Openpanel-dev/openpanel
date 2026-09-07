@@ -1,26 +1,31 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
-// Moved from packages/db/src/services/filter-where.service.ts (M8-005).
-// V1's filter compiler for the sessions/profiles/events tables — distinct
-// from `./filter-where.ts`'s `getEventFiltersWhereClause` (event-property
-// filters). Still sqlstring-escaped text, not the `sql` tag: ADR-013 keeps
-// the two filter compilers as they are ("two behaviours, not two builders")
-// until every caller that splices their output stops using text builders.
-// M10-003: the two symbols this file used to take from
-// `@openpanel/db/src/clickhouse/client` (a module that constructs a
-// ClickHouse client and a pino logger at import time) are now local — the
-// module's own `./dates.formatClickhouseDate`, byte-identical to
-// packages/db's non-`skipTime` branch, and `./field-resolution.CHART_TABLE`,
-// which already carried all four physical table names used below.
+// Moved from packages/db/src/services/filter-where.service.ts (M8-005), then
+// converted onto the `sql` tag (M12-003). V1's filter compiler for the
+// sessions/profiles/events tables — distinct from `./filter-where.ts`'s
+// `getEventFiltersWhereClause` (event-property filters), which converted in
+// M12-002. Every VALUE binds as a `{name:Type}` param; every identifier goes
+// through `sql.id` or a static fragment. Result-set proof:
+// field-resolution.sql.proof.md.
+//
+// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles`, `groups` and
+// `cohort_members` are Distributed on Cloud. The cohort / profile / group /
+// performed_event subselects keep V1's plain `IN`; no `IN` was converted to
+// `GLOBAL IN` or back.
 
-import sqlstring from 'sqlstring';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {
   getCohortIds,
   type IChartEventFilter,
+  type IChartEventFilterValue,
   type IChartFilterValueType,
 } from '../../report/report.constants';
 import { formatClickhouseDate } from './dates';
 import { CHART_TABLE } from './field-resolution';
-import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
+import {
+  buildTypedClauseFragment,
+  hasTypedCast,
+  isTypedOperator,
+} from './filter-cast';
 
 export interface FilterTableContext {
   /** Outer query's primary table. */
@@ -45,6 +50,9 @@ export interface FilterTableContext {
   endDate?: Date;
 }
 
+/** One clause per surviving filter, keyed `f<index>` as V1 keyed them. */
+export type CompiledTableFilters = Record<string, SqlFragment>;
+
 /** Sentinel sessions columns that the UI may filter on directly. */
 const SESSION_NUMERIC_COLUMNS = new Set([
   'screen_view_count',
@@ -53,12 +61,97 @@ const SESSION_NUMERIC_COLUMNS = new Set([
   'revenue',
 ]);
 
-function escape(value: string | number | boolean | null): string {
-  return sqlstring.escape(typeof value === 'string' ? value.trim() : value);
+/** What `sessionColumnName` can return — `sql.id`'s closed set. */
+const SESSION_FILTER_COLUMNS = ['is_bounce', ...SESSION_NUMERIC_COLUMNS];
+
+/**
+ * The type ClickHouse infers for an integer literal, narrowest first: `5` is
+ * UInt8, `300` UInt16, `-5` Int8. Ordered so the first row whose range
+ * contains the value wins; a negative value never matches an unsigned row and
+ * vice versa.
+ */
+const INTEGER_LITERAL_TYPES = [
+  { min: 0n, limit: 2n ** 8n, type: 'UInt8' },
+  { min: 0n, limit: 2n ** 16n, type: 'UInt16' },
+  { min: 0n, limit: 2n ** 32n, type: 'UInt32' },
+  { min: 0n, limit: 2n ** 64n, type: 'UInt64' },
+  { min: -(2n ** 7n), limit: 0n, type: 'Int8' },
+  { min: -(2n ** 15n), limit: 0n, type: 'Int16' },
+  { min: -(2n ** 31n), limit: 0n, type: 'Int32' },
+  { min: -(2n ** 63n), limit: 0n, type: 'Int64' },
+] as const;
+
+/** Everything the table above does not cover — fractions and huge magnitudes. */
+const NON_INTEGER_LITERAL_TYPE = 'Float64';
+
+const INTEGER_LITERAL_TEXT = /^-?\d+$/;
+
+/**
+ * The integer ClickHouse would parse out of the text V1 emitted, or null when
+ * that text is not an integer literal — a fraction, or a magnitude large
+ * enough that `String` switches to exponent notation.
+ */
+function integerLiteralDigits(value: number): bigint | null {
+  const text = String(value);
+  return INTEGER_LITERAL_TEXT.test(text) ? BigInt(text) : null;
 }
 
-function trimVal(value: string | number | boolean | null): string {
+/**
+ * V1 inlined a numeric filter value and let ClickHouse infer the literal's
+ * type; a bound param has to declare one, so declare the one V1's literal
+ * had. Declaring `Float64` for every number would bind a *different constant*
+ * — visible wherever the comparand's type takes part in type resolution, and
+ * in the `NO_COMMON_TYPE` message when a numeric filter lands on a String
+ * property (the proof's two error cases).
+ *
+ * `filter-cast.ts`'s twin needs none of this: there every value is wrapped in
+ * `toFloat64OrNull(toString(…))` or a sibling cast, which erases the declared
+ * type before anything else can observe it.
+ */
+function numericLiteralType(value: number): string {
+  const digits = integerLiteralDigits(value);
+  const fit =
+    digits === null
+      ? undefined
+      : INTEGER_LITERAL_TYPES.find(
+          ({ min, limit }) => digits >= min && digits < limit
+        );
+  return fit?.type ?? NON_INTEGER_LITERAL_TYPE;
+}
+
+/**
+ * Bind one filter value the way `sqlstring.escape` rendered it: a string is a
+ * trimmed quoted literal, a number a numeric literal of the type ClickHouse
+ * would have inferred for it, a boolean `true`/`false` and `null` the SQL
+ * keyword NULL — which only `Nullable` reproduces, since a `String` param
+ * bound to null arrives as the empty string.
+ */
+function valueParam(value: IChartEventFilterValue) {
+  if (value === null) {
+    return sql.nullable('String', null);
+  }
+  if (typeof value === 'number') {
+    return sql.param(numericLiteralType(value), value);
+  }
+  if (typeof value === 'boolean') {
+    return sql.bool(value);
+  }
+  return sql.string(value.trim());
+}
+
+/** V1's `trimVal` — what a LIKE pattern is built from. */
+function trimVal(value: IChartEventFilterValue): string {
   return typeof value === 'string' ? value.trim() : String(value);
+}
+
+/** Every value as one `Array(String)`, for the `IN` / `NOT IN` branches. */
+function valueArray(value: IChartEventFilterValue[]) {
+  return sql.array('String', value.map(trimVal));
+}
+
+/** V1's `(<a> OR <b>)` / `(<a> AND <b>)` — the parenthesised join. */
+function joined(clauses: SqlFragment[], separator: ' OR ' | ' AND ') {
+  return sql`(${sql.join(clauses, separator)})`;
 }
 
 /**
@@ -67,11 +160,11 @@ function trimVal(value: string | number | boolean | null): string {
  * consistent across surfaces.
  */
 function compileScalarClause(
-  column: string,
+  column: SqlFragment,
   operator: IChartEventFilter['operator'],
   value: IChartEventFilter['value'],
   options: { numeric?: boolean; type?: IChartFilterValueType } = {}
-): string | null {
+): SqlFragment | null {
   if (value.length === 0 && operator !== 'isNull' && operator !== 'isNotNull') {
     return null;
   }
@@ -79,97 +172,97 @@ function compileScalarClause(
   // Explicit cast type wins over the column-name `numeric` auto-detect. Casts
   // both the column and each value consistently (see filter-cast.ts).
   if (hasTypedCast(options.type) && isTypedOperator(operator)) {
-    return buildTypedClause(column, operator, value, options.type!);
+    return buildTypedClauseFragment(column, operator, value, options.type!);
   }
 
   const numeric = options.numeric === true;
+  // V1 wrapped BOTH sides in toFloat64 on a numeric column; the quoted
+  // comparand fed to toFloat64 is the behaviour, so the value stays a String.
+  const left = numeric ? sql`toFloat64(${column})` : column;
+  const right = (val: IChartEventFilterValue) =>
+    numeric ? sql`toFloat64(${valueParam(val)})` : valueParam(val);
 
   switch (operator) {
     case 'is': {
       if (numeric) {
-        return `(${value
-          .map((v) => `toFloat64(${column}) = toFloat64(${escape(v)})`)
-          .join(' OR ')})`;
+        return joined(
+          value.map((v) => sql`${left} = ${right(v)}`),
+          ' OR '
+        );
       }
       if (value.length === 1) {
-        return `${column} = ${escape(value[0]!)}`;
+        return sql`${column} = ${valueParam(value[0]!)}`;
       }
-      return `${column} IN (${value.map(escape).join(', ')})`;
+      return sql`${column} IN ${valueArray(value)}`;
     }
     case 'isNot': {
       if (numeric) {
-        return `(${value
-          .map((v) => `toFloat64(${column}) != toFloat64(${escape(v)})`)
-          .join(' OR ')})`;
+        return joined(
+          value.map((v) => sql`${left} != ${right(v)}`),
+          ' OR '
+        );
       }
       if (value.length === 1) {
-        return `${column} != ${escape(value[0]!)}`;
+        return sql`${column} != ${valueParam(value[0]!)}`;
       }
-      return `${column} NOT IN (${value.map(escape).join(', ')})`;
+      return sql`${column} NOT IN ${valueArray(value)}`;
     }
     case 'contains': {
-      return `(${value
-        .map((v) => `${column} ILIKE ${sqlstring.escape(`%${trimVal(v)}%`)}`)
-        .join(' OR ')})`;
+      return joined(
+        value.map((v) => sql`${column} ILIKE ${sql.string(`%${trimVal(v)}%`)}`),
+        ' OR '
+      );
     }
     case 'doesNotContain': {
-      return `(${value
-        .map(
-          (v) => `${column} NOT ILIKE ${sqlstring.escape(`%${trimVal(v)}%`)}`
-        )
-        .join(' AND ')})`;
+      return joined(
+        value.map(
+          (v) => sql`${column} NOT ILIKE ${sql.string(`%${trimVal(v)}%`)}`
+        ),
+        ' AND '
+      );
     }
     case 'startsWith': {
-      return `(${value
-        .map((v) => `${column} ILIKE ${sqlstring.escape(`${trimVal(v)}%`)}`)
-        .join(' OR ')})`;
+      return joined(
+        value.map((v) => sql`${column} ILIKE ${sql.string(`${trimVal(v)}%`)}`),
+        ' OR '
+      );
     }
     case 'endsWith': {
-      return `(${value
-        .map((v) => `${column} ILIKE ${sqlstring.escape(`%${trimVal(v)}`)}`)
-        .join(' OR ')})`;
+      return joined(
+        value.map((v) => sql`${column} ILIKE ${sql.string(`%${trimVal(v)}`)}`),
+        ' OR '
+      );
     }
     case 'regex': {
-      return `(${value
-        .map((v) => `match(${column}, ${escape(v)})`)
-        .join(' OR ')})`;
+      return joined(
+        value.map((v) => sql`match(${column}, ${valueParam(v)})`),
+        ' OR '
+      );
     }
     case 'isNull':
-      return `(${column} = '' OR ${column} IS NULL)`;
+      return sql`(${column} = '' OR ${column} IS NULL)`;
     case 'isNotNull':
-      return `(${column} != '' AND ${column} IS NOT NULL)`;
-    case 'gt': {
-      return `(${value
-        .map(
-          (v) =>
-            `${numeric ? `toFloat64(${column})` : column} > ${numeric ? `toFloat64(${escape(v)})` : escape(v)}`
-        )
-        .join(' OR ')})`;
-    }
-    case 'lt': {
-      return `(${value
-        .map(
-          (v) =>
-            `${numeric ? `toFloat64(${column})` : column} < ${numeric ? `toFloat64(${escape(v)})` : escape(v)}`
-        )
-        .join(' OR ')})`;
-    }
-    case 'gte': {
-      return `(${value
-        .map(
-          (v) =>
-            `${numeric ? `toFloat64(${column})` : column} >= ${numeric ? `toFloat64(${escape(v)})` : escape(v)}`
-        )
-        .join(' OR ')})`;
-    }
-    case 'lte': {
-      return `(${value
-        .map(
-          (v) =>
-            `${numeric ? `toFloat64(${column})` : column} <= ${numeric ? `toFloat64(${escape(v)})` : escape(v)}`
-        )
-        .join(' OR ')})`;
-    }
+      return sql`(${column} != '' AND ${column} IS NOT NULL)`;
+    case 'gt':
+      return joined(
+        value.map((v) => sql`${left} > ${right(v)}`),
+        ' OR '
+      );
+    case 'lt':
+      return joined(
+        value.map((v) => sql`${left} < ${right(v)}`),
+        ' OR '
+      );
+    case 'gte':
+      return joined(
+        value.map((v) => sql`${left} >= ${right(v)}`),
+        ' OR '
+      );
+    case 'lte':
+      return joined(
+        value.map((v) => sql`${left} <= ${right(v)}`),
+        ' OR '
+      );
   }
 
   return null;
@@ -178,10 +271,10 @@ function compileScalarClause(
 /**
  * Profiles columns a `profile.<field>` filter may resolve to. Anything else is
  * not a column name and must not reach the SQL text. Kept in sync with
- * `getProfilePropertySelect` in chart.service.ts, which lists the same set for
- * the SELECT side.
+ * `getProfilePropertySelect` in field-resolution.ts, which lists the same set
+ * for the SELECT side.
  */
-const PROFILE_COLUMNS = new Set([
+const PROFILE_COLUMNS = [
   'id',
   'first_name',
   'last_name',
@@ -189,7 +282,10 @@ const PROFILE_COLUMNS = new Set([
   'avatar',
   'created_at',
   'last_seen_at',
-]);
+];
+
+/** Group fields that are columns rather than a `properties` lookup. */
+const GROUP_COLUMNS = ['name', 'type', 'id'];
 
 /**
  * Translate `profile.<field>` into the SQL accessor used when querying the
@@ -197,14 +293,14 @@ const PROFILE_COLUMNS = new Set([
  * `profile.properties.<key>` maps to the JSON `properties[key]` lookup.
  * Returns null for a field that is neither, so the caller can drop the filter.
  */
-function profileColumnSql(name: string): string | null {
+function profileColumnSql(name: string): SqlFragment | null {
   const withoutPrefix = name.replace(/^profile\./, '');
   if (withoutPrefix.startsWith('properties.')) {
     const key = withoutPrefix.replace(/^properties\./, '');
-    return `properties[${sqlstring.escape(key)}]`;
+    return sql`properties[${sql.string(key)}]`;
   }
-  if (PROFILE_COLUMNS.has(withoutPrefix)) {
-    return withoutPrefix;
+  if (PROFILE_COLUMNS.includes(withoutPrefix)) {
+    return sql.id(withoutPrefix, PROFILE_COLUMNS);
   }
   return null;
 }
@@ -213,24 +309,20 @@ function profileColumnSql(name: string): string | null {
  * Translate `group.<field>` into the SQL accessor used when querying the
  * groups table directly (no join alias).
  */
-function groupColumnSql(name: string): string {
+function groupColumnSql(name: string): SqlFragment {
   const withoutPrefix = name.replace(/^group\./, '');
-  if (
-    withoutPrefix === 'name' ||
-    withoutPrefix === 'type' ||
-    withoutPrefix === 'id'
-  ) {
-    return withoutPrefix;
+  if (GROUP_COLUMNS.includes(withoutPrefix)) {
+    return sql.id(withoutPrefix, GROUP_COLUMNS);
   }
   if (withoutPrefix.startsWith('properties.')) {
     const key = withoutPrefix.replace(/^properties\./, '');
-    return `properties[${sqlstring.escape(key)}]`;
+    return sql`properties[${sql.string(key)}]`;
   }
-  return 'id';
+  return sql`id`;
 }
 
 /** Translate `session.<field>` to the underlying sessions column. */
-function sessionColumnSql(name: string): string | null {
+function sessionColumnName(name: string): string | null {
   const withoutPrefix = name.replace(/^session\./, '');
   if (withoutPrefix === 'is_bounce') {
     return 'is_bounce';
@@ -246,7 +338,7 @@ function buildCohortClause(
   filter: IChartEventFilter,
   projectId: string,
   ctx: FilterTableContext
-): string | null {
+): SqlFragment | null {
   // `getCohortIds` normalizes the legacy single-value `cohortId` field and
   // the newer `cohortIds` array into one list. Falls back to extracting the
   // id from the `cohort:<id>` filter name when neither is set (older URL
@@ -258,17 +350,18 @@ function buildCohortClause(
   if (cohortIds.length === 0) {
     return null;
   }
-  const negate = filter.operator === 'notInCohort';
-  const op = negate ? 'NOT IN' : 'IN';
-  const escapedIds = cohortIds.map((id) => sqlstring.escape(id)).join(', ');
-  return `${ctx.profileIdExpr} ${op} (SELECT profile_id FROM ${CHART_TABLE.cohortMembers} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
+  const profileId = sql.id(ctx.profileIdExpr);
+  const members = sql`(SELECT profile_id FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL WHERE cohort_id IN ${sql.array('String', cohortIds)} AND project_id = ${sql.string(projectId)})`;
+  return filter.operator === 'notInCohort'
+    ? sql`${profileId} NOT IN ${members}`
+    : sql`${profileId} IN ${members}`;
 }
 
 function buildGroupClause(
   filter: IChartEventFilter,
   projectId: string,
   ctx: FilterTableContext
-): string | null {
+): SqlFragment | null {
   if (!ctx.groupsExpr) {
     return null;
   }
@@ -279,20 +372,20 @@ function buildGroupClause(
   if (!inner) {
     return null;
   }
-  const projectClause = `project_id = ${sqlstring.escape(projectId)}`;
-  return `arrayExists(g -> g IN (SELECT id FROM ${CHART_TABLE.groups} FINAL WHERE ${projectClause} AND ${inner}), ${ctx.groupsExpr})`;
+  return sql`arrayExists(g -> g IN (SELECT id FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${inner}), ${sql.id(ctx.groupsExpr)})`;
 }
 
 function buildProfileClause(
   filter: IChartEventFilter,
   projectId: string,
   ctx: FilterTableContext
-): string | null {
+): SqlFragment | null {
+  const name = filter.name.replace(/^profile\./, '');
   const column = profileColumnSql(filter.name);
   if (!column) {
     return null;
   }
-  const numeric = column === 'created_at' || column === 'last_seen_at';
+  const numeric = name === 'created_at' || name === 'last_seen_at';
   const inner = compileScalarClause(column, filter.operator, filter.value, {
     numeric,
     type: filter.type,
@@ -303,14 +396,14 @@ function buildProfileClause(
   if (ctx.selfTable === 'profiles') {
     return inner;
   }
-  return `${ctx.profileIdExpr} IN (SELECT id FROM ${CHART_TABLE.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)} AND ${inner})`;
+  return sql`${sql.id(ctx.profileIdExpr)} IN (SELECT id FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${inner})`;
 }
 
 function buildSessionClause(
   filter: IChartEventFilter,
   projectId: string,
   ctx: FilterTableContext
-): string | null {
+): SqlFragment | null {
   if (ctx.selfTable !== 'sessions') {
     return null;
   }
@@ -320,19 +413,18 @@ function buildSessionClause(
     if (filter.value.length === 0) {
       return null;
     }
-    const inClause =
+    const nameClause =
       filter.value.length === 1
-        ? `= ${escape(filter.value[0]!)}`
-        : `IN (${filter.value.map(escape).join(', ')})`;
-    const op = filter.operator === 'isNot' ? 'NOT IN' : 'IN';
-    const dateScope: string[] = [];
-    if (ctx.startDate && ctx.endDate) {
-      dateScope.push(
-        `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(ctx.startDate)}') AND toDate('${formatClickhouseDate(ctx.endDate)}')`
-      );
-    }
-    const scopeSql = dateScope.length ? `AND ${dateScope.join(' AND ')} ` : '';
-    return `id ${op} (SELECT DISTINCT session_id FROM ${CHART_TABLE.events} WHERE project_id = ${sqlstring.escape(projectId)} ${scopeSql}AND name ${inClause})`;
+        ? sql`= ${valueParam(filter.value[0]!)}`
+        : sql`IN ${valueArray(filter.value)}`;
+    const dateScope =
+      ctx.startDate && ctx.endDate
+        ? sql`AND toDate(created_at) BETWEEN toDate(${sql.string(formatClickhouseDate(ctx.startDate))}) AND toDate(${sql.string(formatClickhouseDate(ctx.endDate))}) `
+        : sql.empty;
+    const members = sql`(SELECT DISTINCT session_id FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(projectId)} ${dateScope}AND name ${nameClause})`;
+    return filter.operator === 'isNot'
+      ? sql`id NOT IN ${members}`
+      : sql`id IN ${members}`;
   }
 
   if (fieldName === 'is_bounce') {
@@ -343,40 +435,45 @@ function buildSessionClause(
       typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true'
     );
     const truthy = filter.operator === 'isNot' ? !wants : wants;
-    return `is_bounce = ${truthy ? 1 : 0}`;
+    return truthy ? sql`is_bounce = 1` : sql`is_bounce = 0`;
   }
 
-  const column = sessionColumnSql(filter.name);
+  const column = sessionColumnName(filter.name);
   if (!column) {
     return null;
   }
-  return compileScalarClause(column, filter.operator, filter.value, {
-    numeric: SESSION_NUMERIC_COLUMNS.has(column),
-    type: filter.type,
-  });
+  return compileScalarClause(
+    sql.id(column, SESSION_FILTER_COLUMNS),
+    filter.operator,
+    filter.value,
+    {
+      numeric: SESSION_NUMERIC_COLUMNS.has(column),
+      type: filter.type,
+    }
+  );
 }
 
 /**
- * Translate `IChartEventFilter[]` into a WHERE-clause record suitable for
- * merging into `createSqlBuilder().sb.where`. Handles cohort / group / profile
- * / session prefixes. Event-property (`properties.*`) filters are ignored on
- * non-events tables — they require a subquery on the events table that is
- * better expressed as a cohort.
+ * Translate `IChartEventFilter[]` into a WHERE-clause record of bound
+ * fragments. Handles cohort / group / profile / session prefixes.
+ * Event-property (`properties.*`) filters are ignored on non-events tables —
+ * they require a subquery on the events table that is better expressed as a
+ * cohort.
  */
 export function buildFilterWhere(
   filters: IChartEventFilter[],
   projectId: string,
   ctx: FilterTableContext
-): Record<string, string> {
-  const where: Record<string, string> = {};
+): CompiledTableFilters {
+  const where: CompiledTableFilters = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
     // Callers concatenate these fragments with AND and no grouping, so each
     // fragment is parenthesized here to keep a top-level OR inside it from
     // rebinding the surrounding conditions.
-    const set = (clause: string | null) => {
+    const set = (clause: SqlFragment | null) => {
       if (clause) {
-        where[id] = `(${clause})`;
+        where[id] = sql`(${clause})`;
       }
     };
 
