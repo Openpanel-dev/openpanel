@@ -13,22 +13,22 @@
 // INSIDE `createProjectService(deps)` for the same reason
 // `getClientByIdCached` does in client.service.ts — see that file's header.
 //
-// ClickHouse queries here still build with clix/sqlstring/`chQuery`, not raw
-// `sql` fragments: ADR-013 converts the analytics read path one query per P7
-// task, and this module's two queries (`getProjectEventsCount`/
-// `getLastEventPerProject`) haven't been converted yet. The CLIENT is
-// `deps.ch` either way, through core's own `chQuery` (shared/ch-query.ts) —
-// M10-009 dropped the `compatChHelpers()` hop these two used to make.
+// M12-006 converted this module's two ClickHouse statements
+// (`getProjectEventsCount` / `getLastEventPerProject`) onto the ADR-013 `sql`
+// tag: every value binds as a `{pN:Type}` param, so `sqlstring` and `clix` are
+// both gone. The CLIENT is `deps.ch` either way, through core's own `chQuery`
+// (shared/ch-query.ts) — M10-009 dropped the `compatChHelpers()` hop these two
+// used to make. The V1-vs-V2 result-set proof is `project.sql.proof.md` beside
+// this file.
 
 import crypto from 'node:crypto';
-import { clix } from '@openpanel/db/src/clickhouse/query-builder';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   Prisma,
   Project,
   ProjectType,
 } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
-import sqlstring from 'sqlstring';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
@@ -38,11 +38,21 @@ import { getId } from '../../shared/slug-id';
 import { stripTrailingSlash } from '../../shared/string';
 import { hashPassword } from '../auth/auth.service';
 
-// `clix` is a value import of `@openpanel/db` and stays one: it is a pure
-// query BUILDER that takes the client as its first argument
-// (`clix(deps.ch)`), not a connection — the same standing ADR-013's `sql` tag
-// has (see shared/ch-query.ts). `TABLE_NAMES` and the date helper are core's
-// own copies (shared/ch-tables.ts, shared/ch-dates.ts).
+// The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
+// compile-time template tag holding no client (see shared/ch-query.ts).
+// `TABLE_NAMES` and the date helper are core's own copies
+// (shared/ch-tables.ts, shared/ch-dates.ts).
+//
+// clix sent `clickhouse_settings.session_timezone = 'UTC'` on every
+// `execute()` — `clix(client)` with no timezone argument defaults to it
+// (query-builder.ts:696-697, :562). `getLastEventPerProject` came off clix and
+// keeps sending it so its result set stays identical; `getProjectEventsCount`
+// was already a raw `chQuery` call, sent none, and still sends none.
+const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
+// Session bookkeeping rows are worker-generated (the reaper can emit
+// session_end after tracking already stopped) — only real tracking activity
+// counts. V1 wrote this list inline in both statements.
+const NON_TRACKING_EVENT_NAMES = ['session_start', 'session_end'];
 // GENUINE CYCLE, kept lazy: `createClientForOrganization`/
 // `updateClientForOrganization` invalidate a project's clients' cache
 // entries, and that cache now lives inside `createClientService(deps)` (see
@@ -171,7 +181,7 @@ export const getProjectEventsCount = async (
 ) => {
   const res = await chQuery<{ count: number }>(
     deps,
-    `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
+    sql`SELECT sum(event_count) as count FROM ${sql.id(TABLE_NAMES.event_names_mv)} WHERE project_id = ${sql.string(projectId)} AND name NOT IN ${sql.array('String', NON_TRACKING_EVENT_NAMES)}`
   );
   return res[0]?.count;
 };
@@ -186,17 +196,16 @@ export const getProjectEventsCount = async (
 export const getLastEventPerProject = async (
   deps: ServiceDeps
 ): Promise<Map<string, Date>> => {
-  const res = await clix(deps.ch)
-    .select<{ project_id: string; last_event_at: string }>([
-      'project_id',
-      'max(created_at) AS last_event_at',
-    ])
-    .from(TABLE_NAMES.event_names_mv)
-    // Session rows are worker-generated (the reaper can emit session_end after
-    // tracking already stopped) — only real tracking activity should count.
-    .where('name', 'NOT IN', ['session_start', 'session_end'])
-    .groupBy(['project_id'])
-    .execute();
+  const res = await chQuery<{ project_id: string; last_event_at: string }>(
+    deps,
+    sql`
+      SELECT project_id, max(created_at) AS last_event_at
+      FROM ${sql.id(TABLE_NAMES.event_names_mv)}
+      WHERE name NOT IN ${sql.array('String', NON_TRACKING_EVENT_NAMES)}
+      GROUP BY project_id
+    `,
+    CLIX_SESSION_TIMEZONE
+  );
   return new Map(
     res.map((row) => [
       row.project_id,

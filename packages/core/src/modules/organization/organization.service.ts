@@ -18,28 +18,39 @@
 // `deps` cannot be a leading parameter and they reach the boot scope through
 // the declared v1-compat seam instead.
 //
-// ClickHouse queries here still go through raw sqlstring-escaped strings and
-// the (still-live, pre-ADR-013) `createSqlBuilder`, not the `sql` tag:
-// ADR-013 converts the analytics read path one query per P7 task, and this
-// module's queries haven't been converted yet. `createSqlBuilder` stays a
-// value import of `@openpanel/db`: like ADR-013's `sql` tag and `clix`, it is
-// a pure string BUILDER that holds no client (see shared/ch-query.ts).
+// M12-006 also made `shared/access-lookups.ts` a static import: that file
+// value-imports only zod-free leaves (`@openpanel/redis`, a Prisma TYPE) and
+// reaches Postgres through the lazy v1-compat seam itself, so it has no static
+// edge back here and the dynamic form deferred nothing (ADR-007: no lazy
+// loaders).
+//
+// M12-006 converted all five ClickHouse statements here onto the ADR-013 `sql`
+// tag: the four billing counters and `deleteFromClickhouse`'s project filter
+// bind every value as a `{pN:Type}` param, and the statements are written out
+// in full instead of assembled by `createSqlBuilder`'s record-of-strings.
+// `sqlstring` and `createSqlBuilder` are both gone from this module. The
+// `sql` tag is a value import of `@openpanel/db` and stays one: it is a
+// compile-time template tag holding no client (see shared/ch-query.ts). The
+// V1-vs-V2 result-set proof is `organization.sql.proof.md` beside this file.
 
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   Invite,
   Prisma,
   ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
-import { createSqlBuilder } from '@openpanel/db/src/sql-builder';
 import { cacheable } from '@openpanel/redis';
-import sqlstring from 'sqlstring';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import {
+  getOrganizationAccess,
+  getProjectAccess,
+} from '../../shared/access-lookups';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
-import { getReplicatedTableName, TABLE_NAMES } from '../../shared/ch-tables';
+import { isClickhouseClustered, TABLE_NAMES } from '../../shared/ch-tables';
 import { DateTime } from '../../shared/date';
 import { generateSecureId } from '../../shared/id';
 
@@ -55,6 +66,10 @@ export type IServiceProjectAccess = ProjectAccess;
 const DEFAULT_TIMEZONE = 'UTC';
 // Grace period between a scheduled deletion and the `delete` cron sweeping it
 // up — matches V1's `addHours(new Date(), 24)`.
+// Session bookkeeping rows are worker-generated (the reaper can emit
+// session_end long after tracking stopped), so they are not billable activity.
+// V1 wrote this list inline as SQL text in all four counters below.
+const NON_BILLABLE_EVENT_NAMES = ['session_start', 'session_end'];
 /** A module function's parameters with its leading `ServiceDeps` dropped. */
 type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
   ? Rest
@@ -227,9 +242,6 @@ export async function connectUserToOrganization(
   }
 ) {
   const db = deps.db;
-  const { getOrganizationAccess, getProjectAccess } = await import(
-    '../../shared/access-lookups'
-  );
 
   // Use primary since before this we might have just created the invite
   // If we use replica it might not find the invite
@@ -327,14 +339,18 @@ export async function getOrganizationBillingEventsCount(
     return 0;
   }
 
-  const { sb, getSql } = createSqlBuilder();
+  const statement = sql`
+    SELECT COUNT(*) AS count
+    FROM ${sql.id(TABLE_NAMES.events)} e
+    WHERE project_id IN ${sql.array(
+      'String',
+      organization.projects.map((project) => project.id)
+    )}
+      AND created_at BETWEEN ${sql.string(formatClickhouseDate(periodStart))} AND ${sql.string(formatClickhouseDate(periodEnd))}
+      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
+  `;
 
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(periodStart))} AND ${sqlstring.escape(formatClickhouseDate(periodEnd))}`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  const res = await chQuery<{ count: number }>(deps, getSql());
+  const res = await chQuery<{ count: number }>(deps, statement);
   return res[0]?.count;
 }
 
@@ -349,13 +365,14 @@ export async function getOrganizationEventsCount(
     return 0;
   }
 
-  const { sb, getSql } = createSqlBuilder();
+  const statement = sql`
+    SELECT COUNT(*) AS count
+    FROM ${sql.id(TABLE_NAMES.events)} e
+    WHERE project_id IN ${sql.array('String', projectIds)}
+      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
+  `;
 
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  const res = await chQuery<{ count: number }>(deps, getSql());
+  const res = await chQuery<{ count: number }>(deps, statement);
   return res[0]?.count ?? 0;
 }
 
@@ -372,14 +389,15 @@ export async function getOrganizationEventsCountSince(
     return 0;
   }
 
-  const { sb, getSql } = createSqlBuilder();
+  const statement = sql`
+    SELECT COUNT(*) AS count
+    FROM ${sql.id(TABLE_NAMES.events)} e
+    WHERE project_id IN ${sql.array('String', projectIds)}
+      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since, true))}
+  `;
 
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-  sb.where.createdAt = `created_at >= ${sqlstring.escape(formatClickhouseDate(since, true))}`;
-
-  const res = await chQuery<{ count: number }>(deps, getSql());
+  const res = await chQuery<{ count: number }>(deps, statement);
   return res[0]?.count ?? 0;
 }
 
@@ -394,18 +412,26 @@ export async function getOrganizationBillingEventsCountSerie(
     endDate: Date;
   }
 ): Promise<{ count: number; day: string }[]> {
-  const interval = 'day';
-  const { sb, getSql } = createSqlBuilder();
+  // V1 built this through a `const interval = 'day'` that was never anything
+  // but 'day'; the fragment writes the bucket out instead of deriving four
+  // spellings of it. `day` is the SELECT alias, referenced by the WHERE and
+  // the WITH FILL exactly as V1 referenced it.
+  const from = formatClickhouseDate(startDate, true);
+  const to = formatClickhouseDate(endDate, true);
+  const statement = sql`
+    SELECT COUNT(*) AS count, toDate(toStartOfDay(created_at)) AS day
+    FROM ${sql.id(TABLE_NAMES.events)} e
+    WHERE project_id IN ${sql.array(
+      'String',
+      organization.projects.map((project) => project.id)
+    )}
+      AND day BETWEEN ${sql.string(from)} AND ${sql.string(to)}
+      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
+    GROUP BY day
+    ORDER BY day WITH FILL FROM toDate(${sql.string(from)}) TO toDate(${sql.string(to)}) STEP INTERVAL 1 DAY
+  `;
 
-  sb.select.count = 'COUNT(*) AS count';
-  sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
-  sb.groupBy.day = interval;
-  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  return chQuery<{ count: number; day: string }>(deps, getSql());
+  return chQuery<{ count: number; day: string }>(deps, statement);
 }
 
 const BILLING_EVENTS_SERIE_CACHE_TTL_SEC = 60 * 10;
@@ -522,7 +548,7 @@ export async function deleteFromClickhouse(
   projectIds: string[]
 ) {
   const ch = deps.ch;
-  const where = `project_id IN (${projectIds.map((projectId) => sqlstring.escape(projectId)).join(',')})`;
+  const where = sql`project_id IN ${sql.array('String', projectIds)}`;
   const tables = [
     TABLE_NAMES.events,
     TABLE_NAMES.profiles,
@@ -541,13 +567,21 @@ export async function deleteFromClickhouse(
   ];
 
   for (const table of tables) {
+    // `getReplicatedTableName` appends `ON CLUSTER '{cluster}'` in clustered
+    // mode, which is a clause rather than an identifier — so the table name
+    // goes through `sql.id` and the clause stays literal template text.
+    const target = isClickhouseClustered()
+      ? sql`${sql.id(`${table}_replicated`)} ON CLUSTER '{cluster}'`
+      : sql.id(table);
     // If materialized view, use ALTER TABLE since DELETE is not supported
-    const query = table.endsWith('_mv')
-      ? `ALTER TABLE ${getReplicatedTableName(table)} DELETE WHERE ${where};`
-      : `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where};`;
+    const statement = table.endsWith('_mv')
+      ? sql`ALTER TABLE ${target} DELETE WHERE ${where};`
+      : sql`DELETE FROM ${target} WHERE ${where};`;
 
+    const { query, query_params } = statement.toStatement();
     await ch.command({
       query,
+      query_params,
       clickhouse_settings: {
         lightweight_deletes_sync: '0',
       },

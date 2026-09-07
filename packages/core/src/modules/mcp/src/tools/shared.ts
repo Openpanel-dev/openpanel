@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { createLogger } from '../../../../clients/logger';
-import { resolveClientProjectId } from '../../../../v1-compat';
+import type { ServiceDeps } from '../../../../services';
+import {
+  compatDb,
+  compatPrisma,
+  compatServiceDeps,
+  pagesService,
+  resolveClientProjectId,
+} from '../../../../v1-compat';
 import type { McpAuthContext } from '../auth';
 
 const logger = createLogger({ name: 'mcp' });
@@ -14,36 +21,40 @@ const logger = createLogger({ name: 'mcp' });
  * the v1-compat singleton instead of `@openpanel/db` (M10-004, see
  * v1-compat.ts's header) — the same pattern every other bare, no-`Ctx`
  * caller in this wave uses.
+ *
+ * M12-006 made the seam a static import (ADR-007: no lazy loaders). It always
+ * could be: this module already value-imported `resolveClientProjectId` from
+ * the same file, so the dynamic form deferred nothing and only hid the edge.
+ * The v1-compat seam itself is still lazy where it matters — it constructs no
+ * database until a caller asks for one.
  */
-export async function loadCompatDb() {
-  return (await import('../../../../v1-compat')).compatDb();
-}
-
-export async function loadCompatCh() {
-  return (await import('../../../../v1-compat')).compatCh();
+export function loadCompatDb() {
+  return compatDb();
 }
 
 /** `dashboard-management.ts`'s only need from `@openpanel/db`: the
  *  `Prisma.DbNull` sentinel for an explicit SQL NULL on a nullable Json
- *  column, not a client — same seam as `loadCompatDb`/`loadCompatCh`. */
-export async function loadCompatPrisma() {
-  return (await import('../../../../v1-compat')).compatPrisma();
+ *  column, not a client — same seam as `loadCompatDb`. */
+export function loadCompatPrisma() {
+  return compatPrisma();
 }
 
-/** `analytics/property-values.ts` still builds its query with `clix`/
- *  `TABLE_NAMES` (ADR-013 converts the analytics read path one query per P7
- *  task) — the query-building helpers, not the client (`loadCompatCh`
- *  covers that), reached the same way. */
-export async function loadCompatChHelpers() {
-  return (await import('../../../../v1-compat')).compatChHelpers();
+/** `analytics/property-values.ts` reads ClickHouse through core's own
+ *  `chQuery` (shared/ch-query.ts), which wants the scope's client AND its
+ *  logger rather than a bare client — same seam, widened to what a read
+ *  needs. */
+export function loadCompatChScope(): Promise<
+  Pick<ServiceDeps, 'ch' | 'logger'>
+> {
+  return compatServiceDeps();
 }
 
 /** `analytics/page-performance.ts` used to construct its own `PagesService`
  *  per call to dodge a module-singleton mocking hazard; since M10-005 there is
  *  no singleton and no class, so it reaches the bare, v1-compat-wrapped pages
  *  service instead. */
-export async function loadCompatPagesService() {
-  return (await import('../../../../v1-compat')).pagesService;
+export function loadCompatPagesService() {
+  return Promise.resolve(pagesService);
 }
 
 /**

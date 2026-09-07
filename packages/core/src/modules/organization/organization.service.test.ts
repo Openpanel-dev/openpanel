@@ -1,8 +1,7 @@
-// organization.service.ts's db/ch access is lazy (`await import(...)` inside
-// each function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// organization.service.ts reaches Postgres/ClickHouse through the `ServiceDeps`
+// it is handed, and its module body has no import-time side effects, which is
+// what makes `mock.module` work here with nothing to race: every mock below is
+// registered before the subject's first call, not before its import.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 

@@ -381,12 +381,12 @@ export async function compatPrisma(): Promise<
 
 /**
  * ADR-013 keeps `clix`/`chQuery`/`TABLE_NAMES` alive until the analytics read
- * path's P7 conversion (one query per task, old-vs-new result sets diffed) —
- * `project.service.ts`'s two still-unconverted functions and mcp's
- * `analytics/property-values.ts` reach the query-building helpers here
- * instead of importing `@openpanel/db` themselves. The CLIENT itself is
- * still `deps.ch` / `compatCh()`; this is only the pure helpers that live
- * beside it.
+ * path's conversion (one query per task, old-vs-new result sets diffed) —
+ * `misc.service.ts`'s still-unconverted queries reach the query-building
+ * helpers here instead of importing `@openpanel/db` themselves. The CLIENT
+ * itself is still `deps.ch` / `compatCh()`; this is only the pure helpers
+ * that live beside it. (M12-006 converted the other two callers,
+ * `project.service.ts` and mcp's `analytics/property-values.ts`.)
  */
 export async function compatChHelpers(): Promise<{
   TABLE_NAMES: typeof import('@openpanel/db/src/clickhouse/client').TABLE_NAMES;

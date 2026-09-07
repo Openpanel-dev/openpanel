@@ -1,10 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { z } from 'zod';
+import { chQuery } from '../../../../../shared/ch-query';
+import { TABLE_NAMES } from '../../../../../shared/ch-tables';
 import { EVENT_COLUMNS } from '../../../../event/event.service';
 import type { McpAuthContext } from '../../auth';
 import {
-  loadCompatCh,
-  loadCompatChHelpers,
+  loadCompatChScope,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -15,6 +17,16 @@ const DEFAULT_PROPERTY_LIMIT = 50;
 const MAX_PROPERTY_LIMIT = 500;
 const DEFAULT_VALUE_LIMIT = 50;
 const MAX_VALUE_LIMIT = 500;
+/** Raw (property_key, name) pairs scanned before `compactPropertyKeys` ranks
+ *  them — V1's `.limit(500)`. */
+const PROPERTY_KEY_SCAN_LIMIT = 500;
+/** Raw MV rows scanned before de-duplication — V1's `.limit(2000)`. */
+const PROPERTY_VALUE_SCAN_LIMIT = 2000;
+// clix built both statements below with no timezone argument, and
+// `clix(client)` defaults to `'UTC'` (query-builder.ts:696-697), sending it as
+// `clickhouse_settings.session_timezone` on every `execute()` (:562). Both
+// keep sending it so their result sets stay identical.
+const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 /**
  * Collapse the raw property-key rows into a discovery list.
@@ -76,31 +88,28 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
-        const [ch, { clix, TABLE_NAMES }] = await Promise.all([
-          loadCompatCh(),
-          loadCompatChHelpers(),
-        ]);
+        const deps = await loadCompatChScope();
         // GROUP BY rather than DISTINCT so the epv_keys projection can serve
         // this (a multi-column DISTINCT cannot be matched against an
         // aggregating projection); `name` tie-breaks the ORDER BY so the
         // LIMIT window is deterministic. See listEventPropertiesCore.
-        const builder = clix(ch)
-          .select<{ property_key: string; event_name: string }>([
-            'property_key',
-            'name as event_name',
-          ])
-          .from(TABLE_NAMES.event_property_values_mv)
-          .where('project_id', '=', projectId)
-          .groupBy(['property_key', 'name'])
-          .orderBy('property_key', 'ASC')
-          .orderBy('name', 'ASC')
-          .limit(500);
-
-        if (eventName) {
-          builder.where('name', '=', eventName);
-        }
-
-        const rows = await builder.execute();
+        const rows = await chQuery<{
+          property_key: string;
+          event_name: string;
+        }>(
+          deps,
+          sql`
+            SELECT property_key, name as event_name
+            FROM ${sql.id(TABLE_NAMES.event_property_values_mv)}
+            WHERE project_id = ${sql.string(projectId)}${
+              eventName ? sql` AND name = ${sql.string(eventName)}` : sql.empty
+            }
+            GROUP BY property_key, name
+            ORDER BY property_key ASC, name ASC
+            LIMIT ${sql.uint64(PROPERTY_KEY_SCAN_LIMIT)}
+          `,
+          CLIX_SESSION_TIMEZONE
+        );
         return {
           ...(eventName ? { event_name: eventName } : {}),
           columns: EVENT_COLUMNS,
@@ -129,23 +138,24 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName, propertyKey, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
-        const [ch, { clix, TABLE_NAMES }] = await Promise.all([
-          loadCompatCh(),
-          loadCompatChHelpers(),
-        ]);
+        const deps = await loadCompatChScope();
         const take = limit ?? DEFAULT_VALUE_LIMIT;
         // The MV holds one row per (property, value, day), so the same value
         // recurs across the window — dedupe before counting against the limit,
         // otherwise a single stable value can fill the whole response.
-        const rows = await clix(ch)
-          .select<{ value: string }>(['property_value as value'])
-          .from(TABLE_NAMES.event_property_values_mv)
-          .where('project_id', '=', projectId)
-          .where('name', '=', eventName)
-          .where('property_key', '=', propertyKey)
-          .orderBy('created_at', 'DESC')
-          .limit(2000)
-          .execute();
+        const rows = await chQuery<{ value: string }>(
+          deps,
+          sql`
+            SELECT property_value as value
+            FROM ${sql.id(TABLE_NAMES.event_property_values_mv)}
+            WHERE project_id = ${sql.string(projectId)}
+              AND name = ${sql.string(eventName)}
+              AND property_key = ${sql.string(propertyKey)}
+            ORDER BY created_at DESC
+            LIMIT ${sql.uint64(PROPERTY_VALUE_SCAN_LIMIT)}
+          `,
+          CLIX_SESSION_TIMEZONE
+        );
 
         const distinct: string[] = [];
         const seen = new Set<string>();
