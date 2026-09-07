@@ -1742,3 +1742,73 @@ templates so a self-hoster reading the file sees it.
   production closure, including `apps/start`'s (§5d). Verified on Bun 1.4.0 that
   `--filter` follows `workspace:` edges transitively and installs nothing
   outside the filtered closure.
+
+## M13-005 unifications
+
+`bunx sherif@1.13.0` baseline on 2026-09-07 (measured before this task, per
+`docs/SPEC_PLAYBOOK.md` rule 15): 20 errors + 6 warnings — 17
+`multiple-dependency-versions`, one `types-in-dependencies`
+(`apps/start`'s `@types/d3`), one `unsync-similar-dependencies` (the `@trpc/*`
+pair), one `root-package-manager-field`, plus the pre-existing
+`root-package-dependencies` and five `packages-without-package-json` warnings.
+After this task: `bunx sherif@1.13.0` exits 0 (0 errors, the same 6
+pre-existing warnings — neither named by this task's acceptance, and warnings
+alone do not fail the default `sherif` invocation).
+
+Per ADR-017 rule 0 and this task's own rule: **every unification below
+converges onto a version `bun.lock` already had resolved for at least one
+workspace member before this task ran** — never a fresh registry fetch of a
+version nobody had. Preference order was the dashboard (`apps/start`, the
+most heavily gated surface — SSR gate, golden compare) when it was a party to
+the duplicate; otherwise the more heavily-tested package (`packages/core`,
+which carries its own `bun test` suite). One exception is called out below.
+
+| # | Dependency | Workspace(s) before | Unified to | Direction |
+|---|---|---|---|---|
+| 1 | `@biomejs/biome` | `.` 2.3.15, `apps/start` 1.9.4 | **1.9.4** | root down to dashboard's |
+| 2 | `@radix-ui/react-slider` | `apps/public` 1.3.6, `apps/start` 1.2.3 | **1.2.3** | public down to dashboard's |
+| 3 | `@radix-ui/react-slot` | `apps/public` 1.2.4, `apps/start` 1.2.3 | **1.2.3** | public down to dashboard's |
+| 4 | `framer-motion` | `apps/public` 12.23.25, `apps/start` 11.18.2 | **11.18.2** | public down to dashboard's |
+| 5 | `lucide-react` | `apps/public` 0.555.0, `apps/start` 0.476.0 | **0.555.0** | **dashboard up to public's — see below** |
+| 6 | `tailwind-merge` | `apps/public` 3.4.0, `apps/start` 3.3.1 | **3.3.1** | public down to dashboard's |
+| 7 | `tailwindcss` | `apps/public` 4.1.17, `apps/start` 4.1.12 | **4.1.12** | public down to dashboard's |
+| 8 | `wrangler` | `apps/start` 4.85.0, `apps/public` 4.65.0 | **4.85.0** | public up to dashboard's |
+| 9 | `@vitejs/plugin-react` | `apps/start` 5.2.0, `apps/testbed` 4.7.0 | **5.2.0** | testbed up to dashboard's |
+| 10 | `vite` | `apps/start` 7.3.0, `apps/testbed` 6.3.5 | **7.3.0** | testbed up to dashboard's |
+| 11 | `@faker-js/faker` | `apps/start` 9.9.0, `apps/api` 9.0.1 | **9.9.0** | api up to dashboard's |
+| 12 | `slugify` | `packages/core` 1.6.9, `apps/start` 1.6.6 | **1.6.6** | core down to dashboard's |
+| 13 | `superjson` | `apps/start` 2.2.2, `packages/core` 1.13.3, `packages/redis` 1.13.3 | **2.2.2** | core+redis up to dashboard's |
+| 14 | `@types/ramda` | `packages/core` 0.31.1, `apps/start` 0.31.0 | **0.31.0** | core down to dashboard's |
+| 15 | `jiti` | `packages/core` 2.6.1, `packages/db` 2.4.1 | **2.6.1** | db up to core's (no dashboard party) |
+| 16 | `lru-cache` | `packages/core` 11.5.1, `packages/redis` 11.2.2 | **11.5.1** | redis up to core's (no dashboard party) |
+| 17 | `@trpc/client` / `@trpc/server` (`unsync-similar-dependencies`) | `apps/start` client 11.17.0 / server 11.17.0, react-query 11.6.0 / tanstack-react-query 11.6.0; `packages/core` server 11.17.0 | **11.6.0**, all four | the only version where no `@trpc/*` package moves *up* — `@trpc/react-query@11.6.0`'s own peerDependencies already require `@trpc/client@11.6.0` + `@trpc/server@11.6.0`, so this also fixes a live peer mismatch, not just the sherif rule |
+| 18 | `prisma` | `packages/db` 6.14.0, `packages/redis` `^5.1.1`, `packages/sdks/_info` `^5.1.1` | n/a | **not unified** — the two `^5.1.1` devDependencies are unused (grepped: neither package imports `prisma`/`@prisma/*`) and are **deleted**, per ADR-017 rule 2 ("Three surviving workspaces will still declare `prisma@^5.1.1` until a dedicated CLEAN task deletes them") and this task's own acceptance criterion. The now-dead `"prisma@^5.1.1": "5.9.1"` root `overrides` entry (added for exactly those two devDeps, `decisions/ADR-014-installer.md`) is removed in the same commit — nothing left in the workspace declares a range that key would match. |
+
+**Row 5 is the one reversal.** The obvious "prefer the dashboard's lower
+version" move (`apps/public`'s `lucide-react` down to `apps/start`'s
+0.476.0) broke `cd apps/public && bun run typecheck` with the exact
+`fumadocs-core` "two hashed instances" TypeScript error
+`docs/BUN_INSTALL_RECIPE.md`'s row 15 already fixed once: the root
+`overrides` entry `"lucide-react@^1.7.0": "0.555.0"` exists specifically to
+collapse `fumadocs-ui`/`fumadocs-openapi`'s optional `lucide-react` peer onto
+the same version `apps/public` declares directly, so both resolve to one
+`fumadocs-core` instance. Moving `apps/public`'s own pin off 0.555.0
+reintroduces the second instance. Converged both apps onto 0.555.0 instead
+(already installed — it is the override's own target) and re-verified: `cd
+apps/public && bun run typecheck` and `bun run build` are both green (242
+static pages generated) with the SSR gate still green for `apps/start`.
+
+**`root-package-manager-field`** is not a dependency-version row, but it is
+the other error `sherif` reported and required a decision: `docs/BUN_INSTALL_RECIPE.md`'s
+"`packageManager` is removed, not repointed to bun" section documents that
+M13-002 deliberately left the field absent, citing ADR-016 rule 5 ("an
+unasserted exact pin is worse than a range") — a `packageManager: "bun@1.4.0"`
+field would be a value corepack reads and Bun (measured, ADR-016 Problem 2)
+does not enforce. That reasoning is unchanged and this task does not
+reintroduce `packageManager`. Instead the root `package.json` gained
+`devEngines.packageManager: { name: "bun", version: ">=1.4.0", onFail: "warn"
+}` — a different, corepack-blind field, expressed as the same **range**
+`engines.bun` already carries (not a fresh exact pin), satisfying sherif's
+rule without the "lies to corepack" or "unasserted exact pin" problems ADR-016
+raised. `docs/BUN_INSTALL_RECIPE.md` is updated alongside this file to record
+the addition.

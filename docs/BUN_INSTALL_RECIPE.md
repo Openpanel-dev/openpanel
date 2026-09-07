@@ -653,6 +653,30 @@ on 2026-09-07 with the same pinned sherif. The other 19 are pre-existing
 declared-range facts ADR-017 freezes, so this script was already red and is not
 a gate anything passes today.
 
+**Update, M13-005:** once the other 19 pre-existing issues were cleaned up,
+`sherif exits 0` became a real, load-bearing acceptance criterion rather than
+an already-red script — so `root-package-manager-field` needed an actual
+answer instead of a deferral. The reasoning above (`packageManager` is
+corepack's field; corepack never runs bun; Bun does not enforce it, ADR-016
+Problem 2) still stands and `packageManager` itself is still not written. What
+M13-005 adds is `devEngines.packageManager`:
+
+```json
+"devEngines": {
+  "packageManager": { "name": "bun", "version": ">=1.4.0", "onFail": "warn" }
+}
+```
+
+`devEngines` is a different field from `packageManager` — no corepack shim
+reads it, so it cannot "lie" to one. And it carries a **range**
+(`>=1.4.0`, byte-identical to `engines.bun`), not an exact pin, so it does not
+trip ADR-016 rule 5's actual objection ("an unasserted *exact* pin is worse
+than a range"). It is one more unenforced assertion alongside the three rule 5
+already names (`scripts/doctor.sh`, `scripts/bootstrap.sh`, `main.ts`'s boot
+log) — sherif's rule only checks the field's presence, not that anything acts
+on it, so this closes the gate without adding a value a future bump has to
+remember to keep in sync with anything exact.
+
 ## `check:deps` is the one script that is not a `bunx`
 
 `pnpm dlx X` -> `bunx X` is right everywhere except here, and it is worth

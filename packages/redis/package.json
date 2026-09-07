@@ -8,15 +8,14 @@
   },
   "dependencies": {
     "ioredis": "5.8.2",
-    "lru-cache": "11.2.2",
-    "superjson": "1.13.3"
+    "lru-cache": "11.5.1",
+    "superjson": "2.2.2"
   },
   "devDependencies": {
     "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "prisma": "^5.1.1",
     "typescript": "catalog:"
   }
 }

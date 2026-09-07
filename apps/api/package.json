@@ -25,7 +25,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "9.0.1",
+    "@faker-js/faker": "9.9.0",
     "@openpanel/tsconfig": "workspace:*",
     "@types/uuid": "10.0.0",
     "bun-types": "1.4.0",
