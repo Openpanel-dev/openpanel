@@ -1,13 +1,22 @@
-import { TABLE_NAMES, ch } from '../src/clickhouse/client';
-import { clix } from '../src/clickhouse/query-builder';
+// Local fixture script: give a couple of sessions per hour a random revenue.
+//
+// M12-009 took it off `clix` (deleted with ADR-013 decision 21) and onto the
+// `sql` tag. Both statements bind every value as a `{pN:Type}` param instead
+// of splicing it into the text, which is also what removes the hand-rolled
+// `'${id}'` quoting the ALTER used to do.
+import { ch, chQuery, TABLE_NAMES } from '../src/clickhouse/client';
+import { sql } from '../src/clickhouse/sql';
 
 const START_DATE = new Date('2025-11-10T00:00:00Z');
 const END_DATE = new Date('2025-11-20T23:00:00Z');
 const SESSIONS_PER_HOUR = 2;
+const PROJECT_ID = 'public-web';
+const MS_PER_HOUR = 60 * 60 * 1000;
+const PAUSE_BETWEEN_MUTATIONS_MS = 500;
 
 // Revenue between $10 (1000 cents) and $200 (20000 cents)
 const MIN_REVENUE = 1000;
-const MAX_REVENUE = 20000;
+const MAX_REVENUE = 20_000;
 
 function getRandomRevenue() {
   return (
@@ -15,26 +24,30 @@ function getRandomRevenue() {
   );
 }
 
+/** `YYYY-MM-DD HH:mm:ss` — the literal form clix escaped a `Date` to. */
+function datetime(date: Date): string {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 async function main() {
   console.log(
-    `Starting revenue update for sessions between ${START_DATE.toISOString()} and ${END_DATE.toISOString()}`,
+    `Starting revenue update for sessions between ${START_DATE.toISOString()} and ${END_DATE.toISOString()}`
   );
 
   let currentDate = new Date(START_DATE);
 
   while (currentDate < END_DATE) {
-    const nextHour = new Date(currentDate.getTime() + 60 * 60 * 1000);
+    const nextHour = new Date(currentDate.getTime() + MS_PER_HOUR);
     console.log(`Processing hour: ${currentDate.toISOString()}`);
 
     // 1. Pick random sessions for this hour
-    const sessions = await clix(ch)
-      .from(TABLE_NAMES.sessions)
-      .select(['id'])
-      .where('created_at', '>=', currentDate)
-      .andWhere('created_at', '<', nextHour)
-      .where('project_id', '=', 'public-web')
-      .limit(SESSIONS_PER_HOUR)
-      .execute();
+    const sessions = await chQuery<{ id: string }>(sql`
+      SELECT id
+      FROM ${sql.id(TABLE_NAMES.sessions)}
+      WHERE created_at >= ${sql.string(datetime(currentDate))}
+        AND created_at < ${sql.string(datetime(nextHour))}
+        AND project_id = ${sql.string(PROJECT_ID)}
+      LIMIT ${sql.uint64(SESSIONS_PER_HOUR)}`);
 
     if (sessions.length === 0) {
       console.log(`No sessions found for ${currentDate.toISOString()}`);
@@ -42,44 +55,42 @@ async function main() {
       continue;
     }
 
-    const sessionIds = sessions.map((s: any) => s.id);
+    const sessionIds = sessions.map((s) => s.id);
     console.log(
-      `Found ${sessionIds.length} sessions to update: ${sessionIds.join(', ')}`,
+      `Found ${sessionIds.length} sessions to update: ${sessionIds.join(', ')}`
     );
 
-    // 2. Construct update query
-    // We want to assign a DIFFERENT random revenue to each session
-    // Query: ALTER TABLE sessions UPDATE revenue = if(id='id1', rev1, if(id='id2', rev2, ...)) WHERE id IN ('id1', 'id2', ...)
+    // 2. Assign a DIFFERENT random revenue to each session. ClickHouse has no
+    // CASE WHEN in an UPDATE expression, so multiIf carries the mapping and
+    // falls back to the existing `revenue`.
+    const updates = sessionIds.map((id) => ({
+      id,
+      revenue: getRandomRevenue(),
+    }));
 
-    const updates: { id: string; revenue: number }[] = [];
+    const updateExpr = sql`multiIf(${sql.join(
+      updates.map(
+        (u) => sql`id = ${sql.string(u.id)}, ${sql.float64(u.revenue)}`
+      ),
+      ', '
+    )}, revenue)`;
 
-    for (const id of sessionIds) {
-      const revenue = getRandomRevenue();
-      updates.push({ id, revenue });
-    }
+    const statement =
+      sql`ALTER TABLE ${sql.id(TABLE_NAMES.sessions)} UPDATE revenue = ${updateExpr} WHERE id IN ${sql.array('String', sessionIds)}`.toStatement();
 
-    // Build nested if() for the update expression
-    // ClickHouse doesn't have CASE WHEN in UPDATE expression in the same way, but if() works.
-    // Actually multiIf is cleaner: multiIf(id='id1', rev1, id='id2', rev2, revenue)
-
-    const conditions = updates
-      .map((u) => `id = '${u.id}', ${u.revenue}`)
-      .join(', ');
-    const updateExpr = `multiIf(${conditions}, revenue)`;
-
-    const idsStr = sessionIds.map((id: string) => `'${id}'`).join(', ');
-    const query = `ALTER TABLE ${TABLE_NAMES.sessions} UPDATE revenue = ${updateExpr} WHERE id IN (${idsStr})`;
-
-    console.log(`Executing update: ${query}`);
+    console.log(`Executing update: ${statement.query}`);
 
     try {
       await ch.command({
-        query,
+        query: statement.query,
+        query_params: statement.query_params,
       });
       console.log('Update command sent.');
 
       // Wait a bit to not overload mutations if running on a large range
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) =>
+        setTimeout(resolve, PAUSE_BETWEEN_MUTATIONS_MS)
+      );
     } catch (error) {
       console.error('Failed to update sessions:', error);
     }

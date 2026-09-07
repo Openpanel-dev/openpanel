@@ -1,6 +1,6 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { omit, uniq } from 'ramda';
-import sqlstring from 'sqlstring';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
@@ -25,22 +25,25 @@ const PROFILE_COLUMNS =
 // bare column refs against the alias list first — causing ILLEGAL_AGGREGATION
 // inside the argMax/max calls. Qualifying with `p.` bypasses the alias
 // lookup and binds to the raw column.
-const PROFILE_LATEST_AGGREGATE_COLUMNS = [
-  'id',
-  'project_id',
-  'argMax(first_name, p.last_seen_at) AS first_name',
-  'argMax(last_name, p.last_seen_at) AS last_name',
-  'argMax(email, p.last_seen_at) AS email',
-  'argMax(avatar, p.last_seen_at) AS avatar',
-  'argMax(properties, p.last_seen_at) AS properties',
-  'argMax(is_external, p.last_seen_at) AS is_external',
-  'argMax(groups, p.last_seen_at) AS groups',
-  // created_at doesn't change between rows for the same profile, but
-  // min() is safe and matches "first seen" semantics if there ever is a
-  // discrepancy.
-  'min(created_at) AS created_at',
-  'max(p.last_seen_at) AS last_seen_at',
-].join(', ');
+const PROFILE_LATEST_AGGREGATE_COLUMNS = sql.join(
+  [
+    sql`id`,
+    sql`project_id`,
+    sql`argMax(first_name, p.last_seen_at) AS first_name`,
+    sql`argMax(last_name, p.last_seen_at) AS last_name`,
+    sql`argMax(email, p.last_seen_at) AS email`,
+    sql`argMax(avatar, p.last_seen_at) AS avatar`,
+    sql`argMax(properties, p.last_seen_at) AS properties`,
+    sql`argMax(is_external, p.last_seen_at) AS is_external`,
+    sql`argMax(groups, p.last_seen_at) AS groups`,
+    // created_at doesn't change between rows for the same profile, but
+    // min() is safe and matches "first seen" semantics if there ever is a
+    // discrepancy.
+    sql`min(created_at) AS created_at`,
+    sql`max(p.last_seen_at) AS last_seen_at`,
+  ],
+  ', '
+);
 
 export class ProfileBuffer extends BaseBuffer {
   private readonly batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
@@ -202,12 +205,13 @@ export class ProfileBuffer extends BaseBuffer {
       withDateFilter: boolean
     ) => {
       for (const chunk of this.chunks(group, this.fetchChunkSize)) {
-        const tuples = chunk
-          .map(
+        const tuples = sql.join(
+          chunk.map(
             (p) =>
-              `(${sqlstring.escape(String(p.id))}, ${sqlstring.escape(p.project_id)})`
-          )
-          .join(', ');
+              sql`(${sql.string(String(p.id))}, ${sql.string(p.project_id)})`
+          ),
+          ', '
+        );
         try {
           // Table alias `p` is required: without it, WHERE's `last_seen_at`
           // resolves to the SELECT-list aggregate alias `max(last_seen_at) AS
@@ -215,10 +219,10 @@ export class ProfileBuffer extends BaseBuffer {
           // (CH ILLEGAL_AGGREGATION). Qualifying with `p.` bypasses the alias
           // lookup and binds to the raw column.
           const rows = await this.chQuery<IClickhouseProfile>(
-            `SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
-            FROM ${TABLE_NAMES.profiles} AS p
+            sql`SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
+            FROM ${sql.id(TABLE_NAMES.profiles)} AS p
             WHERE (p.id, p.project_id) IN (${tuples})
-            ${withDateFilter ? 'AND p.last_seen_at > now() - INTERVAL 2 DAY' : ''}
+            ${withDateFilter ? sql`AND p.last_seen_at > now() - INTERVAL 2 DAY` : sql.empty}
             GROUP BY p.id, p.project_id`
           );
           for (const row of rows) {

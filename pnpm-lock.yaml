@@ -658,9 +658,6 @@ importers:
       sonner:
         specifier: ^1.4.0
         version: 1.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      sqlstring:
-        specifier: ^2.3.3
-        version: 2.3.3
       superjson:
         specifier: ^2.2.2
         version: 2.2.2
@@ -939,9 +936,6 @@ importers:
       slugify:
         specifier: ^1.6.6
         version: 1.6.9
-      sqlstring:
-        specifier: ^2.3.3
-        version: 2.3.3
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
@@ -982,9 +976,6 @@ importers:
       '@types/ramda':
         specifier: ^0.31.1
         version: 0.31.1
-      '@types/sqlstring':
-        specifier: ^2.3.2
-        version: 2.3.2
       '@types/unzipper':
         specifier: ^0.10.10
         version: 0.10.11
@@ -1033,9 +1024,6 @@ importers:
       prisma-json-types-generator:
         specifier: ^3.1.1
         version: 3.1.1(prisma@6.14.0(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
-      sqlstring:
-        specifier: ^2.3.3
-        version: 2.3.3
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -1046,9 +1034,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.1
-      '@types/sqlstring':
-        specifier: ^2.3.2
-        version: 2.3.2
       prisma:
         specifier: ^6.14.0
         version: 6.14.0(magicast@0.3.5)(typescript@5.9.3)
@@ -9276,9 +9261,6 @@ packages:
   '@types/source-list-map@0.1.6':
     resolution: {integrity: sha512-5JcVt1u5HDmlXkwOD2nslZVllBBc7HDuOICfiZah2Z0is8M8g+ddAEawbmd3VjedfDHBzxCaXLs07QEmb7y54g==}
 
-  '@types/sqlstring@2.3.2':
-    resolution: {integrity: sha512-lVRe4Iz9UNgiHelKVo8QlC8fb5nfY8+p+jNQNE+UVsuuVlQnWhyWmQ/wF5pE8Ys6TdjfVpqTG9O9i2vi6E0+Sg==}
-
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
 
@@ -16594,10 +16576,6 @@ packages:
 
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
-
-  sqlstring@2.3.3:
-    resolution: {integrity: sha512-qC9iz2FlN7DQl3+wjwn3802RTyjCx7sDvfQEXchwa6CWOx07/WVfh91gBmQ9fahw8snwGEWU3xGzOt4tFyHLxg==}
-    engines: {node: '>= 0.6'}
 
   srvx@0.8.15:
     resolution: {integrity: sha512-poPs1GuctQLpiJ/1Pb8e+5b5lju9hQU7wxJ6NkYVUw7ZZExeRoYwyiaOekal+rDZc99MO/J2y9+SGFpHBKRSpQ==}
@@ -28827,8 +28805,6 @@ snapshots:
 
   '@types/source-list-map@0.1.6': {}
 
-  '@types/sqlstring@2.3.2': {}
-
   '@types/stack-utils@2.0.3': {}
 
   '@types/tapable@1.0.12': {}
@@ -38309,8 +38285,6 @@ snapshots:
   split2@4.2.0: {}
 
   sprintf-js@1.0.3: {}
-
-  sqlstring@2.3.3: {}
 
   srvx@0.8.15:
     dependencies:

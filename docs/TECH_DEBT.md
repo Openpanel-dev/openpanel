@@ -1154,3 +1154,188 @@ package imports it — the wire-constant types were inlined into `src/index.ts`
 in a pre-rewrite commit (`fix(sdk): inline validation types in dts...`) and
 the manifest entry never followed. Safe to delete whenever that
 `package.json` is next touched.
+
+### 2026-09-07 — M12-009, ADR-013 decision 21 closed: the builders are deleted and `sqlstring` is out of the repo
+
+**RESOLVED: the "clix coexistence" exception.** ADR-013's P8 deletion had been
+deferred since M7 and was last restated by `M9-CLEANUP-001` in
+`packages/db/index.ts`:
+
+> `clix` (query-builder.ts) and `createSqlBuilder` (sql-builder.ts) are dead
+> per ADR-013, but 7 live call sites across @openpanel/core still import them
+> directly and have not been converted onto the `sql` tag yet — see
+> M9-CLEANUP-001's report. Deleting these two ahead of that conversion is
+> BLOCKED, not done.
+
+M12-002..008 emptied that import graph; M12-009 deleted the three files
+(`git rm`), took the barrel comment with them, and removed `sqlstring` /
+`@types/sqlstring` from every workspace that declared it (`packages/db`,
+`packages/core`, `apps/start` — `apps/api` had already lost its copy). Both
+sections of this register that cite `query-builder.ts` / `sql-builder.ts` as
+exempt targets of `core-uses-ctx-not-db-internals` are now describing paths
+that do not exist; `packages/db/src/clickhouse/sql.ts` is the only one left,
+and it is also the one the rule keeps exempt.
+
+**Final `bash tooling/gates/p12-grep-gates.sh --report`, ralph 2026-09-07:**
+
+```
+   sqlstring        clix sql-builder  file
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+           0           0           0  TOTAL
+```
+
+`--assert` exits `0`: `OK: sqlstring = 0, clix = 0, sql-builder = 0; all three
+definer files are gone.`
+
+**The leftovers M12-008 disclosed, converted here.** The gate read
+`sqlstring 16 / clix 1 / sql-builder 1` on clean `30d236fa` (measured by
+stashing this task's tree and re-running `--report`), spread over eight files:
+`apps/start/package.json` 1, `packages/core/package.json` 2, `group-buffer.ts`
+3, `profile-backfill-buffer.ts` 3, `profile-buffer.ts` 2,
+`packages/db/package.json` 2, `packages/db/src/clickhouse/client.ts` 3, and
+`packages/db/index.ts` 1 clix + 1 sql-builder. The gate does not scan
+`packages/db/scripts/`, but the two scripts there imported `clix` and
+`sqlstring` and had to convert too — removing the dependency removes the module
+they import.
+
+Every changed statement was executed against local ClickHouse in **both** forms
+through the same `@clickhouse/client` — V1 as `query`, V2 as `query` +
+`query_params` — on the same data. **8 statements, all IDENTICAL.** Full SQL,
+params, row counts and timings: `packages/core/src/buffers/buffers.sql.proof.md`
+and `packages/db/scripts/scripts.sql.proof.md`.
+
+| Site | Statement | Rows | old → new |
+|---|---|---:|---|
+| `core/src/buffers/group-buffer.ts:84` | `SELECT … FROM groups FINAL` | 1 | 33ms → 8ms |
+| `core/src/buffers/profile-buffer.ts:222` | batch fetch, no date filter | 2 | 20ms → 20ms |
+| `core/src/buffers/profile-buffer.ts:222` | batch fetch, 2-day filter | 0 | 9ms → 8ms |
+| `core/src/buffers/profile-backfill-buffer.ts:96` | lightweight `UPDATE … CASE` | 3 read back | 7ms → 6ms |
+| `db/scripts/ch-update-sessions-with-revenue.ts:45` | `SELECT id FROM sessions` | 2 | 5ms → 5ms |
+| `db/scripts/ch-update-sessions-with-revenue.ts:79` | `ALTER TABLE … UPDATE multiIf` | 4 read back | 11ms → 14ms |
+| `db/scripts/ch-copy-from-remote.ts:95` | `SELECT * FROM remote(…)` | 2 | 7ms → 9ms |
+| `db/scripts/ch-copy-from-remote.ts:97` | `INSERT … SELECT * FROM remote(…)` | 3 → 5 | 9ms → 9ms |
+
+Reads ran against the local prod-copy `openpanel`; the two mutations and the
+`INSERT` ran against a throwaway `m12009_scratch` database, dropped afterwards
+— never against `openpanel` or `openpanel_test`. `remote()` accepts bound
+params (`{p:String}` for the host and credentials, `{p:Identifier}` for the
+database and table), verified before the conversion was written, which is what
+takes the remote password out of the query text the script logs. No `IN` was
+converted to `GLOBAL IN` or back: every `IN` touched takes a literal set, not
+a subquery, so `docs/ENVIRONMENT.md`'s distributed-`IN` trap does not apply.
+
+Timings are single-node and directional only (ClickHouse 26.1.3.52, 4 vCPU);
+production is 2 shards × 2 replicas.
+
+`packages/db/src/clickhouse/client.ts`'s `toDate(str, interval?)` was deleted
+rather than converted: it existed only to `sqlstring.escape` a date-shaped
+string into query text, it had zero importers in the repo, and keeping it
+would have kept a manual-escaping helper alive that ADR-013 forbids.
+
+**`packages/db/src/clickhouse/sql.ts` joined the barrel**, as its own header
+promised. `packages/core` still reaches it by its deep path in all 55 files:
+the barrel also re-exports `clickhouse/client.ts` and `prisma-client.ts`,
+which construct a ClickHouse client array and a `PrismaClient` at module load,
+so a barrel import from core acquires a second, request-scope-less client —
+which is exactly what `.dependency-cruiser.cjs`'s
+`core-uses-ctx-not-db-internals` forbids (its comment: "prisma-client.ts,
+clickhouse/client.ts, logger.ts **and the barrel** are NOT exempt"). Nothing
+outside `packages/core` imported the deep path.
+
+**Debt noticed, not fixed (outside this task's scope — the file is at the repo
+root, not under any of this task's scope globs):** `.dependency-cruiser.cjs`'s
+`core-uses-ctx-not-db-internals` still exempts
+`^packages/db/src/clickhouse/query-builder\.ts$` and
+`^packages/db/src/sql-builder\.ts$` in its `to.pathNot`, and its comment still
+explains both. They are dead regex branches now — harmless (nothing can match
+them), but the next task that touches that file should delete both lines and
+the two sentences describing them.
+
+#### `packages/core/src/modules/chart/src/compiled.ts` — kept, with its caller census
+
+M12-003 kept `compiled.ts` and its reviewer checked the reason: neither filter
+compiler (`filter-where.ts`, `table-filter-where.ts`) nor the field resolver
+(`field-resolution.ts`'s `getSelectPropertyKey`) returns anything that crosses
+`compiledText` any more — they all return `SqlFragment`s — so what is left are
+the chart builders splicing a name they generated themselves.
+`compiledTextWithProfileRefs` was deleted outright at that time. That still
+holds at M12-009: `compiled.ts` has **29 `compiledText(` splice sites on 27
+lines across 8 files**, so it
+is NOT deleted, and this is the census the M12-009 criterion asks for.
+
+`compiledText` stays a named export in one file rather than a `sql.raw()`
+scattered across the module precisely so this census is a grep:
+
+```
+$ grep -rn "compiledText(" packages/core/src --include=*.ts | grep -v '/compiled.ts:'
+```
+
+| file:line | what it splices | where the text comes from |
+|---|---|---|
+| `chart/src/chart.sql.ts:175` | a CTE name in `WITH <name> AS (…)` | keys of the `ctes` record the builder itself assembles — the profile CTE name and `` `cohort-<id>` `` (below) |
+| `chart/src/chart.sql.ts:274` | the `"profile.<field>"` CTE alias | `field`, validated on the same line by `sql.id(field, PROFILE_CTE_FIELDS)` against a closed column set (`id`,
+`properties`, plus `PROFILE_CTE_SCALAR_FIELDS`) |
+| `chart/src/chart.sql.ts:340` | `` `cohort-<id>` `` as a JOIN target | `cohortId`, through `assertCohortId` (below) |
+| `chart/src/chart.sql.ts:434` | `label_<n>` breakdown alias | `\`label_${index + 1}\`` — a loop index |
+| `chart/src/chart.sql.ts:435` | the same `label_<n>` as a GROUP BY key | same |
+| `chart/src/chart.sql.ts:469` | the aggregate keyword (`sum`/`avg`/`max`/`min`) | `MATH_FUNCTION_BY_SEGMENT[event.segment]` — a 4-entry literal `Record` at `chart.sql.ts:58`; an unknown segment yields `undefined`, not the input |
+| `chart/src/chart.sql.ts:580` | `label_<n>` in a window `PARTITION BY` | a loop index |
+| `chart/src/funnel.sql.ts:78` | `, 'strict_increase'` — the `windowFunnel` mode | `STRICT_INCREASE_MODE`, a file constant; the only branch is an env flag |
+| `chart/src/funnel.sql.ts:188` | `b_<index>` breakdown alias | a loop index |
+| `chart/src/funnel.sql.ts:307` | `b_<index>` as a GROUP BY key | a loop index |
+| `chart/src/funnel.sql.ts:366` | `b_<index>` in SELECT and GROUP BY | a loop index |
+| `chart/src/funnel.sql.ts:391` | `trim(ifNull(toString(b_<n>), ''))` | a loop index inside a fixed template; the compared VALUE beside it binds as `sql.string` |
+| `chart/src/conversion.sql.ts:117` | `b_<index>` outer-select alias | a loop index |
+| `chart/conversion.service.ts:137` | `b_<index>` alias | a loop index |
+| `chart/src/retention.sql.ts:170` | `toDate` / `toStartOfWeek` / `toStartOfMonth` | `SQL_START_OF[interval]`, a 5-entry `Record` keyed by the `IRetentionInterval` union |
+| `chart/src/retention.sql.ts:171` | the `dateDiff` / `INTERVAL` unit | `SQL_INTERVAL[interval]`, same shape |
+| `chart/src/retention.sql.ts:172` | `>=` vs `=` | `COUNT_CRITERIA[criteria]`, keyed by the `IRetentionCriteria` union |
+| `chart/src/retention.sql.ts:200` | `interval_<n>_users` alias | `String(index)` over `range(0..diffInterval)` |
+| `chart/src/retention.sql.ts:206` | `interval_<n>_users` / `_user_count` | same |
+| `chart/src/sankey.sql.ts:28` | the `arrayFilter(…) as events_deduped` expression | a file-level constant, no interpolation |
+| `chart/src/sankey.sql.ts:38` | the `if(arrayFirstIndex(…))` truncation | a file-level constant, no interpolation |
+| `chart/src/sankey.sql.ts:48` | the `arrayJoin(arrayMap(…))` transition subselect | a file-level constant, no interpolation |
+| `chart/src/sankey.sql.ts:187` | `arraySlice(events, start_index, …)` | a file-level constant, no interpolation |
+| `chart/src/sankey.sql.ts:201` (×2) | the base CTE name | `transitionsFrom`'s two callers pass the string literals `'session_paths_base'` and `'between_sessions'` |
+| `overview/src/overview.sql.ts:115` | the `WITH FILL … STEP toInterval<Unit>(1)` step | `toIntervalStep(interval)`, a `switch` over the `IInterval` union that throws on anything else |
+| `chart/src/field-resolution.ts:203` | `` `cohort-<id>` `` CTE name | `cohortId` — see below |
+| `chart/src/field-resolution.ts:505` | `` `profile.properties.<key>` `` CTE alias | `key` — see below |
+
+**Nothing above is a value, and nothing above is a compiler's output.** Every
+row is an alias, a CTE name, a SQL keyword or a static expression. The two
+compilers' and the resolver's outputs reach the statement as `SqlFragment`s and
+never pass through `compiledText`.
+
+**Two rows are name-shaped text derived from a user-chosen NAME, and are
+flagged rather than buried** — they are the same two M12-003's reviewer read,
+and both are guarded so that `compiledText` receives only a validated
+identifier, never the raw input:
+
+- **`` `cohort-<id>` ``** (`field-resolution.ts:203`, `chart.sql.ts:340`,
+  and the `ctes` key at `chart.sql.ts:175`). `cohortId` comes from a saved
+  report's breakdown config. `chart.sql.ts:119`'s `assertCohortId` tests it
+  against `/^[A-Za-z0-9_-]+$/` and **throws `ChartCohortIdError`** otherwise —
+  it never falls back to inlining, which is what ADR-013 R3 requires of an
+  identifier path. The name needs the text seam because a dash makes `sql.id`
+  reject it and `{x:Identifier}` is not accepted in a `WITH … AS` position.
+  `field-resolution.ts:202`'s `getCohortCteName` has no in-repo caller today
+  beyond the two barrel re-exports (`chart.service.ts:133`, `index.ts:338`);
+  `chart.sql.ts` builds the same name behind `assertCohortId` itself.
+- **`` `profile.properties.<key>` ``** (`field-resolution.ts:505`). `key` is
+  the tail of a `profile.properties.<key>` field reference in the chart config.
+  `collectProfilePropertyKeys` (`field-resolution.ts:465`, guard at `:484`)
+  **rejects any key
+  containing a backtick or a backslash** — the only two characters that are
+  special inside a backtick-quoted ClickHouse identifier — and such keys are
+  simply not narrowed: the full `properties` Map stays selected and their refs
+  keep the Map access. The alias has three dot-separated parts, so `sql.id`
+  cannot express it. The key's *value* twin on the same line binds normally
+  (`properties[${sql.string(k)}]`).
+
+Both are the identifier tier of ADR-013, implemented as a guard local to the
+call site rather than through `sql.id`, because `sql.id`'s grammar (bare or
+once-qualified, no dashes, no backticks) cannot spell either name. **If a
+future task widens `sql.id` to accept a backtick-quoted, multi-part name,
+these two rows and `compiled.ts` with them can go.** That is the standing exit
+condition; recorded here, not done in M12-009 (out of its scope).

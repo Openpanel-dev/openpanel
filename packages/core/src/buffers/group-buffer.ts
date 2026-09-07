@@ -1,6 +1,6 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
-import sqlstring from 'sqlstring';
 import { formatClickhouseDate } from '../shared/ch-dates';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
@@ -80,11 +80,11 @@ export class GroupBuffer extends BaseBuffer {
     projectId: string,
     id: string
   ): Promise<IGroupCacheEntry | null> {
-    const rows = await this.chQuery<IGroupCacheEntry>(`
+    const rows = await this.chQuery<IGroupCacheEntry>(sql`
       SELECT project_id, id, type, name, properties, created_at
-      FROM ${TABLE_NAMES.groups} FINAL
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND id = ${sqlstring.escape(id)}
+      FROM ${sql.id(TABLE_NAMES.groups)} FINAL
+      WHERE project_id = ${sql.string(projectId)}
+        AND id = ${sql.string(id)}
         AND deleted = 0
     `);
     return rows[0] ?? null;

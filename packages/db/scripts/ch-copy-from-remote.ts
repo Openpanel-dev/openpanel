@@ -1,9 +1,8 @@
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
-import sqlstring from 'sqlstring';
 import { ch } from '../src/clickhouse/client';
-import { clix } from '../src/clickhouse/query-builder';
+import { sql } from '../src/clickhouse/sql';
 
 async function main() {
   const rl = createInterface({ input, output });
@@ -31,14 +30,20 @@ async function main() {
 
     const host =
       getArg(values.host) || (await rl.question('Remote Host (IP/Domain): '));
-    if (!host) throw new Error('Host is required');
+    if (!host) {
+      throw new Error('Host is required');
+    }
 
     const user = getArg(values.user) || (await rl.question('Remote User: '));
-    if (!user) throw new Error('User is required');
+    if (!user) {
+      throw new Error('User is required');
+    }
 
     const password =
       getArg(values.password) || (await rl.question('Remote Password: '));
-    if (!password) throw new Error('Password is required');
+    if (!password) {
+      throw new Error('Password is required');
+    }
 
     const dbName =
       getArg(values.db) ||
@@ -48,17 +53,21 @@ async function main() {
     const startDate =
       getArg(values.start) ||
       (await rl.question('Start Date (YYYY-MM-DD HH:mm:ss): '));
-    if (!startDate) throw new Error('Start date is required');
+    if (!startDate) {
+      throw new Error('Start date is required');
+    }
 
     const endDate =
       getArg(values.end) ||
       (await rl.question('End Date (YYYY-MM-DD HH:mm:ss): '));
-    if (!endDate) throw new Error('End date is required');
+    if (!endDate) {
+      throw new Error('End date is required');
+    }
 
     const projectIdsInput =
       getArg(values.projects) ||
       (await rl.question(
-        'Project IDs (comma separated, leave empty for all): ',
+        'Project IDs (comma separated, leave empty for all): '
       ));
     const projectIds = projectIdsInput
       ? projectIdsInput.split(',').map((s: string) => s.trim())
@@ -71,27 +80,29 @@ async function main() {
     for (const table of tables) {
       console.log(`Processing table: ${table}`);
 
-      // Build the SELECT part using the query builder
-      // We use sqlstring to escape the remote function arguments
-      const remoteTable = `remote(${sqlstring.escape(host)}, ${sqlstring.escape(dbName)}, ${sqlstring.escape(table)}, ${sqlstring.escape(user)}, ${sqlstring.escape(password)})`;
+      // Every remote() argument is a bound param, so the credentials never
+      // enter the query text — which is what makes the log line below safe to
+      // print. `dbName` and `table` are identifiers: bound as {x:Identifier}
+      // inside remote(), validated by sql.id() in the INSERT target, where a
+      // param is not accepted.
+      const remoteTable = sql`remote(${sql.string(host)}, ${sql.identifier(dbName)}, ${sql.identifier(table)}, ${sql.string(user)}, ${sql.string(password)})`;
 
-      const queryBuilder = clix(ch)
-        .from(remoteTable)
-        .select(['*'])
-        .where('created_at', 'BETWEEN', [startDate, endDate]);
+      const projectFilter =
+        projectIds.length > 0
+          ? sql` AND project_id IN ${sql.array('String', projectIds)}`
+          : sql.empty;
 
-      if (projectIds.length > 0) {
-        queryBuilder.where('project_id', 'IN', projectIds);
-      }
+      const selectQuery = sql`SELECT * FROM ${remoteTable} WHERE created_at BETWEEN ${sql.string(startDate)} AND ${sql.string(endDate)}${projectFilter}`;
 
-      const selectQuery = queryBuilder.toSQL();
-      const insertQuery = `INSERT INTO ${dbName}.${table} ${selectQuery}`;
+      const insertQuery =
+        sql`INSERT INTO ${sql.id(dbName)}.${sql.id(table)} ${selectQuery}`.toStatement();
 
-      console.log(`Executing: ${insertQuery}`);
+      console.log(`Executing: ${insertQuery.query}`);
 
       // try {
       //   await ch.command({
-      //     query: insertQuery,
+      //     query: insertQuery.query,
+      //     query_params: insertQuery.query_params,
       //   });
       //   console.log(`✅ Copied ${table} successfully`);
       // } catch (error) {

@@ -3,7 +3,7 @@ import type { ClickHouseSettings } from '@clickhouse/client';
 import { getRedisCache } from '@openpanel/redis';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
-import { type ChScope, chQuery } from '../shared/ch-query';
+import { type ChQueryInput, type ChScope, chQuery } from '../shared/ch-query';
 import { generateSecureId } from '../shared/id';
 
 // GENUINE CYCLE, kept lazy: v1-compat.ts -> services.ts -> (every service) ->
@@ -131,7 +131,7 @@ export class BaseBuffer {
   }
 
   /** `chQuery` bound to this buffer's client and its own logger. */
-  protected async chQuery<T extends object>(query: string): Promise<T[]> {
+  protected async chQuery<T extends object>(query: ChQueryInput): Promise<T[]> {
     const scope: ChScope = { ch: await this.resolveCh(), logger: this.logger };
     return chQuery<T>(scope, query);
   }

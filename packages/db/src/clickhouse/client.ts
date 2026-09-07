@@ -5,8 +5,6 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
-import sqlstring from 'sqlstring';
 import { createLogger } from '../logger';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
 import { type SqlFragment, toStatement } from './sql';
@@ -405,23 +403,6 @@ export function formatClickhouseDate(
     .toISOString()
     .replace('T', ' ')
     .replace(/(\.\d{3})?Z+$/, '');
-}
-
-export function toDate(str: string, interval?: IInterval) {
-  // If it does not match the regex it's a column name eg 'created_at'
-  if (!interval || interval === 'minute' || interval === 'hour') {
-    if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-      return sqlstring.escape(str);
-    }
-
-    return str;
-  }
-
-  if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-    return `toDate(${sqlstring.escape(str.split(' ')[0])})`;
-  }
-
-  return `toDate(${str})`;
 }
 
 export function convertClickhouseDateToJs(date: string) {

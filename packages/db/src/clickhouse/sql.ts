@@ -18,9 +18,17 @@
  * Placeholder names are assigned at render time from a single counter, so
  * fragments nest and repeat without colliding (R2).
  *
- * Not re-exported from the package barrel during the clix coexistence window:
- * `query-builder.ts` exports its own `SqlParam` type, and `export *` from both
- * is ambiguous. It joins the barrel when clix is deleted.
+ * Exported from the package barrel (M12-009). It could not be during the clix
+ * coexistence window — `query-builder.ts` exported its own `SqlParam` type and
+ * `export *` from both was ambiguous — and that file is now deleted.
+ *
+ * `packages/core` still imports this module by its deep path rather than
+ * through the barrel: the barrel also re-exports `clickhouse/client.ts` and
+ * `prisma-client.ts`, which construct a ClickHouse client array and a
+ * PrismaClient at module load, so a barrel import from core would acquire a
+ * second, request-scope-less client. `.dependency-cruiser.cjs`'s
+ * `core-uses-ctx-not-db-internals` encodes exactly that, exempting this file
+ * by path and not the barrel.
  */
 
 /** Auto-generated placeholders are `{p1:Type}`, `{p2:Type}`, … */

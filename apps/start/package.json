@@ -150,7 +150,6 @@
     "short-unique-id": "^5.0.3",
     "slugify": "^1.6.6",
     "sonner": "^1.4.0",
-    "sqlstring": "^2.3.3",
     "superjson": "^2.2.2",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.0.6",

@@ -1,5 +1,5 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
-import sqlstring from 'sqlstring';
 import { getReplicatedTableName, TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
@@ -77,29 +77,32 @@ export class ProfileBackfillBuffer extends BaseBuffer {
 
     const chStart = performance.now();
     for (const chunk of chunks) {
-      const caseClause = chunk
-        .map(
+      const caseClause = sql.join(
+        chunk.map(
           ({ sessionId, profileId }) =>
-            `WHEN ${sqlstring.escape(sessionId)} THEN ${sqlstring.escape(profileId)}`
-        )
-        .join('\n');
-      const tupleList = chunk
-        .map(
+            sql`WHEN ${sql.string(sessionId)} THEN ${sql.string(profileId)}`
+        ),
+        '\n'
+      );
+      const tupleList = sql.join(
+        chunk.map(
           ({ projectId, sessionId }) =>
-            `(${sqlstring.escape(projectId)}, ${sqlstring.escape(sessionId)})`
-        )
-        .join(',');
+            sql`(${sql.string(projectId)}, ${sql.string(sessionId)})`
+        ),
+        ', '
+      );
 
-      const query = `
-        UPDATE ${table}
+      const statement = sql`
+        UPDATE ${sql.id(table)}
         SET profile_id = CASE session_id
           ${caseClause}
         END
         WHERE (project_id, session_id) IN (${tupleList})
-          AND created_at > now() - INTERVAL 6 HOURS`;
+          AND created_at > now() - INTERVAL 6 HOURS`.toStatement();
 
       await ch.command({
-        query,
+        query: statement.query,
+        query_params: statement.query_params,
         clickhouse_settings: {
           mutations_sync: '0',
           allow_experimental_lightweight_update: '1',

@@ -247,6 +247,62 @@ describe('injection (ported from query-builder.test.ts)', () => {
     expect(query).toBe('SELECT * FROM events WHERE e.path = {p1:String}');
     expect(query_params.p1).toBe('{p1:String}');
   });
+
+  // M12-009 completed the port: the four cases below were still only asserted
+  // against clix when query-builder.test.ts was deleted. Each keeps that
+  // test's payload; what changes is the mechanism the payload proves —
+  // clix asserted on the escaped literal it produced, the tag asserts the
+  // value never reaches the text at all.
+
+  it('binds a plain ISO date string instead of quoting it', () => {
+    const { query, query_params } =
+      sql`SELECT * FROM events WHERE e.created_at = ${sql.string('2026-04-29 00:00:00')}`.toStatement();
+
+    expect(query).toBe('SELECT * FROM events WHERE e.created_at = {p1:String}');
+    expect(query_params.p1).toBe('2026-04-29 00:00:00');
+  });
+
+  it('binds a Date as a datetime value, not a literal in the text', () => {
+    const { query, query_params } =
+      sql`SELECT * FROM events WHERE e.created_at = ${sql.dateTime64('2026-04-29 00:00:00.000')}`.toStatement();
+
+    expect(query).toBe(
+      'SELECT * FROM events WHERE e.created_at = {p1:DateTime64(3)}'
+    );
+    expect(query_params.p1).toBe('2026-04-29 00:00:00.000');
+  });
+
+  it('keeps a toDateTime() wrapper as SQL text with the value bound', () => {
+    // clix.datetime(date, 'toDateTime') produced the call AND the quoted
+    // literal in one string. The wrapper is structure and stays raw; the
+    // value is a value and binds.
+    const { query, query_params } =
+      sql`SELECT * FROM events WHERE e.created_at = toDateTime(${sql.string('2026-04-29 00:00:00')})`.toStatement();
+
+    expect(query).toBe(
+      'SELECT * FROM events WHERE e.created_at = toDateTime({p1:String})'
+    );
+    expect(query_params.p1).toBe('2026-04-29 00:00:00');
+  });
+
+  it('handles BETWEEN with two wrapped datetime values', () => {
+    const { query, query_params } =
+      sql`SELECT * FROM events WHERE e.created_at BETWEEN toDateTime(${sql.string('2026-04-29 00:00:00')}) AND toDateTime(${sql.string('2026-05-07 00:00:00')})`.toStatement();
+
+    expect(query).toBe(
+      'SELECT * FROM events WHERE e.created_at BETWEEN toDateTime({p1:String}) AND toDateTime({p2:String})'
+    );
+    expect(query_params.p1).toBe('2026-04-29 00:00:00');
+    expect(query_params.p2).toBe('2026-05-07 00:00:00');
+  });
+
+  it('does not promote an arbitrary string with an embedded date to SQL', () => {
+    const { query, query_params } = bind('event-2026-04-15-launch');
+
+    expect(query).toBe('SELECT * FROM events WHERE e.path = {p1:String}');
+    expect(query).not.toContain('2026-04-15');
+    expect(query_params.p1).toBe('event-2026-04-15-launch');
+  });
 });
 
 describe('param constructors', () => {
