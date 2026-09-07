@@ -1635,3 +1635,110 @@ space cannot scope a version to one importer — see the recipe.
   enforcement point. `[install] ignoreScripts = true` in `bunfig.toml` is, and
   the property the item was really after — no dependency build script runs, as
   under pnpm's twelve `allowBuilds: false` — does hold.
+
+## M13-003 image sizes
+
+Carl asked for the two P13 images to be compared against the published ones.
+All four numbers below are `docker image inspect --format '{{.Size}}'`, run on
+this box on **2026-09-07**, Docker 29.7.2 with the **containerd snapshotter**.
+
+**Read the caveat before the numbers.** Under the containerd snapshotter
+`.Size` is the sum of the image's **compressed** layer blobs — what a registry
+stores and what a `docker pull` transfers. `docker images`' `DISK USAGE` column
+is the **uncompressed**, unpacked size on disk. They differ by ~5x here and
+mixing them produces a meaningless comparison, so both are given, each labelled,
+and the comparison column uses only the compressed pair.
+
+| Image | Source | COMPRESSED (`inspect .Size`) | uncompressed (`docker images` DISK USAGE) |
+|---|---|---:|---:|
+| `openpanel-api:p13-gate` | built here from `apps/api/Dockerfile` | **412,899,646 B** (412.9 MB / 393.8 MiB) | 2.11 GB |
+| `lindesvard/openpanel-api:latest` | pulled from Docker Hub | **476,399,142 B** (476.4 MB / 454.3 MiB) | 2.39 GB |
+| `openpanel-dashboard:p13-gate` | built here from `apps/start/Dockerfile` | **95,217,524 B** (95.2 MB / 90.8 MiB) | 419 MB |
+| `lindesvard/openpanel-dashboard:latest` | pulled from Docker Hub | **524,333,374 B** (524.3 MB / 500.0 MiB) | 2.77 GB |
+
+Compressed deltas: api **−63.5 MB (−13.3%)**, dashboard **−429.1 MB (−81.8%)**.
+
+### Provenance
+
+The two `p13-gate` tags are exactly what `bash tooling/gates/p13-images.sh`
+builds; the sizes above are the two lines that run prints — from the last of
+four full builds on 2026-09-07. Rebuilding the same tree moves these numbers by
+a few hundred to a few thousand bytes, because build timestamps sit inside the
+layer metadata: the four runs gave the api 412,899,207 / 412,902,099 /
+412,906,098 / 412,899,646 (spread 6.9 KB) and the dashboard 95,217,685 /
+95,217,881 / 95,217,702 / 95,217,524 (spread 357 B). Anything larger than
+~10 KB of drift is a real content change, not this noise. The published images
+were pulled at their `latest` tags on 2026-09-07 and measured with the same
+command:
+
+| Image | digest | image `Created` |
+|---|---|---|
+| `lindesvard/openpanel-api:latest` | `sha256:cee4855cd715a7248c5c49090fe93a28ffc505541de20cb238d8884a6bcb9223` | 2026-08-18T21:22:28Z |
+| `lindesvard/openpanel-dashboard:latest` | `sha256:b773cf864454a0ec89b2a133b48bf06202880ed650a75cc2f1f5c87aaed1cffa` | 2026-08-18T20:50:28Z |
+
+Both were `docker rmi`'d after measuring — this box had ~4.5 GB free at that
+point and two more from-scratch builds had to fit. Re-pull by digest to
+reproduce.
+
+**What the two deltas are not.** They are not a like-for-like measurement of
+"the installer changed". The published images are ~3 weeks older than this
+branch's HEAD and were built from a tree with a different dependency set, so the
+api's −63.5 MB mixes the installer swap with three weeks of unrelated content.
+The dashboard's −429.1 MB is dominated by one deliberate change in this task
+and not by the installer at all: the previous runner stage copied a workspace
+`node_modules`, `packages/db`, `packages/payments`, `packages/sdks/_info` and
+the deleted `@openpanel/auth` tree alongside `.output`, and this one copies only
+`.output`, which is verified standalone (222 bundled packages of its own; it
+serves `/login` from an otherwise empty directory).
+
+### Known break in the shipped compose templates — pre-existing, not P13's
+
+`self-hosting/docker-compose.template.yml`, `self-hosting/coolify.yml` and
+`.github/smoke/docker-compose.yml` all start the api container with
+
+```
+cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
+```
+
+**That binary is not in the image**, and was not before this task either.
+`prisma` is a `devDependency` of `packages/db`, and both the old and the new
+image install production dependencies only, so it is correctly omitted. Measured
+2026-09-07 against a freshly built `openpanel-api:p13-gate`:
+
+```
+$ docker run --rm --entrypoint sh openpanel-api:p13-gate \
+    -c 'cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy'
+sh: 1: ./node_modules/.bin/prisma: not found
+```
+
+(`./node_modules/.bin/jiti`, the second migration command, **is** present —
+`jiti` is a real dependency of `packages/core`.)
+
+`docs/OPS_DEPLOY_MIGRATION.md`'s M9-006 section records these commands as
+"verified", but the verification it describes was run against this box's local
+Postgres/ClickHouse — on the **host**, not inside the container — so the
+image's contents were never the thing under test.
+
+Left unfixed on purpose: the two candidate fixes are "ship the Prisma CLI in the
+production image" and "run migrations from somewhere that has it", and choosing
+between them is a decision about what the image contains, not an installer
+change. M13-003's scope is the swap. The note is repeated in both compose
+templates so a self-hoster reading the file sees it.
+
+### Also recorded
+
+- **`.bun-version` still does not exist.** ADR-016 names it as Bun's declared
+  home alongside `ARG BUN_VERSION`; both Dockerfiles carry the ARG and nothing
+  carries the file. Unchanged from M13-002's note.
+- **Both images now `COPY . .` and install the whole workspace**, which is the
+  shape ADR-014 Problems §4 rules for a bun-base image. The cost is that a
+  source edit invalidates the install layer, so neither image has a
+  manifests-only cache tier any more. The benefit is that the hand-maintained
+  per-package `COPY packages/x/package.json` list — whose own comment recorded
+  that drifting silently omitted a package from `node_modules` — is gone from
+  both files.
+- **The api image's production install is `--filter '@openpanel/api'`**, not a
+  bare `--production`. A bare install at the workspace root pulls every member's
+  production closure, including `apps/start`'s (§5d). Verified on Bun 1.4.0 that
+  `--filter` follows `workspace:` edges transitively and installs nothing
+  outside the filtered closure.

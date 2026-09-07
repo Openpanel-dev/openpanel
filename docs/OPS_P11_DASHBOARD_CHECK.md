@@ -3,7 +3,7 @@
 > This box has no browser. `curl http://127.0.0.1:4173/login` proves the SPA
 > shell boots and serves HTML (the automated boot gate); it cannot prove a
 > chart renders or a form validates. That half is this checklist — run it by
-> hand against `pnpm run build && pnpm run preview` (or `pnpm dev`) in a real
+> hand against `bun run build && bun run preview` (or `bun run dev`) in a real
 > browser after any change that touches `@openpanel/core`'s
 > `*.constants.ts` files or `apps/start/src/utils/{math,slug,super-json,
 > union-omit}.ts` — the P11 dissolution's actual runtime surface.

@@ -129,11 +129,20 @@ services:
   op-api:
     image: lindesvard/openpanel-api:2
     restart: always
-    # P9.5 collapsed the two-Dockerfile setup onto oven/bun: pnpm no longer
-    # exists in this image (ADR-014 Problems §4), so migrations and boot run
-    # as their bun equivalents — the prisma/jiti binaries directly (their
-    # `#!/bin/sh` shims resolve `node` to Bun's node-fallback shim) and
-    # `bun run start` for apps/api's own script.
+    # P9.5 collapsed the two-Dockerfile setup onto oven/bun, and P13
+    # (ADR-014, M13-003) made bun the installer as well, so no second package
+    # manager exists in this image or in the repo it is built from. Nothing
+    # here may invoke one: migrations and boot run the installed binaries
+    # directly (their `#!/bin/sh` shims resolve `node` to Bun's node-fallback
+    # shim) and `bun run start` for apps/api's own script.
+    #
+    # KNOWN BREAK, pre-existing and NOT introduced by P13: `prisma` is a
+    # devDependency of packages/db, so the image's production-only install
+    # correctly omits it and the first line below cannot run. Measured against
+    # a freshly built image on 2026-09-07:
+    # `sh: ./node_modules/.bin/prisma: not found`. Recorded in
+    # docs/TECH_DEBT.md; fixing it is a decision about what the image ships,
+    # not an installer change.
     command: >
       sh -c "
         echo 'Running migrations...'

@@ -94,6 +94,10 @@ delta to report — only this absolute number.
 
 ## P9.5 slim-down (M9-006): pnpm and the build toolchain leave the runtime image
 
+> **Superseded by *P13 (M13-003)* at the end of this file.** Both Dockerfiles
+> now install with bun and this section's stage list no longer matches the tree.
+> Kept as the record of what M9-006 did.
+
 `apps/api/Dockerfile` is now five stages: `base` (shared OS packages) →
 `toolchain` (pnpm + python3/make/g++, never ships) → `build` (full install,
 runs `pnpm codegen` — Prisma client + core's geo/ASN data — never ships) and
@@ -354,3 +358,53 @@ was created. Pre-existing tags `openpanel-v2:slim` and `openpanel-v2:test`
 each is within that budget, but if disk pressure appears, `openpanel-v2:slim`
 and `openpanel-v2:test` are the pre-existing tags to reclaim first (this task
 did not create them and does not need them kept).
+
+---
+
+## P13 (M13-003, 2026-09-07): both Dockerfiles move onto `bun install`
+
+Supersedes the *P9.5 slim-down (M9-006)* section above wherever the two
+disagree. That section is left in place as the record of what M9-006 did; the
+image shape it describes no longer exists.
+
+**What changed.**
+
+| | before (M9-006) | now |
+|---|---|---|
+| `apps/api/Dockerfile` stages | `base` → `toolchain` (a second package manager + python3/make/g++) → `build` / `prod-deps` in parallel → `runtime` | `base` → `toolchain` → `build` → `prod-deps` → `runtime`, all on `oven/bun:${BUN_VERSION}-slim` except nothing |
+| api install | root install, then a from-scratch `--prod` install filtered to api's closure | `bun install --frozen-lockfile --linker=isolated`, then a from-scratch `bun install --production --frozen-lockfile --linker=isolated --filter '@openpanel/api'` |
+| api codegen | `pnpm codegen` | `bun run codegen` |
+| manifest COPYs | a hand-maintained list of `packages/*/package.json` | `COPY . .` — one full workspace install per image (ADR-014 Problems §4) |
+| native build toolchain | `python3 make g++` in two stages | gone: `[install] ignoreScripts = true` means nothing compiles at install time, and `@node-rs/argon2` / `sharp` resolve to prebuilt linux-x64 packages |
+| `apps/start/Dockerfile` | did not build at all — see below | install + build on `oven/bun:1.4.0-slim`, runtime unchanged at `node:24-slim` running `.output/server/index.mjs` |
+
+**The dashboard image was already broken before P13**, for two reasons neither
+of which is the installer, both now fixed and named in that file's header:
+stale COPYs of the `@openpanel/auth` package P11 deleted, and a workspace-subset
+install that left `@openpanel/tsconfig` unresolvable for
+`packages/core/tsconfig.json` once P11 made `apps/start` import
+`@openpanel/core`. The fix for the second is the full workspace install, which
+is the shape a bun-base image has to take anyway.
+
+The dashboard runner stage now copies **only** `.output`. The Nitro output is
+standalone — 222 bundled packages of its own, and `.output/public` holds every
+asset `/login` references — verified on 2026-09-07 by running
+`.output/server/index.mjs` from an otherwise empty directory (`/api/healthcheck`
+200, `/login` 200 / 136710 bytes, no resolution errors). The workspace
+`node_modules` and per-package source copies the previous runner carried were
+dead weight.
+
+**Gate.** `bash tooling/gates/p13-images.sh` builds both images, boots each
+against this box's local services and asserts the api's `/healthz/ready` = 200
+and the dashboard's `/login` server-renders (HTTP 200, `<html`, ≥1000 bytes,
+clean container log) — the `.github/smoke/smoke.sh` assertions, because
+"the image built" is exactly what main-8e60 passed. It prunes the build cache
+between the two builds and again on exit; one from-scratch build leaves ~6GB of
+cache on a box with ~15GB free.
+
+Full run, 2026-09-07: **PASSED in 3m16s**, `/login` 152348 bytes, both container
+logs clean, 7.8G free after the final prune.
+
+**Sizes and the one known break** (the shipped compose templates' `prisma
+migrate deploy` line, pre-existing): `docs/TECH_DEBT.md` → *M13-003 image
+sizes*.

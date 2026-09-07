@@ -623,7 +623,7 @@ tasks should expect:
    or a stated reason.
 4. `bash tooling/gates/p12-grep-gates.sh --report | tail -3` — the numbers went
    down, and nothing else moved.
-5. `pnpm run typecheck` and `cd packages/core && bun test`.
+5. `bun run typecheck` and `cd packages/core && bun test`.
 6. When all three totals reach 0, delete `query-builder.ts`,
    `query-builder.test.ts`, `sql-builder.ts` and their `packages/db/index.ts`
    re-exports, drop `sqlstring` and `@types/sqlstring` from the three manifests,

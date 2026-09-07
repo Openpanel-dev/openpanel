@@ -110,6 +110,10 @@ services:
   opapi:
     image: lindesvard/openpanel-api:latest
     restart: always
+    # Same contract as docker-compose.template.yml's op-api: no second package
+    # manager exists in this image (P13 / ADR-014), so nothing below may invoke
+    # one. The same KNOWN, pre-existing `prisma` break applies — see the note
+    # there and docs/TECH_DEBT.md.
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...'
