@@ -1,8 +1,9 @@
 // Only the "is anyone logged in" boundary is exercised here — no database.
-// The access-check + query bodies ride on @openpanel/db (lazy-loaded, see
-// realtime.service.ts's header); wiring this router end-to-end against a
-// real ClickHouse is P6's (protectedProcedure) job, not this one's — see
-// realtime.rpc.ts's header. Same shape as cohort.rpc.test.ts.
+// The query bodies run on `deps.ch` (M12-005: statically imported `sql`
+// fragments, no @openpanel/db client anywhere in the module); wiring this
+// router end-to-end against a real ClickHouse is P6's (protectedProcedure)
+// job, not this one's — see realtime.rpc.ts's header. Same shape as
+// cohort.rpc.test.ts.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';

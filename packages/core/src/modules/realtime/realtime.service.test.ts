@@ -4,6 +4,13 @@
 // reached lazily (see the subject's `loadRedis` header), so that one stays a
 // `mock.module` registered before the subject's first call.
 //
+// M12-005: the subject and the real-module snapshot are STATIC imports. Bun's
+// `mock.module` swaps an already-loaded module's exports in place, and the
+// subject only reaches `@openpanel/redis` lazily at call time, so the mock
+// below still applies — measured on Bun 1.4.0, and the subscribe assertions
+// go red if it ever stops. That leaves this module with no deferred loads at
+// all (docs/TECH_DEBT.md's no-lazy-loaders ruling).
+//
 // Every assertion below is the one it was before the deps switch: the same
 // project scoping, the same 30-minute window, the same filter/limit wiring,
 // the same subscribe/unsubscribe behaviour.
@@ -16,7 +23,9 @@
 // unauthenticated-boundary tests plus this repo's local ClickHouse run (see
 // the task summary for the executed query + row count).
 
-import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
+import * as actualRedis from '@openpanel/redis';
+import * as subject from './realtime.service';
 
 const activeVisitorCountByProject = new Map<string, number>();
 const eventBuffer = {
@@ -37,7 +46,6 @@ let unsubscribeCalls = 0;
 // Spread the real module — a partial factory here would be a process-wide
 // hazard for every other test file mocking `@openpanel/redis` narrowly (see
 // realtime.service.ts's `loadRedis` header for why this file exists at all).
-const actualRedis = await import('@openpanel/redis');
 const realRedis = { ...actualRedis };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
@@ -51,9 +59,20 @@ afterAll(() => {
 // `deps.ch.query` is what shared/ch-query.ts calls; it returns the raw
 // ClickHouse response envelope, so the stub speaks that shape.
 let nextRows: unknown[] = [];
-const chQuery = mock(async ({ query: _query }: { query: string }) => ({
-  json: async () => ({ data: nextRows, meta: [], rows: nextRows.length }),
-}));
+const chQuery = mock(
+  async (_args: {
+    query: string;
+    query_params: Record<string, string | number>;
+  }) => ({
+    json: async () => ({ data: nextRows, meta: [], rows: nextRows.length }),
+  })
+);
+
+const MINUTES_PER_REALTIME_WINDOW = 30;
+const MS_PER_MINUTE = 60_000;
+const REALTIME_WINDOW_MS = MINUTES_PER_REALTIME_WINDOW * MS_PER_MINUTE;
+const CLOCK_TOLERANCE_MS = 5000;
+const ACTIVE_SESSIONS_LIMIT = 50;
 
 const noop = () => undefined;
 const deps = {
@@ -69,12 +88,6 @@ const deps = {
     child: () => deps.logger,
   },
 } as unknown as import('../../services').ServiceDeps;
-
-let subject: typeof import('./realtime.service');
-
-beforeAll(async () => {
-  subject = await import('./realtime.service');
-});
 
 beforeEach(() => {
   activeVisitorCountByProject.clear();
@@ -179,10 +192,18 @@ test('getRealtimeActiveSessions scopes the query to the project and the 30-minut
   const result = await subject.getRealtimeActiveSessions(deps, 'proj_1');
 
   expect(chQuery).toHaveBeenCalledTimes(1);
-  const { query } = chQuery.mock.calls[0]![0];
-  expect(query).toContain("project_id = 'proj_1'");
-  expect(query).toContain('created_at >=');
-  expect(query).toContain('LIMIT 50');
+  // M12-005: the statement binds its values, so the project scoping and the
+  // window live in `query_params` — the assertion follows them there.
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('project_id = {p1:String}');
+  expect(query).toContain('created_at >= {p2:String}');
+  expect(query).toContain('LIMIT {p3:UInt64}');
+  expect(query_params.p1).toBe('proj_1');
+  const windowStart = String(query_params.p2).replace(' ', 'T');
+  const windowAgeMs = Date.now() - Date.parse(`${windowStart}Z`);
+  expect(windowAgeMs).toBeGreaterThanOrEqual(REALTIME_WINDOW_MS);
+  expect(windowAgeMs).toBeLessThan(REALTIME_WINDOW_MS + CLOCK_TOLERANCE_MS);
+  expect(query_params.p3).toBe(ACTIVE_SESSIONS_LIMIT);
   expect(result).toHaveLength(1);
   expect(result[0]?.sessionId).toBe('sess_1');
 });

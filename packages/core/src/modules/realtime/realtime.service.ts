@@ -21,23 +21,31 @@
 //     same Redis subscription underneath.
 //
 // M10-005: every query function takes `ServiceDeps`. The ClickHouse CLIENT is
-// `deps.ch` — reads through shared/ch-query.ts, `clix(deps.ch)` for the four
-// builder queries — and the event buffer is `deps.buffers.event`, so the
-// `loadChClient` / `loadEventBuffer` lazy imports of @openpanel/db are gone
-// and the requestId reaches the query (ADR-018 R1, docs/TECH_DEBT.md §2, §4).
+// `deps.ch` — reads through shared/ch-query.ts — and the event buffer is
+// `deps.buffers.event`, so the `loadChClient` / `loadEventBuffer` lazy imports
+// of @openpanel/db are gone and the requestId reaches the query (ADR-018 R1,
+// docs/TECH_DEBT.md §2, §4).
 //
-// ClickHouse queries here still go through clix/sqlstring, not the `sql` tag:
-// ADR-013 converts the analytics read path one query per P7 task, and this
-// module's queries haven't been converted yet. `clix` and `TABLE_NAMES` are
-// therefore still needed and come from the v1-compat seam's pure-helper hop
-// (project.service.ts's `loadChHelpers` does the same) rather than a direct
-// @openpanel/db import.
+// M12-005 converted all ten ClickHouse statements here onto the ADR-013 `sql`
+// tag: every value binds as a `{pN:Type}` param, table names go through
+// `sql.id`, and the location filters compose as fragments instead of escaped
+// text. `sqlstring`, `clix` and the `loadChHelpers()` lazy hop into
+// `@openpanel/db` are all gone — `TABLE_NAMES` and the date helpers come from
+// core's own pure copies (shared/ch-tables.ts, shared/ch-dates.ts), which is
+// what lets the import be static without constructing a ClickHouse client or a
+// pino transport at module load. The V1-vs-V2 result-set proof is
+// `realtime.sql.proof.md` beside this file.
 
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
-import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
+import {
+  convertClickhouseDateToJs,
+  formatClickhouseDate,
+} from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { type IClickhouseEvent, transformEvent } from '../event/event.service';
 import { getProfiles } from '../profile/profile.service';
 
@@ -51,10 +59,21 @@ const COORDINATES_CLUSTER_TARGET = 500;
 const MAP_BADGE_TOP_LIMIT = 3;
 const MAP_BADGE_RECENT_SESSIONS_LIMIT = 8;
 const CLUSTER_RADII_DEGREES = [0.5, 1, 3, 10];
-
-function loadChHelpers() {
-  return import('../../v1-compat').then((m) => m.compatChHelpers());
-}
+/** Decimal places both sides of the coordinate tuple comparison agree on; the
+ *  `toDecimal64(..., 4)` scale in the SQL below must stay equal to it. */
+const COORDINATE_DECIMALS = 4;
+const EXCLUDED_BADGE_EVENT_NAMES = [
+  'screen_view',
+  'session_start',
+  'session_end',
+];
+// clix built these queries with no timezone argument, and `clix(client)`
+// defaults to `'UTC'` (query-builder.ts:696), sending it as
+// `clickhouse_settings.session_timezone` on every `execute()`. The seven
+// statements that came off clix keep sending it so their result sets stay
+// identical; the three that were already raw `chQuery` calls sent no
+// `session_timezone` and still send none.
+const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 function since(): Date {
   return subMinutes(new Date(), REALTIME_WINDOW_MINUTES);
@@ -139,8 +158,15 @@ function adaptiveCluster(
   return points.slice(0, target);
 }
 
-function buildRealtimeLocationFilter(locations: RealtimeLocation[]): string {
-  const tuples = locations
+// --- location filters ------------------------------------------------------
+//
+// V1 built these as escaped SQL text and spliced them into five statements
+// (clix `.rawWhere()` four times, one raw template). They are fragments now,
+// so the same fragment object composes into every statement and each one
+// numbers its own params at `toStatement()`.
+
+function coordinateTuples(locations: RealtimeLocation[]): SqlFragment[] {
+  return locations
     .filter(
       (
         location
@@ -149,51 +175,68 @@ function buildRealtimeLocationFilter(locations: RealtimeLocation[]): string {
     )
     .map(
       (location) =>
-        `(${sqlstring.escape(location.country ?? '')}, ${sqlstring.escape(
+        sql`(${sql.string(location.country ?? '')}, ${sql.string(
           location.city ?? ''
-        )}, toDecimal64(${location.long.toFixed(4)}, 4), toDecimal64(${location.lat.toFixed(4)}, 4))`
+        )}, toDecimal64(${sql.string(location.long.toFixed(COORDINATE_DECIMALS))}, 4), toDecimal64(${sql.string(location.lat.toFixed(COORDINATE_DECIMALS))}, 4))`
     );
+}
+
+function buildRealtimeLocationFilter(
+  locations: RealtimeLocation[]
+): SqlFragment {
+  const tuples = coordinateTuples(locations);
 
   if (tuples.length === 0) {
     return buildRealtimeCityFilter(locations);
   }
 
-  return `(coalesce(country, ''), coalesce(city, ''), toDecimal64(longitude, 4), toDecimal64(latitude, 4)) IN (${tuples.join(', ')})`;
+  return sql`(coalesce(country, ''), coalesce(city, ''), toDecimal64(longitude, 4), toDecimal64(latitude, 4)) IN (${sql.join(tuples)})`;
 }
 
-function buildRealtimeCountryFilter(locations: RealtimeLocation[]): string {
+function buildRealtimeCountryFilter(
+  locations: RealtimeLocation[]
+): SqlFragment {
   const countries = [
     ...new Set(locations.map((location) => location.country ?? '')),
   ];
 
-  return `coalesce(country, '') IN (${countries
-    .map((country) => sqlstring.escape(country))
-    .join(', ')})`;
+  return sql`coalesce(country, '') IN ${sql.array('String', countries)}`;
 }
 
-function buildRealtimeCityFilter(locations: RealtimeLocation[]): string {
-  const tuples = [
-    ...new Set(
-      locations.map(
-        (location) =>
-          `(${sqlstring.escape(location.country ?? '')}, ${sqlstring.escape(
-            location.city ?? ''
-          )})`
-      )
-    ),
-  ];
+/** V1 de-duplicated the rendered `('<country>', '<city>')` text; the pair it
+ *  rendered from is the same key, so this de-duplicates on the pair. */
+function cityTuples(locations: RealtimeLocation[]): SqlFragment[] {
+  const seen = new Set<string>();
+  const tuples: SqlFragment[] = [];
+
+  for (const location of locations) {
+    const country = location.country ?? '';
+    const city = location.city ?? '';
+    const key = JSON.stringify([country, city]);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    tuples.push(sql`(${sql.string(country)}, ${sql.string(city)})`);
+  }
+
+  return tuples;
+}
+
+function buildRealtimeCityFilter(locations: RealtimeLocation[]): SqlFragment {
+  const tuples = cityTuples(locations);
 
   if (tuples.length === 0) {
     return buildRealtimeCountryFilter(locations);
   }
 
-  return `(coalesce(country, ''), coalesce(city, '')) IN (${tuples.join(', ')})`;
+  return sql`(coalesce(country, ''), coalesce(city, '')) IN (${sql.join(tuples)})`;
 }
 
 function buildRealtimeBadgeDetailsFilter(input: {
   detailScope: RealtimeBadgeDetailScope;
   locations: RealtimeLocation[];
-}): string {
+}): SqlFragment {
   if (input.detailScope === 'country') {
     return buildRealtimeCountryFilter(input.locations);
   }
@@ -213,24 +256,22 @@ export async function getRealtimeCoordinates(
   deps: ServiceDeps,
   projectId: string
 ) {
-  const { TABLE_NAMES } = await loadChHelpers();
-
   const res = await chQuery<CoordinatePoint>(
     deps,
-    `SELECT
+    sql`SELECT
       country,
       city,
       longitude as long,
       latitude as lat,
       COUNT(DISTINCT session_id) as count
-    FROM ${TABLE_NAMES.events}
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND created_at >= now() - INTERVAL ${REALTIME_WINDOW_MINUTES} MINUTE
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= now() - INTERVAL ${sql.uint64(REALTIME_WINDOW_MINUTES)} MINUTE
       AND longitude IS NOT NULL
       AND latitude IS NOT NULL
     GROUP BY country, city, longitude, latitude
     ORDER BY count DESC
-    LIMIT ${COORDINATES_QUERY_LIMIT}`
+    LIMIT ${sql.uint64(COORDINATES_QUERY_LIMIT)}`
   );
 
   return adaptiveCluster(res, COORDINATES_CLUSTER_TARGET);
@@ -244,74 +285,39 @@ export async function getRealtimeMapBadgeDetails(
     locations: RealtimeLocation[];
   }
 ) {
-  const { clix, TABLE_NAMES, formatClickhouseDate, convertClickhouseDateToJs } =
-    await loadChHelpers();
-
   const sinceDate = formatClickhouseDate(since());
   const locationFilter = buildRealtimeBadgeDetailsFilter(input);
+  const projectIdParam = sql.string(input.projectId);
+  const sinceParam = sql.string(sinceDate);
+  const events = sql.id(TABLE_NAMES.events);
 
-  const summaryQuery = clix(deps.ch)
-    .select<{
-      total_sessions: number;
-      total_profiles: number;
-    }>([
-      'COUNT(DISTINCT session_id) as total_sessions',
-      "COUNT(DISTINCT nullIf(profile_id, '')) as total_profiles",
-    ])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', input.projectId)
-    .where('created_at', '>=', sinceDate)
-    .rawWhere(locationFilter);
+  const summaryQuery = sql`SELECT COUNT(DISTINCT session_id) as total_sessions, COUNT(DISTINCT nullIf(profile_id, '')) as total_profiles FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND ${locationFilter}`;
 
-  const topReferrersQuery = clix(deps.ch)
-    .select<{
-      referrer_name: string;
-      count: number;
-    }>(['referrer_name', 'COUNT(DISTINCT session_id) as count'])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', input.projectId)
-    .where('created_at', '>=', sinceDate)
-    .where('referrer_name', '!=', '')
-    .rawWhere(locationFilter)
-    .groupBy(['referrer_name'])
-    .orderBy('count', 'DESC')
-    .limit(MAP_BADGE_TOP_LIMIT);
+  const topReferrersQuery = sql`SELECT referrer_name, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND referrer_name != ${sql.string('')} AND ${locationFilter} GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
 
-  const topPathsQuery = clix(deps.ch)
-    .select<{
-      origin: string;
-      path: string;
-      count: number;
-    }>(['origin', 'path', 'COUNT(DISTINCT session_id) as count'])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', input.projectId)
-    .where('created_at', '>=', sinceDate)
-    .where('path', '!=', '')
-    .rawWhere(locationFilter)
-    .groupBy(['origin', 'path'])
-    .orderBy('count', 'DESC')
-    .limit(MAP_BADGE_TOP_LIMIT);
+  const topPathsQuery = sql`SELECT origin, path, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND path != ${sql.string('')} AND ${locationFilter} GROUP BY origin, path ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
 
-  const topEventsQuery = clix(deps.ch)
-    .select<{
-      name: string;
-      count: number;
-    }>(['name', 'COUNT(DISTINCT session_id) as count'])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', input.projectId)
-    .where('created_at', '>=', sinceDate)
-    .where('name', 'NOT IN', ['screen_view', 'session_start', 'session_end'])
-    .rawWhere(locationFilter)
-    .groupBy(['name'])
-    .orderBy('count', 'DESC')
-    .limit(MAP_BADGE_TOP_LIMIT);
+  const topEventsQuery = sql`SELECT name, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND name NOT IN ${sql.array('String', EXCLUDED_BADGE_EVENT_NAMES)} AND ${locationFilter} GROUP BY name ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
 
   const [summary, topReferrers, topPaths, topEvents, recentSessions] =
     await Promise.all([
-      summaryQuery.execute(),
-      topReferrersQuery.execute(),
-      topPathsQuery.execute(),
-      topEventsQuery.execute(),
+      chQuery<{
+        total_sessions: number;
+        total_profiles: number;
+      }>(deps, summaryQuery, CLIX_SESSION_TIMEZONE),
+      chQuery<{
+        referrer_name: string;
+        count: number;
+      }>(deps, topReferrersQuery, CLIX_SESSION_TIMEZONE),
+      chQuery<{
+        origin: string;
+        path: string;
+        count: number;
+      }>(deps, topPathsQuery, CLIX_SESSION_TIMEZONE),
+      chQuery<{
+        name: string;
+        count: number;
+      }>(deps, topEventsQuery, CLIX_SESSION_TIMEZONE),
       chQuery<{
         profile_id: string;
         session_id: string;
@@ -322,7 +328,7 @@ export async function getRealtimeMapBadgeDetails(
         city: string;
       }>(
         deps,
-        `SELECT
+        sql`SELECT
           session_id,
           profile_id,
           created_at,
@@ -342,14 +348,14 @@ export async function getRealtimeMapBadgeDetails(
             row_number() OVER (
               PARTITION BY session_id ORDER BY created_at DESC
             ) AS rn
-          FROM ${TABLE_NAMES.events}
-          WHERE project_id = ${sqlstring.escape(input.projectId)}
-            AND created_at >= ${sqlstring.escape(sinceDate)}
+          FROM ${events}
+          WHERE project_id = ${projectIdParam}
+            AND created_at >= ${sinceParam}
             AND (${locationFilter})
         ) AS latest_event_per_session
         WHERE rn = 1
         ORDER BY created_at DESC
-        LIMIT ${MAP_BADGE_RECENT_SESSIONS_LIMIT}`
+        LIMIT ${sql.uint64(MAP_BADGE_RECENT_SESSIONS_LIMIT)}`
       ),
     ]);
 
@@ -404,104 +410,61 @@ export async function getRealtimeActiveSessions(
   deps: ServiceDeps,
   projectId: string
 ) {
-  const { TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
-
   const rows = await chQuery<IClickhouseEvent>(
     deps,
-    `SELECT
+    sql`SELECT
       name, session_id, created_at, path, origin, referrer, referrer_name,
       country, city, region, os, os_version, browser, browser_version,
       device
-    FROM ${TABLE_NAMES.events}
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND created_at >= '${formatClickhouseDate(since())}'
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
     ORDER BY created_at DESC
-    LIMIT ${ACTIVE_SESSIONS_LIMIT}`
+    LIMIT ${sql.uint64(ACTIVE_SESSIONS_LIMIT)}`
   );
   return rows.map(transformEvent);
 }
 
-export async function getRealtimePaths(deps: ServiceDeps, projectId: string) {
-  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
-
-  return await clix(deps.ch)
-    .select<{
-      origin: string;
-      path: string;
-      count: number;
-      avg_duration: number;
-      unique_sessions: number;
-    }>([
-      'origin',
-      'path',
-      'COUNT(*) as count',
-      'COUNT(DISTINCT session_id) as unique_sessions',
-      'round(avg(duration)/1000, 2) as avg_duration',
-    ])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', projectId)
-    .where('path', '!=', '')
-    .where('created_at', '>=', formatClickhouseDate(since()))
-    .groupBy(['path', 'origin'])
-    .orderBy('count', 'DESC')
-    .limit(PATHS_LIMIT)
-    .execute();
+export function getRealtimePaths(deps: ServiceDeps, projectId: string) {
+  return chQuery<{
+    origin: string;
+    path: string;
+    count: number;
+    avg_duration: number;
+    unique_sessions: number;
+  }>(
+    deps,
+    sql`SELECT origin, path, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND path != ${sql.string('')} AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY path, origin ORDER BY count DESC LIMIT ${sql.uint64(PATHS_LIMIT)}`,
+    CLIX_SESSION_TIMEZONE
+  );
 }
 
-export async function getRealtimeReferrals(
-  deps: ServiceDeps,
-  projectId: string
-) {
-  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
-
-  return await clix(deps.ch)
-    .select<{
-      referrer_name: string;
-      count: number;
-      avg_duration: number;
-      unique_sessions: number;
-    }>([
-      'referrer_name',
-      'COUNT(*) as count',
-      'COUNT(DISTINCT session_id) as unique_sessions',
-      'round(avg(duration)/1000, 2) as avg_duration',
-    ])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', projectId)
-    .where('referrer_name', 'IS NOT NULL')
-    .where('created_at', '>=', formatClickhouseDate(since()))
-    .groupBy(['referrer_name'])
-    .orderBy('count', 'DESC')
-    .limit(REFERRALS_LIMIT)
-    .execute();
+export function getRealtimeReferrals(deps: ServiceDeps, projectId: string) {
+  return chQuery<{
+    referrer_name: string;
+    count: number;
+    avg_duration: number;
+    unique_sessions: number;
+  }>(
+    deps,
+    sql`SELECT referrer_name, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND referrer_name IS NOT NULL AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(REFERRALS_LIMIT)}`,
+    CLIX_SESSION_TIMEZONE
+  );
 }
 
-export async function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
-  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
-
-  return await clix(deps.ch)
-    .select<{
-      country: string;
-      city: string;
-      count: number;
-      avg_duration: number;
-      unique_sessions: number;
-    }>([
-      'country',
-      'city',
-      'COUNT(*) as count',
-      'COUNT(DISTINCT session_id) as unique_sessions',
-      'round(avg(duration)/1000, 2) as avg_duration',
-    ])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', projectId)
-    .where('created_at', '>=', formatClickhouseDate(since()))
-    .groupBy(['country', 'city'])
-    .orderBy('count', 'DESC')
-    .limit(GEO_LIMIT)
-    .execute();
+export function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
+  return chQuery<{
+    country: string;
+    city: string;
+    count: number;
+    avg_duration: number;
+    unique_sessions: number;
+  }>(
+    deps,
+    sql`SELECT country, city, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY country, city ORDER BY count DESC LIMIT ${sql.uint64(GEO_LIMIT)}`,
+    CLIX_SESSION_TIMEZONE
+  );
 }
-
 // --- /live websocket glue -------------------------------------------------
 //
 // Framework-agnostic: resolve to an unsubscribe function each, exactly

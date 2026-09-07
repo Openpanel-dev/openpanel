@@ -15,21 +15,21 @@
 // auth.service.ts's `createAuthService` binds `ctx.services.auth` to,
 // M10-002) are mocked (not a real Postgres/ClickHouse/Redis), and
 // `../../http/session` for the same reason http/auth.test.ts mocks it:
-// `resolveSession` is still a P6 stub. Every mock is registered before the
-// subject's first (dynamic, per-connection) call — see AGENTS.md's
-// `mock.module` idiom.
+// `resolveSession` is still a P6 stub.
+//
+// M12-005: every import here is STATIC. Bun 1.4.0's `mock.module` swaps an
+// already-loaded module's exports in place, so a subject imported above the
+// `mock.module` calls still sees them; the "not called" and "called with"
+// assertions on every mock below are what would go red if that ever stopped
+// holding. The deferred loads this file used to need are gone with the
+// module's own (docs/TECH_DEBT.md's no-lazy-loaders ruling).
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  expect,
-  mock,
-  test,
-} from 'bun:test';
+import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { stubAppDeps } from '../../../test/http-fixtures';
+import * as actualAccessLookups from '../../shared/access-lookups';
 import { getSuperJson } from '../../shared/json';
+import { realtimeRoutes } from './realtime.routes';
+import * as actualService from './realtime.service';
 
 let visitorActivityCallback: (() => void) | undefined;
 const unsubscribeVisitorActivity = mock(() => undefined);
@@ -60,12 +60,10 @@ const getActiveVisitorCount = mock(async () => activeVisitorCount);
 // Spread the real module rather than hand-listing every export:
 // `mock.module` replaces this specifier process-wide (bun shares one module
 // registry across files without `--isolate` — see AGENTS.md), and
-// realtime.service.test.ts's own `beforeAll` does `await
-// import('./realtime.service')` expecting the real implementation. A plain
-// snapshot, not the live import binding — see gsc.service.test.ts's
-// clickhouse/client mock for why the live binding would make a
-// same-binding "restore" a no-op.
-const actualService = await import('./realtime.service');
+// realtime.service.test.ts imports `./realtime.service` expecting the real
+// implementation. A plain snapshot, not the live import binding — see
+// gsc.service.test.ts's clickhouse/client mock for why the live binding would
+// make a same-binding "restore" a no-op.
 const realService = { ...actualService };
 mock.module('./realtime.service', () => ({
   ...realService,
@@ -84,7 +82,6 @@ afterAll(() => {
 // binds these same lookups in auth.service.ts, so mocking them here is what
 // makes `ws.data.ctx.services.auth.getProjectAccess`/`getOrganizationAccess`
 // observable from the test.
-const actualAccessLookups = await import('../../shared/access-lookups');
 let projectAccess: { level: string } | null = null;
 let organizationAccess: { role: string } | null = null;
 const getProjectAccess = mock(async () => projectAccess);
@@ -101,11 +98,6 @@ mock.module('../../http/session', () => ({
   SESSION_COOKIE_NAME: 'session',
   resolveSession,
 }));
-
-let realtimeRoutes: typeof import('./realtime.routes').realtimeRoutes;
-beforeAll(async () => {
-  ({ realtimeRoutes } = await import('./realtime.routes'));
-});
 
 let app: ReturnType<typeof realtimeRoutes>;
 let port: number;
