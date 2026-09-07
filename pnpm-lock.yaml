@@ -7,34 +7,34 @@ settings:
 catalogs:
   default:
     '@hyperdx/node-opentelemetry':
-      specifier: ^0.10.3
+      specifier: 0.10.3
       version: 0.10.3
     '@types/node':
-      specifier: ^24.7.1
+      specifier: 24.10.1
       version: 24.10.1
     '@types/react':
-      specifier: ^19.2.3
+      specifier: 19.2.7
       version: 19.2.7
     '@types/react-dom':
-      specifier: ^19.2.3
+      specifier: 19.2.3
       version: 19.2.3
     pino:
-      specifier: ^10.3.1
+      specifier: 10.3.1
       version: 10.3.1
     pino-pretty:
-      specifier: ^13.1.3
+      specifier: 13.1.3
       version: 13.1.3
     react:
-      specifier: ^19.2.3
+      specifier: 19.2.3
       version: 19.2.3
     react-dom:
-      specifier: ^19.2.3
+      specifier: 19.2.3
       version: 19.2.3
     typescript:
-      specifier: ^5.9.3
+      specifier: 5.9.3
       version: 5.9.3
     zod:
-      specifier: ^4.1.8
+      specifier: 4.3.6
       version: 4.3.6
 
 overrides:
@@ -56,10 +56,10 @@ importers:
         specifier: 'catalog:'
         version: 0.10.3(supports-color@10.2.0)
       dotenv-cli:
-        specifier: ^7.3.0
+        specifier: 7.3.0
         version: 7.3.0
       semver:
-        specifier: ^7.5.4
+        specifier: 7.6.0
         version: 7.6.0
       typescript:
         specifier: 'catalog:'
@@ -69,16 +69,16 @@ importers:
         specifier: 2.3.15
         version: 2.3.15
       depcheck:
-        specifier: ^1.4.7
+        specifier: 1.4.7
         version: 1.4.7(supports-color@10.2.0)
       simple-git-hooks:
-        specifier: ^2.12.1
+        specifier: 2.12.1
         version: 2.12.1
       ultracite:
         specifier: 7.2.0
         version: 7.2.0
       vitest:
-        specifier: ^3.0.4
+        specifier: 3.1.3
         version: 3.1.3(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@26.1.0(supports-color@10.2.0))(lightningcss@1.30.2)(supports-color@10.2.0)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
 
   apps/api:
@@ -102,20 +102,20 @@ importers:
         specifier: 'catalog:'
         version: 13.1.3
       uuid:
-        specifier: ^9.0.1
+        specifier: 9.0.1
         version: 9.0.1
       zod:
         specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
       '@faker-js/faker':
-        specifier: ^9.0.1
+        specifier: 9.0.1
         version: 9.0.1
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/uuid':
-        specifier: ^10.0.0
+        specifier: 10.0.0
         version: 10.0.0
       bun-types:
         specifier: 1.4.0
@@ -127,16 +127,16 @@ importers:
   apps/public:
     dependencies:
       '@nivo/funnel':
-        specifier: ^0.99.0
+        specifier: 0.99.0
         version: 0.99.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@number-flow/react':
         specifier: 0.5.10
         version: 0.5.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@opennextjs/cloudflare':
-        specifier: ^1.17.1
+        specifier: 1.17.1
         version: 1.17.1(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(supports-color@10.2.0)(wrangler@4.65.0)
       '@openpanel/nextjs':
-        specifier: ^1.2.0
+        specifier: 1.2.0
         version: 1.2.0(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@openpanel/payments':
         specifier: workspace:^
@@ -160,7 +160,7 @@ importers:
         specifier: 1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       cheerio:
-        specifier: ^1.0.0
+        specifier: 1.1.2
         version: 1.1.2
       class-variance-authority:
         specifier: 0.7.1
@@ -181,7 +181,7 @@ importers:
         specifier: 14.2.11
         version: 14.2.11(@types/mdast@4.0.4)(@types/mdx@2.0.13)(@types/react@19.2.7)(fumadocs-core@16.7.11(@mdx-js/mdx@3.1.1(supports-color@10.2.0))(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@types/estree-jsx@1.0.5)(@types/hast@3.0.4)(@types/mdast@4.0.4)(@types/react@19.2.7)(lucide-react@0.555.0(react@19.2.3))(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-router@7.13.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(supports-color@10.2.0)(zod@4.3.6))(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(supports-color@10.2.0)(vite@7.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       fumadocs-openapi:
-        specifier: ^10.6.7
+        specifier: 10.6.7
         version: 10.6.7(763e641a8a256664c00b8169e2df1082)
       fumadocs-ui:
         specifier: 16.7.11
@@ -190,13 +190,13 @@ importers:
         specifier: 1.5.1
         version: 1.5.1(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
       lucide-react:
-        specifier: ^0.555.0
+        specifier: 0.555.0
         version: 0.555.0(react@19.2.3)
       next:
         specifier: 16.0.7
         version: 16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next-themes:
-        specifier: ^0.4.6
+        specifier: 0.4.6
         version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react:
         specifier: 'catalog:'
@@ -205,16 +205,16 @@ importers:
         specifier: 'catalog:'
         version: 19.2.3(react@19.2.3)
       react-markdown:
-        specifier: ^10.1.0
+        specifier: 10.1.0
         version: 10.1.0(@types/react@19.2.7)(react@19.2.3)(supports-color@10.2.0)
       recharts:
-        specifier: ^2.15.0
+        specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       rehype-external-links:
         specifier: 3.0.0
         version: 3.0.0
       shiki:
-        specifier: ^4.0.2
+        specifier: 4.0.2
         version: 4.0.2
       tailwind-merge:
         specifier: 3.4.0
@@ -227,10 +227,10 @@ importers:
         version: 4.3.6
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4.1.17
+        specifier: 4.1.17
         version: 4.1.17
       '@types/mdx':
-        specifier: ^2.0.13
+        specifier: 2.0.13
         version: 2.0.13
       '@types/node':
         specifier: 'catalog:'
@@ -242,10 +242,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.7)
       autoprefixer:
-        specifier: ^10.4.22
+        specifier: 10.4.22
         version: 10.4.22(postcss@8.5.6)
       postcss:
-        specifier: ^8.5.6
+        specifier: 8.5.6
         version: 8.5.6
       tailwindcss:
         specifier: 4.1.17
@@ -254,49 +254,49 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
       wrangler:
-        specifier: ^4.65.0
+        specifier: 4.65.0
         version: 4.65.0
 
   apps/start:
     dependencies:
       '@better-agent/client':
-        specifier: ^0.1.0-beta.3
+        specifier: 0.1.0-beta.3
         version: 0.1.0-beta.3(react@19.2.3)(solid-js@1.9.9)(vue@3.5.25(typescript@5.9.3))
       '@codemirror/commands':
-        specifier: ^6.7.0
+        specifier: 6.10.1
         version: 6.10.1
       '@codemirror/lang-javascript':
-        specifier: ^6.2.0
+        specifier: 6.2.4
         version: 6.2.4
       '@codemirror/lang-json':
-        specifier: ^6.0.1
+        specifier: 6.0.2
         version: 6.0.2
       '@codemirror/state':
-        specifier: ^6.4.0
+        specifier: 6.5.4
         version: 6.5.4
       '@codemirror/theme-one-dark':
-        specifier: ^6.1.3
+        specifier: 6.1.3
         version: 6.1.3
       '@codemirror/view':
-        specifier: ^6.35.0
+        specifier: 6.39.11
         version: 6.39.11
       '@dnd-kit/core':
-        specifier: ^6.3.1
+        specifier: 6.3.1
         version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@dnd-kit/sortable':
-        specifier: ^10.0.0
+        specifier: 10.0.0
         version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@dnd-kit/utilities':
-        specifier: ^3.2.2
+        specifier: 3.2.2
         version: 3.2.2(react@19.2.3)
       '@faker-js/faker':
-        specifier: ^9.6.0
+        specifier: 9.9.0
         version: 9.9.0
       '@hookform/resolvers':
-        specifier: ^5.2.2
+        specifier: 5.2.2
         version: 5.2.2(react-hook-form@7.50.1(react@19.2.3))
       '@nivo/sankey':
-        specifier: ^0.99.0
+        specifier: 0.99.0
         version: 0.99.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@number-flow/react':
         specifier: 0.5.10
@@ -311,148 +311,148 @@ importers:
         specifier: workspace:^
         version: link:../../packages/sdks/_info
       '@openpanel/web':
-        specifier: ^1.0.1
+        specifier: 1.0.5
         version: 1.0.5
       '@radix-ui/react-accordion':
-        specifier: ^1.2.12
+        specifier: 1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-alert-dialog':
-        specifier: ^1.1.15
+        specifier: 1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-aspect-ratio':
-        specifier: ^1.1.7
+        specifier: 1.1.7
         version: 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-avatar':
-        specifier: ^1.1.10
+        specifier: 1.1.10
         version: 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-checkbox':
-        specifier: ^1.3.3
+        specifier: 1.3.3
         version: 1.3.3(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-dialog':
-        specifier: ^1.1.15
+        specifier: 1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.16
+        specifier: 2.1.16
         version: 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-label':
-        specifier: ^2.1.7
+        specifier: 2.1.7
         version: 2.1.7(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-popover':
-        specifier: ^1.1.15
+        specifier: 1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-portal':
-        specifier: ^1.1.9
+        specifier: 1.1.9
         version: 1.1.9(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-progress':
-        specifier: ^1.1.7
+        specifier: 1.1.7
         version: 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-radio-group':
-        specifier: ^1.3.8
+        specifier: 1.3.8
         version: 1.3.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-scroll-area':
-        specifier: ^1.2.10
+        specifier: 1.2.10
         version: 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-select':
-        specifier: ^2.2.6
+        specifier: 2.2.6
         version: 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-separator':
-        specifier: ^1.1.7
+        specifier: 1.1.7
         version: 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-slider':
         specifier: 1.2.3
         version: 1.2.3(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-slot':
-        specifier: ^1.2.3
+        specifier: 1.2.3
         version: 1.2.3(@types/react@19.2.7)(react@19.2.3)
       '@radix-ui/react-switch':
-        specifier: ^1.2.6
+        specifier: 1.2.6
         version: 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-tabs':
-        specifier: ^1.1.13
+        specifier: 1.1.13
         version: 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-toast':
-        specifier: ^1.2.15
+        specifier: 1.2.15
         version: 1.2.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-toggle':
-        specifier: ^1.1.10
+        specifier: 1.1.10
         version: 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-toggle-group':
-        specifier: ^1.1.11
+        specifier: 1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-tooltip':
-        specifier: ^1.2.8
+        specifier: 1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@reduxjs/toolkit':
-        specifier: ^2.8.2
+        specifier: 2.8.2
         version: 2.8.2(react-redux@8.1.3(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react-native@0.73.6(@babel/core@7.28.3(supports-color@10.2.0))(@babel/preset-env@7.23.9(@babel/core@7.28.3(supports-color@10.2.0))(supports-color@10.2.0))(react@19.2.3)(supports-color@10.2.0))(react@19.2.3)(redux@5.0.1))(react@19.2.3)
       '@sentry/tanstackstart-react':
-        specifier: ^9.12.0
+        specifier: 9.46.0
         version: 9.46.0(react@19.2.3)(supports-color@10.2.0)
       '@tailwindcss/container-queries':
-        specifier: ^0.1.1
+        specifier: 0.1.1
         version: 0.1.1(tailwindcss@4.1.12)
       '@tailwindcss/typography':
-        specifier: ^0.5.15
+        specifier: 0.5.15
         version: 0.5.15(tailwindcss@4.1.12)
       '@tailwindcss/vite':
-        specifier: ^4.0.6
+        specifier: 4.1.12
         version: 4.1.12(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/match-sorter-utils':
-        specifier: ^8.19.4
+        specifier: 8.19.4
         version: 8.19.4
       '@tanstack/nitro-v2-vite-plugin':
-        specifier: ^1.133.19
+        specifier: 1.133.19
         version: 1.133.19(aws4fetch@1.0.20)(rolldown@1.0.0-beta.43(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1))(supports-color@10.2.0)(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/react-devtools':
-        specifier: ^0.7.6
+        specifier: 0.7.6
         version: 0.7.6(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(csstype@3.2.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.9)
       '@tanstack/react-query':
-        specifier: ^5.90.2
+        specifier: 5.90.2
         version: 5.90.2(react@19.2.3)
       '@tanstack/react-query-devtools':
-        specifier: ^5.90.2
+        specifier: 5.90.2
         version: 5.90.2(@tanstack/react-query@5.90.2(react@19.2.3))(react@19.2.3)
       '@tanstack/react-router':
-        specifier: ^1.132.47
+        specifier: 1.132.47
         version: 1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/react-router-devtools':
-        specifier: ^1.132.51
+        specifier: 1.132.51
         version: 1.132.51(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@tanstack/router-core@1.132.47)(@types/node@24.10.1)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.9)(terser@5.27.1)(tiny-invariant@1.3.3)(tsx@4.21.0)(yaml@2.8.2)
       '@tanstack/react-router-ssr-query':
-        specifier: ^1.132.47
+        specifier: 1.132.47
         version: 1.132.47(@tanstack/query-core@5.90.2)(@tanstack/react-query@5.90.2(react@19.2.3))(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@tanstack/router-core@1.132.47)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/react-start':
-        specifier: ^1.132.56
+        specifier: 1.132.56
         version: 1.132.56(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@10.2.0)(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/react-store':
-        specifier: ^0.8.0
+        specifier: 0.8.0
         version: 0.8.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/react-table':
-        specifier: ^8.21.3
+        specifier: 8.21.3
         version: 8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/react-virtual':
-        specifier: ^3.13.12
+        specifier: 3.13.12
         version: 3.13.12(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@tanstack/router-plugin':
-        specifier: ^1.132.56
+        specifier: 1.132.56
         version: 1.132.56(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(supports-color@10.2.0)(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/store':
-        specifier: ^0.8.0
+        specifier: 0.8.0
         version: 0.8.0
       '@trpc/client':
-        specifier: ^11.17.0
+        specifier: 11.17.0
         version: 11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3)
       '@trpc/react-query':
-        specifier: ^11.6.0
+        specifier: 11.6.0
         version: 11.6.0(@tanstack/react-query@5.90.2(react@19.2.3))(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@trpc/server':
-        specifier: ^11.17.0
+        specifier: 11.17.0
         version: 11.17.0(typescript@5.9.3)
       '@trpc/tanstack-react-query':
-        specifier: ^11.6.0
+        specifier: 11.6.0
         version: 11.6.0(@tanstack/react-query@5.90.2(react@19.2.3))(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@types/d3':
-        specifier: ^7.4.3
+        specifier: 7.4.3
         version: 7.4.3
       '@visx/curve':
         specifier: 4.0.1-alpha.0
@@ -479,136 +479,136 @@ importers:
         specifier: 4.0.1-alpha.0
         version: 4.0.1-alpha.0(react@19.2.3)
       bind-event-listener:
-        specifier: ^3.0.0
+        specifier: 3.0.0
         version: 3.0.0
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 0.7.1
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 2.1.1
         version: 2.1.1
       cmdk:
-        specifier: ^0.2.1
+        specifier: 0.2.1
         version: 0.2.1(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       codemirror:
-        specifier: ^6.0.1
+        specifier: 6.0.2
         version: 6.0.2
       d3:
-        specifier: ^7.8.5
+        specifier: 7.8.5
         version: 7.8.5
       d3-array:
-        specifier: ^3.2.4
+        specifier: 3.2.4
         version: 3.2.4
       date-fns:
-        specifier: ^3.3.1
+        specifier: 3.3.1
         version: 3.3.1
       debounce:
-        specifier: ^2.2.0
+        specifier: 2.2.0
         version: 2.2.0
       embla-carousel-autoplay:
-        specifier: ^8.6.0
+        specifier: 8.6.0
         version: 8.6.0(embla-carousel@8.0.0-rc22)
       embla-carousel-react:
         specifier: 8.0.0-rc22
         version: 8.0.0-rc22(react@19.2.3)
       flag-icons:
-        specifier: ^7.1.0
+        specifier: 7.1.0
         version: 7.1.0
       framer-motion:
-        specifier: ^11.0.28
+        specifier: 11.18.2
         version: 11.18.2(@emotion/is-prop-valid@0.8.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       hamburger-react:
-        specifier: ^2.5.0
+        specifier: 2.5.0
         version: 2.5.0(react@19.2.3)
       input-otp:
-        specifier: ^1.2.4
+        specifier: 1.2.4
         version: 1.2.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       javascript-time-ago:
-        specifier: ^2.5.9
+        specifier: 2.5.9
         version: 2.5.9
       katex:
-        specifier: ^0.16.21
+        specifier: 0.16.21
         version: 0.16.21
       lodash.debounce:
-        specifier: ^4.0.8
+        specifier: 4.0.8
         version: 4.0.8
       lodash.isequal:
-        specifier: ^4.5.0
+        specifier: 4.5.0
         version: 4.5.0
       lodash.throttle:
-        specifier: ^4.1.1
+        specifier: 4.1.1
         version: 4.1.1
       lottie-react:
-        specifier: ^2.4.0
+        specifier: 2.4.0
         version: 2.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       lucide-react:
-        specifier: ^0.476.0
+        specifier: 0.476.0
         version: 0.476.0(react@19.2.3)
       mathjs:
-        specifier: ^12.3.2
+        specifier: 12.3.2
         version: 12.3.2
       mitt:
-        specifier: ^3.0.1
+        specifier: 3.0.1
         version: 3.0.1
       motion:
-        specifier: ^12.40.0
+        specifier: 12.40.0
         version: 12.40.0(@emotion/is-prop-valid@0.8.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       nanoid:
-        specifier: ^5.1.6
+        specifier: 5.1.6
         version: 5.1.6
       nuqs:
-        specifier: ^2.5.2
+        specifier: 2.5.2
         version: 2.5.2(patch_hash=4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e)(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(next@16.0.7(@babel/core@7.28.3(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router-dom@7.13.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.13.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       prisma-error-enum:
-        specifier: ^0.1.3
+        specifier: 0.1.3
         version: 0.1.3
       pushmodal:
-        specifier: ^1.0.3
+        specifier: 1.0.3
         version: 1.0.3(@radix-ui/react-dialog@1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       ramda:
-        specifier: ^0.29.1
+        specifier: 0.29.1
         version: 0.29.1
       random-animal-name:
-        specifier: ^0.1.1
+        specifier: 0.1.1
         version: 0.1.1
       rc-virtual-list:
-        specifier: ^3.14.5
+        specifier: 3.14.5
         version: 3.14.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react:
         specifier: 'catalog:'
         version: 19.2.3
       react-animate-height:
-        specifier: ^3.2.3
+        specifier: 3.2.3
         version: 3.2.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-animated-numbers:
-        specifier: ^1.1.1
+        specifier: 1.1.1
         version: 1.1.1(@emotion/is-prop-valid@0.8.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-day-picker:
-        specifier: ^9.9.0
+        specifier: 9.9.0
         version: 9.9.0(react@19.2.3)
       react-dom:
         specifier: 'catalog:'
         version: 19.2.3(react@19.2.3)
       react-grid-layout:
-        specifier: ^1.5.2
+        specifier: 1.5.2
         version: 1.5.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-hook-form:
-        specifier: ^7.50.1
+        specifier: 7.50.1
         version: 7.50.1(react@19.2.3)
       react-in-viewport:
         specifier: 1.0.0-beta.8
         version: 1.0.0-beta.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-markdown:
-        specifier: ^10.1.0
+        specifier: 10.1.0
         version: 10.1.0(@types/react@19.2.7)(react@19.2.3)(supports-color@10.2.0)
       react-redux:
-        specifier: ^8.1.3
+        specifier: 8.1.3
         version: 8.1.3(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react-native@0.73.6(@babel/core@7.28.3(supports-color@10.2.0))(@babel/preset-env@7.23.9(@babel/core@7.28.3(supports-color@10.2.0))(supports-color@10.2.0))(react@19.2.3)(supports-color@10.2.0))(react@19.2.3)(redux@5.0.1)
       react-resizable:
-        specifier: ^3.0.5
+        specifier: 3.0.5
         version: 3.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-responsive:
-        specifier: ^9.0.2
+        specifier: 9.0.2
         version: 9.0.2(react@19.2.3)
       react-simple-maps:
         specifier: 3.0.0
@@ -617,70 +617,70 @@ importers:
         specifier: 2.0.0-alpha.16
         version: 2.0.0-alpha.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-syntax-highlighter:
-        specifier: ^15.5.0
+        specifier: 15.5.0
         version: 15.5.0(react@19.2.3)
       react-use-websocket:
-        specifier: ^4.7.0
+        specifier: 4.7.0
         version: 4.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-virtualized-auto-sizer:
-        specifier: ^1.0.22
+        specifier: 1.0.22
         version: 1.0.22(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       recharts:
-        specifier: ^2.15.4
+        specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       rehype-katex:
-        specifier: ^7.0.1
+        specifier: 7.0.1
         version: 7.0.1
       remark-gfm:
-        specifier: ^4.0.1
+        specifier: 4.0.1
         version: 4.0.1(supports-color@10.2.0)
       remark-highlight:
-        specifier: ^0.1.1
+        specifier: 0.1.1
         version: 0.1.1
       remark-math:
-        specifier: ^6.0.0
+        specifier: 6.0.0
         version: 6.0.0(supports-color@10.2.0)
       remark-parse:
-        specifier: ^11.0.0
+        specifier: 11.0.0
         version: 11.0.0(supports-color@10.2.0)
       remark-rehype:
-        specifier: ^11.1.2
+        specifier: 11.1.2
         version: 11.1.2
       rrweb-player:
         specifier: 2.0.0-alpha.20
         version: 2.0.0-alpha.20
       short-unique-id:
-        specifier: ^5.0.3
+        specifier: 5.0.3
         version: 5.0.3
       slugify:
-        specifier: ^1.6.6
+        specifier: 1.6.6
         version: 1.6.6
       sonner:
-        specifier: ^1.4.0
+        specifier: 1.4.0
         version: 1.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       superjson:
-        specifier: ^2.2.2
+        specifier: 2.2.2
         version: 2.2.2
       tailwind-merge:
-        specifier: ^3.3.1
+        specifier: 3.3.1
         version: 3.3.1
       tailwindcss:
-        specifier: ^4.0.6
+        specifier: 4.1.12
         version: 4.1.12
       tailwindcss-animate:
-        specifier: ^1.0.7
+        specifier: 1.0.7
         version: 1.0.7(tailwindcss@4.1.12)
       tw-animate-css:
-        specifier: ^1.3.6
+        specifier: 1.3.7
         version: 1.3.7
       use-stick-to-bottom:
-        specifier: ^1.1.3
+        specifier: 1.1.3
         version: 1.1.3(react@19.2.3)
       usehooks-ts:
-        specifier: ^2.14.0
+        specifier: 2.14.0
         version: 2.14.0(react@19.2.3)
       vite-tsconfig-paths:
-        specifier: ^5.1.4
+        specifier: 5.1.4
         version: 5.1.4(supports-color@10.2.0)(typescript@5.9.3)(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       zod:
         specifier: 'catalog:'
@@ -696,28 +696,28 @@ importers:
         specifier: workspace:*
         version: link:../../packages/db
       '@tanstack/devtools-event-client':
-        specifier: ^0.3.3
+        specifier: 0.3.3
         version: 0.3.3
       '@testing-library/dom':
-        specifier: ^10.4.0
+        specifier: 10.4.1
         version: 10.4.1
       '@testing-library/react':
-        specifier: ^16.2.0
+        specifier: 16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/d3-array':
-        specifier: ^3.2.2
+        specifier: 3.2.2
         version: 3.2.2
       '@types/lodash.debounce':
-        specifier: ^4.0.9
+        specifier: 4.0.9
         version: 4.0.9
       '@types/lodash.isequal':
-        specifier: ^4.5.8
+        specifier: 4.5.8
         version: 4.5.8
       '@types/lodash.throttle':
-        specifier: ^4.1.9
+        specifier: 4.1.9
         version: 4.1.9
       '@types/ramda':
-        specifier: ^0.31.0
+        specifier: 0.31.0
         version: 0.31.0
       '@types/react':
         specifier: 'catalog:'
@@ -726,31 +726,31 @@ importers:
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.7)
       '@types/react-grid-layout':
-        specifier: ^1.3.5
+        specifier: 1.3.5
         version: 1.3.5
       '@types/react-simple-maps':
-        specifier: ^3.0.4
+        specifier: 3.0.4
         version: 3.0.4
       '@types/react-syntax-highlighter':
-        specifier: ^15.5.11
+        specifier: 15.5.11
         version: 15.5.11
       '@vitejs/plugin-react':
-        specifier: ^5.2.0
+        specifier: 5.2.0
         version: 5.2.0(supports-color@10.2.0)(vite@7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       jsdom:
-        specifier: ^26.0.0
+        specifier: 26.1.0
         version: 26.1.0(supports-color@10.2.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       vite:
-        specifier: ^7.3.0
+        specifier: 7.3.0
         version: 7.3.0(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
       vitest:
-        specifier: ^3.0.5
+        specifier: 3.1.3
         version: 3.1.3(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@2.6.1)(jsdom@26.1.0(supports-color@10.2.0))(lightningcss@1.30.2)(supports-color@10.2.0)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
       web-vitals:
-        specifier: ^4.2.4
+        specifier: 4.2.4
         version: 4.2.4
       wrangler:
         specifier: 4.85.0
@@ -762,47 +762,47 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sdks/web
       react:
-        specifier: ^19.0.0
+        specifier: 19.2.3
         version: 19.2.3
       react-dom:
-        specifier: ^19.0.0
+        specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
       react-router-dom:
-        specifier: ^7.13.1
+        specifier: 7.13.1
         version: 7.13.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
     devDependencies:
       '@types/react':
-        specifier: ^19.0.0
+        specifier: 19.2.7
         version: 19.2.7
       '@types/react-dom':
-        specifier: ^19.0.0
+        specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.7)
       '@vitejs/plugin-react':
-        specifier: ^4.3.4
+        specifier: 4.7.0
         version: 4.7.0(supports-color@10.2.0)(vite@6.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       vite:
-        specifier: ^6.0.0
+        specifier: 6.3.5
         version: 6.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/core:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.974.0
+        specifier: 3.984.0
         version: 3.984.0
       '@aws-sdk/client-sts':
-        specifier: ^3.974.0
+        specifier: 3.1117.0
         version: 3.1117.0
       '@babel/parser':
-        specifier: ^7.26.0
+        specifier: 7.29.7
         version: 7.29.7
       '@better-agent/core':
-        specifier: ^0.1.0-beta.3
+        specifier: 0.1.0-beta.3
         version: 0.1.0-beta.3
       '@better-agent/providers':
-        specifier: ^0.1.0-beta.3
+        specifier: 0.1.0-beta.3
         version: 0.1.0-beta.3(@better-agent/core@0.1.0-beta.3)
       '@bull-board/api':
         specifier: 9.6.0
@@ -817,19 +817,19 @@ importers:
         specifier: 1.4.15
         version: 1.4.15(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3))
       '@google-cloud/storage':
-        specifier: ^7.18.0
+        specifier: 7.22.0
         version: 7.22.0(supports-color@10.2.0)
       '@hyperdx/node-opentelemetry':
         specifier: 'catalog:'
         version: 0.10.3(supports-color@10.2.0)
       '@maxmind/geoip2-node':
-        specifier: ^6.1.0
+        specifier: 6.1.0
         version: 6.1.0
       '@modelcontextprotocol/sdk':
-        specifier: ^1.12.0
+        specifier: 1.27.1
         version: 1.27.1(supports-color@10.2.0)(zod@4.3.6)
       '@node-rs/argon2':
-        specifier: ^2.0.2
+        specifier: 2.0.2
         version: 2.0.2
       '@openpanel/db':
         specifier: workspace:*
@@ -844,70 +844,70 @@ importers:
         specifier: workspace:*
         version: link:../redis
       '@oslojs/crypto':
-        specifier: ^1.0.1
+        specifier: 1.0.1
         version: 1.0.1
       '@oslojs/encoding':
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0
       '@oslojs/otp':
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0
       '@slack/bolt':
-        specifier: ^3.18.0
+        specifier: 3.21.4
         version: 3.21.4(debug@4.4.3(supports-color@10.2.0))(supports-color@10.2.0)
       '@slack/oauth':
-        specifier: ^3.0.0
+        specifier: 3.0.1
         version: 3.0.1(debug@4.4.3(supports-color@10.2.0))
       '@trpc/server':
-        specifier: ^11.17.0
+        specifier: 11.17.0
         version: 11.17.0(typescript@5.9.3)
       arctic:
-        specifier: ^2.3.0
+        specifier: 2.3.0
         version: 2.3.0
       bullmq:
         specifier: 6.3.3
         version: 6.3.3(ioredis@5.8.2(supports-color@10.2.0))
       cheerio:
-        specifier: ^1.0.0
+        specifier: 1.1.2
         version: 1.1.2
       csv-parse:
-        specifier: ^6.1.0
+        specifier: 6.1.0
         version: 6.1.0
       date-fns:
-        specifier: ^3.3.1
+        specifier: 3.3.1
         version: 3.3.1
       elysia:
         specifier: 1.4.30
         version: 1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3)
       fast-deep-equal:
-        specifier: ^3.1.3
+        specifier: 3.1.3
         version: 3.1.3
       fast-json-stable-hash:
-        specifier: ^1.0.3
+        specifier: 1.0.3
         version: 1.0.3
       ipaddr.js:
-        specifier: ^2.5.0
+        specifier: 2.5.0
         version: 2.5.0
       jiti:
-        specifier: ^2.4.1
+        specifier: 2.6.1
         version: 2.6.1
       js-yaml:
-        specifier: ^4.1.0
+        specifier: 4.1.1
         version: 4.1.1
       kafkajs:
-        specifier: ^2.2.4
+        specifier: 2.2.4
         version: 2.2.4
       lru-cache:
-        specifier: ^11.2.4
+        specifier: 11.5.1
         version: 11.5.1
       luxon:
-        specifier: ^3.7.2
+        specifier: 3.7.2
         version: 3.7.2
       mathjs:
-        specifier: ^12.3.2
+        specifier: 12.3.2
         version: 12.3.2
       nanoid:
-        specifier: ^5.1.6
+        specifier: 5.1.6
         version: 5.1.6
       pino:
         specifier: 'catalog:'
@@ -916,77 +916,77 @@ importers:
         specifier: 'catalog:'
         version: 13.1.3
       prisma-error-enum:
-        specifier: ^0.1.3
+        specifier: 0.1.3
         version: 0.1.3
       prom-client:
-        specifier: ^15.1.3
+        specifier: 15.1.3
         version: 15.1.3
       qrcode:
-        specifier: ^1.5.4
+        specifier: 1.5.4
         version: 1.5.4
       ramda:
-        specifier: ^0.29.1
+        specifier: 0.29.1
         version: 0.29.1
       sharp:
-        specifier: ^0.33.5
+        specifier: 0.33.5
         version: 0.33.5
       short-unique-id:
-        specifier: ^5.0.3
+        specifier: 5.0.3
         version: 5.0.3
       slugify:
-        specifier: ^1.6.6
+        specifier: 1.6.9
         version: 1.6.9
       superjson:
-        specifier: ^1.13.3
+        specifier: 1.13.3
         version: 1.13.3
       ua-parser-js:
-        specifier: ^2.0.6
+        specifier: 2.0.6
         version: 2.0.6
       undici:
-        specifier: ^8.10.0
+        specifier: 8.10.0
         version: 8.10.0
       unzipper:
-        specifier: ^0.12.3
+        specifier: 0.12.5
         version: 0.12.5
       url-metadata:
-        specifier: ^5.4.1
+        specifier: 5.4.1
         version: 5.4.1
       uuid:
-        specifier: ^9.0.1
+        specifier: 9.0.1
         version: 9.0.1
       zod:
         specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
       '@clickhouse/client':
-        specifier: ^1.18.5
+        specifier: 1.18.5
         version: 1.18.5
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/js-yaml':
-        specifier: ^4.0.9
+        specifier: 4.0.9
         version: 4.0.9
       '@types/luxon':
-        specifier: ^3.7.1
+        specifier: 3.7.1
         version: 3.7.1
       '@types/qrcode':
-        specifier: ^1.5.6
+        specifier: 1.5.6
         version: 1.5.6
       '@types/ramda':
-        specifier: ^0.31.1
+        specifier: 0.31.1
         version: 0.31.1
       '@types/unzipper':
-        specifier: ^0.10.10
+        specifier: 0.10.11
         version: 0.10.11
       '@types/uuid':
-        specifier: ^10.0.0
+        specifier: 10.0.0
         version: 10.0.0
       bun-types:
         specifier: 1.4.0
         version: 1.4.0
       tar:
-        specifier: ^7.4.3
+        specifier: 7.4.3
         version: 7.4.3
       typescript:
         specifier: 'catalog:'
@@ -995,7 +995,7 @@ importers:
   packages/db:
     dependencies:
       '@clickhouse/client':
-        specifier: ^1.18.5
+        specifier: 1.18.5
         version: 1.18.5
       '@hyperdx/node-opentelemetry':
         specifier: 'catalog:'
@@ -1010,10 +1010,10 @@ importers:
         specifier: workspace:*
         version: link:../redis
       '@prisma/client':
-        specifier: ^6.14.0
+        specifier: 6.14.0
         version: 6.14.0(prisma@6.14.0(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
       jiti:
-        specifier: ^2.4.1
+        specifier: 2.4.1
         version: 2.4.1
       pino:
         specifier: 'catalog:'
@@ -1022,7 +1022,7 @@ importers:
         specifier: 'catalog:'
         version: 13.1.3
       prisma-json-types-generator:
-        specifier: ^3.1.1
+        specifier: 3.1.1
         version: 3.1.1(prisma@6.14.0(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
       zod:
         specifier: 'catalog:'
@@ -1038,7 +1038,7 @@ importers:
         specifier: 1.4.0
         version: 1.4.0
       prisma:
-        specifier: ^6.14.0
+        specifier: 6.14.0
         version: 6.14.0(magicast@0.3.5)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1050,16 +1050,16 @@ importers:
         specifier: workspace:*
         version: link:../db
       '@react-email/components':
-        specifier: ^0.5.6
+        specifier: 0.5.6
         version: 0.5.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@react-email/render':
-        specifier: ^2.0.7
+        specifier: 2.0.7
         version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/nodemailer':
-        specifier: ^8.0.0
+        specifier: 8.0.0
         version: 8.0.0
       nodemailer:
-        specifier: ^8.0.5
+        specifier: 8.0.5
         version: 8.0.5
       react:
         specifier: 'catalog:'
@@ -1068,10 +1068,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.3(react@19.2.3)
       resend:
-        specifier: ^4.0.1
+        specifier: 4.0.1
         version: 4.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       responsive-react-email:
-        specifier: ^0.0.5
+        specifier: 0.0.5
         version: 0.0.5(react-email@3.0.4(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@10.2.0))(react@19.2.3)
       zod:
         specifier: 'catalog:'
@@ -1096,10 +1096,10 @@ importers:
   packages/payments:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.49.0
+        specifier: 0.49.0
         version: 0.49.0
       date-fns:
-        specifier: ^3.3.1
+        specifier: 3.3.1
         version: 3.3.1
     devDependencies:
       '@openpanel/db':
@@ -1109,10 +1109,10 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/inquirer':
-        specifier: ^9.0.7
+        specifier: 9.0.7
         version: 9.0.7
       '@types/inquirer-autocomplete-prompt':
-        specifier: ^3.0.3
+        specifier: 3.0.3
         version: 3.0.3
       '@types/node':
         specifier: 'catalog:'
@@ -1121,10 +1121,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.7
       inquirer:
-        specifier: ^9.3.5
+        specifier: 9.3.6
         version: 9.3.6
       inquirer-autocomplete-prompt:
-        specifier: ^3.0.1
+        specifier: 3.0.1
         version: 3.0.1(inquirer@9.3.6)
       typescript:
         specifier: 'catalog:'
@@ -1136,10 +1136,10 @@ importers:
         specifier: 5.8.2
         version: 5.8.2(supports-color@10.2.0)
       lru-cache:
-        specifier: ^11.2.2
+        specifier: 11.2.2
         version: 11.2.2
       superjson:
-        specifier: ^1.13.3
+        specifier: 1.13.3
         version: 1.13.3
     devDependencies:
       '@openpanel/core':
@@ -1187,7 +1187,7 @@ importers:
         version: link:../web
     devDependencies:
       astro:
-        specifier: ^6.4.2
+        specifier: 6.4.2
         version: 6.4.2(@types/node@24.10.1)(aws4fetch@1.0.20)(db0@0.3.4)(ioredis@5.8.2(supports-color@10.2.0))(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.52.5)(supports-color@10.2.0)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/sdks/express:
@@ -1203,13 +1203,13 @@ importers:
         specifier: workspace:*
         version: link:../../../tooling/typescript
       '@types/express':
-        specifier: ^5.0.3
+        specifier: 5.0.3
         version: 5.0.3
       '@types/request-ip':
-        specifier: ^0.0.41
+        specifier: 0.0.41
         version: 0.0.41
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1237,7 +1237,7 @@ importers:
         specifier: 'catalog:'
         version: 19.2.7
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1256,13 +1256,13 @@ importers:
         version: 4.2.2(@biomejs/biome@2.3.15)(@parcel/watcher@2.5.1)(@types/node@24.10.1)(@vue/compiler-sfc@3.5.25)(aws4fetch@1.0.20)(cac@6.7.14)(db0@0.3.4)(ioredis@5.8.2(supports-color@10.2.0))(lightningcss@1.30.2)(magicast@0.5.1)(rolldown@1.0.0-beta.43(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1))(rollup@4.52.5)(supports-color@10.2.0)(terser@5.27.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2))(yaml@2.8.2)
     devDependencies:
       '@nuxt/kit':
-        specifier: ^3.0.0
+        specifier: 3.20.2
         version: 3.20.2(magicast@0.5.1)
       '@nuxt/module-builder':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2(@nuxt/cli@3.31.2(cac@6.7.14)(magicast@0.5.1)(supports-color@10.2.0))(@vue/compiler-core@3.5.25)(esbuild@0.27.3)(typescript@5.9.3)(vue@3.5.25(typescript@5.9.3))
       '@nuxt/types':
-        specifier: ^2.18.1
+        specifier: 2.18.1
         version: 2.18.1
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -1271,13 +1271,13 @@ importers:
         specifier: 'catalog:'
         version: 24.10.1
       '@vue/runtime-core':
-        specifier: ^3.5.25
+        specifier: 3.5.25
         version: 3.5.25
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       unbuild:
-        specifier: ^3.6.1
+        specifier: 3.6.1
         version: 3.6.1(typescript@5.9.3)(vue-sfc-transformer@0.1.17(@vue/compiler-core@3.5.25)(esbuild@0.27.3)(vue@3.5.25(typescript@5.9.3)))(vue@3.5.25(typescript@5.9.3))
 
   packages/sdks/react-native:
@@ -1302,7 +1302,7 @@ importers:
         specifier: 'catalog:'
         version: 24.10.1
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1317,7 +1317,7 @@ importers:
         specifier: 'catalog:'
         version: 24.10.1
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1342,7 +1342,7 @@ importers:
         specifier: 'catalog:'
         version: 24.10.1
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
@@ -1351,10 +1351,10 @@ importers:
   tooling/publish:
     dependencies:
       arg:
-        specifier: ^5.0.2
+        specifier: 5.0.2
         version: 5.0.2
       semver:
-        specifier: ^7.5.4
+        specifier: 7.6.0
         version: 7.6.0
     devDependencies:
       '@openpanel/tsconfig':
@@ -1364,7 +1364,7 @@ importers:
         specifier: 'catalog:'
         version: 24.10.1
       '@types/semver':
-        specifier: ^7.5.4
+        specifier: 7.5.7
         version: 7.5.7
       typescript:
         specifier: 'catalog:'
@@ -1373,7 +1373,7 @@ importers:
   tooling/typescript:
     devDependencies:
       tsup:
-        specifier: ^7.2.0
+        specifier: 7.3.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
 
 packages:

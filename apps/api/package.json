@@ -21,13 +21,13 @@
     "elysia": "1.4.30",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
-    "uuid": "^9.0.1",
+    "uuid": "9.0.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "^9.0.1",
+    "@faker-js/faker": "9.0.1",
     "@openpanel/tsconfig": "workspace:*",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "10.0.0",
     "bun-types": "1.4.0",
     "typescript": "catalog:"
   }

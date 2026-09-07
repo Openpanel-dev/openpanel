@@ -15,23 +15,23 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@clickhouse/client": "^1.18.5",
+    "@clickhouse/client": "1.18.5",
     "@hyperdx/node-opentelemetry": "catalog:",
     "@openpanel/core": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/redis": "workspace:*",
-    "@prisma/client": "^6.14.0",
-    "jiti": "^2.4.1",
+    "@prisma/client": "6.14.0",
+    "jiti": "2.4.1",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
-    "prisma-json-types-generator": "^3.1.1",
+    "prisma-json-types-generator": "3.1.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "bun-types": "1.4.0",
-    "prisma": "^6.14.0",
+    "prisma": "6.14.0",
     "typescript": "catalog:"
   }
 }

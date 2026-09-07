@@ -8,13 +8,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "arg": "^5.0.2",
-    "semver": "^7.5.4"
+    "arg": "5.0.2",
+    "semver": "7.6.0"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "@types/semver": "^7.5.4",
+    "@types/semver": "7.5.7",
     "typescript": "catalog:"
   }
 }

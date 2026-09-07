@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "ioredis": "5.8.2",
-    "lru-cache": "^11.2.2",
-    "superjson": "^1.13.3"
+    "lru-cache": "11.2.2",
+    "superjson": "1.13.3"
   },
   "devDependencies": {
     "@openpanel/core": "workspace:*",
