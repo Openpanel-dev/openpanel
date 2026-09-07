@@ -195,6 +195,49 @@ Invitations are enabled by default. You can also disable invitations by setting 
 ALLOW_INVITATION=false
 ```
 
+### Social login (GitHub / Google)
+
+Email/password works without extra setup. GitHub and Google buttons appear only when their OAuth credentials are configured.
+
+#### GitHub
+
+1. Open [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers) and create a new OAuth App.
+2. Set **Homepage URL** to your dashboard URL (e.g. `https://analytics.example.com`).
+3. Set **Authorization callback URL** to your API callback:
+
+```text
+https://api.example.com/oauth/github/callback
+```
+
+4. Copy the Client ID and generate a Client Secret, then set:
+
+```bash title=".env"
+GITHUB_CLIENT_ID=…
+GITHUB_CLIENT_SECRET=…
+GITHUB_REDIRECT_URI=https://api.example.com/oauth/github/callback
+```
+
+To hide GitHub login while keeping credentials around, set `DISABLE_GITHUB_AUTH=true`.
+
+#### Google
+
+1. In [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 Client ID (Web application).
+2. Add an authorized redirect URI:
+
+```text
+https://api.example.com/oauth/google/callback
+```
+
+3. Set:
+
+```bash title=".env"
+GOOGLE_CLIENT_ID=…
+GOOGLE_CLIENT_SECRET=…
+GOOGLE_REDIRECT_URI=https://api.example.com/oauth/google/callback
+```
+
+If you use the same Google client for Search Console but do not want Google on the login page, set `DISABLE_GOOGLE_AUTH=true`.
+
 For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 ## Helpful scripts

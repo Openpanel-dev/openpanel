@@ -7,6 +7,7 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCookieStore } from '@/hooks/use-cookie-store';
+import { useOAuthProviders } from '@/hooks/use-oauth-providers';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/login')({
@@ -22,14 +23,20 @@ export const Route = createFileRoute('/_login/login')({
     correlationId: z.string().optional(),
     inviteId: z.string().optional(),
   }),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(
+      context.trpc.auth.getOAuthProviders.queryOptions(),
+    );
+  },
 });
 
 function LoginPage() {
   const { error, correlationId, inviteId } = Route.useSearch();
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
-    null
+    null,
   );
+  const { providers, hasAny } = useOAuthProviders();
 
   return (
     <div className="col w-full gap-8 text-left">
@@ -72,19 +79,25 @@ function LoginPage() {
         </Alert>
       )}
 
-      <div className="space-y-4">
-        <SignInGoogle
-          inviteId={inviteId}
-          isLastUsed={lastProvider === 'google'}
-          type="sign-in"
-        />
-        <SignInGithub
-          inviteId={inviteId}
-          isLastUsed={lastProvider === 'github'}
-          type="sign-in"
-        />
-      </div>
-      <Or />
+      {hasAny && (
+        <div className="space-y-4">
+          {providers.google && (
+            <SignInGoogle
+              inviteId={inviteId}
+              isLastUsed={lastProvider === 'google'}
+              type="sign-in"
+            />
+          )}
+          {providers.github && (
+            <SignInGithub
+              inviteId={inviteId}
+              isLastUsed={lastProvider === 'github'}
+              type="sign-in"
+            />
+          )}
+        </div>
+      )}
+      {hasAny && <Or />}
       <SignInEmailForm inviteId={inviteId} isLastUsed={lastProvider === 'email'} />
     </div>
   );

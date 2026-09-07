@@ -7,6 +7,7 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { useOAuthProviders } from '@/hooks/use-oauth-providers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -28,12 +29,15 @@ export const Route = createFileRoute('/_public/onboarding')({
   component: Component,
   validateSearch,
   loader: async ({ context, location }) => {
+    await context.queryClient.ensureQueryData(
+      context.trpc.auth.getOAuthProviders.queryOptions(),
+    );
     const search = validateSearch.safeParse(location.search);
     if (search.success && search.data.inviteId) {
       await context.queryClient.prefetchQuery(
         context.trpc.organization.getInvite.queryOptions({
           inviteId: search.data.inviteId,
-        })
+        }),
       );
     }
   },
@@ -43,6 +47,7 @@ export const Route = createFileRoute('/_public/onboarding')({
 function Component() {
   const { inviteId } = Route.useSearch();
   const trpc = useTRPC();
+  const { providers, hasAny } = useOAuthProviders();
   const { data: invite } = useQuery(
     trpc.organization.getInvite.queryOptions(
       {
@@ -50,8 +55,8 @@ function Component() {
       },
       {
         enabled: !!inviteId,
-      }
-    )
+      },
+    ),
   );
   return (
     <div className="col w-full gap-8 py-4 text-left">
@@ -119,15 +124,23 @@ function Component() {
       )}
 
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <SignInGithub inviteId={inviteId} type="sign-up" />
-          <SignInGoogle inviteId={inviteId} type="sign-up" />
-        </div>
-        <p className="text-center text-muted-foreground text-xs">
-          No credit card required · Free 30-day trial · Cancel anytime
-        </p>
+        {hasAny && (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {providers.github && (
+                <SignInGithub inviteId={inviteId} type="sign-up" />
+              )}
+              {providers.google && (
+                <SignInGoogle inviteId={inviteId} type="sign-up" />
+              )}
+            </div>
+            <p className="text-center text-muted-foreground text-xs">
+              No credit card required · Free 30-day trial · Cancel anytime
+            </p>
 
-        <Or className="my-6" />
+            <Or className="my-6" />
+          </>
+        )}
 
         <div className="mb-4 flex items-center gap-2 font-semibold text-lg">
           <MailIcon className="size-4" />

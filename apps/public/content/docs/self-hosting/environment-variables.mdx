@@ -508,6 +508,112 @@ If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** au
 
 ## OAuth & Integrations
 
+Social login (GitHub / Google) is **off by default** for self-hosted installs. Set the provider credentials below to show the matching button on `/login` and `/onboarding`. Leave them unset (or set `DISABLE_*_AUTH`) to hide a provider.
+
+### GITHUB_CLIENT_ID
+
+**Type**: `string`
+**Required**: No (required to enable GitHub login)
+**Default**: None
+
+OAuth App client ID from [GitHub Developer Settings](https://github.com/settings/developers).
+
+**Example**:
+```bash
+GITHUB_CLIENT_ID=Ov23liABCDEFG
+```
+
+### GITHUB_CLIENT_SECRET
+
+**Type**: `string`
+**Required**: No (required to enable GitHub login)
+**Default**: None
+
+OAuth App client secret from GitHub.
+
+**Example**:
+```bash
+GITHUB_CLIENT_SECRET=your-github-client-secret
+```
+
+### GITHUB_REDIRECT_URI
+
+**Type**: `string`
+**Required**: No (required to enable GitHub login)
+**Default**: None
+
+Must match the **Authorization callback URL** configured on the GitHub OAuth App. Point it at your API host:
+
+**Example**:
+```bash
+GITHUB_REDIRECT_URI=https://api.example.com/oauth/github/callback
+```
+
+### DISABLE_GITHUB_AUTH
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+
+Set to `true` or `1` to hide GitHub login even when GitHub credentials are set.
+
+**Example**:
+```bash
+DISABLE_GITHUB_AUTH=true
+```
+
+### GOOGLE_CLIENT_ID
+
+**Type**: `string`
+**Required**: No (required to enable Google login)
+**Default**: None
+
+OAuth 2.0 Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials). The same client can also be used for Google Search Console integration.
+
+**Example**:
+```bash
+GOOGLE_CLIENT_ID=1234567890-abcdefg.apps.googleusercontent.com
+```
+
+### GOOGLE_CLIENT_SECRET
+
+**Type**: `string`
+**Required**: No (required to enable Google login)
+**Default**: None
+
+OAuth 2.0 Client secret from Google Cloud Console.
+
+**Example**:
+```bash
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+### GOOGLE_REDIRECT_URI
+
+**Type**: `string`
+**Required**: No (required to enable Google login)
+**Default**: None
+
+Must match an authorized redirect URI on the Google OAuth client. Point it at your API host:
+
+**Example**:
+```bash
+GOOGLE_REDIRECT_URI=https://api.example.com/oauth/google/callback
+```
+
+### DISABLE_GOOGLE_AUTH
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+
+Set to `true` or `1` to hide Google login while keeping `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` available for Search Console (`GSC_GOOGLE_REDIRECT_URI`).
+
+**Example**:
+```bash
+DISABLE_GOOGLE_AUTH=true
+```
+
 ### SLACK_CLIENT_ID
 
 **Type**: `string`
