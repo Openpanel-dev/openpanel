@@ -13,9 +13,11 @@
 // test file reaches, and constructing @openpanel/db's clients at import time
 // would spawn a pino-pretty transport worker thread per test file).
 //
-// ClickHouse queries here still go through raw sqlstring-escaped strings, not
-// the `sql` tag: ADR-013 converts the analytics read path one query per P7
-// task, and this module's queries haven't been converted yet. Table names are
+// M12-004 converted every ClickHouse statement here onto the ADR-013 `sql`
+// tag: values bind as `{pN:Type}` params, identifiers go through `sql.id`,
+// structure composes with `sql.join`. `sqlstring` is gone from this module.
+// The proof (V1 vs V2 result sets, per branch, against local ClickHouse) is
+// `cohort.sql.proof.md` beside this file. Table names are
 // a local literal map (`TABLE`, below), not @openpanel/db's `TABLE_NAMES`: the
 // latter lives in the same module as `ch`/`chQuery` (clickhouse/client.ts,
 // which constructs a real pino logger at import time — the exact cost the lazy
@@ -35,11 +37,10 @@
 // module's own rpc mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { sql } from '@openpanel/db/src/clickhouse/sql';
-import sqlstring from 'sqlstring';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../services';
 import { chQuery } from '../../shared/ch-query';
-import { getReplicatedTableName } from '../../shared/ch-tables';
+import { isClickhouseClustered } from '../../shared/ch-tables';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {
@@ -61,6 +62,23 @@ const TABLE = {
   eventProfileSummaryMv: 'event_profile_summary_mv',
   eventPropertyProfileSummaryMv: 'event_property_profile_summary_mv',
 } as const;
+
+/**
+ * The mutation target for a table: `<name>_replicated ON CLUSTER '{cluster}'`
+ * when clustered, the plain name otherwise — the exact text
+ * `getReplicatedTableName` produces (asserted in src/cohort-sql.test.ts).
+ *
+ * Built here rather than fed through `sql.id` because the clustered form is
+ * not an identifier. The `ON CLUSTER` clause is literal template text, and
+ * `'{cluster}'` is a ClickHouse *macro*, not a `{name:Type}` placeholder — it
+ * carries no type suffix, so parameter substitution leaves it alone.
+ */
+export function replicatedTarget(tableName: string): SqlFragment {
+  if (isClickhouseClustered()) {
+    return sql`${sql.id(`${tableName}_replicated`)} ON CLUSTER '{cluster}'`;
+  }
+  return sql.id(tableName);
+}
 
 // Max members materialized into cohort_members per compute. Cohorts larger
 // than this are silently truncated to an arbitrary subset, so deployments
@@ -143,42 +161,97 @@ export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings =
     spillBytesRaw: process.env.COHORT_QUERY_SPILL_BYTES,
   });
 
-function buildTimeConstraint(timeframe: Timeframe): string {
+// The column is a parameter rather than a post-hoc `.replace('created_at',
+// 'event_date')` on finished text: V1 rewrote the clause that way at all four
+// call sites below, and a fragment has no text to rewrite.
+function buildTimeConstraint(
+  timeframe: Timeframe,
+  column: SqlFragment
+): SqlFragment {
   if (timeframe.type === 'relative') {
     const match = timeframe.value.match(/^(\d+)d$/);
     if (!match) {
       throw new Error(`Invalid relative timeframe: ${timeframe.value}`);
     }
     const days = Number.parseInt(match[1]!, 10);
-    return `created_at >= toDate(now() - INTERVAL ${days} DAY)`;
+    return sql`${column} >= toDate(now() - INTERVAL ${sql.uint64(days)} DAY)`;
   }
 
   const start = timeframe.start;
   if (timeframe.end) {
-    return `created_at BETWEEN toDate('${start}') AND toDate('${timeframe.end}')`;
+    return sql`${column} BETWEEN toDate(${sql.string(start)}) AND toDate(${sql.string(timeframe.end)})`;
   }
-  return `created_at >= toDate('${start}')`;
+  return sql`${column} >= toDate(${sql.string(start)})`;
 }
 
-function getFrequencyOperator(frequency: Frequency): string {
+function getFrequencyOperator(frequency: Frequency): SqlFragment {
+  const count = sql.uint64(frequency.count);
   switch (frequency.operator) {
     case 'gte':
-      return `>= ${frequency.count}`;
+      return sql`>= ${count}`;
     case 'eq':
-      return `= ${frequency.count}`;
+      return sql`= ${count}`;
     case 'lte':
-      return `<= ${frequency.count}`;
+      return sql`<= ${count}`;
     default:
-      return `>= ${frequency.count}`;
+      return sql`>= ${count}`;
+  }
+}
+
+/** The trimmed string form V1 escaped for every filter comparand. */
+function trimmedComparand(value: unknown): string {
+  return String(value).trim();
+}
+
+// One event-property filter. Values bind; the property key is a Map key, so it
+// binds as a value too. An `IN`/`NOT IN` list becomes one `Array(String)`
+// param — V1's `IN ()` on an empty list and `IN {p:Array(String)}` on an empty
+// array both match nothing (SQL_MIGRATION_RECIPE idioms 9/10).
+function eventPropertyCondition(filter: IChartEventFilter): SqlFragment {
+  const propertyKey = sql.string(filter.name.replace('properties.', ''));
+  const { value, operator } = filter;
+  const list = sql.array('String', value.map(trimmedComparand));
+
+  switch (operator) {
+    case 'is':
+      if (value.length === 1) {
+        return sql`(property_key = ${propertyKey} AND property_value = ${sql.string(trimmedComparand(value[0]))})`;
+      }
+      return sql`(property_key = ${propertyKey} AND property_value IN ${list})`;
+    case 'isNot':
+      if (value.length === 1) {
+        return sql`(property_key = ${propertyKey} AND property_value != ${sql.string(trimmedComparand(value[0]))})`;
+      }
+      return sql`(property_key = ${propertyKey} AND property_value NOT IN ${list})`;
+    case 'contains':
+      return sql`(property_key = ${propertyKey} AND (${sql.join(
+        value.map(
+          (val) =>
+            sql`property_value LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
+        ),
+        ' OR '
+      )}))`;
+    case 'doesNotContain':
+      return sql`(property_key = ${propertyKey} AND (${sql.join(
+        value.map(
+          (val) =>
+            sql`property_value NOT LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
+        ),
+        ' AND '
+      )}))`;
+    default:
+      return sql`(property_key = ${propertyKey} AND property_value IN ${list})`;
   }
 }
 
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria
-): string {
+): SqlFragment {
   const { name, filters, timeframe, frequency } = criteria;
-  const timeConstraint = buildTimeConstraint(timeframe);
+  const timeConstraint = buildTimeConstraint(timeframe, sql.id('event_date'));
+  const project = sql.string(projectId);
+  const eventName = sql.string(name);
   const hasEventPropertyFilters = filters.some(
     (f) =>
       f.name.startsWith('properties.') &&
@@ -186,114 +259,84 @@ export function buildEventCriteriaQuery(
   );
 
   if (hasEventPropertyFilters) {
-    const propertyFilters = filters.filter((f) =>
-      f.name.startsWith('properties.')
+    const propertyConditions = sql.join(
+      filters
+        .filter((f) => f.name.startsWith('properties.'))
+        .map(eventPropertyCondition),
+      ' OR '
     );
-
-    const propertyConditions = propertyFilters
-      .map((filter) => {
-        const propertyKey = filter.name.replace('properties.', '');
-        const { value, operator } = filter;
-
-        switch (operator) {
-          case 'is':
-            if (value.length === 1) {
-              return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value = ${sqlstring.escape(String(value[0]).trim())})`;
-            }
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value
-              .map((val) => sqlstring.escape(String(val).trim()))
-              .join(', ')}))`;
-          case 'isNot':
-            if (value.length === 1) {
-              return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value != ${sqlstring.escape(String(value[0]).trim())})`;
-            }
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value NOT IN (${value
-              .map((val) => sqlstring.escape(String(val).trim()))
-              .join(', ')}))`;
-          case 'contains':
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
-              .map(
-                (val) =>
-                  `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
-              )
-              .join(' OR ')}))`;
-          case 'doesNotContain':
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
-              .map(
-                (val) =>
-                  `property_value NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
-              )
-              .join(' AND ')}))`;
-          default:
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value
-              .map((val) => sqlstring.escape(String(val).trim()))
-              .join(', ')}))`;
-        }
-      })
-      .join(' OR ');
 
     if (frequency) {
       const frequencyOp = getFrequencyOperator(frequency);
-      return `
+      return sql`
         SELECT profile_id
-        FROM ${TABLE.eventPropertyProfileSummaryMv}
-        WHERE project_id = ${sqlstring.escape(projectId)}
-          AND name = ${sqlstring.escape(name)}
-          AND ${timeConstraint.replace('created_at', 'event_date')}
+        FROM ${sql.id(TABLE.eventPropertyProfileSummaryMv)}
+        WHERE project_id = ${project}
+          AND name = ${eventName}
+          AND ${timeConstraint}
           AND (${propertyConditions})
         GROUP BY profile_id
         HAVING countMerge(event_count) ${frequencyOp}
       `;
     }
 
-    return `
+    return sql`
       SELECT DISTINCT profile_id
-      FROM ${TABLE.eventPropertyProfileSummaryMv}
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND name = ${sqlstring.escape(name)}
-        AND ${timeConstraint.replace('created_at', 'event_date')}
+      FROM ${sql.id(TABLE.eventPropertyProfileSummaryMv)}
+      WHERE project_id = ${project}
+        AND name = ${eventName}
+        AND ${timeConstraint}
         AND (${propertyConditions})
     `;
   }
 
   if (frequency) {
     const frequencyOp = getFrequencyOperator(frequency);
-    return `
+    return sql`
       SELECT profile_id
-      FROM ${TABLE.eventProfileSummaryMv}
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND name = ${sqlstring.escape(name)}
-        AND ${timeConstraint.replace('created_at', 'event_date')}
+      FROM ${sql.id(TABLE.eventProfileSummaryMv)}
+      WHERE project_id = ${project}
+        AND name = ${eventName}
+        AND ${timeConstraint}
       GROUP BY profile_id
       HAVING countMerge(event_count) ${frequencyOp}
     `;
   }
 
-  return `
+  return sql`
     SELECT DISTINCT profile_id
-    FROM ${TABLE.eventProfileSummaryMv}
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND name = ${sqlstring.escape(name)}
-      AND ${timeConstraint.replace('created_at', 'event_date')}
+    FROM ${sql.id(TABLE.eventProfileSummaryMv)}
+    WHERE project_id = ${project}
+      AND name = ${eventName}
+      AND ${timeConstraint}
   `;
 }
 
+// `profile.<x>` and `profiles.<x>` name the same column; normalizing first
+// makes the dedup in buildProfileCohortHavingClause see them as one.
+function normalizeProfileColumn(name: string): string {
+  return name.replace(/^profile\./, 'profiles.');
+}
+
 // SQL for a profile filter's column: either a properties Map lookup or a
-// plain column, qualified with the table name.
-function profileColumnAccess(name: string): string {
-  const normalizedName = name.replace(/^profile\./, 'profiles.');
+// plain column, qualified with the table name. Cohort definitions come from
+// the API, so both halves are user-controlled: the Map key is a *value* and
+// binds as one, and the plain column goes through `sql.id`, which throws
+// rather than inlining anything that is not a bare (once-qualified)
+// identifier (ADR-013 R3). V1 inlined it verbatim — the one input class whose
+// behaviour changes is a non-identifier column name, which V1 turned into a
+// ClickHouse `UNKNOWN_IDENTIFIER` and V2 rejects before the round trip.
+function profileColumnAccess(normalizedName: string): SqlFragment {
   if (normalizedName.startsWith('profiles.properties.')) {
     const propKey = normalizedName.replace('profiles.properties.', '');
-    // Escaped: cohort definitions come from the API, so the key is
-    // user-controlled — a quote in it must not terminate the literal.
-    return `profiles.properties[${sqlstring.escape(propKey)}]`;
+    return sql`profiles.properties[${sql.string(propKey)}]`;
   }
-  return normalizedName;
+  return sql.id(normalizedName);
 }
 
 function buildProfileCohortHavingClause(
   definition: PropertyBasedCohortDefinition
-): string | null {
+): SqlFragment | null {
   const { properties, operator } = definition.criteria;
 
   // Every argMax below must order the candidate rows IDENTICALLY, or
@@ -308,9 +351,9 @@ function buildProfileCohortHavingClause(
   // need a version tie AND a 64-bit collision between different rows — and
   // even then every aggregate in the query still elects the same row.
   const referencedColumns = Array.from(
-    new Set(properties.map((f) => profileColumnAccess(f.name)))
-  );
-  const latestRowKey = `tuple(last_seen_at, cityHash64(${referencedColumns.join(', ')}))`;
+    new Set(properties.map((f) => normalizeProfileColumn(f.name)))
+  ).map(profileColumnAccess);
+  const latestRowKey = sql`tuple(last_seen_at, cityHash64(${sql.join(referencedColumns)}))`;
 
   const filterWhere = getProfileFiltersWhereClause(properties, {
     latestPerProfileKey: latestRowKey,
@@ -321,32 +364,49 @@ function buildProfileCohortHavingClause(
     return null;
   }
 
-  return filterClauses.join(operator === 'and' ? ' AND ' : ' OR ');
+  return sql.join(filterClauses, operator === 'and' ? ' AND ' : ' OR ');
 }
 
 export function buildPropertyBasedCohortQuery(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
   limit?: number
-): string {
+): SqlFragment {
   const havingClause = buildProfileCohortHavingClause(definition);
 
   if (!havingClause) {
-    return `SELECT id as profile_id FROM ${TABLE.profiles} WHERE 1=0`;
+    return sql`SELECT id as profile_id FROM ${sql.id(TABLE.profiles)} WHERE 1=0`;
   }
 
   // Resolve each profile's newest row with GROUP BY + argMax instead of
   // FINAL: FINAL cannot spill to disk, so on wide projects the dedup itself
   // is what runs out of memory. The aggregate shape spills normally under
   // PROFILE_COHORT_QUERY_SETTINGS, and filters on aggregates move to HAVING.
-  return `
+  return sql`
     SELECT id as profile_id
-    FROM ${TABLE.profiles}
-    WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(TABLE.profiles)}
+    WHERE project_id = ${sql.string(projectId)}
     GROUP BY id
     HAVING (${havingClause})
-    ${limit ? `LIMIT ${limit}` : ''}
+    ${limit ? sql`LIMIT ${sql.uint64(limit)}` : sql.empty}
   `;
+}
+
+// `INTERSECT` / `UNION DISTINCT` are not `sql.join` separators (that set is
+// closed on purpose), so the criteria fold left — the same associativity
+// `queries.join(' INTERSECT ')` produced.
+function combineCriteriaQueries(
+  queries: SqlFragment[],
+  operator: 'and' | 'or'
+): SqlFragment {
+  if (queries.length === 0) {
+    return sql.empty;
+  }
+  return queries.reduce((left, right) =>
+    operator === 'and'
+      ? sql`${left} INTERSECT ${right}`
+      : sql`${left} UNION DISTINCT ${right}`
+  );
 }
 
 export async function computeEventBasedCohort(
@@ -361,12 +421,11 @@ export async function computeEventBasedCohort(
     buildEventCriteriaQuery(projectId, eventCriteria)
   );
 
-  const combinedQuery =
-    operator === 'and'
-      ? queries.join(' INTERSECT ')
-      : queries.join(' UNION DISTINCT ');
+  const combinedQuery = combineCriteriaQueries(queries, operator);
 
-  const finalQuery = limit ? `${combinedQuery} LIMIT ${limit}` : combinedQuery;
+  const finalQuery = limit
+    ? sql`${combinedQuery} LIMIT ${sql.uint64(limit)}`
+    : combinedQuery;
 
   const results = await chQuery<{ profile_id: string }>(deps, finalQuery);
   return results.map((r) => r.profile_id);
@@ -383,21 +442,18 @@ export async function countEventBasedCohort(
     buildEventCriteriaQuery(projectId, eventCriteria)
   );
 
-  const combinedQuery =
-    operator === 'and'
-      ? queries.join(' INTERSECT ')
-      : queries.join(' UNION DISTINCT ');
+  const combinedQuery = combineCriteriaQueries(queries, operator);
 
-  const countQuery = `SELECT count() as count FROM (${combinedQuery})`;
+  const countQuery = sql`SELECT count() as count FROM (${combinedQuery})`;
   const results = await chQuery<{ count: number }>(deps, countQuery);
   return results[0]?.count ?? 0;
 }
 
 function getProfileFiltersWhereClause(
   filters: IChartEventFilter[],
-  { latestPerProfileKey }: { latestPerProfileKey?: string } = {}
-): Record<string, string> {
-  const where: Record<string, string> = {};
+  { latestPerProfileKey }: { latestPerProfileKey?: SqlFragment } = {}
+): Record<string, SqlFragment> {
+  const where: Record<string, SqlFragment> = {};
 
   filters.forEach((filter, index) => {
     const id = `pf${index}`;
@@ -411,7 +467,7 @@ function getProfileFiltersWhereClause(
       return;
     }
 
-    let columnAccess = profileColumnAccess(name);
+    let columnAccess = profileColumnAccess(normalizeProfileColumn(name));
 
     if (latestPerProfileKey) {
       // Resolve the profile's newest row inside a GROUP BY instead of
@@ -424,97 +480,104 @@ function getProfileFiltersWhereClause(
       // which is not derivable from the data and can shift under a
       // background merge — the shared value-tuple tie-break is
       // deterministic instead.
-      columnAccess = `argMax(${columnAccess}, ${latestPerProfileKey})`;
+      columnAccess = sql`argMax(${columnAccess}, ${latestPerProfileKey})`;
     }
 
     switch (operator) {
       case 'is': {
         if (value.length === 1) {
           where[id] =
-            `${columnAccess} = ${sqlstring.escape(String(value[0]).trim())}`;
+            sql`${columnAccess} = ${sql.string(trimmedComparand(value[0]))}`;
         } else {
-          where[id] = `${columnAccess} IN (${value
-            .map((val) => sqlstring.escape(String(val).trim()))
-            .join(', ')})`;
+          where[id] =
+            sql`${columnAccess} IN ${sql.array('String', value.map(trimmedComparand))}`;
         }
         break;
       }
       case 'isNot': {
         if (value.length === 1) {
           where[id] =
-            `${columnAccess} != ${sqlstring.escape(String(value[0]).trim())}`;
+            sql`${columnAccess} != ${sql.string(trimmedComparand(value[0]))}`;
         } else {
-          where[id] = `${columnAccess} NOT IN (${value
-            .map((val) => sqlstring.escape(String(val).trim()))
-            .join(', ')})`;
+          where[id] =
+            sql`${columnAccess} NOT IN ${sql.array('String', value.map(trimmedComparand))}`;
         }
         break;
       }
       case 'contains': {
-        where[id] = `(${value
-          .map(
+        where[id] = sql`(${sql.join(
+          value.map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
-          )
-          .join(' OR ')})`;
+              sql`${columnAccess} LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
+          ),
+          ' OR '
+        )})`;
         break;
       }
       case 'doesNotContain': {
-        where[id] = `(${value
-          .map(
+        where[id] = sql`(${sql.join(
+          value.map(
             (val) =>
-              `${columnAccess} NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
-          )
-          .join(' OR ')})`;
+              sql`${columnAccess} NOT LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
+          ),
+          ' OR '
+        )})`;
         break;
       }
       case 'startsWith': {
-        where[id] = `(${value
-          .map(
+        where[id] = sql`(${sql.join(
+          value.map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`
-          )
-          .join(' OR ')})`;
+              sql`${columnAccess} LIKE ${sql.string(`${trimmedComparand(val)}%`)}`
+          ),
+          ' OR '
+        )})`;
         break;
       }
       case 'endsWith': {
-        where[id] = `(${value
-          .map(
+        where[id] = sql`(${sql.join(
+          value.map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`
-          )
-          .join(' OR ')})`;
+              sql`${columnAccess} LIKE ${sql.string(`%${trimmedComparand(val)}`)}`
+          ),
+          ' OR '
+        )})`;
         break;
       }
       case 'isNull': {
-        where[id] = `(${columnAccess} IS NULL OR ${columnAccess} = '')`;
+        where[id] = sql`(${columnAccess} IS NULL OR ${columnAccess} = '')`;
         break;
       }
       case 'isNotNull': {
-        where[id] = `(${columnAccess} IS NOT NULL AND ${columnAccess} != '')`;
+        where[id] =
+          sql`(${columnAccess} IS NOT NULL AND ${columnAccess} != '')`;
         break;
       }
       case 'gt': {
         if (value[0] !== undefined) {
-          where[id] = `toFloat64OrNull(${columnAccess}) > ${Number(value[0])}`;
+          where[id] =
+            sql`toFloat64OrNull(${columnAccess}) > ${sql.float64(Number(value[0]))}`;
         }
         break;
       }
       case 'lt': {
         if (value[0] !== undefined) {
-          where[id] = `toFloat64OrNull(${columnAccess}) < ${Number(value[0])}`;
+          where[id] =
+            sql`toFloat64OrNull(${columnAccess}) < ${sql.float64(Number(value[0]))}`;
         }
         break;
       }
       case 'gte': {
         if (value[0] !== undefined) {
-          where[id] = `toFloat64OrNull(${columnAccess}) >= ${Number(value[0])}`;
+          where[id] =
+            sql`toFloat64OrNull(${columnAccess}) >= ${sql.float64(Number(value[0]))}`;
         }
         break;
       }
       case 'lte': {
         if (value[0] !== undefined) {
-          where[id] = `toFloat64OrNull(${columnAccess}) <= ${Number(value[0])}`;
+          where[id] =
+            sql`toFloat64OrNull(${columnAccess}) <= ${sql.float64(Number(value[0]))}`;
         }
         break;
       }
@@ -555,7 +618,7 @@ export async function countPropertyBasedCohort(
   const results = await chQuery<{ count: number }>(
     deps,
 
-    `SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
+    sql`SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
     PROFILE_COHORT_QUERY_SETTINGS
   );
   return results[0]?.count ?? 0;
@@ -618,16 +681,16 @@ export async function getCohortMembers(
     throw new Error('Cohort not found');
   }
 
-  const query = `
+  const query = sql`
     SELECT
       profile_id,
       count() OVER() as total
-    FROM ${TABLE.cohortMembers} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND cohort_id = ${sqlstring.escape(cohortId)}
+    FROM ${sql.id(TABLE.cohortMembers)} FINAL
+    WHERE project_id = ${sql.string(projectId)}
+      AND cohort_id = ${sql.string(cohortId)}
     ORDER BY matched_at DESC
-    ${opts?.limit ? `LIMIT ${opts.limit}` : ''}
-    ${opts?.offset ? `OFFSET ${opts.offset}` : ''}
+    ${opts?.limit ? sql`LIMIT ${sql.uint64(opts.limit)}` : sql.empty}
+    ${opts?.offset ? sql`OFFSET ${sql.uint64(opts.offset)}` : sql.empty}
   `;
 
   const results = await chQuery<{ profile_id: string; total: number }>(
@@ -663,11 +726,11 @@ export async function getCohortCount(
 
   const result = await chQuery<{ count: number }>(
     deps,
-    `
+    sql`
     SELECT count() as count
-    FROM ${TABLE.cohortMembers} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND cohort_id = ${sqlstring.escape(cohortId)}
+    FROM ${sql.id(TABLE.cohortMembers)} FINAL
+    WHERE project_id = ${sql.string(projectId)}
+      AND cohort_id = ${sql.string(cohortId)}
   `
   );
   return result[0]?.count || 0;
@@ -728,7 +791,7 @@ export async function updateCohortMembership(
   // (project_id, cohort_id, profile_id), so profiles that fell out of the
   // cohort definition would otherwise linger forever. Clear them first.
   await ch.command({
-    query: `DELETE FROM ${getReplicatedTableName(TABLE.cohortMembers)} WHERE cohort_id = ${sqlstring.escape(cohort.id)} AND project_id = ${sqlstring.escape(cohort.projectId)}`,
+    ...sql`DELETE FROM ${replicatedTarget(TABLE.cohortMembers)} WHERE cohort_id = ${sql.string(cohort.id)} AND project_id = ${sql.string(cohort.projectId)}`.toStatement(),
     clickhouse_settings: {
       lightweight_deletes_sync: '1',
     },
@@ -757,10 +820,10 @@ export async function deleteCohortMembership(
   projectId: string
 ): Promise<void> {
   const ch = deps.ch;
-  const where = `cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`;
+  const where = sql`cohort_id = ${sql.string(cohortId)} AND project_id = ${sql.string(projectId)}`;
   for (const table of [TABLE.cohortMembers, TABLE.cohortMetadata]) {
     await ch.command({
-      query: `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where}`,
+      ...sql`DELETE FROM ${replicatedTarget(table)} WHERE ${where}`.toStatement(),
       clickhouse_settings: {
         lightweight_deletes_sync: '0',
       },
@@ -874,21 +937,24 @@ export async function getCohortMemberEvents(
   cohortId: string,
   limit = 10
 ): Promise<{ name: string; count: number }[]> {
+  // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
+  // written — a conversion changes the binding of values and nothing about the
+  // distribution semantics (docs/ENVIRONMENT.md).
   return chQuery<{ name: string; count: number }>(
     deps,
-    `
+    sql`
     SELECT name, count() AS count
-    FROM ${TABLE.events}
-    WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(TABLE.events)}
+    WHERE project_id = ${sql.string(projectId)}
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
+        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+        WHERE cohort_id = ${sql.string(cohortId)}
+          AND project_id = ${sql.string(projectId)}
       )
       AND name NOT IN ('screen_view', 'session_start', 'session_end')
     GROUP BY name
     ORDER BY count DESC
-    LIMIT ${limit}
+    LIMIT ${sql.uint64(limit)}
   `
   );
 }
@@ -899,24 +965,26 @@ export async function getCohortEventsPerDay(
   cohortId: string,
   days = 30
 ): Promise<{ date: string; count: number }[]> {
+  // `IN (subquery)` on the Distributed `cohort_members`: kept as V1 wrote it.
+  const lookbackDays = sql.uint64(days);
   const rows = await chQuery<{ date: string; count: number }>(
     deps,
-    `
+    sql`
     SELECT
       toDate(created_at) AS date,
       count() AS count
-    FROM ${TABLE.events}
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND created_at >= toDate(now() - INTERVAL ${days} DAY)
+    FROM ${sql.id(TABLE.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= toDate(now() - INTERVAL ${lookbackDays} DAY)
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
+        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+        WHERE cohort_id = ${sql.string(cohortId)}
+          AND project_id = ${sql.string(projectId)}
       )
     GROUP BY date
     ORDER BY date ASC
     WITH FILL
-      FROM toDate(now() - INTERVAL ${days} DAY)
+      FROM toDate(now() - INTERVAL ${lookbackDays} DAY)
       TO toDate(now() + INTERVAL 1 DAY)
       STEP INTERVAL 1 DAY
   `
@@ -930,22 +998,23 @@ export async function getCohortMemberRoutes(
   cohortId: string,
   limit = 10
 ): Promise<{ path: string; count: number }[]> {
+  // `IN (subquery)` on the Distributed `cohort_members`: kept as V1 wrote it.
   return chQuery<{ path: string; count: number }>(
     deps,
-    `
+    sql`
     SELECT path, count() AS count
-    FROM ${TABLE.events}
-    WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${sql.id(TABLE.events)}
+    WHERE project_id = ${sql.string(projectId)}
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
+        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+        WHERE cohort_id = ${sql.string(cohortId)}
+          AND project_id = ${sql.string(projectId)}
       )
       AND name = 'screen_view'
       AND path != ''
     GROUP BY path
     ORDER BY count DESC
-    LIMIT ${limit}
+    LIMIT ${sql.uint64(limit)}
   `
   );
 }

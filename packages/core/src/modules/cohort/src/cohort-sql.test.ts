@@ -12,6 +12,14 @@
 // is lazy, and buildPropertyBasedCohortQuery / deriveCohortQuerySettings
 // touch neither — see cohort.service.ts's header.
 //
+// M12-004: the builders return `SqlFragment`s now, so every assertion below
+// runs against the RENDERED statement plus its bound params rather than a
+// finished string. The assertions themselves are unchanged in what they
+// claim, except the one about quotes in a user-controlled property key: a
+// quote no longer needs escaping because the key is not in the SQL text at
+// all, so that test asserts the binding instead. Listed in
+// ../cohort.sql.proof.md.
+//
 // V1's `PROFILE_COHORT_QUERY_SETTINGS` test used `vi.resetModules()` +
 // `vi.stubEnv()` to re-import the module under different env vars — the
 // suite's only `vi.resetModules` site (ADR-010's tail table). bun:test shares
@@ -20,15 +28,17 @@
 // so this ports as direct calls instead.
 
 import { expect, test } from 'bun:test';
+import { getReplicatedTableName } from '../../../shared/ch-tables';
 import type { PropertyBasedCohortDefinition } from '../cohort.constants';
 import {
   buildPropertyBasedCohortQuery,
   deriveCohortQuerySettings,
+  replicatedTarget,
 } from '../cohort.service';
 
 const PROJECT_ID = 'test-sql-validation';
 
-function buildSql(
+function buildStatement(
   criteria: PropertyBasedCohortDefinition['criteria'],
   limit?: number
 ) {
@@ -36,7 +46,14 @@ function buildSql(
     PROJECT_ID,
     { type: 'property', criteria } as PropertyBasedCohortDefinition,
     limit
-  );
+  ).toStatement();
+}
+
+function buildSql(
+  criteria: PropertyBasedCohortDefinition['criteria'],
+  limit?: number
+) {
+  return buildStatement(criteria, limit).query;
 }
 
 const mapFilter = {
@@ -53,7 +70,7 @@ test('resolves the newest row per profile without FINAL', () => {
   expect(sql).not.toContain('FINAL');
   expect(sql).toContain('GROUP BY id');
   expect(sql).toContain(
-    "argMax(profiles.properties['experiment'], tuple(last_seen_at, cityHash64(profiles.properties['experiment'])))"
+    'argMax(profiles.properties[{p2:String}], tuple(last_seen_at, cityHash64(profiles.properties[{p3:String}])))'
   );
 });
 
@@ -75,12 +92,13 @@ test('orders every aggregate by ONE shared row key', () => {
     ],
   });
 
-  const sharedKey =
-    "tuple(last_seen_at, cityHash64(profiles.properties['experiment'], profiles.email))";
+  // One shared key per aggregate: same columns, same order, both times.
   expect(sql).toContain(
-    `argMax(profiles.properties['experiment'], ${sharedKey})`
+    'argMax(profiles.properties[{p2:String}], tuple(last_seen_at, cityHash64(profiles.properties[{p3:String}], profiles.email)))'
   );
-  expect(sql).toContain(`argMax(profiles.email, ${sharedKey})`);
+  expect(sql).toContain(
+    'argMax(profiles.email, tuple(last_seen_at, cityHash64(profiles.properties[{p5:String}], profiles.email)))'
+  );
 });
 
 test('filters aggregates in HAVING, not WHERE', () => {
@@ -124,12 +142,12 @@ test('wraps numeric comparisons inside the cast', () => {
   });
 
   expect(sql).toContain(
-    "toFloat64OrNull(argMax(profiles.properties['age'], tuple(last_seen_at,"
+    'toFloat64OrNull(argMax(profiles.properties[{p2:String}], tuple(last_seen_at,'
   );
 });
 
-test('escapes quotes in user-controlled property keys', () => {
-  const sql = buildSql({
+test('binds user-controlled property keys instead of escaping them', () => {
+  const { query, query_params } = buildStatement({
     operator: 'and',
     properties: [
       {
@@ -141,14 +159,28 @@ test('escapes quotes in user-controlled property keys', () => {
     ],
   });
 
-  // The raw quote must never appear inside the literal unescaped.
-  expect(sql).toContain("profiles.properties['pl\\'an']");
-  expect(sql).not.toContain("properties['pl'an']");
+  // The key never reaches the SQL text, escaped or not — it is a bound param.
+  expect(query).not.toContain("pl'an");
+  expect(query).toContain('profiles.properties[{p2:String}]');
+  expect(Object.values(query_params)).toContain("pl'an");
+});
+
+test('replicatedTarget renders exactly what getReplicatedTableName produces', () => {
+  for (const table of ['cohort_members', 'cohort_metadata']) {
+    expect(replicatedTarget(table).toStatement()).toEqual({
+      query: getReplicatedTableName(table),
+      query_params: {},
+    });
+  }
 });
 
 test('applies the limit', () => {
-  const sql = buildSql({ operator: 'and', properties: [mapFilter] }, 10);
-  expect(sql).toContain('LIMIT 10');
+  const { query, query_params } = buildStatement(
+    { operator: 'and', properties: [mapFilter] },
+    10
+  );
+  expect(query).toContain('LIMIT {p5:UInt64}');
+  expect(query_params.p5).toBe(10);
 });
 
 test('matches nothing when every filter was dropped as empty', () => {
