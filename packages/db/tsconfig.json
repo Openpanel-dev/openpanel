@@ -6,7 +6,11 @@
       "@/*": ["./src/*"]
     },
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    // `bun test` is the runner (ADR-010): the test files import `bun:test`,
+    // which only `bun-types` declares. Listing it explicitly opts out of the
+    // automatic @types/* sweep, so `node` is named back in.
+    "types": ["bun-types", "node"]
   },
   "include": [".", "./src/types.ts"],
   "exclude": ["node_modules"]

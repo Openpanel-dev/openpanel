@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
@@ -58,6 +58,9 @@ async function deadNodeIsRefused(): Promise<boolean> {
 const clickhouseReachable = await bootstrapTestDatabase();
 const failoverIsReal = await deadNodeIsRefused();
 
+/** What the preload pinned, so the mutation below can be undone. */
+const PINNED_CLICKHOUSE_URL = process.env.CLICKHOUSE_URL;
+
 // ./client reads these once, at module evaluation.
 process.env.CLICKHOUSE_URL = `${DEAD_NODE_URL}/${CLICKHOUSE_TEST_DATABASE},${LIVE_NODE_URL}`;
 process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS = String(
@@ -68,6 +71,12 @@ process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS = String(
 process.env.CLICKHOUSE_UNHEALTHY_MARK_MS = '0';
 
 const { chQuery, chQueryWithMeta } = await import('./client');
+
+// The client has read them; put the process back the way the preload left it.
+// Under `--isolate` nothing else can see this realm, but a bare `bun test`
+// shares one global across files and the dead-node-first URL would then reach
+// whichever file evaluates next — silently skipping its ClickHouse suite.
+process.env.CLICKHOUSE_URL = PINNED_CLICKHOUSE_URL;
 
 const HOSTILE = `it's a "quoted" \\ backslash {p1:String} }brace{`;
 

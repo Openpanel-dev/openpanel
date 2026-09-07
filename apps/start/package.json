@@ -10,6 +10,7 @@
     "cf-typegen": "wrangler types",
     "build": "pnpm with-env vite build",
     "serve": "vite preview",
+    "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",

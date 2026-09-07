@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
@@ -115,11 +115,20 @@ const describeAgainstClickhouse = describe.skipIf(!clickhouseReachable);
 const escapeRegExp = (literal: string) =>
   literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const value = async <T>(
+/**
+ * Returns `unknown` rather than a generic `T` on purpose. bun:test's `expect`
+ * has an `(actual?: never)` overload, which makes the argument position a
+ * contextual inference site: a generic helper called bare there resolves its
+ * parameter to `never`, and every `toBe(...)` below then fails to compile
+ * against `Matchers<undefined>`. vitest's `expect(actual: any)` applied no
+ * such pressure. Each assertion states the expected value itself, so nothing
+ * is lost by widening here.
+ */
+const value = async (
   query: Parameters<typeof chQuery>[0],
   settings?: Parameters<typeof chQuery>[1]
-) => {
-  const rows = await chQuery<{ value: T }>(query, settings);
+): Promise<unknown> => {
+  const rows = await chQuery<{ value: unknown }>(query, settings);
   return rows[0]?.value;
 };
 

@@ -7,7 +7,7 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@11.23.0",
   "scripts": {
-    "test": "vitest run",
+    "test": "pnpm --filter @openpanel/core run test && pnpm --filter @openpanel/db run test && pnpm --filter @openpanel/api run test && pnpm --filter start run test && vitest run",
     "gen:bots": "pnpm -r --filter core gen:bots",
     "gen:referrers": "pnpm -r --filter core gen:referrers",
     "dock:up": "docker compose up -d",

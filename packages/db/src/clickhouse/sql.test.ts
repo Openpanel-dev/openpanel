@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { type SqlFragment, SqlIdentifierError, sql, toStatement } from './sql';
 
 describe('sql tag — slot typing (R1)', () => {

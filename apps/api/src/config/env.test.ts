@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import {
   concurrencyEnvKey,
   concurrencyOverride,
@@ -12,7 +12,7 @@ const base = { ROLE: 'worker' } as NodeJS.ProcessEnv;
 describe('ROLE', () => {
   it('defaults to api and accepts the three roles', () => {
     expect(loadConfig({}).ROLE).toBe('api');
-    for (const role of ['api', 'worker', 'all']) {
+    for (const role of ['api', 'worker', 'all'] as const) {
       expect(loadConfig({ ROLE: role }).ROLE).toBe(role);
     }
   });

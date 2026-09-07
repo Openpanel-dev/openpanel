@@ -1368,3 +1368,158 @@ shutdown, 2026-09-07.
 `typecheck`, `check`, `check:workspace`, `check:deps` and `fix` run across the
 whole workspace (`pnpm -r` / no filter) and name no specific package, so they
 are not in this table.
+
+## Test split (M12-011)
+
+Measured on this box (4 cores, local Postgres/ClickHouse/Redis) by the agent
+implementing M12-011, on 2026-09-07, at HEAD `bcf07cbc` with a clean tree.
+Every number below is from a run recorded in this section — none is inherited.
+
+### BEFORE
+
+**`pnpm test`** (`vitest run`, root `vitest.workspace.ts` = `['packages/*','apps/*','!apps/start']`):
+**7 files, 178 tests, 178 passed, 0 failed, 0 skipped — 10.19s.**
+
+| Workspace | Files | Tests | Runner |
+|---|---:|---:|---|
+| `@openpanel/db` | 4 | 101 | vitest (own `vitest.config.ts` → `vitest.shared.ts`) |
+| `@openpanel/api` | 1 | 13 | vitest (own `vitest.config.ts` → `vitest.shared.ts`) |
+| `@openpanel/redis` | 1 | 29 | vitest, **root config only** — no per-package config, no `test` script, no `vitest` devDependency |
+| `@openpanel/payments` | 1 | 35 | vitest, **root config only** — same |
+| **total** | **7** | **178** | |
+
+The task survey recorded db (5 files) and api (1) as "the only vitest suites
+left". That is wrong in both directions: db has **4** test files, not 5, and
+`packages/redis` + `packages/payments` are two more vitest suites, 64 tests
+between them, which only ever run because the root workspace globs `packages/*`
+and the root manifest carries the `vitest` devDependency. Neither is inside
+M12-011's scope globs. See *The redis/payments constraint* below.
+
+**`cd packages/core && bun test`** (bare, as the verification list spells it —
+the package's own script is `bun test --isolate`):
+**154 files, 1487 tests, 1475 pass / 12 skip / 0 fail — 45.82s.**
+
+**`apps/start`**: `src/utils/math.test.ts`, **1 file, 2 tests, run by nothing.**
+Measured, not assumed, in both directions:
+
+- `pnpm --filter start test` → prints nothing, **exit 0** (pnpm treats a missing
+  script in a filtered run as a no-op, so this reads green while testing zero).
+- `cd apps/start && pnpm run test` → `[ERR_PNPM_NO_SCRIPT] Missing script: test`,
+  exit 1.
+- the root workspace file negates `apps/start`, so `pnpm test` never sees it.
+
+### AFTER
+
+Same box, same day, tree as this task leaves it. `pnpm test` is now a chain of
+five `&&`-joined legs (root `package.json`); it exited **0**.
+
+| Suite | Runner | Files | Tests | Result | Wall |
+|---|---|---:|---:|---|---:|
+| `@openpanel/core` | `bun test --isolate` | 154 | 1487 | 1475 pass / 12 skip / 0 fail | 88.12s |
+| `@openpanel/db` | `bun test --isolate` | 4 | 101 | 101 pass / 0 fail | 10.47s |
+| `@openpanel/api` | `bun test --isolate` | 1 | 13 | 13 pass / 0 fail | 4.40s |
+| `apps/start` | `vitest run` (own config) | 1 | 2 | 2 pass | 1.22s |
+| `redis` + `payments` | root `vitest run` | 2 | 64 | 64 pass | 0.44s |
+| **`pnpm test` total** | | **162** | **1667** | **RC 0** | |
+
+Per suite, before → after. Nothing shrank:
+
+| Suite | Files before → after | Tests before → after |
+|---|---|---|
+| `@openpanel/db` | 4 → 4 | 101 → 101 |
+| `@openpanel/api` | 1 → 1 | 13 → 13 |
+| `@openpanel/redis` | 1 → 1 | 29 → 29 |
+| `@openpanel/payments` | 1 → 1 | 35 → 35 |
+| `@openpanel/core` | 154 → 154 | 1487 → 1487 (now **inside** `pnpm test`; before, only reachable by `cd`) |
+| `apps/start` | 0 running → 1 | 0 running → 2 |
+| **`pnpm test`** | **7 → 162** | **178 → 1667** |
+
+The two `+` deltas are the point of the task: `packages/core`'s 1487 tests and
+`apps/start`'s 2 were both invisible to `pnpm test` (and therefore to
+`full.sh`) and now are not. No test was weakened, skipped or deleted — the
+per-suite rows are equal everywhere else.
+
+Standalone, as the verification list spells them:
+
+| Command | Result | Wall |
+|---|---|---:|
+| `pnpm install --frozen-lockfile` | up to date, RC 0 | 0.4s |
+| `cd packages/db && bun test` (bare) | 4 files, 101 pass / 0 fail / 0 skip | 2.74s |
+| `cd apps/api && bun test` (bare) | 1 file, 13 pass / 0 fail | 3.77s |
+| `cd apps/start && pnpm run test` | 1 file, 2 pass | 1.22s |
+| `cd packages/core && bun test` (bare) | 154 files, 1475 pass / 12 skip / 0 fail | 47.34s |
+| `pnpm run typecheck` | 17 passes, 0 fails, RC 0 | |
+| `verification/full.sh` | **FULL: green**, RC 0, zero `FAIL:`, zero `BLOCKED`, goldens `137/137` | |
+
+### What the preload had to do that `globalSetup` did not
+
+`bunfig.toml`'s `[test] preload` has no once-per-run mode. Measured on Bun
+1.4.0 in `packages/db` (4 test files): bare `bun test` → **1** preload;
+`bun test --isolate` → **4** preloads, all in **one pid**, strictly sequential;
+`bun test --parallel=4` → 4 preloads across 3 pids. Under `--isolate` neither
+`globalThis` nor `process.env` survives from one preload to the next, so there
+is no in-process channel to dedupe through — the only workable shape is the one
+the ADR-010 note asked for: idempotent, and serialised by that sequencing.
+`test/bun-preload.ts` is therefore run per file, and each run costs (measured
+once, warm): import 333ms, `bootstrapTestDatabases` 1190ms, fixture load
+1102ms, teardown 1045ms. That is where `packages/db`'s 2.7s bare run becomes
+10.5s under `--isolate`.
+
+Two things the move surfaced, neither of them a weakened test:
+
+- **`pinTestDatabases()` is called twice**, at preload and again inside the
+  `afterAll` teardown — exactly as `test/global-setup.ts` called it in both
+  `setup` and `teardown`. vitest ran teardown in the parent process, which no
+  test could reach; bun runs it in the test file's own realm, *after*
+  `sql.round-robin.clickhouse.test.ts` has deliberately repointed
+  `CLICKHOUSE_URL` at a dead node. Without the re-pin the teardown's
+  `DELETE FROM ...` goes to `127.0.0.1:1` and the hook fails.
+- **`sql.round-robin.clickhouse.test.ts` now restores `CLICKHOUSE_URL`** after
+  the client module has read it. Under a bare `bun test` all four files share
+  one global, and the dead-node-first URL leaked into
+  `sql.clickhouse.test.ts`'s reachability probe: **22 of its tests silently
+  skipped** (`79 pass / 22 skip`) before the restore, 101/101 after. This is one
+  of the three coupling hazards ADR-010 named when it chose `--isolate`; the
+  restore makes both modes agree.
+
+### bun:test types the assertion, vitest did not
+
+Two edits were type-level only; no assertion changed.
+
+- `bun-types` (`1.4.0`, pinned as core pins it) joins `packages/db` and
+  `apps/api` devDependencies, and each `tsconfig.json` names it in `types`
+  (`bun:test` is declared nowhere else). ADR-017 row 7 authorises this addition.
+- bun's `expect` has an `(actual?: never) => Matchers<undefined>` overload,
+  which makes the argument position a **contextual inference site**.
+  `sql.clickhouse.test.ts`'s local `value<T>()` helper, called bare, therefore
+  resolved `T` to `never` and every `toBe` below it failed to compile; it now
+  returns `unknown`. And `expect(config.ROLE).toBe(role)` in `env.test.ts`
+  needs `as const` on the literal array, because bun's `toBe(expected: T)` is
+  typed where vitest's was `any`.
+
+### The redis/payments constraint — read this before deleting more vitest
+
+The task's removal criterion is conditional: the root vitest artefacts go
+"when nothing there uses them any more". Two suites still do.
+`packages/redis/cachable.test.ts` and
+`packages/payments/src/subscription-state.test.ts` have **no `test` script and
+no `vitest` devDependency of their own** — they ran only because the root
+workspace globbed `packages/*` and the root manifest carried `vitest`. Neither
+package is inside M12-011's scope globs, so converting them was not this task's
+to do. Deleting the root `vitest` devDependency and `vitest.workspace.ts`
+anyway would have dropped 64 passing tests out of `pnpm test`, which the
+before/after table above exists to prevent.
+
+So: `vitest.config.ts`, `vitest.shared.ts`, `test/global-setup.ts`,
+`test/test-setup.ts`, `packages/core/vitest.config.ts`,
+`packages/db/vitest.config.ts` and `apps/api/vitest.config.ts` are **deleted**,
+and `apps/api`'s `vitest ^1.0.0` devDependency with them.
+`vitest.workspace.ts` survives, rewritten from a glob to the explicit list
+`['packages/redis', 'packages/payments']`, and the root `vitest` devDependency
+survives to run it. **Next step, when someone owns those two packages:** port
+both to `bun:test`, delete `vitest.workspace.ts` and the root `vitest`
+devDependency, and drop the last `&& vitest run` from the root `test` script.
+
+Also left alone, out of scope: `CLAUDE.md:31` and `.claude/CLAUDE.md:25` still
+describe `pnpm test` as "vitest run — packages/* and apps/* (excluding
+apps/start, packages/core)", which this task made false.

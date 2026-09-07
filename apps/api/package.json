@@ -11,8 +11,7 @@
     "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-e2e.ts",
     "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-stress.ts",
     "e2e:legacy-jobs": "bash e2e/legacy-job-proof.sh",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "bun test --isolate",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -29,7 +28,7 @@
     "@faker-js/faker": "^9.0.1",
     "@openpanel/tsconfig": "workspace:*",
     "@types/uuid": "^10.0.0",
-    "typescript": "catalog:",
-    "vitest": "^1.0.0"
+    "bun-types": "1.4.0",
+    "typescript": "catalog:"
   }
 }

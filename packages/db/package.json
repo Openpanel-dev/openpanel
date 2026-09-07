@@ -10,7 +10,7 @@
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
     "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
     "duplicate-events": "pnpm with-env jiti ./scripts/find-duplicate-events.ts",
-    "test": "vitest run",
+    "test": "bun test --isolate",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "bun-types": "1.4.0",
     "prisma": "^6.14.0",
     "typescript": "catalog:"
   }
