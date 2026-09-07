@@ -5,6 +5,10 @@
   "private": true,
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
+  "engines": {
+    "bun": ">=1.4.0",
+    "node": ">=24.19.0"
+  },
   "workspaces": {
     "packages": [
       "apps/*",

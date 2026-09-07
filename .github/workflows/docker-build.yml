@@ -84,30 +84,27 @@ jobs:
           # "webidl.util.markAsUncloneable is not a function".
           node-version-file: ".nvmrc"
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
+      - name: Setup bun cache
         uses: actions/cache@v3
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install --frozen-lockfile
 
       - name: Codegen
-        run: pnpm codegen
+        run: bun run codegen
 
       - name: Migrate database
-        run: pnpm migrate:deploy
+        run: bun run migrate:deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
           DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
@@ -115,7 +112,7 @@ jobs:
           SELF_HOSTED: "true"
 
       - name: Run tests
-        run: pnpm test
+        run: bun run test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
           CLICKHOUSE_URL: http://localhost:8123/openpanel
@@ -123,18 +120,18 @@ jobs:
 
       # ADR-008: dependency-cruiser is the second layer keeping the dissolved
       # validation/constants/common/json packages from growing back (M11-009).
-      # Run standalone, not via `pnpm run check`, because `check` also runs
+      # Run standalone, not via `bun run check`, because `check` also runs
       # `ultracite check` over a repo that has never been bulk-formatted (see
       # .claude/CLAUDE.md) and is not green today for reasons unrelated to
       # dependency boundaries.
       - name: Check dependency boundaries
-        run: pnpm run check:deps
+        run: bun run check:deps
 
       # - name: Run Biome
-      #   run: pnpm lint
+      #   run: bun run lint
 
       # - name: Run TypeScript checks
-      #   run: pnpm typecheck
+      #   run: bun run typecheck
 
   build-api:
     permissions:

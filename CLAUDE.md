@@ -14,7 +14,7 @@ and nothing here should reach it. Local Postgres / ClickHouse / Redis only.
 
 ## Environment
 
-- **No docker.** `pnpm dock:up` will fail. Postgres (5432), Redis (6379) and
+- **No docker.** `bun run dock:up` will fail. Postgres (5432), Redis (6379) and
   ClickHouse (8123) are already running on localhost, started by another user.
   Do not try to start, stop or install them.
 - **No sudo.** Anything needing root is a human task. Say so; do not attempt it.
@@ -24,15 +24,15 @@ and nothing here should reach it. Local Postgres / ClickHouse / Redis only.
 ## Commands
 
 ```bash
-pnpm install
-pnpm codegen        # prisma client; needs .env
-pnpm run typecheck
-pnpm check          # ultracite + check:deps
-pnpm test
+bun install
+bun run codegen     # prisma client; needs .env
+bun run typecheck
+bun run check       # ultracite + check:deps
+bun run test
 ```
 
-`typecheck` and `test` fail until `.env` exists and `pnpm codegen` has run. If a
-task depends on them and they are not ready, report `BLOCKED` rather than
+`typecheck` and `test` fail until `.env` exists and `bun run codegen` has run.
+If a task depends on them and they are not ready, report `BLOCKED` rather than
 inventing a workaround.
 
 ## ClickHouse

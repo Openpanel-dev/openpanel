@@ -98,20 +98,19 @@ You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-host
 
 - Docker
 - Docker Compose
-- Node
-- pnpm
+- Bun
 
 ### Start
 
 ```bash
-pnpm install
+bun install
 cp .env.example .env
 echo "API_URL=http://localhost:3333" > apps/start/.env
 
-pnpm dock:up
-pnpm codegen
-pnpm migrate:deploy # once to setup the db
-pnpm dev
+bun run dock:up
+bun run codegen
+bun run migrate:deploy # once to setup the db
+bun run dev
 ```
 
 You can now access the following:
@@ -119,5 +118,5 @@ You can now access the following:
 - Dashboard: https://localhost:3000
 - API: https://api.localhost:3333
 - Bullboard (queue): http://localhost:9999
-- `pnpm dock:ch` to access clickhouse terminal
-- `pnpm dock:redis` to access redis terminal
+- `bun run dock:ch` to access clickhouse terminal
+- `bun run dock:redis` to access redis terminal

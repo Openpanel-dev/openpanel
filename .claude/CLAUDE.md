@@ -6,34 +6,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Openpanel is an open-source web/product analytics platform (Mixpanel alternative). It's a **pnpm monorepo** with apps, packages, tooling, and SDKs.
+Openpanel is an open-source web/product analytics platform (Mixpanel alternative). It's a **bun monorepo** with apps, packages, tooling, and SDKs.
 
 ## Common Commands
 
 ```bash
 # Development
-pnpm dev                    # Run apps/api (ROLE=all, port 3333) + apps/start dashboard (port 3000) in parallel
-pnpm dev:public             # Run public/docs site only
-pnpm dock:up / dock:down    # Start/stop Docker (PostgreSQL, Redis, ClickHouse)
+bun run dev                    # Run apps/api (ROLE=all, port 3333) + apps/start dashboard (port 3000) in parallel
+bun run dev:public             # Run public/docs site only
+bun run dock:up / dock:down    # Start/stop Docker (PostgreSQL, Redis, ClickHouse)
 
 # Code quality
-pnpm check                  # Lint (Biome via Ultracite) + dependency-cruiser (check:deps)
-pnpm fix                    # Auto-fix lint/format issues
-pnpm typecheck              # Typecheck all packages
+bun run check                  # Lint (Biome via Ultracite) + dependency-cruiser (check:deps)
+bun run fix                    # Auto-fix lint/format issues
+bun run typecheck              # Typecheck all packages
 
 # Testing
-pnpm test                        # vitest run — packages/* and apps/* (excluding apps/start, packages/core)
+bun run test                     # @openpanel/core, @openpanel/db, @openpanel/api and start's own suites, then root vitest for the rest
 cd packages/core && bun test     # core's own suite (ADR-010; bun:test cannot run under vitest)
-pnpm vitest run <path>           # Run a single vitest test file
+bunx vitest run <path>           # Run a single vitest test file
 
 # Database
-pnpm codegen                # Generate the Prisma client + core's geo/bot/ASN data
-pnpm migrate                # Run Prisma migrations (dev)
-pnpm migrate:deploy         # Deploy migrations (production - never run this)
+bun run codegen                # Generate the Prisma client + core's geo/bot/ASN data
+bun run migrate                # Run Prisma migrations (dev)
+bun run migrate:deploy         # Deploy migrations (production - never run this)
 
 # Docker utilities
-pnpm dock:ch                # ClickHouse CLI
-pnpm dock:redis             # Redis CLI
+bun run dock:ch                # ClickHouse CLI
+bun run dock:redis             # Redis CLI
 ```
 
 ## Architecture
