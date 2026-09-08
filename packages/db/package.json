@@ -21,7 +21,6 @@
     "@openpanel/payments": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@prisma/client": "6.14.0",
-    "jiti": "2.6.1",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
     "prisma-json-types-generator": "3.1.1",

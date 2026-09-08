@@ -36,7 +36,6 @@
     }
   },
   "overrides": {
-    "rolldown": "1.0.0-beta.43",
     "esm-env": "npm:esm-env-runtime@^0.1.0",
     "seroval": "1.3.2",
     "seroval-plugins": "1.3.2",
