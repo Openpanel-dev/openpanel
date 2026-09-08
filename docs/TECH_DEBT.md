@@ -1622,6 +1622,12 @@ space cannot scope a version to one importer — see the recipe.
   tree and `scripts/doctor.sh` has no bun check. Creating them is outside
   M13-002's scope (it touches neither a manifest nor the lockfile); it belongs
   with M13-003's Dockerfile work or a CLEAN task.
+  **RESOLVED by M14-202 (2026-09-08)** — `.bun-version` (`1.4.0`) and
+  `scripts/doctor.sh` both created; `apps/api/src/main.ts`'s "API listening"
+  log line gained `bunVersion: Bun.version`. All three now agree with each
+  other and with the Dockerfile `ARG`, proven by
+  `apps/api/src/config/bun-version.test.ts` rather than by inspection. See the
+  M14-202 section at the end of this file.
 - **The root `package-lock.json` is still tracked.** ADR-014 says it should be
   deleted in the same commit as the lockfile swap ("tracked, stale, and a trap
   for any scanner or contributor running `npm ci`"). It is outside M13-002's
@@ -1736,6 +1742,8 @@ templates so a self-hoster reading the file sees it.
 - **`.bun-version` still does not exist.** ADR-016 names it as Bun's declared
   home alongside `ARG BUN_VERSION`; both Dockerfiles carry the ARG and nothing
   carries the file. Unchanged from M13-002's note.
+  **RESOLVED by M14-202 (2026-09-08)** — see the note against the same item
+  in the M13-002 section above.
 - **Both images now `COPY . .` and install the whole workspace**, which is the
   shape ADR-014 Problems §4 rules for a bun-base image. The cost is that a
   source edit invalidates the install layer, so neither image has a
@@ -1993,3 +2001,45 @@ With the fixtures removed the count returns to 23.
 it fell outside M13-002's scope globs and survived. `lockfileVersion 2`, 359
 entries, one commit ever, still listing `winston` (removed) and `biome@1.9.1`.
 Nothing reads it — `bun.lock` is the lockfile.
+
+## 2026-09-08 — M14-202, the Bun pin asserted at all three ADR-016 rule 5 places
+
+Ran by: ralph (M14-202 implement task), on this box, 2026-09-08.
+
+Before this task: `.bun-version` did not exist, `scripts/doctor.sh` did not
+exist at all (not merely "no bun check", as the M13-002 note understated it),
+and only `apps/api/Dockerfile:4`'s `ARG BUN_VERSION=1.4.0` carried the pin.
+`package.json`'s `devEngines.packageManager` (`bun >=1.4.0`, `onFail: warn`)
+is a range with a warning, not an asserted exact pin, so it was left as is —
+not deleted, not duplicated — per the task's own note that it must simply
+agree with the three new places.
+
+**What landed:**
+
+- `.bun-version` — one line, `1.4.0`, no prefix.
+- `scripts/doctor.sh` — a developer preflight, in the style of
+  `tooling/gates/p13-drift.sh` and `apps/api/e2e/boot-proof.sh`: reads
+  `.bun-version`, compares it against `bun --version`, exits non-zero naming
+  both versions on a mismatch. It is **not** referenced from `verification/`
+  or any gate — ADR-016 rule 5 asks for a preflight, not a gate.
+- `apps/api/src/main.ts` — the existing "API listening" boot log (the one
+  line that already carried `role`) gained a `bunVersion: Bun.version` field.
+  No other behaviour change.
+- `apps/api/src/config/bun-version.test.ts` — the "worth more than the three
+  edits" check ADR-016 asked for: asserts `.bun-version` is one line matching
+  `\d+\.\d+\.\d+`, that it equals the Dockerfile's `ARG BUN_VERSION`, that
+  running `scripts/doctor.sh` actually exits 0 and reports the pinned version
+  (spawned for real, not grepped), and that `main.ts` logs `Bun.version`.
+
+**Verification run on this box, 2026-09-08:**
+
+- `bash scripts/doctor.sh` → `OK: bun 1.4.0 matches the pinned version
+  (1.4.0)`, exit 0.
+- `bash -c 'grep -q "$(cat .bun-version)" apps/api/Dockerfile'` → match.
+- `bun run typecheck` (root) → `typecheck: 17/17 passed`.
+- `cd packages/core && bun test` → `1475 pass, 12 skip, 0 fail` (1487 tests,
+  154 files).
+- `cd apps/api && bun test --isolate` → `17 pass, 0 fail` (2 files), including
+  the new `bun-version.test.ts`.
+
+No ClickHouse SQL touched; no lockfile or manifest changed.

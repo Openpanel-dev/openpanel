@@ -594,7 +594,15 @@ async function main() {
     : { port: config.API_PORT };
   app.listen(listen, () => {
     logger.info(
-      { role, port: config.API_PORT, hostname: config.API_HOST ?? '0.0.0.0' },
+      {
+        role,
+        port: config.API_PORT,
+        hostname: config.API_HOST ?? '0.0.0.0',
+        // ADR-016 rule 5: the running Bun version, asserted against
+        // .bun-version by scripts/doctor.sh — logged so a wrong-runtime
+        // incident is one log line away rather than an inference.
+        bunVersion: Bun.version,
+      },
       'API listening'
     );
   });
