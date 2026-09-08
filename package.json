@@ -70,7 +70,7 @@
     "typecheck": "bun tooling/scripts/typecheck-workspaces.ts",
     "update-simple-git-hooks": "npx simple-git-hooks",
     "check:workspace": "bunx sherif@1.13.0",
-    "check:deps": "bun tooling/scripts/check-deps.ts",
+    "check:deps": "depcruise --config .dependency-cruiser.cjs --output-type err apps/start packages",
     "check": "ultracite check && bun run check:deps",
     "fix": "ultracite fix"
   },
@@ -86,6 +86,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "depcheck": "1.4.7",
+    "dependency-cruiser": "18.2.0",
     "simple-git-hooks": "2.12.1",
     "ultracite": "7.2.0",
     "vitest": "3.1.3"

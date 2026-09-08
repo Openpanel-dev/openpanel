@@ -339,7 +339,7 @@ pattern" — which is what replaces `pnpm -r --filter`.
 | `dev:public` | `pnpm -r --filter public dev` | `bun run --filter public dev` |
 | `typecheck` | `pnpm -r --no-bail typecheck` | `bun run --filter '*' typecheck` — **behaviour gap:** `--no-bail` makes pnpm typecheck every workspace and report all failures. Bun has no `--no-bail`. If it stops at the first failure, the script must keep going by construction (a loop over the workspace list, collecting exit codes) or the gate silently narrows to "the first package that fails" |
 | `check:workspace` | `pnpm dlx sherif@latest` | `bunx sherif@<pinned>` — pin it while touching it (ADR-014 benchmark item 13; it is unpinned today) |
-| `check:deps` | `NODE_PATH=$PWD/node_modules pnpm dlx --package dependency-cruiser@18.2.0 depcruise …` | ~~`bunx --package dependency-cruiser@18.2.0 depcruise …`~~ — **the one row this translation gets wrong.** `bunx` cannot give dependency-cruiser TypeScript, so every `import type` edge stops being `type-only` and the gate returns 82 false errors. M13-002 replaced it with `bun tooling/scripts/check-deps.ts`; see *`check:deps` is the one script that is not a `bunx`* below |
+| `check:deps` | `NODE_PATH=$PWD/node_modules pnpm dlx --package dependency-cruiser@18.2.0 depcruise …` | ~~`bunx --package dependency-cruiser@18.2.0 depcruise …`~~ — **the one row this translation gets wrong.** `bunx` cannot give dependency-cruiser TypeScript, so every `import type` edge stops being `type-only` and the gate returns 82 false errors. M13-002 replaced it with `bun tooling/scripts/check-deps.ts`; **M14-002 then deleted that runner** in favour of a declared `dependency-cruiser` devDependency, whose peer *does* resolve under `linker = "isolated"` — so `check:deps` is now a plain `depcruise …`. See *`check:deps` is the one script that is not a `bunx`* below |
 | `check` | `ultracite check && pnpm run check:deps` | `ultracite check && bun run check:deps` |
 
 ### `apps/api/package.json`
@@ -705,12 +705,24 @@ the wrong direction — a gate that goes red on correct code. It is also **not**
 caused by the installer: `bunx` produces the same 82 on a pnpm-installed tree
 (verified by restoring `HEAD` and re-running).
 
-So `check:deps` is `bun tooling/scripts/check-deps.ts`, which installs
-`dependency-cruiser@18.2.0` and `typescript@5.9.3` **together, hoisted**, into
-`node_modules/.cache/depcruise` and runs the tool from there. Both versions are
-exact — this gate's answer must not move because a patch release shipped. It
-reproduces `pnpm dlx`'s numbers exactly (`2703 modules, 18121 dependencies`,
-zero violations) and the temp install is a no-op after the first run.
+So, through P13, `check:deps` was `bun tooling/scripts/check-deps.ts`, which
+installed `dependency-cruiser@18.2.0` and `typescript@5.9.3` **together,
+hoisted**, into `node_modules/.cache/depcruise` and ran the tool from there. It
+reproduced `pnpm dlx`'s numbers exactly (`2703 modules, 18121 dependencies`,
+zero violations).
+
+**Superseded by M14-002 (2026-09-08).** The runner is deleted and `check:deps`
+is now a plain `depcruise` against a **declared** root devDependency
+(`"dependency-cruiser": "18.2.0"`), which ADR-017's register — reopened after
+P13 by Carl — permits. The row above still holds for `bunx`: what changed is
+that a *declared* dependency is not a `bunx` one. Under `linker = "isolated"`
+bun's store is `node_modules/.bun/` **inside the repo**, so node's upward walk
+from the cruiser's real directory still finds the repo root's
+`node_modules/typescript`; a global `bunx` cache directory is outside the repo
+and never could. Measured 2026-09-08: `bunx --no-install depcruise --info`
+reports `✔ typescript … typescript@5.9.3`, and the cruise reproduces the
+runner's numbers on the same tree (2700 modules, 18121 dependencies, 0 errors).
+No hoist exception was needed. Full detail in `docs/TECH_DEBT.md`.
 
 ## Lifecycle scripts: `bunfig.toml`, not a flag
 

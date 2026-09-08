@@ -1,7 +1,14 @@
 /**
- * ADR-008 enforcement (see decisions/ADR-008-constants.md in the controller repo).
+ * ADR-008 (constants isomorphism) and ADR-022 R22 (layers only import downward)
+ * enforcement. See decisions/ADR-008-constants.md and
+ * decisions/ADR-022-core-conventions.md in the controller repo.
  *
- * Two rules only:
+ * The rules, in the order they appear below:
+ *  - core-uses-ctx-not-db-internals: packages/core reaches Postgres/ClickHouse
+ *    through ctx.db / ctx.ch, never by acquiring its own client.
+ *  - core-no-self-barrel: a file under packages/core/src imports its siblings
+ *    relatively, never through @openpanel/core.
+ *  - core-layers-*: ADR-022 R22, one rule per layer boundary (see below).
  *  - constants-stay-isomorphic: a `*.constants.ts` file may depend on nothing
  *    but zod, another `*.constants.ts` file, or a type-only specifier.
  *  - frontend-values-only-constants: apps/start may only VALUE-import
@@ -77,18 +84,68 @@
  * — i.e. resolution AND type-only detection both work, ADR-008 risk 1 does
  * not apply, Option A (deep paths + this config) stands.
  *
- * `check:deps` (package.json) runs this via `pnpm dlx` rather than a pinned
- * devDependency, to keep this task's diff to `.dependency-cruiser.cjs` +
- * `package.json` only (no pnpm-lock.yaml churn). `pnpm dlx --package` does
- * NOT hoist a `typescript` peer into dependency-cruiser's own resolution
- * scope, so without help it silently falls back to the acorn/JS-only
- * transpiler and skips every .ts/.tsx file (0 modules cruised, falsely
- * green). The script sets `NODE_PATH` to the repo's own `node_modules`
- * (which already carries `typescript` as a root dependency) so
- * dependency-cruiser's internal `require('typescript')` resolves via node's
- * NODE_PATH fallback — verified with `--info`, which flips typescript from
- * `x` to `✔` once NODE_PATH is set.
+ * `check:deps` runs the DECLARED `dependency-cruiser` devDependency
+ * (M14-002; ADR-017's exception register reopened after P13, Carl 2026-09-08),
+ * replacing `tooling/scripts/check-deps.ts`, which existed only because neither
+ * `bunx` nor `pnpm dlx` could be relied on to put `typescript` where the tool
+ * looks for it. dependency-cruiser classifies an edge as `type-only` only when
+ * it can load the TypeScript compiler, and it resolves `typescript` — its own
+ * optional peer — from ITS OWN directory, an ESM lookup `NODE_PATH` cannot
+ * influence. Under `bunx` that failed: `depcruise --info` reported
+ * `typescript … -`, and the cruise returned 82 false
+ * `core-uses-ctx-not-db-internals` violations, every one an `import type` line
+ * the rule explicitly allows.
+ *
+ * Measured on this box on 2026-09-08, with the tool declared and
+ * `bunfig.toml`'s `linker = "isolated"` in force: `bunx --no-install depcruise
+ * --info` reports `✔ typescript >=2.0.0 <7.0.0  typescript@5.9.3`, and the
+ * cruise reproduces the runner's numbers exactly — 2700 modules, 18121
+ * dependencies, 0 errors. The isolated layout is WHY it works: bun's store
+ * lives at `node_modules/.bun/` INSIDE the repo, so node's upward walk from
+ * `node_modules/.bun/dependency-cruiser@18.2.0/node_modules/dependency-cruiser`
+ * still reaches the repo root `node_modules/typescript`. A global `bunx` cache
+ * directory never could.
  */
+// ADR-022 R22 — layers only import downward. The order, lowest first:
+//
+//   shared < clients < transport infrastructure (rpc/, http/, jobs/)
+//          < modules < services.ts < registries < index.ts
+//
+// It is a LAYER order, not path depth: a module importing `../../jobs/define`
+// is going DOWN, and must not be flagged. rpc/, http/ and jobs/ are ONE layer
+// (rpc/base.ts, http/define.ts and jobs/define.ts are peers), so edges among
+// them are sideways, not up. Cross-module edges are likewise sideways — every
+// module is the same layer — so they are out of R22's scope; R1/R3 own those.
+//
+// One dependency-cruiser rule is a single from × to rectangle, and "every layer
+// may import every LOWER layer" is a triangle, so R22 lands as one rule per
+// layer boundary. All six share the `core-layers-` prefix and this comment.
+const R22_COMMENT =
+  'ADR-022 R22: layers only import downward — shared < clients < transport ' +
+  'infrastructure (rpc/, http/, jobs/) < modules < services.ts < registries < ' +
+  'index.ts. By LAYER, not by path depth: a module importing ../../jobs/define ' +
+  'is going down and is not a violation, and rpc/ http/ jobs/ are one layer so ' +
+  'edges among them are sideways. Infrastructure reaches a module\'s behaviour ' +
+  'through deps/ctx, never by deep-importing modules/<name>/src/*. Two upward ' +
+  'edges are legal, both type-only and both exempted on ' +
+  'core-layers-modules-below-composition: a module importing ServiceDeps / ' +
+  'Services from services.ts (R3 requires it — all 36 factories do it), and a ' +
+  'module importing another module\'s <name>.constants.ts (R8 blesses that ' +
+  'file). Landed at `warn` by M14-002 with 23 violations, exactly as ' +
+  'core-uses-ctx-not-db-internals did in M10-001; the fix wave flips it to ' +
+  '`error` at 0. Baseline, measured 2026-09-08: 7 from shared/, 6 from ' +
+  'clients/, 10 from rpc/ + http/ + jobs/, 0 from modules/ and above.';
+
+// The composition root and everything above it.
+const COMPOSITION_AND_ABOVE =
+  '^packages/core/src/(services|rpc\\.router|rest\\.routes|jobs\\.registry|index)\\.ts$';
+// The five registries minus services.ts, plus the export surface.
+const REGISTRIES_AND_INDEX =
+  '^packages/core/src/(rpc\\.router|rest\\.routes|jobs\\.registry|index)\\.ts$';
+// Directory layers strictly above shared, and strictly above clients.
+const ABOVE_SHARED = '^packages/core/src/(clients|rpc|http|jobs|modules)/';
+const ABOVE_CLIENTS = '^packages/core/src/(rpc|http|jobs|modules)/';
+
 module.exports = {
   forbidden: [
     {
@@ -169,6 +226,78 @@ module.exports = {
       from: {
         path: '^packages/core/src/',
         pathNot: '\\.test\\.ts$',
+      },
+      to: {
+        path: '^packages/core/src/index\\.ts$',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'core-layers-shared-is-the-bottom',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: {
+        path: '^packages/core/src/shared/',
+        pathNot: '\\.test\\.ts$',
+      },
+      to: { path: [ABOVE_SHARED, COMPOSITION_AND_ABOVE] },
+    },
+    {
+      name: 'core-layers-clients-below-transport',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: {
+        path: '^packages/core/src/clients/',
+        pathNot: '\\.test\\.ts$',
+      },
+      to: { path: [ABOVE_CLIENTS, COMPOSITION_AND_ABOVE] },
+    },
+    {
+      name: 'core-layers-transport-below-modules',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: {
+        // One layer, three directories: rpc/base.ts, http/define.ts and
+        // jobs/define.ts are peers, so edges AMONG them are sideways, not up.
+        path: '^packages/core/src/(rpc|http|jobs)/',
+        pathNot: '\\.test\\.ts$',
+      },
+      to: { path: ['^packages/core/src/modules/', COMPOSITION_AND_ABOVE] },
+    },
+    {
+      name: 'core-layers-modules-below-composition',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: {
+        path: '^packages/core/src/modules/',
+        pathNot: '\\.test\\.ts$',
+      },
+      to: {
+        path: COMPOSITION_AND_ABOVE,
+        // R8 blesses `<name>.constants.ts` as the one file that may be imported
+        // as a VALUE across a boundary, so a module reaching one is never a
+        // layering violation.
+        pathNot: '\\.constants\\.ts$',
+        // R3 REQUIRES this edge: every one of the 36 factories is
+        // `createXService(deps: ServiceDeps, services: () => Services)`, and
+        // both names live in services.ts. All 47 such imports in the tree today
+        // are `import type`, which is what keeps the edge type-only and legal.
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'core-layers-composition-below-registries',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: { path: '^packages/core/src/services\\.ts$' },
+      to: { path: REGISTRIES_AND_INDEX, dependencyTypesNot: ['type-only'] },
+    },
+    {
+      name: 'core-layers-registries-below-index',
+      severity: 'warn',
+      comment: R22_COMMENT,
+      from: {
+        path: '^packages/core/src/(rpc\\.router|rest\\.routes|jobs\\.registry)\\.ts$',
       },
       to: {
         path: '^packages/core/src/index\\.ts$',

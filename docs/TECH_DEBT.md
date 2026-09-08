@@ -1608,6 +1608,12 @@ space cannot scope a version to one importer — see the recipe.
   at gate time because ADR-017 forbids declaring it. Declaring
   `dependency-cruiser` as a root devDependency would delete this script; that is
   a register question, not a P13 one.
+  **RESOLVED by M14-002 (2026-09-08)** — the register reopened after P13 (Carl),
+  the tool is now a declared root devDependency, and its `typescript` peer does
+  resolve under `linker = "isolated"`. The script is deleted. See the M14-002
+  section at the end of this file. (The premise "ADR-017 forbids declaring it"
+  was also wrong on the letter of the ADR: rule 2 puts additions, like removals,
+  outside the register entirely.)
 - **`packageManager` is gone and nothing replaced it as an asserted pin.** It
   was deleted rather than repointed to `bun@1.4.0` (reasoning in the recipe).
   ADR-016 rule 5 wants the Bun pin asserted in three places: `.bun-version`,
@@ -1812,3 +1818,178 @@ reintroduce `packageManager`. Instead the root `package.json` gained
 rule without the "lies to corepack" or "unasserted exact pin" problems ADR-016
 raised. `docs/BUN_INSTALL_RECIPE.md` is updated alongside this file to record
 the addition.
+
+## 2026-09-08 — M14-002, `dependency-cruiser` declared, R22's layer rule landed at `warn`
+
+Ran by: ralph (M14-002 implement task), on this box, 2026-09-08.
+
+### The peer-resolution verification (ADR-022's condition), and its result
+
+ADR-022 is accepted "with the R22 condition standing": R22 ships as a
+dependency-cruiser rule only if the tool, once **declared** as a root
+devDependency, can still load the TypeScript compiler. It resolves
+`typescript` — its own optional peer — from *its own directory*, an ESM lookup
+`NODE_PATH` cannot influence. Under `bunx` that fails, and the cruise returns
+82 false `core-uses-ctx-not-db-internals` violations, every one an `import
+type` line the rule explicitly allows. `bunfig.toml` sets `linker = "isolated"`
+(P13), so a declared dependency is symlinked into the `.bun` store and the
+same failure shape was plausible.
+
+**It resolves.** With `"dependency-cruiser": "18.2.0"` in the root
+`devDependencies` and a plain `bun install`:
+
+```
+$ bunx --no-install depcruise --info
+    ✔ typescript             >=2.0.0 <7.0.0      typescript@5.9.3
+```
+
+A real version, not a dash. The reason it works under `linker = "isolated"` —
+and the reason `bunx` never could — is that bun's store lives at
+`node_modules/.bun/` **inside the repo**, so node's upward walk from
+
+```
+node_modules/.bun/dependency-cruiser@18.2.0/node_modules/dependency-cruiser/
+```
+
+still reaches the repo root's `node_modules/typescript` (itself a symlink to
+`node_modules/.bun/typescript@5.9.3/`). A global `bunx` cache directory is
+outside the repo, so the walk never reaches a `typescript` at all. Verified
+directly: `require.resolve('typescript')` from the cruiser's real directory
+returns `node_modules/.bun/typescript@5.9.3/node_modules/typescript/lib/typescript.js`.
+No hoist exception was needed.
+
+### Before / after — the declared tool reproduces the runner exactly
+
+Both run on the same tree, same config, minutes apart:
+
+| Run | Modules | Dependencies | Errors |
+|---|---:|---:|---:|
+| `bun tooling/scripts/check-deps.ts` (the runner, before) | 2700 | 18121 | 0 |
+| `depcruise --config … apps/start packages` (declared, after) | 2700 | 18121 | 0 |
+
+Identical, and the 82 false violations do not appear. Both runs took ~8.3s
+wall. (The runner's own 2026-09-07 entry above records 2703 modules; that was
+three modules ago on a different tree. The number to compare is the pair
+measured together on the same tree, which is what this table is.)
+
+So, per this task's second acceptance branch: `tooling/scripts/check-deps.ts`
+is **deleted**, and `check:deps` is now
+`depcruise --config .dependency-cruiser.cjs --output-type err apps/start packages`,
+resolving the declared binary through `node_modules/.bin`.
+
+### The ADR-017 addition
+
+`dependency-cruiser@18.2.0`, root `devDependencies`. ADR-017's exception
+register **reopened after P13 (Carl, 2026-09-08)**, so this addition needs no
+new exception row. It is also not a version *bump* of anything: rule 1 freezes
+the declared range of an existing dependency, and rule 2 puts additions and
+removals outside the register entirely. The only requirement rule 5 imposes —
+that the addition come from Carl or an ADR rather than an implement task
+deciding for itself — is satisfied by ADR-022's `dependency-cruiser` ruling.
+
+The debt this closes was recorded in the M13-002 entry above as "a repo-local
+dev tool is being fetched at gate time because ADR-017 forbids declaring it".
+That premise was wrong on the letter of ADR-017 and is now moot either way.
+
+### R22 — the layer rule, landed at `warn`
+
+ADR-022 R22: **layers only import downward.** The order, lowest first:
+
+```
+shared < clients < transport infrastructure (rpc/, http/, jobs/)
+       < modules < services.ts < registries < index.ts
+```
+
+It is a *layer* order, not path depth. Two consequences drove the encoding:
+
+1. **A module importing `../../jobs/define` is going DOWN** and must not be
+   flagged. A rule that fires on every well-formed module is worse than no rule.
+2. **`rpc/`, `http/` and `jobs/` are ONE layer** (`rpc/base.ts`,
+   `http/define.ts` and `jobs/define.ts` are peers), so edges among them are
+   sideways. Likewise every module is the same layer, so **cross-module edges
+   are out of R22's scope** — R1/R3 own those. Measured: pulling cross-module
+   edges into the rule adds **84** violations, which is a different finding
+   about module boundaries, not about layering.
+
+One dependency-cruiser rule is a single `from` × `to` rectangle, and "every
+layer may import every lower layer" is a triangle, so R22 lands as **one rule
+per layer boundary**, six rules sharing the `core-layers-` prefix and one
+`R22_COMMENT`. Baseline, `bun run check:deps`, 2026-09-08:
+
+| Rule | Violations | What they are |
+|---|---:|---|
+| `core-layers-shared-is-the-bottom` | **7** | the seven misfiled `packages/core/src/shared/` files ADR-022 names: `cacheable-per-deps`, `ch-query`, `slug-id` → `services.ts`; `date`, `math` → `report.constants`; `access` → `rpc/errors`; `email-sequence` → `clients/email` |
+| `core-layers-clients-below-transport` | **6** | `clients/integrations/*` and `clients/ai/providers.ts` reaching up into `modules/*` (five to a `*.constants.ts`, one to `modules/event/event.service.ts`) |
+| `core-layers-transport-below-modules` | **10** | the **8** module-internal deep imports ADR-022 counts (`http/auth`, `http/client-auth` ×2, `http/session` ×3, `rpc/base` ×2), plus `http/debug.routes.ts` and `jobs/schedulers.ts` reaching up into `jobs.registry.ts` |
+| `core-layers-modules-below-composition` | **0** | — |
+| `core-layers-composition-below-registries` | **0** | — |
+| `core-layers-registries-below-index` | **0** | — |
+| **total** | **23** | |
+
+This reproduces ADR-022's prediction exactly — "7 violations from
+`packages/core/src/shared/` and 8 from `http/*` and `rpc/base.ts`" — and adds
+8 more genuine upward edges its *Existing implementation* table did not
+enumerate (the 6 from `clients/`, and the 2 into `jobs.registry.ts`).
+
+All six are at `severity: 'warn'`, exactly as `core-uses-ctx-not-db-internals`
+and `core-no-self-barrel` were in M10-001. **They are not flipped to `error`
+while the tree still violates them**; the fix wave flips them at 0. `bun run
+check:deps` therefore still exits `0` (`x 23 dependency violations (0 errors,
+23 warnings)`), and the four pre-existing rules keep their names, their
+`error` severity and their behaviour — unchanged and still at 0.
+
+`core-layers-modules-below-composition` carries the two upward edges R22
+declares legal, both type-only, both encoded as exemptions naming their rule:
+
+- **R3** — a module importing `ServiceDeps` / `Services` from `services.ts`.
+  Every one of the 36 factories is `createXService(deps: ServiceDeps, services:
+  () => Services)`, so this edge is required, not tolerated. All **47**
+  such imports in production files today are `import type`, so
+  `dependencyTypesNot: ['type-only']` passes every one.
+- **R8** — a module importing another module's `<name>.constants.ts`, the one
+  file blessed for value-import across a boundary (`pathNot:
+  '\.constants\.ts$'`).
+
+### Proving the rule fires, and proving it stays quiet
+
+A rule that cannot fire is worth nothing, and a layer rule that fires on
+well-formed code is worse than nothing. Both directions were checked with
+throwaway fixtures (ADR-008 Benchmark 1's idiom), then deleted — never
+committed. One fixture file was placed in the **modules** layer carrying four
+edges at once:
+
+```ts
+// packages/core/src/modules/health/__r22_fixture__.ts
+import { defineJob } from '../../jobs/define';            // DOWN  -> silent
+import type { ServiceDeps } from '../../services';        // R3    -> silent
+import { NOT_SET_VALUE } from '../report/report.constants'; // R8  -> silent
+import { appRouter } from '../../rpc.router';             // UP    -> FIRES
+```
+
+and one in the **shared** layer, where `jobs/define` is upward rather than
+downward:
+
+```ts
+// packages/core/src/shared/__r22_fixture__.ts
+import { defineJob } from '../jobs/define';               // UP    -> FIRES
+```
+
+Result — exactly two new violations, 23 → 25, and the same
+`../../jobs/define` specifier correctly fires from `shared/` and stays silent
+from `modules/`:
+
+```
+warn core-layers-shared-is-the-bottom: packages/core/src/shared/__r22_fixture__.ts → packages/core/src/jobs/define.ts
+warn core-layers-modules-below-composition: packages/core/src/modules/health/__r22_fixture__.ts → packages/core/src/rpc.router.ts
+x 25 dependency violations (0 errors, 25 warnings)
+```
+
+With the fixtures removed the count returns to 23.
+
+### Root `package-lock.json` deleted
+
+`git rm package-lock.json`. ADR-014 wanted it gone in the lockfile-swap commit
+("tracked, stale, and a trap for any scanner or contributor running `npm ci`");
+it fell outside M13-002's scope globs and survived. `lockfileVersion 2`, 359
+entries, one commit ever, still listing `winston` (removed) and `biome@1.9.1`.
+Nothing reads it — `bun.lock` is the lockfile.
