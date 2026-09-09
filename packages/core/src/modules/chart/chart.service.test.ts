@@ -62,9 +62,11 @@ beforeAll(async () => {
   const fixtures = await import('../../../../../test/fixtures');
   FIXTURE = fixtures.FIXTURE;
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
-  const { testServiceDeps } = await import('../../../test/service-deps');
+  const { testServiceDeps, testServices } = await import(
+    '../../../test/service-deps'
+  );
   const { createChartService } = await import('./chart.service');
-  service = createChartService(await testServiceDeps());
+  service = createChartService(await testServiceDeps(), testServices());
 
   const { bootstrapTestDatabases } = await import(
     '../../../../../test/bootstrap-databases'

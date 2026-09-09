@@ -38,7 +38,7 @@ import {
   slackInstaller,
 } from '../../clients/integrations/slack';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getOrganizationAccess } from '../../shared/access-lookups';
 import { getAccessChecks } from '../auth/auth.service';
 import { BASE_INTEGRATIONS } from '../notification/notification.service';
@@ -496,7 +496,8 @@ export interface IntegrationService {
 /** M10-009: this module had no factory at all — the one `*.service.ts` file
  *  `services.ts` did not register (docs/TECH_DEBT.md §5a). */
 export function createIntegrationService(
-  deps: ServiceDeps
+  deps: ServiceDeps,
+  _services: () => Services
 ): IntegrationService {
   return {
     getById: (...args) => getIntegrationById(deps, ...args),

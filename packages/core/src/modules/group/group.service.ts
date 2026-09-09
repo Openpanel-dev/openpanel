@@ -12,7 +12,7 @@
 // through `deps.ch.insert`. The `loadChClient` lazy loader is gone
 // (docs/TECH_DEBT.md §2, §4).
 
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { toDots } from '../../shared/object';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
@@ -521,7 +521,10 @@ export interface GroupService {
   upsert(input: IServiceUpsertGroup): Promise<void>;
 }
 
-export function createGroupService(deps: ServiceDeps): GroupService {
+export function createGroupService(
+  deps: ServiceDeps,
+  _services: () => Services
+): GroupService {
   return {
     byId: (id, projectId) => getGroupById(deps, id, projectId),
     upsert: (input) => upsertGroup(deps, input),

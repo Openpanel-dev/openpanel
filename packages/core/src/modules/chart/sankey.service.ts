@@ -5,7 +5,7 @@
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { z } from 'zod';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,
@@ -531,7 +531,10 @@ export interface SankeyService {
   ): ReturnType<typeof getUserFlowCore>;
 }
 
-export function createSankeyService(deps: ServiceDeps): SankeyService {
+export function createSankeyService(
+  deps: ServiceDeps,
+  _services: () => Services
+): SankeyService {
   return {
     getRawWhereClause,
     getSankey: (input) => getSankey(deps, input),

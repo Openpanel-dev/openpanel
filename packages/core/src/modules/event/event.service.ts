@@ -29,7 +29,7 @@
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
 import { clone, mergeDeepRight, uniq } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { DateTime, resolveDateRange } from '../../shared/date';
@@ -1333,7 +1333,10 @@ export interface EventService {
   ): Promise<{ document: IClickhouseEvent }>;
 }
 
-export function createEventService(deps: ServiceDeps): EventService {
+export function createEventService(
+  deps: ServiceDeps,
+  _services: () => Services
+): EventService {
   return {
     getById: (input) => getEventById(deps, input),
     create: (payload) => createEvent(deps, payload),

@@ -5,6 +5,7 @@
 // registered before the subject's first call, not before its import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
 
 const listProjectIdsForCadence = mock(async () => ['p1', 'p2']);
@@ -164,16 +165,19 @@ test('createInsightService binds every InsightService method', () => {
     trace: noop,
     child: () => logger,
   };
-  const service = subject.createInsightService({
-    db: undefined as unknown as AppDeps['db'],
-    ch: undefined as unknown as AppDeps['ch'],
-    redis: undefined as unknown as AppDeps['redis'],
-    clients: undefined as unknown as AppDeps['clients'],
-    buffers: undefined as unknown as Buffers,
-    logger,
-    queues:
-      undefined as unknown as import('../../jobs.registry').QueueProducers,
-  });
+  const service = subject.createInsightService(
+    {
+      db: undefined as unknown as AppDeps['db'],
+      ch: undefined as unknown as AppDeps['ch'],
+      redis: undefined as unknown as AppDeps['redis'],
+      clients: undefined as unknown as AppDeps['clients'],
+      buffers: undefined as unknown as Buffers,
+      logger,
+      queues:
+        undefined as unknown as import('../../jobs.registry').QueueProducers,
+    },
+    testServices()
+  );
 
   for (const method of [
     'listDailyInsightCandidates',

@@ -14,7 +14,7 @@
 
 import ShortUniqueId from 'short-unique-id';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getProjectAccess } from '../../shared/access-lookups';
 import { hashPassword } from '../auth/auth.service';
 import { getDashboardById } from '../dashboard/dashboard.service';
@@ -659,7 +659,10 @@ export interface ShareService {
   ): ReturnType<typeof createShareReport>;
 }
 
-export function createShareService(deps: ServiceDeps): ShareService {
+export function createShareService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ShareService {
   return {
     getShareOverviewById: (id) => getShareOverviewById(deps, id),
     getShareByProjectId: (projectId) => getShareByProjectId(deps, projectId),

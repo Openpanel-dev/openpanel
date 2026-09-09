@@ -22,7 +22,7 @@ import { createHash } from 'node:crypto';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
@@ -1242,7 +1242,10 @@ export interface ImportService {
 }
 
 /** `ctx.services.import` — a thin binding of the job body above to a Ctx's queues. */
-export function createImportService(deps: ServiceDeps): ImportService {
+export function createImportService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ImportService {
   const logger = deps.logger.child({ module: 'import' });
 
   return {

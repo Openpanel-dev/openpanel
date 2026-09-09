@@ -24,7 +24,7 @@ import {
   getGeoLocation,
 } from '../../clients/geo';
 import type { Logger } from '../../logger';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { generateId } from '../../shared/id';
 import { parseUserAgent } from '../../shared/parser-user-agent';
 import { generateDeviceId } from '../../shared/profileId';
@@ -912,7 +912,10 @@ export interface IngestService {
   isDuplicate: typeof isDuplicateIngestRequest;
 }
 
-export function createIngestService(deps: ServiceDeps): IngestService {
+export function createIngestService(
+  deps: ServiceDeps,
+  _services: () => Services
+): IngestService {
   return {
     track: (request, produceIncomingEvent) =>
       ingestTrack(request, {

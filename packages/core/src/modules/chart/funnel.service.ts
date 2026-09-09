@@ -4,7 +4,7 @@
 // re-export shim onto this module (DELEGATE PATTERN).
 
 import { last, reverse } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { ifNaN } from '../../shared/math';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
@@ -456,7 +456,10 @@ export interface FunnelService {
   ): ReturnType<typeof getFunnelProfileIds>;
 }
 
-export function createFunnelService(deps: ServiceDeps): FunnelService {
+export function createFunnelService(
+  deps: ServiceDeps,
+  _services: () => Services
+): FunnelService {
   return {
     getFunnelGroup,
     toSeries,

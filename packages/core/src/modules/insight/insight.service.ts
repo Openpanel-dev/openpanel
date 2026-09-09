@@ -34,7 +34,7 @@ import {
 import { generateWeeklyNarrative } from '../../clients/ai/narrative';
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import type { EngineConfig } from './src/engine';
 import type { Insight as LegacyInsight } from './src/legacy-scan';
 import type {
@@ -730,7 +730,10 @@ export interface InsightService {
 }
 
 /** `ctx.services.insight` — a thin binding of the functions above to a Ctx's logger. */
-export function createInsightService(deps: ServiceDeps): InsightService {
+export function createInsightService(
+  deps: ServiceDeps,
+  _services: () => Services
+): InsightService {
   const logger = deps.logger.child({ module: 'insight' });
 
   return {

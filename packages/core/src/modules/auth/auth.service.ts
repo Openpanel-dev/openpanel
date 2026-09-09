@@ -19,7 +19,7 @@
 // carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { type AccessChecks, createAccessChecks } from '../../shared/access';
 import type {
   getClientAccess as GetClientAccessFn,
@@ -180,15 +180,18 @@ export function resetAccessChecksForTests(): void {
 }
 
 /**
- * Registered in `services.ts`. Takes NO `ServiceDeps`, and says so on the
- * signature rather than ignoring an argument: every member here is either
- * pure, reads its own env, or — for the access checks — reaches the shared,
- * memoized `getAccessChecks()` above, whose lookups are `cacheable` (their
- * key is derived from the call's arguments, so they cannot take a leading
- * `deps`; see shared/access-lookups.ts). A member that later needs `db` /
- * `logger` adds the parameter back, and the one call site follows.
+ * Registered in `services.ts`. Ignores BOTH arguments, and takes them only
+ * because ADR-022 R3 keeps the composition root a flat list: every member
+ * here is either pure, reads its own env, or — for the access checks —
+ * reaches the shared, memoized `getAccessChecks()` above, whose lookups are
+ * `cacheable` (their key is derived from the call's arguments, so they cannot
+ * take a leading `deps`; see shared/access-lookups.ts). A member that later
+ * needs `db` / `logger` drops the underscore and reads the parameter.
  */
-export function createAuthService(): AuthService {
+export function createAuthService(
+  _deps: ServiceDeps,
+  _services: () => Services
+): AuthService {
   return {
     async requireProjectAccess(args) {
       return (await getAccessChecks()).requireProjectAccess(args);

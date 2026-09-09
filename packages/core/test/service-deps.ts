@@ -6,7 +6,7 @@
 // container.
 
 import type { Logger } from '../src/logger';
-import type { ServiceDeps } from '../src/services';
+import type { ServiceDeps, Services } from '../src/services';
 
 /** Records what the ClickHouse/Postgres call was logged with — the requestId
  *  chain's observation point. */
@@ -36,7 +36,14 @@ export function recordingLogger(
 }
 
 function unavailable(name: string): never {
-  throw new Error(`ServiceDeps.${name} is not built in this test`);
+  throw new Error(`${name} is not built in this test`);
+}
+
+/** The `services()` thunk every factory takes (ADR-022 R3). No suite here
+ *  reaches a sibling, so calling it is a named error rather than a silently
+ *  half-built container; a suite that needs one passes its own thunk. */
+export function testServices(): () => Services {
+  return () => unavailable('services()');
 }
 
 export async function testServiceDeps(
@@ -53,13 +60,13 @@ export async function testServiceDeps(
     redis,
     logger: recordingLogger(),
     get clients(): never {
-      return unavailable('clients');
+      return unavailable('ServiceDeps.clients');
     },
     get buffers(): never {
-      return unavailable('buffers');
+      return unavailable('ServiceDeps.buffers');
     },
     get queues(): never {
-      return unavailable('queues');
+      return unavailable('ServiceDeps.queues');
     },
     ...overrides,
   };

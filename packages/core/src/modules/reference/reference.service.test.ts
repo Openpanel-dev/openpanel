@@ -4,6 +4,7 @@
 // at the specifier the source resolves through.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeReference {
   id: string;
@@ -130,9 +131,12 @@ afterAll(() => {
 let subject: import('./reference.service').ReferenceService;
 beforeAll(async () => {
   const { createReferenceService } = await import('./reference.service');
-  subject = createReferenceService({
-    db: { reference },
-  } as unknown as import('../../services').ServiceDeps);
+  subject = createReferenceService(
+    {
+      db: { reference },
+    } as unknown as import('../../services').ServiceDeps,
+    testServices()
+  );
 });
 
 beforeEach(() => {

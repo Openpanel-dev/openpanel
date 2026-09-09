@@ -25,7 +25,7 @@ import crypto from 'node:crypto';
 import { getRedisCache } from '@openpanel/redis';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { Logger } from '../../logger';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import {
   DEFAULT_IP_HEADER_ORDER,
@@ -497,6 +497,9 @@ export interface MiscService {
   runPingCron(): Promise<unknown>;
 }
 
-export function createMiscService(deps: ServiceDeps): MiscService {
+export function createMiscService(
+  deps: ServiceDeps,
+  _services: () => Services
+): MiscService {
   return { runPingCron: () => runPingCron(deps) };
 }

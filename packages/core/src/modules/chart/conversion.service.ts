@@ -5,7 +5,7 @@
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
@@ -273,7 +273,10 @@ export interface ConversionService {
   ): ReturnType<typeof getConversion>;
 }
 
-export function createConversionService(deps: ServiceDeps): ConversionService {
+export function createConversionService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ConversionService {
   return {
     getConversion: (input) => getConversion(deps, input),
   };

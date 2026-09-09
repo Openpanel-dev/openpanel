@@ -12,7 +12,7 @@
 // dodge a module-singleton mocking hazard, and there is no singleton left to
 // dodge.
 
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import {
@@ -242,7 +242,10 @@ export interface PagesService {
   ): Promise<IPageConversionRow[]>;
 }
 
-export function createPagesService(deps: ServiceDeps): PagesService {
+export function createPagesService(
+  deps: ServiceDeps,
+  _services: () => Services
+): PagesService {
   return {
     getTopPages: (input) => getTopPages(deps, input),
     getPageTimeseries: (input) => getPageTimeseries(deps, input),

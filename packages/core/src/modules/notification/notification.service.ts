@@ -22,7 +22,7 @@ import { pathOr } from 'ramda';
 import { sendEmail } from '../../clients/email';
 import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { stripLeadingAndTrailingSlashes } from '../../shared/string';
 import type {
   IServiceCreateEventPayload,
@@ -525,7 +525,8 @@ export interface NotificationService {
 }
 
 export function createNotificationService(
-  deps: ServiceDeps
+  deps: ServiceDeps,
+  _services: () => Services
 ): NotificationService {
   return {
     dispatch: (notification) => deliverNotification(deps, notification),

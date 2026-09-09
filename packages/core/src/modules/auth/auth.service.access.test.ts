@@ -8,6 +8,7 @@
 // gate are unchanged.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeProjectAccess {
   level: 'read' | 'write' | 'admin';
@@ -62,7 +63,13 @@ afterAll(() => {
 });
 
 function authService() {
-  return createAuthService();
+  // Both arguments are ignored by `createAuthService` — it takes them so the
+  // composition root stays a flat list (ADR-022 R3). Every member reaches the
+  // mocked lookups above.
+  return createAuthService(
+    {} as import('../../services').ServiceDeps,
+    testServices()
+  );
 }
 
 test('requireProjectAccess is fail-closed: no access throws before the write-level check', async () => {

@@ -6,6 +6,7 @@
 // the v1-compat seam memoizes whatever it resolved while one was installed.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
@@ -144,15 +145,18 @@ test('updateImportStatus marks a failed step with its error message', async () =
 
 test('ImportService.enqueue adds the import job onto the import queue', async () => {
   const producers = createRecordingProducers(queues);
-  const service = createImportService({
-    db: {} as AppDeps['db'],
-    ch: {} as AppDeps['ch'],
-    redis: {} as AppDeps['redis'],
-    clients: {} as AppDeps['clients'],
-    buffers: {} as Buffers,
-    logger: stubLogger(),
-    queues: producers.queues,
-  });
+  const service = createImportService(
+    {
+      db: {} as AppDeps['db'],
+      ch: {} as AppDeps['ch'],
+      redis: {} as AppDeps['redis'],
+      clients: {} as AppDeps['clients'],
+      buffers: {} as Buffers,
+      logger: stubLogger(),
+      queues: producers.queues,
+    },
+    testServices()
+  );
 
   const jobId = await service.enqueue('imp_1');
 

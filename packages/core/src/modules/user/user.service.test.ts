@@ -3,6 +3,7 @@
 // idiom as reference.service.test.ts.
 
 import { beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 import type { ServiceDeps } from '../../services';
 import { createUserService } from './user.service';
 
@@ -90,9 +91,12 @@ const organization = {
   ),
 };
 
-const subject = createUserService({
-  db: { user, organization },
-} as unknown as ServiceDeps);
+const subject = createUserService(
+  {
+    db: { user, organization },
+  } as unknown as ServiceDeps,
+  testServices()
+);
 
 beforeEach(() => {
   userStore.clear();

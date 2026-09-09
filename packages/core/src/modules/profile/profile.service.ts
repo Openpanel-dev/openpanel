@@ -17,7 +17,7 @@
 // reaches a core sibling, not @openpanel/db.
 
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { strip, toObject } from '../../shared/object';
@@ -716,7 +716,10 @@ export interface ProfileService {
   upsert(input: IServiceUpsertProfile, isFromEvent?: boolean): Promise<void>;
 }
 
-export function createProfileService(deps: ServiceDeps): ProfileService {
+export function createProfileService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ProfileService {
   return {
     byId: (id, projectId) => getProfileById(deps, id, projectId),
     upsert: (input, isFromEvent) => upsertProfile(deps, input, isFromEvent),

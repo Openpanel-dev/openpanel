@@ -38,7 +38,7 @@
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { isClickhouseClustered } from '../../shared/ch-tables';
 import type { IServiceProfile } from '../profile/profile.service';
@@ -1038,7 +1038,10 @@ export interface CohortService {
   enqueueCompute(cohortId: string): Promise<void>;
 }
 
-export function createCohortService(deps: ServiceDeps): CohortService {
+export function createCohortService(
+  deps: ServiceDeps,
+  _services: () => Services
+): CohortService {
   return {
     updateMembership: (cohortId) => updateCohortMembership(deps, cohortId),
     listRefreshableCohortIds: () => listRefreshableCohortIds(deps),

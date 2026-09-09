@@ -5,6 +5,7 @@
 // `afterAll` restores the real module instead of re-applying the mock.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeShare {
   id: string;
@@ -220,9 +221,12 @@ afterAll(() => {
 let subject: import('./share.service').ShareService;
 beforeAll(async () => {
   const { createShareService } = await import('./share.service');
-  subject = createShareService({
-    db: { shareOverview, shareDashboard, shareReport },
-  } as unknown as import('../../services').ServiceDeps);
+  subject = createShareService(
+    {
+      db: { shareOverview, shareDashboard, shareReport },
+    } as unknown as import('../../services').ServiceDeps,
+    testServices()
+  );
 });
 
 beforeEach(() => {

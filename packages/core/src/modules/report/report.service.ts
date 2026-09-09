@@ -14,7 +14,7 @@ import type {
   ReportLayout,
 } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getChartStartEndDate } from '../../shared/date';
 import { getFunnel } from '../chart/funnel.service';
 import {
@@ -512,7 +512,10 @@ export interface ReportService {
   ): ReturnType<typeof resetReportLayouts>;
 }
 
-export function createReportService(deps: ServiceDeps): ReportService {
+export function createReportService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ReportService {
   return {
     transformFilter,
     transformReportEventItem,

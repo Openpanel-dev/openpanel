@@ -20,7 +20,7 @@
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
@@ -849,15 +849,18 @@ export interface ChartService {
   getEngagementCore(projectId: string): ReturnType<typeof getEngagementCore>;
 }
 
-export function createChartService(deps: ServiceDeps): ChartService {
+export function createChartService(
+  deps: ServiceDeps,
+  services: () => Services
+): ChartService {
   // The four chart sub-modules each expose their own `create*Service(deps)`
   // (ADR-007). `services.ts` binds each under its own key; `chart` composes
   // them as well, so the callers that reach a funnel/retention method through
   // the chart facade keep working. Both bind the same stateless closures.
-  const funnel = createFunnelService(deps);
-  const conversion = createConversionService(deps);
-  const sankey = createSankeyService(deps);
-  const retention = createRetentionService(deps);
+  const funnel = createFunnelService(deps, services);
+  const conversion = createConversionService(deps, services);
+  const sankey = createSankeyService(deps, services);
+  const retention = createRetentionService(deps, services);
 
   return {
     execute: (input) => executeChart(deps, input),

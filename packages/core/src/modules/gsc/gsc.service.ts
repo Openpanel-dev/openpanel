@@ -28,7 +28,7 @@ import { cacheable } from '@openpanel/redis';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { decrypt, encrypt } from '../../shared/encryption';
@@ -1500,7 +1500,10 @@ export interface GscService {
 }
 
 /** `ctx.services.gsc` — a thin binding of the functions above to a Ctx's logger/queues. */
-export function createGscService(deps: ServiceDeps): GscService {
+export function createGscService(
+  deps: ServiceDeps,
+  _services: () => Services
+): GscService {
   const logger = deps.logger.child({ module: 'gsc' });
 
   return {

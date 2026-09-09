@@ -39,7 +39,7 @@
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
@@ -563,7 +563,10 @@ export interface RealtimeService {
   getActiveVisitorCount(projectId: string): Promise<number>;
 }
 
-export function createRealtimeService(deps: ServiceDeps): RealtimeService {
+export function createRealtimeService(
+  deps: ServiceDeps,
+  _services: () => Services
+): RealtimeService {
   return {
     getCoordinates: (projectId) => getRealtimeCoordinates(deps, projectId),
     getMapBadgeDetails: (input) => getRealtimeMapBadgeDetails(deps, input),

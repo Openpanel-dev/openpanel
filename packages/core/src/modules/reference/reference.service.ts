@@ -12,7 +12,7 @@
 // worker per test file — left to defer (docs/TECH_DEBT.md §4).
 
 import type { Reference } from '@openpanel/db/src/prisma-client';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartRange } from '../report/report.constants';
@@ -145,7 +145,10 @@ export interface ReferenceService {
   getChartReferences(input: ChartReferencesInput): Promise<Reference[]>;
 }
 
-export function createReferenceService(deps: ServiceDeps): ReferenceService {
+export function createReferenceService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ReferenceService {
   return {
     getReferenceById: (id) => getReferenceById(deps, id),
     getReferenceByIdOrThrow: (id) => getReferenceByIdOrThrow(deps, id),

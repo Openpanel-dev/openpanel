@@ -7,6 +7,7 @@
 // land before that import — hence the `await import` in `beforeAll`.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeProject {
   id: string;
@@ -140,9 +141,12 @@ mock.module('@openpanel/redis', () => ({
 let subject: import('./client.service').ClientService;
 beforeAll(async () => {
   const { createClientService } = await import('./client.service');
-  subject = createClientService({
-    db: { project, client },
-  } as unknown as import('../../services').ServiceDeps);
+  subject = createClientService(
+    {
+      db: { project, client },
+    } as unknown as import('../../services').ServiceDeps,
+    testServices()
+  );
 });
 
 beforeEach(() => {

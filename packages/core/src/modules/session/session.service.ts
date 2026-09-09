@@ -18,7 +18,7 @@
 // imports, kept lazy for a cycle, not for a client.
 
 import { cacheable } from '@openpanel/redis';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
@@ -511,7 +511,10 @@ export interface SessionService {
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<void>;
 }
 
-export function createSessionService(deps: ServiceDeps): SessionService {
+export function createSessionService(
+  deps: ServiceDeps,
+  _services: () => Services
+): SessionService {
   return {
     byId: (sessionId, projectId) => getSessionById(deps, sessionId, projectId),
     enqueueSessionEnd: async (input) => {

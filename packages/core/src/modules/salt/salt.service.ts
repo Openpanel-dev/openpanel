@@ -18,7 +18,7 @@
 // closure's cache, which is why it lives inside the factory too.
 
 import { cacheable } from '@openpanel/redis';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { generateSalt } from '../../shared/crypto';
 
 const SALT_CACHE_NAME = 'op:salt';
@@ -94,7 +94,10 @@ export interface SaltService {
   rotateSalt(): Promise<{ salt: string; createdAt: Date }>;
 }
 
-export function createSaltService(deps: ServiceDeps): SaltService {
+export function createSaltService(
+  deps: ServiceDeps,
+  _services: () => Services
+): SaltService {
   const getSalts = cacheable(
     SALT_CACHE_NAME,
     () => fetchSalts(deps),

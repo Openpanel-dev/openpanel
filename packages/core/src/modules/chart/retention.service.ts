@@ -8,7 +8,7 @@
 // well as the MCP / agent / REST retention endpoints.
 
 import { range } from 'ramda';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { DateTime } from '../../shared/date';
 import { round } from '../../shared/math';
 import type { IChartEventFilter } from '../report/report.constants';
@@ -419,7 +419,10 @@ export interface RetentionService {
   getEngagementCore(projectId: string): ReturnType<typeof getEngagementCore>;
 }
 
-export function createRetentionService(deps: ServiceDeps): RetentionService {
+export function createRetentionService(
+  deps: ServiceDeps,
+  _services: () => Services
+): RetentionService {
   return {
     processCohortData,
     getRetentionCohort: (input) => getRetentionCohort(deps, input),

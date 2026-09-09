@@ -13,6 +13,7 @@
 // exercised directly instead.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeSalt {
   salt: string;
@@ -99,7 +100,7 @@ beforeAll(async () => {
   const deps = {
     db: { salt: saltDelegate, $transaction },
   } as unknown as import('../../services').ServiceDeps;
-  subject = mod.createSaltService(deps);
+  subject = mod.createSaltService(deps, testServices());
 });
 
 beforeEach(() => {

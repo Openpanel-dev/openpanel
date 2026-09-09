@@ -14,7 +14,7 @@
 // relative import cannot do (docs/TECH_DEBT.md §4).
 
 import type { AuthenticatedClient } from '../../http/client-auth';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getChartStartEndDate, resolveDateRange } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartRange } from '../report/report.constants';
@@ -133,7 +133,10 @@ export interface ExportService {
   ): Promise<{ startDate: string; endDate: string }>;
 }
 
-export function createExportService(deps: ServiceDeps): ExportService {
+export function createExportService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ExportService {
   return {
     resolveExportProjectId: (client, query) =>
       resolveExportProjectId(deps, client, query),

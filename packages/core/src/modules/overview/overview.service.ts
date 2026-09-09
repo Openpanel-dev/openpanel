@@ -12,7 +12,7 @@
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { z } from 'zod';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { average, sum } from '../../shared/math';
 import { convertClickhouseDateToJs } from '../chart/src/dates';
 import {
@@ -1408,7 +1408,10 @@ export interface OverviewService {
   ): ReturnType<typeof getAnalyticsOverviewCore>;
 }
 
-export function createOverviewService(deps: ServiceDeps): OverviewService {
+export function createOverviewService(
+  deps: ServiceDeps,
+  _services: () => Services
+): OverviewService {
   return {
     isPageFilter,
     getRawWhereClause,

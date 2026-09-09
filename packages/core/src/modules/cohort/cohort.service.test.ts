@@ -10,6 +10,7 @@
 // ClickHouse connection.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeCohort {
   id: string;
@@ -196,7 +197,9 @@ test('createCohortService().enqueueCompute enqueues with the cohort-<id> dedupli
     },
   } as unknown as Parameters<typeof subject.createCohortService>[0];
 
-  await subject.createCohortService(deps).enqueueCompute('cohort_1');
+  await subject
+    .createCohortService(deps, testServices())
+    .enqueueCompute('cohort_1');
 
   expect(addCalls).toEqual([
     {
@@ -210,7 +213,7 @@ test('createCohortService() delegates updateMembership and listRefreshableCohort
   cohortStore.clear();
   seedCohort({ id: 'c1', isStatic: false });
   seedCohort({ id: 'c2', isStatic: true });
-  const service = subject.createCohortService(deps);
+  const service = subject.createCohortService(deps, testServices());
 
   // M10-009: the container's members are closures over `deps`, not the bare
   // functions, so identity is no longer the observable — delegation is.

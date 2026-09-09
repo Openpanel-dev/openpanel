@@ -29,7 +29,7 @@
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { hashPassword } from '../auth/auth.service';
 
 export type IServiceClient = Client;
@@ -168,7 +168,10 @@ export interface ClientService {
   ): Promise<boolean>;
 }
 
-export function createClientService(deps: ServiceDeps): ClientService {
+export function createClientService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ClientService {
   /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
   const getClientByIdCached = cacheable(
     (id: string) => getClientById(deps, id),

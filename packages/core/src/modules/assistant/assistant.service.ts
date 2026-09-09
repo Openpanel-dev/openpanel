@@ -28,6 +28,7 @@
 // them through the v1-compat singleton (see that file's header), the same
 // way every other bare, no-`Ctx` caller in this wave does.
 
+import type { ServiceDeps, Services } from '../../services';
 import type { PageContext } from './assistant.constants';
 
 let _app: Promise<typeof import('./src/app')> | undefined;
@@ -87,12 +88,16 @@ export interface AssistantService {
 }
 
 /**
- * Takes NO `ServiceDeps`: the three members are `@better-agent/core` entry
- * points with a fixed signature, and each reaches the database through the
- * v1-compat seam its own tools already use — there is nothing here to hand a
- * client to.
+ * Ignores BOTH arguments, and takes them only because ADR-022 R3 keeps the
+ * composition root a flat list: the three members are `@better-agent/core`
+ * entry points with a fixed signature, and each reaches the database through
+ * the v1-compat seam its own tools already use — there is nothing here to
+ * hand a client to.
  */
-export function createAssistantService(): AssistantService {
+export function createAssistantService(
+  _deps: ServiceDeps,
+  _services: () => Services
+): AssistantService {
   return {
     getChatApp,
     getChatRunContext,

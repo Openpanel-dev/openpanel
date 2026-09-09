@@ -11,7 +11,7 @@
 import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { getId } from '../../shared/slug-id';
 import { getProjectById } from '../project/project.service';
 
@@ -179,7 +179,10 @@ export interface DashboardService {
   deleteDashboard(input: { id: string; forceDelete?: boolean }): Promise<void>;
 }
 
-export function createDashboardService(deps: ServiceDeps): DashboardService {
+export function createDashboardService(
+  deps: ServiceDeps,
+  _services: () => Services
+): DashboardService {
   return {
     getDashboardById: (id, projectId) => getDashboardById(deps, id, projectId),
     getDashboardByIdOrThrow: (id) => getDashboardByIdOrThrow(deps, id),

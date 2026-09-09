@@ -12,7 +12,7 @@
 
 import type { User } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 
 export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
 
@@ -152,7 +152,10 @@ export interface UserService {
   ): ReturnType<typeof updateUserProfile>;
 }
 
-export function createUserService(deps: ServiceDeps): UserService {
+export function createUserService(
+  deps: ServiceDeps,
+  _services: () => Services
+): UserService {
   return {
     getUserById: (id) => getUserById(deps, id),
     getUserAccount: (args) => getUserAccount(deps, args),

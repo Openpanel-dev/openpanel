@@ -11,7 +11,7 @@ import type {
   Conversation,
   Prisma,
 } from '@openpanel/db/src/prisma-client';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 
 export type IServiceConversation = Conversation;
 export type IServiceChatMessage = ChatMessage;
@@ -108,7 +108,8 @@ export interface ConversationService {
 }
 
 export function createConversationService(
-  deps: ServiceDeps
+  deps: ServiceDeps,
+  _services: () => Services
 ): ConversationService {
   return {
     getConversationById: (id, options) =>

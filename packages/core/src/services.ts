@@ -201,46 +201,53 @@ export interface Services {
   mcp: McpService;
 }
 
+// MUST stay a hoisted `function` declaration, not a `const` arrow: one static
+// ESM cycle runs through it (subscription.service.ts -> v1-compat.ts ->
+// services.ts -> subscription.service.ts) and hoisting is the only reason it
+// evaluates. A `const` would put it in a temporal dead zone that no typecheck
+// reports and that fails at process boot.
 export function createServices(deps: ServiceDeps): Services {
-  // When a second module needs to call this one, each factory takes `deps`
-  // and a `() => container` thunk: captured, not copied, so two services may
-  // call each other without a cycle.
-  return {
-    auth: createAuthService(),
-    insight: createInsightService(deps),
-    gsc: createGscService(deps),
-    cohort: createCohortService(deps),
-    import: createImportService(deps),
-    ingest: createIngestService(deps),
-    organization: createOrganizationService(deps),
-    integration: createIntegrationService(deps),
-    onboarding: createOnboardingService(deps),
-    notification: createNotificationService(deps),
-    session: createSessionService(deps),
-    event: createEventService(deps),
-    profile: createProfileService(deps),
-    group: createGroupService(deps),
-    chart: createChartService(deps),
-    funnel: createFunnelService(deps),
-    conversion: createConversionService(deps),
-    sankey: createSankeyService(deps),
-    retention: createRetentionService(deps),
-    overview: createOverviewService(deps),
-    pages: createPagesService(deps),
-    realtime: createRealtimeService(deps),
-    misc: createMiscService(deps),
-    report: createReportService(deps),
-    dashboard: createDashboardService(deps),
-    export: createExportService(deps),
-    share: createShareService(deps),
-    reference: createReferenceService(deps),
-    client: createClientService(deps),
-    project: createProjectService(deps),
-    user: createUserService(deps),
-    subscription: createSubscriptionService(deps),
-    salt: createSaltService(deps),
-    conversation: createConversationService(deps),
-    assistant: createAssistantService(),
-    mcp: createMcpService(),
+  // The thunk is captured, not copied, so two services may call each other
+  // without a cycle: `container` is assigned before any thunk body can run,
+  // because every sibling reach lives inside a method body.
+  const services = (): Services => container;
+  const container: Services = {
+    auth: createAuthService(deps, services),
+    insight: createInsightService(deps, services),
+    gsc: createGscService(deps, services),
+    cohort: createCohortService(deps, services),
+    import: createImportService(deps, services),
+    ingest: createIngestService(deps, services),
+    organization: createOrganizationService(deps, services),
+    integration: createIntegrationService(deps, services),
+    onboarding: createOnboardingService(deps, services),
+    notification: createNotificationService(deps, services),
+    session: createSessionService(deps, services),
+    event: createEventService(deps, services),
+    profile: createProfileService(deps, services),
+    group: createGroupService(deps, services),
+    chart: createChartService(deps, services),
+    funnel: createFunnelService(deps, services),
+    conversion: createConversionService(deps, services),
+    sankey: createSankeyService(deps, services),
+    retention: createRetentionService(deps, services),
+    overview: createOverviewService(deps, services),
+    pages: createPagesService(deps, services),
+    realtime: createRealtimeService(deps, services),
+    misc: createMiscService(deps, services),
+    report: createReportService(deps, services),
+    dashboard: createDashboardService(deps, services),
+    export: createExportService(deps, services),
+    share: createShareService(deps, services),
+    reference: createReferenceService(deps, services),
+    client: createClientService(deps, services),
+    project: createProjectService(deps, services),
+    user: createUserService(deps, services),
+    subscription: createSubscriptionService(deps, services),
+    salt: createSaltService(deps, services),
+    conversation: createConversationService(deps, services),
+    assistant: createAssistantService(deps, services),
+    mcp: createMcpService(deps, services),
   };
+  return container;
 }

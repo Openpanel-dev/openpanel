@@ -30,7 +30,7 @@ import type {
 } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 import { TRPCBadRequestError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
@@ -447,7 +447,10 @@ export interface ProjectService {
   cancelProjectDeletion(id: string): Promise<void>;
 }
 
-export function createProjectService(deps: ServiceDeps): ProjectService {
+export function createProjectService(
+  deps: ServiceDeps,
+  _services: () => Services
+): ProjectService {
   /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
   const getProjectByIdCached = cacheable(
     (id: string) => getProjectById(deps, id),

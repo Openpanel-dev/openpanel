@@ -11,6 +11,7 @@
 // has no real `AppDeps` to build.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testServices } from '../../../test/service-deps';
 
 interface FakeProject {
   id: string;
@@ -201,9 +202,12 @@ afterAll(() => {
 let subject: import('./project.service').ProjectService;
 beforeAll(async () => {
   const { createProjectService } = await import('./project.service');
-  subject = createProjectService({
-    db: { project, report, member },
-  } as unknown as import('../../services').ServiceDeps);
+  subject = createProjectService(
+    {
+      db: { project, report, member },
+    } as unknown as import('../../services').ServiceDeps,
+    testServices()
+  );
 });
 
 beforeEach(() => {

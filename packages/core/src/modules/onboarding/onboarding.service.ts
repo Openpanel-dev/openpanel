@@ -16,7 +16,7 @@ import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import {
   runSequence,
   type SequenceStep,
@@ -423,7 +423,10 @@ export interface OnboardingService {
  *  `ctx.logger` is, so `ctx.services.onboarding.runOnboardingCron()` takes no
  *  arguments — same shape as organization's `runDeleteCron`, which needs no
  *  logger of its own at all. */
-export function createOnboardingService(deps: ServiceDeps): OnboardingService {
+export function createOnboardingService(
+  deps: ServiceDeps,
+  _services: () => Services
+): OnboardingService {
   return {
     runOnboardingCron: () => runOnboardingCron(deps, deps.logger),
   };

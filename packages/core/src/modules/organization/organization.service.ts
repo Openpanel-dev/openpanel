@@ -43,7 +43,7 @@ import type {
 import { cacheable } from '@openpanel/redis';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError } from '../../rpc/errors';
-import type { ServiceDeps } from '../../services';
+import type { ServiceDeps, Services } from '../../services';
 import {
   getOrganizationAccess,
   getProjectAccess,
@@ -967,7 +967,8 @@ export interface OrganizationService {
 }
 
 export function createOrganizationService(
-  deps: ServiceDeps
+  deps: ServiceDeps,
+  _services: () => Services
 ): OrganizationService {
   return {
     get: (organizationId) => getOrganizationById(deps, organizationId),
