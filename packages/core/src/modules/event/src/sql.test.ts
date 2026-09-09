@@ -2,15 +2,14 @@
 // `{pN:Type}` parameter (nothing is interpolated), the optional clauses and
 // joins toggle exactly on V1's conditions, and `sql.id` refuses anything off
 // the column whitelists. Result-set equivalence against V1 is not tested here
-// (these run offline); it is recorded per query in event.sql.proof.md.
+// (these run offline); it is recorded per query in sql.proof.md.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { EVENT_LIST_COLUMNS, type EventListColumn } from '../event.constants';
 import {
   botEventsCountQuery,
   botEventsQuery,
-  EVENT_LIST_COLUMNS,
-  type EventListColumn,
   eventByIdQuery,
   eventListQuery,
   eventPropertiesQuery,
@@ -21,7 +20,7 @@ import {
   topEventNamesQuery,
   topOriginsQuery,
   topPagesQuery,
-} from './event.sql';
+} from './sql';
 
 const PROJECT_ID = 'proj-1';
 const HOSTILE = "x' OR 1=1 --";

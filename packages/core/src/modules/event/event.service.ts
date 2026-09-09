@@ -5,7 +5,7 @@
 // notification.service, the mcp/assistant tools) keep working while V1 runs
 // (DELEGATE PATTERN).
 //
-// Every query is a `sql` fragment (src/event.sql.ts), converted one at a time
+// Every query is a `sql` fragment (src/sql.ts), converted one at a time
 // with a result-set proof each, per ADR-013. The two filter compilers
 // (`getEventFiltersWhereClause`, `buildFilterWhere`) are NOT converted here —
 // they are shared and out of this task's scope; src/filter-clauses.ts is the
@@ -43,12 +43,17 @@ import {
 } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type { IClickhouseSession } from '../session/session.service';
+import {
+  EVENT_COLUMNS,
+  type EventListColumn,
+  type QueryEventsEqualityColumn,
+} from './event.constants';
 import { convertClickhouseDateToJs, formatClickhouseDate } from './src/dates';
+import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
   botEventsCountQuery,
   botEventsQuery,
   type EventFilterJoins,
-  type EventListColumn,
   type EventListQuery,
   type EventsCountQuery,
   eventByIdQuery,
@@ -57,18 +62,18 @@ import {
   eventPropertyValuesQuery,
   eventsCountQuery,
   NO_FILTER_JOINS,
-  type QueryEventsEqualityColumn,
   queryEventsQuery,
   topEventNamesQuery,
   topOriginsQuery,
   topPagesQuery,
-} from './src/event.sql';
-import type { CompiledFilterClauses } from './src/filter-clauses';
+} from './src/sql';
 
+export type { IEventColumn } from './event.constants';
 export {
+  EVENT_COLUMNS,
   EVENT_LIST_COLUMNS,
   QUERY_EVENTS_EQUALITY_COLUMNS,
-} from './src/event.sql';
+} from './event.constants';
 
 const EVENT_METAS_CACHE_SECONDS = 60 * 5;
 // V1's `cacheable(getEventMetas, ...)` derived this from the function's own
@@ -932,42 +937,6 @@ export const listEventNamesCore = (
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> => getTopEventNames(deps, projectId);
-
-/**
- * Top-level filterable columns on the `events` table. These apply to
- * every event regardless of name and can be passed straight to
- * `getEventFiltersWhereClause` as filter / breakdown `name` values.
- *
- * Kept as a whitelist because the filter builder splices `name` into
- * SQL verbatim — only these are safe to expose through the AI /
- * MCP discovery surface.
- */
-export const EVENT_COLUMNS = [
-  'path',
-  'origin',
-  'referrer',
-  'referrer_name',
-  'referrer_type',
-  'duration',
-  'country',
-  'city',
-  'region',
-  'os',
-  'os_version',
-  'browser',
-  'browser_version',
-  'device',
-  'brand',
-  'model',
-  'sdk_name',
-  'sdk_version',
-  'profile_id',
-  'session_id',
-  'device_id',
-  'revenue',
-] as const;
-
-export type IEventColumn = (typeof EVENT_COLUMNS)[number];
 
 export async function listEventPropertiesCore(
   deps: ServiceDeps,

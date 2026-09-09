@@ -3,7 +3,7 @@
 // packages/trpc/src/routers/event.ts (M7-002): the SQL text is V1's, with
 // every value bound as a `{pN:Type}` parameter instead of an escaped literal.
 // Each builder's result set was diffed against V1's on the local prod-copy;
-// the statements, params, row counts and timings are in event.sql.proof.md.
+// the statements, params, row counts and timings are in sql.proof.md.
 //
 // Dates bind as V1's own `YYYY-MM-DD HH:mm:ss` strings on purpose: a String
 // param in a DateTime64 position is parsed exactly like the literal it
@@ -18,6 +18,12 @@
 // `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import {
+  EVENT_LIST_COLUMNS,
+  type EventListColumn,
+  QUERY_EVENTS_EQUALITY_COLUMNS,
+  type QueryEventsEqualityColumn,
+} from '../event.constants';
 import { formatClickhouseDate } from './dates';
 import {
   type CompiledFilterClauses,
@@ -33,42 +39,6 @@ const TABLE = {
   eventNamesMv: 'distinct_event_names_mv',
   eventPropertyValuesMv: 'event_property_values_mv',
 } as const;
-
-/** Every column `getEventList` can project, in V1's select order. */
-export const EVENT_LIST_COLUMNS = [
-  'created_at',
-  'project_id',
-  'id',
-  'name',
-  'device_id',
-  'profile_id',
-  'session_id',
-  'properties',
-  'country',
-  'city',
-  'region',
-  'longitude',
-  'latitude',
-  'os',
-  'os_version',
-  'browser',
-  'browser_version',
-  'device',
-  'brand',
-  'model',
-  'path',
-  'origin',
-  'referrer',
-  'referrer_name',
-  'referrer_type',
-  'imported_at',
-  'sdk_name',
-  'sdk_version',
-  'revenue',
-  'groups',
-] as const;
-
-export type EventListColumn = (typeof EVENT_LIST_COLUMNS)[number];
 
 /** What the profile-filter join may project besides `id`. */
 const PROFILE_JOIN_COLUMNS = [
@@ -336,22 +306,6 @@ export function eventPropertyValuesQuery(query: {
 }): SqlFragment {
   return sql`SELECT property_value as value FROM ${sql.id(TABLE.eventPropertyValuesMv)} WHERE project_id = ${sql.string(query.projectId)} AND name = ${sql.string(query.eventName)} AND property_key = ${sql.string(query.propertyKey)} ORDER BY created_at DESC LIMIT ${sql.uint64(EVENT_PROPERTY_VALUES_LIMIT)}`;
 }
-
-/** The `= value` columns `queryEventsCore` accepts, in V1's clause order. */
-export const QUERY_EVENTS_EQUALITY_COLUMNS = [
-  'path',
-  'referrer',
-  'referrer_name',
-  'referrer_type',
-  'device',
-  'country',
-  'city',
-  'os',
-  'browser',
-] as const;
-
-export type QueryEventsEqualityColumn =
-  (typeof QUERY_EVENTS_EQUALITY_COLUMNS)[number];
 
 export interface QueryEventsQuery {
   projectId: string;

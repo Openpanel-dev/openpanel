@@ -31,7 +31,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCBadRequestError } from '../../rpc/errors';
+import { TRPCAccessError, TRPCBadRequestError } from '../../rpc/errors';
 import { emailCategories } from './email.constants';
 
 export const emailRouter = createTRPCRouter({
@@ -62,7 +62,7 @@ export const emailRouter = createTRPCRouter({
 
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.session.user?.email) {
-      throw new Error('User not authenticated');
+      throw new TRPCAccessError('Not authenticated');
     }
     const email = ctx.session.user.email;
 
@@ -85,7 +85,7 @@ export const emailRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const email = ctx.session.user?.email;
       if (!email) {
-        throw new Error('User not authenticated');
+        throw new TRPCAccessError('Not authenticated');
       }
 
       const db = ctx.db;
