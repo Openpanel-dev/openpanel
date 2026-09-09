@@ -6,13 +6,6 @@ import type { ServiceDeps } from '../services';
 import { type ChQueryInput, type ChScope, chQuery } from '../shared/ch-query';
 import { generateSecureId } from '../shared/id';
 
-// GENUINE CYCLE, kept lazy: v1-compat.ts -> services.ts -> (every service) ->
-// this module. The fallback only fires for `BufferDeps` built without a `ch`
-// — see that field's comment.
-function loadCompatCh(): Promise<ServiceDeps['ch']> {
-  return import('../v1-compat').then((m) => m.compatCh());
-}
-
 /**
  * What a buffer needs from the boot scope. Buffers are built once by
  * `createBuffers(deps)` and hung on `AppDeps` — never module singletons, so a
@@ -29,18 +22,13 @@ export interface BufferDeps {
    * The boot scope's ClickHouse client — the same round-robin/retry proxy
    * every service reaches as `deps.ch`. M10-009: the buffers used to lazily
    * `import('@openpanel/db/src/clickhouse/client')` for it, which constructed
-   * a second client (and a second pino transport) outside any scope.
-   *
-   * OPTIONAL, deliberately: `@openpanel/queue`'s process-wide buffer
-   * singleton used to be the pre-`AppDeps` caller with no client to hand
-   * in; that caller was deleted with the package (M11-004), but
-   * `apps/api/e2e/legacy-job-proof.ts` — a BullMQ-keys-only proof that never
-   * flushes to ClickHouse — builds `BufferDeps` the same way, so the field
-   * and the fallback stay. When it is absent, `resolveCh()` reaches the boot
-   * scope through the declared v1-compat seam — which, once `main.ts` has
-   * registered, is the very same client, not a second one.
+   * a second client (and a second pino transport) outside any scope. M15-004
+   * made it required: the one caller that had none
+   * (`apps/api/e2e/legacy-job-proof.ts`, a BullMQ-keys-only proof that never
+   * flushes to ClickHouse) already passes the field, so the v1-compat fallback
+   * behind it had no live path left.
    */
-  ch?: ServiceDeps['ch'];
+  ch: ServiceDeps['ch'];
   /**
    * Asked before every flush. ADR-005's `ProducerHandle.bullQueues` escape
    * hatch, narrowed to the one thing the buffers ask BullMQ directly: pausing
@@ -126,13 +114,13 @@ export class BaseBuffer {
   } = {};
 
   /** The scope's ClickHouse client, for a subclass's insert path. */
-  protected async resolveCh(): Promise<ServiceDeps['ch']> {
-    return this.deps.ch ?? (await loadCompatCh());
+  protected resolveCh(): ServiceDeps['ch'] {
+    return this.deps.ch;
   }
 
   /** `chQuery` bound to this buffer's client and its own logger. */
   protected async chQuery<T extends object>(query: ChQueryInput): Promise<T[]> {
-    const scope: ChScope = { ch: await this.resolveCh(), logger: this.logger };
+    const scope: ChScope = { ch: this.resolveCh(), logger: this.logger };
     return chQuery<T>(scope, query);
   }
 

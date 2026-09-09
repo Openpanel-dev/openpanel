@@ -22,7 +22,7 @@
 // Redis GET where it used to cost none. Boot-scoped callers (the v1-compat
 // seam, job handlers) keep a process-lived L1.
 
-import { cacheable } from '@openpanel/redis';
+import { type CacheableOptions, cacheable } from '@openpanel/redis';
 import type { ServiceDeps } from '../services';
 
 type Cacheable<A extends unknown[], R> = ((...args: A) => Promise<R>) & {
@@ -41,7 +41,8 @@ export type CacheablePerDeps<A extends unknown[], R> = ((
 export function cacheablePerDeps<A extends unknown[], R>(
   name: string,
   fn: (deps: ServiceDeps, ...args: A) => Promise<R>,
-  expireInSec: number
+  expireInSec: number,
+  options?: CacheableOptions
 ): CacheablePerDeps<A, R> {
   const byDeps = new WeakMap<ServiceDeps, Cacheable<A, R>>();
 
@@ -53,7 +54,8 @@ export function cacheablePerDeps<A extends unknown[], R>(
     const built = cacheable(
       name,
       (...args: A) => fn(deps, ...args),
-      expireInSec
+      expireInSec,
+      options
     ) as unknown as Cacheable<A, R>;
     byDeps.set(deps, built);
     return built;

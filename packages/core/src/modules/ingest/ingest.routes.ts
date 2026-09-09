@@ -130,7 +130,7 @@ function windDownGuard(deps: AppDeps) {
     ctx: HttpCtx;
     status: StatusFn;
   }) => {
-    const blocked = await isIngestionWoundDown({
+    const blocked = await isIngestionWoundDown(ctx, {
       projectId: client.projectId,
       selfHosted: deps.config.selfHosted,
       logger: ctx.logger,

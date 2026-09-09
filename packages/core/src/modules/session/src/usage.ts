@@ -4,49 +4,26 @@
 // at 80% / 100% of the billing limit.
 
 import type { Organization } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import { sendEmail } from '../../../clients/email';
-import { createLogger, type ILogger } from '../../../clients/logger';
-import type { Logger } from '../../../logger';
+import type { ServiceDeps } from '../../../services';
+import { cacheablePerDeps } from '../../../shared/cacheable-per-deps';
 
-// project.service.ts's `getProjectEventsCount` takes `ServiceDeps` now
-// (M10-004); this file has none (its own db access is the lazy `loadDb()`
-// below), so it reaches the bare, v1-compat-wrapped spelling instead.
-// GENUINE CYCLE, kept lazy: services.ts -> session.service.ts -> this file
-// -> v1-compat.ts -> services.ts.
-//
-// EVERY v1-compat symbol this file uses goes through here, never a static
-// import: jobs.registry.ts reaches this file (session.jobs.ts -> session-end
-// -> usage), and one static edge to v1-compat pulls services.ts and all 36
-// services into the registry's import graph — which builds a ClickHouse
-// client at import time and breaks the offline contract
+// The two project counters stay a DYNAMIC import: jobs.registry.ts reaches
+// this file (session.jobs.ts -> session-end -> usage), and a static edge to
+// project.service.ts pulls a ClickHouse client into the registry's import
+// graph, which breaks the offline contract
 // verification/golden/queue-keys/check.sh depends on.
-function loadProjectService() {
-  return import('../../../v1-compat');
+function loadCounters() {
+  return Promise.all([
+    import('../../project/project.service'),
+    import('../../organization/organization.service'),
+  ]);
 }
 
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
 const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 60 * 60;
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
-
-// M10-009: `updateEventsCount` is `cacheable`, whose key is derived from the
-// call's ARGUMENTS (packages/redis/cachable.ts), so it cannot take a
-// `ServiceDeps` leading parameter — Postgres comes through the same declared
-// v1-compat seam this file already reaches for `getProjectEventsCount`, which
-// hands back the boot scope's `AppDeps.db` rather than a second singleton.
-function loadDb() {
-  return import('../../../v1-compat').then((m) => m.compatDb());
-}
-
-// `cacheable` keys on the function's arguments, so the per-run ctx.logger
-// cannot travel with the projectId; a module logger, created on first use
-// (same as import.service.ts), stands in for it.
-let _logger: ILogger | undefined;
-function getLogger(): Logger {
-  _logger ??= createLogger({ name: 'core:session' });
-  return _logger;
-}
 
 function isSelfHosted(): boolean {
   return process.env.SELF_HOSTED === 'true';
@@ -76,57 +53,61 @@ function nextExceededAt(
   return organization.subscriptionPeriodEventsCountExceededAt;
 }
 
-export const updateEventsCount = cacheable(async function updateEventsCount(
-  projectId: string
-) {
-  const logger = getLogger();
-  const db = await loadDb();
-  const organization = await db.organization.findFirst({
-    where: { projects: { some: { id: projectId } } },
-    include: { projects: true },
-  });
-
-  if (!organization) {
-    return;
-  }
-
-  const { getOrganizationBillingEventsCount, getProjectEventsCount } =
-    await loadProjectService();
-  const organizationEventsCount =
-    await getOrganizationBillingEventsCount(organization);
-  const projectEventsCount = await getProjectEventsCount(projectId);
-
-  if (projectEventsCount) {
-    // Only a sort key and activity threshold, never billing — clamping is safe.
-    await db.project.update({
-      where: { id: projectId },
-      data: { eventsCount: clampToInt4(projectEventsCount) },
-    });
-  }
-
-  if (organizationEventsCount) {
-    await db.organization.update({
-      where: { id: organization.id },
-      data: {
-        subscriptionPeriodEventsCount: clampToInt4(organizationEventsCount),
-        subscriptionPeriodEventsCountExceededAt: nextExceededAt(
-          organization,
-          organizationEventsCount
-        ),
-      },
+export const updateEventsCount = cacheablePerDeps(
+  'updateEventsCount',
+  async (deps: ServiceDeps, projectId: string): Promise<true | undefined> => {
+    const logger = deps.logger;
+    const db = deps.db;
+    const organization = await db.organization.findFirst({
+      where: { projects: { some: { id: projectId } } },
+      include: { projects: true },
     });
 
-    if (!isSelfHosted()) {
-      try {
-        await sendUsageAlerts(organization, organizationEventsCount, logger);
-      } catch (error) {
-        logger.error({ err: error }, 'Failed to send usage alert emails');
+    if (!organization) {
+      return;
+    }
+
+    const [{ getProjectEventsCount }, { getOrganizationBillingEventsCount }] =
+      await loadCounters();
+    const organizationEventsCount = await getOrganizationBillingEventsCount(
+      deps,
+      organization
+    );
+    const projectEventsCount = await getProjectEventsCount(deps, projectId);
+
+    if (projectEventsCount) {
+      // Only a sort key and activity threshold, never billing — clamping is safe.
+      await db.project.update({
+        where: { id: projectId },
+        data: { eventsCount: clampToInt4(projectEventsCount) },
+      });
+    }
+
+    if (organizationEventsCount) {
+      await db.organization.update({
+        where: { id: organization.id },
+        data: {
+          subscriptionPeriodEventsCount: clampToInt4(organizationEventsCount),
+          subscriptionPeriodEventsCountExceededAt: nextExceededAt(
+            organization,
+            organizationEventsCount
+          ),
+        },
+      });
+
+      if (!isSelfHosted()) {
+        try {
+          await sendUsageAlerts(deps, organization, organizationEventsCount);
+        } catch (error) {
+          logger.error({ err: error }, 'Failed to send usage alert emails');
+        }
       }
     }
-  }
 
-  return true;
-}, UPDATE_EVENTS_COUNT_CACHE_SECONDS);
+    return true;
+  },
+  UPDATE_EVENTS_COUNT_CACHE_SECONDS
+);
 
 /**
  * One warning at 80% and one notice at 100% per billing cycle. The sent-at
@@ -134,10 +115,11 @@ export const updateEventsCount = cacheable(async function updateEventsCount(
  * counter (or the limit is raised), so each cycle can alert again.
  */
 async function sendUsageAlerts(
+  deps: ServiceDeps,
   organization: Organization,
-  count: number,
-  logger: Logger
+  count: number
 ) {
+  const logger = deps.logger;
   const limit = organization.subscriptionPeriodEventsLimit;
   if (!limit || limit <= 0) {
     return;
@@ -154,7 +136,7 @@ async function sendUsageAlerts(
     return;
   }
 
-  const db = await loadDb();
+  const db = deps.db;
 
   // Claim the alert atomically BEFORE sending: session jobs for different
   // projects of the same org can run concurrently, and both would otherwise

@@ -123,6 +123,7 @@ export const conversationRouter = createTRPCRouter({
       // the project (they'd still be able to tag the conversation with
       // an unrelated org id).
       const organization = await getOrganizationByProjectIdCached(
+        ctx,
         input.projectId
       );
       if (!organization) {

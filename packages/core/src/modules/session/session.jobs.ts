@@ -90,9 +90,11 @@ async function sessionEndDeps(
       (await chQuery<IClickhouseEvent>(ctx, query)).map(transformEvent),
     profileBackfill: ctx.buffers.profileBackfill,
     notifications: {
-      getRules: notifications.getNotificationRulesByProjectId,
+      getRules: (projectId) =>
+        notifications.getNotificationRulesByProjectId(ctx, projectId),
       hasFunnelRules: notifications.getHasFunnelRules,
-      checkFunnelRules: checkNotificationRulesForSessionEnd,
+      checkFunnelRules: (events) =>
+        checkNotificationRulesForSessionEnd(ctx, events),
     },
   };
 }
@@ -107,7 +109,7 @@ export const sessionQueueJobs = {
       await createSessionEnd(data, await sessionEndDeps(ctx, logger));
 
       try {
-        await updateEventsCount(data.event.projectId);
+        await updateEventsCount(ctx, data.event.projectId);
       } catch (error) {
         logger.error({ err: error }, 'Failed to update events count');
       }

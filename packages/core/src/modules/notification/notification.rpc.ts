@@ -56,7 +56,7 @@ export const notificationRouter = createTRPCRouter({
       const userId = requireLogin(ctx.session.userId);
 
       // Clear the cache for the project
-      await getNotificationRulesByProjectId.clear(input.projectId);
+      await getNotificationRulesByProjectId.clear(ctx, input.projectId);
 
       await ctx.services.auth.requireProjectAccess({
         userId,

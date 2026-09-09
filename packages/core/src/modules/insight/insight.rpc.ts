@@ -116,7 +116,7 @@ export const insightRouter = createTRPCRouter({
 
       const db = ctx.db;
       const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
-        await import('../../v1-compat');
+        await import('../overview/overview.service');
 
       const insight = await db.projectInsight.findUniqueOrThrow({
         where: { id: insightId },
@@ -154,13 +154,13 @@ export const insightRouter = createTRPCRouter({
       const breakdowns = await Promise.all(
         EXPLAIN_COLUMNS.map(async (column) => {
           const [cur, base] = await Promise.all([
-            getTrafficBreakdownCore({
+            getTrafficBreakdownCore(ctx, {
               projectId: insight.projectId,
               column,
               startDate: iso(start),
               endDate: iso(end),
             }),
-            getTrafficBreakdownCore({
+            getTrafficBreakdownCore(ctx, {
               projectId: insight.projectId,
               column,
               startDate: iso(baseStart),
@@ -192,14 +192,14 @@ export const insightRouter = createTRPCRouter({
 
       if (segment?.key && segment.value) {
         const [curSeries, baseSeries] = await Promise.all([
-          getSegmentDailySeriesCore({
+          getSegmentDailySeriesCore(ctx, {
             projectId: insight.projectId,
             column: segment.key,
             value: segment.value,
             startDate: iso(start),
             endDate: iso(end),
           }),
-          getSegmentDailySeriesCore({
+          getSegmentDailySeriesCore(ctx, {
             projectId: insight.projectId,
             column: segment.key,
             value: segment.value,

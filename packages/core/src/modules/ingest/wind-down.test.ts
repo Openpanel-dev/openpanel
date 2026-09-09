@@ -21,10 +21,15 @@ import {
   mock,
 } from 'bun:test';
 import type { Logger } from '../../logger';
+import type { ServiceDeps } from '../../services';
 
 const getOrganizationByProjectIdCached = mock(
-  async (_projectId: string): Promise<unknown> => null
+  async (_deps: unknown, _projectId: string): Promise<unknown> => null
 );
+
+/** The gate only threads `deps` through to the organization lookup, which is
+ *  mocked, so an opaque marker is enough to assert it arrives. */
+const deps = { marker: 'service-deps' } as unknown as ServiceDeps;
 
 // Spread a plain-object SNAPSHOT of the real module: a partial factory
 // replaces the whole module process-wide, and every other importer of it then
@@ -87,13 +92,16 @@ describe('isIngestionWoundDown', () => {
       const { logger } = makeLogger();
 
       expect(
-        await isIngestionWoundDown({
+        await isIngestionWoundDown(deps, {
           projectId: 'proj-1',
           selfHosted: false,
           logger,
         })
       ).toBe(true);
-      expect(getOrganizationByProjectIdCached).toHaveBeenCalledWith('proj-1');
+      expect(getOrganizationByProjectIdCached).toHaveBeenCalledWith(
+        deps,
+        'proj-1'
+      );
     });
   }
 
@@ -106,7 +114,7 @@ describe('isIngestionWoundDown', () => {
       const { logger } = makeLogger();
 
       expect(
-        await isIngestionWoundDown({
+        await isIngestionWoundDown(deps, {
           projectId: 'proj-1',
           selfHosted: false,
           logger,
@@ -128,7 +136,7 @@ describe('isIngestionWoundDown', () => {
     const { logger } = makeLogger();
 
     expect(
-      await isIngestionWoundDown({
+      await isIngestionWoundDown(deps, {
         projectId: 'proj-1',
         selfHosted: false,
         logger,
@@ -141,7 +149,7 @@ describe('isIngestionWoundDown', () => {
     const { logger, calls } = makeLogger();
 
     expect(
-      await isIngestionWoundDown({
+      await isIngestionWoundDown(deps, {
         projectId: 'proj-1',
         selfHosted: false,
         logger,
@@ -154,7 +162,7 @@ describe('isIngestionWoundDown', () => {
     const { logger } = makeLogger();
 
     expect(
-      await isIngestionWoundDown({
+      await isIngestionWoundDown(deps, {
         projectId: 'proj-1',
         selfHosted: true,
         logger,
@@ -167,7 +175,7 @@ describe('isIngestionWoundDown', () => {
     const { logger } = makeLogger();
 
     expect(
-      await isIngestionWoundDown({
+      await isIngestionWoundDown(deps, {
         projectId: null,
         selfHosted: false,
         logger,

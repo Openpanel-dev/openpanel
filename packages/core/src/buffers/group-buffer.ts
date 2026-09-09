@@ -175,7 +175,7 @@ export class GroupBuffer extends BaseBuffer {
     // Raw passthrough: each Redis entry is already a valid JSONEachRow
     // line. Streaming raw strings to CH skips JSON.parse + the client's
     // re-stringify on the hot path.
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({

@@ -276,6 +276,8 @@ async function main() {
   const buffers = createBuffers({
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => false,
+    // Never flushed: this proof asserts BullMQ keys, not ClickHouse rows.
+    ch: undefined as unknown as AppDeps['ch'],
   });
 
   const deps: AppDeps = {

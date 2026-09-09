@@ -104,9 +104,11 @@ export interface IncomingEventBindings {
   /**
    * BullMQ-producer orchestration (notification/src/notification-dispatch.ts).
    * Injected rather than imported so the hot path's per-message handler keeps
-   * the notification module out of its own import graph.
+   * the notification module out of its own import graph. Takes the message's
+   * own scope: an enqueue made here carries that message's requestId.
    */
   checkNotificationRulesForEvent(
+    deps: Ctx,
     payload: IServiceCreateEventPayload
   ): Promise<unknown>;
   /**
@@ -130,7 +132,8 @@ export function createIncomingEventDeps(
     logger: ctx.logger,
     sessions: ctx.buffers.session,
     createEvent: (payload) => createEvent(ctx, payload),
-    checkNotificationRulesForEvent: bindings.checkNotificationRulesForEvent,
+    checkNotificationRulesForEvent: (payload) =>
+      bindings.checkNotificationRulesForEvent(ctx, payload),
     projects: {
       getCached: bindings.getCachedProject,
       markFirstEvent: async (projectId) => {

@@ -81,7 +81,7 @@ export const assistantRoutes = defineRoutes((app) =>
 
       const [access, organization, settings] = await Promise.all([
         getProjectAccess({ projectId, userId }),
-        getOrganizationByProjectIdCached(projectId),
+        getOrganizationByProjectIdCached(ctx, projectId),
         getSettingsForProject(ctx, projectId).catch(() => ({
           timezone: 'UTC',
         })),

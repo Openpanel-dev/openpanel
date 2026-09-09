@@ -69,7 +69,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     }
     const entries = Array.from(seen.values());
 
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     const table = getReplicatedTableName(TABLE_NAMES.events);
 
     const chunks = this.chunks(entries, CHUNK_SIZE);

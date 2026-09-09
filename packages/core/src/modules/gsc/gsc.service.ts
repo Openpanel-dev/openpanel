@@ -8,10 +8,10 @@
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db` and ClickHouse as `deps.ch`; the `loadDb()`/`loadChClient()`
 // lazy loaders are gone, so the requestId minted at the edge reaches the query
-// (ADR-018, docs/TECH_DEBT.md §4). `getGscCannibalization` is the exception:
-// `cacheable` keys on the call's ARGUMENTS (packages/redis/cachable.ts) so it
-// cannot take `deps` as a leading parameter, and reaches the boot scope
-// through the declared v1-compat seam instead.
+// (ADR-018, docs/TECH_DEBT.md §4). `getGscCannibalization` is `cacheablePerDeps`
+// (M15-004): `cacheable` keys on the call's ARGUMENTS
+// (packages/redis/cachable.ts), so the caller's deps travel beside the key
+// rather than inside it and the Redis key stays byte-identical.
 //
 // DELIBERATE BEHAVIOUR CHANGE, recorded: the reads and the four sync inserts
 // used @openpanel/db's `originalCh` (the first configured node, no retry).
@@ -24,11 +24,11 @@
 // tag: ADR-013 converts the analytics read path one query per P7 task, and
 // this module's queries haven't been converted yet.
 
-import { cacheable } from '@openpanel/redis';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { decrypt, encrypt } from '../../shared/encryption';
@@ -45,10 +45,6 @@ function getLogger(): ILogger {
   return _logger;
 }
 
-/** `getGscCannibalization` is `cacheable` — see the header. */
-function loadCompatServiceDeps() {
-  return import('../../v1-compat').then((m) => m.compatServiceDeps());
-}
 export interface GscSite {
   siteUrl: string;
   permissionLevel: string;
@@ -448,14 +444,14 @@ export interface GscCannibalizedQuery {
   }>;
 }
 
-export const getGscCannibalization = cacheable(
+export const getGscCannibalization = cacheablePerDeps(
   'getGscCannibalization',
   async (
+    deps: ServiceDeps,
     projectId: string,
     startDate: string,
     endDate: string
   ): Promise<GscCannibalizedQuery[]> => {
-    const deps = await loadCompatServiceDeps();
     const db = deps.db;
     const conn = await db.gscConnection.findUniqueOrThrow({
       where: { projectId },
@@ -1252,7 +1248,12 @@ export async function gscGetCannibalizationCore(
     endDate: string;
   }
 ) {
-  return getGscCannibalization(input.projectId, input.startDate, input.endDate);
+  return getGscCannibalization(
+    deps,
+    input.projectId,
+    input.startDate,
+    input.endDate
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1522,7 +1523,12 @@ export function createGscService(deps: ServiceDeps, _services: () => Services) {
     getQueries,
     getSearchEngines,
     getAiEngines,
-    getCannibalization: getGscCannibalization,
+    getCannibalization: (
+      projectId: string,
+      startDate: string,
+      endDate: string
+    ): Promise<GscCannibalizedQuery[]> =>
+      getGscCannibalization(deps, projectId, startDate, endDate),
     listConnectionsForSync: (): Promise<{ projectId: string }[]> =>
       listGscConnectionsForSync(deps),
     runProjectSync: (projectId: string): Promise<void> =>

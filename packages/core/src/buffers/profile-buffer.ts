@@ -365,7 +365,7 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
       ch.insert({

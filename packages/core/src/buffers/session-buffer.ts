@@ -566,7 +566,7 @@ export class SessionBuffer extends BaseBuffer {
       ? this.squashSessionsByVersion(parsed)
       : parsed;
 
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     for (const chunk of this.chunks(sessions, this.chunkSize)) {
       await ch.insert({
         table: TABLE_NAMES.sessions,

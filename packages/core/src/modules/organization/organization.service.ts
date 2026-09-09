@@ -13,16 +13,16 @@
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db` and ClickHouse as `deps.ch` (through core's own `chQuery`), so
 // the requestId minted at the edge reaches the query (ADR-018,
-// docs/TECH_DEBT.md §4). The three `cacheable` wrappers are the exception:
-// `cacheable` keys on the call's ARGUMENTS (packages/redis/cachable.ts), so
-// `deps` cannot be a leading parameter and they reach the boot scope through
-// the declared v1-compat seam instead.
+// docs/TECH_DEBT.md §4). The two `cacheable` wrappers are `cacheablePerDeps`
+// (M15-004): `cacheable` keys on the call's ARGUMENTS
+// (packages/redis/cachable.ts), so the caller's deps travel beside the key
+// rather than inside it and the Redis key stays byte-identical.
 //
 // M12-006 also made `shared/access-lookups.ts` a static import: that file
 // value-imports only zod-free leaves (`@openpanel/redis`, a Prisma TYPE) and
-// reaches Postgres through the lazy v1-compat seam itself, so it has no static
-// edge back here and the dynamic form deferred nothing (ADR-007: no lazy
-// loaders).
+// reaches Postgres through the lazy v1-compat seam itself (the one seam
+// M15-004 could not close — its bare signature is pinned by a protected wire
+// contract), so it has no static edge back here.
 //
 // M12-006 converted all five ClickHouse statements here onto the ADR-013 `sql`
 // tag: the four billing counters and `deleteFromClickhouse`'s project filter
@@ -40,7 +40,6 @@ import type {
   ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -48,6 +47,7 @@ import {
   getOrganizationAccess,
   getProjectAccess,
 } from '../../shared/access-lookups';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
 import { isClickhouseClustered, TABLE_NAMES } from '../../shared/ch-tables';
@@ -78,13 +78,6 @@ type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 // Invite link lifetime — matches V1's `addDays(new Date(), 3)`.
 const INVITE_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
-
-/** The three `cacheable` wrappers below cannot carry `ServiceDeps` — see the
- *  header. GENUINE CYCLE, kept lazy: services.ts -> organization.service.ts
- *  (this file) -> v1-compat.ts -> services.ts. */
-function loadCompatServiceDeps() {
-  return import('../../v1-compat').then((m) => m.compatServiceDeps());
-}
 
 export async function getOrganizations(
   deps: ServiceDeps,
@@ -143,10 +136,10 @@ export async function getOrganizationByProjectId(
 }
 
 const ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC = 60 * 5;
-export const getOrganizationByProjectIdCached = cacheable(
+export const getOrganizationByProjectIdCached = cacheablePerDeps(
   'getOrganizationByProjectId',
-  async (projectId: string) =>
-    getOrganizationByProjectId(await loadCompatServiceDeps(), projectId),
+  (deps: ServiceDeps, projectId: string) =>
+    getOrganizationByProjectId(deps, projectId),
   ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC
 );
 
@@ -435,15 +428,12 @@ export async function getOrganizationBillingEventsCountSerie(
 }
 
 const BILLING_EVENTS_SERIE_CACHE_TTL_SEC = 60 * 10;
-export const getOrganizationBillingEventsCountSerieCached = cacheable(
+export const getOrganizationBillingEventsCountSerieCached = cacheablePerDeps(
   'getOrganizationBillingEventsCountSerie',
-  async (
+  (
+    deps: ServiceDeps,
     ...args: Tail<Parameters<typeof getOrganizationBillingEventsCountSerie>>
-  ) =>
-    getOrganizationBillingEventsCountSerie(
-      await loadCompatServiceDeps(),
-      ...args
-    ),
+  ) => getOrganizationBillingEventsCountSerie(deps, ...args),
   BILLING_EVENTS_SERIE_CACHE_TTL_SEC
 );
 
@@ -452,7 +442,7 @@ export async function getOrganizationSubscriptionChartEndDate(
   projectId: string,
   endDate: string
 ): Promise<string | null> {
-  const organization = await getOrganizationByProjectIdCached(projectId);
+  const organization = await getOrganizationByProjectIdCached(deps, projectId);
   if (!organization) {
     return null;
   }

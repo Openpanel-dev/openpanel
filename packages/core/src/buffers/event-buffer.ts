@@ -225,7 +225,7 @@ export class EventBuffer extends BaseBuffer {
       }
     }
 
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(
       this.chunks(queueEvents, this.chunkSize),

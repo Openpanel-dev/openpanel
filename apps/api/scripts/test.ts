@@ -1,11 +1,11 @@
-import { type IClickhouseEvent, createEvent } from '@openpanel/core';
+import type { IClickhouseEvent } from '@openpanel/core';
 import { ch, formatClickhouseDate } from '@openpanel/db';
 import { v4 as uuid } from 'uuid';
 
 async function main() {
   const startDate = new Date('2025-01-01T00:00:00Z');
   const endDate = new Date();
-  const eventsPerDay = 25000;
+  const eventsPerDay = 25_000;
   const variance = 3000;
 
   // Event names to randomly choose from
@@ -36,7 +36,7 @@ async function main() {
         device_id: `device_${Math.floor(Math.random() * 1000)}`,
         profile_id: `profile_${Math.floor(Math.random() * 1000)}`,
         project_id: 'testing',
-        session_id: `session_${Math.floor(Math.random() * 10000)}`,
+        session_id: `session_${Math.floor(Math.random() * 10_000)}`,
         properties: {
           hash: 'test-hash',
           'query.utm_source': 'test',
@@ -75,7 +75,7 @@ async function main() {
 
     // Log progress
     console.log(
-      `Created ${dailyEvents} events for ${currentDate.toISOString().split('T')[0]}`,
+      `Created ${dailyEvents} events for ${currentDate.toISOString().split('T')[0]}`
     );
   }
 }

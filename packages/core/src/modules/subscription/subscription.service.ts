@@ -42,14 +42,10 @@ import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-// `getOrganizationById` takes `ServiceDeps` since M10-009 and these four
-// functions carry none (V1's still-live subscription router calls them with a
-// bare userId) — reached through the v1-compat seam, same as the rest of this
-// file's cross-module calls. GENUINE CYCLE, kept lazy on the other side.
-import { getOrganizationById } from '../../v1-compat';
 import { getAccessChecks } from '../auth/auth.service';
 import {
   getOrganizationBillingEventsCountSerieCached,
+  getOrganizationById,
   getOrganizationByProjectIdCached,
 } from '../organization/organization.service';
 import {
@@ -72,8 +68,11 @@ const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const DEFAULT_USAGE_WINDOW_DAYS = 30;
 
-export async function getCurrentSubscriptionProduct(organizationId: string) {
-  const organization = await getOrganizationById(organizationId);
+export async function getCurrentSubscriptionProduct(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  const organization = await getOrganizationById(deps, organizationId);
 
   if (!organization.subscriptionProductId) {
     return null;
@@ -183,13 +182,13 @@ export async function getUsage(deps: ServiceDeps, organizationId: string) {
     organization.subscriptionStartsAt &&
     organization.subscriptionEndsAt
   ) {
-    return getOrganizationBillingEventsCountSerieCached(organization, {
+    return getOrganizationBillingEventsCountSerieCached(deps, organization, {
       startDate: organization.subscriptionStartsAt,
       endDate: organization.subscriptionEndsAt,
     });
   }
 
-  return getOrganizationBillingEventsCountSerieCached(organization, {
+  return getOrganizationBillingEventsCountSerieCached(deps, organization, {
     startDate: subDays(new Date(), DEFAULT_USAGE_WINDOW_DAYS),
     endDate: new Date(),
   });
@@ -206,7 +205,7 @@ export async function cancelSubscription(
     organizationId: input.organizationId,
   });
 
-  const organization = await getOrganizationById(input.organizationId);
+  const organization = await getOrganizationById(deps, input.organizationId);
   if (!organization.subscriptionId) {
     throw new TRPCBadRequestError('Organization has no subscription');
   }
@@ -246,7 +245,7 @@ export async function pauseSubscription(
     organizationId: input.organizationId,
   });
 
-  const organization = await getOrganizationById(input.organizationId);
+  const organization = await getOrganizationById(deps, input.organizationId);
   if (!organization.subscriptionId) {
     throw new TRPCBadRequestError('Organization has no subscription');
   }
@@ -285,7 +284,7 @@ export async function resumeSubscription(
   const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
-  const organization = await getOrganizationById(organizationId);
+  const organization = await getOrganizationById(deps, organizationId);
   if (!organization.subscriptionId) {
     throw new TRPCBadRequestError('Organization has no subscription');
   }
@@ -324,7 +323,7 @@ export async function applySaveDiscount(
     throw new TRPCBadRequestError('Save discount is not configured');
   }
 
-  const organization = await getOrganizationById(organizationId);
+  const organization = await getOrganizationById(deps, organizationId);
   if (!organization.subscriptionId) {
     throw new TRPCBadRequestError('Organization has no subscription');
   }
@@ -354,11 +353,15 @@ export async function applySaveDiscount(
   return { success: true };
 }
 
-export async function portal(userId: string, organizationId: string) {
+export async function portal(
+  deps: ServiceDeps,
+  userId: string,
+  organizationId: string
+) {
   const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
-  const organization = await getOrganizationById(organizationId);
+  const organization = await getOrganizationById(deps, organizationId);
   if (!organization.subscriptionCustomerId) {
     throw new TRPCBadRequestError('Organization has no subscription');
   }
@@ -478,7 +481,7 @@ async function clearOrganizationCache(
     where: { organizationId },
   });
   for (const project of projects) {
-    await getOrganizationByProjectIdCached.clear(project.id);
+    await getOrganizationByProjectIdCached.clear(deps, project.id);
   }
 }
 
@@ -807,7 +810,10 @@ export function createSubscriptionService(
   _services: () => Services
 ) {
   return {
-    getCurrentSubscriptionProduct,
+    getCurrentSubscriptionProduct: (
+      organizationId: string
+    ): ReturnType<typeof getCurrentSubscriptionProduct> =>
+      getCurrentSubscriptionProduct(deps, organizationId),
     checkout: (
       userId: string,
       input: ICheckout,
@@ -837,7 +843,10 @@ export function createSubscriptionService(
       organizationId: string
     ): ReturnType<typeof applySaveDiscount> =>
       applySaveDiscount(deps, userId, organizationId),
-    portal,
+    portal: (
+      userId: string,
+      organizationId: string
+    ): ReturnType<typeof portal> => portal(deps, userId, organizationId),
     handlePolarWebhookEvent: (
       rawBody: string | Buffer,
       headers: Record<string, string>,

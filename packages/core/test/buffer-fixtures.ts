@@ -21,12 +21,22 @@ const silentLogger: Logger = {
  *
  * M10-009: `BufferDeps.ch` is the boot scope's ClickHouse client, so a suite
  * that exercises a flush hands in its own fake here rather than mocking
- * `@openpanel/db`'s module. `stubBufferDeps` leaves it unset — a buffer that
- * reaches ClickHouse without one is a bug this stub should surface, not hide.
+ * `@openpanel/db`'s module. `stubBufferDeps` hands in a client that throws on
+ * first touch — a buffer that reaches ClickHouse without one is a bug this
+ * stub should surface, not hide.
  */
+const throwingClickHouse = new Proxy({} as BufferDeps['ch'], {
+  get() {
+    throw new Error(
+      'stubBufferDeps has no ClickHouse client — use bufferDepsWithCh(fake)'
+    );
+  },
+});
+
 export const stubBufferDeps: BufferDeps = {
   createLogger: () => silentLogger,
   isCronPaused: () => Promise.resolve(false),
+  ch: throwingClickHouse,
 };
 
 /** `stubBufferDeps` plus a fake ClickHouse client for the flush path. */

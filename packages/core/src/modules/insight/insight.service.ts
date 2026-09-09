@@ -391,16 +391,18 @@ async function buildDigestData(
   const iso = (ms: number) => new Date(ms).toISOString();
 
   const db = deps.db;
-  const { getAnalyticsOverviewCore } = await import('../../v1-compat');
+  const { getAnalyticsOverviewCore } = await import(
+    '../overview/overview.service'
+  );
 
   const [cur, prev] = await Promise.all([
-    getAnalyticsOverviewCore({
+    getAnalyticsOverviewCore(deps, {
       projectId: project.id,
       startDate: iso(curStart),
       endDate: iso(now),
       interval: 'day',
     }),
-    getAnalyticsOverviewCore({
+    getAnalyticsOverviewCore(deps, {
       projectId: project.id,
       startDate: iso(prevStart),
       endDate: iso(curStart),

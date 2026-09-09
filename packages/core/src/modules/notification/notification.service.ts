@@ -17,12 +17,12 @@
 // would spawn a pino-pretty transport worker thread per test file).
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import { pathOr } from 'ramda';
 import { sendEmail } from '../../clients/email';
 import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { stripLeadingAndTrailingSlashes } from '../../shared/string';
 import type {
   IServiceCreateEventPayload,
@@ -69,17 +69,10 @@ export type INotificationPayload =
   | { type: 'event'; event: IServiceCreateEventPayload }
   | { type: 'funnel'; funnel: IServiceEvent[] };
 
-// M10-009: `getNotificationRulesByProjectId` is `cacheable`, whose key is
-// derived from the call's ARGUMENTS (packages/redis/cachable.ts), so it cannot
-// take `ServiceDeps` as a leading parameter — it reaches Postgres through the
-// declared v1-compat seam instead, same as shared/access-lookups.ts's
-// `getProjectAccess`. Every other function in this file takes `deps` and uses
-// `deps.db`. GENUINE CYCLE, kept lazy: services.ts -> notification.service.ts
-// (this file) -> v1-compat.ts -> services.ts.
-function loadCompatDb() {
-  return import('../../v1-compat').then((m) => m.compatDb());
-}
-
+// M15-004: `getNotificationRulesByProjectId` is `cacheablePerDeps` — `cacheable`
+// keys on the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's
+// deps travel beside the key rather than inside it and the Redis key stays
+// byte-identical. Every function in this file now reads `deps.db`.
 function loadPrisma() {
   return import('../../v1-compat').then((m) => m.compatPrisma());
 }
@@ -90,11 +83,10 @@ export type INotificationRuleCached = Awaited<
   ReturnType<typeof getNotificationRulesByProjectId>
 >[number];
 
-export const getNotificationRulesByProjectId = cacheable(
+export const getNotificationRulesByProjectId = cacheablePerDeps(
   'getNotificationRulesByProjectId',
-  async (projectId: string) => {
-    const db = await loadCompatDb();
-    return db.notificationRule.findMany({
+  (deps: ServiceDeps, projectId: string) =>
+    deps.db.notificationRule.findMany({
       where: { projectId },
       select: {
         id: true,
@@ -105,8 +97,7 @@ export const getNotificationRulesByProjectId = cacheable(
         template: true,
         integrations: { select: { id: true } },
       },
-    });
-  },
+    }),
   60 * 24,
   { cacheEmptyArray: true }
 );

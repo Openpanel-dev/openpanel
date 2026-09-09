@@ -562,11 +562,14 @@ export async function ingestTrack(
  */
 const WIND_DOWN_BLOCKED_STEPS = new Set(['blocked', 'final_warning']);
 
-export async function isIngestionWoundDown(request: {
-  projectId: string | null | undefined;
-  selfHosted: boolean;
-  logger: Logger;
-}): Promise<boolean> {
+export async function isIngestionWoundDown(
+  deps: ServiceDeps,
+  request: {
+    projectId: string | null | undefined;
+    selfHosted: boolean;
+    logger: Logger;
+  }
+): Promise<boolean> {
   if (request.selfHosted || !request.projectId) {
     return false;
   }
@@ -576,7 +579,10 @@ export async function isIngestionWoundDown(request: {
   try {
     // Cached for 5 minutes and invalidated by the Polar webhook, so paying
     // again lifts the block on the next checkout rather than on a TTL.
-    const organization = await getOrganizationByProjectIdCached(projectId);
+    const organization = await getOrganizationByProjectIdCached(
+      deps,
+      projectId
+    );
 
     if (
       !(

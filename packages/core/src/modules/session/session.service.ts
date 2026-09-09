@@ -10,15 +10,15 @@
 //
 // M10-009: the ClickHouse client is `deps.ch`, reached through core's own
 // `chQuery` (shared/ch-query.ts), so the requestId minted at the edge reaches
-// every query here (ADR-018, docs/TECH_DEBT.md §4). The one exception is
-// `getSessionsCountCached`: `cacheable` keys on the call's ARGUMENTS
-// (packages/redis/cachable.ts), so `ServiceDeps` cannot be a leading
-// parameter — it reaches the boot scope's deps through the declared v1-compat
-// seam instead. The remaining `load*` functions are intra-package lazy
-// imports, kept lazy for a cycle, not for a client.
+// every query here (ADR-018, docs/TECH_DEBT.md §4). `getSessionsCountCached`
+// is `cacheablePerDeps` (M15-004): `cacheable` keys on the call's ARGUMENTS
+// (packages/redis/cachable.ts), so the caller's deps travel beside the key
+// rather than inside it, and the Redis key stays byte-identical. The remaining
+// `load*` functions are intra-package lazy imports, kept lazy for a cycle, not
+// for a client.
 
-import { cacheable } from '@openpanel/redis';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
@@ -49,11 +49,6 @@ export {
 
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
-}
-
-/** `getSessionsCountCached` cannot carry `ServiceDeps` — see the header. */
-function loadCompatServiceDeps() {
-  return import('../../v1-compat').then((m) => m.compatServiceDeps());
 }
 
 function loadLookback() {
@@ -309,14 +304,11 @@ export async function getSessionList(
     });
   }
 
-  // M10-005: `getProfilesCached` takes `ServiceDeps` now and `getSessionList`
-  // has none — packages/trpc's session router still calls it bare — so it
-  // reaches the v1-compat spelling. Converting this module is its own task.
-  const { getProfilesCached } = await import('../../v1-compat');
+  const { getProfilesCached } = await import('../profile/profile.service');
   const profileIds = data
     .filter((e) => e.device_id !== e.profile_id)
     .map((e) => e.profile_id);
-  const profiles = await getProfilesCached(profileIds, projectId);
+  const profiles = await getProfilesCached(deps, profileIds, projectId);
   const map = new Map<string, IServiceProfile>(profiles.map((p) => [p.id, p]));
 
   const items = data.map(transformSession).map((item) => ({
@@ -360,10 +352,12 @@ export async function getSessionsCount(
   return result[0]?.count ?? 0;
 }
 
-export const getSessionsCountCached = cacheable(
+export const getSessionsCountCached = cacheablePerDeps(
   'getSessionsCount',
-  async (options: Omit<GetSessionListOptions, 'take' | 'cursor'>) =>
-    getSessionsCount(await loadCompatServiceDeps(), options),
+  (
+    deps: ServiceDeps,
+    options: Omit<GetSessionListOptions, 'take' | 'cursor'>
+  ): Promise<number> => getSessionsCount(deps, options),
   SESSIONS_COUNT_CACHE_SECONDS
 );
 

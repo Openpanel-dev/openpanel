@@ -60,7 +60,7 @@ export class BotBuffer extends BaseBuffer {
     // Raw passthrough: each Redis entry is already a valid JSONEachRow
     // line. Streaming raw strings skips JSON.parse + the client's
     // re-stringify on the hot path.
-    const ch = await this.resolveCh();
+    const ch = this.resolveCh();
     const chStart = performance.now();
     await ch.insert({
       table: TABLE_NAMES.events_bots,

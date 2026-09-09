@@ -873,11 +873,9 @@ export async function listCohortMemberProfiles(
   }
 ): Promise<{ data: IServiceProfile[]; count: number }> {
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
-  const { profileSearchCondition } = await import('../profile/profile.service');
-  // M10-005: `getProfiles` takes `ServiceDeps` now and this function has none
-  // — packages/trpc's cohort router still calls it bare — so it reaches the
-  // v1-compat spelling. Converting this module is its own task.
-  const { getProfiles } = await import('../../v1-compat');
+  const { getProfiles, profileSearchCondition } = await import(
+    '../profile/profile.service'
+  );
 
   const offset = Math.max(0, (cursor ?? 0) * take);
   const searchClause = profileSearchCondition(search);
@@ -923,7 +921,7 @@ export async function listCohortMemberProfiles(
     return { data: [], count };
   }
 
-  const profiles = await getProfiles(ids, projectId);
+  const profiles = await getProfiles(deps, ids, projectId);
   const byId = new Map(profiles.map((p) => [p.id, p]));
   const data = ids
     .map((id) => byId.get(id))

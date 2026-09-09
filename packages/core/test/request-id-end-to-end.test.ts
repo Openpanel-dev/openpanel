@@ -653,6 +653,45 @@ test("the envelope's requestId reaches the handler's logger, its buffer write an
   ]);
 });
 
+// M15-004: the notification dispatch used to reach Postgres and the
+// `notification` producer through v1-compat's BOOT scope, so every job it
+// enqueued was stamped `v1-compat` no matter which message triggered it. It
+// takes the caller's scope now, and this is the hop that proves it: the
+// binding enqueues exactly what `triggerNotification` enqueues, off the deps
+// it was handed, and the envelope must carry the message's own id.
+test("a converted read path's own enqueue carries the message's requestId", async () => {
+  const handleEvent = createIncomingEventHandler(ingestHarness.deps, {
+    ...ingestBindings,
+    checkNotificationRulesForEvent: (deps) =>
+      deps.queues.notification.sendNotification.add({
+        notification: {
+          projectId: INGEST_PROJECT_ID,
+          title: 'rule matched',
+          message: 'screen_view',
+        },
+      }),
+  });
+
+  await handleEvent(ingestEnvelope(INGEST_REQUEST_ID), {
+    partition: 0,
+    offset: '1',
+  });
+
+  // One per event the message produced (session_start + screen_view); both
+  // enqueued off the same message scope.
+  const dispatched = ingestHarness.recorded
+    .filter(({ queue }) => queue === 'notification')
+    .map(({ job, meta }) => ({ job, requestId: meta.requestId }));
+
+  expect(dispatched).toHaveLength(2);
+  expect(dispatched).toEqual(
+    dispatched.map(() => ({
+      job: 'sendNotification',
+      requestId: INGEST_REQUEST_ID,
+    }))
+  );
+});
+
 test('a second message is scoped to its own id, and an envelope without one still gets scoped', async () => {
   const handleEvent = createIncomingEventHandler(
     ingestHarness.deps,
