@@ -7,12 +7,6 @@
 // outside the now-deleted trpc/worker and this module's own tests reached it
 // through @openpanel/db's barrel.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
-//
 // M12-004 converted every ClickHouse statement here onto the ADR-013 `sql`
 // tag: values bind as `{pN:Type}` params, identifiers go through `sql.id`,
 // structure composes with `sql.join`. `sqlstring` is gone from this module.
@@ -250,10 +244,12 @@ export function buildEventCriteriaQuery(
   const timeConstraint = buildTimeConstraint(timeframe, sql.id('event_date'));
   const project = sql.string(projectId);
   const eventName = sql.string(name);
-  const hasEventPropertyFilters = filters.some(
-    (f) =>
-      f.name.startsWith('properties.') &&
-      !f.name.startsWith('profile.properties.')
+  // No filter name can start with both 'properties.' and
+  // 'profile.properties.' (they diverge at the 4th character), so the
+  // 'profile.properties.' exclusion this used to carry was always true here
+  // and is dropped rather than kept as dead weight.
+  const hasEventPropertyFilters = filters.some((f) =>
+    f.name.startsWith('properties.')
   );
 
   if (hasEventPropertyFilters) {
@@ -1019,29 +1015,37 @@ export function createCohortService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
+  function updateMembership(cohortId: string): Promise<void> {
+    return updateCohortMembership(deps, cohortId);
+  }
+
+  function listCohortIds(): Promise<string[]> {
+    return listRefreshableCohortIds(deps);
+  }
+
+  /**
+   * Enqueue a recompute for a cohort.
+   *
+   * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
+   * short-circuit `add` for as long as *any* record for that id exists in
+   * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
+   * some other job in the queue finishing. That deadlocks: nothing can be
+   * added because the completed record is still there, and the record is
+   * never collected because nothing gets added. `deduplicationId`, in
+   * contrast, is released by `moveToFinished` on both completion and
+   * terminal failure, so it only collapses a compute that is genuinely still
+   * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
+   */
+  async function enqueueCompute(cohortId: string): Promise<void> {
+    await deps.queues.cohortCompute.cohortCompute.add(
+      { cohortId },
+      { deduplicationId: `cohort-${cohortId}` }
+    );
+  }
+
   return {
-    updateMembership: (cohortId: string): Promise<void> =>
-      updateCohortMembership(deps, cohortId),
-    listRefreshableCohortIds: (): Promise<string[]> =>
-      listRefreshableCohortIds(deps),
-    /**
-     * Enqueue a recompute for a cohort.
-     *
-     * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
-     * short-circuit `add` for as long as *any* record for that id exists in
-     * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
-     * some other job in the queue finishing. That deadlocks: nothing can be
-     * added because the completed record is still there, and the record is
-     * never collected because nothing gets added. `deduplicationId`, in
-     * contrast, is released by `moveToFinished` on both completion and
-     * terminal failure, so it only collapses a compute that is genuinely still
-     * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
-     */
-    enqueueCompute: async (cohortId: string): Promise<void> => {
-      await deps.queues.cohortCompute.cohortCompute.add(
-        { cohortId },
-        { deduplicationId: `cohort-${cohortId}` }
-      );
-    },
+    updateMembership,
+    listRefreshableCohortIds: listCohortIds,
+    enqueueCompute,
   };
 }
