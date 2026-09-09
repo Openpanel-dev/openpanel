@@ -11,15 +11,15 @@
 // src/filter-clauses.ts is the one bridge.
 //
 // M10-005: every function that touches ClickHouse or the profile buffer takes
-// `ServiceDeps` and reaches them as `deps.ch` (through shared/ch-query.ts) and
+// `ServiceDeps` and reaches them as `deps.ch` (through ch-query.ts) and
 // `deps.buffers.profile`. The `loadChClient` / `loadProfileBuffer` lazy
 // loaders are gone (docs/TECH_DEBT.md §2, §4); `loadFilterCompiler` stays and
 // reaches a core sibling, not @openpanel/db.
 
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
+import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
-import { chQuery } from '../../shared/ch-query';
 import { strip, toObject } from '../../shared/object';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IChartEventFilter } from '../report/report.constants';

@@ -116,16 +116,16 @@ mock.module('../organization/organization.service', () => ({
   ...realOrganization,
   getSettingsForProject,
 }));
-const actualDate = await import('../../shared/date');
+const actualDate = await import('../report/src/chart-dates');
 const realDate = { ...actualDate };
-mock.module('../../shared/date', () => ({
+mock.module('../report/src/chart-dates', () => ({
   ...realDate,
   getChartStartEndDate,
 }));
 
 afterAll(() => {
   mock.module('../organization/organization.service', () => realOrganization);
-  mock.module('../../shared/date', () => realDate);
+  mock.module('../report/src/chart-dates', () => realDate);
 });
 
 let subject: ReturnType<

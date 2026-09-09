@@ -19,7 +19,7 @@
 //
 // M10-005: every function that touches a database takes `ServiceDeps` and
 // reaches Postgres as `deps.db`, ClickHouse as `deps.ch` (through
-// shared/ch-query.ts) and the event/bot buffers as `deps.buffers.*`. The
+// ch-query.ts) and the event/bot buffers as `deps.buffers.*`. The
 // `loadDb` / `loadChClient` / `loadDbBuffers` lazy loaders are gone, and so
 // are the two `import('@openpanel/core')` self-barrel hops this file made for
 // `resolveDateRange` — imported straight from `shared/`
@@ -29,9 +29,9 @@
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
 import { clone, mergeDeepRight, uniq } from 'ramda';
+import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
-import { chQuery } from '../../shared/ch-query';
 import { DateTime, resolveDateRange } from '../../shared/date';
 import { toDots } from '../../shared/object';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';

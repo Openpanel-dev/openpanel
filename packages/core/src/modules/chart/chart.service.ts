@@ -20,10 +20,7 @@
 
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
-import {
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '../../shared/date';
+import { getChartPrevStartEndDate } from '../../shared/date';
 import { getEventMetasCached } from '../event/event.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
@@ -41,6 +38,7 @@ import type {
   IReportInput,
 } from '../report/report.constants';
 import type { IServiceReport } from '../report/report.service';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { createConversionService, getConversion } from './conversion.service';
 import {

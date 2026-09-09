@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { CoreConfig } from '../../../../config';
 import type { ServiceDeps } from '../../../../services';
-import { getId } from '../../../../shared/slug-id';
+import { getId } from '../../../../slug-id';
 import { getDashboardById } from '../../../dashboard/dashboard.service';
 import { getProjectById } from '../../../project/project.service';
 import { zReport } from '../../../report/report.constants';

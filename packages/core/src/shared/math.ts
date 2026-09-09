@@ -2,11 +2,13 @@
 // packages/common/src/get-previous-metric.ts (M11-006, ADR-007 shared/ layout).
 // `isFloat` does NOT come along: no importer, anywhere.
 //
+// M15-009: `getPreviousMetric` left with the report vocabulary it returns —
+// it is `modules/report/src/previous-metric.ts` now. What stays here is the
+// generic arithmetic, which knows nothing above it (ADR-022 R22).
+//
 // `isNumber` is mathjs's, not `typeof n === 'number'` — it is the filter
 // predicate for every chart aggregate below, so it stays exactly as it was.
 import { isNumber } from 'mathjs';
-import { isNil } from 'ramda';
-import type { PreviousValue } from '../modules/report/report.constants';
 
 export const round = (num: number, decimals = 2) => {
   const factor = 10 ** decimals;
@@ -48,37 +50,3 @@ export const ifNaN = <T extends number>(
   n: number | null | undefined,
   defaultValue: T
 ): T => (Number.isNaN(n) ? defaultValue : (n as T));
-
-export function getPreviousMetric(
-  current: number,
-  previous: number | null | undefined
-): PreviousValue {
-  if (isNil(previous)) {
-    return undefined;
-  }
-
-  const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
-    1
-  );
-
-  return {
-    diff:
-      Number.isNaN(diff) || !Number.isFinite(diff) || current === previous
-        ? null
-        : diff,
-    state:
-      current > previous
-        ? 'positive'
-        : current < previous
-          ? 'negative'
-          : 'neutral',
-    value: previous,
-  };
-}

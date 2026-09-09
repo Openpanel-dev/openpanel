@@ -17,7 +17,7 @@ import {
   type SequenceStep,
   type SequenceSubject,
   step,
-} from '../../../shared/email-sequence';
+} from '../../email/src/sequence';
 import type { HighlightProject } from './win-back-highlight';
 
 /**

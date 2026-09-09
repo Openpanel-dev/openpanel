@@ -23,7 +23,7 @@
 // `EMPTY_SESSION` there.
 
 import type { Ctx, Session } from '../context';
-import { runWithAlsSession } from '../modules/session/src/session-context';
+import { runWithAlsSession } from '../shared/als-session';
 import type { CookieJar } from '../shared/cookie';
 
 export const SESSION_COOKIE_NAME = 'session';

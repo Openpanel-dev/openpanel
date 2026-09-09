@@ -18,10 +18,10 @@
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { pathOr } from 'ramda';
+import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { stripLeadingAndTrailingSlashes } from '../../shared/string';
 import type {
   IServiceCreateEventPayload,

@@ -38,9 +38,9 @@
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
-import { chQuery } from '../../shared/ch-query';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {

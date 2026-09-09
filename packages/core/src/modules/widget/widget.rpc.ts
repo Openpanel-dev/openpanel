@@ -31,11 +31,12 @@
 // `widget.sql.proof.md` beside this file.
 //
 // `sql` is a value import and stays one: it is a compile-time template tag
-// holding no client and no request scope (see shared/ch-query.ts).
+// holding no client and no request scope (see ch-query.ts).
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
+import { chQuery } from '../../ch-query';
 import type { Ctx } from '../../context';
 import {
   createTRPCRouter,
@@ -43,7 +44,6 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
 import { zWidgetOptions, zWidgetType } from '../report/report.constants';

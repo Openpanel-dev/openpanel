@@ -13,7 +13,7 @@
 // The chat app is memoized PER `deps` object rather than per process: a Ctx
 // builds one `ServiceDeps` per unit of work (context.ts's
 // `installLazyServices`), so two calls inside one chat request share an app
-// while two requests do not — the same trade `shared/cacheable-per-deps.ts`
+// while two requests do not — the same trade `cacheable-per-deps.ts`
 // records for the cross-module caches.
 
 import type { ServiceDeps, Services } from '../../services';

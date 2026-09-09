@@ -23,7 +23,7 @@
 // takes `cacheablePerDb` below instead.
 
 import { type CacheableOptions, cacheable } from '@openpanel/redis';
-import type { ServiceDeps } from '../services';
+import type { ServiceDeps } from './services';
 
 type Cacheable<A extends unknown[], R> = ((...args: A) => Promise<R>) & {
   getKey: (...args: A) => string;

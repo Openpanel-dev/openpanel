@@ -14,6 +14,10 @@ import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
 import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
+import {
+  type SchedulerDefinition,
+  schedulersFromRegistry,
+} from './jobs/schedulers';
 import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
 import { eventCronJobs } from './modules/event/event.jobs';
 import { groupCronJobs } from './modules/group/group.jobs';
@@ -148,6 +152,15 @@ export const queues = {
 };
 
 export type Queues = typeof queues;
+
+// V1's exact 19 always-on scheduler ids and cadences
+// (apps/worker/src/boot-cron.ts), derived from the `cron` queue's own jobs so a
+// job and its schedule cannot drift apart (ADR-021). It is computed HERE, in
+// the registry, and not in `jobs/schedulers.ts`: that file is transport
+// infrastructure and may not import a registry (ADR-022 R22). `ping` is the
+// 20th and is conditional — see `PING_SCHEDULE` and `startSchedulers`.
+export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
+  schedulersFromRegistry(cron);
 
 /** What `ctx.queues` is: `ctx.queues.import.run.add({ importId })`. */
 export type QueueProducers = Producers<Queues>;

@@ -17,6 +17,7 @@ import { assocPath, pathOr, pick } from 'ramda';
 import { v4 as uuid } from 'uuid';
 import type { Buffers } from '../../buffers/create-buffers';
 import { resolveSessionTimeoutMs } from '../../buffers/session-buffer';
+import type { DbScope } from '../../cacheable-per-deps';
 import {
   type AsnInfo,
   type GeoLocation,
@@ -25,7 +26,7 @@ import {
 } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import type { DbScope } from '../../shared/cacheable-per-deps';
+import { headerValue, type IngestHeaders } from '../../shared/headers';
 import { generateId } from '../../shared/id';
 import { parseUserAgent } from '../../shared/parser-user-agent';
 import { generateDeviceId } from '../../shared/profileId';
@@ -53,12 +54,12 @@ import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
 import { isDuplicatedEvent } from './src/deduplicate';
 import { getDeviceId } from './src/device-id';
-import { headerValue, type IngestHeaders } from './src/headers';
 import type {
   IncomingEventPayload,
   IncomingEventProducer,
 } from './src/incoming-event';
 
+export type { IngestHeaders } from '../../shared/headers';
 export type { BotMatch } from './src/bots/detect';
 export { detectBot, isBot } from './src/bots/detect';
 export {
@@ -75,7 +76,6 @@ export {
 } from './src/client-auth';
 export { isDuplicatedEvent } from './src/deduplicate';
 export { getDeviceId } from './src/device-id';
-export type { IngestHeaders } from './src/headers';
 export type {
   IncomingEventPayload,
   IncomingEventProducer,

@@ -1,4 +1,7 @@
-// The permission ladder (ADR-007 layout: `shared/access`).
+// The permission ladder. M15-009 (ADR-022 R10/R22): it lives in the auth
+// module, not in `shared/` — it threw a transport error (`TRPCForbiddenError`)
+// from the bottom layer, and R10 puts every access check in the auth service
+// and the procedure builders.
 //
 // Ported verbatim from packages/trpc/src/access.ts — the rules, the fail-closed
 // ordering and the messages are unchanged, and ADR-011 invariants 5 and 6 bind
@@ -13,7 +16,7 @@
 // now-deleted `@openpanel/trpc` used to bind it the same way; a test binds
 // it to two functions.
 
-import { TRPCForbiddenError } from '../rpc/errors';
+import { TRPCForbiddenError } from '../../../rpc/errors';
 
 /** What a project access row has to expose for the ladder to read it. */
 export interface ProjectAccessLike {

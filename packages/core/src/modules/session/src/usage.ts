@@ -4,9 +4,9 @@
 // at 80% / 100% of the billing limit.
 
 import type { Organization } from '@openpanel/db/src/prisma-client';
+import { cacheablePerDeps } from '../../../cacheable-per-deps';
 import { sendEmail } from '../../../clients/email';
 import type { ServiceDeps } from '../../../services';
-import { cacheablePerDeps } from '../../../shared/cacheable-per-deps';
 
 // The two project counters stay a DYNAMIC import: jobs.registry.ts reaches
 // this file (session.jobs.ts -> session-end -> usage), and a static edge to

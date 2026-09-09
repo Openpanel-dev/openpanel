@@ -1,3 +1,4 @@
+'use strict';
 /**
  * ADR-008 (constants isomorphism) and ADR-022 R22 (layers only import downward)
  * enforcement. See decisions/ADR-008-constants.md and
@@ -125,16 +126,20 @@ const R22_COMMENT =
   'infrastructure (rpc/, http/, jobs/) < modules < services.ts < registries < ' +
   'index.ts. By LAYER, not by path depth: a module importing ../../jobs/define ' +
   'is going down and is not a violation, and rpc/ http/ jobs/ are one layer so ' +
-  'edges among them are sideways. Infrastructure reaches a module\'s behaviour ' +
+  "edges among them are sideways. Infrastructure reaches a module's behaviour " +
   'through deps/ctx, never by deep-importing modules/<name>/src/*. Two upward ' +
   'edges are legal, both type-only and both exempted on ' +
   'core-layers-modules-below-composition: a module importing ServiceDeps / ' +
   'Services from services.ts (R3 requires it — all 36 factories do it), and a ' +
-  'module importing another module\'s <name>.constants.ts (R8 blesses that ' +
-  'file). Landed at `warn` by M14-002 with 23 violations, exactly as ' +
-  'core-uses-ctx-not-db-internals did in M10-001; the fix wave flips it to ' +
-  '`error` at 0. Baseline, measured 2026-09-08: 7 from shared/, 6 from ' +
-  'clients/, 10 from rpc/ + http/ + jobs/, 0 from modules/ and above.';
+  "module importing another module's <name>.constants.ts (R8 blesses that " +
+  'file). Landed at `warn` by M14-002 with 23 violations (7 from shared/, 6 ' +
+  'from clients/, 10 from rpc/ + http/ + jobs/, 0 from modules/ and above), ' +
+  'exactly as core-uses-ctx-not-db-internals did in M10-001. M15-008 cleared ' +
+  'clients/, and M15-009 cleared the rest and flipped all six rules to ' +
+  '`error` at 0: shared/ stopped being a drawer (the seven misfiled files went ' +
+  'to the layer that owns them), the ingest tier is handed to the clientAuth ' +
+  'macro instead of imported by it, and the two registry reads moved into the ' +
+  'registry. A rule that fires is the only durable fix.';
 
 // The composition root and everything above it.
 const COMPOSITION_AND_ABOVE =
@@ -169,7 +174,7 @@ module.exports = {
         "seam (ADR-007; that file's own header). It is where the boot scope registers the " +
         'deps it already built, and the only thing behind it is the lazy fallback for a ' +
         "caller with no Ctx to thread through — MCP's tool handlers have a fixed " +
-        "@modelcontextprotocol/sdk signature (modules/mcp/src/auth.ts lazy-imports it; the gsc " +
+        '@modelcontextprotocol/sdk signature (modules/mcp/src/auth.ts lazy-imports it; the gsc ' +
         'tools reach getGsc* through it), and the assistant tool runtime is the same shape. ' +
         'Nothing holding a Ctx comes through it. M11-004 corrects an earlier claim here: this ' +
         'file is NOT deleted with packages/trpc — it stays as that seam. ' +
@@ -234,7 +239,7 @@ module.exports = {
     },
     {
       name: 'core-layers-shared-is-the-bottom',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: {
         path: '^packages/core/src/shared/',
@@ -244,7 +249,7 @@ module.exports = {
     },
     {
       name: 'core-layers-clients-below-transport',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: {
         path: '^packages/core/src/clients/',
@@ -254,7 +259,7 @@ module.exports = {
     },
     {
       name: 'core-layers-transport-below-modules',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: {
         // One layer, three directories: rpc/base.ts, http/define.ts and
@@ -266,7 +271,7 @@ module.exports = {
     },
     {
       name: 'core-layers-modules-below-composition',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: {
         path: '^packages/core/src/modules/',
@@ -287,14 +292,14 @@ module.exports = {
     },
     {
       name: 'core-layers-composition-below-registries',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: { path: '^packages/core/src/services\\.ts$' },
       to: { path: REGISTRIES_AND_INDEX, dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'core-layers-registries-below-index',
-      severity: 'warn',
+      severity: 'error',
       comment: R22_COMMENT,
       from: {
         path: '^packages/core/src/(rpc\\.router|rest\\.routes|jobs\\.registry)\\.ts$',

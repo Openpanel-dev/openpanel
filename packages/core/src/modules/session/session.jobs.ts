@@ -16,10 +16,10 @@
 // requestId is bound to (M10-006, docs/TECH_DEBT.md §2).
 
 import { z } from 'zod';
+import { chQuery } from '../../ch-query';
 import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';
 import type { Logger } from '../../logger';
-import { chQuery } from '../../shared/ch-query';
 import {
   createEvent,
   type IClickhouseEvent,

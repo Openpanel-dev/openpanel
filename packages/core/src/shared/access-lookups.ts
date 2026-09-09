@@ -1,6 +1,6 @@
 // The concrete, Prisma-backed access lookups (M8-005, moved from
 // packages/db/src/services/access.service.ts). Deliberately a sibling of
-// shared/access.ts rather than living inside it: the ladder in access.ts must
+// modules/auth/src/access.ts rather than living inside it: the ladder must
 // stay importable with no database (see its own header), while this file is
 // the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
 // to it. Same shape as packages/trpc/src/access.ts's binding.
@@ -30,7 +30,7 @@ function unscopedDb() {
 }
 
 /**
- * The project row the ladder reads (`shared/access.ts`'s `AccessLookups`).
+ * The project row the ladder reads (`modules/auth/src/access.ts`'s `AccessLookups`).
  * Same query as `project.service.ts`'s `getProjectById`, without the scope
  * that file's callers have and this one does not.
  */

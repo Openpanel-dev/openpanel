@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../../services';
-import { getChartStartEndDate } from '../../../../shared/date';
 import {
   executeAggregateChart,
   executeChart,
@@ -10,6 +9,7 @@ import { getDashboardById } from '../../../dashboard/dashboard.service';
 import { getSettingsForProject } from '../../../organization/organization.service';
 import type { IChartRange, IInterval } from '../../../report/report.constants';
 import { getReportsByDashboardId } from '../../../report/report.service';
+import { getChartStartEndDate } from '../../../report/src/chart-dates';
 import { chatTool, dashboardUrl } from './helpers';
 
 // Cap on parallel report execution. Real dashboards rarely exceed this,

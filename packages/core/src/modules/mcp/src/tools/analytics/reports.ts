@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { CoreConfig } from '../../../../../config';
 import type { ServiceDeps } from '../../../../../services';
-import { getChartStartEndDate } from '../../../../../shared/date';
 import {
   executeAggregateChart,
   executeChart,
@@ -13,6 +12,7 @@ import {
   getReportById,
   getReportsByDashboardId,
 } from '../../../../report/report.service';
+import { getChartStartEndDate } from '../../../../report/src/chart-dates';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
   type McpToolDeps,

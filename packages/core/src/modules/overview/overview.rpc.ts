@@ -22,10 +22,7 @@ import {
 } from '../../rpc/base';
 import { TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
-import {
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '../../shared/date';
+import { getChartPrevStartEndDate } from '../../shared/date';
 import { pageContextSchema } from '../assistant/assistant.constants';
 import { getConversionEventNames } from '../event/event.service';
 import { getReferrerSpikes } from '../insight/insight.service';
@@ -34,6 +31,7 @@ import {
   getSettingsForProject,
 } from '../organization/organization.service';
 import { type IChartRange, zRange } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import {
   zGetMapDataInput,
   zGetMetricsInput,

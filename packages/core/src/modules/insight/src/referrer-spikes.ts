@@ -8,9 +8,9 @@
 // no `query_params` slot to carry them through. clix always sent
 // `session_timezone` (query-builder.ts:562) — `chQuery` gets the same value.
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
-import { chQuery } from '../../../shared/ch-query';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import { getRawWhereClause } from '../../overview/overview.service';
 import type {

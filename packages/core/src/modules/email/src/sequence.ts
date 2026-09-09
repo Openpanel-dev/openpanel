@@ -1,8 +1,9 @@
-// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003). Shared by
+// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003), and out of
+// `shared/` at M15-009 (ADR-022 R22): it sends email, so it sits in the module
+// that owns email, not in the layer below every transport. Its two callers —
 // the onboarding drip (modules/onboarding) and the wind-down track
-// (modules/organization/src/wind-down.ts, which joined it at M9-003 when
-// apps/worker was deleted). `shared/`, not a module, because two modules need
-// it (ADR-007 layout: "shared/ when several backend modules need it").
+// (modules/organization/src/wind-down.ts) — reach it sideways, module to
+// module.
 //
 // A day-gated email sequence runner. Each subject carries a pointer (the
 // last step whose email was sent) and an anchor date. On every tick the
@@ -28,8 +29,8 @@ import {
   type EmailData,
   type EmailTemplate,
   sendEmail,
-} from '../clients/email';
-import type { Logger } from '../logger';
+} from '../../../clients/email';
+import type { Logger } from '../../../logger';
 
 /**
  * - `true`       send it now

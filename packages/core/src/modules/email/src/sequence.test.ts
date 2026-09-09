@@ -13,15 +13,15 @@ const sendEmail = mock(
     _options: unknown
   ): Promise<Record<string, unknown> | null> => ({})
 );
-mock.module('../clients/email', () => ({ sendEmail }));
+mock.module('../../../clients/email', () => ({ sendEmail }));
 
-let runSequence: typeof import('./email-sequence').runSequence;
-let step: typeof import('./email-sequence').step;
-type SequenceStep<TCtx> = import('./email-sequence').SequenceStep<TCtx>;
-type SequenceSubject<TCtx> = import('./email-sequence').SequenceSubject<TCtx>;
+let runSequence: typeof import('./sequence').runSequence;
+let step: typeof import('./sequence').step;
+type SequenceStep<TCtx> = import('./sequence').SequenceStep<TCtx>;
+type SequenceSubject<TCtx> = import('./sequence').SequenceSubject<TCtx>;
 
 beforeAll(async () => {
-  ({ runSequence, step } = await import('./email-sequence'));
+  ({ runSequence, step } = await import('./sequence'));
 });
 
 interface Ctx {

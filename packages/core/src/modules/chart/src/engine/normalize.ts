@@ -1,5 +1,4 @@
 import type { ServiceDeps } from '../../../../services';
-import { getChartStartEndDate } from '../../../../shared/date';
 import { getSettingsForProject } from '../../../organization/organization.service';
 import type {
   IChartEvent,
@@ -7,6 +6,7 @@ import type {
   IReportInputWithDates,
 } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
+import { getChartStartEndDate } from '../../../report/src/chart-dates';
 import { mergeGlobalFilters } from '../../../report/src/series';
 import type { SeriesDefinition } from './types';
 

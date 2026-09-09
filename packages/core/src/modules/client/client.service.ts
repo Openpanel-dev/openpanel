@@ -25,8 +25,8 @@
 
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
+import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDb, type DbScope } from '../../shared/cacheable-per-deps';
 import { hashPassword } from '../auth/auth.service';
 
 export type IServiceClient = Client;

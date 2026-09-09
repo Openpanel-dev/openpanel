@@ -29,7 +29,7 @@
 // in full instead of assembled by `createSqlBuilder`'s record-of-strings.
 // `sqlstring` and `createSqlBuilder` are both gone from this module. The
 // `sql` tag is a value import of `@openpanel/db` and stays one: it is a
-// compile-time template tag holding no client (see shared/ch-query.ts). The
+// compile-time template tag holding no client (see ch-query.ts). The
 // V1-vs-V2 result-set proof is `organization.sql.proof.md` beside this file.
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
@@ -39,6 +39,8 @@ import type {
   ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
+import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -46,9 +48,7 @@ import {
   getOrganizationAccess,
   getProjectAccess,
 } from '../../shared/access-lookups';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { formatClickhouseDate } from '../../shared/ch-dates';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { DateTime } from '../../shared/date';
 import { generateSecureId } from '../../shared/id';

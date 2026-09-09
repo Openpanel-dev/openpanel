@@ -21,8 +21,8 @@ import {
   type SqlParam,
   sql,
 } from '@openpanel/db/src/clickhouse/sql';
+import { type ChScope, chQuery } from '../../../ch-query';
 import { formatClickhouseDate } from '../../../shared/ch-dates';
-import { type ChScope, chQuery } from '../../../shared/ch-query';
 
 /** clix sent `session_timezone` on every `execute()`, defaulting to `'UTC'`. */
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;

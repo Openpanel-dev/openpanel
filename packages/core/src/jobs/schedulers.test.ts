@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
+import { CRON_SCHEDULES } from '../jobs.registry';
 import type { Logger } from '../logger';
 import {
-  CRON_SCHEDULES,
   PING_SCHEDULE,
   type SchedulerQueue,
   startSchedulers,
@@ -121,6 +121,7 @@ test('ping is excluded by default — neither self-hosted nor production', async
     queue,
     flags: { selfHosted: false, production: false },
     logger: stubLogger(),
+    schedulers: CRON_SCHEDULES,
   });
 
   const upsertedIds = queue.calls.upserted.map((u) => u.id).sort();
@@ -135,6 +136,7 @@ test('ping is excluded when self-hosted but not production', async () => {
     queue,
     flags: { selfHosted: true, production: false },
     logger: stubLogger(),
+    schedulers: CRON_SCHEDULES,
   });
 
   expect(queue.calls.upserted.map((u) => u.id)).not.toContain('ping');
@@ -147,6 +149,7 @@ test('ping is excluded when production but not self-hosted', async () => {
     queue,
     flags: { selfHosted: false, production: true },
     logger: stubLogger(),
+    schedulers: CRON_SCHEDULES,
   });
 
   expect(queue.calls.upserted.map((u) => u.id)).not.toContain('ping');
@@ -159,6 +162,7 @@ test('ping is included only when self-hosted AND production', async () => {
     queue,
     flags: { selfHosted: true, production: true },
     logger: stubLogger(),
+    schedulers: CRON_SCHEDULES,
   });
 
   const upsertedIds = queue.calls.upserted.map((u) => u.id).sort();

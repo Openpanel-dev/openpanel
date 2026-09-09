@@ -12,6 +12,7 @@ import type {
   ClientAuthOptions,
   ClientAuthResult,
 } from '../../http/client-auth';
+import { validateIngestRequest } from '../ingest/src/client-auth';
 import type {
   AdjustProfilePropertyResult,
   IdentifyProfileInput,
@@ -161,7 +162,9 @@ test('every /profile route requires client credentials', async () => {
     expect(response.status).toBe(401);
   }
   expect(authenticateClient).toHaveBeenCalledTimes(3);
-  expect(authenticateClient.mock.calls[0]?.[2]).toEqual({ ingest: true });
+  expect(authenticateClient.mock.calls[0]?.[2]).toEqual({
+    ingest: validateIngestRequest,
+  });
   expect(identifyProfile).not.toHaveBeenCalled();
   expect(adjustProfileProperty).not.toHaveBeenCalled();
 });

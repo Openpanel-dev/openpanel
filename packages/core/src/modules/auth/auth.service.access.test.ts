@@ -1,5 +1,5 @@
 // M10-002 (docs/TECH_DEBT.md §5b): auth.service.ts is now the ONLY place
-// `shared/access.ts`'s ladder is bound to real lookups, via the lazy,
+// the ladder is bound to real lookups, via the lazy,
 // memoized `getAccessChecks()`. This proves that seam still takes a fake
 // `AccessLookups` cleanly — mocking `../../shared/access-lookups`, which
 // auth.service.ts reaches only through a dynamic import and which owns all

@@ -7,7 +7,11 @@
 //
 // M8-002 filled in the INGEST branch — `modules/ingest/src/client-auth.ts`
 // holds V1's `validateSdkRequest` verbatim, and this file adapts it onto the
-// principal. M9-004 filled in the `allow`-list tier, which is the one V1
+// principal. M15-009 inverted how it gets there: transport may not deep-import
+// a module (ADR-022 R22), so the route that wants the ingest tier hands its own
+// validator down as `clientAuth: { ingest: validateIngestRequest }`.
+//
+// M9-004 filled in the `allow`-list tier, which is the one V1
 // spells three times (`validateExportRequest`, `validateImportRequest`,
 // `validateManageRequest`): identical bodies differing only by the accepted
 // `ClientType` set and by the prefix on their error strings. `allow` carries
@@ -15,13 +19,10 @@
 // below. MCP is NOT here — it authenticates its own `token` form inside
 // `modules/mcp/src/auth.ts`, exactly as V1's mcp router did.
 
+import type { DbScope } from '../cacheable-per-deps';
 import type { HttpCtx } from '../context';
-import {
-  type IngestHeaders,
-  validateIngestRequest,
-} from '../modules/ingest/src/client-auth';
-import { headerValue } from '../modules/ingest/src/headers';
 import { verifyPassword } from '../shared/crypto';
+import { headerValue, type IngestHeaders } from '../shared/headers';
 
 /** V1 refuses a client id that is not a UUID before it ever queries
  *  (utils/auth.ts's three validators). Same regex, same order. */
@@ -57,13 +58,39 @@ export interface AuthenticatedClient {
  */
 export type ClientAuthLabel = 'Export' | 'Import' | 'Manage';
 
+/**
+ * What the ingest tier answers, as transport reads it.
+ * `modules/ingest/src/client-auth.ts` owns the rules and returns a wider
+ * outcome; only these fields cross the layer boundary.
+ */
+export type IngestTierOutcome =
+  | {
+      ok: true;
+      client: {
+        id: string;
+        projectId: string | null;
+        organizationId: string;
+        type: ClientType;
+      };
+      secretPresented: boolean;
+    }
+  | { ok: false; message: string; secretPresented: boolean };
+
+/** The ingest tier itself, passed in by the route that wants it. */
+export type ValidateIngestRequest = (args: {
+  deps: DbScope;
+  headers: IngestHeaders;
+  clientIp: string | undefined;
+  body: unknown;
+}) => Promise<IngestTierOutcome>;
+
 export interface ClientAuthOptions {
   /** Which client types may pass. Omitted means any, as `validateSdkRequest`. */
   allow?: ClientType[];
   /** Which of V1's three validators this route was served by. */
   label?: ClientAuthLabel;
-  /** The ingest extension described above. */
-  ingest?: boolean;
+  /** The ingest extension described above, supplied by the ingest module. */
+  ingest?: ValidateIngestRequest;
   /** MCP presents `base64(clientId:clientSecret)` instead of the two headers. */
   token?: 'basic';
 }
@@ -102,7 +129,7 @@ export async function authenticateClient(
     return await authenticateAllowedClient(ctx, headers, options);
   }
 
-  const outcome = await validateIngestRequest({
+  const outcome = await options.ingest({
     deps: ctx,
     headers,
     clientIp: request?.ip,

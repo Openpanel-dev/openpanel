@@ -101,13 +101,13 @@ const ch = {
 
 // M10-009: the subject's functions take `ServiceDeps`, so `deps.db`/`deps.ch`
 // ARE the fakes above — no `@openpanel/db` module mock is needed for either.
-// The one module still mocked is core's own `shared/ch-query`, which is what
+// The one module still mocked is core's own `ch-query`, which is what
 // the subject now calls.
 // `mock.module` has no per-file scope under bare `bun test` (AGENTS.md), so
 // snapshot the real module into a plain object FIRST and restore it in
 // afterAll — restoring via the live import binding would re-apply the mock.
-const realChQuery = { ...(await import('../../shared/ch-query')) };
-mock.module('../../shared/ch-query', () => ({
+const realChQuery = { ...(await import('../../ch-query')) };
+mock.module('../../ch-query', () => ({
   ...realChQuery,
   chQuery: (_deps: unknown, ...args: unknown[]) => chQuery(...(args as [])),
 }));
@@ -138,12 +138,12 @@ mock.module('@openpanel/redis', () => ({
 // file runs next sees real behavior again.
 afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
-  mock.module('../../shared/ch-query', () => realChQuery);
+  mock.module('../../ch-query', () => realChQuery);
   mock.module(
     '../organization/organization.service',
     () => realOrganizationService
   );
-  mock.module('../../shared/date', () => realSharedDate);
+  mock.module('../report/src/chart-dates', () => realSharedDate);
 });
 
 const validateAuthorizationCode = mock(async () => ({
@@ -184,8 +184,8 @@ mock.module('../organization/organization.service', () => ({
   ...realOrganizationService,
   getSettingsForProject,
 }));
-const realSharedDate = { ...(await import('../../shared/date')) };
-mock.module('../../shared/date', () => ({
+const realSharedDate = { ...(await import('../report/src/chart-dates')) };
+mock.module('../report/src/chart-dates', () => ({
   ...realSharedDate,
   getChartStartEndDate,
 }));

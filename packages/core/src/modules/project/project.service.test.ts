@@ -178,15 +178,15 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
-const realSlugId = { ...(await import('../../shared/slug-id')) };
-mock.module('../../shared/slug-id', () => ({
+const realSlugId = { ...(await import('../../slug-id')) };
+mock.module('../../slug-id', () => ({
   ...realSlugId,
   getId: async (_deps: unknown, _table: string, name: string) => `${name}-slug`,
 }));
 
 afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
-  mock.module('../../shared/slug-id', () => realSlugId);
+  mock.module('../../slug-id', () => realSlugId);
 });
 
 let subject: ReturnType<

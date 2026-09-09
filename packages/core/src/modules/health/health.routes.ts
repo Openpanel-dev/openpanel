@@ -14,8 +14,8 @@
 // and self-hosters use it as a "is this thing on" check.
 
 import { z } from 'zod';
+import { chQuery } from '../../ch-query';
 import { defineRoutes } from '../../http/define';
-import { chQuery } from '../../shared/ch-query';
 import { tryCatch } from '../../shared/try-catch';
 import { currentReadiness } from './src/readiness';
 
@@ -74,7 +74,7 @@ export const healthRoutes = defineRoutes((app) =>
       async ({ ctx, set }) => {
         // core's own `chQuery` over `ctx.ch` — the same round-robin + retry
         // proxy every real read takes (M10-009; `ctx.ch.query` IS
-        // `withRetry(client => client.query(...))`, see shared/ch-query.ts).
+        // `withRetry(client => client.query(...))`, see ch-query.ts).
         const [redisResult, dbResult, chResult] = await Promise.all([
           tryCatch(async () => (await ctx.redis.ping()) === 'PONG'),
           tryCatch(async () => Boolean(await ctx.db.$executeRaw`SELECT 1`)),

@@ -40,7 +40,7 @@
 
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
-import { toIngestHeaders } from '../modules/ingest/src/headers';
+import { toIngestHeaders } from '../shared/headers';
 import { authenticateClient, type ClientAuthOptions } from './client-auth';
 import { requestContext } from './context';
 

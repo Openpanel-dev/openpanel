@@ -12,7 +12,7 @@ import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { getId } from '../../shared/slug-id';
+import { getId } from '../../slug-id';
 import { getProjectById } from '../project/project.service';
 
 export type IServiceDashboard = Dashboard;

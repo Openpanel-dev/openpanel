@@ -4,17 +4,17 @@ import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 
-const realChQuery = { ...(await import('../shared/ch-query')) };
+const realChQuery = { ...(await import('../ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
 const chQuery = mock(async (_sql: string): Promise<unknown[]> => []);
 
 // M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
-// own `chQuery` (shared/ch-query.ts) — so the insert path needs no module mock
+// own `chQuery` (ch-query.ts) — so the insert path needs no module mock
 // at all, and the read path mocks one core module instead of
 // `@openpanel/db/src/clickhouse/client` (whose import builds a real client and
 // a pino transport worker thread per test file).
-mock.module('../shared/ch-query', () => ({
+mock.module('../ch-query', () => ({
   ...realChQuery,
   chQuery: (_scope: unknown, sql: string) => chQuery(sql),
 }));
@@ -49,7 +49,7 @@ beforeEach(async () => {
 // every file in one process, and closing the singleton takes it away from the
 // files that run next (V1's vitest isolated per file, so it could).
 afterAll(() => {
-  mock.module('../shared/ch-query', () => realChQuery);
+  mock.module('../ch-query', () => realChQuery);
 });
 
 describe('EventBuffer', () => {

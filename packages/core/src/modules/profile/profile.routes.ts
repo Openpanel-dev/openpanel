@@ -9,7 +9,7 @@
 // NAMED GAP, same as import.routes.ts: not yet reachable. `authenticateClient`
 // (http/client-auth.ts) is a P8 stub that always returns null, so `clientAuth`
 // 401s every request until it is filled in, and main.ts does not mount
-// `publicApiRoutes` until a real `AppDeps` exists. `ingest: true` is V1's
+// `publicApiRoutes` until a real `AppDeps` exists. `ingest` is V1's
 // `clientHook` (the SDK credential rules); V1's `isBotHook` and
 // `subscriptionHook` on this router are P8's too — the ingest module owns
 // them, not this one.
@@ -21,6 +21,7 @@
 import { getGeoLocation } from '../../clients/geo';
 import { defineRoutes } from '../../http/define';
 import { parseUserAgent } from '../../shared/parser-user-agent';
+import { validateIngestRequest } from '../ingest/src/client-auth';
 import {
   type AdjustProfilePropertyResult,
   adjustProfileProperty,
@@ -75,7 +76,7 @@ export const profileRoutes = defineRoutes((app) =>
         return payload.profileId;
       },
       {
-        clientAuth: { ingest: true },
+        clientAuth: { ingest: validateIngestRequest },
         detail: {
           tags: TAGS,
           description: 'Identify or update a user profile.',
@@ -97,7 +98,7 @@ export const profileRoutes = defineRoutes((app) =>
         return respondAdjusted(result, status, set);
       },
       {
-        clientAuth: { ingest: true },
+        clientAuth: { ingest: validateIngestRequest },
         detail: {
           tags: TAGS,
           description: 'Increment a numeric property on a user profile.',
@@ -119,7 +120,7 @@ export const profileRoutes = defineRoutes((app) =>
         return respondAdjusted(result, status, set);
       },
       {
-        clientAuth: { ingest: true },
+        clientAuth: { ingest: validateIngestRequest },
         detail: {
           tags: TAGS,
           description: 'Decrement a numeric property on a user profile.',

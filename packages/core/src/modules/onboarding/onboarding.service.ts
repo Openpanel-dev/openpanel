@@ -15,14 +15,14 @@ import { getRecommendedPlan } from '@openpanel/payments';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import { stripTrailingSlash } from '../../shared/string';
+import { hashPassword } from '../auth/auth.service';
 import {
   runSequence,
   type SequenceStep,
   type SequenceSubject,
   step,
-} from '../../shared/email-sequence';
-import { stripTrailingSlash } from '../../shared/string';
-import { hashPassword } from '../auth/auth.service';
+} from '../email/src/sequence';
 import {
   getOrganizationById,
   getOrganizationEventsCount,
@@ -36,7 +36,7 @@ const TRIAL_DURATION_IN_DAYS = 30;
 const TRIAL_EVENTS_LIMIT = 10_000_000;
 
 function loadIdService() {
-  return import('../../shared/slug-id');
+  return import('../../slug-id');
 }
 
 export async function canSkipOnboarding(

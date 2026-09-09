@@ -1,4 +1,4 @@
-import type { ChScope } from '../../../shared/ch-query';
+import type { ChScope } from '../../../ch-query';
 import { createStatementCache } from './cached-query';
 import { materialDecision } from './material';
 import { defaultImpactScore, severityBand } from './scoring';

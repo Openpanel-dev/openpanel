@@ -11,7 +11,7 @@
 
 import { expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
-import type { ChScope } from '../../../shared/ch-query';
+import type { ChScope } from '../../../ch-query';
 import { createStatementCache } from './cached-query';
 
 function fakeDeps(

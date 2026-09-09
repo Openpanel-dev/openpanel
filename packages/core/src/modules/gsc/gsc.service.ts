@@ -24,12 +24,12 @@
 // tag: ADR-013 converts the analytics read path one query per P7 task, and
 // this module's queries haven't been converted yet.
 
+import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { decrypt, encrypt } from '../../shared/encryption';
 import { googleGscClient } from '../auth/auth.service';
@@ -794,7 +794,7 @@ export async function resolveGscDateRange(
   const { getSettingsForProject } = await import(
     '../organization/organization.service'
   );
-  const { getChartStartEndDate } = await import('../../shared/date');
+  const { getChartStartEndDate } = await import('../report/src/chart-dates');
   const { timezone } = await getSettingsForProject(deps, projectId);
   const { startDate, endDate } = getChartStartEndDate(
     {

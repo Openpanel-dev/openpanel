@@ -14,11 +14,11 @@
 
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
-import { getChartStartEndDate } from '../../../shared/date';
 import { executeAggregateChart, executeChart } from '../../chart/chart.service';
 import { getFunnel } from '../../chart/funnel.service';
 import { getSettingsForProject } from '../../organization/organization.service';
 import { getReportById } from '../../report/report.service';
+import { getChartStartEndDate } from '../../report/src/chart-dates';
 
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 const TRAILING_SLASH = /\/$/;

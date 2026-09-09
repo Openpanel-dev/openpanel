@@ -8,12 +8,12 @@
 // with a result-set proof each, per ADR-013.
 //
 // M10-005: every function takes `ServiceDeps` and reaches ClickHouse as
-// `deps.ch` — reads through shared/ch-query.ts, the one write (`writeGroupToCh`)
+// `deps.ch` — reads through ch-query.ts, the one write (`writeGroupToCh`)
 // through `deps.ch.insert`. The `loadChClient` lazy loader is gone
 // (docs/TECH_DEBT.md §2, §4).
 
+import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { chQuery } from '../../shared/ch-query';
 import { toDots } from '../../shared/object';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
 import { formatClickhouseDate, toNullIfDefaultMinDate } from './src/dates';

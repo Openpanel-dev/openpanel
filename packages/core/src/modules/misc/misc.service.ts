@@ -8,7 +8,7 @@
 // depends on them), so this wave is where V1 drops them too.
 //
 // M10-005: the ClickHouse CLIENT is `deps.ch` — reads through
-// shared/ch-query.ts, the one write through `deps.ch.insert` — so the
+// ch-query.ts, the one write through `deps.ch.insert` — so the
 // `loadCh()` lazy import of `@openpanel/db` is gone. M15-005 dropped the last
 // hop too: these three statements are raw strings, not `sql` fragments, so
 // they still need `TABLE_NAMES` / `formatClickhouseDate`, and core owns its
@@ -24,12 +24,12 @@
 
 import crypto from 'node:crypto';
 import { getRedisCache } from '@openpanel/redis';
+import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import {
   DEFAULT_IP_HEADER_ORDER,

@@ -40,6 +40,7 @@ import {
   BULL_BOARD_BASE_PATH,
   type BufferDeps,
   bullBoardRoutes,
+  CRON_SCHEDULES,
   checkNotificationRulesForEvent,
   cookieOptions,
   corsDelegator,
@@ -485,6 +486,7 @@ async function main() {
             production: config.core.isProduction,
           },
           logger,
+          schedulers: CRON_SCHEDULES,
         });
         warnOnUnhandledSchedulers(
           (await cron.getJobSchedulers()).map((scheduler) => scheduler.key)

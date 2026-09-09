@@ -1,10 +1,10 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { getRedisCache } from '@openpanel/redis';
+import { type ChQueryInput, type ChScope, chQuery } from '../ch-query';
 import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
-import { type ChQueryInput, type ChScope, chQuery } from '../shared/ch-query';
 import { generateSecureId } from '../shared/id';
 
 /**

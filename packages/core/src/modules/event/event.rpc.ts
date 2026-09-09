@@ -18,13 +18,13 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
-import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   zChartEventFilter,
   zRange,
   zTimeInterval,
 } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import {
   getBotEventsPage,
   getConversionEventNames,

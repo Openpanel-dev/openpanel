@@ -16,10 +16,7 @@ import {
 import { z } from 'zod';
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
-import {
-  getDatesFromRange,
-  resolveDateRange as resolveDateRangeCore,
-} from '../../../shared/date';
+import { resolveDateRange as resolveDateRangeCore } from '../../../shared/date';
 import { listEventNamesCore } from '../../event/event.service';
 import { getTrafficBreakdownCore } from '../../overview/overview.service';
 import { getTopPagesCore } from '../../overview/pages.service';
@@ -31,6 +28,7 @@ import {
   timeWindows,
   zRange,
 } from '../../report/report.constants';
+import { getDatesFromRange } from '../../report/src/chart-dates';
 import {
   CHAT_MODELS,
   type ChatModelEntry,

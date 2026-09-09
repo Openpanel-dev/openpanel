@@ -30,6 +30,7 @@
 
 import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
+import { toIngestHeaders } from '../../shared/headers';
 import type { DeprecatedPostEventPayload } from './ingest.constants';
 import { zTrackHandlerPayload } from './ingest.constants';
 import {
@@ -41,7 +42,7 @@ import {
   isIngestionWoundDown,
   type TrackOutcome,
 } from './ingest.service';
-import { toIngestHeaders } from './src/headers';
+import { validateIngestRequest } from './src/client-auth';
 import { recordLegacyEventRequest } from './src/ingest.metrics';
 // The Kafka producer is a sibling now (M11-003), not an `AppDeps` field:
 // kafka.ts moved into this module, so there is nothing left for main.ts to
@@ -187,7 +188,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
             return respondToOutcome(outcome, status);
           },
           {
-            clientAuth: { ingest: true },
+            clientAuth: { ingest: validateIngestRequest },
             body: zTrackHandlerPayload,
             beforeHandle: [botGuard, windDownGuard(deps)],
             detail: {
@@ -227,7 +228,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
             }
           },
           {
-            clientAuth: { ingest: true },
+            clientAuth: { ingest: validateIngestRequest },
             beforeHandle: [botGuard, windDownGuard(deps)],
             detail: {
               tags: TAGS,
@@ -263,7 +264,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
             return status(ACCEPTED_STATUS, 'ok');
           },
           {
-            clientAuth: { ingest: true },
+            clientAuth: { ingest: validateIngestRequest },
             // V1's own order: the usage metric is a `preHandler` registered
             // after `clientHook` and before `isBotHook`/`subscriptionHook`.
             beforeHandle: [

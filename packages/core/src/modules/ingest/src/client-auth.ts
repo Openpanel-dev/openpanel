@@ -1,8 +1,9 @@
 // The ingest tier of caller authentication (ADR-011 A-i's "ingest extension",
 // ported verbatim from apps/api/src/utils/auth.ts's `validateSdkRequest`).
 // apps/api's `clientHook` is a thin delegate over this; core's `clientAuth`
-// macro reaches it through http/client-auth.ts when a route asks for
-// `{ ingest: true }`.
+// macro reaches it through http/client-auth.ts, which a route hands this
+// function to as `clientAuth: { ingest: validateIngestRequest }` (ADR-022 R22:
+// transport never deep-imports a module).
 //
 // Everything here is behaviour V1 relies on and none of it is decoration: the
 // `ignoreCorsAndSecret` short-circuit, the unanchored wildcard origin regex,
@@ -14,8 +15,9 @@
 
 import { getCache } from '@openpanel/redis';
 import { path } from 'ramda';
-import type { DbScope } from '../../../shared/cacheable-per-deps';
+import type { DbScope } from '../../../cacheable-per-deps';
 import { verifyPassword } from '../../../shared/crypto';
+import { headerValue, type IngestHeaders } from '../../../shared/headers';
 import {
   getClientByIdCached,
   type IServiceClientWithProject,
@@ -24,9 +26,8 @@ import type {
   IProjectFilterIp,
   IProjectFilterProfileId,
 } from '../../project/project.constants';
-import { headerValue, type IngestHeaders } from './headers';
 
-export type { IngestHeaders } from './headers';
+export type { IngestHeaders } from '../../../shared/headers';
 
 const CLIENT_ID_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

@@ -94,9 +94,9 @@ mock.module('../../../project/project.service', () => ({
   ),
 }));
 
-const actualSlugId = await import('../../../../shared/slug-id');
+const actualSlugId = await import('../../../../slug-id');
 const realSlugId = { ...actualSlugId };
-mock.module('../../../../shared/slug-id', () => ({
+mock.module('../../../../slug-id', () => ({
   ...realSlugId,
   getId: mockGetId,
 }));
@@ -115,7 +115,7 @@ afterAll(() => {
     () => realDashboardService
   );
   mock.module('../../../project/project.service', () => realProjectService);
-  mock.module('../../../../shared/slug-id', () => realSlugId);
+  mock.module('../../../../slug-id', () => realSlugId);
 });
 
 import { testCoreConfig } from '../../../../../test/config-fixture';

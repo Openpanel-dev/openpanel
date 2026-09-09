@@ -9,7 +9,7 @@
 // compiler, out of this task's scope; src/filter-clauses.ts is the one bridge.
 //
 // M10-009: the ClickHouse client is `deps.ch`, reached through core's own
-// `chQuery` (shared/ch-query.ts), so the requestId minted at the edge reaches
+// `chQuery` (ch-query.ts), so the requestId minted at the edge reaches
 // every query here (ADR-018, docs/TECH_DEBT.md §4). `getSessionsCountCached`
 // is `cacheablePerDeps` (M15-004): `cacheable` keys on the call's ARGUMENTS
 // (packages/redis/cachable.ts), so the caller's deps travel beside the key
@@ -17,9 +17,9 @@
 // `load*` functions are intra-package lazy imports, kept lazy for a cycle, not
 // for a client.
 
+import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
-import { chQuery } from '../../shared/ch-query';
 import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';

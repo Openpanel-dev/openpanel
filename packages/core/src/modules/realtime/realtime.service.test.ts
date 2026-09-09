@@ -56,7 +56,7 @@ afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
 });
 
-// `deps.ch.query` is what shared/ch-query.ts calls; it returns the raw
+// `deps.ch.query` is what ch-query.ts calls; it returns the raw
 // ClickHouse response envelope, so the stub speaks that shape.
 let nextRows: unknown[] = [];
 const chQuery = mock(

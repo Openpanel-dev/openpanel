@@ -2,7 +2,7 @@
 // `deps.ch` ARE the fakes below — the two `@openpanel/db` module mocks this
 // file used to install (and had to carefully restore, because `mock.module`
 // has no per-file scope without `--isolate`) are gone. The one module still
-// mocked is core's own `shared/ch-query`, which is what the subject now calls.
+// mocked is core's own `ch-query`, which is what the subject now calls.
 //
 // The pure SQL-shape builders (buildEventCriteriaQuery,
 // buildPropertyBasedCohortQuery, deriveCohortQuerySettings) have their own
@@ -59,19 +59,19 @@ const chInsert = mock(async (_args: { table: string }) => undefined);
 const chCommand = mock(async (_args: { query: string }) => undefined);
 
 // The subject reaches ClickHouse through core's own `chQuery(deps, ...)`
-// (shared/ch-query.ts) — mocking that one module keeps this file off
+// (ch-query.ts) — mocking that one module keeps this file off
 // @openpanel/db's live-bound client singleton entirely. `mock.module` still
 // has no per-file scope under bare `bun test` (AGENTS.md), so snapshot the
 // real module into a plain object FIRST and restore it in afterAll —
 // restoring via the live import binding would just re-apply the mock.
-const realChQuery = { ...(await import('../../shared/ch-query')) };
-mock.module('../../shared/ch-query', () => ({
+const realChQuery = { ...(await import('../../ch-query')) };
+mock.module('../../ch-query', () => ({
   ...realChQuery,
   chQuery: (_deps: unknown, ...args: unknown[]) => chQuery(...(args as [])),
 }));
 
 afterAll(() => {
-  mock.module('../../shared/ch-query', () => realChQuery);
+  mock.module('../../ch-query', () => realChQuery);
 });
 
 const deps = {

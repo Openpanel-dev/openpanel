@@ -14,7 +14,7 @@ import superjson from 'superjson';
 import { ZodError, z } from 'zod';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
-import { runWithAlsSession } from '../modules/session/src/session-context';
+import { runWithAlsSession } from '../shared/als-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
 import { EMPTY_SESSION } from '../shared/session';
 import { TRPCForbiddenError } from './errors';

@@ -25,7 +25,7 @@ import {
   type SqlFragment,
   toStatement,
 } from '@openpanel/db/src/clickhouse/sql';
-import type { ServiceDeps } from '../services';
+import type { ServiceDeps } from './services';
 
 /** All these two need is the scope's client and its logger — narrowed so the
  *  buffers, whose `BufferDeps` is not a `ServiceDeps`, can call them too. */

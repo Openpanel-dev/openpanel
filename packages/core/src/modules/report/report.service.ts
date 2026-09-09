@@ -15,7 +15,6 @@ import type {
 } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { getChartStartEndDate } from '../../shared/date';
 import { getFunnel } from '../chart/funnel.service';
 import {
   executeAggregateChart,
@@ -33,6 +32,7 @@ import type {
   IReportOptions,
 } from './report.constants';
 import { alphabetIds, lineTypes } from './report.constants';
+import { getChartStartEndDate } from './src/chart-dates';
 import { mergeGlobalFilters, onlyReportEvents } from './src/series';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;

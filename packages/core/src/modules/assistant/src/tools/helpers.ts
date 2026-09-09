@@ -5,14 +5,12 @@ import {
 } from '@better-agent/core';
 import type { z } from 'zod';
 import type { CoreConfig } from '../../../../config';
-import {
-  getDatesFromRange,
-  resolveDateRange as resolveDateRangeCore,
-} from '../../../../shared/date';
+import { resolveDateRange as resolveDateRangeCore } from '../../../../shared/date';
 import type {
   IChartEventFilter,
   IChartRange,
 } from '../../../report/report.constants';
+import { getDatesFromRange } from '../../../report/src/chart-dates';
 import type { ChatAgentContext, PageContext } from '../context';
 import { chatRunContext } from '../run-context';
 

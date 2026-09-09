@@ -5,12 +5,12 @@ import type { IClickhouseProfile } from '../modules/profile/profile.service';
 
 // M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
 // own `chQuery` — see event-buffer.test.ts's header.
-const realChQuery = { ...(await import('../shared/ch-query')) };
+const realChQuery = { ...(await import('../ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
 const chQuery = mock(async (_sql: string): Promise<IClickhouseProfile[]> => []);
 
-mock.module('../shared/ch-query', () => ({
+mock.module('../ch-query', () => ({
   ...realChQuery,
   chQuery: (_scope: unknown, sql: string) => chQuery(sql),
 }));
@@ -57,7 +57,7 @@ beforeEach(async () => {
 // every file in one process, and closing the singleton takes it away from the
 // files that run next (V1's vitest isolated per file, so it could).
 afterAll(() => {
-  mock.module('../shared/ch-query', () => realChQuery);
+  mock.module('../ch-query', () => realChQuery);
 });
 
 describe('ProfileBuffer', () => {

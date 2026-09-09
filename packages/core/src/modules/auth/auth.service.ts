@@ -3,7 +3,7 @@
 // Prisma-touching half — creating, validating and invalidating a `sessions`
 // row — moved here too (M8-005, `./src/login-session.ts`).
 //
-// M10-002 (docs/TECH_DEBT.md §5b): the permission ladder (`shared/access.ts`)
+// M10-002 (docs/TECH_DEBT.md §5b): the permission ladder (`modules/auth/src/access.ts`)
 // is bound to its real lookups exactly here, once, instead of once per module
 // in a `modules/*/src/access.ts` copy — see `getAccessChecks` below for the
 // binding itself.
@@ -18,13 +18,13 @@
 import { z } from 'zod';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
-import { type AccessChecks, createAccessChecks } from '../../shared/access';
 import type {
   getClientAccess as GetClientAccessFn,
   getOrganizationAccess as GetOrganizationAccessFn,
   IProjectAccess,
 } from '../../shared/access-lookups';
 import type { ISetCookie } from '../../shared/cookie';
+import { type AccessChecks, createAccessChecks } from './src/access';
 import {
   deleteSessionTokenCookie,
   setLastAuthProviderCookie,
@@ -94,7 +94,7 @@ type ProjectAccessChecks = AccessChecks<IProjectAccess>;
 let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
 
 /**
- * The single binding of `shared/access.ts`'s ladder to real lookups
+ * The single binding of the ladder to real lookups
  * (M10-002, docs/TECH_DEBT.md §5b) — lazy AND memoized: `createAccessChecks`
  * itself runs exactly once per process, on however many requests, no matter
  * how many of this function's callers invoke it. Nothing here runs at

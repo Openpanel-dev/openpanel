@@ -16,7 +16,7 @@
 // (`getProjectEventsCount` / `getLastEventPerProject`) onto the ADR-013 `sql`
 // tag: every value binds as a `{pN:Type}` param, so `sqlstring` and `clix` are
 // both gone. The CLIENT is `deps.ch` either way, through core's own `chQuery`
-// (shared/ch-query.ts) — M10-009 dropped the `compatChHelpers()` hop these two
+// (ch-query.ts) — M10-009 dropped the `compatChHelpers()` hop these two
 // used to make. The V1-vs-V2 result-set proof is `project.sql.proof.md` beside
 // this file.
 
@@ -27,19 +27,19 @@ import type {
   Project,
   ProjectType,
 } from '@openpanel/db/src/prisma-client';
+import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
+import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDb, type DbScope } from '../../shared/cacheable-per-deps';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { getId } from '../../shared/slug-id';
 import { stripTrailingSlash } from '../../shared/string';
+import { getId } from '../../slug-id';
 import { hashPassword } from '../auth/auth.service';
 import { getClientByIdCached } from '../client/client.service';
 
 // The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
-// compile-time template tag holding no client (see shared/ch-query.ts).
+// compile-time template tag holding no client (see ch-query.ts).
 // `TABLE_NAMES` and the date helper are core's own copies
 // (shared/ch-tables.ts, shared/ch-dates.ts).
 //

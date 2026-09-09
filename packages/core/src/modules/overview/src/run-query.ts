@@ -12,8 +12,8 @@
 // wrapper is worth keeping over calling `chQuery` directly.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
-import { chQuery } from '../../../shared/ch-query';
 
 export function runQuery<T extends object>(
   deps: ServiceDeps,

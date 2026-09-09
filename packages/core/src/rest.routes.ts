@@ -7,7 +7,9 @@
 import { openapi } from '@elysiajs/openapi';
 import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
+import { createDebugRoutes } from './http/debug.routes';
 import { httpMetrics } from './http/http.metrics';
+import { queues } from './jobs.registry';
 import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
 import { authRoutes } from './modules/auth/auth.routes';
@@ -50,7 +52,7 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 // does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
 // tools' `/site-checker` + `/ip-lookup` (M7-008) joined it too — unauthenticated
 // like V1's, per the module map. ingest's `/track` + `/track/device-id`
-// (M8-002) lead the list: the hot path, `clientAuth: { ingest: true }`, and
+// (M8-002) lead the list: the hot path, the ingest `clientAuth` tier, and
 // the one route surface whose hook ORDER is part of the contract.
 export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' })
@@ -115,3 +117,9 @@ export const opsRoutes = (deps: AppDeps) =>
       set.headers['content-type'] = registry.contentType;
       return await registry.metrics();
     });
+
+// The local-only ops surface. It is bound HERE rather than in
+// `http/debug.routes.ts` because that file needs the `cron` queue's job list
+// and transport may not import a registry (ADR-022 R22); a registry binding a
+// transport to a queue is the edge pointing the right way.
+export const debugRoutes = createDebugRoutes(queues.cron);

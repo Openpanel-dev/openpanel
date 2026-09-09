@@ -17,7 +17,7 @@
 import crypto from 'node:crypto';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { type ChScope, chQuery } from '../../../shared/ch-query';
+import { type ChScope, chQuery } from '../../../ch-query';
 
 /** clix's own default when a call site passed no timezone. */
 const DEFAULT_SESSION_TIMEZONE = 'UTC';

@@ -15,10 +15,11 @@
 
 import type { AuthenticatedClient } from '../../http/client-auth';
 import type { ServiceDeps, Services } from '../../services';
-import { getChartStartEndDate, resolveDateRange } from '../../shared/date';
+import { resolveDateRange } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import { resolveClientProjectId } from '../project/project.service';
 import type { IChartRange } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 
 export type ProjectIdResolution =
   | { ok: true; projectId: string }

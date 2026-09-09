@@ -14,8 +14,8 @@
 // passes the scope it holds instead of reading a boot-scoped singleton through
 // the deleted compat seam. `generateNewSalt` clears the same instance.
 
+import { cacheablePerDb } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
-import { cacheablePerDb } from '../../shared/cacheable-per-deps';
 import { generateSalt } from '../../shared/crypto';
 
 const SALT_CACHE_NAME = 'op:salt';

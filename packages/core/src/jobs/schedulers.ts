@@ -6,10 +6,10 @@
 //
 // ADR-021: the scheduler list is no longer a second, hand-maintained registry
 // — it is derived from the `cron` queue's own jobs, so a job and its schedule
-// cannot drift apart. This file imports no module; `schedulersFromRegistry`
-// takes the registry's `cron` queue as data.
+// cannot drift apart. `schedulersFromRegistry` takes the registry's `cron`
+// queue as data; the registry itself calls it and exports the result as
+// `CRON_SCHEDULES`, so this file imports nothing above it (ADR-022 R22).
 
-import { queues } from '../jobs.registry';
 import type { Logger } from '../logger';
 import type { AnyJob, QueueDefinition, RepeatSchedule } from './define';
 import { wrap } from './envelope';
@@ -84,12 +84,6 @@ export function schedulersFromRegistry(
   return schedulers.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// V1's exact 19 always-on scheduler ids and cadences
-// (apps/worker/src/boot-cron.ts). `ping` is the 20th and is conditional —
-// see `PING_SCHEDULE` and `startSchedulers`.
-export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
-  schedulersFromRegistry(queues.cron);
-
 // V1 gated this on `SELF_HOSTED && NODE_ENV === 'production'`
 // (apps/worker/src/boot-cron.ts:133). `misc.jobs.ts`'s `ping` job declares
 // `cron: null` for exactly this reason — it is never in `CRON_SCHEDULES`.
@@ -102,8 +96,9 @@ export interface StartSchedulersOptions {
   queue: SchedulerQueue;
   flags: SchedulerFlags;
   logger: Logger;
-  /** Defaults to the V1 cron set; overridable so a test can use a small fixture. */
-  schedulers?: readonly SchedulerDefinition[];
+  /** The derived cron set — `jobs.registry.ts`'s `CRON_SCHEDULES` in the app,
+   *  a small fixture in a test. */
+  schedulers: readonly SchedulerDefinition[];
 }
 
 /**
@@ -119,7 +114,7 @@ export async function startSchedulers({
   queue,
   flags,
   logger,
-  schedulers = CRON_SCHEDULES,
+  schedulers,
 }: StartSchedulersOptions): Promise<void> {
   const desired =
     flags.selfHosted && flags.production

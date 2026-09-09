@@ -31,7 +31,7 @@ import type { Ctx } from '../../context';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
-import { DateTime, getChartStartEndDate } from '../../shared/date';
+import { DateTime } from '../../shared/date';
 import { HttpError } from '../../shared/errors';
 import type { GetEventListOptions } from '../event/event.service';
 import {
@@ -83,6 +83,7 @@ import {
   zRange,
   zReport,
 } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import { querySessionsCore } from '../session/session.service';
 import {
   resolveExportProjectId,

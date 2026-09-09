@@ -21,7 +21,7 @@
 //     same Redis subscription underneath.
 //
 // M10-005: every query function takes `ServiceDeps`. The ClickHouse CLIENT is
-// `deps.ch` — reads through shared/ch-query.ts — and the event buffer is
+// `deps.ch` — reads through ch-query.ts — and the event buffer is
 // `deps.buffers.event`, so the `loadChClient` / `loadEventBuffer` lazy imports
 // of @openpanel/db are gone and the requestId reaches the query (ADR-018 R1,
 // docs/TECH_DEBT.md §2, §4).
@@ -39,12 +39,12 @@
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
+import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../../shared/ch-dates';
-import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { type IClickhouseEvent, transformEvent } from '../event/event.service';
 import { getProfiles } from '../profile/profile.service';

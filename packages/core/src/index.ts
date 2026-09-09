@@ -64,7 +64,6 @@ export { requestContext, requestLogging } from './http/context';
 // deployment-derived values as arguments — core reads no environment.
 export type { CorsOptions } from './http/cors';
 export { CORS_PRIVATE_PATHS, corsDelegator } from './http/cors';
-export { debugRoutes } from './http/debug.routes';
 export type { ErrorHandlerOptions } from './http/errors';
 export { errorHandler } from './http/errors';
 // The two runtime seams over the registry (ADR-005). `main.ts` builds
@@ -87,7 +86,6 @@ export type {
   SchedulerFlags,
 } from './jobs/schedulers';
 export {
-  CRON_SCHEDULES,
   PING_SCHEDULE,
   schedulersFromRegistry,
   startSchedulers,
@@ -103,7 +101,7 @@ export type {
   QueueProducers,
   Queues,
 } from './jobs.registry';
-export { queues } from './jobs.registry';
+export { CRON_SCHEDULES, queues } from './jobs.registry';
 export type { LogFn, Logger, LogLevel } from './logger';
 export {
   REQUEST_ID_HEADER,
@@ -182,6 +180,13 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+export type {
+  AccessChecks,
+  AccessLookups,
+  OrganizationAccessLike,
+  ProjectAccessLike,
+} from './modules/auth/src/access';
+export { createAccessChecks } from './modules/auth/src/access';
 // Moved from packages/db/src/services/auth-session.service.ts (M8-005) —
 // the Postgres-backed login session CRUD. packages/db keeps a re-export
 // shim (existing `@openpanel/db` importers, apps/api's app.ts).
@@ -342,6 +347,17 @@ export { createDashboardService } from './modules/dashboard/dashboard.service';
 // module map: email owns "C"); packages/constants keeps a re-export shim.
 export type { EmailCategory } from './modules/email/email.constants';
 export { emailCategories } from './modules/email/email.constants';
+// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003) — shared by
+// the onboarding module and, since M9-003, the organization module's
+// wind-down track.
+export type {
+  RunSequenceOptions,
+  SequenceResult,
+  SequenceStep,
+  SequenceSubject,
+  StepResult,
+} from './modules/email/src/sequence';
+export { runSequence, step } from './modules/email/src/sequence';
 // Dissolved from @openpanel/db's services/event.service.ts, profile.service.ts
 // and group.service.ts, plus the query/mutation bodies packages/trpc's
 // event/profile/group routers held inline and apps/api's profile controller
@@ -760,6 +776,10 @@ export {
   transformReport,
   transformReportEventItem,
 } from './modules/report/report.service';
+export {
+  getChartStartEndDate,
+  getDatesFromRange,
+} from './modules/report/src/chart-dates';
 export type { ReportEventItem } from './modules/report/src/series';
 export {
   mergeGlobalFilters,
@@ -776,7 +796,8 @@ export {
   createSaltService,
 } from './modules/salt/salt.service';
 // Dissolved from @openpanel/db's services/session.service.ts and
-// session-context.ts, plus apps/worker's session-end job, reaper and vacuum
+// session-context.ts (now shared/als-session.ts), plus apps/worker's
+// session-end job, reaper and vacuum
 // (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's
 // session router, the assistant/mcp tools and apps/worker's thin delegates
 // call these directly, the same way V1 reaches every other dissolved service
@@ -802,11 +823,6 @@ export {
 // service here.
 export type { SessionMetricsRedis } from './modules/session/src/session.metrics';
 export { registerSessionScrapeMetrics } from './modules/session/src/session.metrics';
-export {
-  als,
-  getAlsSessionId,
-  runWithAlsSession,
-} from './modules/session/src/session-context';
 export type {
   EnqueueSessionEndInput,
   SessionEndJobData,
@@ -869,7 +885,12 @@ export {
   rawStderrWrite,
   rawStdoutWrite,
 } from './pino-logger';
-export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
+export {
+  dashboardRoutes,
+  debugRoutes,
+  opsRoutes,
+  publicApiRoutes,
+} from './rest.routes';
 // The RPC base is on the barrel because it is the seam every module's own
 // `<name>.rpc.ts` builds its router on: ONE tRPC instance (ADR-009), mounted
 // by V2's `createTrpcFetchHandler`. V1's now-deleted `@openpanel/trpc`
@@ -908,13 +929,6 @@ export {
 } from './rpc/handler';
 export type { AppRouter } from './rpc.router';
 export { appRouter } from './rpc.router';
-export type {
-  AccessChecks,
-  AccessLookups,
-  OrganizationAccessLike,
-  ProjectAccessLike,
-} from './shared/access';
-export { createAccessChecks } from './shared/access';
 export type { IProjectAccess } from './shared/access-lookups';
 export {
   canWriteProject,
@@ -922,6 +936,11 @@ export {
   getOrganizationAccess,
   getProjectAccess,
 } from './shared/access-lookups';
+export {
+  als,
+  getAlsSessionId,
+  runWithAlsSession,
+} from './shared/als-session';
 // Dissolved from packages/common/server (M4-003) — a still-live V1 package
 // (db, queue, apps/worker) reaches these the same way apps/api and core
 // itself do, until its own module lands. mcp reaches it as an internal
@@ -932,23 +951,7 @@ export {
   hashPassword,
   verifyPassword,
 } from './shared/crypto';
-export {
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-  getDatesFromRange,
-  resolveDateRange,
-} from './shared/date';
-// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003) — shared by
-// the onboarding module and, since M9-003, the organization module's
-// wind-down track.
-export type {
-  RunSequenceOptions,
-  SequenceResult,
-  SequenceStep,
-  SequenceSubject,
-  StepResult,
-} from './shared/email-sequence';
-export { runSequence, step } from './shared/email-sequence';
+export { getChartPrevStartEndDate, resolveDateRange } from './shared/date';
 export {
   decrypt,
   decryptCredential,

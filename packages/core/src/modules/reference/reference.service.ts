@@ -13,9 +13,9 @@
 
 import type { Reference } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
-import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import type { IChartRange } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 
 export type IServiceReference = Reference;
 
