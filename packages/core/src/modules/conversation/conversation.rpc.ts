@@ -2,10 +2,11 @@
 //
 // M11-001: every procedure is on its V1 twin's builder.
 // `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// the input parser, exactly as V1 does. `enforceAccess` reads the raw,
+// pre-zod input and only a TOP-LEVEL `projectId` (ADR-011) — `list` and
+// `rename` both take one, so their project access is already enforced
+// before the handler runs. `get` and `delete` take only `id`, invisible to
+// `enforceAccess`, so their ownership check stays in the handler.
 //
 // `ctx.services.conversation` carries this module's factory (M10-004).
 //
@@ -16,10 +17,10 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
+import { DEFAULT_LIST_LIMIT } from './conversation.service';
 
 const LIST_LIMIT_MIN = 1;
 const LIST_LIMIT_MAX = 200;
-const LIST_LIMIT_DEFAULT = 50;
 const TITLE_MIN_LENGTH = 1;
 const TITLE_MAX_LENGTH = 80;
 
@@ -40,23 +41,16 @@ export const conversationRouter = createTRPCRouter({
           .number()
           .min(LIST_LIMIT_MIN)
           .max(LIST_LIMIT_MAX)
-          .default(LIST_LIMIT_DEFAULT),
+          .default(DEFAULT_LIST_LIMIT),
       })
     )
-    .query(async ({ input, ctx }) => {
-      const userId = ctx.session.userId;
-      await ctx.services.auth.requireProjectAccess({
-        userId,
+    .query(({ input, ctx }) =>
+      ctx.services.conversation.listConversations({
         projectId: input.projectId,
-        level: 'read',
-      });
-
-      return ctx.services.conversation.listConversations({
-        projectId: input.projectId,
-        userId,
+        userId: ctx.session.userId,
         limit: input.limit,
-      });
-    }),
+      })
+    ),
 
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -93,22 +87,14 @@ export const conversationRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
 
-      // If the conversation already exists, enforce ownership. If it
-      // doesn't, verify the caller has access to the project being
-      // created under before letting the upsert create a fresh row.
+      // If the conversation already exists, enforce ownership. Access to
+      // `input.projectId` itself is already enforced by `enforceAccess`
+      // (a top-level field), so a fresh row needs no further check here.
       const conv = await ctx.services.conversation.getConversationById(
         input.id
       );
-      if (conv) {
-        if (conv.userId !== userId) {
-          throw new TRPCNotFoundError('Conversation not found');
-        }
-      } else {
-        await ctx.services.auth.requireProjectAccess({
-          userId,
-          projectId: input.projectId,
-          level: 'read',
-        });
+      if (conv && conv.userId !== userId) {
+        throw new TRPCNotFoundError('Conversation not found');
       }
 
       // Derive organizationId from the project — we never trust a

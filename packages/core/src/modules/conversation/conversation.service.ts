@@ -1,8 +1,3 @@
-// Moved from packages/db/src/services/conversation.service.ts (M5-006).
-// packages/db keeps a re-export shim (unlike cohort/import, M5-003/004):
-// apps/api's live chat route and this package's own assistant.routes.ts stub
-// both still reach these through `@openpanel/db`'s barrel.
-//
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
 // `deps.db`; the `loadDb()` lazy loader is gone.
 
@@ -19,7 +14,8 @@ export type IServiceConversationWithMessages = Prisma.ConversationGetPayload<{
   include: { messages: true };
 }>;
 
-const DEFAULT_LIST_LIMIT = 50;
+// Shared with conversation.rpc.ts's zod default, so the two never drift.
+export const DEFAULT_LIST_LIMIT = 50;
 
 export async function getConversationById(
   deps: ServiceDeps,
