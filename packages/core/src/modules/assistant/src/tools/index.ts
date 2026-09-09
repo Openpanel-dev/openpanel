@@ -1,4 +1,5 @@
 import type { AgentToolDefinition } from '@better-agent/core';
+import type { ServiceDeps } from '../../../../services';
 import type { ChatAgentContext } from '../context';
 import * as base from './base';
 import * as dashboard from './dashboard';
@@ -13,10 +14,14 @@ import * as seo from './seo';
 import * as session from './session';
 import * as ui from './ui';
 
-// Tool arrays are typed loosely as `AgentToolDefinition[]` — without
-// this, TypeScript tries to compute the union of every tool's schema +
-// result type and hits its instantiation depth limit.
-type ToolList = AgentToolDefinition[];
+// A tool is BUILT per unit of work, from the `deps` the route already holds:
+// `@better-agent/core`'s tool-handler signature has no context parameter, so
+// each handler closes over them instead (ADR-022 R6/R15). The lists are typed
+// loosely as `(deps) => AgentToolDefinition` — without the cast, TypeScript
+// tries to compute the union of every tool's schema + result type and hits
+// its instantiation depth limit.
+type ToolFactory = (deps: ServiceDeps) => AgentToolDefinition;
+type ToolList = ToolFactory[];
 
 /**
  * Always-available base tool set: discovery + saved reports + aggregate
@@ -52,7 +57,7 @@ const BASE_TOOLS: ToolList = [
   // every page, not just the overview.
   references.listReferences,
   references.getReferencesAround,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const PROFILE_TOOLS: ToolList = [
   profile.getProfileFull,
@@ -62,7 +67,7 @@ const PROFILE_TOOLS: ToolList = [
   profile.getProfileJourney,
   profile.getProfileGroups,
   profile.compareProfileToAverage,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const SESSION_TOOLS: ToolList = [
   session.getSessionFull,
@@ -72,7 +77,7 @@ const SESSION_TOOLS: ToolList = [
   session.compareSessionToTypical,
   session.getSessionReferrerContext,
   session.getSessionReplaySummary,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const REPORT_EDITOR_TOOLS: ToolList = [
   report.previewReportWithChanges,
@@ -80,14 +85,14 @@ const REPORT_EDITOR_TOOLS: ToolList = [
   report.compareToPreviousPeriod,
   report.findAnomaliesInCurrentReport,
   report.explainFilterImpact,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const PAGES_TOOLS: ToolList = [
   pages.getPagePerformance,
   pages.getPageConversions,
   pages.getEntryExitPages,
   pages.findDecliningPages,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const SEO_TOOLS: ToolList = [
   seo.gscGetOverview,
@@ -98,20 +103,20 @@ const SEO_TOOLS: ToolList = [
   seo.gscGetQueryOpportunities,
   seo.gscGetCannibalization,
   seo.correlateSeoWithTraffic,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const EVENTS_TOOLS: ToolList = [
   events.analyzeEventDistribution,
   events.correlateEvents,
   events.getEventPropertyDistribution,
   events.listPropertiesForEvent,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const INSIGHTS_TOOLS: ToolList = [
   insights.listInsights,
   insights.explainInsight,
   insights.findRelatedInsights,
-] as AgentToolDefinition[];
+] as ToolList;
 
 const GROUP_TOOLS: ToolList = [
   groups.getGroupFull,
@@ -119,11 +124,9 @@ const GROUP_TOOLS: ToolList = [
   groups.getGroupEvents,
   groups.getGroupMetrics,
   groups.compareGroups,
-] as AgentToolDefinition[];
+] as ToolList;
 
-const DASHBOARD_TOOLS: ToolList = [
-  dashboard.summarizeDashboard,
-] as AgentToolDefinition[];
+const DASHBOARD_TOOLS: ToolList = [dashboard.summarizeDashboard] as ToolList;
 
 // Client-side UI mutators. Available on pages that have user-
 // settable filters (date range, event names, property filters) so
@@ -134,7 +137,7 @@ const UI_TOOLS: ToolList = [
   ui.applyFilters,
   ui.setEventNamesFilter,
   ui.setPropertyFilters,
-] as AgentToolDefinition[];
+] as ToolList;
 
 /**
  * Compose the chat tool set for a given request. Base tools are always
@@ -147,38 +150,45 @@ const UI_TOOLS: ToolList = [
  * The LLM sees fewer-but-more-focused tools per page, which produces
  * better tool selection than one giant flat registry.
  */
-export function composeChatTools(context: ChatAgentContext) {
+export function composeChatTools(
+  deps: ServiceDeps,
+  context: ChatAgentContext
+): AgentToolDefinition[] {
   const page = context.pageContext?.page;
   const ids = context.pageContext?.ids;
+  const build = (...groups: ToolList[]): AgentToolDefinition[] =>
+    groups.flat().map((tool) => tool(deps));
 
   switch (page) {
     case 'profileDetail':
       return ids?.profileId
-        ? [...BASE_TOOLS, ...PROFILE_TOOLS, ...UI_TOOLS]
-        : [...BASE_TOOLS, ...UI_TOOLS];
+        ? build(BASE_TOOLS, PROFILE_TOOLS, UI_TOOLS)
+        : build(BASE_TOOLS, UI_TOOLS);
     case 'sessionDetail':
-      return ids?.sessionId ? [...BASE_TOOLS, ...SESSION_TOOLS] : BASE_TOOLS;
+      return ids?.sessionId
+        ? build(BASE_TOOLS, SESSION_TOOLS)
+        : build(BASE_TOOLS);
     case 'reportEditor':
       return context.pageContext?.reportDraft
-        ? [...BASE_TOOLS, ...REPORT_EDITOR_TOOLS]
-        : BASE_TOOLS;
+        ? build(BASE_TOOLS, REPORT_EDITOR_TOOLS)
+        : build(BASE_TOOLS);
     case 'pages':
-      return [...BASE_TOOLS, ...PAGES_TOOLS, ...UI_TOOLS];
+      return build(BASE_TOOLS, PAGES_TOOLS, UI_TOOLS);
     case 'seo':
-      return [...BASE_TOOLS, ...SEO_TOOLS, ...UI_TOOLS];
+      return build(BASE_TOOLS, SEO_TOOLS, UI_TOOLS);
     case 'events':
-      return [...BASE_TOOLS, ...EVENTS_TOOLS, ...UI_TOOLS];
+      return build(BASE_TOOLS, EVENTS_TOOLS, UI_TOOLS);
     case 'insights':
-      return [...BASE_TOOLS, ...INSIGHTS_TOOLS, ...UI_TOOLS];
+      return build(BASE_TOOLS, INSIGHTS_TOOLS, UI_TOOLS);
     case 'groupDetail':
-      return ids?.groupId ? [...BASE_TOOLS, ...GROUP_TOOLS] : BASE_TOOLS;
+      return ids?.groupId ? build(BASE_TOOLS, GROUP_TOOLS) : build(BASE_TOOLS);
     case 'dashboard':
       return ids?.dashboardId
-        ? [...BASE_TOOLS, ...DASHBOARD_TOOLS, ...UI_TOOLS]
-        : [...BASE_TOOLS, ...UI_TOOLS];
+        ? build(BASE_TOOLS, DASHBOARD_TOOLS, UI_TOOLS)
+        : build(BASE_TOOLS, UI_TOOLS);
     case 'overview':
-      return [...BASE_TOOLS, ...UI_TOOLS];
+      return build(BASE_TOOLS, UI_TOOLS);
     default:
-      return BASE_TOOLS;
+      return build(BASE_TOOLS);
   }
 }

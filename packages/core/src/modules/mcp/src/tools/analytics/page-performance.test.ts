@@ -7,42 +7,51 @@ import {
   it,
   mock,
 } from 'bun:test';
+import type { ServiceDeps } from '../../../../../services';
+import type { McpToolDeps } from '../shared';
 
 const mockGetTopPages = mock();
 const mockGetSettingsForProject = mock(() =>
   Promise.resolve({ timezone: 'UTC' })
 );
 
-// Mocked at the specifier the source imports resolve to, not the
-// '@openpanel/db' barrel — a whole-barrel replacement would drop every other
-// export the barrel carries for any other file sharing this process
-// (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-// The organization/project loaders resolve through this same specifier
-// (M9-CLEANUP-001) — one mock.module call, not two, or each later call
-// replaces the whole module and drops the earlier overrides.
-const actualCore = await import('@openpanel/core');
-mock.module('@openpanel/core', () => ({
-  ...actualCore,
+// M15-003: the tool reads the pages service off the `services` graph handed
+// in with `deps`, so `getTopPages` is a plain stub on TOOLS below rather than
+// a module mock. Only the two sibling module functions this file drives are
+// still replaced, each at the specifier the source imports resolve to — a
+// whole-barrel replacement would drop every other export those modules carry
+// for any other file sharing this process (bun:test only isolates modules per
+// file under `--isolate`; see AGENTS.md) — and each is restored in `afterAll`
+// from a plain-object snapshot taken BEFORE the first `mock.module` call,
+// since restoring via the live `await import(...)` binding is a no-op once
+// mocked.
+const actualOrganizationService = await import(
+  '../../../../organization/organization.service'
+);
+const realOrganizationService = { ...actualOrganizationService };
+mock.module('../../../../organization/organization.service', () => ({
+  ...realOrganizationService,
   getSettingsForProject: mockGetSettingsForProject,
+}));
+
+const actualProjectService = await import(
+  '../../../../project/project.service'
+);
+const realProjectService = { ...actualProjectService };
+mock.module('../../../../project/project.service', () => ({
+  ...realProjectService,
   resolveClientProjectId: mock(
-    ({ clientProjectId }: { clientProjectId: string }) =>
+    (_deps: unknown, { clientProjectId }: { clientProjectId: string }) =>
       Promise.resolve(clientProjectId)
   ),
 }));
 
-// M10-005: `PagesService` is no longer a class the tool constructs — the tool
-// resolves the pages service through `../shared`'s one compat hop, so that is
-// what this file stubs. Spread-actual: every other helper in `../shared` is
-// live for whatever else shares this process.
-const actualShared = await import('../shared');
-mock.module('../shared', () => ({
-  ...actualShared,
-  loadCompatPagesService: async () => ({ getTopPages: mockGetTopPages }),
-}));
-
 afterAll(() => {
-  mock.module('../shared', () => actualShared);
-  mock.module('@openpanel/core', () => actualCore);
+  mock.module(
+    '../../../../organization/organization.service',
+    () => realOrganizationService
+  );
+  mock.module('../../../../project/project.service', () => realProjectService);
 });
 
 let registerPagePerformanceTools: typeof import('./page-performance').registerPagePerformanceTools;
@@ -71,10 +80,42 @@ function makeServer() {
   };
 }
 
+const noopLogger = {
+  fatal: () => {
+    // no-op
+  },
+  error: () => {
+    // no-op
+  },
+  warn: () => {
+    // no-op
+  },
+  info: () => {
+    // no-op
+  },
+  debug: () => {
+    // no-op
+  },
+  trace: () => {
+    // no-op
+  },
+  child: () => noopLogger,
+};
+
 const READ_CTX = {
   projectId: 'proj-1',
   organizationId: 'org-1',
   clientType: 'read' as const,
+};
+
+/** What `createMcpServer` hands every tool at runtime. */
+const TOOLS: McpToolDeps = {
+  context: READ_CTX,
+  dbJsonNull: null,
+  deps: { logger: noopLogger } as unknown as ServiceDeps,
+  services: {
+    pages: { getTopPages: mockGetTopPages },
+  } as unknown as McpToolDeps['services'],
 };
 
 /** Re-hydrate the columnar table the tool returns into row objects. */
@@ -107,7 +148,7 @@ describe('get_page_performance — seo thresholds', () => {
     mockGetTopPages.mockResolvedValue([makePage({ bounce_rate: 80 })]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -126,7 +167,7 @@ describe('get_page_performance — seo thresholds', () => {
     ]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -152,7 +193,7 @@ describe('get_page_performance — sorting', () => {
     mockGetTopPages.mockResolvedValue([...pages]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -166,7 +207,7 @@ describe('get_page_performance — sorting', () => {
     mockGetTopPages.mockResolvedValue([...pages]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       sortBy: 'bounce_rate',
@@ -182,7 +223,7 @@ describe('get_page_performance — sorting', () => {
     mockGetTopPages.mockResolvedValue([...pages]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       sortBy: 'bounce_rate',
@@ -198,7 +239,7 @@ describe('get_page_performance — sorting', () => {
     mockGetTopPages.mockResolvedValue([...pages]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       limit: 2,
@@ -220,7 +261,7 @@ describe('get_page_performance — metadata', () => {
     mockGetTopPages.mockResolvedValue(manyPages);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       limit: 5,
@@ -241,7 +282,7 @@ describe('get_page_performance — metadata', () => {
     mockGetTopPages.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
+    registerPagePerformanceTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;

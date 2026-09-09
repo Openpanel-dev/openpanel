@@ -1,7 +1,12 @@
 // Moved from apps/api/src/agents/app.ts (M5-005, ADR-007's module map:
-// assistant owns "S"). `apps/api/src/agents/app.ts` becomes a re-export shim
-// of `chatApp`/`ChatApp` (DELEGATE PATTERN) — the live Fastify route in
-// apps/api/src/app.ts keeps mounting it exactly as before.
+// assistant owns "S").
+//
+// M15-003: the app is BUILT from the `deps` `assistant.routes.ts` already
+// holds, not constructed at module scope (ADR-022 R6/R15). Importing this
+// file now opens nothing — no provider client, no agent, no conversation
+// store — and every tool handler closes over the same `deps`, which is what
+// `@better-agent/core`'s context-free tool-handler signature ruled out doing
+// as an argument.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import {
   ALLOWED_MODELS,
@@ -9,8 +14,9 @@ import {
   openaiProvider,
   resolveModel,
 } from '../../../clients/ai/providers';
+import type { ServiceDeps } from '../../../services';
 import { type ChatAgentContext, chatContextSchema } from './context';
-import { prismaConversationStore } from './persistence';
+import { createConversationStore } from './persistence';
 import { buildSystemPrompt } from './prompt';
 import { composeChatTools } from './tools';
 
@@ -32,14 +38,14 @@ import { composeChatTools } from './tools';
  * a runtime `validateAgentDefinition` check so misconfigurations
  * still throw at startup.
  */
-function createChatAgent(entry: ChatModelEntry) {
+function createChatAgent(deps: ServiceDeps, entry: ChatModelEntry) {
   return defineAgent({
     name: entry.id,
     description: `OpenPanel chat assistant (${entry.label})`,
     model: resolveModel(entry),
     contextSchema: chatContextSchema,
     instruction: (context: ChatAgentContext) => buildSystemPrompt(context),
-    tools: (context: ChatAgentContext) => composeChatTools(context),
+    tools: (context: ChatAgentContext) => composeChatTools(deps, context),
     maxSteps: 20,
     // Reasoning-capable models (gpt-5.x / o-series) need the
     // `reasoning.summary` option to stream reasoning text back; the
@@ -61,36 +67,43 @@ function createChatAgent(entry: ChatModelEntry) {
 
 /**
  * Dedicated cheap agent for generating 3-5 word conversation titles.
- * Called fire-and-forget from the Fastify wrapper after the first
- * turn of a new conversation completes.
+ * Called fire-and-forget by the route after the first turn of a new
+ * conversation completes.
  */
-const titlerAgent = defineAgent({
-  name: '__titler',
-  description: 'Generates concise 3-5 word titles for chat conversations.',
-  // biome-ignore lint/suspicious/noExplicitAny: OpenAI model id union is open
-  model: openaiProvider().model('gpt-4.1-mini' as any),
-  instruction:
-    'You generate concise 3-5 word titles for chat conversations. Respond with ONLY the title. No quotes, no punctuation, no trailing period.',
-  maxSteps: 1,
-  // biome-ignore lint/suspicious/noExplicitAny: see block comment on createChatAgent
-} as any);
+function createTitlerAgent() {
+  return defineAgent({
+    name: '__titler',
+    description: 'Generates concise 3-5 word titles for chat conversations.',
+    // biome-ignore lint/suspicious/noExplicitAny: OpenAI model id union is open
+    model: openaiProvider().model('gpt-4.1-mini' as any),
+    instruction:
+      'You generate concise 3-5 word titles for chat conversations. Respond with ONLY the title. No quotes, no punctuation, no trailing period.',
+    maxSteps: 1,
+    // biome-ignore lint/suspicious/noExplicitAny: see block comment on createChatAgent
+  } as any);
+}
 
 /**
- * The single Better Agent app. Exports a `.handler` that the Fastify
- * adapter mounts under `/ai/agents/*`. Holds:
+ * The Better Agent app for one unit of work. Exposes a `.handler` that
+ * `assistant.routes.ts` calls under `/ai/agents/*`. Holds:
  *   - one agent per allowed model
  *   - the Prisma-backed conversation store for persistence
  *   - a dedicated titler agent for conversation titles
  *
- * Auth + project-access are enforced by the Fastify wrapper before
- * this handler runs — see `apps/api/src/app.ts`.
+ * Auth + project-access are enforced by `assistant.routes.ts` before this
+ * handler runs.
  */
-export const chatApp = betterAgent({
-  agents: [...ALLOWED_MODELS.map(createChatAgent), titlerAgent],
-  persistence: {
-    conversations: prismaConversationStore,
-  },
-  baseURL: '/ai/agents',
-});
+export function createChatApp(deps: ServiceDeps) {
+  return betterAgent({
+    agents: [
+      ...ALLOWED_MODELS.map((entry) => createChatAgent(deps, entry)),
+      createTitlerAgent(),
+    ],
+    persistence: {
+      conversations: createConversationStore(deps),
+    },
+    baseURL: '/ai/agents',
+  });
+}
 
-export type ChatApp = typeof chatApp;
+export type ChatApp = ReturnType<typeof createChatApp>;

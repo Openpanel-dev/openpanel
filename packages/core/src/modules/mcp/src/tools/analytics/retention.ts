@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getRetentionCohortCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getRetentionCohortCore } from '../../../../chart/retention.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -9,7 +9,7 @@ import {
 
 export function registerRetentionTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_retention_cohort',
@@ -18,9 +18,9 @@ export function registerRetentionTools(
       projectId: projectIdSchema(context),
     },
     async ({ projectId: inputProjectId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        return getRetentionCohortCore(projectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        return getRetentionCohortCore(deps, projectId);
       })
   );
 }

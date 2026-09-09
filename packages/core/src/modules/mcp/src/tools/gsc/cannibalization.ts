@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGscCannibalization } from '../../../../gsc/gsc.service';
-import type { McpAuthContext } from '../../auth';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -31,7 +30,7 @@ const PAGE_COLUMNS = [
 
 export function registerGscCannibalizationTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps, services }: McpToolDeps
 ) {
   server.tool(
     'gsc_get_cannibalization',
@@ -49,11 +48,15 @@ export function registerGscCannibalizationTools(
       pagesPerQuery,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const pageCap = pagesPerQuery ?? DEFAULT_PAGES_PER_QUERY;
-        const rows = await getGscCannibalization(projectId, startDate, endDate);
+        const rows = await services.gsc.getCannibalization(
+          projectId,
+          startDate,
+          endDate
+        );
 
         // Positional tuples rather than page objects: the five keys are stated
         // once in `page_columns` instead of on every page of every query.

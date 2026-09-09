@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getFunnelCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getFunnelCore } from '../../../../chart/funnel.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -12,7 +12,7 @@ import {
 
 export function registerFunnelTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_funnel',
@@ -52,10 +52,10 @@ export function registerFunnelTools(
       windowHours,
       groupBy,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getFunnelCore({
+        return getFunnelCore(deps, {
           projectId,
           startDate,
           endDate,

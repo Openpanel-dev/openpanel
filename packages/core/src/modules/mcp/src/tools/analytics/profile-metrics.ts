@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getProfileMetrics } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getProfileMetrics } from '../../../../profile/profile.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -10,7 +10,7 @@ import {
 
 export function registerProfileMetricTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_profile_metrics',
@@ -20,9 +20,9 @@ export function registerProfileMetricTools(
       profileId: z.string().describe('The profile ID to get metrics for'),
     },
     async ({ projectId: inputProjectId, profileId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const raw = await getProfileMetrics(profileId, projectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const raw = await getProfileMetrics(deps, profileId, projectId);
         if (!raw) {
           return { error: 'Profile not found or has no events', profileId };
         }

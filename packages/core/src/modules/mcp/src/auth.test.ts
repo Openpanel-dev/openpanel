@@ -25,34 +25,16 @@ const noopLogger = {
   child: () => noopLogger,
 };
 
-// Mocked at the specifier the source imports resolve to, not at the
-// '@openpanel/db' / '@openpanel/redis' barrels — a whole-barrel replacement
-// would drop every other export those barrels carry for any other file
-// sharing this process (bun:test only isolates modules per file under
-// `--isolate`; see AGENTS.md).
-const actualClientsService = await import(
-  '@openpanel/core'
-);
-mock.module('@openpanel/core', () => ({
-  ...actualClientsService,
-  getClientByIdCached: mockGetClientByIdCached,
-}));
-
+// M15-003: the client lookup and the logger are ARGUMENTS now — `deps` and
+// `services` come from the route, so only `@openpanel/redis`'s process-global
+// `getCache` and argon2 verification are still mocked at the specifier the
+// source resolves to (a whole-barrel replacement would drop every other
+// export those barrels carry for any other file sharing this process —
+// bun:test only isolates modules per file under `--isolate`, see AGENTS.md).
 const actualRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...actualRedis,
   getCache: mockGetCache,
-}));
-
-// @openpanel/db's barrel eagerly imports @openpanel/core's (buffers/
-// base-buffer.ts, see packages/core/src/index.ts's comment on the mcp
-// loader) — so a partial replacement here breaks that self-referential
-// import for anything auth.ts's own `@openpanel/db` import drags in, not
-// just this file's direct callers.
-const actualLogger = await import('../../../clients/logger');
-mock.module('../../../clients/logger', () => ({
-  ...actualLogger,
-  createLogger: () => noopLogger,
 }));
 
 const actualCrypto = await import('../../../shared/crypto');
@@ -61,12 +43,23 @@ mock.module('../../../shared/crypto', () => ({
   verifyPassword: mockVerifyPassword,
 }));
 
+import type { ServiceDeps, Services } from '../../../services';
+
+const deps = { logger: noopLogger } as unknown as ServiceDeps;
+const services = {
+  client: { getClientByIdCached: mockGetClientByIdCached },
+} as unknown as Services;
+
+let authenticate: (
+  token: string | undefined
+) => ReturnType<typeof import('./auth').authenticateToken>;
 let authenticateToken: typeof import('./auth').authenticateToken;
 let extractToken: typeof import('./auth').extractToken;
 let McpAuthError: typeof import('./auth').McpAuthError;
 
 beforeAll(async () => {
   ({ authenticateToken, extractToken, McpAuthError } = await import('./auth'));
+  authenticate = (token) => authenticateToken(deps, services, token);
 });
 
 beforeEach(() => {
@@ -128,55 +121,51 @@ describe('extractToken', () => {
 
 describe('authenticateToken', () => {
   it('throws McpAuthError when token is missing', async () => {
-    await expect(authenticateToken(undefined)).rejects.toThrow(McpAuthError);
-    await expect(authenticateToken(undefined)).rejects.toThrow(
+    await expect(authenticate(undefined)).rejects.toThrow(McpAuthError);
+    await expect(authenticate(undefined)).rejects.toThrow(
       'Missing authentication token'
     );
   });
 
   it('throws McpAuthError for non-base64 token', async () => {
     // Buffer.from with invalid base64 doesn't throw — but the decoded result won't have a colon
-    await expect(authenticateToken('!!!invalid!!!')).rejects.toThrow(
-      McpAuthError
-    );
+    await expect(authenticate('!!!invalid!!!')).rejects.toThrow(McpAuthError);
   });
 
   it('throws McpAuthError when token has no colon separator', async () => {
     const token = Buffer.from('nodivider').toString('base64');
-    await expect(authenticateToken(token)).rejects.toThrow(
-      'Invalid token format'
-    );
+    await expect(authenticate(token)).rejects.toThrow('Invalid token format');
   });
 
   it('throws McpAuthError when clientId is not a UUID', async () => {
     const token = Buffer.from('not-a-uuid:secret').toString('base64');
-    await expect(authenticateToken(token)).rejects.toThrow(
+    await expect(authenticate(token)).rejects.toThrow(
       'Invalid client ID format'
     );
   });
 
   it('throws McpAuthError when clientSecret is empty', async () => {
     const token = Buffer.from(`${VALID_CLIENT_ID}:`).toString('base64');
-    await expect(authenticateToken(token)).rejects.toThrow(
+    await expect(authenticate(token)).rejects.toThrow(
       'Client secret is required'
     );
   });
 
   it('throws McpAuthError when client is not found', async () => {
     mockGetClientByIdCached.mockResolvedValue(null);
-    await expect(authenticateToken(VALID_TOKEN)).rejects.toThrow(
+    await expect(authenticate(VALID_TOKEN)).rejects.toThrow(
       'Invalid credentials'
     );
   });
 
   it('throws McpAuthError when client has no stored secret', async () => {
     mockGetClientByIdCached.mockResolvedValue({ ...baseClient, secret: null });
-    await expect(authenticateToken(VALID_TOKEN)).rejects.toThrow('no secret');
+    await expect(authenticate(VALID_TOKEN)).rejects.toThrow('no secret');
   });
 
   it('throws McpAuthError for write-only clients', async () => {
     mockGetClientByIdCached.mockResolvedValue({ ...baseClient, type: 'write' });
-    await expect(authenticateToken(VALID_TOKEN)).rejects.toThrow(
+    await expect(authenticate(VALID_TOKEN)).rejects.toThrow(
       'Write-only clients'
     );
   });
@@ -184,14 +173,14 @@ describe('authenticateToken', () => {
   it('throws McpAuthError when password verification fails', async () => {
     mockGetClientByIdCached.mockResolvedValue(baseClient);
     mockVerifyPassword.mockResolvedValue(false);
-    await expect(authenticateToken(VALID_TOKEN)).rejects.toThrow(
+    await expect(authenticate(VALID_TOKEN)).rejects.toThrow(
       'Invalid credentials'
     );
   });
 
   it('returns read client context on success', async () => {
     mockGetClientByIdCached.mockResolvedValue(baseClient);
-    const ctx = await authenticateToken(VALID_TOKEN);
+    const ctx = await authenticate(VALID_TOKEN);
     expect(ctx).toEqual({
       projectId: 'proj-123',
       organizationId: 'org-456',
@@ -205,7 +194,7 @@ describe('authenticateToken', () => {
       type: 'root',
       projectId: null,
     });
-    const ctx = await authenticateToken(VALID_TOKEN);
+    const ctx = await authenticate(VALID_TOKEN);
     expect(ctx).toEqual({
       projectId: null,
       organizationId: 'org-456',
@@ -217,7 +206,7 @@ describe('authenticateToken', () => {
     mockGetClientByIdCached.mockResolvedValue(baseClient);
     // Simulate cache returning true without calling verifyPassword
     mockGetCache.mockResolvedValue(true);
-    const ctx = await authenticateToken(VALID_TOKEN);
+    const ctx = await authenticate(VALID_TOKEN);
     expect(ctx.clientType).toBe('read');
     expect(mockVerifyPassword).not.toHaveBeenCalled();
   });
@@ -231,7 +220,7 @@ describe('authenticateToken', () => {
         return fn();
       }
     );
-    await authenticateToken(VALID_TOKEN);
+    await authenticate(VALID_TOKEN);
     expect(capturedKey).toContain(`mcp:auth:${VALID_CLIENT_ID}:`);
     expect(capturedKey).not.toContain(VALID_SECRET);
     expect(capturedKey).not.toContain(

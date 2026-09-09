@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { querySessionsCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { querySessionsCore } from '../../../../session/session.service';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -18,7 +18,7 @@ const MAX_SESSION_LIMIT = 100;
 
 export function registerSessionTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'query_sessions',
@@ -56,10 +56,10 @@ export function registerSessionTools(
       limit: zLimit(DEFAULT_SESSION_LIMIT, MAX_SESSION_LIMIT),
     },
     async ({ projectId: inputProjectId, fields, ...input }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = input.limit ?? DEFAULT_SESSION_LIMIT;
-        const sessions = await querySessionsCore({
+        const sessions = await querySessionsCore(deps, {
           ...input,
           projectId,
           limit: take + 1,

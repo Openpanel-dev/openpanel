@@ -3,9 +3,9 @@ import { z } from 'zod';
 import {
   getRetentionSeries,
   getRollingActiveUsers,
-} from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+} from '../../../../chart/retention.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -30,7 +30,7 @@ function mostRecent<T>(rows: T[], take: number): T[] {
 
 export function registerActiveUserTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_rolling_active_users',
@@ -46,10 +46,10 @@ export function registerActiveUserTools(
       limit: zLimit(DEFAULT_DAILY_POINTS, MAX_DAILY_POINTS),
     },
     async ({ projectId: inputProjectId, days, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_DAILY_POINTS;
-        const data = await getRollingActiveUsers({ projectId, days });
+        const data = await getRollingActiveUsers(deps, { projectId, days });
         const recent = mostRecent(data, take);
         return {
           window_days: days,
@@ -84,10 +84,10 @@ export function registerActiveUserTools(
       limit: zLimit(DEFAULT_WEEKLY_POINTS, MAX_WEEKLY_POINTS),
     },
     async ({ projectId: inputProjectId, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_WEEKLY_POINTS;
-        const data = await getRetentionSeries({ projectId });
+        const data = await getRetentionSeries(deps, { projectId });
         const recent = mostRecent(data, take);
         return {
           ...(data.length > recent.length

@@ -20,6 +20,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
+import type { McpToolDeps } from '../tools/shared';
 
 const TEST_PROJECT_ID = 'mcp-integration-test';
 const TEST_ORG_ID = 'mcp-integration-org';
@@ -91,20 +92,22 @@ beforeAll(async () => {
   await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
-  // The mcp tools call core's chart/report functions as bare barrel exports
-  // (they have no `Ctx`), so they go through the V1 compat seam, which
-  // `main.ts` registers at boot and a test must register itself (M10-003).
-  const { setV1CompatServices } = await import('../../../../v1-compat');
+  // M15-003: the tools take `deps`/`services` as arguments, so the suite
+  // builds the same graph `mcp.routes.ts` hands them at runtime — no compat
+  // seam, no process-global registration.
   const { testServiceDeps } = await import('../../../../../test/service-deps');
-  setV1CompatServices(await testServiceDeps());
+  const { createServices } = await import('../../../../services');
+  const deps = await testServiceDeps();
+  TOOLS = {
+    context: CTX,
+    dbJsonNull: null,
+    deps,
+    services: createServices(deps),
+  };
 }, 30_000);
 
 afterAll(async () => {
   const fixtures = await import('../../../../../../../test/fixtures');
-  const { resetV1CompatServicesForTests } = await import(
-    '../../../../v1-compat'
-  );
-  resetV1CompatServicesForTests();
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
   await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
 });
@@ -114,6 +117,9 @@ const CTX = {
   organizationId: 'org-test',
   clientType: 'read' as const,
 };
+
+/** What `createMcpServer` hands every tool at runtime. Built in `beforeAll`. */
+let TOOLS: McpToolDeps;
 
 function makeServer() {
   const handlers = new Map<string, (input: unknown) => Promise<unknown>>();
@@ -158,7 +164,7 @@ function rowsOf(result: { columns: string[]; rows: unknown[][] }): any[] {
 describe('list_event_names', () => {
   it('returns { event_names: string[] }', async () => {
     const server = makeServer();
-    registerEventNameTools(server as any, CTX);
+    registerEventNameTools(server as any, TOOLS);
     const res = await server.invoke('list_event_names', {
       projectId: TEST_PROJECT_ID,
     });
@@ -169,7 +175,7 @@ describe('list_event_names', () => {
 describe('list_event_properties', () => {
   it('returns { columns, properties }', async () => {
     const server = makeServer();
-    registerPropertyValueTools(server as any, CTX);
+    registerPropertyValueTools(server as any, TOOLS);
     const res = await server.invoke('list_event_properties', {
       projectId: TEST_PROJECT_ID,
     });
@@ -182,7 +188,7 @@ describe('list_event_properties', () => {
 describe('get_event_property_values', () => {
   it('returns { event, property, values }', async () => {
     const server = makeServer();
-    registerPropertyValueTools(server as any, CTX);
+    registerPropertyValueTools(server as any, TOOLS);
     const res = await server.invoke('get_event_property_values', {
       projectId: TEST_PROJECT_ID,
       eventName: 'purchase',
@@ -199,7 +205,7 @@ describe('get_event_property_values', () => {
 describe('query_events', () => {
   it('returns all 8 fixture events', async () => {
     const server = makeServer();
-    registerEventTools(server as any, CTX);
+    registerEventTools(server as any, TOOLS);
     const res = await server.invoke('query_events', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -210,7 +216,7 @@ describe('query_events', () => {
 
   it('filters by eventName — only returns purchase events', async () => {
     const server = makeServer();
-    registerEventTools(server as any, CTX);
+    registerEventTools(server as any, TOOLS);
     const res = await server.invoke('query_events', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -226,7 +232,7 @@ describe('query_events', () => {
 
   it('filters by profileId — returns only alice events', async () => {
     const server = makeServer();
-    registerEventTools(server as any, CTX);
+    registerEventTools(server as any, TOOLS);
     const res = await server.invoke('query_events', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -242,7 +248,7 @@ describe('query_events', () => {
 
   it('filters by browser', async () => {
     const server = makeServer();
-    registerEventTools(server as any, CTX);
+    registerEventTools(server as any, TOOLS);
     const res = await server.invoke('query_events', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -261,7 +267,7 @@ describe('query_events', () => {
 describe('query_sessions', () => {
   it('returns all 3 fixture sessions', async () => {
     const server = makeServer();
-    registerSessionTools(server as any, CTX);
+    registerSessionTools(server as any, TOOLS);
     const res = await server.invoke('query_sessions', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -272,7 +278,7 @@ describe('query_sessions', () => {
 
   it('filters by profileId — charlie has 2 sessions', async () => {
     const server = makeServer();
-    registerSessionTools(server as any, CTX);
+    registerSessionTools(server as any, TOOLS);
     const res = await server.invoke('query_sessions', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -288,7 +294,7 @@ describe('query_sessions', () => {
 
   it('filters by browser', async () => {
     const server = makeServer();
-    registerSessionTools(server as any, CTX);
+    registerSessionTools(server as any, TOOLS);
     const res = await server.invoke('query_sessions', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -306,7 +312,7 @@ describe('query_sessions', () => {
 describe('find_profiles', () => {
   it('returns all 3 fixture profiles', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
     });
@@ -315,7 +321,7 @@ describe('find_profiles', () => {
 
   it('filters by email partial match', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       email: 'alice@',
@@ -327,7 +333,7 @@ describe('find_profiles', () => {
 
   it('filters by name — matches first_name and last_name', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const byFirst = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       name: 'Charlie',
@@ -345,7 +351,7 @@ describe('find_profiles', () => {
 
   it('filters by country property', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       country: 'SE',
@@ -357,7 +363,7 @@ describe('find_profiles', () => {
 
   it('inactiveDays=7 excludes alice (active 2 days ago) but includes bob (no events)', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       inactiveDays: 7,
@@ -370,7 +376,7 @@ describe('find_profiles', () => {
 
   it('minSessions=2 returns only charlie (has 2 sessions)', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       minSessions: 2,
@@ -382,7 +388,7 @@ describe('find_profiles', () => {
 
   it('performedEvent=purchase returns only charlie', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       performedEvent: 'purchase',
@@ -399,7 +405,7 @@ describe('find_profiles', () => {
 describe('get_profile', () => {
   it('returns correct profile and events for charlie', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('get_profile', {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.charlie,
@@ -413,7 +419,7 @@ describe('get_profile', () => {
 describe('get_profile_sessions', () => {
   it('returns 2 sessions for charlie', async () => {
     const server = makeServer();
-    registerProfileTools(server as any, CTX);
+    registerProfileTools(server as any, TOOLS);
     const res = await server.invoke('get_profile_sessions', {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.charlie,
@@ -429,7 +435,7 @@ describe('get_profile_sessions', () => {
 describe('get_profile_metrics', () => {
   it('returns exact metrics for charlie', async () => {
     const server = makeServer();
-    registerProfileMetricTools(server as any, CTX);
+    registerProfileMetricTools(server as any, TOOLS);
     const res = await server.invoke('get_profile_metrics', {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.charlie,
@@ -448,7 +454,7 @@ describe('get_profile_metrics', () => {
 
   it('returns metrics for alice', async () => {
     const server = makeServer();
-    registerProfileMetricTools(server as any, CTX);
+    registerProfileMetricTools(server as any, TOOLS);
     const res = await server.invoke('get_profile_metrics', {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.alice,
@@ -466,7 +472,7 @@ describe('get_profile_metrics', () => {
 describe('list_group_types', () => {
   it('returns { types: [] } (no groups in fixtures)', async () => {
     const server = makeServer();
-    registerGroupTools(server as any, CTX);
+    registerGroupTools(server as any, TOOLS);
     const res = await server.invoke('list_group_types', {
       projectId: TEST_PROJECT_ID,
     });
@@ -478,7 +484,7 @@ describe('list_group_types', () => {
 describe('find_groups', () => {
   it('returns an empty table (no groups in fixtures)', async () => {
     const server = makeServer();
-    registerGroupTools(server as any, CTX);
+    registerGroupTools(server as any, TOOLS);
     const res = await server.invoke('find_groups', {
       projectId: TEST_PROJECT_ID,
     });
@@ -490,7 +496,7 @@ describe('find_groups', () => {
 describe('get_group', () => {
   it('returns not-found error for unknown group', async () => {
     const server = makeServer();
-    registerGroupTools(server as any, CTX);
+    registerGroupTools(server as any, TOOLS);
     const res = await server.invoke('get_group', {
       projectId: TEST_PROJECT_ID,
       groupId: 'nonexistent',
@@ -505,7 +511,7 @@ describe('get_group', () => {
 describe('get_analytics_overview', () => {
   it('returns summary with numeric metric fields and a series array', async () => {
     const server = makeServer();
-    registerOverviewTools(server as any, CTX);
+    registerOverviewTools(server as any, TOOLS);
     const res = await server.invoke('get_analytics_overview', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -519,7 +525,7 @@ describe('get_analytics_overview', () => {
 describe('get_top_pages', () => {
   it('returns array including /shop and /home from fixtures', async () => {
     const server = makeServer();
-    registerPageTools(server as any, CTX);
+    registerPageTools(server as any, TOOLS);
     const res = await server.invoke('get_top_pages', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -535,7 +541,7 @@ describe('get_top_pages', () => {
 describe('get_entry_exit_pages', () => {
   it('returns entry pages array', async () => {
     const server = makeServer();
-    registerPageTools(server as any, CTX);
+    registerPageTools(server as any, TOOLS);
     const res = await server.invoke('get_entry_exit_pages', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -548,7 +554,7 @@ describe('get_entry_exit_pages', () => {
 
   it('returns exit pages array', async () => {
     const server = makeServer();
-    registerPageTools(server as any, CTX);
+    registerPageTools(server as any, TOOLS);
     const res = await server.invoke('get_entry_exit_pages', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -563,7 +569,7 @@ describe('get_entry_exit_pages', () => {
 describe('get_page_performance', () => {
   it('returns a page table plus the shared seo thresholds', async () => {
     const server = makeServer();
-    registerPagePerformanceTools(server as any, CTX);
+    registerPagePerformanceTools(server as any, TOOLS);
     const res = await server.invoke('get_page_performance', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -584,7 +590,7 @@ describe('get_page_performance', () => {
 describe('get_top_referrers', () => {
   it('returns a columnar table', async () => {
     const server = makeServer();
-    registerTrafficTools(server as any, CTX);
+    registerTrafficTools(server as any, TOOLS);
     const res = await server.invoke('get_top_referrers', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -599,7 +605,7 @@ describe('get_top_referrers', () => {
 describe('get_country_breakdown', () => {
   it('returns US as country in fixtures', async () => {
     const server = makeServer();
-    registerTrafficTools(server as any, CTX);
+    registerTrafficTools(server as any, TOOLS);
     const res = await server.invoke('get_country_breakdown', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -614,7 +620,7 @@ describe('get_country_breakdown', () => {
 describe('get_device_breakdown', () => {
   it('returns desktop in fixtures', async () => {
     const server = makeServer();
-    registerTrafficTools(server as any, CTX);
+    registerTrafficTools(server as any, TOOLS);
     const res = await server.invoke('get_device_breakdown', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -631,7 +637,7 @@ describe('get_device_breakdown', () => {
 describe('get_funnel', () => {
   it('detects charlie completing session_start → purchase', async () => {
     const server = makeServer();
-    registerFunnelTools(server as any, CTX);
+    registerFunnelTools(server as any, TOOLS);
     const res = await server.invoke('get_funnel', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -655,7 +661,7 @@ describe('get_funnel', () => {
 
   it('returns zero completions for an impossible funnel order', async () => {
     const server = makeServer();
-    registerFunnelTools(server as any, CTX);
+    registerFunnelTools(server as any, TOOLS);
     const res = await server.invoke('get_funnel', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -669,7 +675,7 @@ describe('get_funnel', () => {
 describe('get_user_flow', () => {
   it('returns nodes and links for flow after session_start', async () => {
     const server = makeServer();
-    registerUserFlowTools(server as any, CTX);
+    registerUserFlowTools(server as any, TOOLS);
     const res = await server.invoke('get_user_flow', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -687,7 +693,7 @@ describe('get_user_flow', () => {
 
   it('returns error when mode=between without endEvent', async () => {
     const server = makeServer();
-    registerUserFlowTools(server as any, CTX);
+    registerUserFlowTools(server as any, TOOLS);
     const res = await server.invoke('get_user_flow', {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
@@ -703,7 +709,7 @@ describe('get_user_flow', () => {
 describe('get_rolling_active_users', () => {
   it('returns DAU series (may be empty — dau_mv not auto-populated)', async () => {
     const server = makeServer();
-    registerActiveUserTools(server as any, CTX);
+    registerActiveUserTools(server as any, TOOLS);
     const res = await server.invoke('get_rolling_active_users', {
       projectId: TEST_PROJECT_ID,
       days: 1,
@@ -715,7 +721,7 @@ describe('get_rolling_active_users', () => {
 
   it('uses correct label for WAU and MAU', async () => {
     const server = makeServer();
-    registerActiveUserTools(server as any, CTX);
+    registerActiveUserTools(server as any, TOOLS);
     const wau = await server.invoke('get_rolling_active_users', {
       projectId: TEST_PROJECT_ID,
       days: 7,
@@ -732,7 +738,7 @@ describe('get_rolling_active_users', () => {
 describe('get_weekly_retention_series', () => {
   it('returns array of { date, active_users, retained_users, retention } rows', async () => {
     const server = makeServer();
-    registerActiveUserTools(server as any, CTX);
+    registerActiveUserTools(server as any, TOOLS);
     const res = await server.invoke('get_weekly_retention_series', {
       projectId: TEST_PROJECT_ID,
     });
@@ -749,7 +755,7 @@ describe('get_weekly_retention_series', () => {
 describe('get_retention_cohort', () => {
   it('returns weighted-average + per-cohort matrix rows', async () => {
     const server = makeServer();
-    registerRetentionTools(server as any, CTX);
+    registerRetentionTools(server as any, TOOLS);
     const res = await server.invoke('get_retention_cohort', {
       projectId: TEST_PROJECT_ID,
     });
@@ -768,7 +774,7 @@ describe('get_retention_cohort', () => {
 describe('get_user_last_seen_distribution', () => {
   it('returns alice and charlie in active_last_7_days bucket', async () => {
     const server = makeServer();
-    registerEngagementTools(server as any, CTX);
+    registerEngagementTools(server as any, TOOLS);
     const res = await server.invoke('get_user_last_seen_distribution', {
       projectId: TEST_PROJECT_ID,
     });
@@ -786,7 +792,7 @@ describe('get_user_last_seen_distribution', () => {
 
   it('returns the raw histogram when includeDistribution is set', async () => {
     const server = makeServer();
-    registerEngagementTools(server as any, CTX);
+    registerEngagementTools(server as any, TOOLS);
     const res = await server.invoke('get_user_last_seen_distribution', {
       projectId: TEST_PROJECT_ID,
       includeDistribution: true,

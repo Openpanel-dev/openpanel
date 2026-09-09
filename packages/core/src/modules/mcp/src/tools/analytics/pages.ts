@@ -3,9 +3,9 @@ import { z } from 'zod';
 import {
   getEntryExitPagesCore,
   getTopPagesCore,
-} from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+} from '../../../../overview/pages.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -49,7 +49,10 @@ function pageTable(rows: PageRow[], limit: number) {
   });
 }
 
-export function registerPageTools(server: McpServer, context: McpAuthContext) {
+export function registerPageTools(
+  server: McpServer,
+  { context, deps }: McpToolDeps
+) {
   server.tool(
     'get_top_pages',
     `Get the most visited pages ranked by sessions, with pageview counts. Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
@@ -59,11 +62,11 @@ export function registerPageTools(server: McpServer, context: McpAuthContext) {
       limit: zLimit(DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT),
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_PAGE_LIMIT;
-        const rows = await getTopPagesCore({
+        const rows = await getTopPagesCore(deps, {
           projectId,
           startDate,
           endDate,
@@ -93,11 +96,11 @@ export function registerPageTools(server: McpServer, context: McpAuthContext) {
       mode,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_PAGE_LIMIT;
-        const rows = await getEntryExitPagesCore({
+        const rows = await getEntryExitPagesCore(deps, {
           projectId,
           startDate,
           endDate,

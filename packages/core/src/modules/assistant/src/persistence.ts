@@ -1,16 +1,12 @@
 import type { ConversationStore } from '@better-agent/core';
 import type { ConversationItem } from '@better-agent/core/providers';
+import type { ServiceDeps } from '../../../services';
 import { chatRunContext } from './run-context';
 
 // `ConversationStore`'s `load`/`save` signatures are @better-agent/core's own
 // interface — betterAgent calls them with no `Ctx`/`ServiceDeps` to thread
-// through, so db access stays a lazy singleton, same as the other bare
-// hot-path callers in this wave (M10-004, see v1-compat.ts's header) rather
-// than a direct `@openpanel/db` import. GENUINE CYCLE, kept lazy: services.ts
-// -> assistant.service.ts -> this file -> v1-compat.ts -> services.ts.
-function loadCompatDb() {
-  return import('../../../v1-compat').then((m) => m.compatDb());
-}
+// through, so the store is BUILT from the deps the route already holds and
+// closes over them (ADR-022 R6/R15).
 
 /**
  * Prisma-backed `ConversationStore` for Better Agent.
@@ -56,75 +52,76 @@ function itemToRow(conversationId: string, item: ConversationItem) {
   };
 }
 
-export const prismaConversationStore: ConversationStore = {
-  async load({ conversationId }) {
-    const db = await loadCompatDb();
-    const conv = await db.conversation.findUnique({
-      where: { id: conversationId },
-      include: {
-        messages: { orderBy: { createdAt: 'asc' } },
-      },
-    });
-    if (!conv) {
-      return null;
-    }
-
-    return {
-      items: conv.messages.map((m) => m.parts as unknown as ConversationItem),
-      cursor: conv.updatedAt.getTime(),
-    };
-  },
-
-  async save({ conversationId, items }) {
-    const owner = chatRunContext.getStore();
-    if (!owner) {
-      throw new Error(
-        'chatRunContext missing during save — the Fastify wrapper must run first'
-      );
-    }
-
-    const db = await loadCompatDb();
-    await db.$transaction(async (tx) => {
-      await tx.conversation.upsert({
+export function createConversationStore(deps: ServiceDeps): ConversationStore {
+  const db = deps.db;
+  return {
+    async load({ conversationId }) {
+      const conv = await db.conversation.findUnique({
         where: { id: conversationId },
-        create: {
-          id: conversationId,
-          projectId: owner.projectId,
-          organizationId: owner.organizationId,
-          userId: owner.userId,
+        include: {
+          messages: { orderBy: { createdAt: 'asc' } },
         },
-        update: { updatedAt: new Date() },
       });
-
-      const existingCount = await tx.chatMessage.count({
-        where: { conversationId },
-      });
-
-      if (items.length >= existingCount) {
-        // Append-only fast path: Better Agent guarantees prior items
-        // are immutable, so we can safely insert only the tail.
-        const newItems = items.slice(existingCount);
-        if (newItems.length > 0) {
-          await tx.chatMessage.createMany({
-            data: newItems.map((item) => itemToRow(conversationId, item)),
-          });
-        }
-      } else {
-        // Incoming list is shorter than what's stored — an edit,
-        // retry, or deletion. Rewrite.
-        await tx.chatMessage.deleteMany({ where: { conversationId } });
-        if (items.length > 0) {
-          await tx.chatMessage.createMany({
-            data: items.map((item) => itemToRow(conversationId, item)),
-          });
-        }
+      if (!conv) {
+        return null;
       }
-    });
 
-    const updated = await db.conversation.findUnique({
-      where: { id: conversationId },
-      select: { updatedAt: true },
-    });
-    return { cursor: updated?.updatedAt.getTime() ?? Date.now() };
-  },
-};
+      return {
+        items: conv.messages.map((m) => m.parts as unknown as ConversationItem),
+        cursor: conv.updatedAt.getTime(),
+      };
+    },
+
+    async save({ conversationId, items }) {
+      const owner = chatRunContext.getStore();
+      if (!owner) {
+        throw new Error(
+          'chatRunContext missing during save — the Fastify wrapper must run first'
+        );
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.conversation.upsert({
+          where: { id: conversationId },
+          create: {
+            id: conversationId,
+            projectId: owner.projectId,
+            organizationId: owner.organizationId,
+            userId: owner.userId,
+          },
+          update: { updatedAt: new Date() },
+        });
+
+        const existingCount = await tx.chatMessage.count({
+          where: { conversationId },
+        });
+
+        if (items.length >= existingCount) {
+          // Append-only fast path: Better Agent guarantees prior items
+          // are immutable, so we can safely insert only the tail.
+          const newItems = items.slice(existingCount);
+          if (newItems.length > 0) {
+            await tx.chatMessage.createMany({
+              data: newItems.map((item) => itemToRow(conversationId, item)),
+            });
+          }
+        } else {
+          // Incoming list is shorter than what's stored — an edit,
+          // retry, or deletion. Rewrite.
+          await tx.chatMessage.deleteMany({ where: { conversationId } });
+          if (items.length > 0) {
+            await tx.chatMessage.createMany({
+              data: items.map((item) => itemToRow(conversationId, item)),
+            });
+          }
+        }
+      });
+
+      const updated = await db.conversation.findUnique({
+        where: { id: conversationId },
+        select: { updatedAt: true },
+      });
+      return { cursor: updated?.updatedAt.getTime() ?? Date.now() };
+    },
+  };
+}

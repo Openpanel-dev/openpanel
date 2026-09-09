@@ -1,18 +1,20 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { ServiceDeps } from '../../../../../services';
 import { getChartStartEndDate } from '../../../../../shared/date';
 import {
-  AggregateChartEngine,
-  ChartEngine,
-  getFunnel,
+  executeAggregateChart,
+  executeChart,
+} from '../../../../chart/chart.service';
+import { getFunnel } from '../../../../chart/funnel.service';
+import { getSettingsForProject } from '../../../../organization/organization.service';
+import {
   getReportById,
   getReportsByDashboardId,
-  getSettingsForProject,
-} from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+} from '../../../../report/report.service';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
-  loadCompatDb,
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -146,7 +148,7 @@ function shapeChart(
 
 export function registerReportTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'list_dashboards',
@@ -155,9 +157,9 @@ export function registerReportTools(
       projectId: projectIdSchema(context),
     },
     async ({ projectId: inputProjectId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const db = await loadCompatDb();
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const db = deps.db;
         const dashboards = await db.dashboard.findMany({
           where: { projectId },
           orderBy: { createdAt: 'desc' },
@@ -178,9 +180,9 @@ export function registerReportTools(
       dashboardId: z.string().describe('The dashboard ID to list reports for'),
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const reports = await getReportsByDashboardId(dashboardId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const reports = await getReportsByDashboardId(deps, dashboardId);
         if (reports.some((r) => r.projectId !== projectId)) {
           throw new Error('Dashboard does not belong to this project');
         }
@@ -242,9 +244,9 @@ export function registerReportTools(
         ),
     },
     async ({ projectId: inputProjectId, reportId, seriesLimit, plotSeries }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const result = await runReport({
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const result = await runReport(deps, {
           organizationId: context.organizationId,
           projectId,
           reportId,
@@ -293,11 +295,14 @@ export function registerReportTools(
  * Deliberately returns the raw engine output here — the MCP tool reshapes it
  * for LLM consumption, the chat renderer needs the full chart.
  */
-export async function runReport(input: {
-  organizationId: string;
-  projectId: string;
-  reportId: string;
-}): Promise<
+export async function runReport(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    reportId: string;
+  }
+): Promise<
   | { error: string; reportId: string }
   | {
       id: string;
@@ -311,7 +316,7 @@ export async function runReport(input: {
       data: unknown;
     }
 > {
-  const report = await getReportById(input.reportId);
+  const report = await getReportById(deps, input.reportId);
 
   if (!report) {
     return { error: 'Report not found', reportId: input.reportId };
@@ -324,7 +329,7 @@ export async function runReport(input: {
     };
   }
 
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 
@@ -344,30 +349,33 @@ export async function runReport(input: {
   };
 
   if (report.chartType === 'funnel') {
-    return { ...meta, data: await getFunnel(chartInput) };
+    return { ...meta, data: await getFunnel(deps, chartInput) };
   }
   if (report.chartType === 'metric') {
-    return { ...meta, data: await AggregateChartEngine.execute(chartInput) };
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
   }
-  return { ...meta, data: await ChartEngine.execute(chartInput) };
+  return { ...meta, data: await executeChart(deps, chartInput) };
 }
 
 /**
  * Execute an ad-hoc report config (no DB lookup — config is supplied directly).
  * Used by `generate_report` tool in chat.
  */
-export async function runReportFromConfig(input: {
-  organizationId: string;
-  projectId: string;
-  /** Full zReportInput shape, with required startDate/endDate */
-  config: {
-    chartType: string;
-    interval: string;
-    startDate: string;
-    endDate: string;
-    [key: string]: unknown;
-  };
-}): Promise<{
+export async function runReportFromConfig(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    /** Full zReportInput shape, with required startDate/endDate */
+    config: {
+      chartType: string;
+      interval: string;
+      startDate: string;
+      endDate: string;
+      [key: string]: unknown;
+    };
+  }
+): Promise<{
   chartType: string;
   interval: string;
   startDate: string;
@@ -375,12 +383,12 @@ export async function runReportFromConfig(input: {
   report: typeof input.config & { projectId: string };
   data: unknown;
 }> {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const chartInput = {
     ...input.config,
     projectId: input.projectId,
     timezone,
-  } as unknown as Parameters<typeof ChartEngine.execute>[0];
+  } as unknown as Parameters<typeof executeChart>[1];
 
   const meta = {
     chartType: input.config.chartType,
@@ -393,11 +401,14 @@ export async function runReportFromConfig(input: {
   if (input.config.chartType === 'funnel') {
     return {
       ...meta,
-      data: await getFunnel(chartInput as Parameters<typeof getFunnel>[0]),
+      data: await getFunnel(
+        deps,
+        chartInput as Parameters<typeof getFunnel>[1]
+      ),
     };
   }
   if (input.config.chartType === 'metric') {
-    return { ...meta, data: await AggregateChartEngine.execute(chartInput) };
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
   }
-  return { ...meta, data: await ChartEngine.execute(chartInput) };
+  return { ...meta, data: await executeChart(deps, chartInput) };
 }

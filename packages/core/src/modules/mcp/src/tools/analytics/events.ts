@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { queryEventsCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { queryEventsCore } from '../../../../event/event.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -15,7 +15,10 @@ import { EVENT_COLUMNS_DEFAULT, EVENT_COLUMNS_EXTRA } from './columns';
 const DEFAULT_EVENT_LIMIT = 20;
 const MAX_EVENT_LIMIT = 100;
 
-export function registerEventTools(server: McpServer, context: McpAuthContext) {
+export function registerEventTools(
+  server: McpServer,
+  { context, deps }: McpToolDeps
+) {
   server.tool(
     'query_events',
     `Query raw analytics events with optional filters. Returns individual event records as a columnar table. Defaults to the last 30 days and the ${DEFAULT_EVENT_LIMIT} most relevant events, with a commonly-useful field set — pass \`fields\` to add columns like origin, city, or sdk_name.`,
@@ -72,10 +75,10 @@ export function registerEventTools(server: McpServer, context: McpAuthContext) {
       limit: zLimit(DEFAULT_EVENT_LIMIT, MAX_EVENT_LIMIT),
     },
     async ({ projectId: inputProjectId, fields, ...input }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = input.limit ?? DEFAULT_EVENT_LIMIT;
-        const events = await queryEventsCore({
+        const events = await queryEventsCore(deps, {
           ...input,
           projectId,
           limit: take + 1,

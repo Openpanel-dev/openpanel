@@ -1,7 +1,11 @@
-// Moved from packages/trpc/src/agents/filter-command.ts (M5-005). V1's
-// packages/trpc/src/routers/overview.ts stays the LIVE `runFilterCommand`
-// tRPC procedure (DELEGATE PATTERN) and now imports this module's
-// `runFilterCommand` from @openpanel/core instead of a relative path.
+// Moved from packages/trpc/src/agents/filter-command.ts (M5-005). The one
+// caller is `overview.rpc.ts`'s `runFilterCommand` procedure, which reaches
+// it through `ctx.services.assistant`.
+//
+// M15-003: the agent app and its five tools are BUILT from the `deps` that
+// procedure already holds (ADR-022 R6/R15) — importing this file constructs
+// nothing, and the tool handlers close over `deps` because
+// `@better-agent/core`'s tool-handler signature has no slot for them.
 import {
   type AgentToolDefinition,
   betterAgent,
@@ -11,15 +15,14 @@ import {
 } from '@better-agent/core';
 import { z } from 'zod';
 import { resolveModel } from '../../../clients/ai/providers';
+import type { ServiceDeps } from '../../../services';
 import {
   getDatesFromRange,
   resolveDateRange as resolveDateRangeCore,
 } from '../../../shared/date';
-import {
-  getTopPagesCore,
-  getTrafficBreakdownCore,
-  listEventNamesCore,
-} from '../../../v1-compat';
+import { listEventNamesCore } from '../../event/event.service';
+import { getTrafficBreakdownCore } from '../../overview/overview.service';
+import { getTopPagesCore } from '../../overview/pages.service';
 import {
   type IChartEventFilter,
   type IChartRange,
@@ -195,88 +198,94 @@ function defineServerTool<TSchema extends z.ZodTypeAny>(config: {
   ) as AgentToolDefinition;
 }
 
-const listEventNamesTool = defineServerTool({
-  name: 'list_event_names',
-  description:
-    'Top 50 event names tracked in this project. Use BEFORE setting `setEventNamesFilter`.',
-  schema: z.object({}),
-  handler: async (_input, ctx) => ({
-    event_names: await listEventNamesCore(ctx.projectId),
-  }),
-});
+const listEventNamesTool = (deps: ServiceDeps) =>
+  defineServerTool({
+    name: 'list_event_names',
+    description:
+      'Top 50 event names tracked in this project. Use BEFORE setting `setEventNamesFilter`.',
+    schema: z.object({}),
+    handler: async (_input, ctx) => ({
+      event_names: await listEventNamesCore(deps, ctx.projectId),
+    }),
+  });
 
-const getTopReferrersTool = defineServerTool({
-  name: 'get_top_referrers',
-  description:
-    "Top traffic sources by `referrer_name` ('Google', 'GitHub', 'Direct') in the user's current date range. Use to translate vague names into exact filter values.",
-  schema: z.object({}),
-  handler: async (_input, ctx) => {
-    const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
-    const rows = await getTrafficBreakdownCore({
-      projectId: ctx.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
-      column: 'referrer_name',
-      filters: activeFilters(ctx),
-    });
-    return { rows: rows.slice(0, 30) };
-  },
-});
+const getTopReferrersTool = (deps: ServiceDeps) =>
+  defineServerTool({
+    name: 'get_top_referrers',
+    description:
+      "Top traffic sources by `referrer_name` ('Google', 'GitHub', 'Direct') in the user's current date range. Use to translate vague names into exact filter values.",
+    schema: z.object({}),
+    handler: async (_input, ctx) => {
+      const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
+      const rows = await getTrafficBreakdownCore(deps, {
+        projectId: ctx.projectId,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        column: 'referrer_name',
+        filters: activeFilters(ctx),
+      });
+      return { rows: rows.slice(0, 30) };
+    },
+  });
 
-const getTopCountriesTool = defineServerTool({
-  name: 'get_top_countries',
-  description: "Top countries (ISO-2 codes) in the user's current date range.",
-  schema: z.object({}),
-  handler: async (_input, ctx) => {
-    const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
-    const rows = await getTrafficBreakdownCore({
-      projectId: ctx.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
-      column: 'country',
-      filters: activeFilters(ctx),
-    });
-    return { rows: rows.slice(0, 50) };
-  },
-});
+const getTopCountriesTool = (deps: ServiceDeps) =>
+  defineServerTool({
+    name: 'get_top_countries',
+    description:
+      "Top countries (ISO-2 codes) in the user's current date range.",
+    schema: z.object({}),
+    handler: async (_input, ctx) => {
+      const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
+      const rows = await getTrafficBreakdownCore(deps, {
+        projectId: ctx.projectId,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        column: 'country',
+        filters: activeFilters(ctx),
+      });
+      return { rows: rows.slice(0, 50) };
+    },
+  });
 
-const getTopDevicesTool = defineServerTool({
-  name: 'get_top_devices',
-  description:
-    "Device classes seen in the user's current date range (mobile, desktop, tablet, …).",
-  schema: z.object({}),
-  handler: async (_input, ctx) => {
-    const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
-    const rows = await getTrafficBreakdownCore({
-      projectId: ctx.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
-      column: 'device',
-      filters: activeFilters(ctx),
-    });
-    return { rows: rows.slice(0, 20) };
-  },
-});
+const getTopDevicesTool = (deps: ServiceDeps) =>
+  defineServerTool({
+    name: 'get_top_devices',
+    description:
+      "Device classes seen in the user's current date range (mobile, desktop, tablet, …).",
+    schema: z.object({}),
+    handler: async (_input, ctx) => {
+      const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
+      const rows = await getTrafficBreakdownCore(deps, {
+        projectId: ctx.projectId,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        column: 'device',
+        filters: activeFilters(ctx),
+      });
+      return { rows: rows.slice(0, 20) };
+    },
+  });
 
-const getTopPagesTool = defineServerTool({
-  name: 'get_top_pages',
-  description:
-    "Top pages (paths like '/blog/foo', '/pricing', '/') in the user's current date range. Use to discover the path shape so you can pick the right operator (`startsWith` for sections like /blog, `is` for an exact page, `contains` for fuzzy matching).",
-  schema: z.object({}),
-  handler: async (_input, ctx) => {
-    const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
-    const rows = await getTopPagesCore({
-      projectId: ctx.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
-      filters: activeFilters(ctx),
-      limit: 50,
-    });
-    return { rows };
-  },
-});
+const getTopPagesTool = (deps: ServiceDeps) =>
+  defineServerTool({
+    name: 'get_top_pages',
+    description:
+      "Top pages (paths like '/blog/foo', '/pricing', '/') in the user's current date range. Use to discover the path shape so you can pick the right operator (`startsWith` for sections like /blog, `is` for an exact page, `contains` for fuzzy matching).",
+    schema: z.object({}),
+    handler: async (_input, ctx) => {
+      const range = resolveRange(ctx.pageContext?.filters, ctx.timezone);
+      const rows = await getTopPagesCore(deps, {
+        projectId: ctx.projectId,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        filters: activeFilters(ctx),
+        limit: 50,
+      });
+      return { rows };
+    },
+  });
 
-const FILTER_COMMAND_TOOLS: AgentToolDefinition[] = [
+const FILTER_COMMAND_TOOLS: ((deps: ServiceDeps) => AgentToolDefinition)[] = [
   listEventNamesTool,
   getTopReferrersTool,
   getTopCountriesTool,
@@ -363,11 +372,7 @@ const filterCommandOutputJsonSchema = z.toJSONSchema(
   { target: 'draft-07' }
 );
 
-let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp() {
-  if (_app) {
-    return _app;
-  }
+function createFilterCommandApp(deps: ServiceDeps) {
   const agent = defineAgent({
     name: 'filter-command',
     description: 'OpenPanel filter command bar (one-shot, no persistence).',
@@ -379,21 +384,23 @@ function getApp() {
       strict: true,
     },
     instruction: (ctx: FilterCommandContext) => buildInstruction(ctx),
-    tools: () => FILTER_COMMAND_TOOLS,
+    tools: () => FILTER_COMMAND_TOOLS.map((tool) => tool(deps)),
     maxSteps: 6,
     // biome-ignore lint/suspicious/noExplicitAny: same dodge as apps/api/src/agents/app.ts
   } as any);
-  _app = betterAgent({ agents: [agent] });
-  return _app;
+  return betterAgent({ agents: [agent] });
 }
 
-export async function runFilterCommand(input: {
-  query: string;
-  projectId: string;
-  pageContext?: PageContext;
-  timezone: string;
-}): Promise<FilterCommandResult> {
-  const result = (await getApp().run('filter-command', {
+export async function runFilterCommand(
+  deps: ServiceDeps,
+  input: {
+    query: string;
+    projectId: string;
+    pageContext?: PageContext;
+    timezone: string;
+  }
+): Promise<FilterCommandResult> {
+  const result = (await createFilterCommandApp(deps).run('filter-command', {
     input: input.query,
     context: {
       projectId: input.projectId,

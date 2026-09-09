@@ -4,9 +4,8 @@ import { z } from 'zod';
 import { chQuery } from '../../../../../shared/ch-query';
 import { TABLE_NAMES } from '../../../../../shared/ch-tables';
 import { EVENT_COLUMNS } from '../../../../event/event.service';
-import type { McpAuthContext } from '../../auth';
 import {
-  loadCompatChScope,
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -70,7 +69,7 @@ function compactPropertyKeys(
 
 export function registerPropertyValueTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'list_event_properties',
@@ -86,9 +85,8 @@ export function registerPropertyValueTools(
       limit: zLimit(DEFAULT_PROPERTY_LIMIT, MAX_PROPERTY_LIMIT),
     },
     async ({ projectId: inputProjectId, eventName, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const deps = await loadCompatChScope();
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         // GROUP BY rather than DISTINCT so the epv_keys projection can serve
         // this (a multi-column DISTINCT cannot be matched against an
         // aggregating projection); `name` tie-breaks the ORDER BY so the
@@ -136,9 +134,8 @@ export function registerPropertyValueTools(
       limit: zLimit(DEFAULT_VALUE_LIMIT, MAX_VALUE_LIMIT),
     },
     async ({ projectId: inputProjectId, eventName, propertyKey, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const deps = await loadCompatChScope();
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_VALUE_LIMIT;
         // The MV holds one row per (property, value, day), so the same value
         // recurs across the window — dedupe before counting against the limit,

@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getTrafficBreakdownCore } from '../../../../../v1-compat';
 import type { TrafficColumn } from '../../../../overview/overview.service';
-import type { McpAuthContext } from '../../auth';
+import { getTrafficBreakdownCore } from '../../../../overview/overview.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -58,7 +58,7 @@ function breakdownTable(rows: BreakdownRow[], limit: number, unit: string) {
 
 export function registerTrafficTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_top_referrers',
@@ -89,10 +89,10 @@ export function registerTrafficTools(
       breakdown,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const rows = await getTrafficBreakdownCore({
+        const rows = await getTrafficBreakdownCore(deps, {
           projectId,
           startDate,
           endDate,
@@ -126,10 +126,10 @@ export function registerTrafficTools(
       breakdown,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const rows = await getTrafficBreakdownCore({
+        const rows = await getTrafficBreakdownCore(deps, {
           projectId,
           startDate,
           endDate,
@@ -165,10 +165,10 @@ export function registerTrafficTools(
       breakdown,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const rows = await getTrafficBreakdownCore({
+        const rows = await getTrafficBreakdownCore(deps, {
           projectId,
           startDate,
           endDate,

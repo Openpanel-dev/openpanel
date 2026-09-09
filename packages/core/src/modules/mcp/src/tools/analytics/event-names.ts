@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getTopEventNames } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getTopEventNames } from '../../../../event/event.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -9,7 +9,7 @@ import {
 
 export function registerEventNameTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'list_event_names',
@@ -18,9 +18,9 @@ export function registerEventNameTools(
       projectId: projectIdSchema(context),
     },
     async ({ projectId: inputProjectId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const names = await getTopEventNames(projectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const names = await getTopEventNames(deps, projectId);
         return { event_names: names };
       })
   );

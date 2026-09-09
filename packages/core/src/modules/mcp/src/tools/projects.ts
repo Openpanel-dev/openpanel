@@ -1,10 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpAuthContext } from '../auth';
-import { loadCompatDb, withErrorHandling } from './shared';
+import { type McpToolDeps, withErrorHandling } from './shared';
 
 export function registerProjectTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'list_projects',
@@ -13,8 +12,8 @@ export function registerProjectTools(
       : 'Returns the single project this client has access to.',
     {},
     async () =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
 
         if (context.clientType === 'root') {
           const projects = await db.project.findMany({

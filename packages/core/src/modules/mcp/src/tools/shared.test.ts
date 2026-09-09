@@ -6,9 +6,26 @@ import {
   it,
   setSystemTime,
 } from 'bun:test';
-import { resolveClientProjectId } from '@openpanel/core';
+import type { ServiceDeps } from '../../../../services';
+import { resolveClientProjectId } from '../../../project/project.service';
 import type { McpAuthContext } from '../auth';
 import { MAX_RESPONSE_CHARS, resolveDateRange, table, toText } from './shared';
+
+const noop = () => undefined;
+/** Neither subject under test here touches a connection: `resolveClientProjectId`
+ *  short-circuits before its one Postgres read for both cases below, and
+ *  `toText` only logs when it cannot shrink. */
+const deps = {
+  logger: {
+    fatal: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    child: () => deps.logger,
+  },
+} as unknown as ServiceDeps;
 
 const READ_CTX: McpAuthContext = {
   projectId: 'proj-abc',
@@ -56,7 +73,7 @@ describe('resolveDateRange', () => {
 describe('resolveClientProjectId', () => {
   it('returns the context projectId for read clients, ignoring any input', async () => {
     await expect(
-      resolveClientProjectId({
+      resolveClientProjectId(deps, {
         clientType: READ_CTX.clientType,
         clientProjectId: READ_CTX.projectId,
         organizationId: READ_CTX.organizationId,
@@ -64,7 +81,7 @@ describe('resolveClientProjectId', () => {
       })
     ).resolves.toBe('proj-abc');
     await expect(
-      resolveClientProjectId({
+      resolveClientProjectId(deps, {
         clientType: READ_CTX.clientType,
         clientProjectId: READ_CTX.projectId,
         organizationId: READ_CTX.organizationId,
@@ -75,7 +92,7 @@ describe('resolveClientProjectId', () => {
 
   it('throws for root clients when no projectId is provided', async () => {
     await expect(
-      resolveClientProjectId({
+      resolveClientProjectId(deps, {
         clientType: ROOT_CTX.clientType,
         clientProjectId: ROOT_CTX.projectId,
         organizationId: ROOT_CTX.organizationId,
@@ -162,10 +179,10 @@ describe('table', () => {
 
 describe('toText', () => {
   const parse = (data: unknown) =>
-    JSON.parse(toText(data).content[0].text) as Record<string, unknown>;
+    JSON.parse(toText(deps, data).content[0].text) as Record<string, unknown>;
 
   it('serializes compactly — no indentation', () => {
-    const { text } = toText({ a: 1, b: [1, 2] }).content[0];
+    const { text } = toText(deps, { a: 1, b: [1, 2] }).content[0];
     expect(text).toBe('{"a":1,"b":[1,2]}');
   });
 
@@ -175,7 +192,7 @@ describe('toText', () => {
       sessions: i,
     }));
     const oversized = table(rows, { limit: 5000 });
-    const { text } = toText(oversized).content[0];
+    const { text } = toText(deps, oversized).content[0];
     expect(text.length).toBeLessThanOrEqual(MAX_RESPONSE_CHARS);
     const parsed = JSON.parse(text) as { rows: unknown[]; note: string };
     expect(parsed.rows.length).toBeLessThan(5000);

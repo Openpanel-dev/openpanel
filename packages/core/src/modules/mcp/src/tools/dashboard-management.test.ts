@@ -31,68 +31,96 @@ const mockDb = {
   },
 };
 
+const noopLogger = {
+  fatal: () => {
+    // no-op
+  },
+  error: () => {
+    // no-op
+  },
+  warn: () => {
+    // no-op
+  },
+  info: () => {
+    // no-op
+  },
+  debug: () => {
+    // no-op
+  },
+  trace: () => {
+    // no-op
+  },
+  child: () => noopLogger,
+};
+
 const mockGetDashboardById = mock();
 const mockGetProjectById = mock();
 const mockGetId = mock();
 
-// Mocked at the specifier the source imports resolve to, not the
-// '@openpanel/db' barrel — a whole-barrel replacement would drop every other
-// export the barrel carries for any other file sharing this process
-// (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  Prisma: { DbNull: { kind: 'DbNull' } },
-  db: mockDb,
+// M15-003: Postgres arrives on `deps.db` (see TOOLS below), so the only
+// module mocks left are the three sibling functions this file asserts calls
+// against. Each is replaced at the specifier the source imports resolve to —
+// a whole-barrel replacement would drop every other export those modules
+// carry for any other file sharing this process (bun:test only isolates
+// modules per file under `--isolate`; see AGENTS.md) — and each is restored
+// in `afterAll` from a plain-object snapshot taken BEFORE the first
+// `mock.module` call, since restoring via the live `await import(...)`
+// binding is a no-op once mocked.
+const actualDashboardService = await import(
+  '../../../dashboard/dashboard.service'
+);
+const realDashboardService = { ...actualDashboardService };
+mock.module('../../../dashboard/dashboard.service', () => ({
+  ...realDashboardService,
+  getDashboardById: mockGetDashboardById,
 }));
 
-// The dashboard/project/id loaders all resolve through this same
-// @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call, not
-// three, or each later call replaces the whole module and drops the earlier
-// overrides.
-const actualCore = await import('@openpanel/core');
-mock.module('@openpanel/core', () => ({
-  ...actualCore,
-  getDashboardById: mockGetDashboardById,
+const actualProjectService = await import('../../../project/project.service');
+const realProjectService = { ...actualProjectService };
+mock.module('../../../project/project.service', () => ({
+  ...realProjectService,
   getProjectById: mockGetProjectById,
   resolveClientProjectId: mock(
-    ({
-      clientProjectId,
-      inputProjectId,
-    }: {
-      clientProjectId: string | null;
-      inputProjectId?: string;
-    }) => Promise.resolve(clientProjectId ?? inputProjectId)
+    (
+      _deps: unknown,
+      {
+        clientProjectId,
+        inputProjectId,
+      }: {
+        clientProjectId: string | null;
+        inputProjectId?: string;
+      }
+    ) => Promise.resolve(clientProjectId ?? inputProjectId)
   ),
+}));
+
+const actualSlugId = await import('../../../../shared/slug-id');
+const realSlugId = { ...actualSlugId };
+mock.module('../../../../shared/slug-id', () => ({
+  ...realSlugId,
   getId: mockGetId,
 }));
 
 let registerDashboardManagementTools: typeof import('./dashboard-management').registerDashboardManagementTools;
 
 beforeAll(async () => {
-  // `loadCompatDb` (./shared) reaches Postgres through v1-compat.ts's
-  // memoized fallback singleton — a process-lifetime cache once resolved,
-  // so an earlier test file's `bun test` (no `--isolate`) run can have
-  // already resolved it against a DIFFERENT `@openpanel/db/src/prisma-client`
-  // mock (or none at all). Reset it so this file's own mock above is what
-  // gets picked up.
-  const { resetV1CompatServicesForTests } = await import(
-    '../../../../v1-compat'
-  );
-  resetV1CompatServicesForTests();
   ({ registerDashboardManagementTools } = await import(
     './dashboard-management'
   ));
 });
 
-afterAll(async () => {
-  const { resetV1CompatServicesForTests } = await import(
-    '../../../../v1-compat'
+afterAll(() => {
+  mock.module(
+    '../../../dashboard/dashboard.service',
+    () => realDashboardService
   );
-  resetV1CompatServicesForTests();
+  mock.module('../../../project/project.service', () => realProjectService);
+  mock.module('../../../../shared/slug-id', () => realSlugId);
 });
 
+import type { ServiceDeps } from '../../../../services';
 import type { McpAuthContext } from '../auth';
+import type { McpToolDeps } from './shared';
 
 type Handler = (input: any) => Promise<any>;
 
@@ -230,7 +258,13 @@ beforeEach(() => {
 
 function register(context: McpAuthContext = ROOT_CONTEXT) {
   const server = makeServer();
-  registerDashboardManagementTools(server as any, context);
+  const tools: McpToolDeps = {
+    context,
+    dbJsonNull: { kind: 'DbNull' },
+    deps: { db: mockDb, logger: noopLogger } as unknown as ServiceDeps,
+    services: {} as McpToolDeps['services'],
+  };
+  registerDashboardManagementTools(server as any, tools);
   return server;
 }
 
@@ -322,6 +356,7 @@ describe('dashboard management project binding', () => {
     });
 
     expect(mockGetDashboardById).toHaveBeenCalledWith(
+      expect.any(Object),
       'dashboard-1',
       'project-1'
     );

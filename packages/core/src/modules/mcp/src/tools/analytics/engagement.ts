@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getRetentionLastSeenSeries } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getRetentionLastSeenSeries } from '../../../../chart/retention.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -14,7 +14,7 @@ const MAX_DISTRIBUTION_ROWS = 200;
 
 export function registerEngagementTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_user_last_seen_distribution',
@@ -30,9 +30,9 @@ export function registerEngagementTools(
         ),
     },
     async ({ projectId: inputProjectId, includeDistribution }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const raw = await getRetentionLastSeenSeries({ projectId });
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const raw = await getRetentionLastSeenSeries(deps, { projectId });
 
         // Bucket into meaningful segments for easier reading
         let active_0_7 = 0;

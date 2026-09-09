@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getUserFlowCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getUserFlowCore } from '../../../../chart/sankey.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -17,7 +17,7 @@ const MAX_FLOW_NODES = 500;
 
 export function registerUserFlowTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_user_flow',
@@ -72,11 +72,11 @@ export function registerUserFlowTools(
       include,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_FLOW_NODES;
-        const flow = await getUserFlowCore({
+        const flow = await getUserFlowCore(deps, {
           projectId,
           startDate,
           endDate,

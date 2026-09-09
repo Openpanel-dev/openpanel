@@ -1,17 +1,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpAuthContext } from './auth';
 import { registerAllTools } from './tools/index';
+import type { McpToolDeps } from './tools/shared';
 
 const SERVER_NAME = 'OpenPanel';
 const SERVER_VERSION = '1.0.0';
 
 /**
- * Create a fully configured McpServer instance for a given auth context.
+ * Create a fully configured McpServer for one authenticated request.
  *
- * Each authenticated session gets its own server instance with tools
- * pre-bound to the session's project/organization context.
+ * The API owns every connection (ADR-022 R6/R15, Carl's ruling): the server
+ * is bootstrapped from the `deps` `mcp.routes.ts` already holds, and each
+ * tool handler CLOSES OVER them — the SDK's tool-handler signature has no
+ * context parameter, which is a closure problem, not a context problem.
  */
-export function createMcpServer(context: McpAuthContext): McpServer {
+export function createMcpServer(tools: McpToolDeps): McpServer {
   const server = new McpServer(
     {
       name: SERVER_NAME,
@@ -24,7 +26,7 @@ export function createMcpServer(context: McpAuthContext): McpServer {
     }
   );
 
-  registerAllTools(server, context);
+  registerAllTools(server, tools);
 
   return server;
 }

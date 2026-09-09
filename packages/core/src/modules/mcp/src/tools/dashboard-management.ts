@@ -1,13 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { ServiceDeps } from '../../../../services';
 import { getId } from '../../../../shared/slug-id';
-import { getDashboardById, getProjectById } from '../../../../v1-compat';
+import { getDashboardById } from '../../../dashboard/dashboard.service';
+import { getProjectById } from '../../../project/project.service';
 import { zReport } from '../../../report/report.constants';
-import type { McpAuthContext } from '../auth';
 import { dashboardBaseUrl } from './dashboard-links';
 import {
-  loadCompatDb,
-  loadCompatPrisma,
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   withErrorHandling,
@@ -143,7 +143,8 @@ function reportUrl(
 // `dbNull` is `Prisma.DbNull` (an explicit SQL NULL on a nullable Json
 // column), threaded in as `unknown` rather than importing `@openpanel/db`
 // here — same shape notification.service.ts's `isValidPayload` uses for the
-// same sentinel. Callers resolve it via `loadCompatPrisma()` (./shared).
+// same sentinel. It arrives on `McpToolDeps.dbJsonNull`, resolved once by
+// `mcp.service.ts` when it builds the server (ADR-022 R6).
 function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   return {
     name: report.name,
@@ -165,8 +166,12 @@ function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   };
 }
 
-async function requireDashboard(projectId: string, dashboardId: string) {
-  const dashboard = await getDashboardById(dashboardId, projectId);
+async function requireDashboard(
+  deps: ServiceDeps,
+  projectId: string,
+  dashboardId: string
+) {
+  const dashboard = await getDashboardById(deps, dashboardId, projectId);
   if (!dashboard) {
     throw new Error('Dashboard not found');
   }
@@ -174,7 +179,7 @@ async function requireDashboard(projectId: string, dashboardId: string) {
 }
 
 async function requireReport(
-  db: Awaited<ReturnType<typeof loadCompatDb>>,
+  db: ServiceDeps['db'],
   projectId: string,
   reportId: string
 ) {
@@ -264,7 +269,7 @@ function canonicalReportConfig(report: {
 
 export function registerDashboardManagementTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps, dbJsonNull }: McpToolDeps
 ) {
   server.tool(
     'get_dashboard',
@@ -274,10 +279,10 @@ export function registerDashboardManagementTools(
       dashboardId: z.string().describe('The dashboard ID to retrieve'),
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const dashboard = await requireDashboard(projectId, dashboardId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const dashboard = await requireDashboard(deps, projectId, dashboardId);
         const reports = await db.report.findMany({
           where: { dashboardId, projectId },
           include: { layout: true },
@@ -319,10 +324,10 @@ export function registerDashboardManagementTools(
       name: z.string().describe('The dashboard name'),
     },
     async ({ projectId: inputProjectId, name }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const project = await getProjectById(projectId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const project = await getProjectById(deps, projectId);
         if (!project) {
           throw new Error('Project not found');
         }
@@ -357,10 +362,10 @@ export function registerDashboardManagementTools(
       name: z.string().describe('The new dashboard name'),
     },
     async ({ projectId: inputProjectId, dashboardId, name }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        await requireDashboard(projectId, dashboardId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        await requireDashboard(deps, projectId, dashboardId);
         const dashboard = await db.dashboard.update({
           where: { id: dashboardId },
           data: { name },
@@ -388,10 +393,10 @@ export function registerDashboardManagementTools(
         .describe('Delete all reports in the dashboard before deleting it'),
     },
     async ({ projectId: inputProjectId, dashboardId, forceDelete }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const dashboard = await requireDashboard(projectId, dashboardId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const dashboard = await requireDashboard(deps, projectId, dashboardId);
 
         try {
           await db.$transaction(async (transaction) => {
@@ -461,16 +466,15 @@ export function registerDashboardManagementTools(
       report: reportSchema.describe('The saved report configuration'),
     },
     async ({ projectId: inputProjectId, dashboardId, report }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const { DbNull } = await loadCompatPrisma();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const dashboard = await requireDashboard(projectId, dashboardId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const dashboard = await requireDashboard(deps, projectId, dashboardId);
         const created = await db.report.create({
           data: {
             projectId: dashboard.projectId,
             dashboardId,
-            ...reportData(report, DbNull),
+            ...reportData(report, dbJsonNull),
           },
         });
 
@@ -489,14 +493,13 @@ export function registerDashboardManagementTools(
       report: reportSchema.describe('The complete saved report configuration'),
     },
     async ({ projectId: inputProjectId, reportId, report }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const { DbNull } = await loadCompatPrisma();
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         await requireReport(db, projectId, reportId);
         const updated = await db.report.update({
           where: { id: reportId },
-          data: reportData(report, DbNull),
+          data: reportData(report, dbJsonNull),
         });
 
         return {
@@ -513,9 +516,9 @@ export function registerDashboardManagementTools(
       reportId: z.string().uuid().describe('The report ID to delete'),
     },
     async ({ projectId: inputProjectId, reportId }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         await requireReport(db, projectId, reportId);
         const deleted = await db.report.delete({ where: { id: reportId } });
 
@@ -534,10 +537,9 @@ export function registerDashboardManagementTools(
       reportId: z.string().uuid().describe('The report ID to duplicate'),
     },
     async ({ projectId: inputProjectId, reportId }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const { DbNull } = await loadCompatPrisma();
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const report = await requireReport(db, projectId, reportId);
         const duplicate = await db.report.create({
           data: {
@@ -555,7 +557,7 @@ export function registerDashboardManagementTools(
             previous: report.previous,
             unit: report.unit,
             metric: report.metric,
-            options: report.options ?? DbNull,
+            options: report.options ?? dbJsonNull,
             visibleSeries: report.visibleSeries,
             startDate: report.startDate,
             endDate: report.endDate,
@@ -580,9 +582,9 @@ export function registerDashboardManagementTools(
       layout: layoutSchema.describe('The report grid layout'),
     },
     async ({ projectId: inputProjectId, reportId, layout }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         await requireReport(db, projectId, reportId);
         return db.reportLayout.upsert({
           where: { reportId },
@@ -602,10 +604,10 @@ export function registerDashboardManagementTools(
         .describe('The dashboard whose layouts should reset'),
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
-      withErrorHandling(async () => {
-        const db = await loadCompatDb();
-        const projectId = await resolveProjectId(context, inputProjectId);
-        await requireDashboard(projectId, dashboardId);
+      withErrorHandling(deps, async () => {
+        const db = deps.db;
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        await requireDashboard(deps, projectId, dashboardId);
         const result = await db.reportLayout.deleteMany({
           where: {
             report: {

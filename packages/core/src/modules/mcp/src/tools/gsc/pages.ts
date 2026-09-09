@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getGscPageDetails, getGscPages } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getGscPageDetails, getGscPages } from '../../../../gsc/gsc.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -25,7 +25,7 @@ const GSC_ADDITIVE = ['clicks', 'impressions'] as const;
 
 export function registerGscPageTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'gsc_get_top_pages',
@@ -36,13 +36,14 @@ export function registerGscPageTools(
       limit: zLimit(DEFAULT_GSC_LIMIT, MAX_GSC_LIMIT),
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_GSC_LIMIT;
         // Fetch the full ranked set (capped) so the tail can be rolled up
         // rather than silently cut — GSC totals are the whole point here.
         const pages = await getGscPages(
+          deps,
           projectId,
           startDate,
           endDate,
@@ -79,10 +80,11 @@ export function registerGscPageTools(
       page,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const details = await getGscPageDetails(
+          deps,
           projectId,
           page,
           startDate,

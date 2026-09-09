@@ -1,9 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getSettingsForProject } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getSettingsForProject } from '../../../../organization/organization.service';
 import {
-  loadCompatPagesService,
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -30,7 +29,7 @@ const SEO_THRESHOLDS = {
 
 export function registerPagePerformanceTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps, services }: McpToolDeps
 ) {
   server.tool(
     'get_page_performance',
@@ -63,18 +62,11 @@ export function registerPagePerformanceTools(
       sortOrder,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const { timezone } = await getSettingsForProject(projectId);
-        // Resolved per call, not once at module scope: a module-scope binding
-        // would freeze whatever was live the first time this file was imported
-        // by *any* test in the process (bun:test shares one module registry
-        // without `--isolate` — see AGENTS.md), permanently defeating this
-        // file's own mocks whenever the integration suite imports it first.
-        const pagesService = await loadCompatPagesService();
-
-        const pages = await pagesService.getTopPages({
+        const { timezone } = await getSettingsForProject(deps, projectId);
+        const pages = await services.pages.getTopPages({
           projectId,
           startDate,
           endDate,

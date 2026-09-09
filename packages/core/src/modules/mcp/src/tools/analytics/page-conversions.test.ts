@@ -1,29 +1,74 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
+import type { ServiceDeps } from '../../../../../services';
+import type { McpToolDeps } from '../shared';
 
 const mockGetPageConversionsCore = mock();
 
-// Mocked at the specifier the source imports resolve to, not the
-// '@openpanel/db' barrel — a whole-barrel replacement would drop every other
-// export the barrel carries for any other file sharing this process
-// (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-// The pages/project loaders both resolve through this same specifier now
-// (M9-CLEANUP-001) — one mock.module call, not two, or the second replaces
-// the whole module and drops the first override.
-const actualCore = await import('@openpanel/core');
-mock.module('@openpanel/core', () => ({
-  ...actualCore,
+// Mocked at the specifier the source imports resolve to — a whole-barrel
+// replacement would drop every other export those modules carry for any
+// other file sharing this process (bun:test only isolates modules per file
+// under `--isolate`; see AGENTS.md). Restored in `afterAll` from a
+// plain-object snapshot taken BEFORE the first `mock.module` call: restoring
+// via the live `await import(...)` binding is a no-op once mocked.
+const actualPagesService = await import('../../../../overview/pages.service');
+const realPagesService = { ...actualPagesService };
+mock.module('../../../../overview/pages.service', () => ({
+  ...realPagesService,
   getPageConversionsCore: mockGetPageConversionsCore,
+}));
+
+const actualProjectService = await import(
+  '../../../../project/project.service'
+);
+const realProjectService = { ...actualProjectService };
+mock.module('../../../../project/project.service', () => ({
+  ...realProjectService,
   resolveClientProjectId: mock(
-    ({ clientProjectId }: { clientProjectId: string }) =>
+    (_deps: unknown, { clientProjectId }: { clientProjectId: string }) =>
       Promise.resolve(clientProjectId)
   ),
 }));
+
+afterAll(() => {
+  mock.module('../../../../overview/pages.service', () => realPagesService);
+  mock.module('../../../../project/project.service', () => realProjectService);
+});
 
 let registerPageConversionTools: typeof import('./page-conversions').registerPageConversionTools;
 
 beforeAll(async () => {
   ({ registerPageConversionTools } = await import('./page-conversions'));
 });
+
+const noopLogger = {
+  fatal: () => {
+    // no-op
+  },
+  error: () => {
+    // no-op
+  },
+  warn: () => {
+    // no-op
+  },
+  info: () => {
+    // no-op
+  },
+  debug: () => {
+    // no-op
+  },
+  trace: () => {
+    // no-op
+  },
+  child: () => noopLogger,
+};
 
 function makeServer() {
   let handler: ((input: unknown) => Promise<unknown>) | null = null;
@@ -49,6 +94,14 @@ const READ_CTX = {
   projectId: 'proj-1',
   organizationId: 'org-1',
   clientType: 'read' as const,
+};
+
+/** What `createMcpServer` hands every tool at runtime. */
+const TOOLS: McpToolDeps = {
+  context: READ_CTX,
+  dbJsonNull: null,
+  deps: { logger: noopLogger } as unknown as ServiceDeps,
+  services: {} as McpToolDeps['services'],
 };
 
 /** Re-hydrate the columnar table the tool returns into row objects. */
@@ -78,7 +131,7 @@ describe('get_page_conversions — output structure', () => {
     mockGetPageConversionsCore.mockResolvedValue([makePage()]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
@@ -98,7 +151,7 @@ describe('get_page_conversions — output structure', () => {
     mockGetPageConversionsCore.mockResolvedValue([makePage()]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'purchase',
@@ -114,7 +167,7 @@ describe('get_page_conversions — output structure', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
@@ -131,13 +184,14 @@ describe('get_page_conversions — arguments forwarding', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'trial_started',
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({ conversionEvent: 'trial_started' })
     );
   });
@@ -146,13 +200,14 @@ describe('get_page_conversions — arguments forwarding', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({ windowHours: 24 })
     );
   });
@@ -161,7 +216,7 @@ describe('get_page_conversions — arguments forwarding', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
@@ -169,6 +224,7 @@ describe('get_page_conversions — arguments forwarding', () => {
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({ windowHours: 168 })
     );
     const result = (await server.invoke({
@@ -184,13 +240,14 @@ describe('get_page_conversions — arguments forwarding', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({ limit: 26 })
     );
   });
@@ -199,13 +256,14 @@ describe('get_page_conversions — arguments forwarding', () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({ projectId: 'proj-1' })
     );
   });
@@ -219,7 +277,7 @@ describe('get_page_conversions — total_pages count', () => {
     mockGetPageConversionsCore.mockResolvedValue(pages);
 
     const server = makeServer() as any;
-    registerPageConversionTools(server, READ_CTX);
+    registerPageConversionTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       conversionEvent: 'sign_up',

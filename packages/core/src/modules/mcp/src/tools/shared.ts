@@ -1,60 +1,31 @@
 import { z } from 'zod';
-import { createLogger } from '../../../../clients/logger';
-import type { ServiceDeps } from '../../../../services';
-import {
-  compatDb,
-  compatPrisma,
-  compatServiceDeps,
-  pagesService,
-  resolveClientProjectId,
-} from '../../../../v1-compat';
+import type { ServiceDeps, Services } from '../../../../services';
+import { resolveClientProjectId } from '../../../project/project.service';
 import type { McpAuthContext } from '../auth';
 
-const logger = createLogger({ name: 'mcp' });
-
 /**
- * MCP's tool handlers have a fixed signature from `@modelcontextprotocol/sdk`
- * — there is no `Ctx`/`ServiceDeps` parameter to thread through, so the few
- * tools that still touch Postgres/ClickHouse directly (`projects.ts`,
- * `dashboard-management.ts`, `analytics/property-values.ts`,
- * `analytics/page-performance.ts`, `analytics/reports.ts`) reach them through
- * the v1-compat singleton instead of `@openpanel/db` (M10-004, see
- * v1-compat.ts's header) — the same pattern every other bare, no-`Ctx`
- * caller in this wave uses.
+ * What every MCP tool handler closes over.
  *
- * M12-006 made the seam a static import (ADR-007: no lazy loaders). It always
- * could be: this module already value-imported `resolveClientProjectId` from
- * the same file, so the dynamic form deferred nothing and only hid the edge.
- * The v1-compat seam itself is still lazy where it matters — it constructs no
- * database until a caller asks for one.
+ * `@modelcontextprotocol/sdk`'s tool-handler signature has no context
+ * parameter, so the API's connections cannot be threaded through it as an
+ * argument. They are captured in a CLOSURE instead, when the per-request
+ * server is built from the `deps` the route already holds (ADR-022 R6/R15,
+ * Carl's ruling: `createMcpServer(deps)`).
  */
-export function loadCompatDb() {
-  return compatDb();
-}
-
-/** `dashboard-management.ts`'s only need from `@openpanel/db`: the
- *  `Prisma.DbNull` sentinel for an explicit SQL NULL on a nullable Json
- *  column, not a client — same seam as `loadCompatDb`. */
-export function loadCompatPrisma() {
-  return compatPrisma();
-}
-
-/** `analytics/property-values.ts` reads ClickHouse through core's own
- *  `chQuery` (shared/ch-query.ts), which wants the scope's client AND its
- *  logger rather than a bare client — same seam, widened to what a read
- *  needs. */
-export function loadCompatChScope(): Promise<
-  Pick<ServiceDeps, 'ch' | 'logger'>
-> {
-  return compatServiceDeps();
-}
-
-/** `analytics/page-performance.ts` used to construct its own `PagesService`
- *  per call to dodge a module-singleton mocking hazard; since M10-005 there is
- *  no singleton and no class, so it reaches the bare, v1-compat-wrapped pages
- *  service instead. */
-export function loadCompatPagesService() {
-  return Promise.resolve(pagesService);
+export interface McpToolDeps {
+  /** The API's connections. Postgres and ClickHouse are reached from here. */
+  deps: ServiceDeps;
+  /** The live service graph, for a sibling module's behaviour. */
+  services: Services;
+  /** The authenticated MCP caller. */
+  context: McpAuthContext;
+  /**
+   * `Prisma.DbNull` — the explicit-SQL-NULL sentinel for a nullable Json
+   * column. A frozen constant, not a client: `ServiceDeps` has no field for
+   * it and `core-uses-ctx-not-db-internals` forbids importing it here, so
+   * `mcp.service.ts` resolves it once and hands it in with the rest.
+   */
+  dbJsonNull: unknown;
 }
 
 /**
@@ -62,10 +33,11 @@ export function loadCompatPagesService() {
  * Thin adapter so tool files don't repeat the full argument object every call.
  */
 export function resolveProjectId(
+  deps: ServiceDeps,
   context: McpAuthContext,
   inputProjectId: string | undefined
 ): Promise<string> {
-  return resolveClientProjectId({
+  return resolveClientProjectId(deps, {
     clientType: context.clientType,
     clientProjectId: context.projectId,
     organizationId: context.organizationId,
@@ -330,7 +302,10 @@ function shrinkLargestTable(payload: unknown): boolean {
  * unexpectedly large must degrade to a smaller answer rather than flood the
  * caller's context.
  */
-export function toText(data: unknown): {
+export function toText(
+  deps: ServiceDeps,
+  data: unknown
+): {
   content: [{ type: 'text'; text: string }];
 } {
   let text = JSON.stringify(data);
@@ -340,7 +315,7 @@ export function toText(data: unknown): {
   }
 
   if (text.length > MAX_RESPONSE_CHARS) {
-    logger.warn(
+    deps.logger.warn(
       { chars: text.length },
       'MCP response exceeded size limit with no shrinkable table'
     );
@@ -359,14 +334,15 @@ export function toText(data: unknown): {
  * Wrap a tool handler to catch errors and return them as MCP error content.
  */
 export async function withErrorHandling<T>(
+  deps: ServiceDeps,
   fn: () => Promise<T>
 ): Promise<{ content: [{ type: 'text'; text: string }]; isError?: boolean }> {
   try {
     const result = await fn();
-    return toText(result);
+    return toText(deps, result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error({ err }, `MCP tool error: ${message}`);
+    deps.logger.error({ err }, `MCP tool error: ${message}`);
     return {
       content: [{ type: 'text' as const, text: `Error: ${message}` }],
       isError: true,

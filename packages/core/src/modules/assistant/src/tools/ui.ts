@@ -1,4 +1,5 @@
 import { type AgentToolDefinition, defineTool } from '@better-agent/core';
+import type { ServiceDeps } from '../../../../services';
 import {
   applyFiltersSchema,
   setEventNamesFilterSchema,
@@ -13,6 +14,10 @@ import {
  * by updating the URL params the dashboard's hooks read. Zod schemas
  * are imported from `assistant.constants.ts` so the frontend handler
  * types stay in sync with what the LLM calls.
+ *
+ * Each is exported as a `(deps) => AgentToolDefinition` for uniformity with
+ * every other tool bucket (`./index.ts`'s `ToolFactory`); these three touch
+ * nothing, so `_deps` is genuinely unused here.
  */
 
 // Cast to `any` before `.client()` for the same reason `chatTool`
@@ -29,7 +34,7 @@ const applyFiltersContract: any = defineTool({
   schema: applyFiltersSchema,
 });
 
-export const applyFilters: AgentToolDefinition =
+export const applyFilters = (_deps: ServiceDeps): AgentToolDefinition =>
   applyFiltersContract.client() as AgentToolDefinition;
 
 // biome-ignore lint/suspicious/noExplicitAny: see comment on applyFiltersContract
@@ -40,7 +45,7 @@ const setPropertyFiltersContract: any = defineTool({
   schema: setPropertyFiltersSchema,
 });
 
-export const setPropertyFilters: AgentToolDefinition =
+export const setPropertyFilters = (_deps: ServiceDeps): AgentToolDefinition =>
   setPropertyFiltersContract.client() as AgentToolDefinition;
 
 // biome-ignore lint/suspicious/noExplicitAny: see comment on applyFiltersContract
@@ -51,5 +56,5 @@ const setEventNamesFilterContract: any = defineTool({
   schema: setEventNamesFilterSchema,
 });
 
-export const setEventNamesFilter: AgentToolDefinition =
+export const setEventNamesFilter = (_deps: ServiceDeps): AgentToolDefinition =>
   setEventNamesFilterContract.client() as AgentToolDefinition;

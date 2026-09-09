@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getGscOverview } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getGscOverview } from '../../../../gsc/gsc.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -16,7 +16,7 @@ const MAX_SERIES_POINTS = 180;
 
 export function registerGscOverviewTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'gsc_get_overview',
@@ -44,10 +44,11 @@ export function registerGscOverviewTools(
       interval,
       includeSeries,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const data = await getGscOverview(
+          deps,
           projectId,
           startDate,
           endDate,

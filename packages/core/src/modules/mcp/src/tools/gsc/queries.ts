@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getGscQueries, getGscQueryDetails } from '../../../../../v1-compat';
 import type { GscQueryOpportunity } from '../../../../gsc/gsc.service';
-import type { McpAuthContext } from '../../auth';
+import { getGscQueries, getGscQueryDetails } from '../../../../gsc/gsc.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -94,7 +94,7 @@ function computeOpportunities(
 
 export function registerGscQueryTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'gsc_get_top_queries',
@@ -105,12 +105,13 @@ export function registerGscQueryTools(
       limit: zLimit(DEFAULT_GSC_LIMIT, MAX_GSC_LIMIT),
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         // Fetch the full ranked set (capped) so the tail can be rolled up
         // rather than silently cut.
         const queries = await getGscQueries(
+          deps,
           projectId,
           startDate,
           endDate,
@@ -149,11 +150,12 @@ export function registerGscQueryTools(
       minImpressions,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_OPPORTUNITY_LIMIT;
         const queries = await getGscQueries(
+          deps,
           projectId,
           startDate,
           endDate,
@@ -206,10 +208,11 @@ export function registerGscQueryTools(
       query,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const details = await getGscQueryDetails(
+          deps,
           projectId,
           query,
           startDate,

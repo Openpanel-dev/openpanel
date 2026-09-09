@@ -1,29 +1,74 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
+import type { ServiceDeps } from '../../../../../services';
+import type { McpToolDeps } from '../shared';
 
 const mockGetRetentionLastSeenSeries = mock();
 
-// Mocked at the specifier the source imports resolve to, not the
-// '@openpanel/db' barrel — a whole-barrel replacement would drop every other
-// export the barrel carries for any other file sharing this process
-// (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-// The retention/project loaders both resolve through this same specifier now
-// (M9-CLEANUP-001) — one mock.module call, not two, or the second replaces
-// the whole module and drops the first override.
-const actualCore = await import('@openpanel/core');
-mock.module('@openpanel/core', () => ({
-  ...actualCore,
+// Mocked at the specifier the source imports resolve to — a whole-barrel
+// replacement would drop every other export those modules carry for any
+// other file sharing this process (bun:test only isolates modules per file
+// under `--isolate`; see AGENTS.md). Restored in `afterAll` from a
+// plain-object snapshot taken BEFORE the first `mock.module` call: restoring
+// via the live `await import(...)` binding is a no-op once mocked.
+const actualRetention = await import('../../../../chart/retention.service');
+const realRetention = { ...actualRetention };
+mock.module('../../../../chart/retention.service', () => ({
+  ...realRetention,
   getRetentionLastSeenSeries: mockGetRetentionLastSeenSeries,
+}));
+
+const actualProjectService = await import(
+  '../../../../project/project.service'
+);
+const realProjectService = { ...actualProjectService };
+mock.module('../../../../project/project.service', () => ({
+  ...realProjectService,
   resolveClientProjectId: mock(
-    ({ clientProjectId }: { clientProjectId: string }) =>
+    (_deps: unknown, { clientProjectId }: { clientProjectId: string }) =>
       Promise.resolve(clientProjectId)
   ),
 }));
+
+afterAll(() => {
+  mock.module('../../../../chart/retention.service', () => realRetention);
+  mock.module('../../../../project/project.service', () => realProjectService);
+});
 
 let registerEngagementTools: typeof import('./engagement').registerEngagementTools;
 
 beforeAll(async () => {
   ({ registerEngagementTools } = await import('./engagement'));
 });
+
+const noopLogger = {
+  fatal: () => {
+    // no-op
+  },
+  error: () => {
+    // no-op
+  },
+  warn: () => {
+    // no-op
+  },
+  info: () => {
+    // no-op
+  },
+  debug: () => {
+    // no-op
+  },
+  trace: () => {
+    // no-op
+  },
+  child: () => noopLogger,
+};
 
 // Helper: directly invoke the bucketing logic by importing it through a minimal mock server
 // We test the bucketing by calling the tool handler directly via a test double McpServer.
@@ -53,6 +98,14 @@ const READ_CTX = {
   clientType: 'read' as const,
 };
 
+/** What `createMcpServer` hands every tool at runtime. */
+const TOOLS: McpToolDeps = {
+  context: READ_CTX,
+  dbJsonNull: null,
+  deps: { logger: noopLogger } as unknown as ServiceDeps,
+  services: {} as McpToolDeps['services'],
+};
+
 beforeEach(() => {
   mockGetRetentionLastSeenSeries.mockReset();
 });
@@ -71,7 +124,7 @@ describe('get_user_last_seen_distribution — bucketing', () => {
     ]);
 
     const server = makeServer() as any;
-    registerEngagementTools(server, READ_CTX);
+    registerEngagementTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -89,7 +142,7 @@ describe('get_user_last_seen_distribution — bucketing', () => {
     mockGetRetentionLastSeenSeries.mockResolvedValue([]);
 
     const server = makeServer() as any;
-    registerEngagementTools(server, READ_CTX);
+    registerEngagementTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -104,7 +157,7 @@ describe('get_user_last_seen_distribution — bucketing', () => {
     mockGetRetentionLastSeenSeries.mockResolvedValue([{ days: 1, users: 5 }]);
 
     const server = makeServer() as any;
-    registerEngagementTools(server, READ_CTX);
+    registerEngagementTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
     })) as any;
@@ -123,7 +176,7 @@ describe('get_user_last_seen_distribution — bucketing', () => {
     ]);
 
     const server = makeServer() as any;
-    registerEngagementTools(server, READ_CTX);
+    registerEngagementTools(server, TOOLS);
     const result = (await server.invoke({
       projectId: READ_CTX.projectId,
       includeDistribution: true,

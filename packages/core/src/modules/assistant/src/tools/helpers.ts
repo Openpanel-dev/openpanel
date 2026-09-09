@@ -19,18 +19,6 @@ import { chatRunContext } from '../run-context';
 const TOOL_TIMEOUT_MS = 30_000;
 
 /**
- * Chat tool handlers have a fixed signature from `@better-agent/core` — no
- * `Ctx`/`ServiceDeps` parameter to thread through, so tools that touch
- * Postgres directly (`references.ts`, `insights.ts`) reach it through the
- * v1-compat singleton instead of `@openpanel/db` (M10-004, see
- * v1-compat.ts's header) — the same pattern every other bare, no-`Ctx`
- * caller in this wave uses.
- */
-export async function loadCompatDb() {
-  return (await import('../../../../v1-compat')).compatDb();
-}
-
-/**
  * Thin wrapper around `defineTool().server()` that bakes in our typed
  * agent context and enforces a time ceiling. Three things this gives
  * us over the raw API:

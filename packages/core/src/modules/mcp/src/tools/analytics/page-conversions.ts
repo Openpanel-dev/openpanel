@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getPageConversionsCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getPageConversionsCore } from '../../../../overview/pages.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -17,7 +17,7 @@ const MAX_CONVERSION_LIMIT = 500;
 
 export function registerPageConversionTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_page_conversions',
@@ -49,11 +49,11 @@ export function registerPageConversionTools(
       windowHours,
       limit,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const take = limit ?? DEFAULT_CONVERSION_LIMIT;
-        const pages = await getPageConversionsCore({
+        const pages = await getPageConversionsCore(deps, {
           projectId,
           startDate,
           endDate,

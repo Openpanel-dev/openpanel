@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getAnalyticsOverviewCore } from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+import { getAnalyticsOverviewCore } from '../../../../overview/overview.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -86,7 +86,7 @@ function fitInterval(
 
 export function registerOverviewTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_analytics_overview',
@@ -114,12 +114,12 @@ export function registerOverviewTools(
       interval,
       includeSeries,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const fitted = fitInterval(interval ?? 'day', startDate, endDate);
 
-        const result = await getAnalyticsOverviewCore({
+        const result = await getAnalyticsOverviewCore(deps, {
           projectId,
           startDate,
           endDate,

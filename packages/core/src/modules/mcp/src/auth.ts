@@ -1,20 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getCache } from '@openpanel/redis';
-import { createLogger } from '../../../clients/logger';
+import type { ServiceDeps, Services } from '../../../services';
 import { verifyPassword } from '../../../shared/crypto';
-
-const logger = createLogger({ name: 'mcp:auth' });
-
-// GENUINE CYCLE, kept lazy: `mcp.service.ts` statically imports this file
-// (`extractToken` must stay synchronous — its own caller doesn't await it),
-// and v1-compat.ts imports services.ts, which registers `createMcpService`.
-// services.ts -> mcp.service.ts -> this file -> v1-compat.ts -> services.ts;
-// the dynamic import is what keeps it a cycle ESM can evaluate. M10-009: the
-// hop goes to the seam directly rather than through this package's own barrel
-// (`core-no-self-barrel`) — same cycle, one module shorter.
-function loadClientService() {
-  return import('../../../v1-compat');
-}
 
 export interface McpAuthContext {
   /**
@@ -44,8 +31,11 @@ export class McpAuthError extends Error {
  * - root clients get null projectId + organizationId (multi-project access)
  */
 export async function authenticateToken(
+  deps: ServiceDeps,
+  services: Services,
   token: string | undefined
 ): Promise<McpAuthContext> {
+  const logger = deps.logger;
   if (!token) {
     throw new McpAuthError('Missing authentication token');
   }
@@ -89,8 +79,7 @@ export async function authenticateToken(
     throw new McpAuthError('Client secret is required');
   }
 
-  const { getClientByIdCached } = await loadClientService();
-  const client = await getClientByIdCached(clientId);
+  const client = await services.client.getClientByIdCached(clientId);
   if (!client) {
     logger.warn({ clientId }, 'MCP auth: client not found');
     throw new McpAuthError('Invalid credentials');

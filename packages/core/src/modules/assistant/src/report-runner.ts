@@ -1,14 +1,9 @@
 // Ported from packages/mcp/src/tools/analytics/reports.ts's `runReport` /
 // `runReportFromConfig` (M5-005).
 //
-// V1's apps/api/src/agents/tools/{base,report}.ts called these two functions
-// straight out of `@openpanel/mcp` — a working cross-package reuse, but one
-// core cannot inherit: `@openpanel/mcp` already depends on `@openpanel/core`
-// (its auth + session-manager modules), so core importing `@openpanel/mcp`
-// back would be a real package cycle (the same shape cohort.service.ts's
-// header documents for the now-deleted `@openpanel/queue`). ADR-007 also
-// explicitly defers unifying MCP's tool definitions with assistant's, so
-// reaching into mcp is not the fix either.
+// ADR-007 explicitly defers unifying MCP's tool definitions with assistant's,
+// so `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
+// dispatch — reaching into another module's tool tree is not the fix.
 //
 // The result is a second copy of this dispatch logic, which is exactly the
 // "four independent wrapper layers over the same 34 *Core functions"
@@ -17,14 +12,12 @@
 // @openpanel/db primitives and must be kept in sync by hand until that debt
 // is paid down.
 
+import type { ServiceDeps } from '../../../services';
 import { getChartStartEndDate } from '../../../shared/date';
-import {
-  AggregateChartEngine,
-  ChartEngine,
-  getFunnel,
-  getReportById,
-  getSettingsForProject,
-} from '../../../v1-compat';
+import { executeAggregateChart, executeChart } from '../../chart/chart.service';
+import { getFunnel } from '../../chart/funnel.service';
+import { getSettingsForProject } from '../../organization/organization.service';
+import { getReportById } from '../../report/report.service';
 
 function reportUrl(
   organizationId: string,
@@ -42,17 +35,20 @@ function reportUrl(
 /**
  * Execute a saved report by ID. Dispatches on chart type:
  *  - funnel  → getFunnel
- *  - metric  → AggregateChartEngine.execute
- *  - others  → ChartEngine.execute
+ *  - metric  → executeAggregateChart
+ *  - others  → executeChart
  *
  * Deliberately returns the raw engine output — the chat renderer needs the
  * full chart, unlike MCP's copy which reshapes it for LLM consumption.
  */
-export async function runReport(input: {
-  organizationId: string;
-  projectId: string;
-  reportId: string;
-}): Promise<
+export async function runReport(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    reportId: string;
+  }
+): Promise<
   | { error: string; reportId: string }
   | {
       id: string;
@@ -66,7 +62,7 @@ export async function runReport(input: {
       data: unknown;
     }
 > {
-  const report = await getReportById(input.reportId);
+  const report = await getReportById(deps, input.reportId);
 
   if (!report) {
     return { error: 'Report not found', reportId: input.reportId };
@@ -79,7 +75,7 @@ export async function runReport(input: {
     };
   }
 
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 
@@ -99,12 +95,12 @@ export async function runReport(input: {
   };
 
   if (report.chartType === 'funnel') {
-    return { ...meta, data: await getFunnel(chartInput) };
+    return { ...meta, data: await getFunnel(deps, chartInput) };
   }
   if (report.chartType === 'metric') {
-    return { ...meta, data: await AggregateChartEngine.execute(chartInput) };
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
   }
-  return { ...meta, data: await ChartEngine.execute(chartInput) };
+  return { ...meta, data: await executeChart(deps, chartInput) };
 }
 
 /**
@@ -112,18 +108,21 @@ export async function runReport(input: {
  * directly). Used by the `generate_report` / `preview_report_with_changes`
  * chat tools.
  */
-export async function runReportFromConfig(input: {
-  organizationId: string;
-  projectId: string;
-  /** Full zReportInput shape, with required startDate/endDate */
-  config: {
-    chartType: string;
-    interval: string;
-    startDate: string;
-    endDate: string;
-    [key: string]: unknown;
-  };
-}): Promise<{
+export async function runReportFromConfig(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    /** Full zReportInput shape, with required startDate/endDate */
+    config: {
+      chartType: string;
+      interval: string;
+      startDate: string;
+      endDate: string;
+      [key: string]: unknown;
+    };
+  }
+): Promise<{
   chartType: string;
   interval: string;
   startDate: string;
@@ -131,12 +130,12 @@ export async function runReportFromConfig(input: {
   report: typeof input.config & { projectId: string };
   data: unknown;
 }> {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const chartInput = {
     ...input.config,
     projectId: input.projectId,
     timezone,
-  } as unknown as Parameters<typeof ChartEngine.execute>[0];
+  } as unknown as Parameters<typeof executeChart>[1];
 
   const meta = {
     chartType: input.config.chartType,
@@ -149,11 +148,14 @@ export async function runReportFromConfig(input: {
   if (input.config.chartType === 'funnel') {
     return {
       ...meta,
-      data: await getFunnel(chartInput as Parameters<typeof getFunnel>[0]),
+      data: await getFunnel(
+        deps,
+        chartInput as Parameters<typeof getFunnel>[1]
+      ),
     };
   }
   if (input.config.chartType === 'metric') {
-    return { ...meta, data: await AggregateChartEngine.execute(chartInput) };
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
   }
-  return { ...meta, data: await ChartEngine.execute(chartInput) };
+  return { ...meta, data: await executeChart(deps, chartInput) };
 }

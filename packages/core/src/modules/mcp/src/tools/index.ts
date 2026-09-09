@@ -1,5 +1,4 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpAuthContext } from '../auth';
 import { registerActiveUserTools } from './analytics/active-users';
 import { registerEngagementTools } from './analytics/engagement';
 import { registerEventNameTools } from './analytics/event-names';
@@ -25,49 +24,47 @@ import { registerGscOverviewTools } from './gsc/overview';
 import { registerGscPageTools } from './gsc/pages';
 import { registerGscQueryTools } from './gsc/queries';
 import { registerProjectTools } from './projects';
+import type { McpToolDeps } from './shared';
 
-export function registerAllTools(
-  server: McpServer,
-  context: McpAuthContext
-): void {
+export function registerAllTools(server: McpServer, tools: McpToolDeps): void {
   // Project access — always call first to discover available projects
-  registerProjectTools(server, context);
-  registerDashboardLinkTools(server, context);
-  registerDashboardManagementTools(server, context);
-  registerReportTools(server, context);
+  registerProjectTools(server, tools);
+  registerDashboardLinkTools(server, tools);
+  registerDashboardManagementTools(server, tools);
+  registerReportTools(server, tools);
 
   // Analytics — discovery (call these first to understand the data)
-  registerEventNameTools(server, context);
-  registerPropertyValueTools(server, context);
+  registerEventNameTools(server, tools);
+  registerPropertyValueTools(server, tools);
 
   // Analytics — event data
-  registerEventTools(server, context);
-  registerSessionTools(server, context);
+  registerEventTools(server, tools);
+  registerSessionTools(server, tools);
 
   // Analytics — profiles
-  registerProfileTools(server, context);
-  registerProfileMetricTools(server, context);
+  registerProfileTools(server, tools);
+  registerProfileMetricTools(server, tools);
 
   // Analytics — groups (B2B)
-  registerGroupTools(server, context);
+  registerGroupTools(server, tools);
 
   // Analytics — aggregated metrics
-  registerOverviewTools(server, context);
-  registerActiveUserTools(server, context);
-  registerPageTools(server, context);
-  registerPagePerformanceTools(server, context);
-  registerPageConversionTools(server, context);
-  registerTrafficTools(server, context);
+  registerOverviewTools(server, tools);
+  registerActiveUserTools(server, tools);
+  registerPageTools(server, tools);
+  registerPagePerformanceTools(server, tools);
+  registerPageConversionTools(server, tools);
+  registerTrafficTools(server, tools);
 
   // Analytics — user behavior
-  registerFunnelTools(server, context);
-  registerRetentionTools(server, context);
-  registerEngagementTools(server, context);
-  registerUserFlowTools(server, context);
+  registerFunnelTools(server, tools);
+  registerRetentionTools(server, tools);
+  registerEngagementTools(server, tools);
+  registerUserFlowTools(server, tools);
 
   // Google Search Console
-  registerGscOverviewTools(server, context);
-  registerGscPageTools(server, context);
-  registerGscQueryTools(server, context);
-  registerGscCannibalizationTools(server, context);
+  registerGscOverviewTools(server, tools);
+  registerGscPageTools(server, tools);
+  registerGscQueryTools(server, tools);
+  registerGscCannibalizationTools(server, tools);
 }

@@ -205,28 +205,19 @@ export {
 // somewhere other than a module, which is the thing §18 forbids.
 export { registerDefaultMetrics } from './metrics';
 // Moved from apps/api/src/agents/* + packages/trpc/src/agents/filter-command.ts
-// (M5-005) — apps/api's `/ai/agents/*` Fastify wrapper and packages/trpc's
-// overview router call these. M10-004: `assistant.service.ts` keeps all of
-// `./src/app`/`./src/run-context`/`./src/filter-command` behind its OWN
-// lazy loaders now (see that file's header) — needed so `createAssistantService`
-// can be registered in services.ts without constructing the whole Better
-// Agent app at process boot — which is what makes a plain static re-export
-// safe here too. `getChatApp`/`getChatRunContext`/`runFilterCommand` are
-// one-time-per-process values, so callers resolve them once (apps/api's
-// Fastify wrapper does so inside its own already-async route registration)
-// and keep the reference.
+// (M5-005). M15-003: the chat app, the run context and the filter command all
+// take the API's `deps` now, so the barrel carries the factory and the types
+// only — `assistant.routes.ts` and `overview.rpc.ts` reach them through
+// `ctx.services.assistant`. `ChatApp` is the one type past `AppRouter` that
+// crosses into apps/start (`src/agents/client.ts`); it stays a TYPE, so no
+// value of this module reaches a browser bundle.
 export type {
   ChatApp,
   ChatRunContext,
   FilterCommandResult,
   RunFilterCommandInput,
 } from './modules/assistant/assistant.service';
-export {
-  createAssistantService,
-  getChatApp,
-  getChatRunContext,
-  runFilterCommand,
-} from './modules/assistant/assistant.service';
+export { createAssistantService } from './modules/assistant/assistant.service';
 // Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks call
 // these directly; V1's now-deleted @openpanel/trpc auth/share/user/gsc
 // routers did too, the same way they reached the other dissolved leaf
@@ -497,6 +488,141 @@ export type {
   GscSite,
 } from './modules/gsc/gsc.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
+export { isShuttingDown, setShuttingDown } from './modules/health/src/shutdown';
+// Dissolved from @openpanel/db's services/import.service.ts +
+// apps/worker's job file + apps/api's /import controller (M5-004) —
+// apps/worker's import job file and apps/api's import controller call these
+// directly, the same way V1 reaches every other dissolved service here.
+// packages/db/src/services/import.service.ts is deleted outright: nothing
+// else reached it through @openpanel/db's barrel (same as cohort, M5-003).
+export type {
+  ImportJobProgress,
+  ImportStageResult,
+  ImportSteps,
+  InsertRawEventsResult,
+  UpdateImportStatusOptions,
+} from './modules/import/import.service';
+// The ingestion pipeline (M8-002). apps/api's /track controller, its three
+// route hooks and the legacy /event controller are thin delegates over these
+// — the same functions core's own `ingestRoutes` calls.
+export type {
+  BotMatch,
+  BotSuspicion,
+  DeviceIdentity,
+  IncomingEventPayload,
+  IncomingEventProducer,
+  IngestAuthErrorPayload,
+  IngestAuthOutcome,
+  IngestBuffers,
+  IngestHeaders,
+  IngestTransport,
+  TrackOutcome,
+  TrackRequest,
+} from './modules/ingest/ingest.service';
+export {
+  applyBotSuspicion,
+  checkIngestBot,
+  detectBot,
+  fetchDeviceIdentity,
+  getDeviceId,
+  getOverrideDeviceId,
+  getStringHeaders,
+  getTimestamp,
+  handleReplay,
+  ingestTrack,
+  isBot,
+  isDuplicatedEvent,
+  isDuplicateIngestRequest,
+  stripBotProperties,
+  summarizeBotSignals,
+  validateIngestRequest,
+} from './modules/ingest/ingest.service';
+// The Kafka consumer and its per-message handler (M8-003), which take the
+// kafkajs client, the topic/group names and the retry bounds as arguments —
+// the injection seam that used to cross a package boundary and now just
+// crosses two files.
+export type {
+  ConsumerLogger,
+  ConsumerMetrics,
+  DeadLetterMessage,
+  DeadLetterReason,
+  EventsBatchHandler,
+  EventsBatchHandlerDeps,
+  EventsConsumerDeps,
+  KafkaConsumerHandle,
+} from './modules/ingest/src/consumer';
+export {
+  createEventsBatchHandler,
+  startKafkaEventsConsumer,
+} from './modules/ingest/src/consumer';
+export { createIncomingEventHandler } from './modules/ingest/src/consumer-handler';
+// The readiness probe's two inputs (M9-002). `markEventsActivity` is the
+// consumer's `onActivity`; `setShuttingDown` is main.ts's signal handler.
+export {
+  enableEventsHeartbeat,
+  getEventsHeartbeat,
+  markEventsActivity,
+} from './modules/ingest/src/heartbeat';
+export type {
+  IncomingEventBindings,
+  IncomingEventDelivery,
+  IncomingEventDeps,
+  IncomingEventMetrics,
+  IncomingEventProject,
+  IncomingEventSessions,
+} from './modules/ingest/src/incoming-event-handler';
+export {
+  createIncomingEventDeps,
+  incomingEvent,
+} from './modules/ingest/src/incoming-event-handler';
+export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
+// The Kafka transport itself (M11-003): producer, consumer factory, admin/lag
+// sampling and every topic/group/retry constant, moved from
+// @openpanel/queue's kafka.ts unchanged. It constructs no client at import
+// time, so the barrel stays offline-importable.
+export type {
+  Admin,
+  ConsumerGroupLag,
+  EachBatchPayload,
+  KafkaMessage,
+  PartitionLag,
+} from './modules/ingest/src/kafka';
+export {
+  assertKafkaConfigured,
+  createKafkaAdmin,
+  createKafkaEventsConsumer,
+  disconnectKafka,
+  KAFKA_BROKERS,
+  KAFKA_CONNECTION_TIMEOUT_MS,
+  KAFKA_CONSUMER_GROUP,
+  KAFKA_EVENTS_DLQ_TOPIC,
+  KAFKA_EVENTS_TOPIC,
+  KAFKA_HANDLER_MAX_ATTEMPTS,
+  KAFKA_HANDLER_RETRY_INITIAL_MS,
+  KAFKA_HANDLER_RETRY_MAX_MS,
+  KAFKA_HEARTBEAT_INTERVAL_MS,
+  KAFKA_MAX_MESSAGES_PER_PARTITION,
+  KAFKA_MAX_WAIT_MS,
+  KAFKA_MIN_MESSAGES,
+  KAFKA_PARTITIONS_CONCURRENT,
+  KAFKA_PRODUCER_INITIAL_RETRY_MS,
+  KAFKA_PRODUCER_MAX_RETRY_MS,
+  KAFKA_PRODUCER_RETRIES,
+  KAFKA_REQUEST_TIMEOUT_MS,
+  KAFKA_SESSION_TIMEOUT_MS,
+  kafkaLogger,
+  produceDeadLetterEvent,
+  produceIncomingEvent,
+  sampleConsumerGroupLag,
+} from './modules/ingest/src/kafka';
+export type {
+  DailyInsightCandidate,
+  GetReferrerSpikesInput,
+  ReferrerSpikeCluster,
+  WeeklyDigestPreview,
+  WeeklyDigestResult,
+} from './modules/insight/insight.service';
+export { explainInsight } from './modules/insight/insight.service';
 // Moved from packages/trpc/src/routers/integration.ts, plus the Slack OAuth
 // callback business logic out of
 // apps/api/src/controllers/webhook.controller.ts (M6-006, ADR-008's module
@@ -512,19 +638,31 @@ export { SlackOAuthCallbackError } from './modules/integration/integration.servi
 // response, the same way it reaches slackInstaller above.
 export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
 // packages/mcp absorbed whole (M5-007) — ADR-015 entry 2: stateless-only, so
-// there is no SessionManager to manage. `mcp.service.ts` keeps its own
-// tool tree (`./src/server`) behind a lazy loader (M10-004, see that file's
-// header), which is what makes THIS a safe static export now — unlike the
-// `getChatApp`-style TDZ hazard this barrel used to route around here.
+// there is no SessionManager to manage. M15-003: the barrel carries the
+// factory and the two types only. `handleStatelessMcpRequest` needs the
+// API's `deps`, so the app shell reaches MCP the one way it ever did —
+// `rest.routes.ts`'s `.use(mcpRoutes(deps))` and `ctx.services.mcp`.
 export type {
   McpAuthContext,
   McpHttpResult,
 } from './modules/mcp/mcp.service';
+export { createMcpService } from './modules/mcp/mcp.service';
+// Ported from apps/api's misc controller + apps/worker's cron.ping.ts (M7-008)
+// — apps/api's misc controller and the worker's ping cron job call these
+// directly, the same way V1 reaches every other dissolved service here.
+// `GET /misc/og/clear` and `/misc/favicon/clear` are NOT ported (ADR-015
+// entry #6: RULED + DEAD).
+export type {
+  GeoReport,
+  ImageAssetResult,
+  PingRecord,
+  StatsResult,
+} from './modules/misc/misc.service';
 export {
-  createMcpService,
-  extractToken,
-  handleStatelessMcpRequest,
-} from './modules/mcp/mcp.service';
+  getFavicon,
+  getGeoReport,
+  getOgImage,
+} from './modules/misc/misc.service';
 export type {
   INotificationPayload,
   INotificationRuleCached,
@@ -732,6 +870,18 @@ export {
   mergeGlobalFilters,
   onlyReportEvents,
 } from './modules/report/src/series';
+// Moved from packages/db/src/services/salt.service.ts +
+// apps/worker/src/jobs/cron.salt.ts (M8-004) — `main.ts` calls
+// `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s cron handler
+// and everything else reach `rotateSalt`/`getSalts` through
+// `ctx.services.salt` / the v1-compat singleton instead (M10-004, see
+// salt.service.ts's header — `getSalts` is the one export still bare here,
+// for the same reason it's bare on the v1-compat seam).
+export type { Salts } from './modules/salt/salt.service';
+export {
+  createInitialSalts,
+  createSaltService,
+} from './modules/salt/salt.service';
 // Dissolved from @openpanel/db's services/session.service.ts and
 // session-context.ts, plus apps/worker's session-end job, reaper and vacuum
 // (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's
@@ -753,6 +903,12 @@ export {
   SESSION_DISTINCT_FIELDS,
   transformSession,
 } from './modules/session/session.service';
+// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
+// (M5-001) — apps/worker's insight job files and packages/trpc's insight
+// router call these directly, the same way V1 reaches every other dissolved
+// service here.
+export type { SessionMetricsRedis } from './modules/session/src/session.metrics';
+export { registerSessionScrapeMetrics } from './modules/session/src/session.metrics';
 export {
   als,
   getAlsSessionId,
@@ -795,194 +951,6 @@ export {
   getCurrentSubscriptionProduct,
   toSubscriptionDiscount,
 } from './modules/subscription/subscription.service';
-// Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
-// packages/trpc's auth/onboarding routers call `getUserById`/
-// `getUserAccount` directly through @openpanel/db's re-export shim, the same
-// way they reach every other dissolved service here.
-export { createUserService } from './modules/user/user.service';
-
-import {
-  extractToken as mcpExtractToken,
-  handleStatelessMcpRequest as mcpHandleStatelessMcpRequest,
-} from './modules/mcp/mcp.service';
-
-export async function handleMcpRequest(
-  query: Record<string, unknown>,
-  authHeader: string | undefined,
-  body: unknown
-): Promise<{ status: number; body: unknown }> {
-  const token = mcpExtractToken(query, authHeader);
-  return mcpHandleStatelessMcpRequest(token, body);
-}
-export { isShuttingDown, setShuttingDown } from './modules/health/src/shutdown';
-// Dissolved from @openpanel/db's services/import.service.ts +
-// apps/worker's job file + apps/api's /import controller (M5-004) —
-// apps/worker's import job file and apps/api's import controller call these
-// directly, the same way V1 reaches every other dissolved service here.
-// packages/db/src/services/import.service.ts is deleted outright: nothing
-// else reached it through @openpanel/db's barrel (same as cohort, M5-003).
-export type {
-  ImportJobProgress,
-  ImportStageResult,
-  ImportSteps,
-  InsertRawEventsResult,
-  UpdateImportStatusOptions,
-} from './modules/import/import.service';
-// The ingestion pipeline (M8-002). apps/api's /track controller, its three
-// route hooks and the legacy /event controller are thin delegates over these
-// — the same functions core's own `ingestRoutes` calls.
-export type {
-  BotMatch,
-  BotSuspicion,
-  DeviceIdentity,
-  IncomingEventPayload,
-  IncomingEventProducer,
-  IngestAuthErrorPayload,
-  IngestAuthOutcome,
-  IngestBuffers,
-  IngestHeaders,
-  IngestTransport,
-  TrackOutcome,
-  TrackRequest,
-} from './modules/ingest/ingest.service';
-export {
-  applyBotSuspicion,
-  checkIngestBot,
-  detectBot,
-  fetchDeviceIdentity,
-  getDeviceId,
-  getOverrideDeviceId,
-  getStringHeaders,
-  getTimestamp,
-  handleReplay,
-  ingestTrack,
-  isBot,
-  isDuplicatedEvent,
-  isDuplicateIngestRequest,
-  stripBotProperties,
-  summarizeBotSignals,
-  validateIngestRequest,
-} from './modules/ingest/ingest.service';
-// The Kafka consumer and its per-message handler (M8-003), which take the
-// kafkajs client, the topic/group names and the retry bounds as arguments —
-// the injection seam that used to cross a package boundary and now just
-// crosses two files.
-export type {
-  ConsumerLogger,
-  ConsumerMetrics,
-  DeadLetterMessage,
-  DeadLetterReason,
-  EventsBatchHandler,
-  EventsBatchHandlerDeps,
-  EventsConsumerDeps,
-  KafkaConsumerHandle,
-} from './modules/ingest/src/consumer';
-export {
-  createEventsBatchHandler,
-  startKafkaEventsConsumer,
-} from './modules/ingest/src/consumer';
-export { createIncomingEventHandler } from './modules/ingest/src/consumer-handler';
-// The readiness probe's two inputs (M9-002). `markEventsActivity` is the
-// consumer's `onActivity`; `setShuttingDown` is main.ts's signal handler.
-export {
-  enableEventsHeartbeat,
-  getEventsHeartbeat,
-  markEventsActivity,
-} from './modules/ingest/src/heartbeat';
-export type {
-  IncomingEventBindings,
-  IncomingEventDelivery,
-  IncomingEventDeps,
-  IncomingEventMetrics,
-  IncomingEventProject,
-  IncomingEventSessions,
-} from './modules/ingest/src/incoming-event-handler';
-export {
-  createIncomingEventDeps,
-  incomingEvent,
-} from './modules/ingest/src/incoming-event-handler';
-export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
-// The Kafka transport itself (M11-003): producer, consumer factory, admin/lag
-// sampling and every topic/group/retry constant, moved from
-// @openpanel/queue's kafka.ts unchanged. It constructs no client at import
-// time, so the barrel stays offline-importable.
-export type {
-  Admin,
-  ConsumerGroupLag,
-  EachBatchPayload,
-  KafkaMessage,
-  PartitionLag,
-} from './modules/ingest/src/kafka';
-export {
-  assertKafkaConfigured,
-  createKafkaAdmin,
-  createKafkaEventsConsumer,
-  disconnectKafka,
-  KAFKA_BROKERS,
-  KAFKA_CONNECTION_TIMEOUT_MS,
-  KAFKA_CONSUMER_GROUP,
-  KAFKA_EVENTS_DLQ_TOPIC,
-  KAFKA_EVENTS_TOPIC,
-  KAFKA_HANDLER_MAX_ATTEMPTS,
-  KAFKA_HANDLER_RETRY_INITIAL_MS,
-  KAFKA_HANDLER_RETRY_MAX_MS,
-  KAFKA_HEARTBEAT_INTERVAL_MS,
-  KAFKA_MAX_MESSAGES_PER_PARTITION,
-  KAFKA_MAX_WAIT_MS,
-  KAFKA_MIN_MESSAGES,
-  KAFKA_PARTITIONS_CONCURRENT,
-  KAFKA_PRODUCER_INITIAL_RETRY_MS,
-  KAFKA_PRODUCER_MAX_RETRY_MS,
-  KAFKA_PRODUCER_RETRIES,
-  KAFKA_REQUEST_TIMEOUT_MS,
-  KAFKA_SESSION_TIMEOUT_MS,
-  kafkaLogger,
-  produceDeadLetterEvent,
-  produceIncomingEvent,
-  sampleConsumerGroupLag,
-} from './modules/ingest/src/kafka';
-export type {
-  DailyInsightCandidate,
-  GetReferrerSpikesInput,
-  ReferrerSpikeCluster,
-  WeeklyDigestPreview,
-  WeeklyDigestResult,
-} from './modules/insight/insight.service';
-export { explainInsight } from './modules/insight/insight.service';
-// Ported from apps/api's misc controller + apps/worker's cron.ping.ts (M7-008)
-// — apps/api's misc controller and the worker's ping cron job call these
-// directly, the same way V1 reaches every other dissolved service here.
-// `GET /misc/og/clear` and `/misc/favicon/clear` are NOT ported (ADR-015
-// entry #6: RULED + DEAD).
-export type {
-  GeoReport,
-  ImageAssetResult,
-  PingRecord,
-  StatsResult,
-} from './modules/misc/misc.service';
-export {
-  getFavicon,
-  getGeoReport,
-  getOgImage,
-} from './modules/misc/misc.service';
-// Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts (M8-004) — `main.ts` calls
-// `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s cron handler
-// and everything else reach `rotateSalt`/`getSalts` through
-// `ctx.services.salt` / the v1-compat singleton instead (M10-004, see
-// salt.service.ts's header — `getSalts` is the one export still bare here,
-// for the same reason it's bare on the v1-compat seam).
-export type { Salts } from './modules/salt/salt.service';
-export {
-  createInitialSalts,
-  createSaltService,
-} from './modules/salt/salt.service';
-// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
-// (M5-001) — apps/worker's insight job files and packages/trpc's insight
-// router call these directly, the same way V1 reaches every other dissolved
-// service here.
-export type { SessionMetricsRedis } from './modules/session/src/session.metrics';
-export { registerSessionScrapeMetrics } from './modules/session/src/session.metrics';
 // New module (M7-008) — apps/api's tools controller calls these directly,
 // the same way V1 reaches every other dissolved service here.
 export type {
@@ -995,6 +963,11 @@ export type {
   SiteCheckResult,
 } from './modules/tools/src/site-checker';
 export { runSiteCheck } from './modules/tools/src/site-checker';
+// Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
+// packages/trpc's auth/onboarding routers call `getUserById`/
+// `getUserAccount` directly through @openpanel/db's re-export shim, the same
+// way they reach every other dissolved service here.
+export { createUserService } from './modules/user/user.service';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 // The RPC base is on the barrel because it is the seam every module's own
 // `<name>.rpc.ts` builds its router on: ONE tRPC instance (ADR-009), mounted

@@ -1,7 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { McpAuthContext } from '../auth';
-import { projectIdSchema, resolveProjectId, withErrorHandling } from './shared';
+import {
+  type McpToolDeps,
+  projectIdSchema,
+  resolveProjectId,
+  withErrorHandling,
+} from './shared';
 
 export function dashboardBaseUrl() {
   return (
@@ -29,7 +33,7 @@ export function sessionUrl(
 
 export function registerDashboardLinkTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_dashboard_urls',
@@ -60,8 +64,8 @@ export function registerDashboardLinkTools(
       dashboardId,
       reportId,
     }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const base = `${dashboardBaseUrl()}/${context.organizationId}/${projectId}`;
 
         const urls: Record<string, string> = {

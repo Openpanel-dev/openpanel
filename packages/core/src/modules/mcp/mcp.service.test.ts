@@ -4,20 +4,19 @@
  * ClickHouse — neither exercises this file's own logic: turning one HTTP POST
  * into a real MCP JSON-RPC exchange (auth → ephemeral server → synthetic
  * initialize handshake → dispatch → response), with no session surviving
- * between requests. This file is that missing layer: auth is mocked (already
- * proven elsewhere), everything from `createMcpServer` down — the real SDK
- * server, `InMemoryTransport`, the wire-format handshake, tool registration
- * and dispatch — runs for real.
+ * between requests. This file is that missing layer: the client lookup is a
+ * stub on the `Services` handed in, everything from `createMcpServer` down —
+ * the real SDK server, `InMemoryTransport`, the wire-format handshake, tool
+ * registration and dispatch — runs for real.
  *
- * Mocked at the specifiers the source imports resolve to, not the
- * '@openpanel/db' / '@openpanel/redis' barrels — a whole-barrel replacement
- * would drop every other export those barrels carry for any other file
- * sharing this process (bun:test only isolates modules per file under
- * `--isolate`; `cd packages/core && bun test` in CI runs without it — see
- * AGENTS.md). Every mocked specifier is restored in `afterAll` from a
- * plain-object snapshot taken before the first `mock.module` call — restoring
- * via the live `await import(...)` binding itself is a no-op once mocked,
- * since namespace bindings track the current mock.
+ * M15-003: `deps` and `services` are now ARGUMENTS, so the Postgres handle
+ * and the client lookup are supplied by the test rather than mocked into the
+ * module registry. The only surviving `mock.module` calls are for the two
+ * process-global seams MCP auth still reaches (`@openpanel/redis`'s
+ * `getCache` and argon2 verification), and both are restored in `afterAll`
+ * from a plain-object snapshot taken before the first `mock.module` call —
+ * restoring via the live `await import(...)` binding itself is a no-op once
+ * mocked, since namespace bindings track the current mock.
  */
 
 import {
@@ -29,14 +28,44 @@ import {
   it,
   mock,
 } from 'bun:test';
+import type { ServiceDeps, Services } from '../../services';
 
-// Real pino (not mocked) instantiates a pino-pretty transport worker thread
-// whenever NODE_ENV isn't 'production' — `createLogger`'s own condition, see
-// clients/logger.ts. That transport intermittently fails to spawn under Bun
-// ("unable to determine transport target for pino-pretty"), and this file
-// exercises `createMcpServer` for real, so every tool module's own
-// `createLogger` call would add to that risk. Noop it out, same as
-// `src/auth.test.ts` already does for the same reason.
+const actualRedis = await import('@openpanel/redis');
+const realRedis = { ...actualRedis };
+mock.module('@openpanel/redis', () => ({
+  ...realRedis,
+  getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
+}));
+
+const mockVerifyPassword = mock(async () => true);
+const actualCrypto = await import('../../shared/crypto');
+const realCrypto = { ...actualCrypto };
+mock.module('../../shared/crypto', () => ({
+  ...realCrypto,
+  verifyPassword: mockVerifyPassword,
+}));
+
+afterAll(() => {
+  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('../../shared/crypto', () => realCrypto);
+});
+
+let handleStatelessMcpRequest: typeof import('./mcp.service').handleStatelessMcpRequest;
+
+beforeAll(async () => {
+  ({ handleStatelessMcpRequest } = await import('./mcp.service'));
+});
+
+// Only `list_projects` (the tool this file dispatches through a real
+// `tools/call`) touches Postgres — `db.project.findUnique` is the one method
+// it needs.
+const mockFindUnique = mock();
+const mockGetClientByIdCached = mock();
+
+// Real pino would instantiate a pino-pretty transport worker thread whenever
+// NODE_ENV isn't 'production' (clients/logger.ts), which intermittently fails
+// to spawn under Bun. `deps.logger` is an argument now, so the test simply
+// hands in a noop.
 const noopLogger = {
   fatal: () => {
     // no-op
@@ -58,67 +87,15 @@ const noopLogger = {
   },
   child: () => noopLogger,
 };
-const actualLogger = await import('../../clients/logger');
-const realLogger = { ...actualLogger };
-mock.module('../../clients/logger', () => ({
-  ...realLogger,
-  createLogger: () => noopLogger,
-}));
 
-const mockGetClientByIdCached = mock();
-const actualClientsService = await import('@openpanel/core');
-const realClientsService = { ...actualClientsService };
-mock.module('@openpanel/core', () => ({
-  ...realClientsService,
-  getClientByIdCached: mockGetClientByIdCached,
-}));
-
-const actualRedis = await import('@openpanel/redis');
-const realRedis = { ...actualRedis };
-mock.module('@openpanel/redis', () => ({
-  ...realRedis,
-  getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
-}));
-
-const mockVerifyPassword = mock(async () => true);
-const actualCrypto = await import('../../shared/crypto');
-const realCrypto = { ...actualCrypto };
-mock.module('../../shared/crypto', () => ({
-  ...realCrypto,
-  verifyPassword: mockVerifyPassword,
-}));
-
-// Only `list_projects` (the tool this file dispatches through a real
-// `tools/call`) touches Postgres — `db.project.findUnique` is the one method
-// it needs.
-const mockFindUnique = mock();
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-const realPrismaClient = { ...actualPrismaClient };
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...realPrismaClient,
+const deps = {
   db: { project: { findUnique: mockFindUnique } },
-}));
+  logger: noopLogger,
+} as unknown as ServiceDeps;
 
-afterAll(async () => {
-  mock.module('../../clients/logger', () => realLogger);
-  mock.module('@openpanel/core', () => realClientsService);
-  mock.module('@openpanel/redis', () => realRedis);
-  mock.module('../../shared/crypto', () => realCrypto);
-  mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
-  // Restoring the module registry is not enough: `v1-compat.ts` MEMOIZES the
-  // fallback `ServiceDeps` the first time anything resolves it, so if that
-  // happened while the mock above was installed, every later FILE in this
-  // process keeps the mocked client (bare `bun test` shares one registry).
-  // Drop the memo too — same reason mcp's dashboard-management.test.ts does.
-  const { resetV1CompatServicesForTests } = await import('../../v1-compat');
-  resetV1CompatServicesForTests();
-});
-
-let handleStatelessMcpRequest: typeof import('./mcp.service').handleStatelessMcpRequest;
-
-beforeAll(async () => {
-  ({ handleStatelessMcpRequest } = await import('./mcp.service'));
-});
+const services = {
+  client: { getClientByIdCached: mockGetClientByIdCached },
+} as unknown as Services;
 
 const CLIENT_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 const CLIENT_SECRET = 'mysecret';
@@ -134,6 +111,10 @@ const READ_CLIENT = {
   organizationId: 'org-1',
 };
 
+function post(token: string | undefined, body: unknown) {
+  return handleStatelessMcpRequest(deps, services, token, body);
+}
+
 beforeEach(() => {
   mockGetClientByIdCached.mockReset();
   mockGetClientByIdCached.mockResolvedValue(READ_CLIENT);
@@ -144,7 +125,7 @@ beforeEach(() => {
 
 describe('handleStatelessMcpRequest — auth', () => {
   it('401s a request with no token, without ever reaching the MCP server', async () => {
-    const res = await handleStatelessMcpRequest(undefined, {
+    const res = await post(undefined, {
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/list',
@@ -160,7 +141,7 @@ describe('handleStatelessMcpRequest — auth', () => {
   it('401s a request with a wrong secret', async () => {
     mockVerifyPassword.mockResolvedValue(false);
 
-    const res = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/list',
@@ -172,18 +153,18 @@ describe('handleStatelessMcpRequest — auth', () => {
 
 describe('handleStatelessMcpRequest — protocol', () => {
   it('202s a notification and never runs it through the MCP server', async () => {
-    const res = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       method: 'notifications/initialized',
     });
 
-    // Authenticated (mock hit) but no `id` — dispatch never happens.
+    // Authenticated (stub hit) but no `id` — dispatch never happens.
     expect(res).toEqual({ status: 202, body: null });
     expect(mockGetClientByIdCached).toHaveBeenCalledTimes(1);
   });
 
   it('completes a real initialize handshake sent as the request itself', async () => {
-    const res = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 1,
       method: 'initialize',
@@ -209,7 +190,7 @@ describe('handleStatelessMcpRequest — protocol', () => {
   });
 
   it('dispatches tools/list via the synthetic handshake when no prior initialize was sent', async () => {
-    const res = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/list',
@@ -234,7 +215,7 @@ describe('handleStatelessMcpRequest — protocol', () => {
       types: [],
     });
 
-    const res = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
@@ -265,12 +246,12 @@ describe('handleStatelessMcpRequest — protocol', () => {
   });
 
   it('re-authenticates from scratch on every call — no session survives between requests', async () => {
-    const first = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const first = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/list',
     });
-    const second = await handleStatelessMcpRequest(VALID_TOKEN, {
+    const second = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
       id: 5,
       method: 'tools/list',

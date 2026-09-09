@@ -5,9 +5,9 @@ import {
   getGroupList,
   getGroupMemberProfiles,
   getGroupTypes,
-} from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+} from '../../../../group/group.service';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -35,7 +35,10 @@ const MEMBER_COLUMNS = [
   'lastSeenAt',
 ] as const;
 
-export function registerGroupTools(server: McpServer, context: McpAuthContext) {
+export function registerGroupTools(
+  server: McpServer,
+  { context, deps }: McpToolDeps
+) {
   server.tool(
     'list_group_types',
     'List all group types defined in this project (e.g. "company", "team", "account"). Groups represent B2B entities. Call this first to discover what group types exist before querying groups.',
@@ -43,9 +46,9 @@ export function registerGroupTools(server: McpServer, context: McpAuthContext) {
       projectId: projectIdSchema(context),
     },
     async ({ projectId: inputProjectId }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
-        const types = await getGroupTypes(projectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
+        const types = await getGroupTypes(deps, projectId);
         return { types };
       })
   );
@@ -68,10 +71,10 @@ export function registerGroupTools(server: McpServer, context: McpAuthContext) {
       limit: zLimit(DEFAULT_GROUP_LIMIT, MAX_GROUP_LIMIT),
     },
     async ({ projectId: inputProjectId, type, search, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_GROUP_LIMIT;
-        const groups = await getGroupList({
+        const groups = await getGroupList(deps, {
           projectId,
           type,
           search,
@@ -95,12 +98,12 @@ export function registerGroupTools(server: McpServer, context: McpAuthContext) {
       memberLimit: zLimit(DEFAULT_MEMBER_LIMIT, MAX_MEMBER_LIMIT),
     },
     async ({ projectId: inputProjectId, groupId, memberLimit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = memberLimit ?? DEFAULT_MEMBER_LIMIT;
         const [group, members] = await Promise.all([
-          getGroupById(groupId, projectId),
-          getGroupMemberProfiles({
+          getGroupById(deps, groupId, projectId),
+          getGroupMemberProfiles(deps, {
             projectId,
             groupId,
             take,

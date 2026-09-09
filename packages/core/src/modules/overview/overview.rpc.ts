@@ -45,15 +45,6 @@ import {
   zGetUserJourneyInput,
 } from './overview.service';
 
-// Lazy, not a static import: the assistant module's chatApp chain reaches
-// deep into @openpanel/db (see index.ts's own `loadAssistant()` for the full
-// story) — a static import here would pull that chain into this module's
-// evaluation, and this module is itself a static import of
-// rpc.router.ts/index.ts's own barrel.
-function loadFilterCommand() {
-  return import('../assistant/src/filter-command');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -432,8 +423,7 @@ export const overviewRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await requireReadAccess(ctx, input.projectId);
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
-      const { runFilterCommand } = await loadFilterCommand();
-      return runFilterCommand({
+      return ctx.services.assistant.runFilterCommand({
         query: input.query,
         projectId: input.projectId,
         pageContext: input.pageContext,

@@ -10,45 +10,29 @@
 // MCP is the one module the wave map allows to change its endpoint surface —
 // every other module in this wave preserves its V1 contract byte-for-byte.
 //
-// M10-004: `createMcpService(deps)` lands here, which means THIS FILE is now
-// statically imported by services.ts. `./src/server`'s `registerAllTools`
-// pulls in ~20 tool files that reach this package's own barrel
-// (`@openpanel/core`) for cross-module functions, so it stays behind a lazy
-// loader — a static top-level import would make services.ts's own module
-// evaluation re-enter that barrel mid-evaluation, the exact TDZ hazard
-// index.ts's header used to document for this file before it was reached
-// only through a dynamic import. `./src/auth` stays a plain static import:
-// `extractToken` is synchronous today (`mcp.routes.ts` doesn't await it) and
-// auth.ts no longer reaches the barrel at its own top level (M10-004, see
-// that file's header) — nothing left to make lazy. `deps` is unused:
-// `handleStatelessMcpRequest`'s signature is a hard contract (its own tests
-// call it with none) and its tool tree already reaches Postgres/ClickHouse
-// through the v1-compat singleton, the same way every other bare, no-`Ctx`
-// caller in this wave does.
+// M15-003: MCP is NOT a separate process and has no dependency builder of its
+// own. `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route
+// already holds the API's connections; this factory closes over them and
+// hands them to `createMcpServer` per request (ADR-022 R6/R15, Carl's
+// ruling). The `@modelcontextprotocol/sdk` tool-handler signature has no
+// context parameter, which is a CLOSURE problem — solved by building the
+// server where `deps` is in hand — not a context problem.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { createLogger } from '../../clients/logger';
 import type { ServiceDeps, Services } from '../../services';
+import { compatPrisma } from '../../v1-compat';
 import {
   authenticateToken,
   extractToken,
   type McpAuthContext,
   McpAuthError,
 } from './src/auth';
+import { createMcpServer } from './src/server';
+import type { McpToolDeps } from './src/tools/shared';
 
 export type { McpAuthContext } from './src/auth';
 export { extractToken, McpAuthError } from './src/auth';
-
-let _server: Promise<typeof import('./src/server')> | undefined;
-function loadServer() {
-  if (!_server) {
-    _server = import('./src/server');
-  }
-  return _server;
-}
-
-const logger = createLogger({ name: 'mcp' });
 
 const MCP_PROTOCOL_VERSION = '2024-11-05';
 const MCP_PROXY_CLIENT_INFO = { name: 'mcp-proxy', version: '0' };
@@ -56,6 +40,26 @@ const MCP_PROXY_CLIENT_INFO = { name: 'mcp-proxy', version: '0' };
 export interface McpHttpResult {
   status: number;
   body: unknown;
+}
+
+/**
+ * `Prisma.DbNull` — the explicit-SQL-NULL sentinel `dashboard-management.ts`
+ * writes onto a nullable Json column. A frozen CONSTANT, not a client and not
+ * a service graph: nothing about it is per-request, and resolving it opens no
+ * connection.
+ *
+ * It comes off `v1-compat.ts` because that is the ONLY file in this package
+ * `core-uses-ctx-not-db-internals` lets import `@openpanel/db`'s Prisma
+ * namespace, and `ServiceDeps` has no field for it — the same door
+ * `notification.service.ts`, `subscription.service.ts` and
+ * `insight/src/store.ts` use for the same sentinel. This is the module's one
+ * remaining edge to that file: the tool tree itself reaches Postgres and
+ * ClickHouse through `deps`.
+ */
+let jsonNullSentinel: Promise<unknown> | undefined;
+function dbJsonNull(): Promise<unknown> {
+  jsonNullSentinel ??= compatPrisma().then((prisma) => prisma.DbNull);
+  return jsonNullSentinel;
 }
 
 /**
@@ -68,15 +72,17 @@ export interface McpHttpResult {
  * the protocol to this function.
  */
 export async function handleStatelessMcpRequest(
+  deps: ServiceDeps,
+  services: Services,
   token: string | undefined,
   body: unknown
 ): Promise<McpHttpResult> {
   let context: McpAuthContext;
   try {
-    context = await authenticateToken(token);
+    context = await authenticateToken(deps, services, token);
   } catch (err) {
     if (err instanceof McpAuthError) {
-      logger.warn({ reason: err.message }, 'MCP auth failed');
+      deps.logger.warn({ reason: err.message }, 'MCP auth failed');
       return { status: 401, body: { error: err.message } };
     }
     throw err;
@@ -89,16 +95,16 @@ export async function handleStatelessMcpRequest(
     return { status: 202, body: null };
   }
 
-  logToolCall(message, context);
+  logToolCall(deps, message, context);
   const isInitializeRequest =
     'method' in message && message.method === 'initialize';
   const start = Date.now();
   const response = await runOnEphemeralServer(
-    context,
+    { context, deps, dbJsonNull: await dbJsonNull(), services },
     message,
     isInitializeRequest
   );
-  logToolResult(message, response, start);
+  logToolResult(deps, message, response, start);
 
   return { status: 200, body: response };
 }
@@ -112,14 +118,13 @@ export async function handleStatelessMcpRequest(
  * reach its ready state.
  */
 async function runOnEphemeralServer(
-  context: McpAuthContext,
+  tools: McpToolDeps,
   message: JSONRPCMessage,
   isInitializeRequest: boolean
 ): Promise<JSONRPCMessage> {
-  const { createMcpServer } = await loadServer();
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
-  const server = createMcpServer(context);
+  const server = createMcpServer(tools);
   await server.connect(serverTransport);
 
   if (!isInitializeRequest) {
@@ -151,7 +156,11 @@ async function runOnEphemeralServer(
   });
 }
 
-function logToolCall(message: JSONRPCMessage, context: McpAuthContext) {
+function logToolCall(
+  deps: ServiceDeps,
+  message: JSONRPCMessage,
+  context: McpAuthContext
+) {
   if (
     !(
       'method' in message &&
@@ -165,7 +174,7 @@ function logToolCall(message: JSONRPCMessage, context: McpAuthContext) {
     name?: string;
     arguments?: unknown;
   };
-  logger.info(
+  deps.logger.info(
     {
       tool: name,
       params: args,
@@ -178,6 +187,7 @@ function logToolCall(message: JSONRPCMessage, context: McpAuthContext) {
 }
 
 function logToolResult(
+  deps: ServiceDeps,
   message: JSONRPCMessage,
   response: JSONRPCMessage,
   start: number
@@ -190,26 +200,24 @@ function logToolResult(
   };
   const isError =
     'result' in response && (response.result as { isError?: boolean })?.isError;
-  logger.info(
+  deps.logger.info(
     { tool: name, durationMs: Date.now() - start, isError: isError ?? false },
     'MCP tool result'
   );
 }
 
 /**
- * Ignores BOTH arguments, and takes them only because ADR-022 R3 keeps the
- * composition root a flat list: `extractToken` is pure and
- * `handleStatelessMcpRequest` hands the request to the
- * `@modelcontextprotocol/sdk` server, whose tool handlers have a fixed
- * signature with no room for a `deps` argument (docs/TECH_DEBT.md's
- * "loaders still standing" table).
+ * The MCP tool tree reaches Postgres and ClickHouse through the `deps` this
+ * factory closes over — there is no singleton and no "no context" path left
+ * (ADR-022 R6). `extractToken` is pure and stays a bare re-export.
  */
-export function createMcpService(
-  _deps: ServiceDeps,
-  _services: () => Services
-) {
+export function createMcpService(deps: ServiceDeps, services: () => Services) {
   return {
     extractToken,
-    handleStatelessMcpRequest,
+    handleStatelessMcpRequest: (
+      token: string | undefined,
+      body: unknown
+    ): Promise<McpHttpResult> =>
+      handleStatelessMcpRequest(deps, services(), token, body),
   };
 }

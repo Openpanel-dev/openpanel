@@ -4,10 +4,10 @@ import {
   findProfilesCore,
   getProfileSessionsCore,
   getProfileWithEvents,
-} from '../../../../../v1-compat';
-import type { McpAuthContext } from '../../auth';
+} from '../../../../profile/profile.service';
 import { dashboardBaseUrl, profileUrl } from '../dashboard-links';
 import {
+  type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
   table,
@@ -35,7 +35,7 @@ const PROFILE_COLUMNS = [
 
 export function registerProfileTools(
   server: McpServer,
-  context: McpAuthContext
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'find_profiles',
@@ -89,10 +89,10 @@ export function registerProfileTools(
       limit: zLimit(DEFAULT_PROFILE_LIMIT, MAX_PROFILE_LIMIT),
     },
     async ({ projectId: inputProjectId, ...input }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = input.limit ?? DEFAULT_PROFILE_LIMIT;
-        const profiles = await findProfilesCore({
+        const profiles = await findProfilesCore(deps, {
           ...input,
           projectId,
           limit: take + 1,
@@ -120,10 +120,15 @@ export function registerProfileTools(
       eventLimit: zLimit(DEFAULT_EVENT_LIMIT, 100),
     },
     async ({ projectId: inputProjectId, profileId, eventLimit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = eventLimit ?? DEFAULT_EVENT_LIMIT;
-        const result = await getProfileWithEvents(projectId, profileId, take);
+        const result = await getProfileWithEvents(
+          deps,
+          projectId,
+          profileId,
+          take
+        );
         if (!result.profile) {
           return { error: 'Profile not found', profileId };
         }
@@ -153,10 +158,11 @@ export function registerProfileTools(
       limit: zLimit(DEFAULT_SESSION_LIMIT, 100),
     },
     async ({ projectId: inputProjectId, profileId, limit }) =>
-      withErrorHandling(async () => {
-        const projectId = await resolveProjectId(context, inputProjectId);
+      withErrorHandling(deps, async () => {
+        const projectId = await resolveProjectId(deps, context, inputProjectId);
         const take = limit ?? DEFAULT_SESSION_LIMIT;
         const sessions = await getProfileSessionsCore(
+          deps,
           projectId,
           profileId,
           take + 1
