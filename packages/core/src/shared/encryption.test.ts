@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   decrypt,
   decryptCredential,
@@ -7,42 +7,41 @@ import {
   isEncrypted,
 } from './encryption';
 
-beforeAll(() => {
-  // Deterministic key for the round-trips (overrides any ambient value).
-  process.env.ENCRYPTION_KEY = 'a'.repeat(64);
-});
+// Deterministic key for the round-trips — the value the config loader would
+// hand down as `config.encryptionKey`.
+const KEY = 'a'.repeat(64);
 
 describe('encryption (single ENCRYPTION_KEY)', () => {
   it('encrypt/decrypt round-trips without a prefix (TOTP/GSC format)', () => {
     const secret = 'totp-or-gsc-secret';
-    const enc = encrypt(secret);
+    const enc = encrypt(KEY, secret);
     expect(isEncrypted(enc)).toBe(false);
     expect(enc).not.toBe(secret);
-    expect(decrypt(enc)).toBe(secret);
+    expect(decrypt(KEY, enc)).toBe(secret);
   });
 
   it('encryptCredential/decryptCredential round-trips with the enc: prefix', () => {
     const secret = 'aws-secret-access-key';
-    const enc = encryptCredential(secret);
+    const enc = encryptCredential(KEY, secret);
     expect(isEncrypted(enc)).toBe(true);
-    expect(decryptCredential(enc)).toBe(secret);
+    expect(decryptCredential(KEY, enc)).toBe(secret);
   });
 
   it('encryptCredential is idempotent (never double-encrypts)', () => {
-    const enc = encryptCredential('x');
-    expect(encryptCredential(enc)).toBe(enc);
+    const enc = encryptCredential(KEY, 'x');
+    expect(encryptCredential(KEY, enc)).toBe(enc);
   });
 
   it('decryptCredential passes plaintext through (test-connection flow)', () => {
-    expect(decryptCredential('plaintext')).toBe('plaintext');
+    expect(decryptCredential(KEY, 'plaintext')).toBe('plaintext');
   });
 
   it('decrypt round-trips multi-byte UTF-8 across cipher chunk boundaries', () => {
     // GCM is a stream cipher: update() can return a chunk ending mid-character,
     // so decoding per chunk instead of after concatenation corrupts the value.
     const secret = `${'ä'.repeat(500)}🔐日本語`;
-    expect(decrypt(encrypt(secret))).toBe(secret);
-    expect(decryptCredential(encryptCredential(secret))).toBe(secret);
+    expect(decrypt(KEY, encrypt(KEY, secret))).toBe(secret);
+    expect(decryptCredential(KEY, encryptCredential(KEY, secret))).toBe(secret);
   });
 
   it('decrypt throws a guarded error for a too-short/malformed ciphertext', () => {
@@ -51,10 +50,10 @@ describe('encryption (single ENCRYPTION_KEY)', () => {
     // bare TypeError before this guard existed; the guard normalizes that
     // to the same descriptive error on both runtimes.
     const tooShort = Buffer.from('short').toString('base64');
-    expect(() => decrypt(tooShort)).toThrow(
+    expect(() => decrypt(KEY, tooShort)).toThrow(
       'Invalid encrypted value: expected a 16-byte auth tag, got 0'
     );
-    expect(() => decrypt('')).toThrow(
+    expect(() => decrypt(KEY, '')).toThrow(
       'Invalid encrypted value: expected a 16-byte auth tag, got 0'
     );
   });

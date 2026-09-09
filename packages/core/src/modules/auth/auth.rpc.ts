@@ -62,7 +62,7 @@ export const authRouter = createTRPCRouter({
 
   signInOAuth: publicProcedure
     .input(z.object({ provider: zProvider, inviteId: z.string().nullish() }))
-    .mutation(({ input, ctx }) => startOAuthSignIn(input, ctx.setCookie)),
+    .mutation(({ input, ctx }) => startOAuthSignIn(ctx, input, ctx.setCookie)),
 
   signUpEmail: publicProcedure
     .input(zSignUpEmail)

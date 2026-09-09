@@ -15,7 +15,7 @@
     "gen:asns": "bun scripts/get-datacenter-asns.ts",
     "gen:bots": "bun scripts/get-bots.ts && biome format --write ./src/modules/ingest/src/bots/bots.ts",
     "gen:referrers": "bun scripts/get-referrers.ts && biome format --write ./src/shared/referrers/index.ts",
-    "migrate:deploy:code": "bun run with-env bun ./src/code-migrations/migrate.ts",
+    "migrate:deploy:code": "bun run with-env bun ./scripts/migrate-code.ts",
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {

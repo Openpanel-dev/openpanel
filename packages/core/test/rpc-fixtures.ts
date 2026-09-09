@@ -13,6 +13,7 @@ import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
 import type { LogFn, Logger } from '../src/logger';
 import type { Services } from '../src/services';
+import { testCoreConfig } from './config-fixture';
 
 export interface LoggedLine {
   level: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
@@ -94,7 +95,7 @@ export function stubHttpCtx(
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
     logger,
-    config: { selfHosted: false },
+    config: testCoreConfig(),
   };
 
   const { services, ...rest } = overrides;

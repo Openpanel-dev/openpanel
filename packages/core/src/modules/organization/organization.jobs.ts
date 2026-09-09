@@ -67,12 +67,13 @@ async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
     getAnalyticsOverview: (input) =>
       ctx.services.overview.getAnalyticsOverviewCore(input),
     getTopPages: (input) => ctx.services.pages.getTopPagesCore(input),
-    generatePitch: (facts) => generateWinBackPitch(facts),
+    generatePitch: (facts) => generateWinBackPitch(ctx.config, facts),
   };
 
   return {
     db: ctx.db as unknown as WindDownDb,
     logger,
+    config: ctx.config,
     sendEmail: ctx.clients.email.sendEmail,
     getLastEventPerProject: () => ctx.services.project.getLastEventPerProject(),
     getOrganizationEventsCount: (projectIds) =>

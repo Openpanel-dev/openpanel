@@ -2,7 +2,8 @@
 // daily backstop for sessions whose cleanup() leaked: a lingering blob →
 // id-gated cleanup(); a missing blob → ZREM the orphan.
 
-import { afterEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import {
   fixtureSession,
   stubLogger,
@@ -11,15 +12,18 @@ import {
 } from './session-lifecycle.fixtures';
 import { vacuumStaleSessions } from './session-vacuum';
 
-function makeDeps(live: ReturnType<typeof fixtureSession> | null) {
+function makeDeps(
+  live: ReturnType<typeof fixtureSession> | null,
+  config = testCoreConfig()
+) {
   const redis = stubRedis();
   const sessions = stubStore(live);
-  return { redis, sessions, deps: { redis, sessions, logger: stubLogger() } };
+  return {
+    redis,
+    sessions,
+    deps: { redis, sessions, logger: stubLogger(), config },
+  };
 }
-
-afterEach(() => {
-  delete process.env.SESSION_VACUUM;
-});
 
 describe('vacuumStaleSessions', () => {
   test('id-gated cleanup() for a stale blob that lingered', async () => {
@@ -57,8 +61,12 @@ describe('vacuumStaleSessions', () => {
   });
 
   test('is a no-op when disabled via SESSION_VACUUM=0', async () => {
-    process.env.SESSION_VACUUM = '0';
-    const { deps, redis } = makeDeps(null);
+    const { deps, redis } = makeDeps(
+      null,
+      testCoreConfig({
+        session: { ...testCoreConfig().session, vacuumEnabled: false },
+      })
+    );
 
     await vacuumStaleSessions(deps);
 

@@ -14,17 +14,24 @@ export function printBoxMessage(title: string, lines: (string | unknown)[]) {
   console.log('└──┘');
 }
 
-export function getIsCluster() {
-  const args = process.argv;
-  return (
-    args.includes('--cluster') ||
-    process.env.CLICKHOUSE_CLUSTER === 'true' ||
-    process.env.CLICKHOUSE_CLUSTER === '1'
-  );
+/**
+ * The environment this script needs, read by its shell
+ * (`packages/core/scripts/migrate-code.ts`) rather than here: nothing under
+ * `packages/core/src` reads `process.env` (ADR-022 R7).
+ */
+export interface CodeMigrationEnv {
+  clickhouseCluster: boolean;
+  selfHosted: boolean;
+  databaseUrl: string | undefined;
+  clickhouseUrl: string | undefined;
 }
 
-export function getIsSelfHosting() {
-  return process.env.SELF_HOSTED === 'true' || !!process.env.SELF_HOSTED;
+export function getIsCluster(env: CodeMigrationEnv) {
+  return process.argv.includes('--cluster') || env.clickhouseCluster;
+}
+
+export function getIsSelfHosting(env: CodeMigrationEnv) {
+  return env.selfHosted;
 }
 
 export function getIsDry() {

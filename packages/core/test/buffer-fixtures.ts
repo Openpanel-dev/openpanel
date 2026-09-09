@@ -3,6 +3,7 @@
 
 import type { BufferDeps } from '../src/buffers/base-buffer';
 import type { Logger } from '../src/logger';
+import { testCoreConfig } from './config-fixture';
 
 const silentLogger: Logger = {
   fatal: () => undefined,
@@ -35,11 +36,16 @@ const throwingClickHouse = new Proxy({} as BufferDeps['ch'], {
 
 export const stubBufferDeps: BufferDeps = {
   createLogger: () => silentLogger,
+  config: testCoreConfig(),
   isCronPaused: () => Promise.resolve(false),
   ch: throwingClickHouse,
 };
 
-/** `stubBufferDeps` plus a fake ClickHouse client for the flush path. */
-export function bufferDepsWithCh(ch: unknown): BufferDeps {
-  return { ...stubBufferDeps, ch: ch as BufferDeps['ch'] };
+/** `stubBufferDeps` plus a fake ClickHouse client for the flush path, and an
+ *  optional sizing override for the suites that exercise chunking. */
+export function bufferDepsWithCh(
+  ch: unknown,
+  config: BufferDeps['config'] = stubBufferDeps.config
+): BufferDeps {
+  return { ...stubBufferDeps, ch: ch as BufferDeps['ch'], config };
 }

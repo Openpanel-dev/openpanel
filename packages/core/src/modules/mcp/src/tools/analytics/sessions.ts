@@ -67,7 +67,7 @@ export function registerSessionTools(
         return {
           // One template beats stamping a ~90-character absolute URL onto every
           // row — the model can substitute `id` itself.
-          session_url_template: `${dashboardBaseUrl()}/${context.organizationId}/${projectId}/sessions/{id}`,
+          session_url_template: `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}/sessions/{id}`,
           ...table(sessions.slice(0, take), {
             limit: take,
             columns: [...SESSION_COLUMNS_DEFAULT, ...(fields ?? [])],

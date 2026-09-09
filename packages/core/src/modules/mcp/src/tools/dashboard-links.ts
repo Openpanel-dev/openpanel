@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { CoreConfig } from '../../../../config';
 import {
   type McpToolDeps,
   projectIdSchema,
@@ -7,28 +8,32 @@ import {
   withErrorHandling,
 } from './shared';
 
-export function dashboardBaseUrl() {
-  return (
-    process.env.DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
-    'https://dashboard.openpanel.dev'
-  ).replace(/\/$/, '');
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const TRAILING_SLASH = /\/$/;
+
+export function dashboardBaseUrl(config: CoreConfig) {
+  return (config.dashboardUrl || DEFAULT_DASHBOARD_URL).replace(
+    TRAILING_SLASH,
+    ''
+  );
 }
 
 export function profileUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   profileId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/profiles/${profileId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/profiles/${profileId}`;
 }
 
 export function sessionUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   sessionId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/sessions/${sessionId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/sessions/${sessionId}`;
 }
 
 export function registerDashboardLinkTools(
@@ -66,7 +71,7 @@ export function registerDashboardLinkTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
-        const base = `${dashboardBaseUrl()}/${context.organizationId}/${projectId}`;
+        const base = `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}`;
 
         const urls: Record<string, string> = {
           overview: base,

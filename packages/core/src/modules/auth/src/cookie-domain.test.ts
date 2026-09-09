@@ -1,9 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import { parseCookieDomain } from './cookie-domain';
+
+/** The config the loader builds for an environment with no COOKIE_TLDS set. */
+const parse = (url: string) => parseCookieDomain(testCoreConfig(), url);
+
+/** COOKIE_TLDS, already split and lowercased by the loader. */
+const parseWithTlds = (extraMultiPartTlds: string[], url: string) =>
+  parseCookieDomain(
+    testCoreConfig({
+      cookies: { extraMultiPartTlds, customDomain: undefined },
+    }),
+    url
+  );
 
 describe('parseCookieDomain', () => {
   it('should return undefined domain for empty string', () => {
-    expect(parseCookieDomain('')).toEqual({
+    expect(parse('')).toEqual({
       domain: undefined,
       secure: false,
     });
@@ -11,35 +24,35 @@ describe('parseCookieDomain', () => {
 
   describe('localhost and IP addresses', () => {
     it('should return undefined domain for localhost', () => {
-      expect(parseCookieDomain('http://localhost:3000')).toEqual({
+      expect(parse('http://localhost:3000')).toEqual({
         domain: undefined,
         secure: false,
       });
     });
 
     it('should return undefined domain for localhost with https', () => {
-      expect(parseCookieDomain('https://localhost:3000')).toEqual({
+      expect(parse('https://localhost:3000')).toEqual({
         domain: undefined,
         secure: true,
       });
     });
 
     it('should return undefined domain for IPv4 addresses', () => {
-      expect(parseCookieDomain('http://192.168.1.1')).toEqual({
+      expect(parse('http://192.168.1.1')).toEqual({
         domain: undefined,
         secure: false,
       });
     });
 
     it('should return undefined domain for IPv4 addresses with https', () => {
-      expect(parseCookieDomain('https://192.168.1.1')).toEqual({
+      expect(parse('https://192.168.1.1')).toEqual({
         domain: undefined,
         secure: true,
       });
     });
 
     it('should return undefined domain for IPv4 addresses with port', () => {
-      expect(parseCookieDomain('http://192.168.1.1:8080')).toEqual({
+      expect(parse('http://192.168.1.1:8080')).toEqual({
         domain: undefined,
         secure: false,
       });
@@ -48,70 +61,70 @@ describe('parseCookieDomain', () => {
 
   describe('multi-part TLDs (co.uk, com.au, etc.)', () => {
     it('should handle co.uk domains correctly', () => {
-      expect(parseCookieDomain('https://example.co.uk')).toEqual({
+      expect(parse('https://example.co.uk')).toEqual({
         domain: '.example.co.uk',
         secure: true,
       });
     });
 
     it('should handle subdomains of co.uk domains', () => {
-      expect(parseCookieDomain('https://subdomain.example.co.uk')).toEqual({
+      expect(parse('https://subdomain.example.co.uk')).toEqual({
         domain: '.example.co.uk',
         secure: true,
       });
     });
 
     it('should handle deep subdomains of co.uk domains', () => {
-      expect(parseCookieDomain('https://api.subdomain.example.co.uk')).toEqual({
+      expect(parse('https://api.subdomain.example.co.uk')).toEqual({
         domain: '.example.co.uk',
         secure: true,
       });
     });
 
     it('should handle com.au domains correctly', () => {
-      expect(parseCookieDomain('https://example.com.au')).toEqual({
+      expect(parse('https://example.com.au')).toEqual({
         domain: '.example.com.au',
         secure: true,
       });
     });
 
     it('should handle subdomains of com.au domains', () => {
-      expect(parseCookieDomain('https://api.example.com.au')).toEqual({
+      expect(parse('https://api.example.com.au')).toEqual({
         domain: '.example.com.au',
         secure: true,
       });
     });
 
     it('should handle co.za domains correctly', () => {
-      expect(parseCookieDomain('https://example.co.za')).toEqual({
+      expect(parse('https://example.co.za')).toEqual({
         domain: '.example.co.za',
         secure: true,
       });
     });
 
     it('should handle org.uk domains correctly', () => {
-      expect(parseCookieDomain('https://example.org.uk')).toEqual({
+      expect(parse('https://example.org.uk')).toEqual({
         domain: '.example.org.uk',
         secure: true,
       });
     });
 
     it('should handle gov.uk domains correctly', () => {
-      expect(parseCookieDomain('https://example.gov.uk')).toEqual({
+      expect(parse('https://example.gov.uk')).toEqual({
         domain: '.example.gov.uk',
         secure: true,
       });
     });
 
     it('should handle ac.uk domains correctly', () => {
-      expect(parseCookieDomain('https://example.ac.uk')).toEqual({
+      expect(parse('https://example.ac.uk')).toEqual({
         domain: '.example.ac.uk',
         secure: true,
       });
     });
 
     it('should handle nhs.uk domains correctly', () => {
-      expect(parseCookieDomain('https://example.nhs.uk')).toEqual({
+      expect(parse('https://example.nhs.uk')).toEqual({
         domain: '.example.nhs.uk',
         secure: true,
       });
@@ -120,35 +133,35 @@ describe('parseCookieDomain', () => {
 
   describe('regular domains', () => {
     it('should handle root domains correctly', () => {
-      expect(parseCookieDomain('https://example.com')).toEqual({
+      expect(parse('https://example.com')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle root domains with http', () => {
-      expect(parseCookieDomain('http://example.com')).toEqual({
+      expect(parse('http://example.com')).toEqual({
         domain: '.example.com',
         secure: false,
       });
     });
 
     it('should handle subdomains correctly', () => {
-      expect(parseCookieDomain('https://api.example.com')).toEqual({
+      expect(parse('https://api.example.com')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle deep subdomains correctly', () => {
-      expect(parseCookieDomain('https://v1.api.example.com')).toEqual({
+      expect(parse('https://v1.api.example.com')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle very deep subdomains correctly', () => {
-      expect(parseCookieDomain('https://staging.v1.api.example.com')).toEqual({
+      expect(parse('https://staging.v1.api.example.com')).toEqual({
         domain: '.example.com',
         secure: true,
       });
@@ -157,35 +170,35 @@ describe('parseCookieDomain', () => {
 
   describe('PaaS platform subdomains', () => {
     it('should handle zeabur.app subdomains correctly', () => {
-      expect(parseCookieDomain('https://xxx.zeabur.app')).toEqual({
+      expect(parse('https://xxx.zeabur.app')).toEqual({
         domain: '.zeabur.app',
         secure: true,
       });
     });
 
     it('should handle railway.app subdomains correctly', () => {
-      expect(parseCookieDomain('https://xxx.railway.app')).toEqual({
+      expect(parse('https://xxx.railway.app')).toEqual({
         domain: '.railway.app',
         secure: true,
       });
     });
 
     it('should handle vercel.app subdomains correctly', () => {
-      expect(parseCookieDomain('https://xxx.vercel.app')).toEqual({
+      expect(parse('https://xxx.vercel.app')).toEqual({
         domain: '.vercel.app',
         secure: true,
       });
     });
 
     it('should handle netlify.app subdomains correctly', () => {
-      expect(parseCookieDomain('https://xxx.netlify.app')).toEqual({
+      expect(parse('https://xxx.netlify.app')).toEqual({
         domain: '.netlify.app',
         secure: true,
       });
     });
 
     it('should handle render.com subdomains correctly', () => {
-      expect(parseCookieDomain('https://xxx.onrender.com')).toEqual({
+      expect(parse('https://xxx.onrender.com')).toEqual({
         domain: '.onrender.com',
         secure: true,
       });
@@ -194,28 +207,28 @@ describe('parseCookieDomain', () => {
 
   describe('edge cases and potential breaking scenarios', () => {
     it('should handle domains with ports', () => {
-      expect(parseCookieDomain('https://example.com:8080')).toEqual({
+      expect(parse('https://example.com:8080')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle domains with paths', () => {
-      expect(parseCookieDomain('https://example.com/path')).toEqual({
+      expect(parse('https://example.com/path')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle domains with query parameters', () => {
-      expect(parseCookieDomain('https://example.com?param=value')).toEqual({
+      expect(parse('https://example.com?param=value')).toEqual({
         domain: '.example.com',
         secure: true,
       });
     });
 
     it('should handle domains with fragments', () => {
-      expect(parseCookieDomain('https://example.com#fragment')).toEqual({
+      expect(parse('https://example.com#fragment')).toEqual({
         domain: '.example.com',
         secure: true,
       });
@@ -223,7 +236,7 @@ describe('parseCookieDomain', () => {
 
     it('should handle domains with all URL components', () => {
       expect(
-        parseCookieDomain('https://example.com:8080/path?param=value#fragment')
+        parse('https://example.com:8080/path?param=value#fragment')
       ).toEqual({
         domain: '.example.com',
         secure: true,
@@ -231,28 +244,28 @@ describe('parseCookieDomain', () => {
     });
 
     it('should handle single-level domains', () => {
-      expect(parseCookieDomain('https://example')).toEqual({
+      expect(parse('https://example')).toEqual({
         domain: '.example',
         secure: true,
       });
     });
 
     it('should handle domains with underscores (invalid but should not crash)', () => {
-      expect(parseCookieDomain('https://example_test.com')).toEqual({
+      expect(parse('https://example_test.com')).toEqual({
         domain: '.example_test.com',
         secure: true,
       });
     });
 
     it('should handle domains with hyphens', () => {
-      expect(parseCookieDomain('https://example-test.com')).toEqual({
+      expect(parse('https://example-test.com')).toEqual({
         domain: '.example-test.com',
         secure: true,
       });
     });
 
     it('should handle domains with numbers', () => {
-      expect(parseCookieDomain('https://example123.com')).toEqual({
+      expect(parse('https://example123.com')).toEqual({
         domain: '.example123.com',
         secure: true,
       });
@@ -261,57 +274,53 @@ describe('parseCookieDomain', () => {
 
   describe('error cases that should break', () => {
     it('should throw error for invalid URLs', () => {
-      expect(() => parseCookieDomain('not-a-url')).toThrow();
+      expect(() => parse('not-a-url')).toThrow();
     });
 
     it('should throw error for URLs without protocol', () => {
-      expect(() => parseCookieDomain('example.com')).toThrow();
+      expect(() => parse('example.com')).toThrow();
     });
 
     it('should throw error for malformed URLs', () => {
-      expect(() => parseCookieDomain('http://')).toThrow();
+      expect(() => parse('http://')).toThrow();
     });
 
     it('should throw error for URLs with invalid characters', () => {
-      expect(() =>
-        parseCookieDomain('http://example.com:invalid-port')
-      ).toThrow();
+      expect(() => parse('http://example.com:invalid-port')).toThrow();
     });
   });
 
   describe('specific real-world scenarios', () => {
     it('should handle openpanel.dev domains correctly', () => {
-      expect(parseCookieDomain('https://api.openpanel.dev')).toEqual({
+      expect(parse('https://api.openpanel.dev')).toEqual({
         domain: '.openpanel.dev',
         secure: true,
       });
     });
 
     it('should handle dashboard.openpanel.dev domains correctly', () => {
-      expect(parseCookieDomain('https://dashboard.openpanel.dev')).toEqual({
+      expect(parse('https://dashboard.openpanel.dev')).toEqual({
         domain: '.openpanel.dev',
         secure: true,
       });
     });
 
     it('should handle subdomains of openpanel.dev correctly', () => {
-      expect(
-        parseCookieDomain('https://staging.dashboard.openpanel.dev')
-      ).toEqual({
+      expect(parse('https://staging.dashboard.openpanel.dev')).toEqual({
         domain: '.openpanel.dev',
         secure: true,
       });
     });
 
     it('should handle custom domains correctly', () => {
-      expect(parseCookieDomain('https://myapp.com')).toEqual({
+      expect(parse('https://myapp.com')).toEqual({
         domain: '.myapp.com',
         secure: true,
       });
     });
 
     it('should handle subdomains of custom domains correctly', () => {
-      expect(parseCookieDomain('https://api.myapp.com')).toEqual({
+      expect(parse('https://api.myapp.com')).toEqual({
         domain: '.myapp.com',
         secure: true,
       });
@@ -385,14 +394,14 @@ describe('parseCookieDomain', () => {
 
     for (const tld of multiPartTLDs) {
       it(`should handle ${tld} domains correctly`, () => {
-        expect(parseCookieDomain(`https://example.${tld}`)).toEqual({
+        expect(parse(`https://example.${tld}`)).toEqual({
           domain: `.example.${tld}`,
           secure: true,
         });
       });
 
       it(`should handle subdomains of ${tld} domains correctly`, () => {
-        expect(parseCookieDomain(`https://api.example.${tld}`)).toEqual({
+        expect(parse(`https://api.example.${tld}`)).toEqual({
           domain: `.example.${tld}`,
           secure: true,
         });
@@ -401,98 +410,80 @@ describe('parseCookieDomain', () => {
   });
 
   describe('custom multi-part TLDs via COOKIE_TLDS', () => {
-    const originalEnv = process.env.COOKIE_TLDS;
-
-    beforeEach(() => {
-      // Reset the environment variable before each test
-      delete process.env.COOKIE_TLDS;
-    });
-
-    afterEach(() => {
-      // Restore original value
-      if (originalEnv !== undefined) {
-        process.env.COOKIE_TLDS = originalEnv;
-      } else {
-        delete process.env.COOKIE_TLDS;
-      }
-    });
-
     it('should handle my.id domains when COOKIE_TLDS includes my.id', () => {
-      process.env.COOKIE_TLDS = 'my.id';
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+      expect(parseWithTlds(['my.id'], 'https://abc.my.id')).toEqual({
         domain: '.abc.my.id',
         secure: true,
       });
     });
 
     it('should handle subdomains of my.id domains correctly', () => {
-      process.env.COOKIE_TLDS = 'my.id';
-      expect(parseCookieDomain('https://api.abc.my.id')).toEqual({
+      expect(parseWithTlds(['my.id'], 'https://api.abc.my.id')).toEqual({
         domain: '.abc.my.id',
         secure: true,
       });
     });
 
     it('should handle multiple custom TLDs', () => {
-      process.env.COOKIE_TLDS = 'my.id,web.id,co.id';
+      const tlds = ['my.id', 'web.id', 'co.id'];
 
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+      expect(parseWithTlds(tlds, 'https://abc.my.id')).toEqual({
         domain: '.abc.my.id',
         secure: true,
       });
 
-      expect(parseCookieDomain('https://abc.web.id')).toEqual({
+      expect(parseWithTlds(tlds, 'https://abc.web.id')).toEqual({
         domain: '.abc.web.id',
         secure: true,
       });
 
-      expect(parseCookieDomain('https://abc.co.id')).toEqual({
+      expect(parseWithTlds(tlds, 'https://abc.co.id')).toEqual({
         domain: '.abc.co.id',
         secure: true,
       });
     });
 
-    it('should handle custom TLDs with extra whitespace', () => {
-      process.env.COOKIE_TLDS = ' my.id , web.id ';
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
-        domain: '.abc.my.id',
-        secure: true,
-      });
-    });
-
+    // Trimming and lowercasing happen in the config loader (`tokenList` plus
+    // the transform), so what reaches here is already normalised.
     it('should handle case-insensitive custom TLDs', () => {
-      process.env.COOKIE_TLDS = 'MY.ID';
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+      expect(parseWithTlds(['my.id'], 'https://abc.my.id')).toEqual({
         domain: '.abc.my.id',
         secure: true,
       });
     });
 
-    it('should not affect domains when env variable is empty', () => {
-      process.env.COOKIE_TLDS = '';
+    it('should not affect domains when the list is empty', () => {
       // Without the custom TLD, my.id is treated as a regular TLD
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+      expect(parseWithTlds([], 'https://abc.my.id')).toEqual({
         domain: '.my.id',
         secure: true,
       });
-    });
-
-    it('should not affect domains when env variable is not set', () => {
-      delete process.env.COOKIE_TLDS;
-      // Without the custom TLD, my.id is treated as a regular TLD
-      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+      expect(parse('https://abc.my.id')).toEqual({
         domain: '.my.id',
         secure: true,
       });
     });
 
     it('should still work with built-in multi-part TLDs when custom TLDs are set', () => {
-      process.env.COOKIE_TLDS = 'my.id';
       // Built-in TLDs should still work
-      expect(parseCookieDomain('https://example.co.uk')).toEqual({
+      expect(parseWithTlds(['my.id'], 'https://example.co.uk')).toEqual({
         domain: '.example.co.uk',
         secure: true,
       });
+    });
+
+    it('uses CUSTOM_COOKIE_DOMAIN verbatim when it is set', () => {
+      expect(
+        parseCookieDomain(
+          testCoreConfig({
+            cookies: {
+              extraMultiPartTlds: [],
+              customDomain: '.openpanel.dev',
+            },
+          }),
+          'https://abc.my.id'
+        )
+      ).toEqual({ domain: '.openpanel.dev', secure: true });
     });
   });
 });

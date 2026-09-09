@@ -42,6 +42,7 @@ import {
 } from '@openpanel/core';
 import { Redis } from '@openpanel/redis';
 import pino from 'pino';
+import { loadConfig } from '../src/config/env';
 
 /** Isolates the proof from the shared dev Redis — see the header. */
 const NAMESPACE = 'm9001proof';
@@ -273,9 +274,12 @@ async function main() {
     logger,
   });
 
+  const config = loadConfig();
+
   const buffers = createBuffers({
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => false,
+    config: config.core,
     // Never flushed: this proof asserts BullMQ keys, not ClickHouse rows.
     ch: undefined as unknown as AppDeps['ch'],
   });
@@ -288,7 +292,7 @@ async function main() {
     buffers,
     producers,
     logger,
-    config: { selfHosted: false },
+    config: config.core,
   };
 
   process.stdout.write(

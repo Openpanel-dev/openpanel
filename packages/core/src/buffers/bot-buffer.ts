@@ -3,10 +3,11 @@ import type { IClickhouseBotEvent } from '../modules/event/event.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
+const DEFAULT_BATCH_SIZE = 1000;
+
 export class BotBuffer extends BaseBuffer {
-  private batchSize = process.env.BOT_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.BOT_BUFFER_BATCH_SIZE, 10)
-    : 1000;
+  private readonly batchSize =
+    this.deps.config.buffers.bot.batchSize ?? DEFAULT_BATCH_SIZE;
 
   private readonly redisKey = 'bot-events-buffer';
   private redis: Redis;

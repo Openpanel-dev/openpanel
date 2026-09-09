@@ -99,7 +99,7 @@ export function registerProfileTools(
         });
         return {
           // One template instead of a ~90-character absolute URL on every row.
-          profile_url_template: `${dashboardBaseUrl()}/${context.organizationId}/${projectId}/profiles/{id}`,
+          profile_url_template: `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}/profiles/{id}`,
           ...table(profiles.slice(0, take), {
             limit: take,
             columns: PROFILE_COLUMNS,
@@ -135,6 +135,7 @@ export function registerProfileTools(
         return {
           profile: result.profile,
           dashboard_url: profileUrl(
+            deps.config,
             context.organizationId,
             projectId,
             profileId
@@ -170,11 +171,12 @@ export function registerProfileTools(
         return {
           profileId,
           dashboard_url: profileUrl(
+            deps.config,
             context.organizationId,
             projectId,
             profileId
           ),
-          session_url_template: `${dashboardBaseUrl()}/${context.organizationId}/${projectId}/sessions/{id}`,
+          session_url_template: `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}/sessions/{id}`,
           ...table(sessions.slice(0, take), {
             limit: take,
             columns: SESSION_COLUMNS_DEFAULT,

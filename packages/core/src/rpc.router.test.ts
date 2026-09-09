@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { testCoreConfig } from '../test/config-fixture';
 import { stubHttpCtx } from '../test/rpc-fixtures';
 import { createTrpcFetchHandler } from './rpc/handler';
 import { appRouter } from './rpc.router';
@@ -18,6 +19,7 @@ test('the composed appRouter serves the health procedure', async () => {
     router: appRouter,
     logger,
     cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
   });
 
   const response = await handler(

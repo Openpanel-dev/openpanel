@@ -6,7 +6,7 @@ import {
   getExistingTables,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
  * Re-key the cohort summary MVs for the queries that actually read them.
@@ -41,10 +41,10 @@ import { getIsCluster } from './helpers';
  * The old MVs are left in place and keep receiving inserts. Once the new
  * ones are verified, dropping them is a one-line follow-up migration.
  */
-export async function up() {
+export async function up(env: CodeMigrationEnv) {
   const replicatedVersion = '1';
   const existingTables = await getExistingTables();
-  const isClustered = getIsCluster();
+  const isClustered = getIsCluster(env);
   const sqls: string[] = [];
 
   if (

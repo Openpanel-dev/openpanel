@@ -5,6 +5,7 @@
 
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import {
   clickhouseEventToExportEvent,
   createBatch,
@@ -101,6 +102,7 @@ function fakeDeps(rows: unknown[][]) {
     },
     ch: { query } as unknown as FlushExportsDeps['ch'],
     logger: stubLogger(),
+    config: testCoreConfig(),
     createAdapter: () =>
       ({
         upload: async ({
@@ -218,11 +220,17 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
         format: 'jsonl_gzip' as const,
         serviceAccountKey: KEY,
       };
-      const adapter = createGCSAdapter(config);
+      const adapter = createGCSAdapter(config, testCoreConfig());
 
       // --- exactly what processExport() does ---
       const events = [1, 2, 3].map(chEvent).map(clickhouseEventToExportEvent);
-      const batch = await createBatch('proj_1', 'int_1', events, 'jsonl_gzip');
+      const batch = await createBatch(
+        stubLogger(),
+        'proj_1',
+        'int_1',
+        events,
+        'jsonl_gzip'
+      );
       const basePath = generateBatchPath(
         config.prefix,
         'proj_1',

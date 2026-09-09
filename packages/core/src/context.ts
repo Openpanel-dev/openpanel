@@ -5,6 +5,7 @@
 // (ADR-007 decision 18, ADR-018 R1).
 
 import type { Buffers } from './buffers/create-buffers';
+import type { CoreConfig } from './config';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
@@ -74,11 +75,10 @@ export type { Buffers } from './buffers/create-buffers';
 // `@openpanel/db`'s Prisma client from.
 export type Session = SessionValidationResult;
 
-/** The env-derived flags core needs. apps/api's config/env.ts is the sole
- *  reader of process.env; core reads none. */
-export interface RuntimeFlags {
-  selfHosted: boolean;
-}
+// The parsed environment. `apps/api`'s config/env.ts is the sole reader of
+// process.env and core reads none (ADR-022 R7, made true at M15-006), so the
+// shape of what core needs is declared in `./config.ts` and arrives here.
+export type { CoreConfig } from './config';
 
 /** Boot scope. Built once in apps/api's main.ts, closed once in shutdown. */
 export interface AppDeps {
@@ -89,7 +89,7 @@ export interface AppDeps {
   buffers: Buffers;
   producers: QueueProducerHandle;
   logger: Logger;
-  config: RuntimeFlags;
+  config: CoreConfig;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
@@ -101,6 +101,7 @@ export interface Ctx {
   buffers: Buffers;
   logger: Logger;
   queues: QueueProducers;
+  config: CoreConfig;
   services: Services;
   requestId: string;
 }
@@ -139,6 +140,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     buffers: deps.buffers,
     logger: scope.logger,
     queues: deps.producers.scope({ requestId: scope.requestId }),
+    config: deps.config,
     requestId: scope.requestId,
     // Installed as a getter immediately below.
     services: undefined as unknown as Services,
@@ -174,6 +176,7 @@ function installLazyServices(ctx: Ctx): void {
         buffers: ctx.buffers,
         logger: ctx.logger,
         queues: ctx.queues,
+        config: ctx.config,
       });
       return built;
     },

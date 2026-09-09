@@ -49,7 +49,7 @@ import {
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
-import { isClickhouseClustered, TABLE_NAMES } from '../../shared/ch-tables';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { DateTime } from '../../shared/date';
 import { generateSecureId } from '../../shared/id';
 
@@ -247,7 +247,7 @@ export async function connectUserToOrganization(
     throw new Error('Invite not found');
   }
 
-  if (process.env.ALLOW_INVITATION === 'false') {
+  if (deps.config.auth.allowInvitation === false) {
     throw new Error('Invitations are not allowed');
   }
 
@@ -559,7 +559,7 @@ export async function deleteFromClickhouse(
     // `getReplicatedTableName` appends `ON CLUSTER '{cluster}'` in clustered
     // mode, which is a clause rather than an identifier — so the table name
     // goes through `sql.id` and the clause stays literal template text.
-    const target = isClickhouseClustered()
+    const target = deps.config.clickhouseClustered
       ? sql`${sql.id(`${table}_replicated`)} ON CLUSTER '{cluster}'`
       : sql.id(table);
     // If materialized view, use ALTER TABLE since DELETE is not supported
@@ -825,7 +825,7 @@ export async function inviteUserToOrganization(
   await sendEmail('invite', {
     to: email,
     data: {
-      url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
+      url: `${deps.config.dashboardUrl}/onboarding?inviteId=${invite.id}`,
       organizationName: invite.organization.name,
     },
   });

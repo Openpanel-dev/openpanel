@@ -5,6 +5,7 @@
 // (side-effect-free) import.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 
 process.env.ENCRYPTION_KEY = 'a'.repeat(64);
 
@@ -114,6 +115,8 @@ mock.module('../../shared/ch-query', () => ({
 const deps = {
   db: { gscConnection, project },
   ch,
+  // The GSC tokens are stored encrypted; the key arrives as config now.
+  config: testCoreConfig({ encryptionKey: 'a'.repeat(64) }),
 } as unknown as import('../../services').ServiceDeps;
 // Bypasses the Redis cache-aside entirely — `getGscCannibalization`'s own
 // logic is exercised directly, its caching is @openpanel/redis's concern.
@@ -158,7 +161,7 @@ const validateAuthorizationCode = mock(async () => ({
 const actualAuthService = await import('../auth/auth.service');
 mock.module('../auth/auth.service', () => ({
   ...actualAuthService,
-  googleGsc: { validateAuthorizationCode },
+  googleGscClient: () => ({ validateAuthorizationCode }),
 }));
 
 const getSettingsForProject = mock(

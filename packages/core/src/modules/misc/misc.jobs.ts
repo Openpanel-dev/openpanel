@@ -33,6 +33,7 @@ export const miscCronJobs = {
       await runDataHealthCron({
         db: ctx.db as unknown as DataHealthDb,
         logger: ctx.logger.child({ job: 'data-health' }),
+        config: ctx.config,
         getLastEventPerProject: () =>
           ctx.services.project.getLastEventPerProject(),
         sendEmail: (template, options) =>

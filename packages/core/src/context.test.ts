@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../test/config-fixture';
 import type { AppDeps, Buffers, Ctx } from './context';
 import type { JobMeta } from './jobs/envelope';
 import { createRecordingProducers } from './jobs/testing';
@@ -82,7 +83,7 @@ function stubDeps(): {
         },
       },
       logger: stubLogger(),
-      config: { selfHosted: true },
+      config: testCoreConfig({ selfHosted: true }),
     },
   };
 }

@@ -42,7 +42,7 @@ function createChatAgent(deps: ServiceDeps, entry: ChatModelEntry) {
   return defineAgent({
     name: entry.id,
     description: `OpenPanel chat assistant (${entry.label})`,
-    model: resolveModel(entry),
+    model: resolveModel(deps.config, entry),
     contextSchema: chatContextSchema,
     instruction: (context: ChatAgentContext) => buildSystemPrompt(context),
     tools: (context: ChatAgentContext) => composeChatTools(deps, context),
@@ -70,12 +70,12 @@ function createChatAgent(deps: ServiceDeps, entry: ChatModelEntry) {
  * Called fire-and-forget by the route after the first turn of a new
  * conversation completes.
  */
-function createTitlerAgent() {
+function createTitlerAgent(deps: ServiceDeps) {
   return defineAgent({
     name: '__titler',
     description: 'Generates concise 3-5 word titles for chat conversations.',
     // biome-ignore lint/suspicious/noExplicitAny: OpenAI model id union is open
-    model: openaiProvider().model('gpt-4.1-mini' as any),
+    model: openaiProvider(deps.config).model('gpt-4.1-mini' as any),
     instruction:
       'You generate concise 3-5 word titles for chat conversations. Respond with ONLY the title. No quotes, no punctuation, no trailing period.',
     maxSteps: 1,
@@ -97,7 +97,7 @@ export function createChatApp(deps: ServiceDeps) {
   return betterAgent({
     agents: [
       ...ALLOWED_MODELS.map((entry) => createChatAgent(deps, entry)),
-      createTitlerAgent(),
+      createTitlerAgent(deps),
     ],
     persistence: {
       conversations: createConversationStore(deps),

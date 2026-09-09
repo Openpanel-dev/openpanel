@@ -4,7 +4,6 @@
 
 import crypto from 'node:crypto';
 import type { SessionBuffer } from '../../../buffers/session-buffer';
-import { SESSION_TIMEOUT_MS } from '../../../buffers/session-buffer';
 import { generateDeviceId } from '../../../shared/profileId';
 import type { IClickhouseSession } from '../../session/session.service';
 import { convertClickhouseDateToJs } from '../../session/src/dates';
@@ -36,6 +35,7 @@ export async function getDeviceId({
   overrideDeviceId,
   eventTimeMs,
   sessionBuffer,
+  sessionTimeoutMs,
 }: {
   projectId: string;
   ip: string;
@@ -46,6 +46,8 @@ export async function getDeviceId({
    *  still within its idle window. Defaults to `Date.now()`. */
   eventTimeMs?: number;
   sessionBuffer: SessionBufferReader;
+  /** The idle window, resolved from config by the caller. */
+  sessionTimeoutMs: number;
 }): Promise<DeviceIdResult> {
   if (overrideDeviceId) {
     // A caller-supplied device id is stable (no salt rotation), so it's the only
@@ -55,6 +57,7 @@ export async function getDeviceId({
       deviceIds: [overrideDeviceId],
       eventTimeMs: eventTimeMs ?? Date.now(),
       sessionBuffer,
+      sessionTimeoutMs,
     });
   }
 
@@ -80,6 +83,7 @@ export async function getDeviceId({
     deviceIds: [currentDeviceId, previousDeviceId],
     eventTimeMs: eventTimeMs ?? Date.now(),
     sessionBuffer,
+    sessionTimeoutMs,
   });
 }
 
@@ -95,10 +99,11 @@ export async function getDeviceId({
  */
 function withinIdleWindow(
   session: IClickhouseSession,
-  eventTimeMs: number
+  eventTimeMs: number,
+  sessionTimeoutMs: number
 ): boolean {
   const lastEventMs = convertClickhouseDateToJs(session.ended_at).getTime();
-  return eventTimeMs - lastEventMs < SESSION_TIMEOUT_MS;
+  return eventTimeMs - lastEventMs < sessionTimeoutMs;
 }
 
 async function getInfoFromSession({
@@ -106,6 +111,7 @@ async function getInfoFromSession({
   deviceIds,
   eventTimeMs,
   sessionBuffer,
+  sessionTimeoutMs,
 }: {
   projectId: string;
   /** Candidate device ids in priority order (e.g. [current, previous] salt
@@ -113,6 +119,7 @@ async function getInfoFromSession({
   deviceIds: string[];
   eventTimeMs: number;
   sessionBuffer: SessionBufferReader;
+  sessionTimeoutMs: number;
 }): Promise<DeviceIdResult> {
   const candidates = [...new Set(deviceIds.filter(Boolean))];
   const primary = candidates[0] ?? '';
@@ -128,7 +135,7 @@ async function getInfoFromSession({
     );
 
     for (const [index, session] of sessions.entries()) {
-      if (session && withinIdleWindow(session, eventTimeMs)) {
+      if (session && withinIdleWindow(session, eventTimeMs, sessionTimeoutMs)) {
         return { deviceId: candidates[index]!, sessionId: session.id };
       }
     }
@@ -144,7 +151,7 @@ async function getInfoFromSession({
     //
     // The bucket window MUST track the idle timeout: a gap > the window has to
     // land in a new bucket so a boundary mints a *fresh* id. If it didn't (e.g.
-    // a hardcoded 30min while SESSION_TIMEOUT_MS is shorter), the worker would
+    // a hardcoded 30min while the idle timeout is shorter), the worker would
     // reopen the just-closed id and its session_end would be skipped. Grace must
     // stay < window or getSessionId throws.
     sessionId: getSessionId({
@@ -153,9 +160,9 @@ async function getInfoFromSession({
       eventMs: eventTimeMs,
       graceMs: Math.min(
         SESSION_GRACE_CEILING_MS,
-        Math.floor(SESSION_TIMEOUT_MS / SESSION_GRACE_WINDOW_DIVISOR)
+        Math.floor(sessionTimeoutMs / SESSION_GRACE_WINDOW_DIVISOR)
       ),
-      windowMs: SESSION_TIMEOUT_MS,
+      windowMs: sessionTimeoutMs,
     }),
   };
 }

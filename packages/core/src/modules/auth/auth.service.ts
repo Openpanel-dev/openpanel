@@ -16,6 +16,7 @@
 // `auth.rpc.ts` already carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
 import { type AccessChecks, createAccessChecks } from '../../shared/access';
 import type {
@@ -30,7 +31,7 @@ import {
   setSessionTokenCookie,
 } from './src/cookie';
 import { parseCookieDomain } from './src/cookie-domain';
-import { Arctic, github, google } from './src/oauth';
+import { Arctic, githubClient, googleClient } from './src/oauth';
 import { hashPassword, verifyPasswordHash } from './src/password';
 import {
   decodeSessionToken,
@@ -52,7 +53,7 @@ import {
 // exist for `createAuthService` below) — `noExportedImports` would otherwise
 // flag every one of those imports as "only re-exported", which is false;
 // they are also the members `createAuthService` returns.
-export { COOKIE_MAX_AGE, COOKIE_OPTIONS } from './src/constants';
+export { COOKIE_MAX_AGE, cookieOptions } from './src/constants';
 export {
   deleteSessionTokenCookie,
   setLastAuthProviderCookie,
@@ -60,7 +61,12 @@ export {
 } from './src/cookie';
 export { parseCookieDomain } from './src/cookie-domain';
 export type { OAuth2Tokens } from './src/oauth';
-export { Arctic, github, google, googleGsc } from './src/oauth';
+export {
+  Arctic,
+  githubClient,
+  googleClient,
+  googleGscClient,
+} from './src/oauth';
 export { hashPassword, verifyPasswordHash } from './src/password';
 export {
   decodeSessionToken,
@@ -143,7 +149,7 @@ export function resetAccessChecksForTests(): void {
  * needs `db` / `logger` drops the underscore and reads the parameter.
  */
 export function createAuthService(
-  _deps: ServiceDeps,
+  deps: ServiceDeps,
   _services: () => Services
 ) {
   // Annotated as a whole rather than member by member: one annotation binds
@@ -192,10 +198,19 @@ export function createAuthService(
     hashRecoveryCodes,
     normalizeRecoveryCode,
     consumeRecoveryCode,
-    setSessionTokenCookie,
-    setLastAuthProviderCookie,
-    deleteSessionTokenCookie,
-    parseCookieDomain,
+    setSessionTokenCookie: (
+      setCookie: ISetCookie,
+      token: string,
+      expiresAt: Date
+    ): void => setSessionTokenCookie(deps.config, setCookie, token, expiresAt),
+    setLastAuthProviderCookie: (
+      setCookie: ISetCookie,
+      provider: string
+    ): void => setLastAuthProviderCookie(deps.config, setCookie, provider),
+    deleteSessionTokenCookie: (setCookie: ISetCookie): void =>
+      deleteSessionTokenCookie(deps.config, setCookie),
+    parseCookieDomain: (url: string): ReturnType<typeof parseCookieDomain> =>
+      parseCookieDomain(deps.config, url),
   };
 }
 
@@ -259,12 +274,6 @@ function loadShare() {
   return import('../share/share.service');
 }
 
-function dashboardUrl(): string {
-  return (
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || ''
-  );
-}
-
 /**
  * Best-effort consumption of an invite for a user that just authenticated.
  * Failures (expired/invalid invite) must not block the sign-in itself, so we
@@ -294,7 +303,7 @@ export async function signOutUser(
   setCookie: ISetCookie,
   sessionId: string | null | undefined
 ): Promise<void> {
-  deleteSessionTokenCookie(setCookie);
+  deleteSessionTokenCookie(deps.config, setCookie);
   if (sessionId) {
     await invalidateSession(deps, sessionId);
   }
@@ -317,6 +326,7 @@ export type StartOAuthSignInResult =
  * only place we know the user is new.
  */
 export function startOAuthSignIn(
+  deps: ServiceDeps,
   input: StartOAuthSignInInput,
   setCookie: ISetCookie
 ): StartOAuthSignInResult {
@@ -326,7 +336,7 @@ export function startOAuthSignIn(
 
   if (input.provider === 'github') {
     const state = Arctic.generateState();
-    const url = github.createAuthorizationURL(state, [
+    const url = githubClient(deps.config).createAuthorizationURL(state, [
       'user:email',
       'user:read',
     ]);
@@ -336,11 +346,11 @@ export function startOAuthSignIn(
 
   const state = Arctic.generateState();
   const codeVerifier = Arctic.generateCodeVerifier();
-  const url = google.createAuthorizationURL(state, codeVerifier, [
-    'openid',
-    'profile',
-    'email',
-  ]);
+  const url = googleClient(deps.config).createAuthorizationURL(
+    state,
+    codeVerifier,
+    ['openid', 'profile', 'email']
+  );
   setCookie('google_oauth_state', state, { maxAge: 60 * 10 });
   setCookie('google_code_verifier', codeVerifier, { maxAge: 60 * 10 });
   return { type: 'google', url: url.toString() };
@@ -397,7 +407,7 @@ export async function signUpWithEmail(
 
   const token = generateSessionToken();
   const session = await createSession(deps, token, createdUser.id);
-  setSessionTokenCookie(setCookie, token, session.expiresAt);
+  setSessionTokenCookie(deps.config, setCookie, token, session.expiresAt);
   return session;
 }
 
@@ -469,8 +479,8 @@ export async function signInWithEmail(
 
   const token = generateSessionToken();
   const session = await createSession(deps, token, user.id);
-  setSessionTokenCookie(setCookie, token, session.expiresAt);
-  setLastAuthProviderCookie(setCookie, 'email');
+  setSessionTokenCookie(deps.config, setCookie, token, session.expiresAt);
+  setLastAuthProviderCookie(deps.config, setCookie, 'email');
 
   if (input.inviteId) {
     await consumeInviteForUser(deps, user.id, input.inviteId, logger);
@@ -516,7 +526,7 @@ export async function signInWithTotp(
     throw new TRPCAccessError('Two-factor is not enabled');
   }
 
-  const secret = decrypt(totp.secret);
+  const secret = decrypt(deps.config.encryptionKey, totp.secret);
   const isTotpCode = /^\d{6}$/.test(input.code.replace(/\s+/g, ''));
   let valid = false;
 
@@ -545,8 +555,8 @@ export async function signInWithTotp(
 
   const token = generateSessionToken();
   const session = await createSession(deps, token, challenge.userId);
-  setSessionTokenCookie(setCookie, token, session.expiresAt);
-  setLastAuthProviderCookie(setCookie, 'email');
+  setSessionTokenCookie(deps.config, setCookie, token, session.expiresAt);
+  setLastAuthProviderCookie(deps.config, setCookie, 'email');
 
   const inviteId = cookies.get(INVITE_COOKIE);
   if (inviteId) {
@@ -601,8 +611,16 @@ export async function setupTotp(deps: ServiceDeps, userId: string) {
 
   await deps.db.userTotp.upsert({
     where: { userId },
-    create: { userId, secret: encrypt(secret), recoveryCodes: [] },
-    update: { secret: encrypt(secret), recoveryCodes: [], enabledAt: null },
+    create: {
+      userId,
+      secret: encrypt(deps.config.encryptionKey, secret),
+      recoveryCodes: [],
+    },
+    update: {
+      secret: encrypt(deps.config.encryptionKey, secret),
+      recoveryCodes: [],
+      enabledAt: null,
+    },
   });
 
   return { otpauthUrl, qrDataUrl, secret };
@@ -621,7 +639,7 @@ export async function enableTotp(
     throw new TRPCAccessError('Two-factor is already enabled');
   }
 
-  const secret = decrypt(totp.secret);
+  const secret = decrypt(deps.config.encryptionKey, totp.secret);
   if (!verifyTotpCode(secret, code)) {
     throw new TRPCAccessError('Invalid code');
   }
@@ -647,7 +665,7 @@ export async function disableTotp(
     throw new TRPCAccessError('Two-factor is not enabled');
   }
 
-  const secret = decrypt(totp.secret);
+  const secret = decrypt(deps.config.encryptionKey, totp.secret);
   const isTotpCode = /^\d{6}$/.test(code.replace(/\s+/g, ''));
   const valid = isTotpCode
     ? verifyTotpCode(secret, code)
@@ -672,7 +690,7 @@ export async function regenerateTotpRecoveryCodes(
   if (!totp?.enabledAt) {
     throw new TRPCAccessError('Two-factor is not enabled');
   }
-  const secret = decrypt(totp.secret);
+  const secret = decrypt(deps.config.encryptionKey, totp.secret);
   if (!verifyTotpCode(secret, code)) {
     throw new TRPCAccessError('Invalid code');
   }
@@ -742,7 +760,9 @@ export async function requestPasswordReset(
 
   await sendEmail('reset-password', {
     to: input.email,
-    data: { url: `${dashboardUrl()}/reset-password?token=${token}` },
+    data: {
+      url: `${deps.config.dashboardUrl}/reset-password?token=${token}`,
+    },
   });
 
   return true;
@@ -762,7 +782,12 @@ export async function extendSessionCookie(
   const session = await validateSessionToken(deps, token);
 
   if (session.session) {
-    setSessionTokenCookie(setCookie, token, session.session.expiresAt);
+    setSessionTokenCookie(
+      deps.config,
+      setCookie,
+      token,
+      session.session.expiresAt
+    );
     return { extended: true, expiresAt: session.session.expiresAt };
   }
 
@@ -870,8 +895,11 @@ async function fetchGithubEmail(accessToken: string): Promise<string | null> {
   return email;
 }
 
-export async function fetchGithubOAuthUser(code: string): Promise<OAuthUser> {
-  const tokens = await github.validateAuthorizationCode(code);
+export async function fetchGithubOAuthUser(
+  config: CoreConfig,
+  code: string
+): Promise<OAuthUser> {
+  const tokens = await githubClient(config).validateAuthorizationCode(code);
   const accessToken = tokens.accessToken();
   const email = await fetchGithubEmail(accessToken);
   if (!email) {
@@ -907,10 +935,14 @@ export async function fetchGithubOAuthUser(code: string): Promise<OAuthUser> {
 }
 
 export async function fetchGoogleOAuthUser(
+  config: CoreConfig,
   code: string,
   codeVerifier: string
 ): Promise<OAuthUser> {
-  const tokens = await google.validateAuthorizationCode(code, codeVerifier);
+  const tokens = await googleClient(config).validateAuthorizationCode(
+    code,
+    codeVerifier
+  );
   const claims = Arctic.decodeIdToken(tokens.idToken());
 
   const claimsSchema = z.object({
@@ -1038,8 +1070,13 @@ async function completeExistingOAuthUser(
     await consumeInviteForUser(deps, account.userId, inviteId, logger);
   }
 
-  setSessionTokenCookie(setCookie, sessionToken, session.expiresAt);
-  setLastAuthProviderCookie(setCookie, provider);
+  setSessionTokenCookie(
+    deps.config,
+    setCookie,
+    sessionToken,
+    session.expiresAt
+  );
+  setLastAuthProviderCookie(deps.config, setCookie, provider);
 }
 
 async function completeNewOAuthUser(
@@ -1104,6 +1141,11 @@ async function completeNewOAuthUser(
 
   const sessionToken = generateSessionToken();
   const session = await createSession(deps, sessionToken, user.id);
-  setSessionTokenCookie(setCookie, sessionToken, session.expiresAt);
-  setLastAuthProviderCookie(setCookie, provider);
+  setSessionTokenCookie(
+    deps.config,
+    setCookie,
+    sessionToken,
+    session.expiresAt
+  );
+  setLastAuthProviderCookie(deps.config, setCookie, provider);
 }

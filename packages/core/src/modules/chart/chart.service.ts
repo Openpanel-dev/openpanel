@@ -143,13 +143,6 @@ const EVENT_PROPERTY_KEY_LIMIT = 50_000;
  * keep the default).
  */
 const DEFAULT_EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT = 500;
-const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT = (() => {
-  const raw = process.env.EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT;
-  const parsed = raw && /^\d+$/.test(raw) ? Number(raw) : Number.NaN;
-  return Number.isSafeInteger(parsed) && parsed > 0
-    ? parsed
-    : DEFAULT_EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT;
-})();
 
 /** Profile lookups are batched so the `IN (...)` never exceeds max_query_size. */
 const BUCKET_PROFILES_BATCH_SIZE = 200;
@@ -393,7 +386,8 @@ export async function getChartPropertyValues(
         projectId,
         property.replace(/^properties\./, ''),
         event,
-        EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT
+        deps.config.query.eventPropertyValueAutocompleteLimit ??
+          DEFAULT_EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT
       )
     );
     return { values: rows.map((row) => row.property_value) };

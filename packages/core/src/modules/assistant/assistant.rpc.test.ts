@@ -1,10 +1,11 @@
 // Only the "is anyone logged in" boundary and the deterministic model-list
 // shape are exercised here — no LLM call, no database. `chat.models` reads
-// only `process.env` + the static whitelist (assistant.constants.ts);
+// only `ctx.config.ai` + the static whitelist (assistant.constants.ts);
 // wiring the live-model whitelist against real provider keys is out of
 // scope for a unit test — see assistant.rpc.ts's header.
 
-import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { expect, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { stubHttpCtx, TEST_SESSION } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
@@ -22,36 +23,27 @@ const COOKIE_OPTIONS: CookieOptions = {
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
-async function callerWith(session: unknown) {
-  const { ctx } = stubHttpCtx({}, session);
+/** OPENAI_API_KEY / ANTHROPIC_API_KEY arrive as `ctx.config.ai`. */
+function configWithKeys(keys: { openai?: string; anthropic?: string }) {
+  const base = testCoreConfig();
+  return testCoreConfig({
+    ai: {
+      openai: { ...base.ai.openai, apiKey: keys.openai },
+      anthropic: { ...base.ai.anthropic, apiKey: keys.anthropic },
+    },
+  });
+}
+
+async function callerWith(
+  session: unknown,
+  keys: { openai?: string; anthropic?: string } = {}
+) {
+  const { ctx } = stubHttpCtx({ config: configWithKeys(keys) }, session);
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
   });
   return chatRouter.createCaller(trpcCtx);
 }
-
-const ORIGINAL_ENV = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-};
-
-beforeEach(() => {
-  delete process.env.OPENAI_API_KEY;
-  delete process.env.ANTHROPIC_API_KEY;
-});
-
-afterEach(() => {
-  if (ORIGINAL_ENV.OPENAI_API_KEY === undefined) {
-    delete process.env.OPENAI_API_KEY;
-  } else {
-    process.env.OPENAI_API_KEY = ORIGINAL_ENV.OPENAI_API_KEY;
-  }
-  if (ORIGINAL_ENV.ANTHROPIC_API_KEY === undefined) {
-    delete process.env.ANTHROPIC_API_KEY;
-  } else {
-    process.env.ANTHROPIC_API_KEY = ORIGINAL_ENV.ANTHROPIC_API_KEY;
-  }
-});
 
 test('models rejects an unauthenticated caller before reading provider keys', async () => {
   const caller = await callerWith(EMPTY_SESSION);
@@ -70,8 +62,7 @@ test('models returns no models and a null default with no provider keys set', as
 });
 
 test('models filters to the configured provider and prefers the recorded default', async () => {
-  process.env.OPENAI_API_KEY = 'sk-test';
-  const caller = await callerWith(TEST_SESSION);
+  const caller = await callerWith(TEST_SESSION, { openai: 'sk-test' });
   const result = await caller.models();
   expect(result.providers).toEqual({ openai: true, anthropic: false });
   expect(result.models.every((m) => m.group === 'OpenAI')).toBe(true);

@@ -1,4 +1,5 @@
 import { getRedisCache, type Redis } from '@openpanel/redis';
+import type { CoreConfig } from '../config';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
@@ -7,12 +8,17 @@ import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 // 30min of idle in event-time → session ends. Matches industry default.
-// Idle window for a session (boundary detection + the reaper's default deadman).
-// Env-overridable so E2E tests can shrink it from 30min to a few seconds.
-export const SESSION_TIMEOUT_MS = Number.parseInt(
-  process.env.SESSION_TIMEOUT_MS || String(1000 * 60 * 30),
-  10
-);
+const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
+
+/**
+ * Idle window for a session (boundary detection + the reaper's default
+ * deadman). Overridable through SESSION_TIMEOUT_MS so the E2E harness can
+ * shrink it from 30min to a few seconds — the harness and the stack must be
+ * given the same value (apps/api/e2e/README.md).
+ */
+export function resolveSessionTimeoutMs(config: CoreConfig): number {
+  return config.session.timeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS;
+}
 
 const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;
@@ -119,17 +125,17 @@ function pickUtm(
   return v ? String(v) : '';
 }
 
-export class SessionBuffer extends BaseBuffer {
-  private batchSize = process.env.SESSION_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.SESSION_BUFFER_BATCH_SIZE, 10)
-    : 1000;
-  private chunkSize = process.env.SESSION_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
-    : 1000;
+const DEFAULT_BATCH_SIZE = 1000;
+const DEFAULT_CHUNK_SIZE = 1000;
 
-  private readonly squashEnabled =
-    process.env.SESSION_BUFFER_SQUASH !== 'false' &&
-    process.env.SESSION_BUFFER_SQUASH !== '0';
+export class SessionBuffer extends BaseBuffer {
+  private readonly batchSize =
+    this.deps.config.buffers.session.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.session.chunkSize ?? DEFAULT_CHUNK_SIZE;
+
+  private readonly squashEnabled = this.deps.config.buffers.session.squash;
+  private readonly idleTimeoutMs = resolveSessionTimeoutMs(this.deps.config);
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
@@ -201,7 +207,7 @@ export class SessionBuffer extends BaseBuffer {
       const isBoundary =
         existing &&
         eventTimeMs - fromClickhouseDate(existing.ended_at).getTime() >
-          SESSION_TIMEOUT_MS;
+          this.idleTimeoutMs;
 
       if (existing && !isBoundary) {
         const { current, chRows } = this.extendSession(existing, payload);

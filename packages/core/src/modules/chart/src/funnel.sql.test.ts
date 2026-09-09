@@ -22,6 +22,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import type {
   IChartBreakdown,
   IReportInput,
@@ -162,14 +163,17 @@ const chartSql = async (breakdowns: IChartBreakdown[]) =>
 const chartText = async (breakdowns: IChartBreakdown[]) =>
   render(await chartStatement({ breakdowns })).text;
 
-const originalNonStrict = process.env.FUNNEL_NON_STRICT_ORDERING;
-function setNonStrictOrdering(value: string | undefined) {
-  if (value === undefined) {
-    process.env.FUNNEL_NON_STRICT_ORDERING = undefined;
-    delete process.env.FUNNEL_NON_STRICT_ORDERING;
-    return;
-  }
-  process.env.FUNNEL_NON_STRICT_ORDERING = value;
+/** `deps` with FUNNEL_NON_STRICT_ORDERING flipped, as the loader resolves it. */
+function withNonStrictOrdering(
+  nonStrict: boolean
+): import('../../../services').ServiceDeps {
+  // Object.create, not a spread: `testServiceDeps` exposes `clients`/`buffers`
+  // as throwing getters and a spread would read them.
+  return Object.assign(Object.create(deps), {
+    config: testCoreConfig({
+      query: { ...deps.config.query, funnelNonStrictOrdering: nonStrict },
+    }),
+  });
 }
 
 beforeAll(async () => {
@@ -384,27 +388,26 @@ describe('funnel.sql / buildFunnelBase — breakdown attribution', () => {
 });
 
 describe('funnel.sql / funnel CTE — windowFunnel ordering', () => {
-  afterAll(() => {
-    setNonStrictOrdering(originalNonStrict);
-  });
-
   it('defaults to strict_increase (unchanged behavior)', async () => {
-    // Set to '' rather than deleting: a dev shell with the variable exported
-    // would otherwise flip this test.
-    setNonStrictOrdering('');
     expect(await chartSql([])).toContain("'strict_increase'");
   });
 
   it('drops strict_increase when FUNNEL_NON_STRICT_ORDERING is set', async () => {
-    setNonStrictOrdering('1');
-    const sql = await chartSql([]);
+    const base = await buildFunnelBase(
+      withNonStrictOrdering(true),
+      baseInput()
+    );
+    const sql = render(funnelChartQuery(base)).sql;
     expect(sql).not.toContain('strict_increase');
     expect(sql).toMatch(/windowFunnel\(\{p:UInt64\}\)\(/);
   });
 
   it('non-strict funnel SQL parses and resolves', async () => {
-    setNonStrictOrdering('true');
-    const statement = await chartStatement();
+    const base = await buildFunnelBase(
+      withNonStrictOrdering(true),
+      baseInput()
+    );
+    const statement = funnelChartQuery(base);
     expect(render(statement).sql).not.toContain('strict_increase');
     await explain(statement);
   });

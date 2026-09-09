@@ -38,9 +38,9 @@
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
 import { chQuery } from '../../shared/ch-query';
-import { isClickhouseClustered } from '../../shared/ch-tables';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {
@@ -73,8 +73,11 @@ const TABLE = {
  * `'{cluster}'` is a ClickHouse *macro*, not a `{name:Type}` placeholder — it
  * carries no type suffix, so parameter substitution leaves it alone.
  */
-export function replicatedTarget(tableName: string): SqlFragment {
-  if (isClickhouseClustered()) {
+export function replicatedTarget(
+  clustered: boolean,
+  tableName: string
+): SqlFragment {
+  if (clustered) {
     return sql`${sql.id(`${tableName}_replicated`)} ON CLUSTER '{cluster}'`;
   }
   return sql.id(tableName);
@@ -85,23 +88,17 @@ export function replicatedTarget(tableName: string): SqlFragment {
 // with bigger cohorts need to raise it — env-tunable to avoid an image
 // rebuild for what is really a sizing knob.
 //
-// Strictly a positive safe integer: anything else falls back to the
-// default. Number.parseInt would accept '5000junk' or '-1' (LIMIT -1 is a
-// query error), and 0 is falsy at the `limit ? LIMIT ... : ''` call sites,
-// which would silently remove the cap entirely.
-function parsePositiveInt(raw: string | undefined): number | undefined {
-  if (!(raw && /^\d+$/.test(raw))) {
-    return undefined;
-  }
-  const parsed = Number(raw);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
+// Strictly a positive safe integer, which is what the config loader's
+// `optionalPositiveInt` guarantees: '5000junk', '-1' and '0' all arrive as
+// undefined, and 0 is falsy at the `limit ? LIMIT ... : ''` call sites, which
+// would silently remove the cap entirely.
+const DEFAULT_COHORT_MATERIALIZE_LIMIT = 10_000;
 
-const COHORT_MATERIALIZE_LIMIT_PARSED = parsePositiveInt(
-  process.env.COHORT_MATERIALIZE_LIMIT
-);
-export const COHORT_MATERIALIZE_LIMIT =
-  COHORT_MATERIALIZE_LIMIT_PARSED ?? 10_000;
+export function cohortMaterializeLimit(config: CoreConfig): number {
+  return (
+    config.query.cohortMaterializeLimit ?? DEFAULT_COHORT_MATERIALIZE_LIMIT
+  );
+}
 
 // Property cohorts aggregate every profile row for the project, so they are
 // the one cohort query that can outgrow the server's memory headroom. Two
@@ -122,20 +119,18 @@ export const COHORT_MATERIALIZE_LIMIT =
 // ~281MB spilled whether the threshold was 300, 512 or 768MB, at
 // 6.9s/6.7s/6.0s, while peak memory climbed 410/695/893MiB).
 //
-// A standalone function of its raw env inputs (not a module-level read), so
-// a test can exercise every branch by calling it directly — bun:test shares
-// one module registry per file even under --isolate, so vitest's
+// A standalone function of its two parsed inputs (not a module-level read),
+// so a test can exercise every branch by calling it directly — bun:test
+// shares one module registry per file even under --isolate, so vitest's
 // vi.resetModules()-per-case porting has no equivalent (see AGENTS.md; this
 // was the one vi.resetModules site in the suite, ADR-010's tail table).
 export function deriveCohortQuerySettings({
-  memoryLimitBytesRaw,
-  spillBytesRaw,
+  memoryLimitBytes,
+  spillBytes: spillBytesParsed,
 }: {
-  memoryLimitBytesRaw: string | undefined;
-  spillBytesRaw: string | undefined;
+  memoryLimitBytes: number | undefined;
+  spillBytes: number | undefined;
 }): ClickHouseSettings {
-  const memoryLimitBytes = parsePositiveInt(memoryLimitBytesRaw);
-  const spillBytesParsed = parsePositiveInt(spillBytesRaw);
   const spillBytes =
     memoryLimitBytes !== undefined &&
     (spillBytesParsed === undefined || spillBytesParsed >= memoryLimitBytes)
@@ -155,11 +150,14 @@ export function deriveCohortQuerySettings({
   };
 }
 
-export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings =
-  deriveCohortQuerySettings({
-    memoryLimitBytesRaw: process.env.COHORT_QUERY_MEMORY_LIMIT_BYTES,
-    spillBytesRaw: process.env.COHORT_QUERY_SPILL_BYTES,
+export function profileCohortQuerySettings(
+  config: CoreConfig
+): ClickHouseSettings {
+  return deriveCohortQuerySettings({
+    memoryLimitBytes: config.query.cohortQueryMemoryLimitBytes,
+    spillBytes: config.query.cohortQuerySpillBytes,
   });
+}
 
 // The column is a parameter rather than a post-hoc `.replace('created_at',
 // 'event_date')` on finished text: V1 rewrote the clause that way at all four
@@ -381,7 +379,7 @@ export function buildPropertyBasedCohortQuery(
   // Resolve each profile's newest row with GROUP BY + argMax instead of
   // FINAL: FINAL cannot spill to disk, so on wide projects the dedup itself
   // is what runs out of memory. The aggregate shape spills normally under
-  // PROFILE_COHORT_QUERY_SETTINGS, and filters on aggregates move to HAVING.
+  // profileCohortQuerySettings, and filters on aggregates move to HAVING.
   return sql`
     SELECT id as profile_id
     FROM ${sql.id(TABLE.profiles)}
@@ -601,7 +599,7 @@ export async function computePropertyBasedCohort(
     deps,
 
     buildPropertyBasedCohortQuery(projectId, definition, limit),
-    PROFILE_COHORT_QUERY_SETTINGS
+    profileCohortQuerySettings(deps.config)
   );
   return results.map((r) => r.profile_id);
 }
@@ -619,7 +617,7 @@ export async function countPropertyBasedCohort(
     deps,
 
     sql`SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
-    PROFILE_COHORT_QUERY_SETTINGS
+    profileCohortQuerySettings(deps.config)
   );
   return results[0]?.count ?? 0;
 }
@@ -782,7 +780,7 @@ export async function updateCohortMembership(
     deps,
     cohort.projectId,
     definition,
-    COHORT_MATERIALIZE_LIMIT
+    cohortMaterializeLimit(deps.config)
   );
 
   const version = Date.now();
@@ -791,7 +789,7 @@ export async function updateCohortMembership(
   // (project_id, cohort_id, profile_id), so profiles that fell out of the
   // cohort definition would otherwise linger forever. Clear them first.
   await ch.command({
-    ...sql`DELETE FROM ${replicatedTarget(TABLE.cohortMembers)} WHERE cohort_id = ${sql.string(cohort.id)} AND project_id = ${sql.string(cohort.projectId)}`.toStatement(),
+    ...sql`DELETE FROM ${replicatedTarget(deps.config.clickhouseClustered, TABLE.cohortMembers)} WHERE cohort_id = ${sql.string(cohort.id)} AND project_id = ${sql.string(cohort.projectId)}`.toStatement(),
     clickhouse_settings: {
       lightweight_deletes_sync: '1',
     },
@@ -823,7 +821,7 @@ export async function deleteCohortMembership(
   const where = sql`cohort_id = ${sql.string(cohortId)} AND project_id = ${sql.string(projectId)}`;
   for (const table of [TABLE.cohortMembers, TABLE.cohortMetadata]) {
     await ch.command({
-      ...sql`DELETE FROM ${replicatedTarget(table)} WHERE ${where}`.toStatement(),
+      ...sql`DELETE FROM ${replicatedTarget(deps.config.clickhouseClustered, table)} WHERE ${where}`.toStatement(),
       clickhouse_settings: {
         lightweight_deletes_sync: '0',
       },

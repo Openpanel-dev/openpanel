@@ -1,11 +1,9 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
+import type { Logger } from '../../../logger';
 import { generateSecureId } from '../../../shared/id';
-import { createLogger } from '../../logger';
 import type { IExportEvent } from './export-event';
-
-const logger = createLogger({ name: 'batch-creator' });
 
 /**
  * Supported export formats
@@ -145,6 +143,7 @@ async function gzipCompress(content: string): Promise<Buffer> {
  * Create a batch of events in the specified format
  */
 export async function createBatch(
+  logger: Logger,
   projectId: string,
   integrationId: string,
   events: IExportEvent[],

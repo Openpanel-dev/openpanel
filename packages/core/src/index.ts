@@ -30,7 +30,7 @@ export type { IGroupBufferInput } from './buffers/group-buffer';
 export type { ProfileBackfillEntry } from './buffers/profile-backfill-buffer';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
 export type { SessionIngestResult } from './buffers/session-buffer';
-export { SESSION_TIMEOUT_MS } from './buffers/session-buffer';
+export { resolveSessionTimeoutMs } from './buffers/session-buffer';
 // Dissolved from @openpanel/ai (M4-005) — the chat agent app, the filter
 // command bar, insight explanation/enrichment and the worker's digest and
 // win-back emails all call these directly.
@@ -136,10 +136,10 @@ export {
 } from './clients/logger';
 export type {
   AppDeps,
+  CoreConfig,
   Ctx,
   HttpCtx,
   JobCtx,
-  RuntimeFlags,
   ScopeMeta,
   Session,
 } from './context';
@@ -246,8 +246,8 @@ export {
   assertOAuthState,
   buildOtpauthUrl,
   COOKIE_MAX_AGE,
-  COOKIE_OPTIONS,
   consumeRecoveryCode,
+  cookieOptions,
   createAuthService,
   decodeSessionToken,
   deleteSessionTokenCookie,
@@ -257,9 +257,9 @@ export {
   generateRecoveryCodes,
   generateSessionToken,
   generateTotpSecret,
-  github,
-  google,
-  googleGsc,
+  githubClient,
+  googleClient,
+  googleGscClient,
   hashPassword as hashUserPassword,
   hashRecoveryCodes,
   hashSessionToken,
@@ -596,24 +596,6 @@ export {
   createKafkaAdmin,
   createKafkaEventsConsumer,
   disconnectKafka,
-  KAFKA_BROKERS,
-  KAFKA_CONNECTION_TIMEOUT_MS,
-  KAFKA_CONSUMER_GROUP,
-  KAFKA_EVENTS_DLQ_TOPIC,
-  KAFKA_EVENTS_TOPIC,
-  KAFKA_HANDLER_MAX_ATTEMPTS,
-  KAFKA_HANDLER_RETRY_INITIAL_MS,
-  KAFKA_HANDLER_RETRY_MAX_MS,
-  KAFKA_HEARTBEAT_INTERVAL_MS,
-  KAFKA_MAX_MESSAGES_PER_PARTITION,
-  KAFKA_MAX_WAIT_MS,
-  KAFKA_MIN_MESSAGES,
-  KAFKA_PARTITIONS_CONCURRENT,
-  KAFKA_PRODUCER_INITIAL_RETRY_MS,
-  KAFKA_PRODUCER_MAX_RETRY_MS,
-  KAFKA_PRODUCER_RETRIES,
-  KAFKA_REQUEST_TIMEOUT_MS,
-  KAFKA_SESSION_TIMEOUT_MS,
   kafkaLogger,
   produceDeadLetterEvent,
   produceIncomingEvent,
@@ -1068,7 +1050,6 @@ export { generateId, generateSecureId, shortId } from './shared/id';
 // only definition already lived here; the barrel is how a package outside
 // core reaches it, since the exports map has no ./shared/* entry).
 export { getSafeJson } from './shared/json';
-export { resolveMaxLookbackDays } from './shared/lookback';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
 export type {
   UserAgentInfo,

@@ -8,18 +8,19 @@
 // the same facts.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import { ALLOWED_MODELS, resolveModel } from './providers';
 
 const WIN_BACK_MODEL_ID = 'gpt-4-1-mini';
 
-function winBackModel() {
+function winBackModel(config: CoreConfig) {
   const entry =
     ALLOWED_MODELS.find((m) => m.id === WIN_BACK_MODEL_ID) ??
     ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
   if (!entry) {
     throw new Error('No OpenAI model available for win-back pitch');
   }
-  return resolveModel(entry);
+  return resolveModel(config, entry);
 }
 
 export interface WinBackPitchInput {
@@ -55,14 +56,14 @@ Rules:
 - Contractions are fine.`;
 
 let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp() {
+function getApp(config: CoreConfig) {
   if (_app) {
     return _app;
   }
   const agent = defineAgent({
     name: 'win-back-pitch',
     description: 'Writes a wind-down win-back paragraph (one-shot).',
-    model: winBackModel(),
+    model: winBackModel(config),
     contextSchema: z.object({}),
     outputSchema: {
       schema: winBackOutputJsonSchema,
@@ -79,9 +80,10 @@ function getApp() {
 }
 
 export async function generateWinBackPitch(
+  config: CoreConfig,
   input: WinBackPitchInput
 ): Promise<string> {
-  const result = (await getApp().run('win-back-pitch', {
+  const result = (await getApp(config).run('win-back-pitch', {
     input: JSON.stringify(input),
     context: {},
     // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts

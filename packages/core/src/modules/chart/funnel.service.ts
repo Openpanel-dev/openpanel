@@ -134,6 +134,7 @@ export async function buildFunnelBase(
     funnelGroup,
     cohortMetadata,
     timezone,
+    config: deps.config,
   });
 }
 

@@ -3,7 +3,7 @@ import {
   chMigrationClient,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
  * Aggregating projection for the property-key autocomplete dropdown.
@@ -188,8 +188,8 @@ async function materializedProjections(
   }
 }
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const storage = await resolveStorageTable(isClustered);
   const tbl = `\`${storage}\``;
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
@@ -214,8 +214,8 @@ export async function up() {
   ]);
 }
 
-export async function down() {
-  const isClustered = getIsCluster();
+export async function down(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const storage = await resolveStorageTable(isClustered);
   const tbl = `\`${storage}\``;
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';

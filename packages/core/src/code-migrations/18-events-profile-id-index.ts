@@ -2,7 +2,7 @@ import {
   chMigrationClient,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
  * Data-skipping index on events.profile_id.
@@ -109,8 +109,8 @@ async function hasCompletedMaterialization(
   }
 }
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const table = isClustered ? 'events_replicated' : 'events';
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 
@@ -133,8 +133,8 @@ export async function up() {
   await runClickhouseMigrationCommands(sqls);
 }
 
-export async function down() {
-  const isClustered = getIsCluster();
+export async function down(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const table = isClustered ? 'events_replicated' : 'events';
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 

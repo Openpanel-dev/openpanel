@@ -1,3 +1,5 @@
+import type { CoreConfig } from '../../../config';
+
 // List of known multi-part TLDs that should be treated as single domains
 const MULTI_PART_TLDS = [
   /com\.\w{2}$/,
@@ -12,30 +14,18 @@ const MULTI_PART_TLDS = [
   /go\.\w{2}$/,
 ];
 
-function getCustomMultiPartTLDs(): string[] {
-  const envValue = process.env.COOKIE_TLDS || '';
-  if (!envValue.trim()) {
-    return [];
-  }
-  return envValue
-    .split(',')
-    .map((tld) => tld.trim().toLowerCase())
-    .filter((tld) => tld.length > 0);
-}
-
-function isMultiPartTLD(potentialTLD: string): boolean {
+function isMultiPartTLD(config: CoreConfig, potentialTLD: string): boolean {
   if (MULTI_PART_TLDS.some((pattern) => pattern.test(potentialTLD))) {
     return true;
   }
 
-  const customTLDs = getCustomMultiPartTLDs();
-  return customTLDs.includes(potentialTLD.toLowerCase());
+  return config.cookies.extraMultiPartTlds.includes(potentialTLD.toLowerCase());
 }
 
-export const parseCookieDomain = (url: string) => {
-  if (process.env.CUSTOM_COOKIE_DOMAIN) {
+export const parseCookieDomain = (config: CoreConfig, url: string) => {
+  if (config.cookies.customDomain) {
     return {
-      domain: process.env.CUSTOM_COOKIE_DOMAIN,
+      domain: config.cookies.customDomain,
       secure: true,
     };
   }
@@ -63,7 +53,7 @@ export const parseCookieDomain = (url: string) => {
   // Handle multi-part TLDs like co.uk, com.au, etc.
   if (parts.length >= 3) {
     const potentialTLD = parts.slice(-2).join('.');
-    if (isMultiPartTLD(potentialTLD)) {
+    if (isMultiPartTLD(config, potentialTLD)) {
       // For domains like example.co.uk or subdomain.example.co.uk
       // Use the last 3 parts: .example.co.uk
       return {

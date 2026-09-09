@@ -5,6 +5,7 @@
 // registered before the subject's first call, not before its import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
 
@@ -27,6 +28,7 @@ const $executeRaw = mock((..._args: unknown[]) => {
 // $executeRaw above), so `deps.ch` stays unbuilt.
 const deps = {
   db: { $executeRaw },
+  config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
 const spikesQuery = mock(async () => [
@@ -144,12 +146,20 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
     references: [],
   };
 
-  const first = await subject.explainInsight(input, 'insight-explain:i1:100');
+  const first = await subject.explainInsight(
+    deps,
+    input,
+    'insight-explain:i1:100'
+  );
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(first?.summary).toBe('x');
 
   // Second call with the same key is served from the cache, not the LLM.
-  const second = await subject.explainInsight(input, 'insight-explain:i1:100');
+  const second = await subject.explainInsight(
+    deps,
+    input,
+    'insight-explain:i1:100'
+  );
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(second).toEqual(first);
 });
@@ -175,6 +185,7 @@ test('createInsightService binds every InsightService method', () => {
       logger,
       queues:
         undefined as unknown as import('../../jobs.registry').QueueProducers,
+      config: testCoreConfig(),
     },
     testServices()
   );

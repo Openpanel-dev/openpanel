@@ -129,6 +129,7 @@ export const listDashboards = (deps: ServiceDeps) =>
       return dashboards.map((d) => ({
         ...d,
         dashboard_url: dashboardUrl(
+          deps.config,
           context.organizationId,
           context.projectId,
           `/dashboards/${d.id}`
@@ -979,6 +980,7 @@ export const findProfiles = (deps: ServiceDeps) =>
         profiles.map((p) => ({
           ...p,
           dashboard_url: dashboardUrl(
+            deps.config,
             context.organizationId,
             context.projectId,
             `/profiles/${p.id}`

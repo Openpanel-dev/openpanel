@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { CoreConfig } from '../../../../config';
 import type { ServiceDeps } from '../../../../services';
 import { getId } from '../../../../shared/slug-id';
 import { getDashboardById } from '../../../dashboard/dashboard.service';
@@ -125,19 +126,21 @@ function isValidDateOnly(value: unknown): value is string {
 }
 
 function dashboardUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   dashboardId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
 }
 
 function reportUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   reportId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/reports/${reportId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
 // `dbNull` is `Prisma.DbNull` (an explicit SQL NULL on a nullable Json
@@ -193,6 +196,7 @@ async function requireReport(
 }
 
 function withDashboardUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   dashboard: {
@@ -213,11 +217,17 @@ function withDashboardUrl(
     organizationId: dashboard.organizationId,
     createdAt: dashboard.createdAt,
     updatedAt: dashboard.updatedAt,
-    dashboard_url: dashboardUrl(organizationId, projectId, dashboard.id),
+    dashboard_url: dashboardUrl(
+      config,
+      organizationId,
+      projectId,
+      dashboard.id
+    ),
   };
 }
 
 function withReportUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   report: { id: string }
@@ -225,7 +235,7 @@ function withReportUrl(
   return {
     ...report,
     // Keep the existing MCP report-tool field name for this report URL.
-    dashboard_url: reportUrl(organizationId, projectId, report.id),
+    dashboard_url: reportUrl(config, organizationId, projectId, report.id),
   };
 }
 
@@ -292,6 +302,7 @@ export function registerDashboardManagementTools(
           report: canonicalReportConfig(report),
           layout: report.layout,
           dashboard_url: reportUrl(
+            deps.config,
             context.organizationId,
             projectId,
             report.id
@@ -300,6 +311,7 @@ export function registerDashboardManagementTools(
 
         return {
           dashboard: withDashboardUrl(
+            deps.config,
             context.organizationId,
             projectId,
             dashboard
@@ -343,6 +355,7 @@ export function registerDashboardManagementTools(
 
         return {
           dashboard: withDashboardUrl(
+            deps.config,
             context.organizationId,
             projectId,
             dashboard
@@ -373,6 +386,7 @@ export function registerDashboardManagementTools(
 
         return {
           dashboard: withDashboardUrl(
+            deps.config,
             context.organizationId,
             projectId,
             dashboard
@@ -449,6 +463,7 @@ export function registerDashboardManagementTools(
         return {
           deleted: true,
           dashboard: withDashboardUrl(
+            deps.config,
             context.organizationId,
             projectId,
             dashboard
@@ -479,7 +494,12 @@ export function registerDashboardManagementTools(
         });
 
         return {
-          report: withReportUrl(context.organizationId, projectId, created),
+          report: withReportUrl(
+            deps.config,
+            context.organizationId,
+            projectId,
+            created
+          ),
         };
       })
   );
@@ -503,7 +523,12 @@ export function registerDashboardManagementTools(
         });
 
         return {
-          report: withReportUrl(context.organizationId, projectId, updated),
+          report: withReportUrl(
+            deps.config,
+            context.organizationId,
+            projectId,
+            updated
+          ),
         };
       })
   );
@@ -524,7 +549,12 @@ export function registerDashboardManagementTools(
 
         return {
           deleted: true,
-          report: withReportUrl(context.organizationId, projectId, deleted),
+          report: withReportUrl(
+            deps.config,
+            context.organizationId,
+            projectId,
+            deleted
+          ),
         };
       })
   );
@@ -565,7 +595,12 @@ export function registerDashboardManagementTools(
         });
 
         return {
-          report: withReportUrl(context.organizationId, projectId, duplicate),
+          report: withReportUrl(
+            deps.config,
+            context.organizationId,
+            projectId,
+            duplicate
+          ),
         };
       })
   );
@@ -621,6 +656,7 @@ export function registerDashboardManagementTools(
           dashboardId,
           count: result.count,
           dashboard_url: dashboardUrl(
+            deps.config,
             context.organizationId,
             projectId,
             dashboardId

@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { testCoreConfig } from '../../test/config-fixture';
 import { stubHttpCtx, TEST_SESSION } from '../../test/rpc-fixtures';
 import type { CookieOptions } from '../shared/cookie';
 import * as baseModule from './base';
@@ -201,6 +202,7 @@ function mountWith(
     router,
     logger,
     cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
   });
   return {
     logger,
@@ -334,6 +336,7 @@ test('the rate limit middleware hands the limiter ctx fields, not a request', as
     router,
     logger,
     cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
   });
 
   await handler(postTo('signIn'), ctx);
@@ -369,6 +372,7 @@ test('a limiter rejection stops the procedure and surfaces as 429', async () => 
     router,
     logger,
     cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
   });
 
   const response = await handler(postTo('signIn'), ctx);

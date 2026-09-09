@@ -166,11 +166,13 @@ test('binds user-controlled property keys instead of escaping them', () => {
 });
 
 test('replicatedTarget renders exactly what getReplicatedTableName produces', () => {
-  for (const table of ['cohort_members', 'cohort_metadata']) {
-    expect(replicatedTarget(table).toStatement()).toEqual({
-      query: getReplicatedTableName(table),
-      query_params: {},
-    });
+  for (const clustered of [true, false]) {
+    for (const table of ['cohort_members', 'cohort_metadata']) {
+      expect(replicatedTarget(clustered, table).toStatement()).toEqual({
+        query: getReplicatedTableName(clustered, table),
+        query_params: {},
+      });
+    }
   }
 });
 
@@ -203,8 +205,8 @@ test('matches nothing when every filter was dropped as empty', () => {
 test('deriveCohortQuerySettings applies NO settings when neither variable is set (upstream defaults govern)', () => {
   expect(
     deriveCohortQuerySettings({
-      memoryLimitBytesRaw: undefined,
-      spillBytesRaw: undefined,
+      memoryLimitBytes: undefined,
+      spillBytes: undefined,
     })
   ).toEqual({});
 });
@@ -212,8 +214,8 @@ test('deriveCohortQuerySettings applies NO settings when neither variable is set
 test('deriveCohortQuerySettings derives the spill threshold as limit/3 when only the limit is set', () => {
   expect(
     deriveCohortQuerySettings({
-      memoryLimitBytesRaw: '3000000000',
-      spillBytesRaw: undefined,
+      memoryLimitBytes: 3_000_000_000,
+      spillBytes: undefined,
     })
   ).toEqual({
     max_bytes_before_external_group_by: '1000000000',
@@ -224,8 +226,8 @@ test('deriveCohortQuerySettings derives the spill threshold as limit/3 when only
 test('deriveCohortQuerySettings respects both values when both are set', () => {
   expect(
     deriveCohortQuerySettings({
-      memoryLimitBytesRaw: '2000000000',
-      spillBytesRaw: '500000000',
+      memoryLimitBytes: 2_000_000_000,
+      spillBytes: 500_000_000,
     })
   ).toEqual({
     max_bytes_before_external_group_by: '500000000',
@@ -236,8 +238,8 @@ test('deriveCohortQuerySettings respects both values when both are set', () => {
 test('deriveCohortQuerySettings applies only the spill threshold when only it is set', () => {
   expect(
     deriveCohortQuerySettings({
-      memoryLimitBytesRaw: undefined,
-      spillBytesRaw: '500000000',
+      memoryLimitBytes: undefined,
+      spillBytes: 500_000_000,
     })
   ).toEqual({ max_bytes_before_external_group_by: '500000000' });
 });
@@ -248,8 +250,8 @@ test('deriveCohortQuerySettings re-derives an inverted pair (spill >= limit woul
   // writes to disk — the exact inversion ClickHouse Cloud ships.
   expect(
     deriveCohortQuerySettings({
-      memoryLimitBytesRaw: '900000000',
-      spillBytesRaw: '900000000',
+      memoryLimitBytes: 900_000_000,
+      spillBytes: 900_000_000,
     })
   ).toEqual({
     max_bytes_before_external_group_by: '300000000',
@@ -258,10 +260,10 @@ test('deriveCohortQuerySettings re-derives an inverted pair (spill >= limit woul
 });
 
 test('deriveCohortQuerySettings never derives a zero spill threshold (0 would DISABLE spilling)', () => {
-  for (const memoryLimitBytesRaw of ['1', '2', '3']) {
+  for (const memoryLimitBytes of [1, 2, 3]) {
     const settings = deriveCohortQuerySettings({
-      memoryLimitBytesRaw,
-      spillBytesRaw: undefined,
+      memoryLimitBytes,
+      spillBytes: undefined,
     });
     expect(
       Number(settings.max_bytes_before_external_group_by)
@@ -269,11 +271,5 @@ test('deriveCohortQuerySettings never derives a zero spill threshold (0 would DI
   }
 });
 
-test('deriveCohortQuerySettings ignores malformed values', () => {
-  expect(
-    deriveCohortQuerySettings({
-      memoryLimitBytesRaw: '2gb',
-      spillBytesRaw: '-1',
-    })
-  ).toEqual({});
-});
+// A malformed COHORT_QUERY_* value is rejected by the config loader now, not
+// here — `apps/api/src/config/env.test.ts` owns that case since M15-006.

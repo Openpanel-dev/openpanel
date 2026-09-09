@@ -35,16 +35,17 @@ export type IGroupBufferInput = {
   properties?: Record<string, unknown>;
 };
 
+const DEFAULT_BATCH_SIZE = 200;
+const DEFAULT_CHUNK_SIZE = 1000;
+const DEFAULT_TTL_IN_SECONDS = 60 * 60;
+
 export class GroupBuffer extends BaseBuffer {
-  private batchSize = process.env.GROUP_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.GROUP_BUFFER_BATCH_SIZE, 10)
-    : 200;
-  private chunkSize = process.env.GROUP_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.GROUP_BUFFER_CHUNK_SIZE, 10)
-    : 1000;
-  private ttlInSeconds = process.env.GROUP_BUFFER_TTL_IN_SECONDS
-    ? Number.parseInt(process.env.GROUP_BUFFER_TTL_IN_SECONDS, 10)
-    : 60 * 60;
+  private readonly batchSize =
+    this.deps.config.buffers.group.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.group.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  private readonly ttlInSeconds =
+    this.deps.config.buffers.group.ttlSeconds ?? DEFAULT_TTL_IN_SECONDS;
 
   private readonly redisKey = 'group-buffer';
   private readonly redisCachePrefix = 'group-cache:';

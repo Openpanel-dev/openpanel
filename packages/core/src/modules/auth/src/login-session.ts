@@ -14,7 +14,7 @@ import { decodeSessionToken, hashSessionToken } from './token';
 
 /** Only Postgres — narrowed so `AppDeps` (http/session.ts, before
  *  `ServiceDeps.queues` exists) satisfies it with no cast. */
-type LoginSessionDeps = Pick<ServiceDeps, 'db'>;
+type LoginSessionDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const SESSION_RENEWAL_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
@@ -76,8 +76,9 @@ export async function validateSessionToken(
   deps: LoginSessionDeps,
   token: string | null | undefined
 ): Promise<SessionValidationResult> {
-  if (process.env.DEMO_USER_ID) {
-    return createDemoSession(deps, process.env.DEMO_USER_ID);
+  const demoUserId = deps.config.demoUserId;
+  if (demoUserId) {
+    return createDemoSession(deps, demoUserId);
   }
 
   if (!token) {

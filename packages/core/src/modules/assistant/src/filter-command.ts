@@ -15,6 +15,7 @@ import {
 } from '@better-agent/core';
 import { z } from 'zod';
 import { resolveModel } from '../../../clients/ai/providers';
+import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
 import {
   getDatesFromRange,
@@ -120,9 +121,9 @@ type FilterCommandContext = z.infer<typeof filterCommandContextSchema>;
 
 const PREFERRED_MODEL_IDS = ['claude-haiku-4-5', 'gpt-4-1-mini'] as const;
 
-function pickModel(): ChatModelEntry {
-  const haveOpenai = Boolean(process.env.OPENAI_API_KEY);
-  const haveAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
+function pickModel(config: CoreConfig): ChatModelEntry {
+  const haveOpenai = Boolean(config.ai.openai.apiKey);
+  const haveAnthropic = Boolean(config.ai.anthropic.apiKey);
   const available = (entry: ChatModelEntry) =>
     (entry.group === 'OpenAI' && haveOpenai) ||
     (entry.group === 'Anthropic' && haveAnthropic);
@@ -376,7 +377,7 @@ function createFilterCommandApp(deps: ServiceDeps) {
   const agent = defineAgent({
     name: 'filter-command',
     description: 'OpenPanel filter command bar (one-shot, no persistence).',
-    model: resolveModel(pickModel()),
+    model: resolveModel(deps.config, pickModel(deps.config)),
     contextSchema: filterCommandContextSchema,
     outputSchema: {
       schema: filterCommandOutputJsonSchema,

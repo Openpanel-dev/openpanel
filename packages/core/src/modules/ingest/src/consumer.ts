@@ -321,7 +321,7 @@ export function createEventsBatchHandler(
 /** The broker-facing half, supplied by whoever owns the kafkajs client. */
 export interface EventsConsumerDeps {
   /** Already configured with the group id, timeouts and fetch bounds. */
-  createConsumer: () => Consumer;
+  createConsumer: (options?: { groupId?: string }) => Consumer;
   /** Lifecycle / rebalance visibility. */
   logger: ConsumerLogger;
   /** The "consumer running" line, on the kafka-scoped logger. */

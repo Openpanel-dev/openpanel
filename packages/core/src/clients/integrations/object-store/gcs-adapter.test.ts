@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import { encryptCredential } from '../../../shared/encryption';
 import { createGCSAdapter } from './gcs-adapter';
 
@@ -16,7 +17,7 @@ import { createGCSAdapter } from './gcs-adapter';
  * The whole suite skips when it isn't reachable, so `pnpm test` stays green
  * without Docker.
  */
-const EMULATOR = process.env.GCS_API_ENDPOINT ?? 'http://localhost:4443';
+const EMULATOR = 'http://localhost:4443';
 const BUCKET = 'op-gcs-adapter-test';
 
 // A structurally valid service account key. fake-gcs-server does no auth, and
@@ -60,16 +61,42 @@ async function readObject(bucket: string, key: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-function adapter(
-  overrides: { bucket?: string; serviceAccountKey?: string } = {}
+// GCS_API_ENDPOINT and ENCRYPTION_KEY arrive as config, not as env. The
+// endpoint is set by the emulator block's `beforeAll` and left unset for the
+// validation-only tests above it, exactly as the env write it replaces did.
+let emulatorEndpoint: string | undefined;
+
+function coreConfig(
+  overrides: { gcsApiEndpoint?: string; encryptionKey?: string } = {}
 ) {
-  return createGCSAdapter({
-    type: 'gcs_export',
-    bucket: overrides.bucket ?? BUCKET,
-    prefix: 'openpanel-exports',
-    format: 'jsonl_gzip',
-    serviceAccountKey: overrides.serviceAccountKey ?? SERVICE_ACCOUNT_KEY,
+  const base = testCoreConfig();
+  return testCoreConfig({
+    encryptionKey: overrides.encryptionKey,
+    objectStoreExport: {
+      ...base.objectStoreExport,
+      gcsApiEndpoint: overrides.gcsApiEndpoint ?? emulatorEndpoint,
+    },
   });
+}
+
+function adapter(
+  overrides: {
+    bucket?: string;
+    serviceAccountKey?: string;
+    gcsApiEndpoint?: string;
+    encryptionKey?: string;
+  } = {}
+) {
+  return createGCSAdapter(
+    {
+      type: 'gcs_export',
+      bucket: overrides.bucket ?? BUCKET,
+      prefix: 'openpanel-exports',
+      format: 'jsonl_gzip',
+      serviceAccountKey: overrides.serviceAccountKey ?? SERVICE_ACCOUNT_KEY,
+    },
+    coreConfig(overrides)
+  );
 }
 
 // Runs without the emulator: the credential document is rejected before any
@@ -118,7 +145,7 @@ const available = await emulatorReachable();
 
 describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
   beforeAll(async () => {
-    process.env.GCS_API_ENDPOINT = EMULATOR;
+    emulatorEndpoint = EMULATOR;
     await createBucket(BUCKET);
   });
 
@@ -211,11 +238,15 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
     });
 
     it('decrypts an encrypted service account key', async () => {
-      process.env.ENCRYPTION_KEY = 'a'.repeat(64);
+      const encryptionKey = 'a'.repeat(64);
       const key = 'upload/encrypted-creds.txt';
 
       await adapter({
-        serviceAccountKey: encryptCredential(SERVICE_ACCOUNT_KEY),
+        encryptionKey,
+        serviceAccountKey: encryptCredential(
+          encryptionKey,
+          SERVICE_ACCOUNT_KEY
+        ),
       }).upload({
         bucket: BUCKET,
         key,

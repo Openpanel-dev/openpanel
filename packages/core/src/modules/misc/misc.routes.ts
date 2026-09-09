@@ -48,7 +48,7 @@ export const miscRoutes = defineRoutes((app) =>
     .get(
       '/misc/favicon',
       async ({ query, ctx, set }) => {
-        const result = await getFavicon(query.url, ctx.logger);
+        const result = await getFavicon(ctx.config, query.url, ctx.logger);
         set.status = result.status;
         for (const [name, value] of Object.entries(result.headers)) {
           set.headers[name] = value;
@@ -60,7 +60,7 @@ export const miscRoutes = defineRoutes((app) =>
     .get(
       '/misc/og',
       async ({ query, ctx, set }) => {
-        const result = await getOgImage(query.url, ctx.logger);
+        const result = await getOgImage(ctx.config, query.url, ctx.logger);
         set.status = result.status;
         for (const [name, value] of Object.entries(result.headers)) {
           set.headers[name] = value;
@@ -72,7 +72,7 @@ export const miscRoutes = defineRoutes((app) =>
     .get(
       '/misc/geo',
       async ({ ctx, status }) => {
-        const report = await getGeoReport(ctx.headers);
+        const report = await getGeoReport(ctx.config, ctx.headers);
         if (!report.ok) {
           return status(400, 'Bad Request');
         }

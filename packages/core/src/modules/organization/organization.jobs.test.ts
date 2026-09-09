@@ -2,6 +2,7 @@
 // method itself is exercised in organization.service.test.ts.
 
 import { expect, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import type { AppDeps, Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
@@ -74,6 +75,7 @@ function stubJobCtx(
     buffers: {} as Buffers,
     logger: stubLogger(),
     queues: createRecordingProducers(queues).queues,
+    config: testCoreConfig(),
     services,
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: jobName },

@@ -6,18 +6,19 @@
 // pattern as enrich.ts / filter-command.ts.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import { ALLOWED_MODELS, resolveModel } from './providers';
 
 const NARRATIVE_MODEL_ID = 'gpt-4-1-mini';
 
-function narrativeModel() {
+function narrativeModel(config: CoreConfig) {
   const entry =
     ALLOWED_MODELS.find((m) => m.id === NARRATIVE_MODEL_ID) ??
     ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
   if (!entry) {
     throw new Error('No OpenAI model available for weekly narrative');
   }
-  return resolveModel(entry);
+  return resolveModel(config, entry);
 }
 
 export interface WeeklyNarrativeInput {
@@ -49,14 +50,14 @@ Rules:
 - If the week was quiet, say so plainly and briefly. Never invent data.`;
 
 let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp() {
+function getApp(config: CoreConfig) {
   if (_app) {
     return _app;
   }
   const agent = defineAgent({
     name: 'weekly-narrative',
     description: 'Writes a weekly digest intro paragraph (one-shot).',
-    model: narrativeModel(),
+    model: narrativeModel(config),
     contextSchema: z.object({}),
     outputSchema: {
       schema: narrativeOutputJsonSchema,
@@ -73,9 +74,10 @@ function getApp() {
 }
 
 export async function generateWeeklyNarrative(
+  config: CoreConfig,
   input: WeeklyNarrativeInput
 ): Promise<string> {
-  const result = (await getApp().run('weekly-narrative', {
+  const result = (await getApp(config).run('weekly-narrative', {
     input: JSON.stringify(input),
     context: {},
     // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts

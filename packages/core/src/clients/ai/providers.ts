@@ -1,78 +1,58 @@
 // Ported from @openpanel/ai (dissolved into core — M4-005).
 //
-// SERVER-ONLY. This module instantiates `@better-agent/providers` clients and
-// reads provider API keys from `process.env`. Never value-import it from the
-// browser (apps/start) — import the model catalog/types from
+// SERVER-ONLY. This module instantiates `@better-agent/providers` clients from
+// the credentials the config loader parsed (ADR-022 R9: config in). Never
+// value-import it from the browser (apps/start) — import the model
+// catalog/types from
 // `@openpanel/core/modules/assistant/assistant.constants` instead.
 import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
-import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import type { ChatModelEntry } from '../../modules/assistant/assistant.constants';
 
 export type { ChatModelEntry } from '../../modules/assistant/assistant.constants';
 export { CHAT_MODELS as ALLOWED_MODELS } from '../../modules/assistant/assistant.constants';
 
-const openAiEnvSchema = z.object({
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_BASE_URL: z.string().optional(),
-  OPENAI_PROJECT: z.string().optional(),
-  OPENAI_ORGANIZATION: z.string().optional(),
-});
-
-const anthropicEnvSchema = z.object({
-  ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_BASE_URL: z.string().optional(),
-  ANTHROPIC_TOKEN: z.string().optional(),
-  ANTHROPIC_VERSION: z.string().optional(),
-});
-
+// One provider client per process, built on first use. The credentials are
+// the same object for every caller — `loadConfig` runs once at boot — so the
+// memo cannot serve one caller another caller's key.
 let _openai: ReturnType<typeof createOpenAI> | null = null;
-function openai() {
+function openai(config: CoreConfig) {
   if (!_openai) {
-    const {
-      OPENAI_API_KEY,
-      OPENAI_BASE_URL,
-      OPENAI_PROJECT,
-      OPENAI_ORGANIZATION,
-    } = openAiEnvSchema.parse(process.env);
+    const { apiKey, baseUrl, project, organization } = config.ai.openai;
 
-    if (!OPENAI_API_KEY) {
+    if (!apiKey) {
       console.warn(
         `[chat] OPENAI_API_KEY is not set. Models routed through OpenAI will fail with "x-api-key required" until you add it to the API's env.`
       );
     }
 
     _openai = createOpenAI({
-      apiKey: OPENAI_API_KEY,
-      baseURL: OPENAI_BASE_URL,
-      project: OPENAI_PROJECT,
-      organization: OPENAI_ORGANIZATION,
+      apiKey,
+      baseURL: baseUrl,
+      project,
+      organization,
     });
   }
   return _openai;
 }
 
 let _anthropic: ReturnType<typeof createAnthropic> | null = null;
-function anthropic() {
+function anthropic(config: CoreConfig) {
   if (!_anthropic) {
-    const {
-      ANTHROPIC_API_KEY,
-      ANTHROPIC_BASE_URL,
-      ANTHROPIC_TOKEN,
-      ANTHROPIC_VERSION,
-    } = anthropicEnvSchema.parse(process.env);
+    const { apiKey, baseUrl, authToken, version } = config.ai.anthropic;
 
-    if (!ANTHROPIC_API_KEY) {
+    if (!apiKey) {
       console.warn(
         `[chat] ANTHROPIC_API_KEY is not set. Models routed through Anthropic will fail with "x-api-key required" until you add it to the API's env.`
       );
     }
 
     _anthropic = createAnthropic({
-      apiKey: ANTHROPIC_API_KEY,
-      baseURL: ANTHROPIC_BASE_URL,
-      authToken: ANTHROPIC_TOKEN,
-      anthropicVersion: ANTHROPIC_VERSION,
+      apiKey,
+      baseURL: baseUrl,
+      authToken,
+      anthropicVersion: version,
     });
   }
   return _anthropic;
@@ -81,13 +61,13 @@ function anthropic() {
 export const openaiProvider = openai;
 export const anthropicProvider = anthropic;
 
-export function resolveModel(entry: ChatModelEntry) {
+export function resolveModel(config: CoreConfig, entry: ChatModelEntry) {
   switch (entry.group) {
     case 'OpenAI':
       // biome-ignore lint/suspicious/noExplicitAny: OpenAI model id union is open
-      return openai().model(entry.modelId as any);
+      return openai(config).model(entry.modelId as any);
     case 'Anthropic':
       // biome-ignore lint/suspicious/noExplicitAny: Anthropic model id union is open
-      return anthropic().model(entry.modelId as any);
+      return anthropic(config).model(entry.modelId as any);
   }
 }

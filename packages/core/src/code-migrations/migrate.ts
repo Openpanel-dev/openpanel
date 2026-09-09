@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 
 import { db } from '@openpanel/db';
 import {
+  type CodeMigrationEnv,
   getIsCluster,
   getIsDry,
   getIsSelfHosting,
@@ -14,7 +15,7 @@ import {
   printBoxMessage,
 } from './helpers';
 
-async function migrate() {
+export async function runCodeMigrations(env: CodeMigrationEnv) {
   const args = process.argv.slice(2);
   const migration = args.filter((arg) => !arg.startsWith('--'))[0];
 
@@ -54,16 +55,16 @@ async function migrate() {
   ]);
 
   printBoxMessage('🤝 Config', [
-    `isClustered:   ${getIsCluster()}`,
-    `isSelfHosting: ${getIsSelfHosting()}`,
+    `isClustered:   ${getIsCluster(env)}`,
+    `isSelfHosting: ${getIsSelfHosting(env)}`,
   ]);
 
   printBoxMessage('🌍 Environment', [
-    `POSTGRES:   ${process.env.DATABASE_URL}`,
-    `CLICKHOUSE: ${process.env.CLICKHOUSE_URL}`,
+    `POSTGRES:   ${env.databaseUrl}`,
+    `CLICKHOUSE: ${env.clickhouseUrl}`,
   ]);
 
-  if (!getIsSelfHosting()) {
+  if (!getIsSelfHosting(env)) {
     if (getIsDry()) {
       printBoxMessage('🕒 Migrations starts now (dry run)', []);
     } else {
@@ -73,7 +74,7 @@ async function migrate() {
   }
 
   if (migration) {
-    await runMigration(migrationsDir, migration);
+    await runMigration(migrationsDir, migration, env);
   } else {
     for (const file of migrations) {
       if (finishedMigrations.some((migration) => migration.name === file)) {
@@ -81,7 +82,7 @@ async function migrate() {
         continue;
       }
 
-      await runMigration(migrationsDir, file);
+      await runMigration(migrationsDir, file, env);
     }
   }
 
@@ -89,11 +90,15 @@ async function migrate() {
   process.exit(0);
 }
 
-async function runMigration(migrationsDir: string, file: string) {
+async function runMigration(
+  migrationsDir: string,
+  file: string,
+  env: CodeMigrationEnv
+) {
   printBoxMessage('⚡️ Running Migration ⚡️ ', [`${file}`]);
   try {
     const migration = await import(path.join(migrationsDir, file));
-    await migration.up();
+    await migration.up(env);
     if (!(getIsDry() || getShouldIgnoreRecord())) {
       await db.codeMigration.upsert({
         where: {
@@ -115,5 +120,3 @@ async function runMigration(migrationsDir: string, file: string) {
     process.exit(1);
   }
 }
-
-migrate();

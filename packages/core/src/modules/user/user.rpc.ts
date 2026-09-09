@@ -31,7 +31,7 @@ export const userRouter = createTRPCRouter({
   delete: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
     await ctx.services.user.deleteUserAccount(userId);
-    deleteSessionTokenCookie(ctx.setCookie);
+    deleteSessionTokenCookie(ctx.config, ctx.setCookie);
     return true;
   }),
 

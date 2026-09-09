@@ -22,14 +22,11 @@ const slackCallbackQuery = z.object({
   state: z.string(),
 });
 
-function dashboardUrl(): string {
-  return (
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || ''
-  );
-}
+/** Only used to make the URL parseable when DASHBOARD_URL is not set. */
+const FALLBACK_ORIGIN = 'http://localhost';
 
-function loginErrorRedirect(message: string) {
-  const url = new URL('/login', dashboardUrl() || 'http://localhost');
+function loginErrorRedirect(dashboardUrl: string, message: string) {
+  const url = new URL('/login', dashboardUrl || FALLBACK_ORIGIN);
   url.searchParams.set('error', message);
   return redirect(url.toString());
 }
@@ -51,14 +48,14 @@ export const integrationRoutes = defineRoutes((app) =>
         // than a now-404 integrations URL.
         return redirect(
           projectId
-            ? `${dashboardUrl()}/${organizationId}/${projectId}/integrations/installed`
-            : `${dashboardUrl()}/${organizationId}`
+            ? `${ctx.config.dashboardUrl}/${organizationId}/${projectId}/integrations/installed`
+            : `${ctx.config.dashboardUrl}/${organizationId}`
         );
       } catch (error) {
         ctx.logger.error({ err: error }, 'Slack OAuth callback error');
         const message =
           error instanceof Error ? error.message : 'An error occurred';
-        return loginErrorRedirect(message);
+        return loginErrorRedirect(ctx.config.dashboardUrl, message);
       }
     },
     { query: slackCallbackQuery, detail: { hide: true } }

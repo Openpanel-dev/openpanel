@@ -4,6 +4,7 @@
 // `sendEmail` arrive as injected deps so the job is testable without
 // `mock.module`. `misc.jobs.ts` binds them off the job's ctx (M10-006).
 
+import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -52,6 +53,7 @@ export type DataHealthTemplate = 'tracking-no-data' | 'tracking-data-stopped';
 export interface DataHealthDeps {
   db: DataHealthDb;
   logger: Logger;
+  config: CoreConfig;
   getLastEventPerProject(): Promise<Map<string, Date>>;
   sendEmail(
     template: DataHealthTemplate,
@@ -95,7 +97,7 @@ export interface DataHealthResult extends Record<string, number> {
 export async function runDataHealthCron(
   deps: DataHealthDeps
 ): Promise<DataHealthResult | null> {
-  if (process.env.SELF_HOSTED === 'true') {
+  if (deps.config.selfHosted) {
     return null;
   }
 
@@ -179,7 +181,7 @@ export async function runDataHealthCron(
         continue;
       }
 
-      const dashboardUrl = `${process.env.DASHBOARD_URL ?? DEFAULT_DASHBOARD_URL}/${alert.organizationId}`;
+      const dashboardUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${alert.organizationId}`;
 
       if (alert.noData.length > 0) {
         for (const [to, firstName] of recipients) {

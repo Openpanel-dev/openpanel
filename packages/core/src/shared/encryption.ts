@@ -6,14 +6,19 @@ const IV_LENGTH = 12; // 96 bits for GCM
 const AUTH_TAG_LENGTH = 16; // 128 bits
 const ENCODING = 'base64';
 
+/** The hex ENCRYPTION_KEY as it arrives from the config loader. */
+export type EncryptionKey = string | undefined;
+
 /**
  * Single symmetric key for all at-rest encryption (TOTP secrets, GSC tokens,
  * integration credentials). Must be 32 bytes (64 hex characters).
  * Generate with: openssl rand -hex 32
+ *
+ * Validated here rather than at boot: a deployment that never encrypts
+ * anything has always been allowed to run without the key, and only the first
+ * call that needs it fails.
  */
-function getEncryptionKey(): Buffer {
-  const keyHex = process.env.ENCRYPTION_KEY;
-
+function getEncryptionKey(keyHex: EncryptionKey): Buffer {
   if (!keyHex) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
@@ -33,10 +38,10 @@ function getEncryptionKey(): Buffer {
 // ciphertext keeps decrypting; this is the implementation db re-exports.)
 // ---------------------------------------------------------------------------
 
-export function encrypt(plaintext: string): string {
-  const key = getEncryptionKey();
+export function encrypt(key: EncryptionKey, plaintext: string): string {
+  const encryptionKey = getEncryptionKey(key);
   const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv(ALGORITHM, key, iv);
+  const cipher = createCipheriv(ALGORITHM, encryptionKey, iv);
   const encrypted = Buffer.concat([
     cipher.update(plaintext, 'utf8'),
     cipher.final(),
@@ -45,8 +50,8 @@ export function encrypt(plaintext: string): string {
   return Buffer.concat([iv, tag, encrypted]).toString(ENCODING);
 }
 
-export function decrypt(ciphertext: string): string {
-  const key = getEncryptionKey();
+export function decrypt(key: EncryptionKey, ciphertext: string): string {
+  const encryptionKey = getEncryptionKey(key);
   const buf = Buffer.from(ciphertext, ENCODING);
   const iv = buf.subarray(0, IV_LENGTH);
   const tag = buf.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
@@ -59,7 +64,7 @@ export function decrypt(ciphertext: string): string {
       `Invalid encrypted value: expected a ${AUTH_TAG_LENGTH}-byte auth tag, got ${tag.length}`
     );
   }
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  const decipher = createDecipheriv(ALGORITHM, encryptionKey, iv);
   decipher.setAuthTag(tag);
   // Concatenate first, decode once: GCM is a stream cipher, so update() can end
   // mid-way through a multi-byte UTF-8 sequence and a per-chunk toString would
@@ -80,7 +85,10 @@ export function isEncrypted(value: string): boolean {
   return value.startsWith(ENCRYPTION_PREFIX);
 }
 
-export function encryptCredential(plaintext: string): string {
+export function encryptCredential(
+  key: EncryptionKey,
+  plaintext: string
+): string {
   if (!plaintext) {
     return plaintext;
   }
@@ -89,10 +97,10 @@ export function encryptCredential(plaintext: string): string {
     return plaintext;
   }
 
-  const key = getEncryptionKey();
+  const encryptionKey = getEncryptionKey(key);
   const iv = randomBytes(IV_LENGTH);
 
-  const cipher = createCipheriv(ALGORITHM, key, iv, {
+  const cipher = createCipheriv(ALGORITHM, encryptionKey, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
 
@@ -109,7 +117,10 @@ export function encryptCredential(plaintext: string): string {
   return ENCRYPTION_PREFIX + combined.toString('base64');
 }
 
-export function decryptCredential(ciphertext: string): string {
+export function decryptCredential(
+  key: EncryptionKey,
+  ciphertext: string
+): string {
   if (!ciphertext) {
     return ciphertext;
   }
@@ -118,7 +129,7 @@ export function decryptCredential(ciphertext: string): string {
     return ciphertext;
   }
 
-  const key = getEncryptionKey();
+  const encryptionKey = getEncryptionKey(key);
 
   // Remove prefix and decode base64
   const combined = Buffer.from(
@@ -138,7 +149,7 @@ export function decryptCredential(ciphertext: string): string {
     combined.length - AUTH_TAG_LENGTH
   );
 
-  const decipher = createDecipheriv(ALGORITHM, key, iv, {
+  const decipher = createDecipheriv(ALGORITHM, encryptionKey, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
 

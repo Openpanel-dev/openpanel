@@ -5,6 +5,7 @@
 // other FILE in the process (bare `bun test` shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 import type { AppDeps, Buffers } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
@@ -153,6 +154,7 @@ test('ImportService.enqueue adds the import job onto the import queue', async ()
       buffers: {} as Buffers,
       logger: stubLogger(),
       queues: producers.queues,
+      config: testCoreConfig(),
     },
     testServices()
   );

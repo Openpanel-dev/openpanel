@@ -18,12 +18,16 @@ import { getDeviceId, type SessionBufferReader } from './device-id';
 const NOW = new Date('2026-06-08T12:00:00.000Z').getTime();
 const MINUTE = 60 * 1000;
 const SALTS = { current: 'salt-current', previous: 'salt-previous' };
+/** SESSION_TIMEOUT_MS's default: the caller resolves it from config now. */
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
 const BASE = {
   projectId: 'proj-1',
   ip: '1.2.3.4',
   ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/148.0.0.0',
   salts: SALTS,
   eventTimeMs: NOW,
+  sessionTimeoutMs: SESSION_TIMEOUT_MS,
 };
 
 // withinIdleWindow only reads `id` + `ended_at`; the rest is irrelevant here.

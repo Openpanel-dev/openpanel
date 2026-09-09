@@ -1,19 +1,19 @@
-// Read at import time, not through config/env.ts: this is the same pragmatic
-// deviation @openpanel/db and @openpanel/redis take (TARGET_ARCHITECTURE §7)
-// — ported from @openpanel/auth unchanged rather than threaded through
-// AppDeps, which would make every module reachable from a session cookie
-// carry a dependency on this one.
+// Deployment-derived: the session cookie's domain and `secure` flag come from
+// the dashboard's own URL, so they are computed from the config the boot path
+// already holds rather than read at import (ADR-022 R7).
+import type { CoreConfig } from '../../../config';
+import type { CookieOptions } from '../../../shared/cookie';
 import { parseCookieDomain } from './cookie-domain';
 
-const parsed = parseCookieDomain(
-  (process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL) ?? ''
-);
-
 export const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
-export const COOKIE_OPTIONS = {
-  domain: parsed.domain,
-  secure: parsed.secure,
-  sameSite: 'lax',
-  httpOnly: true,
-  path: '/',
-} as const;
+
+export function cookieOptions(config: CoreConfig): CookieOptions {
+  const parsed = parseCookieDomain(config, config.dashboardUrl);
+  return {
+    domain: parsed.domain,
+    secure: parsed.secure,
+    sameSite: 'lax',
+    httpOnly: true,
+    path: '/',
+  };
+}

@@ -178,7 +178,8 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent,
+                produceIncomingEvent: (payload, partitionKey) =>
+                  produceIncomingEvent(ctx.config, payload, partitionKey),
                 deps: ctx,
               }
             );
@@ -249,7 +250,8 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               },
               {
                 buffers: ctx.buffers,
-                produceIncomingEvent,
+                produceIncomingEvent: (payload, partitionKey) =>
+                  produceIncomingEvent(ctx.config, payload, partitionKey),
                 deps: ctx,
               }
             );

@@ -25,6 +25,7 @@
 import crypto from 'node:crypto';
 import { getRedisCache } from '@openpanel/redis';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
+import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
@@ -203,17 +204,19 @@ function textFailure(status: 400 | 404, body: string): ImageAssetFailure {
   return { status, body, headers: { 'content-type': 'text/plain' } };
 }
 
-function blockedOrErrorResult(error: unknown): ImageAssetFailure {
+function blockedOrErrorResult(
+  isProduction: boolean,
+  error: unknown
+): ImageAssetFailure {
   if (error instanceof BlockedUrlError) {
     return {
       ...textFailure(400, 'Bad request'),
       headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' },
     };
   }
-  const message =
-    process.env.NODE_ENV === 'production'
-      ? 'Bad request'
-      : ((error as Error)?.message ?? 'Error');
+  const message = isProduction
+    ? 'Bad request'
+    : ((error as Error)?.message ?? 'Error');
   return {
     ...textFailure(400, message),
     headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' },
@@ -221,6 +224,7 @@ function blockedOrErrorResult(error: unknown): ImageAssetFailure {
 }
 
 export async function getFavicon(
+  config: CoreConfig,
   rawUrl: string | undefined,
   logger?: Pick<Logger, 'debug' | 'warn' | 'error'>
 ): Promise<ImageAssetResult> {
@@ -295,17 +299,18 @@ export async function getFavicon(
     };
   } catch (error) {
     logger?.error?.({ err: error, url: rawUrl }, 'Favicon fetch error');
-    return blockedOrErrorResult(error);
+    return blockedOrErrorResult(config.isProduction, error);
   }
 }
 
 export async function getOgImage(
+  config: CoreConfig,
   rawUrl: string | undefined,
   logger?: Pick<Logger, 'debug' | 'warn' | 'error'>
 ): Promise<ImageAssetResult> {
   const url = validateUrl(rawUrl);
   if (!url) {
-    return getFavicon(rawUrl, logger);
+    return getFavicon(config, rawUrl, logger);
   }
 
   try {
@@ -327,14 +332,14 @@ export async function getOgImage(
     } else {
       const meta = await parseUrlMeta(url.toString());
       if (!meta?.ogImage) {
-        return getFavicon(rawUrl, logger);
+        return getFavicon(config, rawUrl, logger);
       }
       imageUrl = new URL(meta.ogImage);
     }
 
     const { buffer, status } = await fetchImage(imageUrl, logger);
     if (status !== 200 || buffer.length === 0) {
-      return getFavicon(rawUrl, logger);
+      return getFavicon(config, rawUrl, logger);
     }
 
     // Rasterize to a 300px-wide PNG
@@ -352,7 +357,7 @@ export async function getOgImage(
     };
   } catch (error) {
     logger?.error?.({ err: error, url: rawUrl }, 'OG image fetch error');
-    return blockedOrErrorResult(error);
+    return blockedOrErrorResult(config.isProduction, error);
   }
 }
 
@@ -424,12 +429,17 @@ export type GeoReport =
     };
 
 export async function getGeoReport(
+  config: CoreConfig,
   headers: Record<string, string | string[] | undefined> | Headers
 ): Promise<GeoReport> {
-  const { ip, header } = getClientIpFromHeaders(headers);
+  const { ip, header } = getClientIpFromHeaders(config.ipHeaders, headers);
   const others = await Promise.all(
     DEFAULT_IP_HEADER_ORDER.map(async (headerName) => {
-      const { ip: otherIp } = getClientIpFromHeaders(headers, headerName);
+      const { ip: otherIp } = getClientIpFromHeaders(
+        config.ipHeaders,
+        headers,
+        headerName
+      );
       return {
         header: headerName,
         ip: otherIp,
@@ -459,7 +469,7 @@ export async function getGeoReport(
  * apps/worker/src/jobs/cron.ping.ts.
  */
 export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
-  if (process.env.DISABLE_PING) {
+  if (deps.config.pingDisabled) {
     return;
   }
 
@@ -476,8 +486,7 @@ export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      domain:
-        process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
+      domain: deps.config.dashboardUrl || undefined,
       count: res.count,
     }),
   });

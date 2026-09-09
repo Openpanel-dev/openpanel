@@ -51,10 +51,6 @@ function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
 }
 
-function loadLookback() {
-  return import('../../shared/lookback');
-}
-
 function loadDateService() {
   return import('../../shared/date');
 }
@@ -164,7 +160,6 @@ const SESSION_FILTER_TABLE = {
 
 const DEFAULT_LOOKBACK_DAYS = 0.5;
 const SESSION_LIST_MAX_LOOKBACK_DAYS_DEFAULT = 365;
-const SESSION_LIST_MAX_LOOKBACK_DAYS_ENV = 'SESSION_LIST_MAX_LOOKBACK_DAYS';
 
 const SESSIONS_COUNT_CACHE_SECONDS = 60 * 10;
 const REPLAY_CHUNKS_PAGE_SIZE = 40;
@@ -265,13 +260,11 @@ export async function getSessionList(
     dateIntervalInDays = DEFAULT_LOOKBACK_DAYS,
   } = options;
 
-  const { resolveMaxLookbackDays } = await loadLookback();
-
-  // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
-  const maxLookbackDays = resolveMaxLookbackDays(
-    SESSION_LIST_MAX_LOOKBACK_DAYS_ENV,
-    SESSION_LIST_MAX_LOOKBACK_DAYS_DEFAULT
-  );
+  // Deployment-tunable ceiling for the empty-result lookback
+  // (SESSION_LIST_MAX_LOOKBACK_DAYS).
+  const maxLookbackDays =
+    deps.config.query.sessionListMaxLookbackDays ??
+    SESSION_LIST_MAX_LOOKBACK_DAYS_DEFAULT;
   const lookbackDays = Math.min(dateIntervalInDays, maxLookbackDays);
 
   const data = await chQuery<IClickhouseSession & { hasReplay: boolean }>(

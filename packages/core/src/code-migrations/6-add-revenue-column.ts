@@ -4,10 +4,10 @@ import {
   addColumns,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
 
   const sqls: string[] = [
     ...addColumns(

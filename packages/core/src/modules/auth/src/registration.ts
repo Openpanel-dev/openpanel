@@ -4,7 +4,7 @@ import type { ServiceDeps } from '../../../services';
 
 /** Only Postgres — narrowed so any of this module's several callers, none of
  *  which carry a full `ServiceDeps`, satisfy it with no cast. */
-type RegistrationDeps = Pick<ServiceDeps, 'db'>;
+type RegistrationDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
 /**
  * Whether a *new* user may be created right now.
@@ -19,7 +19,8 @@ export async function getIsRegistrationAllowed(
   inviteId?: string | null
 ) {
   // ALLOW_REGISTRATION is always undefined in cloud
-  if (process.env.ALLOW_REGISTRATION === undefined) {
+  const { allowRegistration, allowInvitation } = deps.config.auth;
+  if (allowRegistration === undefined) {
     return true;
   }
 
@@ -32,7 +33,7 @@ export async function getIsRegistrationAllowed(
 
   // 2. If there is an invite, check if it is valid
   if (inviteId) {
-    if (process.env.ALLOW_INVITATION === 'false') {
+    if (allowInvitation === false) {
       return false;
     }
 
@@ -46,5 +47,5 @@ export async function getIsRegistrationAllowed(
   }
 
   // 3. Otherwise, check if general registration is allowed
-  return process.env.ALLOW_REGISTRATION !== 'false';
+  return allowRegistration;
 }

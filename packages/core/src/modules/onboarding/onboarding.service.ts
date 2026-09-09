@@ -208,6 +208,7 @@ interface OnboardingCronOrg {
 interface OnboardingContext {
   org: OnboardingCronOrg;
   user: NonNullable<OnboardingCronOrg['createdBy']>;
+  dashboardUrl: string;
   // Lazy + memoized: only emails past the day gate pay for the ClickHouse count.
   getUsage: () => Promise<OnboardingUsage>;
 }
@@ -229,10 +230,10 @@ function createUsageGetter(deps: ServiceDeps, org: OnboardingCronOrg) {
 const getters = {
   firstName: (ctx: OnboardingContext) => ctx.user.firstName || undefined,
   dashboardUrl: (ctx: OnboardingContext) => {
-    return `${process.env.DASHBOARD_URL}/${ctx.org.id}`;
+    return `${ctx.dashboardUrl}/${ctx.org.id}`;
   },
   billingUrl: (ctx: OnboardingContext) => {
-    return `${process.env.DASHBOARD_URL}/${ctx.org.id}/billing`;
+    return `${ctx.dashboardUrl}/${ctx.org.id}/billing`;
   },
   trialEndDate: (ctx: OnboardingContext) => {
     return ctx.org.subscriptionEndsAt
@@ -333,7 +334,7 @@ export async function runOnboardingCron(
   deps: ServiceDeps,
   logger: OnboardingCronLogger
 ): Promise<OnboardingCronSummary | null> {
-  if (process.env.SELF_HOSTED === 'true') {
+  if (deps.config.selfHosted) {
     return null;
   }
 
@@ -369,7 +370,12 @@ export async function runOnboardingCron(
         email: user.email,
         anchor: org.createdAt,
         pointer: org.onboarding,
-        ctx: { org, user, getUsage: createUsageGetter(deps, org) },
+        ctx: {
+          org,
+          user,
+          dashboardUrl: deps.config.dashboardUrl,
+          getUsage: createUsageGetter(deps, org),
+        },
       };
     }
   );

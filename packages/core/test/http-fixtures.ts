@@ -4,6 +4,7 @@
 import type { AppDeps, Buffers } from '../src/context';
 import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
+import { testCoreConfig } from './config-fixture';
 import { type CapturedLogger, capturingLogger } from './rpc-fixtures';
 
 export interface AppDepsStub {
@@ -45,7 +46,7 @@ export function stubAppDeps(): AppDepsStub {
       buffers: {} as Buffers,
       producers,
       logger,
-      config: { selfHosted: false },
+      config: testCoreConfig(),
     },
   };
 }

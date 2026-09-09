@@ -3,7 +3,7 @@ import {
   chMigrationClient,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
  * Fill the re-keyed cohort summary MVs from migration 20 with history.
@@ -237,8 +237,8 @@ async function scalar(query: string): Promise<string | undefined> {
   return rows[0] ? Object.values(rows[0])[0] : undefined;
 }
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const isDry = process.argv.includes('--dry');
   const only = getArg('only');
   const batchDays = getPositiveInt(getArg('batch-days'), DEFAULT_BATCH_DAYS);
@@ -369,9 +369,15 @@ export async function up() {
   console.log('\n✅ Rebuild complete.');
 }
 
-// Allow direct execution for the supervised path.
+// Allow direct execution for the supervised path. `--cluster` is the only
+// input `up` reads through `getIsCluster`, and it comes from argv.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  up()
+  up({
+    clickhouseCluster: false,
+    selfHosted: false,
+    databaseUrl: undefined,
+    clickhouseUrl: undefined,
+  })
     .then(() => process.exit(0))
     .catch((err) => {
       console.error(err);

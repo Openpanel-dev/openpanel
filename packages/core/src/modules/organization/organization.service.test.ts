@@ -4,6 +4,7 @@
 // registered before the subject's first call, not before its import.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 
 interface FakeOrganization {
   id: string;
@@ -411,6 +412,7 @@ const deps = {
     $transaction,
   },
   ch: { command: chCommand },
+  config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
 // Bypasses the Redis cache-aside entirely — this module's own logic is

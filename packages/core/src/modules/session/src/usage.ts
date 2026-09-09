@@ -25,10 +25,6 @@ const USAGE_WARNING_THRESHOLD = 0.8;
 const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 60 * 60;
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
-function isSelfHosted(): boolean {
-  return process.env.SELF_HOSTED === 'true';
-}
-
 /** Saturating: the columns are INT4 and lifetime counts can exceed them. */
 function clampToInt4(count: number): number {
   return Math.min(count, INT4_MAX);
@@ -36,11 +32,12 @@ function clampToInt4(count: number): number {
 
 function nextExceededAt(
   organization: Organization,
-  count: number
+  count: number,
+  selfHosted: boolean
 ): Date | null {
   // Self-hosting has no billing limits: never flag, and clear any stale flag
   // set before this guard existed (default limit 0 trips on the first event).
-  if (isSelfHosted()) {
+  if (selfHosted) {
     return null;
   }
   const limit = organization.subscriptionPeriodEventsLimit;
@@ -90,12 +87,13 @@ export const updateEventsCount = cacheablePerDeps(
           subscriptionPeriodEventsCount: clampToInt4(organizationEventsCount),
           subscriptionPeriodEventsCountExceededAt: nextExceededAt(
             organization,
-            organizationEventsCount
+            organizationEventsCount,
+            deps.config.selfHosted
           ),
         },
       });
 
-      if (!isSelfHosted()) {
+      if (!deps.config.selfHosted) {
         try {
           await sendUsageAlerts(deps, organization, organizationEventsCount);
         } catch (error) {
@@ -169,7 +167,7 @@ async function sendUsageAlerts(
       include: { user: { select: { email: true, firstName: true } } },
     });
 
-    const billingUrl = `${process.env.DASHBOARD_URL ?? DEFAULT_DASHBOARD_URL}/${organization.id}/billing`;
+    const billingUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${organization.id}/billing`;
     const recipients = new Map<string, string | undefined>();
     for (const member of admins) {
       if (member.user?.email) {

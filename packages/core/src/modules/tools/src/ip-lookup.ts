@@ -2,6 +2,7 @@
 // `ipLookup` (M7-008).
 
 import { getGeoLocation } from '../../../clients/geo';
+import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
 import { checkRateLimit } from './rate-limit';
@@ -65,11 +66,12 @@ function isPrivateIP(ip: string): boolean {
 }
 
 export async function runIpLookup(
+  config: CoreConfig,
   ipParam: string | undefined,
   headers: Record<string, string | string[] | undefined> | Headers,
   logger?: Pick<Logger, 'error'>
 ): Promise<IpLookupOutcome> {
-  const { ip: clientIp } = getClientIpFromHeaders(headers);
+  const { ip: clientIp } = getClientIpFromHeaders(config.ipHeaders, headers);
   if (
     clientIp &&
     !checkRateLimit(`ip:${clientIp}`, IP_LOOKUP_WINDOW_MS, IP_LOOKUP_MAX)

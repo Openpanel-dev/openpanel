@@ -1,9 +1,10 @@
 /**
  * Get client IP from headers
  *
- * Can be configured via IP_HEADER_ORDER env variable
- * Example: IP_HEADER_ORDER="cf-connecting-ip,x-real-ip,x-forwarded-for"
+ * Both orders are configurable per deployment (IP_HEADER_ORDER,
+ * TRUSTED_IP_HEADER_ORDER); the parsed lists arrive as `config.ipHeaders`.
  */
+import type { IpHeaderConfig } from '../config';
 
 // Order matters: client-forwarded headers (set explicitly by SDKs/upstream
 // servers) must come before infrastructure headers like `cf-connecting-ip`.
@@ -79,13 +80,6 @@ function isPublicIp(ip: string): boolean {
   return true;
 }
 
-function getHeaderOrder(): string[] {
-  if (typeof process !== 'undefined' && process.env?.IP_HEADER_ORDER) {
-    return process.env.IP_HEADER_ORDER.split(',').map((h) => h.trim());
-  }
-  return DEFAULT_IP_HEADER_ORDER;
-}
-
 function isValidIp(ip: string): boolean {
   // Basic IP validation
   const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -94,13 +88,14 @@ function isValidIp(ip: string): boolean {
 }
 
 export function getClientIpFromHeaders(
+  config: IpHeaderConfig,
   headers: Record<string, string | string[] | undefined> | Headers,
   overrideHeaderName?: string
 ): {
   ip: string;
   header: string;
 } {
-  let headerOrder = getHeaderOrder();
+  let headerOrder = config.attributionOrder ?? DEFAULT_IP_HEADER_ORDER;
 
   if (overrideHeaderName) {
     headerOrder = [overrideHeaderName];
@@ -179,12 +174,11 @@ export const TRUSTED_IP_HEADER_ORDER = [
  * (comma separated) - set it to the single header your edge guarantees.
  */
 export function getTrustedIpFromHeaders(
+  config: IpHeaderConfig,
   headers: Record<string, string | string[] | undefined> | Headers,
   socketIp?: string
 ): { ip: string; header: string } {
-  const headerOrder = process.env.TRUSTED_IP_HEADER_ORDER
-    ? process.env.TRUSTED_IP_HEADER_ORDER.split(',').map((h) => h.trim())
-    : TRUSTED_IP_HEADER_ORDER;
+  const headerOrder = config.trustedOrder ?? TRUSTED_IP_HEADER_ORDER;
 
   for (const headerName of headerOrder) {
     let value: string | null = null;

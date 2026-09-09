@@ -42,27 +42,18 @@ export const TABLE_NAMES = {
 };
 
 /**
- * Clustered mode = production (not self-hosted); non-clustered = self-hosted.
- */
-export function isClickhouseClustered(): boolean {
-  if (
-    process.env.CLICKHOUSE_CLUSTER === 'true' ||
-    process.env.CLICKHOUSE_CLUSTER === '1'
-  ) {
-    return true;
-  }
-
-  return !(
-    process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
-  );
-}
-
-/**
  * The table a mutation must target: `<name>_replicated ON CLUSTER '{cluster}'`
  * when clustered, the plain name otherwise.
+ *
+ * Clustered mode = production (not self-hosted); non-clustered = self-hosted.
+ * The verdict is `config.clickhouseClustered`, resolved once by the config
+ * loader from CLICKHOUSE_CLUSTER and SELF_HOSTED.
  */
-export function getReplicatedTableName(tableName: string): string {
-  if (isClickhouseClustered()) {
+export function getReplicatedTableName(
+  clustered: boolean,
+  tableName: string
+): string {
+  if (clustered) {
     return `${tableName}_replicated ON CLUSTER '{cluster}'`;
   }
   return tableName;

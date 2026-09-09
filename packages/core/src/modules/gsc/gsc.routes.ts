@@ -21,14 +21,11 @@ const gscCallbackQuery = z.object({
   state: z.string(),
 });
 
-function dashboardUrl(): string {
-  return (
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || ''
-  );
-}
+/** Only used to make the URL parseable when DASHBOARD_URL is not set. */
+const FALLBACK_ORIGIN = 'http://localhost';
 
-function loginErrorRedirect(message: string) {
-  const url = new URL('/login', dashboardUrl() || 'http://localhost');
+function loginErrorRedirect(dashboardUrl: string, message: string) {
+  const url = new URL('/login', dashboardUrl || FALLBACK_ORIGIN);
   url.searchParams.set('error', message);
   return redirect(url.toString());
 }
@@ -42,7 +39,10 @@ export const gscRoutes = defineRoutes((app) =>
       const projectId = ctx.cookies.get('gsc_project_id');
 
       if (!(storedState && codeVerifier && projectId)) {
-        return loginErrorRedirect('Missing GSC OAuth cookies');
+        return loginErrorRedirect(
+          ctx.config.dashboardUrl,
+          'Missing GSC OAuth cookies'
+        );
       }
 
       try {
@@ -54,7 +54,7 @@ export const gscRoutes = defineRoutes((app) =>
           projectId,
         });
         return redirect(
-          `${dashboardUrl()}/${organizationId}/${projectId}/settings/gsc`
+          `${ctx.config.dashboardUrl}/${organizationId}/${projectId}/settings/gsc`
         );
       } catch (error) {
         ctx.logger.error({ err: error }, 'GSC OAuth callback error');
@@ -62,7 +62,7 @@ export const gscRoutes = defineRoutes((app) =>
           error instanceof Error
             ? error.message
             : 'Failed to connect Google Search Console';
-        return loginErrorRedirect(message);
+        return loginErrorRedirect(ctx.config.dashboardUrl, message);
       }
     },
     { query: gscCallbackQuery, detail: { hide: true } }

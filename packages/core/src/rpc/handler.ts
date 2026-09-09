@@ -9,6 +9,7 @@
 
 import type { AnyRouter, TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+import type { IpHeaderConfig } from '../config';
 import type { HttpCtx } from '../context';
 import type { Logger } from '../logger';
 import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
@@ -43,7 +44,10 @@ const SILENCED_UNAUTHORIZED_PATH = 'organization.list';
  * no `ctx` then, and a naive `ctx.logger.error(...)` would turn a
  * context-construction failure into a second throw inside the error handler.
  */
-export function createTrpcOnError(bootLogger: Logger) {
+export function createTrpcOnError(
+  bootLogger: Logger,
+  ipHeaders: IpHeaderConfig
+) {
   return function onError(report: TrpcErrorReport): void {
     if (
       report.error.code === 'UNAUTHORIZED' &&
@@ -55,7 +59,10 @@ export function createTrpcOnError(bootLogger: Logger) {
     // The IP is resolved from trusted headers only (see
     // `getTrustedIpFromHeaders`), so it is the address to hand to
     // Cloudflare when an abuser needs blocking at the edge.
-    const { ip, header } = getTrustedIpFromHeaders(report.req.headers);
+    const { ip, header } = getTrustedIpFromHeaders(
+      ipHeaders,
+      report.req.headers
+    );
     const payload = {
       err: report.error,
       path: report.path,
@@ -84,6 +91,8 @@ export interface TrpcFetchHandlerOptions extends TrpcContextOptions {
   router: AnyRouter;
   /** Used only when `createContext` threw. Every other line goes to `ctx.logger`. */
   logger: Logger;
+  /** `onError` resolves the abuser's IP from trusted headers only. */
+  ipHeaders: IpHeaderConfig;
   endpoint?: string;
 }
 
@@ -96,10 +105,11 @@ export function createTrpcFetchHandler(options: TrpcFetchHandlerOptions) {
   const {
     router,
     logger,
+    ipHeaders,
     endpoint = TRPC_ENDPOINT,
     ...contextOptions
   } = options;
-  const onError = createTrpcOnError(logger);
+  const onError = createTrpcOnError(logger, ipHeaders);
 
   return (request: Request, ctx: HttpCtx): Promise<Response> =>
     fetchRequestHandler({

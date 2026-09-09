@@ -10,10 +10,13 @@ import {
   type Admin,
   type ConsumerGroupLag,
   createKafkaAdmin,
-  KAFKA_CONSUMER_GROUP,
-  KAFKA_EVENTS_TOPIC,
   sampleConsumerGroupLag,
 } from '@openpanel/core';
+import { loadConfig } from '../src/config/env';
+
+// The Kafka topic and group come from the same loader the API boots on, so a
+// run that points the stack at a non-default topic samples the same one.
+const kafkaConfig = loadConfig().core;
 
 export interface LagSummary {
   sampleCount: number;
@@ -31,13 +34,13 @@ export class LagMonitor {
   private connected = false;
 
   constructor(
-    private readonly topic: string = KAFKA_EVENTS_TOPIC,
-    private readonly groupId: string = KAFKA_CONSUMER_GROUP
+    private readonly topic: string = kafkaConfig.kafka.eventsTopic,
+    private readonly groupId: string = kafkaConfig.kafka.consumerGroup
   ) {}
 
   async start(intervalMs = 1000): Promise<void> {
     try {
-      this.admin = createKafkaAdmin();
+      this.admin = createKafkaAdmin(kafkaConfig);
       await this.admin.connect();
       this.connected = true;
     } catch (error) {

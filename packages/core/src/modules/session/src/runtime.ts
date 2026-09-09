@@ -4,6 +4,7 @@
 // hand in stubs, so no `mock.module` is needed and every assertion is on a
 // call the code under test made.
 
+import type { CoreConfig } from '../../../config';
 import type { Ctx } from '../../../context';
 import type { IClickhouseSession } from '../session.service';
 
@@ -48,6 +49,8 @@ export interface SessionRedis {
 export interface SessionRuntime {
   redis: SessionRedis;
   sessions: SessionStore;
+  /** The reaper's and vacuum's kill switches, batch sizes and thresholds. */
+  config: CoreConfig;
 }
 
 /**
@@ -57,7 +60,11 @@ export interface SessionRuntime {
  * own and its writes stay inside the request's scope (ADR-007, ADR-018 R1).
  */
 export function sessionRuntimeFrom(
-  ctx: Pick<Ctx, 'redis' | 'buffers'>
+  ctx: Pick<Ctx, 'redis' | 'buffers' | 'config'>
 ): SessionRuntime {
-  return { redis: ctx.redis, sessions: ctx.buffers.session };
+  return {
+    redis: ctx.redis,
+    sessions: ctx.buffers.session,
+    config: ctx.config,
+  };
 }

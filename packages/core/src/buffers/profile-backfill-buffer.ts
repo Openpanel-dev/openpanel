@@ -13,10 +13,11 @@ export interface ProfileBackfillEntry {
 // Max session IDs per IN clause before we split into another query
 const CHUNK_SIZE = 500;
 
+const DEFAULT_BATCH_SIZE = 1000;
+
 export class ProfileBackfillBuffer extends BaseBuffer {
-  private batchSize = process.env.PROFILE_BACKFILL_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.PROFILE_BACKFILL_BUFFER_BATCH_SIZE, 10)
-    : 1000;
+  private readonly batchSize =
+    this.deps.config.buffers.profileBackfill.batchSize ?? DEFAULT_BATCH_SIZE;
 
   private readonly redisKey = 'profile-backfill-buffer';
   private redis: Redis;
@@ -70,7 +71,10 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     const entries = Array.from(seen.values());
 
     const ch = this.resolveCh();
-    const table = getReplicatedTableName(TABLE_NAMES.events);
+    const table = getReplicatedTableName(
+      this.deps.config.clickhouseClustered,
+      TABLE_NAMES.events
+    );
 
     const chunks = this.chunks(entries, CHUNK_SIZE);
     let processedChunks = 0;

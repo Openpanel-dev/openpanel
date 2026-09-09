@@ -24,6 +24,7 @@ import {
   it,
   mock,
 } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import type { Buffers } from '../../buffers/create-buffers';
 import type { GeoLocation } from '../../clients/geo';
 import type { IReplayPayload, ITrackHandlerPayload } from './ingest.constants';
@@ -193,7 +194,7 @@ const transport = (
       group: { add: mock(async () => undefined) },
     },
     produceIncomingEvent,
-    deps: { buffers: {} },
+    deps: { buffers: {}, config: testCoreConfig() },
   }) as unknown as Parameters<typeof ingestTrack>[1];
 
 const request = (body: ITrackHandlerPayload) => ({

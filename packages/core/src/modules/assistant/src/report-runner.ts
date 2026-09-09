@@ -12,6 +12,7 @@
 // @openpanel/db primitives and must be kept in sync by hand until that debt
 // is paid down.
 
+import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
 import { getChartStartEndDate } from '../../../shared/date';
 import { executeAggregateChart, executeChart } from '../../chart/chart.service';
@@ -19,16 +20,19 @@ import { getFunnel } from '../../chart/funnel.service';
 import { getSettingsForProject } from '../../organization/organization.service';
 import { getReportById } from '../../report/report.service';
 
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const TRAILING_SLASH = /\/$/;
+
 function reportUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   reportId: string
 ): string {
-  const base = (
-    process.env.DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
-    'https://dashboard.openpanel.dev'
-  ).replace(/\/$/, '');
+  const base = (config.dashboardUrl || DEFAULT_DASHBOARD_URL).replace(
+    TRAILING_SLASH,
+    ''
+  );
   return `${base}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
@@ -88,6 +92,7 @@ export async function runReport(
     startDate,
     endDate,
     dashboard_url: reportUrl(
+      deps.config,
       input.organizationId,
       input.projectId,
       input.reportId

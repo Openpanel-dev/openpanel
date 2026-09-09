@@ -6,6 +6,7 @@
 // the job's `ctx` supplies every client, so the requestId that opened the
 // session still labels the rows this close writes (ADR-018 R1).
 
+import type { CoreConfig } from '../../../config';
 import type { EnqueueOptions } from '../../../jobs/define';
 import type { Logger } from '../../../logger';
 import type {
@@ -37,9 +38,6 @@ const SESSION_END_CLAIM_TTL_SECONDS = 60 * 60 * 2;
 const SESSION_EVENTS_WINDOW_PADDING_MS = 1000;
 /** The session_end event lands one second after the last event. */
 const SESSION_END_OFFSET_MS = 1000;
-
-const PROFILE_BACKFILL_FLAG_ENV = 'EXPERIMENTAL_PROFILE_BACKFILL';
-const PROFILE_BACKFILL_PROJECTS_ENV = 'EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS';
 
 /**
  * Deterministic jobId for a closed session, so concurrent / retried closes
@@ -119,14 +117,18 @@ function claimKey(session: IClickhouseSession): string {
   return `session:end:emitted:${session.project_id}:${session.device_id}:${session.id}`;
 }
 
-function isProfileBackfillEnabled(projectId: string): boolean {
-  if (process.env[PROFILE_BACKFILL_FLAG_ENV] !== '1') {
+function isProfileBackfillEnabled(
+  config: CoreConfig,
+  projectId: string
+): boolean {
+  const { profileBackfillEnabled, profileBackfillProjectIds } = config.session;
+  if (!profileBackfillEnabled) {
     return false;
   }
-  const runOnProjects =
-    process.env[PROFILE_BACKFILL_PROJECTS_ENV]?.split(',').filter(Boolean) ??
-    [];
-  return runOnProjects.length === 0 || runOnProjects.includes(projectId);
+  return (
+    profileBackfillProjectIds.length === 0 ||
+    profileBackfillProjectIds.includes(projectId)
+  );
 }
 
 /**
@@ -202,7 +204,7 @@ export async function createSessionEnd(
 
   if (
     profileId !== session.device_id &&
-    isProfileBackfillEnabled(payload.projectId)
+    isProfileBackfillEnabled(deps.config, payload.projectId)
   ) {
     await deps.profileBackfill.add({
       projectId: payload.projectId,

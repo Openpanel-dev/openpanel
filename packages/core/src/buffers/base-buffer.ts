@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { getRedisCache } from '@openpanel/redis';
+import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
 import { type ChQueryInput, type ChScope, chQuery } from '../shared/ch-query';
@@ -36,7 +37,23 @@ export interface BufferDeps {
    * (docs/ANSWERS.md §3: "known!").
    */
   isCronPaused(): Promise<boolean>;
+  /**
+   * The parsed environment. Every buffer's batch/chunk/TTL knob used to be a
+   * module-scope `process.env` read; they arrive here instead (ADR-022 R7),
+   * which is also what lets a test build a buffer with a different sizing
+   * without touching the process environment.
+   */
+  config: CoreConfig;
 }
+
+/**
+ * Max number of ch.insert sub-chunks that a single flush may run in parallel.
+ * Caps connection-pool usage and worker memory peak. The ClickHouse client
+ * pool defaults to 30 connections; with 3 workers and up to ~3 buffers
+ * flushing concurrently cluster-wide, a per-flush cap of 5 keeps total
+ * in-flight inserts well under the pool.
+ */
+const DEFAULT_CH_INSERT_CONCURRENCY = 5;
 
 export type FlushPhaseTimings = {
   lrangeMs?: number;
@@ -125,7 +142,7 @@ export class BaseBuffer {
   }
 
   protected getClickhouseSettings(): ClickHouseSettings {
-    if (process.env.BUFFER_ASYNC_INSERTS) {
+    if (this.deps.config.buffers.asyncInserts) {
       return {
         async_insert: 1,
         wait_for_async_insert: 0,
@@ -150,6 +167,8 @@ export class BaseBuffer {
       enableParallelProcessing?: boolean;
     }
   ) {
+    this.chInsertConcurrency =
+      deps.config.buffers.chInsertConcurrency ?? DEFAULT_CH_INSERT_CONCURRENCY;
     this.logger = deps.createLogger(options.name);
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
@@ -242,16 +261,8 @@ export class BaseBuffer {
     return chunks;
   }
 
-  /**
-   * Max number of ch.insert sub-chunks that a single flush may run in
-   * parallel. Caps connection-pool usage and worker memory peak. The
-   * ClickHouse client pool defaults to 30 connections; with 3 workers and
-   * up to ~3 buffers flushing concurrently cluster-wide, a per-flush cap
-   * of 5 keeps total in-flight inserts well under the pool.
-   */
-  protected chInsertConcurrency = process.env.BUFFER_CH_INSERT_CONCURRENCY
-    ? Math.max(1, Number.parseInt(process.env.BUFFER_CH_INSERT_CONCURRENCY, 10))
-    : 5;
+  /** BUFFER_CH_INSERT_CONCURRENCY, or DEFAULT_CH_INSERT_CONCURRENCY. */
+  protected chInsertConcurrency: number;
 
   /**
    * Run `fn` over `items` with a bounded concurrency. Preserves order of

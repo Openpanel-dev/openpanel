@@ -6,7 +6,7 @@ import {
   renameTable,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 // Restructures the `profiles` table so the column names actually mean what
 // they say:
@@ -63,8 +63,8 @@ const OLD_TABLE = `profiles_${SUFFIX}`;
 
 const replicated = (table: string) => `${table}_replicated`;
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const sqls: string[] = [];
 
   // 1. New profiles table. ReplacingMergeTree's version is now `last_seen_at`,

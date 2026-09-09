@@ -5,16 +5,9 @@ import type { SessionRuntime } from './runtime';
 import { sessionsVacuumed } from './session.metrics';
 import { PROJECTS_SET_KEY, wallclockSetKey } from './session-keys';
 
-const VACUUM_DISABLED_ENV = 'SESSION_VACUUM';
-const VACUUM_BATCH_SIZE_ENV = 'SESSION_VACUUM_BATCH_SIZE';
-const VACUUM_STALE_THRESHOLD_ENV = 'SESSION_VACUUM_STALE_THRESHOLD_MS';
 const DEFAULT_VACUUM_BATCH_SIZE = 1000;
 // Much larger than the reaper deadman, so it never races with normal reaping.
 const DEFAULT_VACUUM_STALE_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 7;
-
-function readIntEnv(name: string, fallback: number): number {
-  return Number.parseInt(process.env[name] || String(fallback), 10);
-}
 
 export interface SessionVacuumDeps extends SessionRuntime {
   logger: Logger;
@@ -30,11 +23,11 @@ export interface SessionVacuumDeps extends SessionRuntime {
 export async function vacuumStaleSessions(
   deps: SessionVacuumDeps
 ): Promise<void> {
-  if (process.env[VACUUM_DISABLED_ENV] === '0') {
+  if (!deps.config.session.vacuumEnabled) {
     return;
   }
 
-  const { redis, sessions, logger } = deps;
+  const { redis, sessions, logger, config } = deps;
   const projectIds = await redis.smembers(PROJECTS_SET_KEY);
   if (projectIds.length === 0) {
     return;
@@ -44,11 +37,9 @@ export async function vacuumStaleSessions(
 
   const cutoff =
     Date.now() -
-    readIntEnv(VACUUM_STALE_THRESHOLD_ENV, DEFAULT_VACUUM_STALE_THRESHOLD_MS);
-  const batchSize = readIntEnv(
-    VACUUM_BATCH_SIZE_ENV,
-    DEFAULT_VACUUM_BATCH_SIZE
-  );
+    (config.session.vacuumStaleThresholdMs ??
+      DEFAULT_VACUUM_STALE_THRESHOLD_MS);
+  const batchSize = config.session.vacuumBatchSize ?? DEFAULT_VACUUM_BATCH_SIZE;
   let total = 0;
   let staleBlobs = 0;
   let missingBlobs = 0;

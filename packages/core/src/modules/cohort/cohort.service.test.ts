@@ -10,6 +10,7 @@
 // ClickHouse connection.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 
 interface FakeCohort {
@@ -76,6 +77,7 @@ afterAll(() => {
 const deps = {
   db: { cohort },
   ch: { insert: chInsert, command: chCommand },
+  config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
 let subject: typeof import('./cohort.service');

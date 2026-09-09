@@ -43,6 +43,7 @@ export const getProfileFull = (deps: ServiceDeps) =>
         recent_sessions: sessions,
         recent_events: withEvents.recent_events,
         dashboard_url: dashboardUrl(
+          deps.config,
           context.organizationId,
           context.projectId,
           `/profiles/${id}`
@@ -100,6 +101,7 @@ export const getProfileSessions = (deps: ServiceDeps) =>
         sessions.map((s) => ({
           ...s,
           dashboard_url: dashboardUrl(
+            deps.config,
             context.organizationId,
             context.projectId,
             `/sessions/${s.id}`
@@ -192,6 +194,7 @@ export const getProfileJourney = (deps: ServiceDeps) =>
           created_at: e.created_at,
         })),
         dashboard_url: dashboardUrl(
+          deps.config,
           context.organizationId,
           context.projectId,
           `/profiles/${id}`

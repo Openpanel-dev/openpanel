@@ -22,7 +22,12 @@ export const getGroupFull = (deps: ServiceDeps) =>
       const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
       const id = groupId || defaultGroupId;
       const orgPath = (path = '') =>
-        dashboardUrl(context.organizationId, context.projectId, path);
+        dashboardUrl(
+          deps.config,
+          context.organizationId,
+          context.projectId,
+          path
+        );
 
       const group = await getGroupCore(deps, {
         projectId: context.projectId,
@@ -65,7 +70,12 @@ export const getGroupMembers = (deps: ServiceDeps) =>
       const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
       const id = groupId || defaultGroupId;
       const orgPath = (path = '') =>
-        dashboardUrl(context.organizationId, context.projectId, path);
+        dashboardUrl(
+          deps.config,
+          context.organizationId,
+          context.projectId,
+          path
+        );
 
       const result = await getGroupMemberProfiles(deps, {
         projectId: context.projectId,

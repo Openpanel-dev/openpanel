@@ -24,7 +24,7 @@
 // tag: ADR-013 converts the analytics read path one query per P7 task, and
 // this module's queries haven't been converted yet.
 
-import { createLogger, type ILogger } from '../../clients/logger';
+import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -32,18 +32,12 @@ import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { decrypt, encrypt } from '../../shared/encryption';
-import { googleGsc } from '../auth/auth.service';
+import { googleGscClient } from '../auth/auth.service';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
 const CANNIBALIZATION_CACHE_TTL_SEC = 60 * 60 * 4;
 const GSC_ROW_LIMIT = 25_000;
-
-let _logger: ILogger | undefined;
-function getLogger(): ILogger {
-  _logger ??= createLogger({ name: 'core:gsc' });
-  return _logger;
-}
 
 export interface GscSite {
   siteUrl: string;
@@ -51,17 +45,19 @@ export interface GscSite {
 }
 
 async function refreshGscToken(
+  config: CoreConfig,
   refreshToken: string
 ): Promise<{ accessToken: string; expiresAt: Date }> {
-  if (!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)) {
+  const { clientId, clientSecret } = config.auth.google;
+  if (!(clientId && clientSecret)) {
     throw new Error(
       'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in this environment'
     );
   }
 
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    client_id: clientId,
+    client_secret: clientSecret,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
@@ -98,14 +94,14 @@ export async function getGscAccessToken(
     conn.accessTokenExpiresAt &&
     conn.accessTokenExpiresAt.getTime() > Date.now() + 60_000
   ) {
-    getLogger().info(
+    deps.logger.info(
       { projectId, expiresAt: conn.accessTokenExpiresAt },
       'GSC using cached access token'
     );
-    return decrypt(conn.accessToken);
+    return decrypt(deps.config.encryptionKey, conn.accessToken);
   }
 
-  getLogger().info(
+  deps.logger.info(
     {
       projectId,
       expiresAt: conn.accessTokenExpiresAt,
@@ -116,16 +112,17 @@ export async function getGscAccessToken(
 
   try {
     const { accessToken, expiresAt } = await refreshGscToken(
-      decrypt(conn.refreshToken)
+      deps.config,
+      decrypt(deps.config.encryptionKey, conn.refreshToken)
     );
     await db.gscConnection.update({
       where: { projectId },
       data: {
-        accessToken: encrypt(accessToken),
+        accessToken: encrypt(deps.config.encryptionKey, accessToken),
         accessTokenExpiresAt: expiresAt,
       },
     });
-    getLogger().info(
+    deps.logger.info(
       { projectId, expiresAt },
       'GSC token refreshed successfully'
     );
@@ -133,7 +130,7 @@ export async function getGscAccessToken(
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to refresh token';
-    getLogger().error(
+    deps.logger.error(
       { err: error, projectId, errorMessage },
       'GSC token refresh failed'
     );
@@ -1276,7 +1273,7 @@ export async function listGscConnectionsForSync(
 export async function runGscProjectSync(
   deps: ServiceDeps,
   projectId: string,
-  logger: Logger = getLogger()
+  logger: Logger = deps.logger
 ): Promise<void> {
   const db = deps.db;
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
@@ -1321,7 +1318,7 @@ export async function runGscProjectSync(
 export async function runGscProjectBackfill(
   deps: ServiceDeps,
   projectId: string,
-  logger: Logger = getLogger()
+  logger: Logger = deps.logger
 ): Promise<void> {
   const db = deps.db;
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
@@ -1421,7 +1418,7 @@ export async function completeGscOAuthCallback(
     throw new Error('GSC OAuth state mismatch');
   }
 
-  const tokens = await googleGsc.validateAuthorizationCode(
+  const tokens = await googleGscClient(deps.config).validateAuthorizationCode(
     input.code,
     input.codeVerifier
   );
@@ -1448,14 +1445,14 @@ export async function completeGscOAuthCallback(
     where: { projectId: input.projectId },
     create: {
       projectId: input.projectId,
-      accessToken: encrypt(accessToken),
-      refreshToken: encrypt(refreshToken),
+      accessToken: encrypt(deps.config.encryptionKey, accessToken),
+      refreshToken: encrypt(deps.config.encryptionKey, refreshToken),
       accessTokenExpiresAt,
       siteUrl: '',
     },
     update: {
-      accessToken: encrypt(accessToken),
-      refreshToken: encrypt(refreshToken),
+      accessToken: encrypt(deps.config.encryptionKey, accessToken),
+      refreshToken: encrypt(deps.config.encryptionKey, refreshToken),
       accessTokenExpiresAt,
       lastSyncStatus: null,
       lastSyncError: null,

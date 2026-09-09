@@ -39,6 +39,7 @@ export const getSessionFull = (deps: ServiceDeps) =>
         path: screenViews,
         events: events.slice(0, 50),
         dashboard_url: dashboardUrl(
+          deps.config,
           context.organizationId,
           context.projectId,
           `/sessions/${id}`
@@ -132,6 +133,7 @@ export const getSimilarSessions = (deps: ServiceDeps) =>
         similar_sessions: filtered.map((s) => ({
           ...s,
           dashboard_url: dashboardUrl(
+            deps.config,
             context.organizationId,
             context.projectId,
             `/sessions/${s.id}`
@@ -274,6 +276,7 @@ export const getSessionReplaySummary = (deps: ServiceDeps) =>
         available: session.hasReplay ?? false,
         replay_url: session.hasReplay
           ? dashboardUrl(
+              deps.config,
               context.organizationId,
               context.projectId,
               `/sessions/${id}`

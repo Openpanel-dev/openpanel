@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Readable } from 'node:stream';
 import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
+import { testCoreConfig } from '../../test/config-fixture';
 
 const realChQuery = { ...(await import('../shared/ch-query')) };
 
@@ -221,9 +222,18 @@ describe('EventBuffer', () => {
   });
 
   it('processes buffer with chunking', async () => {
-    const prev = process.env.EVENT_BUFFER_CHUNK_SIZE;
-    process.env.EVENT_BUFFER_CHUNK_SIZE = '2';
-    const eb = new EventBuffer(bufferDepsWithCh({ insert: chInsert }));
+    const base = testCoreConfig();
+    const eb = new EventBuffer(
+      bufferDepsWithCh(
+        { insert: chInsert },
+        testCoreConfig({
+          buffers: {
+            ...base.buffers,
+            event: { ...base.buffers.event, chunkSize: 2 },
+          },
+        })
+      )
+    );
 
     for (let i = 0; i < 4; i++) {
       eb.add({
@@ -245,12 +255,6 @@ describe('EventBuffer', () => {
     );
     expect(call1.length).toBe(2);
     expect(call2.length).toBe(2);
-
-    if (prev === undefined) {
-      delete process.env.EVENT_BUFFER_CHUNK_SIZE;
-    } else {
-      process.env.EVENT_BUFFER_CHUNK_SIZE = prev;
-    }
   });
 
   it('tracks active visitors', async () => {

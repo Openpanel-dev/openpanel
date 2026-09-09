@@ -3,7 +3,7 @@ import {
   chMigrationClient,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
  * Backfill the two cohort MVs for the last 30 days.
@@ -174,8 +174,8 @@ async function executeBatches(label: string, batches: Batch[]): Promise<void> {
   }
 }
 
-export async function up() {
-  const isClustered = getIsCluster();
+export async function up(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
   const isDryRun = process.argv.includes('--dry');
 
   const days = Number.parseInt(getArg('days') ?? String(DEFAULT_DAYS), 10);
@@ -255,7 +255,7 @@ export async function up() {
   console.log('✅ Backfill complete.');
 }
 
-export async function down() {
+export async function down(_env: CodeMigrationEnv) {
   console.log('⚠️  No down migration — backfill writes MV state, not schema.');
   console.log(
     '   If a clean slate is needed, DROP + CREATE the two MVs and re-run.'

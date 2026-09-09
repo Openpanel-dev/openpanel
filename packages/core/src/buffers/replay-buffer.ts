@@ -13,13 +13,14 @@ export interface IClickhouseSessionReplayChunk {
   payload: string;
 }
 
+const DEFAULT_BATCH_SIZE = 500;
+const DEFAULT_CHUNK_SIZE = 500;
+
 export class ReplayBuffer extends BaseBuffer {
-  private batchSize = process.env.REPLAY_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.REPLAY_BUFFER_BATCH_SIZE, 10)
-    : 500;
-  private chunkSize = process.env.REPLAY_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.REPLAY_BUFFER_CHUNK_SIZE, 10)
-    : 500;
+  private readonly batchSize =
+    this.deps.config.buffers.replay.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.replay.chunkSize ?? DEFAULT_CHUNK_SIZE;
 
   private readonly redisKey = 'replay-buffer';
 

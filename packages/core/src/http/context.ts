@@ -44,7 +44,7 @@ export function requestContext(deps: AppDeps) {
   return new Elysia({ name: 'core/request-context' })
     .use(requestIdHook())
     .use(timestampHook())
-    .use(clientIpHook())
+    .use(clientIpHook(deps.config.ipHeaders))
     .derive(
       { as: 'global' },
       ({ request, cookie, requestId, clientIp }): { ctx: HttpCtx } => {

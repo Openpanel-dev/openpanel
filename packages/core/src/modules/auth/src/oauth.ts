@@ -1,5 +1,6 @@
 import * as Arctic from 'arctic';
 import { GitHub } from 'arctic';
+import type { CoreConfig } from '../../../config';
 
 export type { OAuth2Tokens } from 'arctic';
 // Re-exported straight from source, not the `Arctic` import above — that one
@@ -7,20 +8,21 @@ export type { OAuth2Tokens } from 'arctic';
 // `noExportedImports` over a binding that genuinely has a second use.
 export * as Arctic from 'arctic';
 
-export const github = new GitHub(
-  process.env.GITHUB_CLIENT_ID ?? '',
-  process.env.GITHUB_CLIENT_SECRET ?? '',
-  process.env.GITHUB_REDIRECT_URI ?? ''
-);
+// Built per call, not at import: an arctic client is a credential holder with
+// no socket, so there is nothing to keep alive and nothing to construct at
+// module scope (ADR-022 R15).
+export function githubClient(config: CoreConfig): GitHub {
+  const { clientId, clientSecret, redirectUri } = config.auth.github;
+  return new GitHub(clientId, clientSecret, redirectUri);
+}
 
-export const google = new Arctic.Google(
-  process.env.GOOGLE_CLIENT_ID ?? '',
-  process.env.GOOGLE_CLIENT_SECRET ?? '',
-  process.env.GOOGLE_REDIRECT_URI ?? ''
-);
+export function googleClient(config: CoreConfig): Arctic.Google {
+  const { clientId, clientSecret, redirectUri } = config.auth.google;
+  return new Arctic.Google(clientId, clientSecret, redirectUri);
+}
 
-export const googleGsc = new Arctic.Google(
-  process.env.GOOGLE_CLIENT_ID ?? '',
-  process.env.GOOGLE_CLIENT_SECRET ?? '',
-  process.env.GSC_GOOGLE_REDIRECT_URI ?? ''
-);
+/** The same Google credentials, redirected at the Search Console callback. */
+export function googleGscClient(config: CoreConfig): Arctic.Google {
+  const { clientId, clientSecret, redirectUri } = config.auth.googleGsc;
+  return new Arctic.Google(clientId, clientSecret, redirectUri);
+}

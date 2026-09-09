@@ -272,6 +272,9 @@ function isValidPayload<T>(
 }
 
 /** apps/worker/src/jobs/notification.ts's `sendNotification` job body. */
+/** Where a notification email links when DASHBOARD_URL is not set. */
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+
 export async function deliverNotification(
   deps: ServiceDeps,
   notification: Prisma.NotificationUncheckedCreateInput
@@ -315,7 +318,7 @@ export async function deliverNotification(
           title: notification.title,
           message: notification.message,
           projectName: project.name,
-          dashboardUrl: `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${project.organizationId}/${notification.projectId}`,
+          dashboardUrl: `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${project.organizationId}/${notification.projectId}`,
         },
       });
     }

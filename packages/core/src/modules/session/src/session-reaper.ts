@@ -11,22 +11,15 @@ import {
 } from './session.metrics';
 import type { EnqueueSessionEndInput } from './session-end';
 import {
+  DEFAULT_SESSION_TIMEOUT_MS,
   PROJECTS_SET_KEY,
-  SESSION_TIMEOUT_MS,
   wallclockSetKey,
 } from './session-keys';
 
-const REAPER_DISABLED_ENV = 'SESSION_REAPER';
-const REAPER_BATCH_SIZE_ENV = 'SESSION_REAPER_BATCH_SIZE';
-const REAPER_DEADMAN_ENV = 'SESSION_REAPER_WALLCLOCK_DEADMAN_MS';
 const DEFAULT_REAPER_BATCH_SIZE = 5000;
 const LOCK_TTL_SECONDS = 60;
 
 const lockKey = (projectId: string) => `session:reaper:lock:${projectId}`;
-
-function readIntEnv(name: string, fallback: number): number {
-  return Number.parseInt(process.env[name] || String(fallback), 10);
-}
 
 export interface SessionReaperDeps extends SessionRuntime {
   logger: Logger;
@@ -42,7 +35,7 @@ export interface SessionReaperDeps extends SessionRuntime {
  * the session_end jobId.
  */
 export async function reapIdleSessions(deps: SessionReaperDeps): Promise<void> {
-  if (process.env[REAPER_DISABLED_ENV] === '0') {
+  if (!deps.config.session.reaperEnabled) {
     return;
   }
 
@@ -94,7 +87,11 @@ async function reapProject(
   }
 
   try {
-    const deadmanMs = readIntEnv(REAPER_DEADMAN_ENV, SESSION_TIMEOUT_MS);
+    const session = deps.config.session;
+    const deadmanMs =
+      session.reaperWallclockDeadmanMs ??
+      session.timeoutMs ??
+      DEFAULT_SESSION_TIMEOUT_MS;
     const cutoff = Date.now() - deadmanMs;
     const candidates = await redis.zrangebyscore(
       wallclockSetKey(projectId),
@@ -102,7 +99,7 @@ async function reapProject(
       cutoff,
       'LIMIT',
       0,
-      readIntEnv(REAPER_BATCH_SIZE_ENV, DEFAULT_REAPER_BATCH_SIZE)
+      session.reaperBatchSize ?? DEFAULT_REAPER_BATCH_SIZE
     );
 
     let reaped = 0;

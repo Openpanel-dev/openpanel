@@ -19,6 +19,7 @@ import {
   serializeManifest,
 } from '../../../clients/integrations/export';
 import type { IObjectStoreAdapter } from '../../../clients/integrations/object-store';
+import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { DateTime } from '../../../shared/date';
 import type { IClickhouseEvent } from '../../event/event.service';
@@ -32,18 +33,12 @@ import {
 // Safety lag: never export events whose inserted_at is within this window of
 // now(), so an in-flight CH insert batch (or replica lag) can't be half-read at
 // the boundary. Evaluated server-side via CH now64() to avoid worker/CH clock skew.
-const LAG_SECONDS = Number.parseInt(process.env.EXPORT_LAG_SECONDS || '60', 10);
+const DEFAULT_LAG_SECONDS = 60;
 // Max rows per object/batch and max batches drained per (project, integration)
 // per run. A backlog drains over subsequent ticks rather than in one giant pass.
-const BATCH_SIZE = Number.parseInt(
-  process.env.EXPORT_BATCH_SIZE || '50000',
-  10
-);
-const MAX_BATCHES_PER_RUN = Number.parseInt(
-  process.env.EXPORT_MAX_BATCHES_PER_RUN || '20',
-  10
-);
-const CONCURRENCY = Number.parseInt(process.env.EXPORT_CONCURRENCY || '4', 10);
+const DEFAULT_BATCH_SIZE = 50_000;
+const DEFAULT_MAX_BATCHES_PER_RUN = 20;
+const DEFAULT_CONCURRENCY = 4;
 
 // Sentinel cursor id for the first window of a (project, integration). The
 // events `id` column is a UUID, so the tie-breaker must compare as UUID — an
@@ -110,6 +105,8 @@ export interface FlushExportsDeps {
   db: ExportDb;
   ch: ExportClickhouse;
   logger: Logger;
+  /** EXPORT_LAG_SECONDS / _BATCH_SIZE / _MAX_BATCHES_PER_RUN / _CONCURRENCY. */
+  config: CoreConfig;
   /** Resolves the object-store adapter for an export config, or undefined. */
   createAdapter(config: ExportConfig): IObjectStoreAdapter | undefined;
 }
@@ -175,9 +172,16 @@ export async function runFlushExportsCron(
     }
   }
 
-  await runWithConcurrency(items, CONCURRENCY, (item) =>
-    processExport(item.projectId, item.integrationId, item.config, deps).catch(
-      (error) => {
+  await runWithConcurrency(
+    items,
+    deps.config.objectStoreExport.concurrency ?? DEFAULT_CONCURRENCY,
+    (item) =>
+      processExport(
+        item.projectId,
+        item.integrationId,
+        item.config,
+        deps
+      ).catch((error) => {
         deps.logger.error(
           {
             err: error,
@@ -186,8 +190,7 @@ export async function runFlushExportsCron(
           },
           'Export failed for project'
         );
-      }
-    )
+      })
   );
 }
 
@@ -205,14 +208,25 @@ async function processExport(
   const prefix = config.prefix || 'openpanel-exports';
   const format = config.format || 'jsonl_gzip';
 
-  for (let i = 0; i < MAX_BATCHES_PER_RUN; i++) {
+  const maxBatches =
+    deps.config.objectStoreExport.maxBatchesPerRun ??
+    DEFAULT_MAX_BATCHES_PER_RUN;
+  const batchSize =
+    deps.config.objectStoreExport.batchSize ?? DEFAULT_BATCH_SIZE;
+  for (let i = 0; i < maxBatches; i++) {
     const rows = await queryWindow(projectId, cursor, deps);
     if (rows.length === 0) {
       break;
     }
 
     const events = rows.map(clickhouseEventToExportEvent);
-    const batch = await createBatch(projectId, integrationId, events, format);
+    const batch = await createBatch(
+      deps.logger,
+      projectId,
+      integrationId,
+      events,
+      format
+    );
     const basePath = generateBatchPath(
       prefix,
       projectId,
@@ -259,7 +273,7 @@ async function processExport(
       'Export batch uploaded'
     );
 
-    if (rows.length < BATCH_SIZE) {
+    if (rows.length < batchSize) {
       break;
     }
   }
@@ -285,10 +299,10 @@ async function queryWindow(
     `,
     query_params: {
       projectId,
-      lag: LAG_SECONDS,
+      lag: deps.config.objectStoreExport.lagSeconds ?? DEFAULT_LAG_SECONDS,
       wTs: cursor.insertedAt,
       wId: cursor.eventId || NIL_UUID,
-      limit: BATCH_SIZE,
+      limit: deps.config.objectStoreExport.batchSize ?? DEFAULT_BATCH_SIZE,
     },
     format: 'JSONEachRow',
   });

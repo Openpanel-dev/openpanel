@@ -13,6 +13,7 @@
 // consumer.
 
 import { Elysia } from 'elysia';
+import type { IpHeaderConfig } from '../config';
 import { REQUEST_ID_HEADER, REQUEST_ID_LENGTH } from '../logger';
 import { getClientIpFromHeaders } from '../shared/get-client-ip';
 import { generateId } from '../shared/id';
@@ -54,11 +55,11 @@ export function timestampHook() {
  * `openpanel-client-id` and then `getTrustedIpFromHeaders`, and must never
  * read this (ADR-002 "behaviour that must be preserved explicitly" 2).
  */
-export function clientIpHook() {
+export function clientIpHook(ipHeaders: IpHeaderConfig) {
   return new Elysia({ name: 'core/http/client-ip' }).derive(
     { as: 'global' },
     ({ request }) => {
-      const { ip, header } = getClientIpFromHeaders(request.headers);
+      const { ip, header } = getClientIpFromHeaders(ipHeaders, request.headers);
       return { clientIp: ip, clientIpHeader: header };
     }
   );

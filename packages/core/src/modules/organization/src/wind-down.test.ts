@@ -5,8 +5,9 @@
 // (who enters, which step fires, what gets written), not any real persistence.
 // No `mock.module`, so nothing this file does leaks into another test file.
 
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { subDays } from 'date-fns';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import type { Logger } from '../../../logger';
 import {
   runWindDownCron,
@@ -51,6 +52,7 @@ function deps(): WindDownDeps {
       },
     },
     logger: stubLogger(),
+    config: windDownConfig(),
     sendEmail: sendEmail as WindDownDeps['sendEmail'],
     getLastEventPerProject,
     getOrganizationEventsCount,
@@ -82,16 +84,19 @@ function makeOrg(
   } as WindDownOrganization;
 }
 
-const savedEnv = {
-  SELF_HOSTED: process.env.SELF_HOSTED,
-  DASHBOARD_URL: process.env.DASHBOARD_URL,
-  WIND_DOWN_MAX_PER_RUN: process.env.WIND_DOWN_MAX_PER_RUN,
-};
+/** SELF_HOSTED / DASHBOARD_URL / WIND_DOWN_MAX_PER_RUN arrive as config. */
+function windDownConfig(
+  overrides: { selfHosted?: boolean; maxPerRun?: number } = {}
+) {
+  const base = testCoreConfig();
+  return testCoreConfig({
+    selfHosted: overrides.selfHosted ?? false,
+    dashboardUrl: 'https://dashboard.openpanel.dev',
+    query: { ...base.query, windDownMaxPerRun: overrides.maxPerRun },
+  });
+}
 
 beforeEach(() => {
-  process.env.SELF_HOSTED = 'false';
-  process.env.DASHBOARD_URL = 'https://dashboard.openpanel.dev';
-  delete process.env.WIND_DOWN_MAX_PER_RUN;
   organizationFindMany.mockClear().mockResolvedValue([]);
   organizationUpdate.mockClear().mockResolvedValue({});
   organizationUpdateMany.mockClear().mockResolvedValue({ count: 0 });
@@ -103,21 +108,14 @@ beforeEach(() => {
   buildHighlight.mockClear().mockResolvedValue(undefined);
 });
 
-afterEach(() => {
-  for (const [key, value] of Object.entries(savedEnv)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-});
-
 describe('runWindDownCron', () => {
   it('does nothing when self hosted', async () => {
-    process.env.SELF_HOSTED = 'true';
-
-    expect(await runWindDownCron(deps())).toBeNull();
+    expect(
+      await runWindDownCron({
+        ...deps(),
+        config: windDownConfig({ selfHosted: true }),
+      })
+    ).toBeNull();
     expect(organizationFindMany).not.toHaveBeenCalled();
   });
 
@@ -151,7 +149,6 @@ describe('runWindDownCron', () => {
   });
 
   it('caps how many organizations enter per run', async () => {
-    process.env.WIND_DOWN_MAX_PER_RUN = '2';
     organizationFindMany.mockResolvedValue([
       makeOrg({ id: 'org-1' }),
       makeOrg({ id: 'org-2' }),
@@ -159,7 +156,10 @@ describe('runWindDownCron', () => {
       makeOrg({ id: 'org-4' }),
     ]);
 
-    const result = await runWindDownCron(deps());
+    const result = await runWindDownCron({
+      ...deps(),
+      config: windDownConfig({ maxPerRun: 2 }),
+    });
 
     expect(result).toMatchObject({ entering: 2 });
     expect(organizationUpdateMany).toHaveBeenCalledWith({
@@ -273,7 +273,6 @@ describe('runWindDownCron', () => {
     // The population this whole sequence is aimed at: trial lapsed months ago,
     // SDKs never stopped, never paid a cent.
     it('lets organizations that are still tracking into the sequence first', async () => {
-      process.env.WIND_DOWN_MAX_PER_RUN = '1';
       getLastEventPerProject.mockResolvedValue(
         new Map([['project-active', subDays(new Date(), 1)]])
       );
@@ -290,7 +289,10 @@ describe('runWindDownCron', () => {
         }),
       ]);
 
-      const result = await runWindDownCron(deps());
+      const result = await runWindDownCron({
+        ...deps(),
+        config: windDownConfig({ maxPerRun: 1 }),
+      });
 
       expect(result).toMatchObject({ entering: 1, stillTracking: 1 });
       expect(organizationUpdateMany).toHaveBeenCalledWith({

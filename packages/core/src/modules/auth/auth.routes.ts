@@ -27,14 +27,15 @@ const callbackQuery = z.object({
   state: z.string(),
 });
 
-function dashboardUrl(): string {
-  return (
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || ''
-  );
-}
+/** Only used to make the URL parseable when DASHBOARD_URL is not set. */
+const FALLBACK_ORIGIN = 'http://localhost';
 
-function loginErrorRedirect(message: string, correlationId: string) {
-  const url = new URL('/login', dashboardUrl() || 'http://localhost');
+function loginErrorRedirect(
+  dashboardUrl: string,
+  message: string,
+  correlationId: string
+) {
+  const url = new URL('/login', dashboardUrl || FALLBACK_ORIGIN);
   url.searchParams.set('error', message);
   url.searchParams.set('correlationId', correlationId);
   return redirect(url.toString());
@@ -50,7 +51,7 @@ export const authRoutes = defineRoutes((app) =>
 
         try {
           assertOAuthState('github', query.state, storedState);
-          const oauthUser = await fetchGithubOAuthUser(query.code);
+          const oauthUser = await fetchGithubOAuthUser(ctx.config, query.code);
           await completeOAuthCallback(ctx, {
             provider: 'github',
             oauthUser,
@@ -59,7 +60,7 @@ export const authRoutes = defineRoutes((app) =>
             logger: ctx.logger,
           });
           ctx.setCookie('github_oauth_state', '', { maxAge: 0 });
-          return redirect(dashboardUrl());
+          return redirect(ctx.config.dashboardUrl);
         } catch (error) {
           ctx.logger.error({ err: error }, 'GitHub OAuth callback error');
           ctx.setCookie('github_oauth_state', '', { maxAge: 0 });
@@ -67,7 +68,11 @@ export const authRoutes = defineRoutes((app) =>
             error instanceof OAuthCallbackError
               ? error.message
               : 'An error occurred';
-          return loginErrorRedirect(message, ctx.requestId);
+          return loginErrorRedirect(
+            ctx.config.dashboardUrl,
+            message,
+            ctx.requestId
+          );
         }
       },
       { query: callbackQuery, detail: { hide: true } }
@@ -87,6 +92,7 @@ export const authRoutes = defineRoutes((app) =>
             });
           }
           const oauthUser = await fetchGoogleOAuthUser(
+            ctx.config,
             query.code,
             codeVerifier
           );
@@ -99,7 +105,7 @@ export const authRoutes = defineRoutes((app) =>
           });
           ctx.setCookie('google_oauth_state', '', { maxAge: 0 });
           ctx.setCookie('google_code_verifier', '', { maxAge: 0 });
-          return redirect(dashboardUrl());
+          return redirect(ctx.config.dashboardUrl);
         } catch (error) {
           ctx.logger.error({ err: error }, 'Google OAuth callback error');
           ctx.setCookie('google_oauth_state', '', { maxAge: 0 });
@@ -108,7 +114,11 @@ export const authRoutes = defineRoutes((app) =>
             error instanceof OAuthCallbackError
               ? error.message
               : 'An error occurred';
-          return loginErrorRedirect(message, ctx.requestId);
+          return loginErrorRedirect(
+            ctx.config.dashboardUrl,
+            message,
+            ctx.requestId
+          );
         }
       },
       { query: callbackQuery, detail: { hide: true } }

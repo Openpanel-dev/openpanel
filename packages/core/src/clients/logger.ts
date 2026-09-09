@@ -9,17 +9,9 @@
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
+import type { CoreConfig } from '../config';
 
 export type ILogger = PinoLogger;
-
-const logLevel = process.env.LOG_LEVEL ?? 'info';
-const silent = process.env.LOG_SILENT === 'true';
-
-// Exactly one shipping path at a time (see logging-capture-plan.md):
-// - 'otlp': pino ships via the HyperDX transport (requires HYPERDX_API_KEY).
-// - 'stdout': pino writes JSON to stdout; an external collector ships it.
-const logExporter =
-  process.env.LOG_EXPORTER ?? (process.env.HYPERDX_API_KEY ? 'otlp' : 'stdout');
 
 // Originals captured before interceptProcessOutput wraps the streams. Code
 // that must bypass capture (e.g. crash handlers mirroring fatals to stderr)
@@ -91,8 +83,9 @@ function redactSensitive(value: unknown, depth = 0): unknown {
 
 // Shared by logs and traces so both signals land under the same service
 // name in ClickStack (e.g. new-api-production).
-export function getServiceName(name: string): string {
-  return [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
+export function getServiceName(config: CoreConfig, name: string): string {
+  const { serviceNamePrefix, serviceNameEnvironment } = config.logging;
+  return [serviceNamePrefix, name, serviceNameEnvironment]
     .filter(Boolean)
     .join('-');
 }
@@ -107,16 +100,22 @@ export function getServiceName(name: string): string {
 // (V1 api/worker) is unaffected.
 const isBun = !!process.versions.bun;
 
-export function createLogger({ name }: { name: string }): ILogger {
-  const service = getServiceName(name);
+export function createLogger({
+  name,
+  config,
+}: {
+  name: string;
+  config: CoreConfig;
+}): ILogger {
+  const service = getServiceName(config, name);
+  const { level, silent, exporter, hyperdxApiKey } = config.logging;
 
-  const useHyperDX = logExporter === 'otlp' && !!process.env.HYPERDX_API_KEY;
-  const usePretty =
-    !(useHyperDX || isBun) && process.env.NODE_ENV !== 'production';
+  const useHyperDX = exporter === 'otlp' && !!hyperdxApiKey;
+  const usePretty = !(useHyperDX || isBun || config.isProduction);
 
   return pino({
     name: service,
-    level: logLevel,
+    level,
     enabled: !silent,
     formatters: {
       log: (obj) => {
@@ -125,11 +124,9 @@ export function createLogger({ name }: { name: string }): ILogger {
     },
     // Keep trace_id/span_id on every line even in stdout mode so trace↔log
     // correlation survives when a collector does the shipping.
-    mixin: process.env.HYPERDX_API_KEY
-      ? HyperDX.getPinoMixinFunction
-      : undefined,
+    mixin: hyperdxApiKey ? HyperDX.getPinoMixinFunction : undefined,
     transport: useHyperDX
-      ? HyperDX.getPinoTransport(logLevel, {
+      ? HyperDX.getPinoTransport(level, {
           detectResources: true,
           service,
         })
@@ -165,21 +162,20 @@ let intercepted = false;
  * `docker logs` stays useful. In stdout mode pino's JSON line on stdout IS
  * the container output — teeing would print everything twice.
  */
-export function interceptProcessOutput(logger: ILogger): void {
+export function interceptProcessOutput(
+  config: CoreConfig,
+  logger: ILogger
+): void {
   if (intercepted) {
     return;
   }
   // Keep local dev output untouched.
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    !process.env.HYPERDX_API_KEY &&
-    process.env.LOG_EXPORTER === undefined
-  ) {
+  if (!config.logging.interceptProcessOutput) {
     return;
   }
   intercepted = true;
 
-  const passthrough = logExporter !== 'stdout';
+  const passthrough = config.logging.exporter !== 'stdout';
   let logging = false;
 
   const wrap = (

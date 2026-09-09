@@ -26,8 +26,8 @@ export const chatRouter = createTRPCRouter({
     requireLogin(ctx.session.userId);
 
     const providers = {
-      openai: Boolean(process.env.OPENAI_API_KEY),
-      anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+      openai: Boolean(ctx.config.ai.openai.apiKey),
+      anthropic: Boolean(ctx.config.ai.anthropic.apiKey),
     };
     const models = getAvailableChatModels(providers);
     const preferred = models.find((m) => m.id === PREFERRED_DEFAULT_MODEL_ID);

@@ -314,7 +314,7 @@ export async function applySaveDiscount(
   const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
-  const discountId = process.env.POLAR_SAVE_DISCOUNT_ID;
+  const discountId = deps.config.polar.saveDiscountId;
   if (!discountId) {
     throw new TRPCBadRequestError('Save discount is not configured');
   }
@@ -674,7 +674,7 @@ export async function handlePolarWebhookEvent(
     event = validatePolarEvent(
       rawBody,
       headers,
-      process.env.POLAR_WEBHOOK_SECRET ?? ''
+      deps.config.polar.webhookSecret ?? ''
     );
   } catch (err) {
     logger.error({ err }, 'polar webhook: failed to parse event');

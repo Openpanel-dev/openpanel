@@ -16,9 +16,14 @@ import {
   renameTable,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster, getIsSelfHosting, printBoxMessage } from './helpers';
+import {
+  type CodeMigrationEnv,
+  getIsCluster,
+  getIsSelfHosting,
+  printBoxMessage,
+} from './helpers';
 
-export async function up() {
+export async function up(env: CodeMigrationEnv) {
   const replicatedVersion = '1';
   const existingTables = await getExistingTables();
   const hasSelfHosting = existingTables.includes('self_hosting_distributed');
@@ -30,8 +35,8 @@ export async function up() {
     'profile_aliases_distributed'
   );
 
-  const isSelfHosting = getIsSelfHosting();
-  const isClustered = getIsCluster();
+  const isSelfHosting = getIsSelfHosting(env);
+  const isClustered = getIsCluster(env);
 
   const isSelfHostingPostCluster =
     existingTables.includes('events_replicated') && isSelfHosting;

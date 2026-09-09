@@ -3,13 +3,9 @@
 // V1's reaper and vacuum redefine them — the buffer keeps its own copy and
 // importing it would construct the ClickHouse client at import time.
 
-const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
-
-/** Idle time after which a session is over; also the reaper's deadman default. */
-export const SESSION_TIMEOUT_MS = Number.parseInt(
-  process.env.SESSION_TIMEOUT_MS || String(DEFAULT_SESSION_TIMEOUT_MS),
-  10
-);
+/** Idle time after which a session is over; also the reaper's deadman default.
+ *  SESSION_TIMEOUT_MS overrides it (`config.session.timeoutMs`). */
+export const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
 
 /** Set of project ids with at least one live session. */
 export const PROJECTS_SET_KEY = 'session:projects';

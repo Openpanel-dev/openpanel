@@ -54,6 +54,8 @@ const ENRICH_BATCH_SIZE = 25;
 const CLEANUP_BATCH_SIZE = 5000;
 const CLEANUP_MAX_BATCHES = 2000; // runaway backstop: 5000 * 2000 = 10M rows
 const DEFAULT_INSIGHTS_RETENTION_DAYS = 90;
+/** Where the weekly-digest link points when DASHBOARD_URL is not set. */
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
 // Weekly digest: quiet threshold + how many email-worthy insights to surface.
 const WEEKLY_DIGEST_MIN_EVENTS = 100;
@@ -185,7 +187,7 @@ async function enrichProjectInsights(
 
     let results: Awaited<ReturnType<typeof enrichInsights>>;
     try {
-      results = await enrichInsights(input);
+      results = await enrichInsights(deps.config, input);
     } catch (err) {
       logger.error(
         { err, projectId, batchSize: batch.length },
@@ -293,11 +295,8 @@ export async function cleanupStaleInsights(
   logger: Logger
 ): Promise<{ insights: number; events: number }> {
   const db = deps.db;
-  const retentionDays = Number.parseInt(
-    process.env.INSIGHTS_RETENTION_DAYS ||
-      String(DEFAULT_INSIGHTS_RETENTION_DAYS),
-    10
-  );
+  const retentionDays =
+    deps.config.query.insightsRetentionDays ?? DEFAULT_INSIGHTS_RETENTION_DAYS;
   const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
 
   const suppressed = await deleteInBatches(
@@ -464,7 +463,7 @@ async function buildDigestData(
 
   let narrative = '';
   try {
-    narrative = await generateWeeklyNarrative({
+    narrative = await generateWeeklyNarrative(deps.config, {
       projectName: project.name,
       dateRange,
       stats: [
@@ -496,7 +495,7 @@ async function buildDigestData(
     // Narrative is best-effort — the digest still sends without it.
   }
 
-  const dashboardUrl = `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${project.organizationId}/${project.id}`;
+  const dashboardUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${project.organizationId}/${project.id}`;
 
   return {
     data: {
@@ -652,6 +651,7 @@ export async function listAllInsights(
  * the LLM.
  */
 export async function explainInsight(
+  deps: ServiceDeps,
   input: ExplainInsightInput,
   cacheKey: string
 ): Promise<InsightExplanation | null> {
@@ -660,7 +660,7 @@ export async function explainInsight(
     return JSON.parse(cached) as InsightExplanation;
   }
 
-  const explanation = await generateInsightExplanation(input);
+  const explanation = await generateInsightExplanation(deps.config, input);
 
   // Only cache a successful explanation — a null is a transient LLM failure
   // and should be retried on the next click.
@@ -737,7 +737,11 @@ export function createInsightService(
       projectId: string;
       limit: number;
     }): ReturnType<typeof listAllInsights> => listAllInsights(deps, args),
-    explainInsight,
+    explainInsight: (
+      input: ExplainInsightInput,
+      cacheKey: string
+    ): Promise<InsightExplanation | null> =>
+      explainInsight(deps, input, cacheKey),
     getReferrerSpikes: (
       input: GetReferrerSpikesInput
     ): Promise<ReferrerSpikeCluster[]> => getReferrerSpikes(deps, input),

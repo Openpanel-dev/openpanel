@@ -2,6 +2,7 @@
 // Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
 import * as Slack from '@slack/bolt';
+import type { CoreConfig } from '../../config';
 import {
   browserFetcher,
   postWebhook,
@@ -13,44 +14,52 @@ const { LogLevel, App: SlackApp } = Slack;
 
 import { InstallProvider } from '@slack/oauth';
 
-const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID;
-const SLACK_CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET;
-const SLACK_OAUTH_REDIRECT_URL = process.env.SLACK_OAUTH_REDIRECT_URL;
-const SLACK_STATE_SECRET = process.env.SLACK_STATE_SECRET;
+const INSTALL_SCOPES = [
+  'incoming-webhook',
+  'chat:write',
+  'chat:write.public',
+  'team:read',
+];
 
-export const slackInstaller = SLACK_CLIENT_ID
-  ? new InstallProvider({
-      clientId: SLACK_CLIENT_ID!,
-      clientSecret: SLACK_CLIENT_SECRET!,
-      stateSecret: SLACK_STATE_SECRET,
-      logLevel:
-        process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : undefined,
-    })
-  : ({
+/**
+ * Built from the credentials the config loader parsed (ADR-022 R9). Without a
+ * client id there is no install flow, and the stub keeps the two members the
+ * integration module touches so an unconfigured deployment still boots.
+ */
+export function slackInstaller(config: CoreConfig): InstallProvider {
+  const { clientId, clientSecret, stateSecret } = config.slack;
+  if (!clientId) {
+    return {
       generateInstallUrl: () => {},
       stateStore: {},
-    } as unknown as InstallProvider);
+    } as unknown as InstallProvider;
+  }
+  return new InstallProvider({
+    clientId,
+    // An id without a secret is a misconfiguration Slack itself rejects.
+    clientSecret: clientSecret ?? '',
+    stateSecret,
+    logLevel: config.isDevelopment ? LogLevel.DEBUG : undefined,
+  });
+}
 
 export const getSlackInstallUrl = ({
+  config,
   integrationId,
   organizationId,
   projectId,
 }: {
+  config: CoreConfig;
   integrationId: string;
   organizationId: string;
   projectId: string;
 }) => {
-  if (!SLACK_CLIENT_ID) {
+  if (!config.slack.clientId) {
     throw new Error('SLACK_CLIENT_ID is not set (slack.ts)');
   }
-  return slackInstaller.generateInstallUrl({
-    scopes: [
-      'incoming-webhook',
-      'chat:write',
-      'chat:write.public',
-      'team:read',
-    ],
-    redirectUri: SLACK_OAUTH_REDIRECT_URL,
+  return slackInstaller(config).generateInstallUrl({
+    scopes: INSTALL_SCOPES,
+    redirectUri: config.slack.oauthRedirectUrl,
     metadata: JSON.stringify({ integrationId, organizationId, projectId }),
   });
 };

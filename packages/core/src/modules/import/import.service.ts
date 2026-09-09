@@ -20,7 +20,6 @@
 
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
-import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import {
@@ -33,7 +32,7 @@ import type { IClickhouseEvent } from '../event/event.service';
 import type { IClickhouseProfile } from '../profile/profile.service';
 import type { IImportConfig } from './import.constants';
 
-const BATCH_SIZE = Number.parseInt(process.env.IMPORT_BATCH_SIZE || '5000', 10);
+const DEFAULT_BATCH_SIZE = 5000;
 const SESSION_BATCH_SIZE = 5000;
 const PROFILE_BATCH_SIZE = 5000;
 // Profiles derived inline from events (Amplitude, which has no profile export
@@ -42,12 +41,6 @@ const PROFILE_BATCH_SIZE = 5000;
 // duplicate rows that span flush boundaries to the latest activity per id.
 const PROFILE_MAP_CAP = 50_000;
 const RESUMABLE_STEPS = ['creating_sessions', 'moving', 'backfilling_sessions'];
-
-let _logger: ILogger | undefined;
-function getLogger(): ILogger {
-  _logger ??= createLogger({ name: 'core:import' });
-  return _logger;
-}
 
 function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => {
@@ -211,7 +204,10 @@ export async function generateGapBasedSessionIds(
     await insertImportBatch(deps, batch, importId);
   }
 
-  const mutationTable = getReplicatedTableName(TABLE_NAMES.events_imports);
+  const mutationTable = getReplicatedTableName(
+    deps.config.clickhouseClustered,
+    TABLE_NAMES.events_imports
+  );
   await ch.command({
     query: `ALTER TABLE ${mutationTable} DELETE
       WHERE import_id = {importId:String}
@@ -236,7 +232,10 @@ export async function cleanupStagingData(
   importId: string
 ): Promise<void> {
   const ch = deps.ch;
-  const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
+  const mutationTableName = getReplicatedTableName(
+    deps.config.clickhouseClustered,
+    TABLE_NAMES.events_imports
+  );
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String}`,
     query_params: { importId },
@@ -254,7 +253,10 @@ export async function cleanupSessionStartEndEvents(
   importId: string
 ): Promise<void> {
   const ch = deps.ch;
-  const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
+  const mutationTableName = getReplicatedTableName(
+    deps.config.clickhouseClustered,
+    TABLE_NAMES.events_imports
+  );
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String} AND name IN ('session_start', 'session_end')`,
     query_params: { importId },
@@ -895,9 +897,10 @@ export async function runImportJob(
   deps: ServiceDeps,
   importId: string,
   progress: ImportJobProgress = NOOP_PROGRESS,
-  logger: Logger = getLogger()
+  logger: Logger = deps.logger
 ): Promise<{ success: true }> {
   const db = deps.db;
+  const batchSize = deps.config.query.importBatchSize ?? DEFAULT_BATCH_SIZE;
   const record = await db.import.findUniqueOrThrow({
     where: { id: importId },
     include: { project: true },
@@ -982,7 +985,7 @@ export async function runImportJob(
           }
         }
 
-        if (eventBatch.length >= BATCH_SIZE) {
+        if (eventBatch.length >= batchSize) {
           await insertImportBatch(deps, eventBatch, importId);
           processedEvents += eventBatch.length;
 
@@ -1204,7 +1207,7 @@ export async function insertRawEventsBatch(
   deps: ServiceDeps,
   projectId: string,
   events: IClickhouseEvent[],
-  logger: Logger = getLogger()
+  logger: Logger = deps.logger
 ): Promise<InsertRawEventsResult> {
   const ch = deps.ch;
   const importedAt = formatClickhouseDate(new Date());

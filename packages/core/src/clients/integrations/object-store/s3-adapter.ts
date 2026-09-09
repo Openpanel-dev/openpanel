@@ -9,6 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
+import type { CoreConfig } from '../../../config';
 import type { IS3ExportConfig } from '../../../modules/integration/integration.constants';
 import { decryptCredential } from '../../../shared/encryption';
 import { assertSafeUrl, createPinnedLookup } from '../../../shared/ssrf';
@@ -23,8 +24,8 @@ import type {
 // pino-pretty transport, so a module that is merely imported (every test file
 // that reaches the object-store barrel) must not pay for one unused.
 let _logger: ILogger | null = null;
-function logger(): ILogger {
-  _logger ??= createLogger({ name: 's3-adapter' });
+function logger(coreConfig: CoreConfig): ILogger {
+  _logger ??= createLogger({ name: 's3-adapter', config: coreConfig });
   return _logger;
 }
 
@@ -56,12 +57,18 @@ export class S3Adapter implements IObjectStoreAdapter {
   private clientPromise: Promise<S3Client> | null = null;
   private clientExpiresAt = 0;
 
-  constructor(config: IS3ExportConfig) {
+  constructor(
+    config: IS3ExportConfig,
+    private readonly coreConfig: CoreConfig
+  ) {
     // Decrypt secretAccessKey if present and encrypted
     if (config.authMode === 'access_key') {
       this.config = {
         ...config,
-        secretAccessKey: decryptCredential(config.secretAccessKey),
+        secretAccessKey: decryptCredential(
+          coreConfig.encryptionKey,
+          config.secretAccessKey
+        ),
       };
     } else {
       this.config = config;
@@ -86,7 +93,7 @@ export class S3Adapter implements IObjectStoreAdapter {
     // Self-hosted returns null (guard skipped) — a single tenant already owns
     // the network, and internal MinIO endpoints are a legitimate use.
     const addresses = this.config.endpoint
-      ? await assertSafeUrl(this.config.endpoint)
+      ? await assertSafeUrl(this.coreConfig.selfHosted, this.config.endpoint)
       : null;
 
     return this.getClientWithAccessKeys(addresses?.[0]);
@@ -127,7 +134,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         : {}),
     });
 
-    logger().debug(
+    logger(this.coreConfig).debug(
       {
         region: this.config.region,
         endpoint: this.config.endpoint || 'default',
@@ -206,7 +213,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         },
       });
 
-      logger().debug(
+      logger(this.coreConfig).debug(
         {
           roleArn: this.config.roleArn,
           expiresAt: new Date(this.clientExpiresAt).toISOString(),
@@ -216,7 +223,7 @@ export class S3Adapter implements IObjectStoreAdapter {
 
       return s3Client;
     } catch (error) {
-      logger().error(
+      logger(this.coreConfig).error(
         {
           error,
           roleArn: this.config.roleArn,
@@ -270,7 +277,7 @@ export class S3Adapter implements IObjectStoreAdapter {
       const command = new PutObjectCommand(putParams);
       const response = await client.send(command);
 
-      logger().debug(
+      logger(this.coreConfig).debug(
         {
           bucket: options.bucket,
           key: options.key,
@@ -286,7 +293,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         location: `s3://${options.bucket}/${options.key}`,
       };
     } catch (error) {
-      logger().error(
+      logger(this.coreConfig).error(
         {
           error,
           bucket: options.bucket,
@@ -349,7 +356,10 @@ export class S3Adapter implements IObjectStoreAdapter {
     const status = (error as { $metadata?: { httpStatusCode?: number } } | null)
       ?.$metadata?.httpStatusCode;
 
-    logger().warn({ err: error, bucket: this.config.bucket }, 'S3 test failed');
+    logger(this.coreConfig).warn(
+      { err: error, bucket: this.config.bucket },
+      'S3 test failed'
+    );
 
     if (status === 404 || name === 'NotFound' || name === 'NoSuchBucket') {
       return `Bucket '${this.config.bucket}' does not exist or is not accessible`;
@@ -371,6 +381,9 @@ export class S3Adapter implements IObjectStoreAdapter {
 /**
  * Create an S3 adapter from integration config
  */
-export function createS3Adapter(config: IS3ExportConfig): S3Adapter {
-  return new S3Adapter(config);
+export function createS3Adapter(
+  config: IS3ExportConfig,
+  coreConfig: CoreConfig
+): S3Adapter {
+  return new S3Adapter(config, coreConfig);
 }

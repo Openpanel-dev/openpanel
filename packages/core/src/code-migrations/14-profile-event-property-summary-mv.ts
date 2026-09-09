@@ -7,7 +7,7 @@ import {
   getExistingTables,
   runClickhouseMigrationCommands,
 } from '@openpanel/db/src/clickhouse/migration';
-import { getIsCluster } from './helpers';
+import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 // Per-property breakdown of profile events, used when cohort event criteria
 // filter on properties.<key> AND as a future fast path for property breakdowns
@@ -15,10 +15,10 @@ import { getIsCluster } from './helpers';
 //
 // NOTE: fork references this MV but never shipped a migration for it; we own
 // the authoritative DDL.
-export async function up() {
+export async function up(env: CodeMigrationEnv) {
   const replicatedVersion = '1';
   const existingTables = await getExistingTables();
-  const isClustered = getIsCluster();
+  const isClustered = getIsCluster(env);
 
   const sqls: string[] = [];
 
@@ -85,8 +85,8 @@ export async function up() {
   }
 }
 
-export async function down() {
-  const isClustered = getIsCluster();
+export async function down(env: CodeMigrationEnv) {
+  const isClustered = getIsCluster(env);
 
   const sqls = [
     dropTable(

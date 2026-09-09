@@ -45,20 +45,21 @@ const PROFILE_LATEST_AGGREGATE_COLUMNS = sql.join(
   ', '
 );
 
+const DEFAULT_BATCH_SIZE = 200;
+const DEFAULT_CHUNK_SIZE = 1000;
+const DEFAULT_TTL_IN_SECONDS = 60 * 60;
+const DEFAULT_FETCH_CHUNK_SIZE = 50;
+
 export class ProfileBuffer extends BaseBuffer {
-  private readonly batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
-    : 200;
-  private readonly chunkSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
-    : 1000;
-  private readonly ttlInSeconds = process.env.PROFILE_BUFFER_TTL_IN_SECONDS
-    ? Number.parseInt(process.env.PROFILE_BUFFER_TTL_IN_SECONDS, 10)
-    : 60 * 60;
+  private readonly batchSize =
+    this.deps.config.buffers.profile.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.profile.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  private readonly ttlInSeconds =
+    this.deps.config.buffers.profile.ttlSeconds ?? DEFAULT_TTL_IN_SECONDS;
   /** Max profiles per ClickHouse IN-clause fetch to keep query size bounded */
-  private readonly fetchChunkSize = process.env.PROFILE_BUFFER_FETCH_CHUNK_SIZE
-    ? Number.parseInt(process.env.PROFILE_BUFFER_FETCH_CHUNK_SIZE, 10)
-    : 50;
+  private readonly fetchChunkSize =
+    this.deps.config.buffers.profile.fetchChunkSize ?? DEFAULT_FETCH_CHUNK_SIZE;
 
   private readonly redisKey = 'profile-buffer';
   private readonly redisProfilePrefix = 'profile-cache:';

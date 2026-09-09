@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import type { CoreConfig } from '../../../../../config';
 import type { ServiceDeps } from '../../../../../services';
 import { getChartStartEndDate } from '../../../../../shared/date';
 import {
@@ -30,19 +31,21 @@ const MAX_PLOTTED_SERIES = 25;
 const MAX_DATA_POINTS = 180;
 
 function reportUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   reportId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/reports/${reportId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
 function dashboardUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   dashboardId: string
 ) {
-  return `${dashboardBaseUrl()}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
+  return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
 }
 
 type ChartSeries = {
@@ -167,7 +170,12 @@ export function registerReportTools(
         });
         return dashboards.map((d) => ({
           ...d,
-          dashboard_url: dashboardUrl(context.organizationId, projectId, d.id),
+          dashboard_url: dashboardUrl(
+            deps.config,
+            context.organizationId,
+            projectId,
+            d.id
+          ),
         }));
       })
   );
@@ -207,7 +215,7 @@ export function registerReportTools(
           breakdowns: r.breakdowns,
         }));
         return {
-          report_url_template: `${dashboardBaseUrl()}/${context.organizationId}/${projectId}/reports/{id}`,
+          report_url_template: `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}/reports/{id}`,
           ...table(rows, {
             limit: MAX_SERIES_LIMIT,
             columns: [
@@ -342,6 +350,7 @@ export async function runReport(
     startDate,
     endDate,
     dashboard_url: reportUrl(
+      deps.config,
       input.organizationId,
       input.projectId,
       input.reportId

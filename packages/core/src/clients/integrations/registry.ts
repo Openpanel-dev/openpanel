@@ -1,9 +1,11 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
+
+import type { CoreConfig } from '../../config';
 import {
   type IIntegrationConfig,
   looksEncrypted,
 } from '../../modules/integration/integration.constants';
-import { encryptCredential } from '../../shared/encryption';
+import { type EncryptionKey, encryptCredential } from '../../shared/encryption';
 import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,
@@ -62,14 +64,18 @@ export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   };
   // Object-store export sink.
   export?: {
-    createAdapter(config: ConfigOf<T>): IObjectStoreAdapter;
+    createAdapter(
+      config: ConfigOf<T>,
+      coreConfig: CoreConfig
+    ): IObjectStoreAdapter;
   };
   // Optional synchronous config validation run before persisting (e.g. webhook
   // JS template). Returning invalid rejects the create/update.
   validateConfig?(config: ConfigOf<T>): { valid: boolean; error?: string };
   // Optional pre-save connection test (used by the generic tRPC procedure).
   testConnection?(
-    config: ConfigOf<T>
+    config: ConfigOf<T>,
+    coreConfig: CoreConfig
   ): Promise<{ success: boolean; error?: string }>;
   /**
    * Config values that must never travel back to a client. ONE declaration
@@ -208,9 +214,10 @@ const webhookServer: IServerIntegration<'webhook'> = {
 const s3Server: IServerIntegration<'s3_export'> = {
   type: 's3_export',
   export: {
-    createAdapter: (config) => createS3Adapter(config),
+    createAdapter: (config, coreConfig) => createS3Adapter(config, coreConfig),
   },
-  testConnection: (config) => createS3Adapter(config).testConnection(),
+  testConnection: (config, coreConfig) =>
+    createS3Adapter(config, coreConfig).testConnection(),
   // Absent in iam_role configs; the generic helpers skip keys that aren't there.
   secretFields: [{ path: 'secretAccessKey', encrypted: true }],
 };
@@ -218,9 +225,10 @@ const s3Server: IServerIntegration<'s3_export'> = {
 const gcsServer: IServerIntegration<'gcs_export'> = {
   type: 'gcs_export',
   export: {
-    createAdapter: (config) => createGCSAdapter(config),
+    createAdapter: (config, coreConfig) => createGCSAdapter(config, coreConfig),
   },
-  testConnection: (config) => createGCSAdapter(config).testConnection(),
+  testConnection: (config, coreConfig) =>
+    createGCSAdapter(config, coreConfig).testConnection(),
   secretFields: [{ path: 'serviceAccountKey', encrypted: true }],
 };
 
@@ -359,9 +367,9 @@ function mapSecrets<C>(
 }
 
 /** Encrypt every declared secret that is stored encrypted. */
-export function encryptConfigSecrets<C>(config: C): C {
+export function encryptConfigSecrets<C>(key: EncryptionKey, config: C): C {
   return mapSecrets(config, (value, secret) =>
-    secret.encrypted ? encryptCredential(value) : undefined
+    secret.encrypted ? encryptCredential(key, value) : undefined
   );
 }
 

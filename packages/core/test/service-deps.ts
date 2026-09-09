@@ -7,6 +7,7 @@
 
 import type { Logger } from '../src/logger';
 import type { ServiceDeps, Services } from '../src/services';
+import { testCoreConfig } from './config-fixture';
 
 /** Records what the ClickHouse/Postgres call was logged with — the requestId
  *  chain's observation point. */
@@ -59,6 +60,7 @@ export async function testServiceDeps(
     ch,
     redis,
     logger: recordingLogger(),
+    config: testCoreConfig(),
     get clients(): never {
       return unavailable('ServiceDeps.clients');
     },

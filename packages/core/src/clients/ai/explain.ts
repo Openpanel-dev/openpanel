@@ -8,6 +8,7 @@
 // causes. The caller gathers the data (DB/CH); this module just narrates.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import { ALLOWED_MODELS, resolveModel } from './providers';
 
 // gpt-4.1 (the larger non-reasoning model) synthesizes the supplied breakdown
@@ -15,14 +16,14 @@ import { ALLOWED_MODELS, resolveModel } from './providers';
 // deeper inference is wanted.
 const EXPLAIN_MODEL_ID = 'gpt-4-1';
 
-function explainModel() {
+function explainModel(config: CoreConfig) {
   const entry =
     ALLOWED_MODELS.find((m) => m.id === EXPLAIN_MODEL_ID) ??
     ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
   if (!entry) {
     throw new Error('No OpenAI model available for insight explanation');
   }
-  return resolveModel(entry);
+  return resolveModel(config, entry);
 }
 
 export interface BreakdownComparison {
@@ -99,14 +100,14 @@ Produce:
 Be honest and precise. You can only see what's in the data: explain the shape and the internal decomposition (which segment moved, when), not external causes you can't observe. If the data doesn't clearly explain it, say so and set confidence low. Never invent numbers or dates.`;
 
 let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp() {
+function getApp(config: CoreConfig) {
   if (_app) {
     return _app;
   }
   const agent = defineAgent({
     name: 'insight-explain',
     description: 'Explains why an insight changed (one-shot).',
-    model: explainModel(),
+    model: explainModel(config),
     contextSchema: z.object({}),
     outputSchema: {
       schema: explanationJsonSchema,
@@ -123,9 +124,10 @@ function getApp() {
 }
 
 export async function generateInsightExplanation(
+  config: CoreConfig,
   input: ExplainInsightInput
 ): Promise<InsightExplanation | null> {
-  const result = (await getApp().run('insight-explain', {
+  const result = (await getApp(config).run('insight-explain', {
     input: JSON.stringify(input),
     context: {},
     // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts

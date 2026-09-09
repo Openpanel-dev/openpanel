@@ -17,7 +17,7 @@ import {
   type TrpcContext,
 } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
-import { Arctic, googleGsc } from '../auth/auth.service';
+import { Arctic, googleGscClient } from '../auth/auth.service';
 import { zRange, zTimeInterval } from '../report/report.constants';
 
 const OAUTH_COOKIE_MAX_AGE_SECONDS = 60 * 10;
@@ -78,9 +78,11 @@ export const gscRouter = createTRPCRouter({
 
       const state = Arctic.generateState();
       const codeVerifier = Arctic.generateCodeVerifier();
-      const url = googleGsc.createAuthorizationURL(state, codeVerifier, [
-        'https://www.googleapis.com/auth/webmasters.readonly',
-      ]);
+      const url = googleGscClient(ctx.config).createAuthorizationURL(
+        state,
+        codeVerifier,
+        ['https://www.googleapis.com/auth/webmasters.readonly']
+      );
       url.searchParams.set('access_type', 'offline');
       url.searchParams.set('prompt', 'consent');
 

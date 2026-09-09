@@ -22,8 +22,8 @@
 // shared/ch-query.ts) and the event/bot buffers as `deps.buffers.*`. The
 // `loadDb` / `loadChClient` / `loadDbBuffers` lazy loaders are gone, and so
 // are the two `import('@openpanel/core')` self-barrel hops this file made for
-// `resolveMaxLookbackDays` / `resolveDateRange` — both are imported straight
-// from `shared/` (docs/TECH_DEBT.md §2, §4). What stays lazy is named and
+// `resolveDateRange` — imported straight from `shared/`
+// (docs/TECH_DEBT.md §2, §4). What stays lazy is named and
 // argued at each remaining `load*` below; none of them reach @openpanel/db.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
@@ -33,7 +33,6 @@ import type { ServiceDeps, Services } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
 import { DateTime, resolveDateRange } from '../../shared/date';
-import { resolveMaxLookbackDays } from '../../shared/lookback';
 import { toDots } from '../../shared/object';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
@@ -79,7 +78,6 @@ const EVENT_METAS_CACHE_NAME = 'getEventMetas';
 const TOP_EVENT_NAMES_CACHE_SECONDS = 60 * 10;
 const EVENT_LIST_DEFAULT_LOOKBACK_DAYS = 0.5;
 const EVENT_LIST_MAX_LOOKBACK_DAYS_DEFAULT = 365 * 5;
-const EVENT_LIST_MAX_LOOKBACK_DAYS_ENV = 'EVENT_LIST_MAX_LOOKBACK_DAYS';
 const QUERY_EVENTS_DEFAULT_LIMIT = 20;
 const CLICKHOUSE_DATETIME_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSS';
 const MASK_CHARACTER = '*';
@@ -737,11 +735,11 @@ export async function getEventList(
     dateIntervalInDays = EVENT_LIST_DEFAULT_LOOKBACK_DAYS,
   } = options;
 
-  // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
-  const maxLookbackDays = resolveMaxLookbackDays(
-    EVENT_LIST_MAX_LOOKBACK_DAYS_ENV,
-    EVENT_LIST_MAX_LOOKBACK_DAYS_DEFAULT
-  );
+  // Deployment-tunable ceiling for the empty-result lookback
+  // (EVENT_LIST_MAX_LOOKBACK_DAYS).
+  const maxLookbackDays =
+    deps.config.query.eventListMaxLookbackDays ??
+    EVENT_LIST_MAX_LOOKBACK_DAYS_DEFAULT;
   const lookbackDays = Math.min(dateIntervalInDays, maxLookbackDays);
   const hasLookback = hasEventListLookback(options);
 

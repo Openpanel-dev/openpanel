@@ -53,20 +53,21 @@ export function extractProjectId(line: string): string | null {
   return line.slice(valueStart, valueEnd);
 }
 
-export class EventBuffer extends BaseBuffer {
-  private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
-    : 4000;
-  private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
-    : 1000;
+const DEFAULT_BATCH_SIZE = 4000;
+const DEFAULT_CHUNK_SIZE = 1000;
+const DEFAULT_MICRO_BATCH_MS = 10;
+const DEFAULT_MICRO_BATCH_SIZE = 100;
 
-  private microBatchIntervalMs = process.env.EVENT_BUFFER_MICRO_BATCH_MS
-    ? Number.parseInt(process.env.EVENT_BUFFER_MICRO_BATCH_MS, 10)
-    : 10;
-  private microBatchMaxSize = process.env.EVENT_BUFFER_MICRO_BATCH_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_MICRO_BATCH_SIZE, 10)
-    : 100;
+export class EventBuffer extends BaseBuffer {
+  private readonly batchSize =
+    this.deps.config.buffers.event.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.event.chunkSize ?? DEFAULT_CHUNK_SIZE;
+
+  private readonly microBatchIntervalMs =
+    this.deps.config.buffers.event.microBatchMs ?? DEFAULT_MICRO_BATCH_MS;
+  private readonly microBatchMaxSize =
+    this.deps.config.buffers.event.microBatchSize ?? DEFAULT_MICRO_BATCH_SIZE;
 
   private pendingEvents: IClickhouseEvent[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;

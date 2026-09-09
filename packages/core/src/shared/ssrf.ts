@@ -19,10 +19,11 @@ export { createPinnedLookup } from './safe-fetch';
  * or webhook receiver) is a legitimate, pre-existing use. The guard exists to
  * stop cross-tenant SSRF on the managed/multi-tenant cloud.
  */
-export async function assertSafeUrl(rawUrl: string): Promise<string[] | null> {
-  // Compare explicitly: bare truthiness would treat SELF_HOSTED="false" as
-  // self-hosted and silently drop the guard on the cloud.
-  if (process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1') {
+export async function assertSafeUrl(
+  selfHosted: boolean,
+  rawUrl: string
+): Promise<string[] | null> {
+  if (selfHosted) {
     return null;
   }
 

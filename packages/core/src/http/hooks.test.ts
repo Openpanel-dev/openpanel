@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { cors } from '@elysiajs/cors';
 import { Elysia } from 'elysia';
+import { testCoreConfig } from '../../test/config-fixture';
 import { REQUEST_ID_LENGTH } from '../logger';
 import { clientIpHook, requestIdHook, timestampHook } from './hooks';
 
@@ -42,7 +43,7 @@ describe('requestIdHook', () => {
 
 describe('clientIpHook', () => {
   const app = new Elysia()
-    .use(clientIpHook())
+    .use(clientIpHook(testCoreConfig().ipHeaders))
     .get('/', ({ clientIp, clientIpHeader }) => ({ clientIp, clientIpHeader }));
 
   test('prefers the client-forwarded header, as V1 does', async () => {
@@ -92,7 +93,7 @@ test('root chain runs cors -> requestId -> timestamp -> ip', async () => {
       ran.push(`timestamp:${typeof timestamp}`);
       return {};
     })
-    .use(clientIpHook())
+    .use(clientIpHook(testCoreConfig().ipHeaders))
     .derive({ as: 'global' }, ({ clientIp }) => {
       ran.push(`ip:${clientIp}`);
       return {};

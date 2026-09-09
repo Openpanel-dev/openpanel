@@ -53,6 +53,7 @@ export const summarizeDashboard = (deps: ServiceDeps) =>
         id: dashboard.id,
         name: dashboard.name,
         dashboard_url: dashboardUrl(
+          deps.config,
           context.organizationId,
           context.projectId,
           `/dashboards/${dashboard.id}`

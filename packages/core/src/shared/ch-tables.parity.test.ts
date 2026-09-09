@@ -9,24 +9,21 @@
 
 import { describe, expect, it } from 'bun:test';
 import * as dbClient from '@openpanel/db/src/clickhouse/client';
-import {
-  getReplicatedTableName,
-  isClickhouseClustered,
-  TABLE_NAMES,
-} from './ch-tables';
+import { getReplicatedTableName, TABLE_NAMES } from './ch-tables';
 
 describe('ch-tables parity with @openpanel/db', () => {
   it('has exactly the same table map', () => {
     expect(TABLE_NAMES).toEqual(dbClient.TABLE_NAMES);
   });
 
-  it('derives the same cluster verdict', () => {
-    expect(isClickhouseClustered()).toBe(dbClient.isClickhouseClustered());
-  });
-
-  it('derives the same mutation table name', () => {
+  // The cluster VERDICT is the config loader's since M15-006
+  // (`config.clickhouseClustered` = CLICKHOUSE_CLUSTER, else not SELF_HOSTED);
+  // @openpanel/db still reads it itself. Feeding db's verdict in is what makes
+  // this a parity check of the NAME derivation rather than of two env reads.
+  it('derives the same mutation table name for the same verdict', () => {
+    const clustered = dbClient.isClickhouseClustered();
     for (const name of Object.values(TABLE_NAMES)) {
-      expect(getReplicatedTableName(name)).toBe(
+      expect(getReplicatedTableName(clustered, name)).toBe(
         dbClient.getReplicatedTableName(name)
       );
     }

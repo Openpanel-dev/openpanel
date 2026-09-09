@@ -237,12 +237,12 @@ export async function upsertIntegration(
   // Test the connection with the real credentials before saving. `submitted`
   // may carry a still-encrypted value forward from the stored row; the adapters
   // decrypt on construction, so this works for both new and carried-over keys.
-  const testResult = await plugin.testConnection?.(submitted);
+  const testResult = await plugin.testConnection?.(submitted, deps.config);
   if (testResult && !testResult.success) {
     throw new TRPCBadRequestError(`Failed to connect: ${testResult.error}`);
   }
 
-  const config = encryptConfigSecrets(submitted);
+  const config = encryptConfigSecrets(deps.config.encryptionKey, submitted);
 
   if (input.id) {
     return db.integration.update({
@@ -318,6 +318,7 @@ export async function createOrUpdateSlackIntegration(
   return {
     ...res,
     slackInstallUrl: await getSlackInstallUrl({
+      config: deps.config,
       integrationId: res.id,
       organizationId,
       projectId,
@@ -344,7 +345,8 @@ export async function testIntegrationConnection(
 
   return (
     (await getServerIntegration(input.config.type).testConnection?.(
-      input.config
+      input.config,
+      deps.config
     )) ?? { success: true }
   );
 }
@@ -365,7 +367,8 @@ export async function testExportIntegrationConnection(
 
   return (
     (await getServerIntegration(input.config.type).testConnection?.(
-      input.config
+      input.config,
+      deps.config
     )) ?? { success: false, error: 'Unknown export type' }
   );
 }
@@ -416,10 +419,9 @@ export async function completeSlackOAuthCallback(
     state: string;
   }
 ): Promise<CompleteSlackOAuthCallbackResult> {
-  const verifiedState = await slackInstaller.stateStore?.verifyStateParam(
-    new Date(),
-    params.state
-  );
+  const verifiedState = await slackInstaller(
+    deps.config
+  ).stateStore?.verifyStateParam(new Date(), params.state);
   const parsedMetadata = slackOAuthMetadataSchema.safeParse(
     JSON.parse(verifiedState?.metadata ?? '{}')
   );
@@ -428,12 +430,13 @@ export async function completeSlackOAuthCallback(
     throw new SlackOAuthCallbackError('Invalid metadata');
   }
 
+  const slack = deps.config.slack;
   const slackOauthAccessUrl = [
     'https://slack.com/api/oauth.v2.access',
-    `?client_id=${process.env.SLACK_CLIENT_ID}`,
-    `&client_secret=${process.env.SLACK_CLIENT_SECRET}`,
+    `?client_id=${slack.clientId}`,
+    `&client_secret=${slack.clientSecret}`,
     `&code=${params.code}`,
-    `&redirect_uri=${process.env.SLACK_OAUTH_REDIRECT_URL}`,
+    `&redirect_uri=${slack.oauthRedirectUrl}`,
   ].join('');
 
   const response = await fetch(slackOauthAccessUrl);

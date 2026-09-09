@@ -23,6 +23,7 @@
 // no `IN (subquery)` is introduced or removed.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import type { CoreConfig } from '../../../config';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -71,11 +72,10 @@ const JOINABLE_PROFILE_COLUMNS = [
  */
 const STRICT_INCREASE_MODE = ", 'strict_increase'";
 
-function windowFunnelMode(): SqlFragment {
-  const nonStrictOrdering =
-    process.env.FUNNEL_NON_STRICT_ORDERING === '1' ||
-    process.env.FUNNEL_NON_STRICT_ORDERING === 'true';
-  return nonStrictOrdering ? sql.empty : compiledText(STRICT_INCREASE_MODE);
+function windowFunnelMode(config: CoreConfig): SqlFragment {
+  return config.query.funnelNonStrictOrdering
+    ? sql.empty
+    : compiledText(STRICT_INCREASE_MODE);
 }
 
 export interface FunnelBaseInput {
@@ -93,6 +93,8 @@ export interface FunnelBaseInput {
   cohortMetadata: Map<string, CohortMetadata>;
   /** Travels to `session_timezone`; `toDateTime('…')` parses in it. */
   timezone: string;
+  /** FUNNEL_NON_STRICT_ORDERING decides `windowFunnel`'s ordering mode. */
+  config: CoreConfig;
 }
 
 /** Everything the funnel chart and the funnel profile list share. */
@@ -293,7 +295,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
-    sql`windowFunnel(${sql.uint64(input.funnelWindowMilliseconds)}${windowFunnelMode()})(toUInt64(toUnixTimestamp64Milli(created_at)), ${sql.join(conditions)}) AS level`,
+    sql`windowFunnel(${sql.uint64(input.funnelWindowMilliseconds)}${windowFunnelMode(input.config)})(toUInt64(toUnixTimestamp64Milli(created_at)), ${sql.join(conditions)}) AS level`,
   ];
   if (group === 'session_id') {
     // Resolves identity changes mid-session.

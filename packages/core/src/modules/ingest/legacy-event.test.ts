@@ -22,6 +22,7 @@ import {
   it,
   mock,
 } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import type { Buffers } from '../../buffers/create-buffers';
 import type { GeoLocation } from '../../clients/geo';
 import type { ServiceDeps } from '../../services';
@@ -96,7 +97,10 @@ const buffers = {
 
 // The legacy route produces to Kafka and never touches Postgres/ClickHouse;
 // `deps` is on `IngestTransport` for the profile writes /track makes (M10-005).
-const transportDeps = { buffers } as unknown as ServiceDeps;
+const transportDeps = {
+  buffers,
+  config: testCoreConfig(),
+} as unknown as ServiceDeps;
 
 const legacyBody = (
   overrides: Partial<DeprecatedPostEventPayload> = {}

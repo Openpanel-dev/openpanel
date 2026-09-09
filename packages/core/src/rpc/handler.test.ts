@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { testCoreConfig } from '../../test/config-fixture';
 import {
   capturingLogger,
   stubHttpCtx,
@@ -45,7 +46,10 @@ function report(overrides: Partial<TrpcErrorReport> = {}): TrpcErrorReport {
 test('UNAUTHORIZED on organization.list is dropped', () => {
   const logger = capturingLogger();
 
-  createTrpcOnError(logger)(
+  createTrpcOnError(
+    logger,
+    testCoreConfig().ipHeaders
+  )(
     report({
       error: new TRPCError({ code: 'UNAUTHORIZED' }),
       path: 'organization.list',
@@ -58,7 +62,10 @@ test('UNAUTHORIZED on organization.list is dropped', () => {
 test('the drop is scoped to that one path', () => {
   const logger = capturingLogger();
 
-  createTrpcOnError(logger)(
+  createTrpcOnError(
+    logger,
+    testCoreConfig().ipHeaders
+  )(
     report({
       error: new TRPCError({ code: 'UNAUTHORIZED' }),
       path: 'organization.get',
@@ -72,9 +79,10 @@ test('the drop is scoped to that one path', () => {
 test('TOO_MANY_REQUESTS logs at warn as "trpc rate limited"', () => {
   const logger = capturingLogger();
 
-  createTrpcOnError(logger)(
-    report({ error: new TRPCError({ code: 'TOO_MANY_REQUESTS' }) })
-  );
+  createTrpcOnError(
+    logger,
+    testCoreConfig().ipHeaders
+  )(report({ error: new TRPCError({ code: 'TOO_MANY_REQUESTS' }) }));
 
   expect(logger.lines).toHaveLength(1);
   expect(logger.lines[0]?.level).toBe('warn');
@@ -85,7 +93,7 @@ test('everything else logs at error as "trpc error", with the V1 fields', () => 
   const logger = capturingLogger();
   const failure = report();
 
-  createTrpcOnError(logger)(failure);
+  createTrpcOnError(logger, testCoreConfig().ipHeaders)(failure);
 
   expect(logger.lines).toHaveLength(1);
   const [line] = logger.lines;
@@ -110,7 +118,10 @@ test('the request logger is preferred and the resolved session is carried', asyn
     cookieOptions: COOKIE_OPTIONS,
   });
 
-  createTrpcOnError(bootLogger)(report({ ctx: trpcCtx }));
+  createTrpcOnError(
+    bootLogger,
+    testCoreConfig().ipHeaders
+  )(report({ ctx: trpcCtx }));
 
   expect(bootLogger.lines).toHaveLength(0);
   expect(requestLogger.lines).toHaveLength(1);
@@ -123,7 +134,10 @@ test('a ctx-less failure (createContext threw) logs through the boot logger', ()
   const bootLogger = capturingLogger();
 
   expect(() =>
-    createTrpcOnError(bootLogger)(report({ ctx: undefined }))
+    createTrpcOnError(
+      bootLogger,
+      testCoreConfig().ipHeaders
+    )(report({ ctx: undefined }))
   ).not.toThrow();
 
   expect(bootLogger.lines).toHaveLength(1);
@@ -133,7 +147,10 @@ test('a ctx-less failure (createContext threw) logs through the boot logger', ()
 test('an untrusted forwarded ip is ignored', () => {
   const logger = capturingLogger();
 
-  createTrpcOnError(logger)(
+  createTrpcOnError(
+    logger,
+    testCoreConfig().ipHeaders
+  )(
     report({
       req: new Request('https://api.openpanel.dev/trpc/report.get', {
         headers: { 'x-client-ip': '198.51.100.9' },
@@ -170,6 +187,7 @@ function mount() {
     router,
     logger,
     cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
   });
   return { logger, call: (request: Request) => handler(request, ctx) };
 }

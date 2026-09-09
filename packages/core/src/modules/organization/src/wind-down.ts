@@ -9,6 +9,7 @@
 
 import { getRecommendedPlan } from '@openpanel/payments';
 import { addDays, format, subDays } from 'date-fns';
+import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import {
   runSequence,
@@ -51,9 +52,8 @@ const RECENT_VOLUME_DAYS = 30;
 /** Orgs allowed to *enter* the sequence per tick. Entry staggers the cohort. */
 const DEFAULT_MAX_PER_RUN = 100;
 
-function getMaxPerRun(): number {
-  const parsed = Number.parseInt(process.env.WIND_DOWN_MAX_PER_RUN ?? '', 10);
-  return Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_MAX_PER_RUN : parsed;
+function getMaxPerRun(config: CoreConfig): number {
+  return config.query.windDownMaxPerRun ?? DEFAULT_MAX_PER_RUN;
 }
 
 /** The organization row shape this job reads — V1's `orgQuery` include. */
@@ -92,6 +92,7 @@ interface WindDownUsage {
 export interface WindDownDeps {
   db: WindDownDb;
   logger: Logger;
+  config: CoreConfig;
   sendEmail: SendSequenceEmail;
   getLastEventPerProject(): Promise<Map<string, Date>>;
   getOrganizationEventsCount(projectIds: string[]): Promise<number>;
@@ -108,6 +109,7 @@ export interface WindDownDeps {
 interface WindDownContext {
   org: WindDownOrganization;
   user: NonNullable<WindDownOrganization['createdBy']>;
+  dashboardUrl: string;
   /** Day 0 of this org's schedule. */
   startedAt: Date;
   lastEventAt: Date | null;
@@ -169,7 +171,7 @@ function createUsageGetter(org: WindDownOrganization, deps: WindDownDeps) {
 const getters = {
   firstName: (ctx: WindDownContext) => ctx.user.firstName || undefined,
   billingUrl: (ctx: WindDownContext) =>
-    `${process.env.DASHBOARD_URL}/${ctx.org.id}/billing`,
+    `${ctx.dashboardUrl}/${ctx.org.id}/billing`,
   blockDate: (ctx: WindDownContext) =>
     format(addDays(ctx.startedAt, BLOCK_DAY), 'MMMM d'),
   deleteDate: (ctx: WindDownContext) =>
@@ -292,7 +294,7 @@ export interface WindDownResult {
 export async function runWindDownCron(
   deps: WindDownDeps
 ): Promise<WindDownResult | null> {
-  if (process.env.SELF_HOSTED === 'true') {
+  if (deps.config.selfHosted) {
     return null;
   }
 
@@ -394,7 +396,7 @@ export async function runWindDownCron(
         (left?.lastEventAt?.getTime() ?? 0)
       );
     })
-    .slice(0, getMaxPerRun());
+    .slice(0, getMaxPerRun(deps.config));
 
   if (entering.length > 0) {
     await deps.db.organization.updateMany({
@@ -436,6 +438,7 @@ export async function runWindDownCron(
       ctx: {
         org,
         user,
+        dashboardUrl: deps.config.dashboardUrl,
         startedAt,
         lastEventAt: seen?.lastEventAt ?? null,
         stillTracking,

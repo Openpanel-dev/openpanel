@@ -20,7 +20,12 @@ export const toolsRoutes = defineRoutes((app) =>
     .get(
       '/site-checker',
       async ({ query, ctx, status }) => {
-        const outcome = await runSiteCheck(query.url, ctx.headers, ctx.logger);
+        const outcome = await runSiteCheck(
+          ctx.config,
+          query.url,
+          ctx.headers,
+          ctx.logger
+        );
         if (outcome.status !== 200) {
           return status(outcome.status, { error: outcome.error });
         }
@@ -34,7 +39,12 @@ export const toolsRoutes = defineRoutes((app) =>
     .get(
       '/ip-lookup',
       async ({ query, ctx, status }) => {
-        const outcome = await runIpLookup(query.ip, ctx.headers, ctx.logger);
+        const outcome = await runIpLookup(
+          ctx.config,
+          query.ip,
+          ctx.headers,
+          ctx.logger
+        );
         if (outcome.status !== 200) {
           return status(outcome.status, { error: outcome.error });
         }

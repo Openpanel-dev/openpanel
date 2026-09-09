@@ -8,6 +8,7 @@
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';
+import { testCoreConfig } from '../../../test/config-fixture';
 
 const organizationFindMany = mock(async () => [] as unknown[]);
 const organizationUpdate = mock(async () => ({}));
@@ -16,7 +17,10 @@ const dbMock = {
 };
 // M10-009: `runOnboardingCron` takes `ServiceDeps` now, so `deps.db` IS the
 // fake below — no Prisma module mock needed.
-const deps = { db: dbMock } as unknown as import('../../services').ServiceDeps;
+const deps = {
+  db: dbMock,
+  config: testCoreConfig(),
+} as unknown as import('../../services').ServiceDeps;
 
 const getOrganizationEventsCount = mock(
   async (_deps: unknown, _projectIds: string[]) => 0
@@ -90,12 +94,13 @@ beforeEach(() => {
   logger.info.mockClear();
   logger.warn.mockClear();
   logger.error.mockClear();
-  process.env.SELF_HOSTED = 'false';
 });
 
 test('returns null and does nothing when self-hosted', async () => {
-  process.env.SELF_HOSTED = 'true';
-  const result = await runOnboardingCron(deps, logger);
+  const result = await runOnboardingCron(
+    { ...deps, config: testCoreConfig({ selfHosted: true }) },
+    logger
+  );
   expect(result).toBeNull();
   expect(organizationFindMany).not.toHaveBeenCalled();
 });

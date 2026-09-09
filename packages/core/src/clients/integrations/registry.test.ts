@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   carryOverConfigSecrets,
   encryptConfigSecrets,
@@ -7,9 +7,10 @@ import {
   redactConfigSecrets,
 } from './registry';
 
-beforeAll(() => {
-  process.env.ENCRYPTION_KEY = 'a'.repeat(64);
-});
+/** The ENCRYPTION_KEY the config loader would hand down. */
+const KEY = 'a'.repeat(64);
+
+const encryptSecrets = <C>(config: C): C => encryptConfigSecrets(KEY, config);
 
 const gcs = (serviceAccountKey: string) =>
   ({
@@ -64,19 +65,19 @@ describe('config secret handling', () => {
   });
 
   it('encrypts declared secrets before persisting', () => {
-    const encrypted = encryptConfigSecrets(gcs('super-secret'));
+    const encrypted = encryptSecrets(gcs('super-secret'));
     expect(encrypted.serviceAccountKey.startsWith('enc:')).toBe(true);
     expect(encrypted.serviceAccountKey).not.toContain('super-secret');
   });
 
   it('carries a blank secret over from the stored row on update', () => {
-    const stored = encryptConfigSecrets(gcs('super-secret'));
+    const stored = encryptSecrets(gcs('super-secret'));
     const submitted = carryOverConfigSecrets(gcs(''), stored);
     expect(submitted.serviceAccountKey).toBe(stored.serviceAccountKey);
   });
 
   it('does not let a submitted secret be overwritten by the stored one', () => {
-    const stored = encryptConfigSecrets(gcs('old'));
+    const stored = encryptSecrets(gcs('old'));
     const submitted = carryOverConfigSecrets(gcs('new-key'), stored);
     expect(submitted.serviceAccountKey).toBe('new-key');
   });
@@ -175,7 +176,7 @@ describe('config secret handling', () => {
   it('does not encrypt redact-only secrets', () => {
     // The notification senders read these raw; encrypting without decrypting at
     // use would break delivery.
-    const slack = encryptConfigSecrets({
+    const slack = encryptSecrets({
       type: 'slack',
       access_token: 'xoxb-super-secret',
       incoming_webhook: { url: 'https://hooks.slack.com/x' },

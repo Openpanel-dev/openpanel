@@ -4,6 +4,7 @@ import {
   type ToolRunContext,
 } from '@better-agent/core';
 import type { z } from 'zod';
+import type { CoreConfig } from '../../../../config';
 import {
   getDatesFromRange,
   resolveDateRange as resolveDateRangeCore,
@@ -244,17 +245,18 @@ export function previousPeriod(startDate: string, endDate: string) {
   };
 }
 
+/** Where a dev box's dashboard runs when DASHBOARD_URL is not set. */
+const DEFAULT_DASHBOARD_URL = 'http://localhost:3000';
+
 /**
  * Build a clickable dashboard URL for a tool result.
  */
 export function dashboardUrl(
+  config: CoreConfig,
   organizationId: string,
   projectId: string,
   path = ''
 ): string {
-  const base =
-    process.env.DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
-    'http://localhost:3000';
+  const base = config.dashboardUrl || DEFAULT_DASHBOARD_URL;
   return `${base}/${organizationId}/${projectId}${path}`;
 }

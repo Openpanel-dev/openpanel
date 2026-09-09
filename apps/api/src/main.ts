@@ -28,6 +28,8 @@
 // dashboard surface and `/trpc`. A role that only consumes serves none of the
 // last three — V1's worker never did either.
 
+// The only `process.env` touch outside config/env.ts, and a WRITE: it sets the
+// process timezone. Every value the app READS comes from `loadConfig` below.
 process.env.TZ = 'UTC';
 
 import { createHmac } from 'node:crypto';
@@ -38,8 +40,8 @@ import {
   BULL_BOARD_BASE_PATH,
   type BufferDeps,
   bullBoardRoutes,
-  COOKIE_OPTIONS,
   checkNotificationRulesForEvent,
+  cookieOptions,
   corsDelegator,
   createBuffers,
   createClients,
@@ -54,11 +56,6 @@ import {
   errorHandler,
   type HttpCtx,
   ingestConsumerMetrics,
-  KAFKA_EVENTS_TOPIC,
-  KAFKA_HANDLER_MAX_ATTEMPTS,
-  KAFKA_HANDLER_RETRY_INITIAL_MS,
-  KAFKA_HANDLER_RETRY_MAX_MS,
-  KAFKA_PARTITIONS_CONCURRENT,
   type KafkaConsumerHandle,
   kafkaLogger,
   markEventsActivity,
@@ -88,15 +85,7 @@ import { db } from '@openpanel/db/src/prisma-client';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
-import {
-  type Config,
-  concurrencyOverride,
-  dashboardOrigins,
-  isProduction,
-  KAFKA_QUEUE_TOKEN,
-  loadConfig,
-  verboseClientIds,
-} from './config/env';
+import { type Config, KAFKA_QUEUE_TOKEN, loadConfig } from './config/env';
 
 // The registry key and the Redis name are the same string for all seven queues
 // (jobs.registry.ts); `queueKey` only braces it under `QUEUE_CLUSTER`.
@@ -168,6 +157,7 @@ function bufferDeps(producers: QueueProducerHandle): BufferDeps {
   return {
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => (cron ? await cron.isPaused() : false),
+    config: config.core,
     // M10-009: the boot scope's ClickHouse client, so a buffer flush logs
     // under the same client every service reaches as `deps.ch` instead of
     // constructing its own (docs/TECH_DEBT.md §4).
@@ -200,7 +190,7 @@ function buildDeps(): AppDeps {
     buffers: createBuffers(bufferDeps(producers)),
     producers,
     logger,
-    config: { selfHosted: config.SELF_HOSTED },
+    config: config.core,
   };
 }
 
@@ -219,7 +209,7 @@ function consumedQueues(): Record<string, QueueDefinition> {
     if (!enabled.has(name)) {
       continue;
     }
-    const concurrency = concurrencyOverride(config, name);
+    const concurrency = config.concurrency[name];
     selected[name] =
       concurrency === undefined
         ? definition
@@ -254,15 +244,16 @@ function warnOnUnhandledSchedulers(schedulerIds: string[]): void {
 async function startIngestConsumer(
   deps: AppDeps
 ): Promise<KafkaConsumerHandle> {
-  assertKafkaConfigured();
+  assertKafkaConfigured(config.core.kafka);
   enableEventsHeartbeat();
 
   return await startKafkaEventsConsumer({
-    createConsumer: createKafkaEventsConsumer,
+    createConsumer: (options?: { groupId?: string }) =>
+      createKafkaEventsConsumer(config.core, options),
     logger,
-    kafkaLogger,
-    topic: KAFKA_EVENTS_TOPIC,
-    partitionsConsumedConcurrently: KAFKA_PARTITIONS_CONCURRENT,
+    kafkaLogger: kafkaLogger(config.core),
+    topic: config.core.kafka.eventsTopic,
+    partitionsConsumedConcurrently: config.core.kafka.partitionsConcurrent,
     batch: {
       // One Ctx per message, scoped to the requestId the producer stamped
       // into the envelope (M10-006). The one binding a work scope cannot
@@ -271,13 +262,14 @@ async function startIngestConsumer(
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
       }),
-      sendToDeadLetter: produceDeadLetterEvent,
+      sendToDeadLetter: (message) =>
+        produceDeadLetterEvent(config.core, message),
       logger,
       metrics: ingestConsumerMetrics,
       onActivity: markEventsActivity,
-      maxAttempts: KAFKA_HANDLER_MAX_ATTEMPTS,
-      initialRetryMs: KAFKA_HANDLER_RETRY_INITIAL_MS,
-      maxRetryMs: KAFKA_HANDLER_RETRY_MAX_MS,
+      maxAttempts: config.core.kafka.handlerMaxAttempts,
+      initialRetryMs: config.core.kafka.handlerRetryInitialMs,
+      maxRetryMs: config.core.kafka.handlerRetryMaxMs,
     },
   });
 }
@@ -372,19 +364,20 @@ async function buildHttpApp(deps: AppDeps) {
       ? { secrets: config.COOKIE_SECRET, sign: SIGNED_COOKIE_NAMES }
       : {},
   })
-    .use(corsDelegator({ dashboardOrigins: dashboardOrigins(config) }))
-    .use(errorHandler(deps, { production: isProduction(config) }))
-    .use(requestLogging(deps, { verboseClientIds: verboseClientIds(config) }))
+    .use(corsDelegator({ dashboardOrigins: config.dashboardOrigins }))
+    .use(errorHandler(deps, { production: config.core.isProduction }))
+    .use(requestLogging(deps, { verboseClientIds: config.verboseClientIds }))
     .use(opsRoutes(deps));
 
   if (roleServesHttp) {
     const trpc = createTrpcFetchHandler({
       router: appRouter,
       logger,
-      cookieOptions: COOKIE_OPTIONS,
-      simulateLatency: !isProduction(config),
+      cookieOptions: cookieOptions(config.core),
+      ipHeaders: config.core.ipHeaders,
+      simulateLatency: !config.core.isProduction,
       signCookie,
-      demoMode: Boolean(config.DEMO_USER_ID),
+      demoMode: Boolean(config.core.demoUserId),
     });
 
     app
@@ -412,7 +405,7 @@ async function buildHttpApp(deps: AppDeps) {
   // schedule. Two conditions, both V1's: `NODE_ENV != production`, because it
   // is an unauthenticated "run anything now" surface, and a consuming role,
   // because in V1 these routes only ever existed on the worker.
-  if (roleConsumes && !isProduction(config)) {
+  if (roleConsumes && !config.core.isProduction) {
     app.use(debugRoutes(deps));
     logger.info('Debug routes enabled at /debug/cron');
   }
@@ -488,8 +481,8 @@ async function main() {
         await startSchedulers({
           queue: cron,
           flags: {
-            selfHosted: config.SELF_HOSTED,
-            production: isProduction(config),
+            selfHosted: config.core.selfHosted,
+            production: config.core.isProduction,
           },
           logger,
         });
@@ -553,17 +546,12 @@ async function main() {
     shutdown('SIGINT');
   });
 
-  // No `hostname` unless API_HOST says one: Bun's default is `0.0.0.0`, and
-  // its `localhost` binds IPv6-only (see config/env.ts's API_HOST).
-  const listen = config.API_HOST
-    ? { port: config.API_PORT, hostname: config.API_HOST }
-    : { port: config.API_PORT };
-  app.listen(listen, () => {
+  app.listen(config.listen, () => {
     logger.info(
       {
         role,
         port: config.API_PORT,
-        hostname: config.API_HOST ?? '0.0.0.0',
+        hostname: config.listen.hostname ?? '0.0.0.0',
         // ADR-016 rule 5: the running Bun version, asserted against
         // .bun-version by scripts/doctor.sh — logged so a wrong-runtime
         // incident is one log line away rather than an inference.

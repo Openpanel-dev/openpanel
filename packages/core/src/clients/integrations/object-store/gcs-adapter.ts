@@ -1,5 +1,6 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Storage } from '@google-cloud/storage';
+import type { CoreConfig } from '../../../config';
 import {
   type IGCSExportConfig,
   parseServiceAccountKey,
@@ -16,8 +17,8 @@ import type {
 // pino-pretty transport, so a module that is merely imported (every test file
 // that reaches the object-store barrel) must not pay for one unused.
 let _logger: ILogger | null = null;
-function logger(): ILogger {
-  _logger ??= createLogger({ name: 'gcs-adapter' });
+function logger(coreConfig: CoreConfig): ILogger {
+  _logger ??= createLogger({ name: 'gcs-adapter', config: coreConfig });
   return _logger;
 }
 
@@ -32,11 +33,17 @@ export class GCSAdapter implements IObjectStoreAdapter {
   private config: IGCSExportConfig;
   private storage: Storage | null = null;
 
-  constructor(config: IGCSExportConfig) {
+  constructor(
+    config: IGCSExportConfig,
+    private readonly coreConfig: CoreConfig
+  ) {
     // Decrypt the service account key if encrypted
     this.config = {
       ...config,
-      serviceAccountKey: decryptCredential(config.serviceAccountKey),
+      serviceAccountKey: decryptCredential(
+        coreConfig.encryptionKey,
+        config.serviceAccountKey
+      ),
     };
   }
 
@@ -62,7 +69,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
     // any future caller that skips it.
     const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
     if (!parsed.ok) {
-      logger().error(
+      logger(this.coreConfig).error(
         { reason: parsed.error },
         'Rejected GCS credential document'
       );
@@ -79,7 +86,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
       // Deliberately NOT the SDK's own `STORAGE_EMULATOR_HOST`: in v7 that var
       // is applied to the JSON API base but not the upload base, so metadata
       // reads and uploads can't both resolve. `apiEndpoint` sets both.
-      const apiEndpoint = process.env.GCS_API_ENDPOINT;
+      const apiEndpoint = this.coreConfig.objectStoreExport.gcsApiEndpoint;
 
       this.storage = new Storage({
         // Allowlisted fields only, and deliberately WITHOUT `type`: with no
@@ -99,7 +106,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
         ...(apiEndpoint ? { apiEndpoint } : {}),
       });
 
-      logger().debug(
+      logger(this.coreConfig).debug(
         {
           projectId: credentials.project_id,
         },
@@ -108,7 +115,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
 
       return this.storage;
     } catch (error) {
-      logger().error({ error }, 'Failed to create GCS client');
+      logger(this.coreConfig).error({ error }, 'Failed to create GCS client');
       throw new Error('Failed to create GCS client');
     }
   }
@@ -139,7 +146,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
       // it with getMetadata() would double the request count of every export.
       const metadata = file.metadata;
 
-      logger().debug(
+      logger(this.coreConfig).debug(
         {
           bucket: options.bucket,
           key: options.key,
@@ -155,7 +162,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
         location: `gs://${options.bucket}/${options.key}`,
       };
     } catch (error) {
-      logger().error(
+      logger(this.coreConfig).error(
         {
           error,
           bucket: options.bucket,
@@ -237,6 +244,9 @@ export class GCSAdapter implements IObjectStoreAdapter {
 /**
  * Create a GCS adapter from integration config
  */
-export function createGCSAdapter(config: IGCSExportConfig): GCSAdapter {
-  return new GCSAdapter(config);
+export function createGCSAdapter(
+  config: IGCSExportConfig,
+  coreConfig: CoreConfig
+): GCSAdapter {
+  return new GCSAdapter(config, coreConfig);
 }

@@ -2,7 +2,8 @@
 // wall-clock deadman that closes idle sessions: stub Redis drives the
 // wallclock ZSET + lock, so the assertions are on decisions, not side effects.
 
-import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import {
   fixtureSession,
   stubLogger,
@@ -11,7 +12,10 @@ import {
 } from './session-lifecycle.fixtures';
 import { reapIdleSessions, type SessionReaperDeps } from './session-reaper';
 
-function makeDeps(live: ReturnType<typeof fixtureSession> | null) {
+function makeDeps(
+  live: ReturnType<typeof fixtureSession> | null,
+  config = testCoreConfig()
+) {
   const redis = stubRedis();
   const sessions = stubStore(live);
   const enqueueSessionEnd = mock<SessionReaperDeps['enqueueSessionEnd']>(
@@ -21,13 +25,15 @@ function makeDeps(live: ReturnType<typeof fixtureSession> | null) {
     redis,
     sessions,
     enqueueSessionEnd,
-    deps: { redis, sessions, enqueueSessionEnd, logger: stubLogger() },
+    deps: {
+      redis,
+      sessions,
+      enqueueSessionEnd,
+      logger: stubLogger(),
+      config,
+    },
   };
 }
-
-afterEach(() => {
-  delete process.env.SESSION_REAPER;
-});
 
 describe('reapIdleSessions', () => {
   test('enqueues a session_end for an idle session blob', async () => {
@@ -73,8 +79,12 @@ describe('reapIdleSessions', () => {
   });
 
   test('is a no-op when disabled via SESSION_REAPER=0', async () => {
-    process.env.SESSION_REAPER = '0';
-    const { deps, redis } = makeDeps(null);
+    const { deps, redis } = makeDeps(
+      null,
+      testCoreConfig({
+        session: { ...testCoreConfig().session, reaperEnabled: false },
+      })
+    );
 
     await reapIdleSessions(deps);
 

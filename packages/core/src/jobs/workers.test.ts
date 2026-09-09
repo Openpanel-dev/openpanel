@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 import { z } from 'zod';
+import { testCoreConfig } from '../../test/config-fixture';
 import type { AppDeps, Buffers, JobCtx } from '../context';
 import { queues } from '../jobs.registry';
 import type { Logger } from '../logger';
@@ -31,7 +32,7 @@ function stubDeps(): AppDeps {
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
     logger: stubLogger(),
-    config: { selfHosted: true },
+    config: testCoreConfig({ selfHosted: true }),
   };
 }
 

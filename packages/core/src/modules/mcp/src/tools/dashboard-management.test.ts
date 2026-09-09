@@ -118,6 +118,7 @@ afterAll(() => {
   mock.module('../../../../shared/slug-id', () => realSlugId);
 });
 
+import { testCoreConfig } from '../../../../../test/config-fixture';
 import type { ServiceDeps } from '../../../../services';
 import type { McpAuthContext } from '../auth';
 import type { McpToolDeps } from './shared';
@@ -261,7 +262,11 @@ function register(context: McpAuthContext = ROOT_CONTEXT) {
   const tools: McpToolDeps = {
     context,
     dbJsonNull: { kind: 'DbNull' },
-    deps: { db: mockDb, logger: noopLogger } as unknown as ServiceDeps,
+    deps: {
+      db: mockDb,
+      logger: noopLogger,
+      config: testCoreConfig(),
+    } as unknown as ServiceDeps,
     services: {} as McpToolDeps['services'],
   };
   registerDashboardManagementTools(server as any, tools);

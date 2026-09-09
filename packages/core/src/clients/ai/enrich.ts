@@ -7,6 +7,7 @@
 // writes the results back (this module stays db-free).
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
+import type { CoreConfig } from '../../config';
 import { ALLOWED_MODELS, resolveModel } from './providers';
 
 // Bump when the prompt or output shape changes — the worker re-enriches any
@@ -16,14 +17,14 @@ export const ENRICH_VERSION = 1;
 // Tier-1 is cheap, fast, non-reasoning work — gpt-4.1-mini is the right tier.
 const ENRICH_MODEL_ID = 'gpt-4-1-mini';
 
-function enrichModel() {
+function enrichModel(config: CoreConfig) {
   const entry =
     ALLOWED_MODELS.find((m) => m.id === ENRICH_MODEL_ID) ??
     ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
   if (!entry) {
     throw new Error('No OpenAI model available for insight enrichment');
   }
-  return resolveModel(entry);
+  return resolveModel(config, entry);
 }
 
 export interface InsightToEnrich {
@@ -84,7 +85,7 @@ For EACH input insight, produce:
 Return exactly one result per input insight, preserving each "id" verbatim. Be calibrated and consistent across the batch.`;
 
 let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp() {
+function getApp(config: CoreConfig) {
   if (_app) {
     return _app;
   }
@@ -92,7 +93,7 @@ function getApp() {
     name: 'insight-enrich',
     description:
       'Scores and summarizes analytics insights (one-shot, no persistence).',
-    model: enrichModel(),
+    model: enrichModel(config),
     contextSchema: z.object({}),
     outputSchema: {
       schema: enrichmentOutputJsonSchema,
@@ -114,6 +115,7 @@ function getApp() {
  * Keep batches modest (~25) so the prompt stays small and the mapping reliable.
  */
 export async function enrichInsights(
+  config: CoreConfig,
   insights: InsightToEnrich[]
 ): Promise<InsightEnrichment[]> {
   if (insights.length === 0) {
@@ -121,7 +123,7 @@ export async function enrichInsights(
   }
 
   const input = JSON.stringify(insights);
-  const result = (await getApp().run('insight-enrich', {
+  const result = (await getApp(config).run('insight-enrich', {
     input,
     context: {},
     // biome-ignore lint/suspicious/noExplicitAny: same dodge as filter-command.ts

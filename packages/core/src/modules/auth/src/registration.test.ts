@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import type { ServiceDeps } from '../../../services';
 import { getIsRegistrationAllowed } from './registration';
 
@@ -7,14 +8,24 @@ const mockInviteFindUnique = mock(
   async (): Promise<{ id: string } | null> => null
 );
 
-const deps = {
-  db: {
-    user: { count: mockUserCount },
-    invite: { findUnique: mockInviteFindUnique },
-  },
-} as unknown as ServiceDeps;
-
-const ORIGINAL_ENV = { ...process.env };
+/**
+ * ALLOW_REGISTRATION / ALLOW_INVITATION arrive as `config.auth`, where
+ * `undefined` is "unset" (cloud) and the loader has already resolved the
+ * `!== 'false'` reading.
+ */
+function depsWith(auth: {
+  allowRegistration?: boolean;
+  allowInvitation?: boolean;
+}): ServiceDeps {
+  const base = testCoreConfig();
+  return {
+    db: {
+      user: { count: mockUserCount },
+      invite: { findUnique: mockInviteFindUnique },
+    },
+    config: testCoreConfig({ auth: { ...base.auth, ...auth } }),
+  } as unknown as ServiceDeps;
+}
 
 beforeEach(() => {
   mockUserCount.mockClear();
@@ -24,60 +35,63 @@ beforeEach(() => {
   mockInviteFindUnique.mockResolvedValue(null);
 });
 
-afterEach(() => {
-  process.env = { ...ORIGINAL_ENV };
-});
-
 describe('getIsRegistrationAllowed', () => {
   it('allows everything in cloud (ALLOW_REGISTRATION unset)', async () => {
-    process.env.ALLOW_REGISTRATION = undefined;
-    delete process.env.ALLOW_REGISTRATION;
-
-    expect(await getIsRegistrationAllowed(deps)).toBe(true);
+    expect(await getIsRegistrationAllowed(depsWith({}))).toBe(true);
     expect(mockUserCount).not.toHaveBeenCalled();
   });
 
   it('allows the very first user even when registration is disabled', async () => {
-    process.env.ALLOW_REGISTRATION = 'false';
     mockUserCount.mockResolvedValue(0);
 
-    expect(await getIsRegistrationAllowed(deps)).toBe(true);
+    expect(
+      await getIsRegistrationAllowed(depsWith({ allowRegistration: false }))
+    ).toBe(true);
   });
 
   it('blocks a new user with no invite when registration is disabled', async () => {
-    process.env.ALLOW_REGISTRATION = 'false';
-
-    expect(await getIsRegistrationAllowed(deps)).toBe(false);
+    expect(
+      await getIsRegistrationAllowed(depsWith({ allowRegistration: false }))
+    ).toBe(false);
   });
 
   it('allows a new user holding a valid invite when registration is disabled', async () => {
-    process.env.ALLOW_REGISTRATION = 'false';
-    process.env.ALLOW_INVITATION = 'true';
     mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
 
-    expect(await getIsRegistrationAllowed(deps, 'invite-1')).toBe(true);
+    expect(
+      await getIsRegistrationAllowed(
+        depsWith({ allowRegistration: false, allowInvitation: true }),
+        'invite-1'
+      )
+    ).toBe(true);
   });
 
   it('blocks an unknown invite id', async () => {
-    process.env.ALLOW_REGISTRATION = 'false';
-    process.env.ALLOW_INVITATION = 'true';
     mockInviteFindUnique.mockResolvedValue(null);
 
-    expect(await getIsRegistrationAllowed(deps, 'nope')).toBe(false);
+    expect(
+      await getIsRegistrationAllowed(
+        depsWith({ allowRegistration: false, allowInvitation: true }),
+        'nope'
+      )
+    ).toBe(false);
   });
 
   it('blocks a valid invite when invitations are disabled', async () => {
-    process.env.ALLOW_REGISTRATION = 'false';
-    process.env.ALLOW_INVITATION = 'false';
     mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
 
-    expect(await getIsRegistrationAllowed(deps, 'invite-1')).toBe(false);
+    expect(
+      await getIsRegistrationAllowed(
+        depsWith({ allowRegistration: false, allowInvitation: false }),
+        'invite-1'
+      )
+    ).toBe(false);
     expect(mockInviteFindUnique).not.toHaveBeenCalled();
   });
 
   it('allows open self-hosted registration', async () => {
-    process.env.ALLOW_REGISTRATION = 'true';
-
-    expect(await getIsRegistrationAllowed(deps)).toBe(true);
+    expect(
+      await getIsRegistrationAllowed(depsWith({ allowRegistration: true }))
+    ).toBe(true);
   });
 });

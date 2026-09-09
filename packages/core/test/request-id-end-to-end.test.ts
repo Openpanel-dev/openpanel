@@ -47,6 +47,7 @@ import type { IncomingEventPayload } from '../src/modules/ingest/src/incoming-ev
 import type { IncomingEventBindings } from '../src/modules/ingest/src/incoming-event-handler';
 import type { IClickhouseSession } from '../src/modules/session/session.service';
 import type { ServiceDeps } from '../src/services';
+import { testCoreConfig } from './config-fixture';
 
 const SUPPLIED_REQUEST_ID = 'adr007-benchmark-3';
 
@@ -187,7 +188,7 @@ function stubDeps() {
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
     logger: bindingLogger(lines),
-    config: { selfHosted: false },
+    config: testCoreConfig(),
   };
 
   return { deps, lines, recorded: producers.recorded };
@@ -368,7 +369,7 @@ function chartDeps() {
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
     logger: chartLogger(lines),
-    config: { selfHosted: false },
+    config: testCoreConfig(),
   };
   return { deps, lines };
 }
@@ -560,7 +561,7 @@ function ingestDeps() {
     buffers,
     producers: producers as unknown as QueueProducerHandle,
     logger: ingestLogger(lines),
-    config: { selfHosted: false },
+    config: testCoreConfig(),
   };
 
   return { deps, lines, eventsBuffered, recorded: producers.recorded };

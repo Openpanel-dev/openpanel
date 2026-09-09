@@ -4,6 +4,7 @@
 // id-gated to the closed session.
 
 import { describe, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../../test/config-fixture';
 import type { IServiceCreateEventPayload } from '../../event/event.service';
 import {
   createSessionEnd,
@@ -39,6 +40,7 @@ function makeDeps(live = snapshot as ReturnType<typeof fixtureSession> | null) {
     redis,
     sessions,
     logger: stubLogger(),
+    config: testCoreConfig(),
     createEvent,
     transformEvent: (event) => event as never,
     transformSessionToEvent: () => ({}) as never,

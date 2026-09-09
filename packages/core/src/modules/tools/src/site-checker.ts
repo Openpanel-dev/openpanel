@@ -6,6 +6,7 @@ import * as net from 'node:net';
 import * as tls from 'node:tls';
 import * as cheerio from 'cheerio';
 import { getGeoLocation } from '../../../clients/geo';
+import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
 import {
@@ -508,6 +509,7 @@ function calculateSecurityScore(security: SiteCheckResult['security']): number {
 }
 
 export async function runSiteCheck(
+  config: CoreConfig,
   urlParam: string | undefined,
   headers: Record<string, string | string[] | undefined> | Headers,
   logger?: Pick<Logger, 'error'>
@@ -516,7 +518,7 @@ export async function runSiteCheck(
     return { status: 400, error: 'URL parameter is required' };
   }
 
-  const { ip } = getClientIpFromHeaders(headers);
+  const { ip } = getClientIpFromHeaders(config.ipHeaders, headers);
   if (
     ip &&
     !checkRateLimit(`site:${ip}`, SITE_CHECK_WINDOW_MS, SITE_CHECK_MAX)

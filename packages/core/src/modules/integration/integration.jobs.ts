@@ -34,8 +34,12 @@ export const integrationCronJobs = {
         db: ctx.db as unknown as ExportDb,
         ch: ctx.ch as unknown as ExportClickhouse,
         logger: ctx.logger.child({ job: 'flush-exports' }),
+        config: ctx.config,
         createAdapter: (config) =>
-          getServerIntegration(config.type).export?.createAdapter(config),
+          getServerIntegration(config.type).export?.createAdapter(
+            config,
+            ctx.config
+          ),
       });
     },
   }),

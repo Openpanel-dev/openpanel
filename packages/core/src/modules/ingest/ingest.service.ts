@@ -16,7 +16,7 @@
 import { assocPath, pathOr, pick } from 'ramda';
 import { v4 as uuid } from 'uuid';
 import type { Buffers } from '../../buffers/create-buffers';
-import { SESSION_TIMEOUT_MS } from '../../buffers/session-buffer';
+import { resolveSessionTimeoutMs } from '../../buffers/session-buffer';
 import {
   type AsnInfo,
   type GeoLocation,
@@ -91,6 +91,10 @@ export interface IngestTransport {
    *  buffer through the scope, not a module singleton. */
   deps: ServiceDeps;
 }
+
+/** What the two context builders below need: the Postgres client the salt
+ *  cache keys on, and the idle window every session decision reads. */
+type IngestScope = DbScope & Pick<ServiceDeps, 'config'>;
 
 const QUEUE_PAYLOAD_HEADERS = [
   'user-agent',
@@ -228,10 +232,11 @@ export type TrackOutcome =
   | { status: 'profile-property-not-a-number' };
 
 async function buildContext(
-  deps: DbScope,
+  deps: IngestScope,
   request: TrackRequest,
   buffers: IngestBuffers
 ): Promise<TrackContext> {
+  const sessionTimeoutMs = resolveSessionTimeoutMs(deps.config);
   const projectId = request.projectId as string;
   const timestamp = getTimestamp(request.timestamp, request.body.payload);
   const ip =
@@ -267,6 +272,7 @@ async function buildContext(
     overrideDeviceId,
     eventTimeMs: timestamp.timestamp,
     sessionBuffer: buffers.session,
+    sessionTimeoutMs,
   });
 
   return {
@@ -658,6 +664,7 @@ export async function ingestLegacyEvent(
     ua,
     salts,
     sessionBuffer: transport.buffers.session,
+    sessionTimeoutMs: resolveSessionTimeoutMs(transport.deps.config),
   });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);
@@ -706,7 +713,7 @@ export type DeviceIdentity =
 
 /** `GET /track/device-id`. */
 export async function fetchDeviceIdentity(
-  deps: DbScope,
+  deps: IngestScope,
   request: {
     projectId: string | null | undefined;
     clientIp: string | undefined;
@@ -716,6 +723,7 @@ export async function fetchDeviceIdentity(
   logger: Logger
 ): Promise<DeviceIdentity> {
   const salts = await getSalts(deps);
+  const sessionTimeoutMs = resolveSessionTimeoutMs(deps.config);
   const projectId = request.projectId;
   if (!projectId) {
     return { status: 'missing-project-id' };
@@ -761,7 +769,7 @@ export async function fetchDeviceIdentity(
     // server to start a fresh session id on the next event.
     const now = Date.now();
 
-    if (current && isLiveSession(current, now)) {
+    if (current && isLiveSession(current, now, sessionTimeoutMs)) {
       return {
         status: 'ok',
         deviceId: currentDeviceId,
@@ -770,7 +778,7 @@ export async function fetchDeviceIdentity(
       };
     }
 
-    if (previous && isLiveSession(previous, now)) {
+    if (previous && isLiveSession(previous, now, sessionTimeoutMs)) {
       return {
         status: 'ok',
         deviceId: previousDeviceId,
@@ -895,10 +903,14 @@ function getBotEventPath(body: unknown): string | undefined {
   return undefined;
 }
 
-function isLiveSession(session: { ended_at: string }, now: number): boolean {
+function isLiveSession(
+  session: { ended_at: string },
+  now: number,
+  sessionTimeoutMs: number
+): boolean {
   return (
     now - convertClickhouseDateToJs(session.ended_at).getTime() <
-    SESSION_TIMEOUT_MS
+    sessionTimeoutMs
   );
 }
 
