@@ -3,15 +3,14 @@
 // access.service.ts and notification.service.ts still reach `getProjectById`
 // / `getProjectByIdCached` through the same relative path, and
 // apps/api/src/utils/auth.ts reaches them through @openpanel/db's barrel;
-// auth.service.ts's permission ladder (M10-002) reaches `getProjectById`
-// through `shared/access-lookups.ts`, which — with no `ServiceDeps` of its
-// own to carry — reaches it through the v1-compat singleton instead
-// (M10-004, see v1-compat.ts's header).
+// auth.service.ts's permission ladder (M10-002) reaches a project through
+// `shared/access-lookups.ts`, which has no `ServiceDeps` of its own to carry
+// (M15-005: it reads Postgres from `context.ts`'s `unscopedDb()` instead).
 //
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone. `getProjectByIdCached` lives
-// INSIDE `createProjectService(deps)` for the same reason
-// `getClientByIdCached` does in client.service.ts — see that file's header.
+// `deps.db`; the `loadDb()` lazy loader is gone. M15-005: `getProjectByIdCached`
+// is a module-scope `cacheablePerDb` for the same reason `getClientByIdCached`
+// is in client.service.ts — see that file's header.
 //
 // M12-006 converted this module's two ClickHouse statements
 // (`getProjectEventsCount` / `getLastEventPerProject`) onto the ADR-013 `sql`
@@ -28,15 +27,16 @@ import type {
   Project,
   ProjectType,
 } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDb, type DbScope } from '../../shared/cacheable-per-deps';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getId } from '../../shared/slug-id';
 import { stripTrailingSlash } from '../../shared/string';
 import { hashPassword } from '../auth/auth.service';
+import { getClientByIdCached } from '../client/client.service';
 
 // The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
 // compile-time template tag holding no client (see shared/ch-query.ts).
@@ -53,18 +53,6 @@ const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 // session_end after tracking already stopped) — only real tracking activity
 // counts. V1 wrote this list inline in both statements.
 const NON_TRACKING_EVENT_NAMES = ['session_start', 'session_end'];
-// GENUINE CYCLE, kept lazy: `createClientForOrganization`/
-// `updateClientForOrganization` invalidate a project's clients' cache
-// entries, and that cache now lives inside `createClientService(deps)` (see
-// that file's header) — reached here through the v1-compat singleton so
-// every caller invalidates the SAME cache instance, the one `ingest`/`http`/
-// `mcp` actually read. services.ts -> project.service.ts (this file) ->
-// v1-compat.ts -> services.ts; the dynamic import is what keeps it a cycle
-// ESM can evaluate.
-function loadClientService() {
-  return import('../../v1-compat');
-}
-
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
   include: {
@@ -74,7 +62,7 @@ export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
 
 const DAY_IN_SECONDS = 60 * 60 * 24;
 
-export async function getProjectById(deps: ServiceDeps, id: string) {
+export async function getProjectById(deps: DbScope, id: string) {
   const res = await deps.db.project.findUnique({
     where: {
       id,
@@ -87,6 +75,19 @@ export async function getProjectById(deps: ServiceDeps, id: string) {
 
   return res;
 }
+
+/**
+ * L1 LRU (60s) + L2 Redis, one instance per Postgres client — the ingest
+ * consumer, `/track` and mcp all read and invalidate the same one. The name is
+ * EMPTY for the same reason `getClientByIdCached`'s is: the in-factory
+ * `cacheable(...)` this replaces took an anonymous arrow, so the Redis key is
+ * `cachable::<id>`.
+ */
+export const getProjectByIdCached = cacheablePerDb(
+  '',
+  getProjectById,
+  DAY_IN_SECONDS
+);
 
 export async function getProjectWithClients(deps: ServiceDeps, id: string) {
   const res = await deps.db.project.findUnique({
@@ -391,12 +392,6 @@ export function createProjectService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
-  const getProjectByIdCached = cacheable(
-    (id: string) => getProjectById(deps, id),
-    DAY_IN_SECONDS
-  );
-
   async function createProjectForOrganization(
     organizationId: string,
     input: {
@@ -440,11 +435,10 @@ export function createProjectService(
       },
     });
 
-    const clientService = await loadClientService();
     await Promise.all([
-      getProjectByIdCached.clear(project.id),
+      getProjectByIdCached.clear(deps, project.id),
       ...project.clients.map((client) =>
-        clientService.clearClientByIdCache(client.id)
+        getClientByIdCached.clear(deps, client.id)
       ),
     ]);
 
@@ -498,11 +492,10 @@ export function createProjectService(
       data: updateData,
     });
 
-    const clientService = await loadClientService();
     await Promise.all([
-      getProjectByIdCached.clear(project.id),
+      getProjectByIdCached.clear(deps, project.id),
       ...existing.clients.map((client) =>
-        clientService.clearClientByIdCache(client.id)
+        getClientByIdCached.clear(deps, client.id)
       ),
     ]);
 
@@ -528,7 +521,7 @@ export function createProjectService(
       },
     });
 
-    await getProjectByIdCached.clear(id);
+    await getProjectByIdCached.clear(deps, id);
 
     return true;
   }
@@ -574,12 +567,12 @@ export function createProjectService(
     getProjectById: (id: string): ReturnType<typeof getProjectById> =>
       getProjectById(deps, id),
     getProjectByIdCached: (id: string): ReturnType<typeof getProjectById> =>
-      getProjectByIdCached(id),
+      getProjectByIdCached(deps, id),
     /** Invalidates a single id in `getProjectByIdCached`'s L1 LRU + Redis —
-     *  `ingest/src/incoming-event-handler.ts` reaches it, through the
-     *  v1-compat singleton, right after marking a project's first event. */
+     *  `ingest/src/incoming-event-handler.ts` calls the module-scope spelling
+     *  right after marking a project's first event. */
     clearProjectByIdCache: (id: string): Promise<number> =>
-      getProjectByIdCached.clear(id),
+      getProjectByIdCached.clear(deps, id),
     getProjectWithClients: (
       id: string
     ): ReturnType<typeof getProjectWithClients> =>

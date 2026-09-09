@@ -397,7 +397,7 @@ const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 // `deps.ch` ARE the fakes below — the two `@openpanel/db` module mocks this
 // file used to install are gone, and with them the process-wide leak they had
 // to be restored from. `connectUserToOrganization` reaches
-// `shared/access-lookups.ts` (cacheable, via the v1-compat seam), which is why
+// `shared/access-lookups.ts` (cacheable, on the unscoped db), which is why
 // the `@openpanel/redis` stand-in below stays.
 const chCommand = mock(async () => undefined);
 const deps = {

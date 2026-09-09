@@ -20,9 +20,8 @@
 //
 // M12-006 also made `shared/access-lookups.ts` a static import: that file
 // value-imports only zod-free leaves (`@openpanel/redis`, a Prisma TYPE) and
-// reaches Postgres through the lazy v1-compat seam itself (the one seam
-// M15-004 could not close — its bare signature is pinned by a protected wire
-// contract), so it has no static edge back here.
+// reaches Postgres through `context.ts`'s `unscopedDb()` (its bare signature
+// is pinned by a protected wire contract), so it has no static edge back here.
 //
 // M12-006 converted all five ClickHouse statements here onto the ADR-013 `sql`
 // tag: the four billing counters and `deleteFromClickhouse`'s project filter

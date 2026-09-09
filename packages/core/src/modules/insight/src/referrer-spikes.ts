@@ -12,7 +12,7 @@ import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
 import { chQuery } from '../../../shared/ch-query';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
-import { overviewService } from '../../../v1-compat';
+import { getRawWhereClause } from '../../overview/overview.service';
 import type {
   IChartEventFilter,
   IInterval,
@@ -118,9 +118,7 @@ export async function getReferrerSpikes(
   input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
   const { projectId, filters, startDate, endDate, interval, timezone } = input;
-  const filtersWhere = andFilters(
-    overviewService.getRawWhereClause('sessions', filters)
-  );
+  const filtersWhere = andFilters(getRawWhereClause('sessions', filters));
   const window = sessionWindow(projectId, startDate, endDate);
   const bucket = bucketStart(interval);
   const sessionsTable = sql.id(TABLE_NAMES.sessions);

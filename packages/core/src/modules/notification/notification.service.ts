@@ -36,6 +36,14 @@ import type {
   IChartEvent,
   IChartEventFilter,
 } from '../report/report.constants';
+
+/** Lazy: `context.ts` value-imports `services.ts`, so a static import here
+ *  would put the whole service graph in this module's import graph — and this
+ *  module is part of that graph. */
+function loadPrismaSentinels() {
+  return import('../../context').then((m) => m.prismaSentinels());
+}
+
 import type { ICreateNotificationRule } from './notification.constants';
 
 export const APP_NOTIFICATION_INTEGRATION_ID = 'app';
@@ -73,9 +81,6 @@ export type INotificationPayload =
 // keys on the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's
 // deps travel beside the key rather than inside it and the Redis key stays
 // byte-identical. Every function in this file now reads `deps.db`.
-function loadPrisma() {
-  return import('../../v1-compat').then((m) => m.compatPrisma());
-}
 
 // -- Rule cache --------------------------------------------------------
 
@@ -326,7 +331,7 @@ export async function deliverNotification(
   });
 
   const payload = notification.payload;
-  const PrismaRuntime = await loadPrisma();
+  const PrismaRuntime = await loadPrismaSentinels();
   if (
     !isValidPayload<INotificationPayload>(
       payload,

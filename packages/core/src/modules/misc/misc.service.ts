@@ -9,11 +9,12 @@
 //
 // M10-005: the ClickHouse CLIENT is `deps.ch` — reads through
 // shared/ch-query.ts, the one write through `deps.ch.insert` — so the
-// `loadCh()` lazy import of `@openpanel/db` is gone. What is left is
-// `loadChHelpers()`, the same v1-compat hop project.service.ts uses: these
-// three statements are raw strings, not `sql` fragments, so they still need
-// `TABLE_NAMES` / `formatClickhouseDate`, which are pure helpers living beside
-// the client. Converting the statements is ADR-013's P7 work, not this wave's.
+// `loadCh()` lazy import of `@openpanel/db` is gone. M15-005 dropped the last
+// hop too: these three statements are raw strings, not `sql` fragments, so
+// they still need `TABLE_NAMES` / `formatClickhouseDate`, and core owns its
+// own parity-tested copies of both (shared/ch-tables.ts, shared/ch-dates.ts,
+// guarded by their `.parity.test.ts` siblings). Converting the STATEMENTS is
+// ADR-013's P7 work, not this wave's.
 //
 // `getCache` (not `getRedisCache`) is lazy for the same reason
 // subscription.service.ts's header gives: a static `import { getCache } from
@@ -26,7 +27,9 @@ import { getRedisCache } from '@openpanel/redis';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import { formatClickhouseDate } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
@@ -43,10 +46,6 @@ import {
   processOgImage,
 } from './src/image-proxy';
 import { parseUrlMeta } from './src/parse-url-meta';
-
-function loadChHelpers() {
-  return import('../../v1-compat').then((m) => m.compatChHelpers());
-}
 
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
@@ -364,7 +363,6 @@ export interface StatsResult {
 }
 
 export async function getStats(deps: ServiceDeps): Promise<StatsResult> {
-  const { TABLE_NAMES } = await loadChHelpers();
   const getCache = await loadCache();
   const res = await getCache(
     STATS_CACHE_KEY,
@@ -399,7 +397,6 @@ export async function insertPingRecord(
   deps: ServiceDeps,
   record: PingRecord
 ): Promise<void> {
-  const { TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
   await deps.ch.insert({
     table: TABLE_NAMES.self_hosting,
     values: [
@@ -466,7 +463,6 @@ export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
     return;
   }
 
-  const { TABLE_NAMES } = await loadChHelpers();
   const [res] = await chQuery<{ count: number }>(
     deps,
     `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`

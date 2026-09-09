@@ -8,9 +8,7 @@
 //
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db`; the `loadDb()` lazy loader is gone, so the requestId minted at
-// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4). V1's still-live
-// trpc router and cron job keep calling the deps-free spellings v1-compat.ts
-// re-exports.
+// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4).
 
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
@@ -29,16 +27,8 @@ import {
   getOrganizationById,
   getOrganizationEventsCount,
 } from '../organization/organization.service';
+import { getUserById } from '../user/user.service';
 import type { IOnboardingProject } from './onboarding.constants';
-
-// user.service.ts's `getUserById` now takes `ServiceDeps` (M10-004), which
-// this file's own still-lazy `loadDb()` functions don't carry — reached
-// through v1-compat.ts's bare re-export instead. GENUINE CYCLE, kept lazy:
-// services.ts -> onboarding.service.ts (this file) -> v1-compat.ts ->
-// services.ts; the dynamic import is what keeps it a cycle ESM can evaluate.
-function loadUserService() {
-  return import('../../v1-compat');
-}
 
 const TRIAL_DURATION_IN_DAYS = 30;
 // Generous trial allowance so trialing orgs never get flagged as
@@ -106,7 +96,7 @@ async function createOrGetOnboardingOrganization(
     }),
     db.member.create({
       data: {
-        email: (await (await loadUserService()).getUserById(userId)).email,
+        email: (await getUserById(deps, userId)).email,
         organizationId,
         role: 'org:admin',
         userId,

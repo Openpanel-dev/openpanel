@@ -200,6 +200,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
           '/track/device-id',
           async ({ client, ctx, status }) => {
             const identity = await fetchDeviceIdentity(
+              ctx,
               {
                 projectId: client.projectId,
                 clientIp: ctx.ip,

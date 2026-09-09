@@ -5,32 +5,40 @@
 // the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
 // to it. Same shape as packages/trpc/src/access.ts's binding.
 //
-// M10-004: `project.service.ts`'s `getProjectById` now takes `ServiceDeps`,
-// which this file has none of — reached through the v1-compat singleton
-// instead (see v1-compat.ts's header). GENUINE CYCLE, kept lazy: auth.service.ts
-// -> this file (via `access-lookups`) is already lazy on the OTHER side;
-// v1-compat.ts -> services.ts -> project.service.ts has no edge back to this
-// file, but `getAccessChecks()` in auth.service.ts reaches both this file and
-// project.service.ts, so a static import here risks the same evaluation-order
-// hazard `getAccessChecks()`'s own header warns about.
+// M15-005: Postgres comes from `context.ts`'s `unscopedDb()`. Two of the three
+// lookups here are `cacheable`, whose key is derived from the call's ARGUMENTS
+// (packages/redis/cachable.ts), so they cannot take a `ServiceDeps` leading
+// parameter at all; the third (`getClientAccess`) delegates to them and stays
+// symmetric. Their bare signature is also a protected wire contract —
+// `verification/contracts/auth/group-b-project-access.mts` imports them through
+// `packages/db/src/services/access.service.ts` with no app boot at all, so the
+// handle has to be one this file can resolve on its own. It is the same client
+// `ctx.db` is, not a second one.
 //
-// M10-009: Postgres comes through that same seam (`compatDb()`), not a direct
-// `import('@openpanel/db/...')`. Two of the three lookups here are `cacheable`,
-// whose key is derived from the call's ARGUMENTS (packages/redis/cachable.ts),
-// so they cannot take a `ServiceDeps` leading parameter at all; the third
-// (`getClientAccess`) delegates to them and stays symmetric. What they get is
-// the boot scope's `AppDeps.db` — the same client `ctx.db` is — rather than a
-// second module-level singleton.
+// `getProjectById` is spelled here rather than imported from
+// `project.service.ts`: `shared/` sits below `modules/` (ADR-022 R22) and the
+// ladder reads one field off the row.
 
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 
-function loadDb() {
-  return import('../v1-compat').then((m) => m.compatDb());
+// Lazy, as the seam this replaces was: `context.ts` value-imports
+// `services.ts`, so a static import here would drag the whole 36-service graph
+// into the import graph of everything that reaches this file.
+function unscopedDb() {
+  return import('../context').then((m) => m.unscopedDb());
 }
 
-function loadProjectService() {
-  return import('../v1-compat');
+/**
+ * The project row the ladder reads (`shared/access.ts`'s `AccessLookups`).
+ * Same query as `project.service.ts`'s `getProjectById`, without the scope
+ * that file's callers have and this one does not.
+ */
+export async function getProjectById(
+  projectId: string
+): Promise<{ organizationId: string | null } | null> {
+  const db = await unscopedDb();
+  return db.project.findUnique({ where: { id: projectId } });
 }
 
 export interface IProjectAccess {
@@ -71,14 +79,12 @@ export const getProjectAccess = cacheable(
   }): Promise<IProjectAccess | null> => {
     try {
       // Check if user has access to the project
-      const project = await (await loadProjectService()).getProjectById(
-        projectId
-      );
+      const project = await getProjectById(projectId);
       if (!project?.organizationId) {
         return null;
       }
 
-      const db = await loadDb();
+      const db = await unscopedDb();
       const [projectAccess, member] = await Promise.all([
         db.projectAccess.findMany({
           where: {
@@ -123,7 +129,7 @@ export const getOrganizationAccess = cacheable(
     userId: string;
     organizationId: string;
   }) => {
-    const db = await loadDb();
+    const db = await unscopedDb();
     return db.member.findFirst({
       where: {
         userId,
@@ -141,7 +147,7 @@ export async function getClientAccess({
   userId: string;
   clientId: string;
 }) {
-  const db = await loadDb();
+  const db = await unscopedDb();
   const client = await db.client.findFirst({
     where: {
       id: clientId,

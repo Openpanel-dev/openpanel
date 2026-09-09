@@ -353,7 +353,7 @@ const zOverviewGenericQuerystring = zGetTopPagesQuery;
 
 type OverviewGenericQuery = z.infer<typeof zOverviewGenericQuerystring>;
 type InsightsProjectParam = z.infer<typeof projectIdParam>;
-type InsightsClient = Parameters<typeof resolveInsightsProjectId>[0];
+type InsightsClient = Parameters<typeof resolveInsightsProjectId>[1];
 
 /** Shared body of the 18 `overviewColumns` routes below (V1's `getOverviewGeneric(column)`). */
 async function getOverviewGeneric(
@@ -363,7 +363,7 @@ async function getOverviewGeneric(
   query: OverviewGenericQuery,
   client: InsightsClient
 ) {
-  const projectId = await resolveInsightsProjectId(client, params);
+  const projectId = await resolveInsightsProjectId(ctx, client, params);
   const { timezone } = await getSettingsForProject(ctx, projectId);
   const { startDate, endDate } = getChartStartEndDate(query, timezone);
   return ctx.services.overview.getTopGeneric({
@@ -542,7 +542,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/overview',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -569,7 +569,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/active_users',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return ctx.services.chart.getRollingActiveUsersCore({
           projectId,
           days: query.days,
@@ -588,7 +588,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/retention',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return ctx.services.chart.getWeeklyRetentionSeriesCore(projectId);
       },
       {
@@ -603,7 +603,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/retention/cohort',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return ctx.services.chart.getRetentionCohortCore(projectId);
       },
       {
@@ -618,7 +618,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/pages/top',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -640,7 +640,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/pages/entry_exit',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -666,7 +666,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/pages/performance',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -693,7 +693,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/metrics',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { timezone } = await getSettingsForProject(ctx, projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return ctx.services.overview.getMetrics({
@@ -719,7 +719,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/live',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return {
           visitors: await ctx.buffers.event.getActiveVisitorCount(projectId),
         };
@@ -736,7 +736,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/pages',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { timezone } = await getSettingsForProject(ctx, projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return ctx.services.overview.getTopPages({
@@ -1013,7 +1013,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/funnel',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1041,7 +1041,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/traffic/referrers',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1067,7 +1067,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/traffic/geo',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1094,7 +1094,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/traffic/devices',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1120,7 +1120,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/user_flow',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1147,7 +1147,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/engagement',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return ctx.services.chart.getEngagementCore(projectId);
       },
       {
@@ -1162,7 +1162,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/events',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return queryEventsCore(ctx, { projectId, ...query });
       },
       {
@@ -1179,7 +1179,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/events/names',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return listEventNamesCore(ctx, projectId);
       },
       {
@@ -1194,7 +1194,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/events/properties',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return listEventPropertiesCore(ctx, {
           projectId,
           eventName: query.eventName,
@@ -1213,7 +1213,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/events/property_values',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return getEventPropertyValuesCore(ctx, { projectId, ...query });
       },
       {
@@ -1229,7 +1229,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/profiles',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return findProfilesCore(ctx, { projectId, ...query });
       },
       {
@@ -1245,7 +1245,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/profiles/:profileId',
       async ({ params, query, client, status, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const result = await getProfileWithEvents(
           ctx,
           projectId,
@@ -1273,7 +1273,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/profiles/:profileId/sessions',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return getProfileSessionsCore(
           ctx,
           projectId,
@@ -1294,7 +1294,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/profiles/:profileId/metrics',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return getProfileMetricsCore(ctx, {
           projectId,
           profileId: params.profileId,
@@ -1312,7 +1312,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/sessions',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return querySessionsCore(ctx, { projectId, ...query });
       },
       {
@@ -1328,7 +1328,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/groups/types',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return listGroupTypesCore(ctx, projectId);
       },
       {
@@ -1343,7 +1343,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/groups',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return findGroupsCore(ctx, { projectId, ...query });
       },
       {
@@ -1359,7 +1359,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/groups/:groupId',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return getGroupCore(ctx, {
           projectId,
           groupId: params.groupId,
@@ -1379,7 +1379,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/reports/:reportId/data',
       async ({ params, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         return ctx.services.report.getReportDataCore({
           projectId,
           reportId: params.reportId,
@@ -1398,7 +1398,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/overview',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1425,7 +1425,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/pages',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1451,7 +1451,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/pages/details',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1477,7 +1477,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/queries',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1503,7 +1503,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/queries/details',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1529,7 +1529,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/queries/opportunities',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,
@@ -1556,7 +1556,7 @@ export const insightsRoutes = defineRoutes((app) =>
     .get(
       '/insights/:projectId/gsc/cannibalization',
       async ({ params, query, client, ctx }) => {
-        const projectId = await resolveInsightsProjectId(client, params);
+        const projectId = await resolveInsightsProjectId(ctx, client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           ctx,
           projectId,

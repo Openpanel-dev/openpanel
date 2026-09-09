@@ -25,7 +25,7 @@ export interface BufferDeps {
    * a second client (and a second pino transport) outside any scope. M15-004
    * made it required: the one caller that had none
    * (`apps/api/e2e/legacy-job-proof.ts`, a BullMQ-keys-only proof that never
-   * flushes to ClickHouse) already passes the field, so the v1-compat fallback
+   * flushes to ClickHouse) already passes the field, so the unscoped fallback
    * behind it had no live path left.
    */
   ch: ServiceDeps['ch'];

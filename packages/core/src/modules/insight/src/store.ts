@@ -1,9 +1,8 @@
 // M10-009: the store is a FACTORY over `ServiceDeps` — `deps.db` is the boot
 // scope's client, so the requestId minted at the edge reaches every insight
-// write (ADR-018, docs/TECH_DEBT.md §4). `Prisma` here is the namespace's two
-// JSON sentinels (`DbNull`), which live in the same module as the constructed
-// client and are reached through the declared v1-compat seam
-// (`compatPrisma()`) rather than by importing `@openpanel/db` from core.
+// write (ADR-018, docs/TECH_DEBT.md §4). `Prisma` here is the namespace's JSON
+// sentinel (`DbNull`), reached through `context.ts`'s declared seam
+// (`prismaSentinels()`) rather than by importing `@openpanel/db` from core.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
@@ -15,10 +14,11 @@ import type {
 } from './types';
 
 /** `Prisma.DbNull` is a plain sentinel value that lives in the same module as
- *  the constructed client — reached through the v1-compat seam so this file
- *  value-imports nothing from `@openpanel/db`. */
-function loadCompatPrisma() {
-  return import('../../../v1-compat').then((m) => m.compatPrisma());
+ *  the constructed client — reached through `context.ts`'s seam so this file
+ *  value-imports nothing from `@openpanel/db`. Lazy: `context.ts`
+ *  value-imports `services.ts`, and this module is part of that graph. */
+function loadPrismaSentinels() {
+  return import('../../../context').then((m) => m.prismaSentinels());
 }
 
 export function createInsightStore(deps: ServiceDeps): InsightStore {
@@ -206,7 +206,7 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
     changeTo,
     now,
   }): Promise<void> {
-    const { DbNull } = await loadCompatPrisma();
+    const { DbNull } = await loadPrismaSentinels();
     await db.insightEvent.create({
       data: {
         insightId,

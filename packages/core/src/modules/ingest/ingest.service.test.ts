@@ -42,7 +42,7 @@ const getAsnInfo = mock(async () => ({
   org: undefined,
   isHosting: false,
 }));
-const getSalts = mock(async () => ({
+const getSalts = mock(async (_deps: unknown) => ({
   current: 'salt-current',
   previous: 'salt-previous',
 }));
@@ -62,11 +62,10 @@ let ingestTrack: typeof import('./ingest.service').ingestTrack;
 // path off Postgres and the profile buffer — profile.service calls its own
 // local `upsertProfile`, not the exported binding.
 //
-// M10-004: ingest.service.ts reaches `getSalts` through the v1-compat
-// singleton (salt.service.ts's own cache now lives inside
-// `createSaltService(deps)`, not at module scope — see both files' headers),
-// so that's the specifier mocked here, spread-actual like the rest.
-let realV1Compat: typeof import('../../v1-compat');
+// M15-005: ingest.service.ts calls salt.service.ts's module-scope `getSalts`
+// with the scope it holds, so that is the specifier mocked here,
+// spread-actual like the rest.
+let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
   const profile = await import('../profile/profile.service');
   mock.module('../profile/profile.service', () => ({
@@ -75,15 +74,18 @@ beforeAll(async () => {
     upsertProfile,
     getProfileById,
   }));
-  realV1Compat = { ...(await import('../../v1-compat')) };
-  mock.module('../../v1-compat', () => ({ ...realV1Compat, getSalts }));
+  realSaltService = { ...(await import('../salt/salt.service')) };
+  mock.module('../salt/salt.service', () => ({
+    ...realSaltService,
+    getSalts,
+  }));
   ({ getOverrideDeviceId, handleReplay, ingestTrack } = await import(
     './ingest.service'
   ));
 });
 
 afterAll(() => {
-  mock.module('../../v1-compat', () => realV1Compat);
+  mock.module('../salt/salt.service', () => realSaltService);
 });
 
 const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>

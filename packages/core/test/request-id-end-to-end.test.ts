@@ -545,7 +545,14 @@ function ingestDeps() {
 
   const deps: AppDeps = {
     db: {
-      project: { updateMany: () => Promise.resolve({ count: 0 }) },
+      project: {
+        // M15-005: the handler reads the project through
+        // `project.service.ts`'s module-scope `getProjectByIdCached`, off the
+        // message's own scope, instead of a binding resolved at boot.
+        findUnique: () =>
+          Promise.resolve({ firstEventAt: new Date(), filters: [] }),
+        updateMany: () => Promise.resolve({ count: 0 }),
+      },
     } as unknown as AppDeps['db'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
@@ -561,9 +568,6 @@ function ingestDeps() {
 
 const ingestBindings: IncomingEventBindings = {
   checkNotificationRulesForEvent: () => Promise.resolve(null),
-  getCachedProject: () =>
-    Promise.resolve({ firstEventAt: new Date(), filters: [] }),
-  clearProjectCache: () => Promise.resolve(0),
 };
 
 function ingestEnvelope(requestId?: string): IncomingEventPayload {
@@ -637,7 +641,7 @@ test("the envelope's requestId reaches the handler's logger, its buffer write an
   expect(ingestHarness.eventsBuffered).toHaveLength(2);
 
   // Hop 3: the boundary's session_end job, enqueued through `ctx.services`.
-  // Before M10-006 this carried the boot scope's `v1-compat` id.
+  // Before M10-006 this carried the boot scope's compat id.
   expect(
     ingestHarness.recorded.map(({ queue, job, meta }) => ({
       queue,
@@ -654,8 +658,9 @@ test("the envelope's requestId reaches the handler's logger, its buffer write an
 });
 
 // M15-004: the notification dispatch used to reach Postgres and the
-// `notification` producer through v1-compat's BOOT scope, so every job it
-// enqueued was stamped `v1-compat` no matter which message triggered it. It
+// `notification` producer through the deleted compat seam's BOOT scope, so
+// every job it enqueued was stamped with that scope's id no matter which
+// message triggered it. It
 // takes the caller's scope now, and this is the hop that proves it: the
 // binding enqueues exactly what `triggerNotification` enqueues, off the deps
 // it was handed, and the envelope must carry the message's own id.

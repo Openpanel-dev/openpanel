@@ -4,11 +4,8 @@
 // @openpanel/db's barrel, same shape as packages/db/src/gsc.ts since M5-002.
 //
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone. `onboarding.service.ts`'s
-// own `getUserById` call and `packages/trpc`'s bare calls have no `deps` to
-// hand it, so they reach these through v1-compat.ts's bare re-exports
-// instead (see v1-compat.ts's header) — `auth.service.ts` calls
-// `getUserAccount` directly since it already carries `deps` itself.
+// `deps.db`; the `loadDb()` lazy loader is gone. Every caller — including
+// `onboarding.service.ts` and `auth.service.ts` — passes the `deps` it holds.
 
 import type { User } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
@@ -18,9 +15,8 @@ export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
 
 // Explicit `Promise<User>` return type, not inferred: Prisma's
 // `findUniqueOrThrow` returns a chainable "fluent" client (PromiseLike, plus
-// relation-loading methods), which trips up `Services['user']['getUserById']`
-// in v1-compat.ts — a `.then(...)` wrapping a bare fluent type there can't
-// unify with the plain `Promise<User>` the service member declares.
+// relation-loading methods), which does not unify with the plain
+// `Promise<User>` a `.then(...)` wrapper would declare.
 export function getUserById(deps: ServiceDeps, id: string): Promise<User> {
   return deps.db.user.findUniqueOrThrow({
     where: {

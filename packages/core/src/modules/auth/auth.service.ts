@@ -13,10 +13,7 @@
 // password-reset/OAuth-callback all take `deps` now and reach Postgres as
 // `deps.db`; `./src/login-session.ts` and `./src/registration.ts` do the
 // same and are plain static imports here (neither cycles back to this file).
-// `packages/trpc`'s still-live router calls every one of these bare (no
-// `ServiceDeps`); those reach `createServices` through the v1-compat
-// singleton instead (see v1-compat.ts's header) — `auth.rpc.ts` already
-// carries a `Ctx` and passes it straight through.
+// `auth.rpc.ts` already carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
 import type { ServiceDeps, Services } from '../../services';
@@ -101,24 +98,18 @@ let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
  * attempt bound this at module scope and hung `bun test` for 30 minutes.
  *
  * `integration.service.ts` and `subscription.service.ts` import this
- * directly instead of going through `ctx.services.auth`: both are invoked by
- * `packages/trpc`'s still-live V1 delegate routers with a bare `userId`, no
- * `ctx`, so they cannot reach a service. Operator-authorized (docs/TECH_DEBT.md
- * §5b); the exemption expires when `packages/trpc` dies at P10.
+ * directly instead of going through `ctx.services.auth`: both are called with
+ * a bare `userId` and no `ctx`. Operator-authorized (docs/TECH_DEBT.md §5b).
  */
 export function getAccessChecks(): Promise<ProjectAccessChecks> {
   if (!accessChecksPromise) {
-    accessChecksPromise = Promise.all([
-      loadAccessLookups(),
-      // project.service.ts's own `getProjectById` takes `ServiceDeps` now
-      // (M10-004) — this singleton has none, so it reaches the bare,
-      // v1-compat-wrapped spelling instead (see that file's header).
-      import('../../v1-compat'),
-    ]).then(
-      ([
-        { getProjectAccess, canWriteProject, getOrganizationAccess },
-        { getProjectById },
-      ]) =>
+    accessChecksPromise = loadAccessLookups().then(
+      ({
+        getProjectAccess,
+        canWriteProject,
+        getOrganizationAccess,
+        getProjectById,
+      }) =>
         createAccessChecks({
           getProjectAccess,
           canWriteProject,

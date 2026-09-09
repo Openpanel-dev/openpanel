@@ -70,7 +70,7 @@ export function authMacros(deps: AppDeps) {
       clientAuth: (options: ClientAuthOptions) => ({
         async resolve({ body, ctx, status }) {
           const result = await authenticateClient(
-            deps,
+            ctx,
             toIngestHeaders(ctx.headers),
             options,
             { ip: ctx.ip, body }

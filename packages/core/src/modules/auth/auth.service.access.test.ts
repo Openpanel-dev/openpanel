@@ -1,11 +1,10 @@
 // M10-002 (docs/TECH_DEBT.md §5b): auth.service.ts is now the ONLY place
 // `shared/access.ts`'s ladder is bound to real lookups, via the lazy,
 // memoized `getAccessChecks()`. This proves that seam still takes a fake
-// `AccessLookups` cleanly — mocking `../../shared/access-lookups` and
-// `../project/project.service` (both reached only through dynamic imports by
-// auth.service.ts, never statically) instead of a per-module `src/access.ts`
-// copy — and that ADR-011's fail-closed ordering, messages and write-level
-// gate are unchanged.
+// `AccessLookups` cleanly — mocking `../../shared/access-lookups`, which
+// auth.service.ts reaches only through a dynamic import and which owns all
+// four lookups since M15-005 — and that ADR-011's fail-closed ordering,
+// messages and write-level gate are unchanged.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -29,19 +28,15 @@ const getProjectById = mock(async () => projectById);
 // Snapshotted BEFORE `mock.module` below, not after — restoring by
 // re-`import`ing later would resolve the already-mocked registry entry, not
 // the real module (bare `bun test` shares one module registry across every
-// file, and both of these are reached by plenty of other modules —
-// client.rpc.ts, project.rpc.ts, integration.service.ts, ...).
+// file, and this one is reached by plenty of other modules — client.rpc.ts,
+// project.rpc.ts, integration.service.ts, ...).
 const realAccessLookups = { ...(await import('../../shared/access-lookups')) };
-const realProjectService = { ...(await import('../project/project.service')) };
 
 mock.module('../../shared/access-lookups', () => ({
   ...realAccessLookups,
   getProjectAccess,
   getOrganizationAccess,
   canWriteProject,
-}));
-mock.module('../project/project.service', () => ({
-  ...realProjectService,
   getProjectById,
 }));
 
@@ -55,7 +50,6 @@ beforeAll(async () => {
 
 afterAll(() => {
   mock.module('../../shared/access-lookups', () => realAccessLookups);
-  mock.module('../project/project.service', () => realProjectService);
   // `getAccessChecks()` memoizes for the life of the process — clear it so a
   // later file in this bare run rebuilds against the real lookups just
   // restored above, not this file's fakes.

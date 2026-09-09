@@ -52,7 +52,7 @@ const getAsnInfo = mock(async () => ({
   org: 'Example ISP',
   isHosting: false,
 }));
-const getSalts = mock(async () => ({
+const getSalts = mock(async (_deps: unknown) => ({
   current: 'salt-current',
   previous: 'salt-previous',
 }));
@@ -61,20 +61,21 @@ mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let ingestLegacyEvent: typeof import('./ingest.service').ingestLegacyEvent;
 
-// M10-004: ingest.service.ts reaches `getSalts` through the v1-compat
-// singleton now (salt.service.ts's own cache moved inside
-// `createSaltService(deps)` — see both files' headers), so that's the
-// specifier mocked here, spread-actual like everywhere else this seam is
-// overridden.
-let realV1Compat: typeof import('../../v1-compat');
+// M15-005: ingest.service.ts calls salt.service.ts's module-scope `getSalts`
+// with the scope it holds, so that is the specifier mocked here —
+// spread-actual like everywhere else this module is overridden.
+let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
-  realV1Compat = { ...(await import('../../v1-compat')) };
-  mock.module('../../v1-compat', () => ({ ...realV1Compat, getSalts }));
+  realSaltService = { ...(await import('../salt/salt.service')) };
+  mock.module('../salt/salt.service', () => ({
+    ...realSaltService,
+    getSalts,
+  }));
   ({ ingestLegacyEvent } = await import('./ingest.service'));
 });
 
 afterAll(() => {
-  mock.module('../../v1-compat', () => realV1Compat);
+  mock.module('../salt/salt.service', () => realSaltService);
 });
 
 const produced: { payload: IncomingEventPayload; partitionKey: string }[] = [];

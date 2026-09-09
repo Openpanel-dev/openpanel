@@ -67,13 +67,6 @@ const realPrismaClient = {
 afterAll(async () => {
   mock.module('@openpanel/redis', () => realRedis);
   mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
-  // Restoring the module registry is not enough: `v1-compat.ts` MEMOIZES the
-  // fallback `ServiceDeps` the first time anything resolves it, so if that
-  // happened while the mock above was installed, every later FILE in this
-  // process keeps the mocked client (bare `bun test` shares one registry).
-  // Drop the memo too — same reason mcp's dashboard-management.test.ts does.
-  const { resetV1CompatServicesForTests } = await import('../../v1-compat');
-  resetV1CompatServicesForTests();
 });
 
 const notificationRule = {
@@ -132,10 +125,9 @@ const project = {
 };
 
 // M10-009: every function under test takes `ServiceDeps`, so `deps.db` IS the
-// fake below. The `@openpanel/db/src/prisma-client` mock stays only for the
-// cacheable `getNotificationRulesByProjectId`, which reaches Postgres through
-// the v1-compat seam (see the service's header) — and for `Prisma.JsonNull` /
-// `Prisma.DbNull`, which `compatPrisma()` reads from the same module.
+// fake below. The `@openpanel/db/src/prisma-client` mock stays for
+// `Prisma.JsonNull` / `Prisma.DbNull`, which `prismaSentinels()` reads from
+// that module.
 const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
   ...actualPrismaClient,

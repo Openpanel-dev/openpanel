@@ -15,19 +15,13 @@
 // below. MCP is NOT here — it authenticates its own `token` form inside
 // `modules/mcp/src/auth.ts`, exactly as V1's mcp router did.
 
-import type { AppDeps } from '../context';
+import type { HttpCtx } from '../context';
 import {
   type IngestHeaders,
   validateIngestRequest,
 } from '../modules/ingest/src/client-auth';
 import { headerValue } from '../modules/ingest/src/headers';
 import { verifyPassword } from '../shared/crypto';
-// M10-004: `getClientByIdCached`'s L1 LRU now lives inside
-// `createClientService(deps)` (see that file's header), reached here through
-// the v1-compat singleton, exactly as `modules/ingest/src/client-auth.ts`
-// does — no cycle for THIS file (nothing under `modules/*.service.ts`
-// imports `http/**`), so the import stays static.
-import { getClientByIdCached } from '../v1-compat';
 
 /** V1 refuses a client id that is not a UUID before it ever queries
  *  (utils/auth.ts's three validators). Same regex, same order. */
@@ -91,17 +85,25 @@ export interface ClientAuthRequest {
   body: unknown;
 }
 
+/**
+ * M15-005: takes the request's own `Ctx`, not the boot scope. The ingest tier
+ * reads only `ctx.db` — `getClientByIdCached`'s L1 is keyed on the Postgres
+ * client, so `/track` reaches the one process-lived cache without forcing
+ * `ctx.services`. The allow-list tier is not a hot path and goes through
+ * `ctx.services.client` like every other handler.
+ */
 export async function authenticateClient(
-  _deps: AppDeps,
+  ctx: HttpCtx,
   headers: IngestHeaders,
   options: ClientAuthOptions,
   request?: ClientAuthRequest
 ): Promise<ClientAuthResult> {
   if (!options.ingest) {
-    return await authenticateAllowedClient(headers, options);
+    return await authenticateAllowedClient(ctx, headers, options);
   }
 
   const outcome = await validateIngestRequest({
+    deps: ctx,
     headers,
     clientIp: request?.ip,
     body: request?.body,
@@ -146,6 +148,7 @@ const UNEXPECTED_MESSAGE = 'Unexpected error';
  * secret, so reaching the return means one was presented and matched.
  */
 async function authenticateAllowedClient(
+  ctx: HttpCtx,
   headers: IngestHeaders,
   options: ClientAuthOptions
 ): Promise<ClientAuthResult> {
@@ -164,7 +167,7 @@ async function authenticateAllowedClient(
   }
 
   try {
-    const client = await getClientByIdCached(clientId);
+    const client = await ctx.services.client.getClientByIdCached(clientId);
     if (!client) {
       return refuse(`${label}: Invalid client id`);
     }

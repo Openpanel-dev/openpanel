@@ -5,10 +5,10 @@
 // port with unchanged SQL (ADR-013 converts them in P7) — executed against
 // local ClickHouse for this task's verification, not re-tested here.
 //
-// `../../v1-compat` is still mocked: `createProjectForOrganization`/
-// `updateProjectForOrganization` invalidate a project's clients through the
-// v1-compat singleton (see project.service.ts's header), which this test
-// has no real `AppDeps` to build.
+// M15-005: `createProjectForOrganization`/`updateProjectForOrganization`
+// invalidate a project's clients through `client.service.ts`'s module-scope
+// `getClientByIdCached`, which is built from the `cacheable` stub below — so
+// there is no seam left to mock here.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -165,10 +165,8 @@ function cacheableStub(
 }
 // M10-009: each factory spreads a plain-object SNAPSHOT of the real module and
 // is restored in afterAll. `mock.module` has no per-file scope under bare
-// `bun test` (AGENTS.md), and a partial factory for `@openpanel/redis` or
-// `../../v1-compat` deletes every export it does not name for whichever file
-// runs next — which, now that cross-module callers reach the v1-compat seam
-// directly rather than through the package barrel, is a live hazard.
+// `bun test` (AGENTS.md), and a partial factory for `@openpanel/redis` deletes
+// every export it does not name for whichever file runs next.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
@@ -186,17 +184,9 @@ mock.module('../../shared/slug-id', () => ({
   getId: async (_deps: unknown, _table: string, name: string) => `${name}-slug`,
 }));
 
-const clearClientByIdCache = mock(async () => 0);
-const realV1Compat = { ...(await import('../../v1-compat')) };
-mock.module('../../v1-compat', () => ({
-  ...realV1Compat,
-  clearClientByIdCache,
-}));
-
 afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
   mock.module('../../shared/slug-id', () => realSlugId);
-  mock.module('../../v1-compat', () => realV1Compat);
 });
 
 let subject: ReturnType<

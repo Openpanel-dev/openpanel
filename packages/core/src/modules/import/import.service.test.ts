@@ -2,8 +2,7 @@
 // file hands in fakes as `deps.db` / `deps.ch` and mocks NO module at all.
 // That is the point of the conversion: a module mock of
 // `@openpanel/db/src/clickhouse/client` replaced that specifier for every
-// other FILE in the process (bare `bun test` shares one module registry), and
-// the v1-compat seam memoizes whatever it resolved while one was installed.
+// other FILE in the process (bare `bun test` shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';

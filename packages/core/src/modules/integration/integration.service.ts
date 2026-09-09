@@ -19,8 +19,7 @@
 //
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db`; the `loadDb()` lazy loader is gone, so a requestId minted at
-// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4). V1's still-live
-// trpc router keeps calling the deps-free spellings v1-compat.ts re-exports.
+// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4).
 
 import { z } from 'zod';
 import {

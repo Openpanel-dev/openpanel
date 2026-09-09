@@ -7,8 +7,8 @@
 // `import('@openpanel/db/...')` — so the requestId minted at the edge reaches
 // the uniqueness probe (ADR-018, docs/TECH_DEBT.md §4). `deps` is narrowed to
 // `Pick<ServiceDeps, 'db'>` because mcp's tool handlers have a fixed
-// `@modelcontextprotocol/sdk` signature and only ever hold the db they got
-// from the v1-compat seam.
+// `@modelcontextprotocol/sdk` signature and only ever hold the db the route
+// closed over.
 
 import type { ServiceDeps } from '../services';
 import { slug } from './slug';

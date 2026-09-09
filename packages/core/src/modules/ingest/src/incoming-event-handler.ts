@@ -29,6 +29,7 @@ import {
 } from '../../event/event.service';
 import { matchEvent } from '../../notification/notification.service';
 import type { IProjectFilters } from '../../project/project.constants';
+import { getProjectByIdCached } from '../../project/project.service';
 import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
@@ -97,8 +98,12 @@ export interface IncomingEventDeps {
 }
 
 /**
- * The two lookups a work scope cannot supply. Both are resolved once at the
- * composition root (`apps/api`'s main.ts) rather than per message.
+ * The one lookup a work scope cannot supply, resolved once at the composition
+ * root (`apps/api`'s main.ts) rather than per message.
+ *
+ * M15-005 removed the other two: `getProjectByIdCached` is now a module-scope
+ * `cacheablePerDb` keyed on the Postgres client, so the message's own scope
+ * reaches the same process-lived cache ingest, http and mcp read.
  */
 export interface IncomingEventBindings {
   /**
@@ -111,13 +116,6 @@ export interface IncomingEventBindings {
     deps: Ctx,
     payload: IServiceCreateEventPayload
   ): Promise<unknown>;
-  /**
-   * `getProjectByIdCached`'s L1 LRU lives inside `createProjectService(deps)`,
-   * so `ctx.services.project` would hand every message a fresh, empty cache;
-   * ingest, http and mcp read the one instance registered at boot.
-   */
-  getCachedProject(projectId: string): Promise<IncomingEventProject | null>;
-  clearProjectCache(projectId: string): Promise<unknown>;
 }
 
 /**
@@ -135,13 +133,13 @@ export function createIncomingEventDeps(
     checkNotificationRulesForEvent: (payload) =>
       bindings.checkNotificationRulesForEvent(ctx, payload),
     projects: {
-      getCached: bindings.getCachedProject,
+      getCached: (projectId) => getProjectByIdCached(ctx, projectId),
       markFirstEvent: async (projectId) => {
         await ctx.db.project.updateMany({
           where: { id: projectId, firstEventAt: null },
           data: { firstEventAt: new Date() },
         });
-        await bindings.clearProjectCache(projectId);
+        await getProjectByIdCached.clear(ctx, projectId);
       },
     },
     enqueueSessionEnd: (input) => ctx.services.session.enqueueSessionEnd(input),

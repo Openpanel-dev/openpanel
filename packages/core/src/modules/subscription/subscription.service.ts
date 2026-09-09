@@ -16,11 +16,8 @@
 // `deps.db`; the `loadDb()`/`loadPrisma()` lazy loaders are gone.
 // `Prisma.DbNull` (the JSON-column null sentinel) has no home on `deps` — it
 // is a plain value on the namespace, not the client — so it is reached
-// through v1-compat.ts's `compatPrisma()` instead of importing
-// `@openpanel/db` here. `packages/trpc`'s still-live router calls every
-// function here bare (no `ServiceDeps`); those reach `createServices` through
-// the v1-compat singleton too — `subscription.routes.ts`'s own
-// `/webhook/polar` route already carries a `Ctx`.
+// through `context.ts`'s `prismaSentinels()` instead of importing
+// `@openpanel/db` here.
 
 import {
   applySubscriptionDiscount,
@@ -56,12 +53,11 @@ import {
   zCancellationReason,
 } from './subscription.constants';
 
-// GENUINE CYCLE, kept lazy: `services.ts` statically imports this file for
-// `createSubscriptionService`, and `v1-compat.ts` statically imports
-// `services.ts` for `createServices` — so `loadCompatPrisma` reaches
-// `v1-compat.ts` through a dynamic `import()`, not a static one.
-function loadCompatPrisma() {
-  return import('../../v1-compat').then((m) => m.compatPrisma());
+/** Lazy: `context.ts` value-imports `services.ts`, so a static import here
+ *  would put the whole service graph in this module's import graph — and this
+ *  module is part of that graph. */
+function loadPrismaSentinels() {
+  return import('../../context').then((m) => m.prismaSentinels());
 }
 
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
@@ -566,7 +562,7 @@ async function syncSubscriptionToOrg(
     );
   }
 
-  const { DbNull } = await loadCompatPrisma();
+  const { DbNull } = await loadPrismaSentinels();
 
   const updateData = {
     subscriptionId: data.id,

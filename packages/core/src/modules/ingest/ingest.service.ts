@@ -25,6 +25,7 @@ import {
 } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import type { DbScope } from '../../shared/cacheable-per-deps';
 import { generateId } from '../../shared/id';
 import { parseUserAgent } from '../../shared/parser-user-agent';
 import { generateDeviceId } from '../../shared/profileId';
@@ -35,21 +36,7 @@ import {
   identifyProfile,
   upsertProfile,
 } from '../profile/profile.service';
-
-// M10-004: salt.service.ts's `getSalts` moved inside `createSaltService(deps)`
-// so its LRU survives across calls; this hot path has no `Ctx` to reach
-// `ctx.services.salt` from, so it reads the v1-compat singleton instead — see
-// v1-compat.ts's header and salt.service.ts's. GENUINE CYCLE, kept lazy:
-// services.ts -> ingest.service.ts (this file) -> v1-compat.ts -> services.ts;
-// the dynamic import is what keeps it a cycle ESM can evaluate, same as
-// auth.service.ts's `loadShare()`.
-function loadSalt() {
-  return import('../../v1-compat');
-}
-function getSalts() {
-  return loadSalt().then((m) => m.getSalts());
-}
-
+import { getSalts } from '../salt/salt.service';
 import { convertClickhouseDateToJs } from '../session/src/dates';
 import type {
   DeprecatedPostEventPayload,
@@ -241,6 +228,7 @@ export type TrackOutcome =
   | { status: 'profile-property-not-a-number' };
 
 async function buildContext(
+  deps: DbScope,
   request: TrackRequest,
   buffers: IngestBuffers
 ): Promise<TrackContext> {
@@ -268,7 +256,7 @@ async function buildContext(
   const [geo, asnInfo, salts] = await Promise.all([
     getGeoLocation(ip),
     getAsnInfo(ip),
-    getSalts(),
+    getSalts(deps),
   ]);
 
   const deviceIdResult = await getDeviceId({
@@ -478,7 +466,11 @@ export async function ingestTrack(
     return { status: 'missing-project-id' };
   }
 
-  const context = await buildContext(request, transport.buffers);
+  const context = await buildContext(
+    transport.deps,
+    request,
+    transport.buffers
+  );
 
   switch (body.type) {
     case 'track':
@@ -656,7 +648,7 @@ export async function ingestLegacyEvent(
   const headers = getStringHeaders(request.headers);
 
   const [salts, geo, asnInfo] = await Promise.all([
-    getSalts(),
+    getSalts(transport.deps),
     getGeoLocation(ip),
     getAsnInfo(ip),
   ]);
@@ -714,6 +706,7 @@ export type DeviceIdentity =
 
 /** `GET /track/device-id`. */
 export async function fetchDeviceIdentity(
+  deps: DbScope,
   request: {
     projectId: string | null | undefined;
     clientIp: string | undefined;
@@ -722,7 +715,7 @@ export async function fetchDeviceIdentity(
   buffers: Pick<IngestBuffers, 'session'>,
   logger: Logger
 ): Promise<DeviceIdentity> {
-  const salts = await getSalts();
+  const salts = await getSalts(deps);
   const projectId = request.projectId;
   if (!projectId) {
     return { status: 'missing-project-id' };

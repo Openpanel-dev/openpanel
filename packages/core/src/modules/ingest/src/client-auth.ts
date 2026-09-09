@@ -14,8 +14,12 @@
 
 import { getCache } from '@openpanel/redis';
 import { path } from 'ramda';
+import type { DbScope } from '../../../shared/cacheable-per-deps';
 import { verifyPassword } from '../../../shared/crypto';
-import type { IServiceClientWithProject } from '../../client/client.service';
+import {
+  getClientByIdCached,
+  type IServiceClientWithProject,
+} from '../../client/client.service';
 import type {
   IProjectFilterIp,
   IProjectFilterProfileId,
@@ -23,16 +27,6 @@ import type {
 import { headerValue, type IngestHeaders } from './headers';
 
 export type { IngestHeaders } from './headers';
-
-// M10-004: `getClientByIdCached`'s L1 LRU now lives inside
-// `createClientService(deps)` (see that file's header), reached here through
-// the v1-compat singleton — this ingest hot path has no `Ctx` of its own.
-// GENUINE CYCLE, kept lazy: services.ts -> ingest.service.ts -> this file ->
-// v1-compat.ts -> services.ts; the dynamic import is what keeps it a cycle
-// ESM can evaluate.
-function loadClientService() {
-  return import('../../../v1-compat');
-}
 
 const CLIENT_ID_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -108,10 +102,14 @@ function isOriginAllowed(cors: string[], origin: string | undefined): boolean {
 }
 
 export async function validateIngestRequest({
+  deps,
   headers,
   clientIp,
   body,
 }: {
+  /** The scope the caller already holds — `getClientByIdCached`'s L1 is keyed
+   *  on `deps.db`, so every ingest caller reads the one process instance. */
+  deps: DbScope;
   headers: IngestHeaders;
   clientIp: string | undefined;
   body: unknown;
@@ -150,9 +148,7 @@ export async function validateIngestRequest({
     return refuse('Ingestion: Client ID must be a valid UUIDv4');
   }
 
-  const client = await (await loadClientService()).getClientByIdCached(
-    clientId
-  );
+  const client = await getClientByIdCached(deps, clientId);
 
   if (!client) {
     return refuse('Ingestion: Invalid client id');

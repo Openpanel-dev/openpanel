@@ -16,20 +16,17 @@
 // invalidation) — project-ownership checks below query `db.project`
 // directly, matching V1's manage.controller.ts exactly.
 //
-// `getClientByIdCached` lives INSIDE `createClientService(deps)` rather than
-// at module scope: its `cacheable(...)` L1 LRU must survive across calls to
-// stay useful, which only holds if the closure it is built in is a
-// singleton. `ctx.services.client` is one Ctx per request, so this cache is
-// only actually a cross-call singleton through the v1-compat seam
-// (`registered`, built exactly once at boot) — see v1-compat.ts's header —
-// which is what `ingest/src/client-auth.ts`, `http/client-auth.ts` and
-// `mcp/src/auth.ts` read through, on the ingest hot path, with no `Ctx` of
-// their own to carry `ServiceDeps`.
+// M15-005: `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on
+// the Postgres client rather than on the scope. Its L1 LRU has to survive
+// across calls to be worth anything, and the ingest hot path
+// (`ingest/src/client-auth.ts`, `http/client-auth.ts`) now passes the scope it
+// holds instead of reading a boot-scoped singleton through the deleted compat
+// seam. One instance per process to read, one to invalidate.
 
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDb, type DbScope } from '../../shared/cacheable-per-deps';
 import { hashPassword } from '../auth/auth.service';
 
 export type IServiceClient = Client;
@@ -71,7 +68,7 @@ export async function getClientsByProjectId(
 }
 
 export async function getClientById(
-  deps: ServiceDeps,
+  deps: DbScope,
   id: string
 ): Promise<IServiceClientWithProject | null> {
   return deps.db.client.findUnique({
@@ -81,6 +78,21 @@ export async function getClientById(
     },
   });
 }
+
+/**
+ * L1 LRU (60s) + L2 Redis, one instance per Postgres client. `clear()`
+ * invalidates Redis and that LRU; other nodes may serve stale from theirs for
+ * up to 60s.
+ *
+ * The name is EMPTY on purpose: the in-factory `cacheable(...)` this replaces
+ * was handed an anonymous arrow, so `fn.name` was `''` and the Redis key is
+ * `cachable::<id>`. Naming it here would orphan every live entry.
+ */
+export const getClientByIdCached = cacheablePerDb(
+  '',
+  getClientById,
+  FIVE_MINUTES_IN_SECONDS
+);
 
 // --- /manage REST CRUD (apps/api/src/controllers/manage.controller.ts) ---
 
@@ -131,12 +143,6 @@ export function createClientService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
-  const getClientByIdCached = cacheable(
-    (id: string) => getClientById(deps, id),
-    FIVE_MINUTES_IN_SECONDS
-  );
-
   async function createClientForOrganization(
     organizationId: string,
     input: {
@@ -165,7 +171,7 @@ export function createClientService(
       },
     });
 
-    await getClientByIdCached.clear(client.id);
+    await getClientByIdCached.clear(deps, client.id);
 
     return { client, secret };
   }
@@ -193,7 +199,7 @@ export function createClientService(
       data: updateData,
     });
 
-    await getClientByIdCached.clear(client.id);
+    await getClientByIdCached.clear(deps, client.id);
 
     return client;
   }
@@ -211,7 +217,7 @@ export function createClientService(
     }
 
     await deps.db.client.delete({ where: { id } });
-    await getClientByIdCached.clear(id);
+    await getClientByIdCached.clear(deps, id);
 
     return true;
   }
@@ -229,13 +235,14 @@ export function createClientService(
       getClientById(deps, id),
     getClientByIdCached: (
       id: string
-    ): Promise<IServiceClientWithProject | null> => getClientByIdCached(id),
+    ): Promise<IServiceClientWithProject | null> =>
+      getClientByIdCached(deps, id),
     /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. Its
-     *  own create/update/delete already call this; `project.service.ts`
-     *  reaches it too, through the v1-compat singleton, to invalidate a
-     *  project's clients on a project mutation — see that file's header. */
+     *  own create/update/delete already call this; `project.service.ts` calls
+     *  the module-scope spelling to invalidate a project's clients on a
+     *  project mutation. */
     clearClientByIdCache: (id: string): Promise<number> =>
-      getClientByIdCached.clear(id),
+      getClientByIdCached.clear(deps, id),
     listClientsForOrganization: (
       organizationId: string,
       projectId?: string

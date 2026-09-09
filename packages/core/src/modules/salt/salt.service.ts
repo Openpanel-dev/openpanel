@@ -8,17 +8,14 @@
 // `salt.jobs.ts`'s handler passes its `JobCtx` (a `ServiceDeps` by
 // construction) to `rotateSalt`.
 //
-// `getSalts` is built ONCE per `createSaltService(deps)` call — its
-// `cacheable(...)` L1 LRU must survive across calls to stay useful. That
-// holds for the two places that matter: `ctx.services.salt` (one Ctx per
-// request, but nothing hot-path reads it that way yet) and the v1-compat
-// singleton (`registered`, built exactly once at boot by
-// `setV1CompatServices`) that `ingest.service.ts`'s `/track` hot path reads
-// through — see v1-compat.ts's header. `generateNewSalt` clears the SAME
-// closure's cache, which is why it lives inside the factory too.
+// M15-005: `getSalts` is a module-scope `cacheablePerDb`, keyed on the
+// Postgres client rather than on the scope — its L1 LRU has to survive across
+// calls to be worth anything, and `ingest.service.ts`'s `/track` hot path now
+// passes the scope it holds instead of reading a boot-scoped singleton through
+// the deleted compat seam. `generateNewSalt` clears the same instance.
 
-import { cacheable } from '@openpanel/redis';
 import type { ServiceDeps, Services } from '../../services';
+import { cacheablePerDb } from '../../shared/cacheable-per-deps';
 import { generateSalt } from '../../shared/crypto';
 
 const SALT_CACHE_NAME = 'op:salt';
@@ -60,6 +57,15 @@ export async function fetchSalts(deps: SaltDeps): Promise<Salts> {
   return { current: curr.salt, previous: prev?.salt ?? curr.salt };
 }
 
+/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. No arguments, so
+ *  the Redis key stays the single `cachable:op:salt:[]` the in-factory
+ *  `cacheable(SALT_CACHE_NAME, () => fetchSalts(deps), ...)` produced. */
+export const getSalts = cacheablePerDb(
+  SALT_CACHE_NAME,
+  fetchSalts,
+  SALT_CACHE_TTL_SECONDS
+);
+
 /** Boot bootstrap: creates the first two salts the first time this ever runs. */
 export async function createInitialSalts(
   deps: SaltDeps,
@@ -92,12 +98,6 @@ export function createSaltService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  const getSalts = cacheable(
-    SALT_CACHE_NAME,
-    () => fetchSalts(deps),
-    SALT_CACHE_TTL_SECONDS
-  );
-
   async function generateNewSalt() {
     const created = await deps.db.$transaction(async (tx) => {
       const existingSalts = await tx.salt.findMany({
@@ -118,7 +118,7 @@ export function createSaltService(
       return newSalt;
     });
 
-    await getSalts.clear();
+    await getSalts.clear(deps);
 
     return created;
   }
@@ -139,7 +139,7 @@ export function createSaltService(
   }
 
   return {
-    getSalts: (): Promise<Salts> => getSalts(),
+    getSalts: (): Promise<Salts> => getSalts(deps),
     createInitialSalts: (): Promise<void> => createInitialSalts(deps),
     rotateSalt: (): Promise<{ salt: string; createdAt: Date }> => rotateSalt(),
   };

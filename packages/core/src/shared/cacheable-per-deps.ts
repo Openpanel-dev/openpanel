@@ -19,8 +19,8 @@
 // (context.ts's `installLazyServices`), so the L1 LRU inside `cacheable` is
 // per scope rather than per process. The L2 Redis cache — the shared one, the
 // one that actually saves the query — is unchanged, so a repeat call costs one
-// Redis GET where it used to cost none. Boot-scoped callers (the v1-compat
-// seam, job handlers) keep a process-lived L1.
+// Redis GET where it used to cost none. A cache that must be process-lived
+// takes `cacheablePerDb` below instead.
 
 import { type CacheableOptions, cacheable } from '@openpanel/redis';
 import type { ServiceDeps } from '../services';
@@ -66,6 +66,65 @@ export function cacheablePerDeps<A extends unknown[], R>(
   run.getKey = (deps: ServiceDeps, ...args: A): string =>
     forDeps(deps).getKey(...args);
   run.clear = (deps: ServiceDeps, ...args: A): Promise<number> =>
+    forDeps(deps).clear(...args);
+
+  return run;
+}
+
+/** What a cache keyed on the Postgres client needs from a scope. `AppDeps`,
+ *  `Ctx` and `ServiceDeps` all satisfy it. */
+export type DbScope = Pick<ServiceDeps, 'db'>;
+
+export type CacheablePerDb<A extends unknown[], R> = ((
+  deps: DbScope,
+  ...args: A
+) => Promise<R>) & {
+  getKey: (deps: DbScope, ...args: A) => string;
+  clear: (deps: DbScope, ...args: A) => Promise<number>;
+};
+
+/**
+ * `cacheablePerDeps` for a cache that must be PROCESS-lived, not scope-lived.
+ *
+ * The three ingest-path caches (`getClientByIdCached`, `getProjectByIdCached`,
+ * `getSalts`) used to live inside a factory that was only ever built once, in
+ * the deleted V1 compat seam. Keying them on the scope like `cacheablePerDeps`
+ * does would hand every request a fresh, empty L1 LRU and split `.clear()`
+ * across as many instances as there are requests. Keying on `deps.db` — one
+ * Postgres client per process — keeps one instance to read and one to
+ * invalidate under any scope.
+ *
+ * Safe precisely because `fn` can see nothing but `db`: the closure captures
+ * the first caller's scope, and `db` is the key, so there is nothing else in
+ * it that could differ between sharers.
+ */
+export function cacheablePerDb<A extends unknown[], R>(
+  name: string,
+  fn: (deps: DbScope, ...args: A) => Promise<R>,
+  expireInSec: number,
+  options?: CacheableOptions
+): CacheablePerDb<A, R> {
+  const byDb = new WeakMap<DbScope['db'], Cacheable<A, R>>();
+
+  const forDeps = (deps: DbScope): Cacheable<A, R> => {
+    const existing = byDb.get(deps.db);
+    if (existing) {
+      return existing;
+    }
+    const built = cacheable(
+      name,
+      (...args: A) => fn(deps, ...args),
+      expireInSec,
+      options
+    ) as unknown as Cacheable<A, R>;
+    byDb.set(deps.db, built);
+    return built;
+  };
+
+  const run = (deps: DbScope, ...args: A): Promise<R> => forDeps(deps)(...args);
+  run.getKey = (deps: DbScope, ...args: A): string =>
+    forDeps(deps).getKey(...args);
+  run.clear = (deps: DbScope, ...args: A): Promise<number> =>
     forDeps(deps).clear(...args);
 
   return run;

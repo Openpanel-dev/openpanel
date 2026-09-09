@@ -21,7 +21,6 @@
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import type { ServiceDeps, Services } from '../../services';
-import { compatPrisma } from '../../v1-compat';
 import {
   authenticateToken,
   extractToken,
@@ -48,18 +47,17 @@ export interface McpHttpResult {
  * a service graph: nothing about it is per-request, and resolving it opens no
  * connection.
  *
- * It comes off `v1-compat.ts` because that is the ONLY file in this package
- * `core-uses-ctx-not-db-internals` lets import `@openpanel/db`'s Prisma
+ * It comes off `context.ts` because that is the ONE file in this package
+ * `core-uses-ctx-not-db-internals` lets name `@openpanel/db`'s Prisma
  * namespace, and `ServiceDeps` has no field for it — the same door
  * `notification.service.ts`, `subscription.service.ts` and
- * `insight/src/store.ts` use for the same sentinel. This is the module's one
- * remaining edge to that file: the tool tree itself reaches Postgres and
- * ClickHouse through `deps`.
+ * `insight/src/store.ts` use for the same sentinel. The tool tree itself
+ * reaches Postgres and ClickHouse through `deps`.
  */
-let jsonNullSentinel: Promise<unknown> | undefined;
 function dbJsonNull(): Promise<unknown> {
-  jsonNullSentinel ??= compatPrisma().then((prisma) => prisma.DbNull);
-  return jsonNullSentinel;
+  return import('../../context').then((m) =>
+    m.prismaSentinels().then((prisma) => prisma.DbNull)
+  );
 }
 
 /**

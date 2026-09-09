@@ -40,7 +40,6 @@ import {
   bullBoardRoutes,
   COOKIE_OPTIONS,
   checkNotificationRulesForEvent,
-  clearProjectByIdCache,
   corsDelegator,
   createBuffers,
   createClients,
@@ -53,7 +52,6 @@ import {
   debugRoutes,
   enableEventsHeartbeat,
   errorHandler,
-  getProjectByIdCached,
   type HttpCtx,
   ingestConsumerMetrics,
   KAFKA_EVENTS_TOPIC,
@@ -79,12 +77,10 @@ import {
   requestLogging,
   type SessionMetricsRedis,
   setShuttingDown,
-  setV1CompatServices,
   startKafkaEventsConsumer,
   startSchedulers,
   startWorkers,
   TRPC_ENDPOINT,
-  V1_COMPAT_REQUEST_ID,
   type WorkerHandle,
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
@@ -250,26 +246,6 @@ function warnOnUnhandledSchedulers(schedulerIds: string[]): void {
 }
 
 /**
- * The boot scope as `ServiceDeps`. `AppDeps` carries a `QueueProducerHandle`;
- * a service wants an already-scoped `QueueProducers`, and outside a request
- * there is nothing to correlate with, so the boot scope stamps
- * `V1_COMPAT_REQUEST_ID` (M10-005).
- */
-function bootServiceDeps(
-  deps: AppDeps
-): Parameters<typeof setV1CompatServices>[0] {
-  return {
-    db: deps.db,
-    ch: deps.ch,
-    redis: deps.redis,
-    clients: deps.clients,
-    buffers: deps.buffers,
-    logger: deps.logger,
-    queues: deps.producers.scope({ requestId: V1_COMPAT_REQUEST_ID }),
-  };
-}
-
-/**
  * The Kafka events consumer. The kafkajs client, the topic, the consumer
  * group, the DLQ producer and the retry bounds all come from core's own
  * `modules/ingest/src/kafka.ts` (M11-003) — still passed in as arguments, so
@@ -289,14 +265,11 @@ async function startIngestConsumer(
     partitionsConsumedConcurrently: KAFKA_PARTITIONS_CONCURRENT,
     batch: {
       // One Ctx per message, scoped to the requestId the producer stamped
-      // into the envelope (M10-006). The two bindings a work scope cannot
-      // supply are resolved here, once: the notification dispatch has no Ctx
-      // slot in its signature, and the project cache is the boot-registered
-      // singleton ingest/http/mcp share.
+      // into the envelope (M10-006). The one binding a work scope cannot
+      // supply is resolved here, once: the notification dispatch has no Ctx
+      // slot in its signature.
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
-        getCachedProject: getProjectByIdCached,
-        clearProjectCache: clearProjectByIdCache,
       }),
       sendToDeadLetter: produceDeadLetterEvent,
       logger,
@@ -485,13 +458,6 @@ function installFatalHandlers(): void {
 async function main() {
   const role = config.ROLE;
   const deps = buildDeps();
-
-  // The V1 compat seam (core/src/v1-compat.ts): `packages/trpc`'s routers and
-  // the mcp/assistant tool runtimes reach core's modules as bare barrel
-  // exports with no `Ctx`, so the deps built above are registered once here
-  // for them. Everything with a `Ctx` uses `ctx.services.*`. Deleted with
-  // `packages/trpc` at P10.
-  setV1CompatServices(bootServiceDeps(deps));
 
   // HTTP and default metrics register everywhere (TARGET_ARCHITECTURE §18).
   registerDefaultMetrics();

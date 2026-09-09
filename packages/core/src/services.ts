@@ -99,11 +99,10 @@ export interface Services {
   mcp: ReturnType<typeof createMcpService>;
 }
 
-// MUST stay a hoisted `function` declaration, not a `const` arrow: one static
-// ESM cycle runs through it (subscription.service.ts -> v1-compat.ts ->
-// services.ts -> subscription.service.ts) and hoisting is the only reason it
-// evaluates. A `const` would put it in a temporal dead zone that no typecheck
-// reports and that fails at process boot.
+// Stays a hoisted `function` declaration, not a `const` arrow: the one static
+// ESM cycle that ran through it died with the compat seam at M15-005, but a
+// `const` here would still put any future cycle in a temporal dead zone that
+// no typecheck reports and that fails at process boot.
 export function createServices(deps: ServiceDeps): Services {
   // The thunk is captured, not copied, so two services may call each other
   // without a cycle: `container` is assigned before any thunk body can run,

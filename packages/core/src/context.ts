@@ -25,6 +25,42 @@ export type RedisClient = ReturnType<
 >;
 export type ServiceClients = import('./clients/create-clients').ServiceClients;
 
+// The two `@openpanel/db` VALUES core cannot reach through a scope, and the
+// one file allowed to name them: `core-uses-ctx-not-db-internals` exempts
+// this module by path, and it is already where core declares its handles.
+// Both are LAZY, so importing core still constructs no database and
+// `bun test` still runs offline, and neither memoizes its result — the module
+// registry already caches the import, and a second memo is exactly what let
+// the deleted compat seam hand one suite's mocked Prisma client to every
+// later file in the process.
+
+export type PrismaNamespace =
+  typeof import('@openpanel/db/src/prisma-client').Prisma;
+
+/**
+ * Prisma's JSON sentinels (`DbNull`, `JsonNull`): frozen constants that write
+ * an explicit SQL NULL — or a JSON `null` — onto a nullable `Json?` column.
+ * They are values on the namespace, not a client, so nothing about them is
+ * per-request and `ServiceDeps` carries no field for them.
+ */
+export function prismaSentinels(): Promise<PrismaNamespace> {
+  return import('@openpanel/db/src/prisma-client').then((m) => m.Prisma);
+}
+
+/**
+ * The process's Postgres client, for the one path that cannot be handed a
+ * scope: `shared/access-lookups.ts`. Its lookups are `cacheable` on their
+ * ARGUMENTS, so they cannot take a leading `deps`, and their bare signature is
+ * pinned by the protected wire contract
+ * `verification/contracts/auth/group-b-project-access.mts`, which imports them
+ * through `packages/db/src/services/access.service.ts` with no app boot at
+ * all. It is the same client `main.ts` puts on `AppDeps.db`. Every other
+ * caller in core reaches Postgres as `deps.db`.
+ */
+export function unscopedDb(): Promise<Db> {
+  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+}
+
 // Landed at M8-001: built once by `createBuffers(deps)` in main.ts, never a
 // module singleton.
 export type { Buffers } from './buffers/create-buffers';

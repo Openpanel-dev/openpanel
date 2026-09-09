@@ -17,17 +17,8 @@ import type { AuthenticatedClient } from '../../http/client-auth';
 import type { ServiceDeps, Services } from '../../services';
 import { getChartStartEndDate, resolveDateRange } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
+import { resolveClientProjectId } from '../project/project.service';
 import type { IChartRange } from '../report/report.constants';
-
-// project.service.ts's `resolveClientProjectId` takes `ServiceDeps` now
-// (M10-004); `resolveInsightsProjectId` below is called from ~35 route
-// handlers in export.routes.ts with no `deps` in their own signature, so it
-// reaches the bare, v1-compat-wrapped spelling instead of threading `deps`
-// through every one of them. GENUINE CYCLE, kept lazy: services.ts ->
-// export.service.ts (this file) -> v1-compat.ts -> services.ts.
-function loadProjectService() {
-  return import('../../v1-compat');
-}
 
 export type ProjectIdResolution =
   | { ok: true; projectId: string }
@@ -85,11 +76,11 @@ export async function resolveExportProjectId(
  * 12), already what apps/api's insights.controller.ts `getProjectId` calls.
  */
 export async function resolveInsightsProjectId(
+  deps: ServiceDeps,
   client: AuthenticatedClient,
   params: { projectId?: string }
 ): Promise<string> {
-  const { resolveClientProjectId } = await loadProjectService();
-  return resolveClientProjectId({
+  return resolveClientProjectId(deps, {
     clientType: client.type === 'root' ? 'root' : 'read',
     clientProjectId: client.projectId,
     organizationId: client.organizationId,
