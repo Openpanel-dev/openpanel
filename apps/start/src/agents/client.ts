@@ -14,11 +14,15 @@ import type { ChatApp } from '@openpanel/core';
  * entire agent definition (DB services, providers, etc.) along with it. It is
  * type-only, erased at build time — no runtime coupling, which is what
  * keeps it inside ADR-008's rule that only `*.constants.ts` may be
- * VALUE-imported here. It used to reach `apps/api/src/agents/app`
- * relatively; M9-004 deleted that wrapper and core's barrel exports the
- * type. The shared schemas (context, client tool inputs, model
- * whitelist) live in `@openpanel/core`'s assistant.constants so only this
- * one type import crosses the app boundary.
+ * VALUE-imported here. The barrel is the only door: `@openpanel/core`'s
+ * exports map publishes `.` and `./modules/*.constants`, and `ChatApp`
+ * cannot live in a constants file. The shared schemas (context, client
+ * tool inputs, model whitelist) do live in
+ * `@openpanel/core`'s assistant.constants, so this is the one type import
+ * that crosses the app boundary — a second one past `AppRouter`, which
+ * ADR-022 R12 says should be the only one. Recorded as an open R12
+ * finding (M14-101 / M15-101): widening R12 to `AppRouter` + `ChatApp`
+ * is an ADR amendment, not a code change.
  */
 export type AppClient = ReturnType<typeof createClient<ChatApp>>;
 

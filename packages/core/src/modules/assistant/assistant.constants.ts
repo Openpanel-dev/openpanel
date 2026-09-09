@@ -1,21 +1,20 @@
 import { z } from 'zod';
 
 /**
- * Moved from packages/validation/src/chat.ts (M5-005, ADR-008's module map:
- * assistant owns "C"). packages/validation/src/chat.ts becomes a re-export
- * shim of this file (same shape as packages/validation/src/import.validation.ts
- * since M5-004), so apps/start's model picker and the SDK-facing types keep
- * resolving these symbols through packages/validation's existing barrel
- * unchanged.
+ * Moved from the V1 validation package (M5-005, ADR-008's module map:
+ * assistant owns "C"). apps/start reaches these symbols through the
+ * `@openpanel/core/modules/assistant/assistant.constants` subpath —
+ * `src/agents/models.ts`, `src/contexts/page-context.tsx` and
+ * `src/components/chat/tool-handlers.ts`.
  *
  * Isomorphic by the AGENTS.md rule: zod and nothing else.
  *
  * The full `ChatApp` type (Better Agent's inferred app type) lives in
- * `./src/app.ts` — it's `typeof chatApp` and inherently bound to the
- * server-side agent definition, so it stays out of this constants file
- * (a Prisma/Better-Agent type would follow it into a browser bundle).
- * `apps/api/src/agents/app.ts` re-exports it (DELEGATE PATTERN) for the
- * frontend's narrow type-only import.
+ * `./src/app.ts` — it's `ReturnType<typeof createChatApp>` and inherently
+ * bound to the server-side agent definition, so it stays out of this
+ * constants file (a Prisma/Better-Agent type would follow it into a browser
+ * bundle). The frontend type-imports it from the core barrel instead
+ * (`apps/start/src/agents/client.ts`); see that file for why.
  */
 
 // ────────────────────────────────────────────────────────────────────
@@ -69,10 +68,12 @@ export type PageContext = z.infer<typeof pageContextSchema>;
 export type PageContextPage = z.infer<typeof pageContextPageSchema>;
 
 /**
- * Agent context shared by every agent. The client sends all three fields,
- * but the auth plugin guard validates that the session user actually has
- * access to (projectId, organizationId) and rejects mismatches before
- * the agent ever runs. Tools may safely trust these values.
+ * Agent context shared by every agent. The client sends all three fields;
+ * `assistant.routes.ts` re-reads the body, checks the session user's access
+ * to (projectId, organizationId) and 403s a mismatch before handing the
+ * request to the agent — so tools may trust these values. That check is the
+ * module's ONLY tenancy gate: all 65 server tools use `context.projectId` as
+ * their key without re-checking it.
  */
 export const chatContextSchema = z.object({
   projectId: z.string(),
@@ -84,7 +85,7 @@ export type ChatAgentContext = z.infer<typeof chatContextSchema>;
 
 // ────────────────────────────────────────────────────────────────────
 // Model whitelist — single source of truth, consumed by:
-//   - apps/api (builds an agent per entry)
+//   - src/app.ts (builds an agent per entry)
 //   - apps/start (model picker)
 // Adding a new model = add an entry here. No other changes required.
 // ────────────────────────────────────────────────────────────────────

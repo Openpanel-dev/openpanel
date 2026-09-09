@@ -150,17 +150,11 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
     }
 
     case 'tool-get_rolling_active_users': {
-      const w = args.windowDays ?? 1;
-      const label =
-        w === 1
-          ? 'DAU'
-          : w === 7
-            ? 'WAU'
-            : w === 30
-              ? 'MAU'
-              : `${w}-day active users`;
+      // The chart this tool returns is daily uniques whatever `windowDays`
+      // asked for — only the numeric summary honours the rolling window — so
+      // the title must not say DAU/WAU/MAU.
       const days = args.days ?? 30;
-      return `${label} — last ${days} days`;
+      return `Daily active users — last ${days} days`;
     }
 
     case 'tool-generate_report': {

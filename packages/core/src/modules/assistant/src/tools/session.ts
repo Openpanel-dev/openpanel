@@ -7,6 +7,11 @@ import {
 } from '../../../session/session.service';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
+/** How many same-referrer sessions `get_session_referrer_context` samples. */
+const REFERRER_SAMPLE_LIMIT = 20;
+/** How many of that sample are returned in full. */
+const REFERRER_SAMPLE_DETAIL_COUNT = 5;
+
 export const getSessionFull = (deps: ServiceDeps) =>
   chatTool(
     {
@@ -104,7 +109,7 @@ export const getSimilarSessions = (deps: ServiceDeps) =>
     {
       name: 'get_similar_sessions',
       description:
-        'Find sessions with similar device + country + entry path to this one. Returns up to 10. Useful for "is this typical?" questions.',
+        'Find sessions with the same device + country as this one. Returns up to 10. The reference session\'s entry path is reported back for context but is NOT used as a match criterion. Useful for "is this typical?" questions.',
       schema: z.object({
         sessionId: z.string().optional(),
         limit: z.number().min(1).max(20).default(10).optional(),
@@ -217,8 +222,7 @@ export const getSessionReferrerContext = (deps: ServiceDeps) =>
   chatTool(
     {
       name: 'get_session_referrer_context',
-      description:
-        'Context about how the user arrived: total traffic this period from the same referrer, plus a few sample sessions from that referrer.',
+      description: `Context about how the user arrived: a sample of up to ${REFERRER_SAMPLE_LIMIT} recent sessions from the same referrer, across all time (not the current date range), plus a few of them in full. \`sampled_from_referrer\` is that sample size, NOT a project total — never quote it as one.`,
       schema: z.object({
         sessionId: z.string().optional(),
       }),
@@ -238,7 +242,7 @@ export const getSessionReferrerContext = (deps: ServiceDeps) =>
       const fromSameReferrer = await querySessionsCore(deps, {
         projectId: context.projectId,
         referrerName: session.referrerName ?? undefined,
-        limit: 20,
+        limit: REFERRER_SAMPLE_LIMIT,
       });
 
       return {
@@ -246,14 +250,17 @@ export const getSessionReferrerContext = (deps: ServiceDeps) =>
         referrer: session.referrer,
         referrer_name: session.referrerName,
         referrer_type: session.referrerType,
-        total_from_referrer: fromSameReferrer.length,
-        sample_sessions: fromSameReferrer.slice(0, 5).map((s) => ({
-          id: s.id,
-          created_at: s.created_at,
-          country: s.country,
-          is_bounce: s.is_bounce,
-          entry_path: s.entry_path,
-        })),
+        sampled_from_referrer: fromSameReferrer.length,
+        sample_limit: REFERRER_SAMPLE_LIMIT,
+        sample_sessions: fromSameReferrer
+          .slice(0, REFERRER_SAMPLE_DETAIL_COUNT)
+          .map((s) => ({
+            id: s.id,
+            created_at: s.created_at,
+            country: s.country,
+            is_bounce: s.is_bounce,
+            entry_path: s.entry_path,
+          })),
       };
     }
   );
@@ -273,7 +280,7 @@ export const getSessionReplaySummary = (deps: ServiceDeps) =>
       const session = await getSessionById(deps, id, context.projectId);
       return {
         session_id: id,
-        available: session.hasReplay ?? false,
+        available: session.hasReplay,
         replay_url: session.hasReplay
           ? dashboardUrl(
               deps.config,

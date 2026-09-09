@@ -170,48 +170,91 @@ export function createAuthService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  // Annotated as a whole rather than member by member: one annotation binds
-  // the ladder contract and gives all three members the explicit return type
-  // `ReturnType<typeof createAuthService>` needs (ADR-022 R5).
-  const accessChecks: ProjectAccessChecks = {
-    async requireProjectAccess(args) {
-      return (await getAccessChecks()).requireProjectAccess(args);
-    },
-    async requireOrganizationAdmin(args) {
-      return (await getAccessChecks()).requireOrganizationAdmin(args);
-    },
-    async requireProjectAdmin(args) {
-      return (await getAccessChecks()).requireProjectAdmin(args);
-    },
-  };
+  // One function per member, closing over `deps`, so the return statement
+  // below stays a plain index (ADR-022 R4) — nothing here is a `return { ... }`
+  // literal with logic inside it.
+  async function requireProjectAccess(
+    args: Parameters<ProjectAccessChecks['requireProjectAccess']>[0]
+  ): ReturnType<ProjectAccessChecks['requireProjectAccess']> {
+    return (await getAccessChecks()).requireProjectAccess(args);
+  }
+
+  async function requireOrganizationAdmin(
+    args: Parameters<ProjectAccessChecks['requireOrganizationAdmin']>[0]
+  ): ReturnType<ProjectAccessChecks['requireOrganizationAdmin']> {
+    return (await getAccessChecks()).requireOrganizationAdmin(args);
+  }
+
+  async function requireProjectAdmin(
+    args: Parameters<ProjectAccessChecks['requireProjectAdmin']>[0]
+  ): ReturnType<ProjectAccessChecks['requireProjectAdmin']> {
+    return (await getAccessChecks()).requireProjectAdmin(args);
+  }
+
+  async function getProjectAccess(args: {
+    userId: string;
+    projectId: string;
+  }): Promise<IProjectAccess | null> {
+    return (await loadAccessLookups()).getProjectAccess(args);
+  }
+
+  async function getOrganizationAccess(
+    ...args: Parameters<typeof GetOrganizationAccessFn>
+  ): ReturnType<typeof GetOrganizationAccessFn> {
+    return (await loadAccessLookups()).getOrganizationAccess(...args);
+  }
+
+  async function getClientAccess(
+    ...args: Parameters<typeof GetClientAccessFn>
+  ): ReturnType<typeof GetClientAccessFn> {
+    return (await loadAccessLookups()).getClientAccess(...args);
+  }
+
+  /**
+   * The session cookie's other half. `http/session.ts` reaches it here
+   * rather than deep-importing `./src/login-session` (ADR-022 R22), which
+   * is also what keeps the demo-user branch inside one function.
+   */
+  function checkSessionToken(
+    token: string | null | undefined
+  ): Promise<SessionValidationResult> {
+    return validateSessionToken(deps, token);
+  }
+
+  function setSessionCookie(
+    setCookie: ISetCookie,
+    token: string,
+    expiresAt: Date
+  ): void {
+    setSessionTokenCookie(deps.config, setCookie, token, expiresAt);
+  }
+
+  function setAuthProviderCookie(
+    setCookie: ISetCookie,
+    provider: string
+  ): void {
+    setLastAuthProviderCookie(deps.config, setCookie, provider);
+  }
+
+  function clearSessionCookie(setCookie: ISetCookie): void {
+    deleteSessionTokenCookie(deps.config, setCookie);
+  }
+
+  function cookieDomainForUrl(
+    url: string
+  ): ReturnType<typeof parseCookieDomain> {
+    return parseCookieDomain(deps.config, url);
+  }
 
   return {
-    ...accessChecks,
+    requireProjectAccess,
+    requireOrganizationAdmin,
+    requireProjectAdmin,
     requireLogin,
-    /**
-     * The session cookie's other half. `http/session.ts` reaches it here
-     * rather than deep-importing `./src/login-session` (ADR-022 R22), which
-     * is also what keeps the demo-user branch inside one function.
-     */
-    validateSessionToken: (
-      token: string | null | undefined
-    ): Promise<SessionValidationResult> => validateSessionToken(deps, token),
-    async getProjectAccess(args: {
-      userId: string;
-      projectId: string;
-    }): Promise<IProjectAccess | null> {
-      return (await loadAccessLookups()).getProjectAccess(args);
-    },
-    async getOrganizationAccess(
-      ...args: Parameters<typeof GetOrganizationAccessFn>
-    ): ReturnType<typeof GetOrganizationAccessFn> {
-      return (await loadAccessLookups()).getOrganizationAccess(...args);
-    },
-    async getClientAccess(
-      ...args: Parameters<typeof GetClientAccessFn>
-    ): ReturnType<typeof GetClientAccessFn> {
-      return (await loadAccessLookups()).getClientAccess(...args);
-    },
+    validateSessionToken: checkSessionToken,
+    getProjectAccess,
+    getOrganizationAccess,
+    getClientAccess,
     hashPassword,
     verifyPasswordHash,
     generateSessionToken,
@@ -225,19 +268,10 @@ export function createAuthService(
     hashRecoveryCodes,
     normalizeRecoveryCode,
     consumeRecoveryCode,
-    setSessionTokenCookie: (
-      setCookie: ISetCookie,
-      token: string,
-      expiresAt: Date
-    ): void => setSessionTokenCookie(deps.config, setCookie, token, expiresAt),
-    setLastAuthProviderCookie: (
-      setCookie: ISetCookie,
-      provider: string
-    ): void => setLastAuthProviderCookie(deps.config, setCookie, provider),
-    deleteSessionTokenCookie: (setCookie: ISetCookie): void =>
-      deleteSessionTokenCookie(deps.config, setCookie),
-    parseCookieDomain: (url: string): ReturnType<typeof parseCookieDomain> =>
-      parseCookieDomain(deps.config, url),
+    setSessionTokenCookie: setSessionCookie,
+    setLastAuthProviderCookie: setAuthProviderCookie,
+    deleteSessionTokenCookie: clearSessionCookie,
+    parseCookieDomain: cookieDomainForUrl,
   };
 }
 

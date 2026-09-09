@@ -1,5 +1,5 @@
-// Ported from packages/mcp/src/tools/analytics/reports.ts's `runReport` /
-// `runReportFromConfig` (M5-005).
+// Ported from V1's MCP `runReport` / `runReportFromConfig` (M5-005), now
+// `modules/mcp/src/tools/analytics/reports.ts`.
 //
 // ADR-007 explicitly defers unifying MCP's tool definitions with assistant's,
 // so `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this

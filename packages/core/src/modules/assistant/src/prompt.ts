@@ -142,9 +142,9 @@ When you call a chart tool, keep prose SHORT — a one-line caption like "Here's
  * function.
  */
 export function buildSystemPrompt(context: ChatAgentContext): string {
-  return [buildBasePrompt(), buildPageContextSection(context.pageContext)]
-    .filter(Boolean)
-    .join('\n\n');
+  return [buildBasePrompt(), buildPageContextSection(context.pageContext)].join(
+    '\n\n'
+  );
 }
 
 function buildPageContextSection(pc?: PageContext): string {

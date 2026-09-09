@@ -31,7 +31,8 @@ export type { PageContextPage };
  * `filters` / `reportDraft`. The validation
  * schema keeps those loose (`z.record(unknown)`) because Zod can't narrow
  * `IChartEventFilter` / `IReportInput` at the boundary; the server
- * re-narrows in `apps/api/src/agents/tools/helpers.ts`.
+ * re-narrows in `@openpanel/core`'s
+ * `modules/assistant/src/tools/helpers.ts` (`pageContextFilters`).
  *
  * Each target page calls `usePageContext({...})` in an effect; the
  * provider stores the latest value. The chat drawer reads it via a ref so

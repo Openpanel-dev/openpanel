@@ -1,6 +1,6 @@
-// Moved from packages/trpc/src/agents/filter-command.ts (M5-005). The one
-// caller is `overview.rpc.ts`'s `runFilterCommand` procedure, which reaches
-// it through `ctx.services.assistant`.
+// Moved from V1's tRPC filter-command agent (M5-005). The one caller is
+// `overview.rpc.ts`'s `runFilterCommand` procedure, which reaches it through
+// `ctx.services.assistant`.
 //
 // M15-003: the agent app and its five tools are BUILT from the `deps` that
 // procedure already holds (ADR-022 R6/R15) — importing this file constructs
@@ -49,7 +49,7 @@ const operatorEnum = z.enum(objectToZodEnums(operators));
 const rangeEnum = zRange;
 const intervalEnum = z.enum(objectToZodEnums(intervals));
 
-export const filterCommandOutputSchema = z.object({
+const filterCommandOutputSchema = z.object({
   applyFilters: z
     .object({
       range: rangeEnum.nullable(),
@@ -183,7 +183,7 @@ function defineServerTool<TSchema extends z.ZodTypeAny>(config: {
     ctx: FilterCommandContext
   ) => Promise<unknown>;
 }): AgentToolDefinition {
-  // biome-ignore lint/suspicious/noExplicitAny: Zod schema instantiation depth — same dodge as apps/api/src/agents/tools/ui.ts
+  // biome-ignore lint/suspicious/noExplicitAny: Zod schema instantiation depth — same dodge as `chatTool` in src/tools/helpers.ts
   const contract: any = defineTool({
     name: config.name,
     description: config.description,
@@ -385,7 +385,7 @@ function createFilterCommandApp(deps: ServiceDeps) {
     instruction: (ctx: FilterCommandContext) => buildInstruction(ctx),
     tools: () => FILTER_COMMAND_TOOLS.map((tool) => tool(deps)),
     maxSteps: 6,
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as apps/api/src/agents/app.ts
+    // biome-ignore lint/suspicious/noExplicitAny: same dodge as `createChatAgent` in src/app.ts
   } as any);
   return betterAgent({ agents: [agent] });
 }
@@ -406,7 +406,7 @@ export async function runFilterCommand(
       timezone: input.timezone,
       pageContext: input.pageContext as FilterCommandContext['pageContext'],
     },
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as apps/api/src/agents/app.ts
+    // biome-ignore lint/suspicious/noExplicitAny: same dodge as `createChatAgent` in src/app.ts
   } as any)) as { structured?: FilterCommandResult };
 
   if (!result.structured) {

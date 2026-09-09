@@ -37,6 +37,9 @@ import {
   truncateRows,
 } from './helpers';
 
+/** Series label for `get_rolling_active_users`' chart — always daily uniques. */
+const DAILY_ACTIVE_USERS_SERIES_LABEL = 'Daily active users';
+
 // Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
 // rather than import from a module.
 function objectToZodEnums<K extends string>(
@@ -643,7 +646,7 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
     {
       name: 'get_rolling_active_users',
       description:
-        'Rolling active-users trend (DAU/WAU/MAU). Returns BOTH the latest single value AND a renderable chart config (so the UI draws a line chart). Default is DAU over 30 days; pass `windowDays: 7` for WAU or `windowDays: 30` for MAU. ALWAYS supply a concise `title` (3-8 words) that describes what the chart shows.',
+        'Rolling active users (DAU/WAU/MAU). Returns TWO things that answer different questions: `summary` is the rolling active-user count over `windowDays` (1 = DAU, 7 = WAU, 30 = MAU — quote this for "how many MAU do we have?"), and the chart is a DAILY unique-users trend over the last `days` — it is NOT a rolling-window series, so do not describe the line as WAU/MAU. ALWAYS supply a concise `title` (3-8 words) that describes what the chart shows.',
       schema: z.object({
         /**
          * The rolling window. 1 = DAU (default), 7 = WAU, 30 = MAU.
@@ -667,11 +670,16 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
       // We use a user-segment on `screen_view` — OpenPanel's standard
       // pageview event — with a linear chart. The ChartEngine dedupes
       // per profile_id because of `segment: 'user'`.
+      //
+      // The chart is daily uniques regardless of `windowDays`: the chart
+      // engine has no rolling-window series type. `windowDays` shapes the
+      // `summary` below and nothing else, which is why the series is
+      // labelled for what it is rather than for the requested window.
       const endDate = new Date().toISOString().slice(0, 10);
       const startDate = new Date(Date.now() - (range - 1) * 86_400_000)
         .toISOString()
         .slice(0, 10);
-      const label =
+      const summaryLabel =
         window === 1
           ? 'DAU'
           : window === 7
@@ -694,7 +702,7 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
             id: '1',
             type: 'event' as const,
             name: 'screen_view',
-            displayName: label,
+            displayName: DAILY_ACTIVE_USERS_SERIES_LABEL,
             segment: 'user' as const,
             filters: [],
           },
@@ -717,9 +725,13 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
       return {
         // `name` is the title the frontend `ChatReportResult` uses for
         // the card header. The model is asked to supply a `title` —
-        // we use it when present, falling back to a generic label.
-        name: title?.trim() || `${label} — last ${range} days`,
-        label,
+        // we use it when present, falling back to a generic label. The
+        // fallback names the CHART, not the summary: the two measure
+        // different windows.
+        name:
+          title?.trim() ||
+          `${DAILY_ACTIVE_USERS_SERIES_LABEL} — last ${range} days`,
+        label: summaryLabel,
         window,
         summary,
         // Keys the frontend report renderer knows about.

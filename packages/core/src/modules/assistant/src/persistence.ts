@@ -76,7 +76,7 @@ export function createConversationStore(deps: ServiceDeps): ConversationStore {
       const owner = chatRunContext.getStore();
       if (!owner) {
         throw new Error(
-          'chatRunContext missing during save — the Fastify wrapper must run first'
+          'chatRunContext missing during save — assistant.routes.ts must run the handler inside chatRunContext.run()'
         );
       }
 

@@ -85,7 +85,8 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
     hydrateFromServer: true,
     optimisticUserMessage: true,
     // Better Agent forwards tool calls for any tool declared via
-    // `.client()` on the server (see `apps/api/src/agents/tools/ui.ts`)
+    // `.client()` on the server (see `@openpanel/core`'s
+    // `modules/assistant/src/tools/ui.ts`)
     // to the matching entry here. Typed via `ToolHandlers<ChatApp>`
     // on the map itself, so this line stays cast-free.
     toolHandlers: chatToolHandlers,

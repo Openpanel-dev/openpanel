@@ -1,10 +1,8 @@
-// The github/google OAuth callbacks (M6-003). V1's Fastify controller
-// (apps/api/src/controllers/oauth-callback.controller.tsx) stays the LIVE
-// route (DELEGATE PATTERN) and delegates its token-exchange/session logic to
-// auth.service.ts's `completeOAuthCallback` — the same function this route
-// calls, same shape as gsc.routes.ts (M5-002). This route is not yet
-// reachable: main.ts does not mount `dashboardRoutes` until a real `AppDeps`
-// exists (P3/P4/P8).
+// The github/google OAuth callbacks (M6-003), same shape as gsc.routes.ts
+// (M5-002): DELEGATE PATTERN, token-exchange/session logic lives in
+// auth.service.ts's `completeOAuthCallback`. `main.ts` mounts
+// `dashboardRoutes` unconditionally on every HTTP-serving boot, so this route
+// is live.
 //
 // NAMED GAP: per-route cookie signing is not wired yet (gsc.routes.ts's
 // header names the same gap), so `ctx.cookies.get()` here reads the raw,

@@ -10,6 +10,11 @@ import {
 } from '../../../profile/profile.service';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
+/** How many other profiles `compare_profile_to_average` fetches to sample from. */
+const AVERAGE_CANDIDATE_LIMIT = 100;
+/** How many of those candidates actually get a metrics query. */
+const AVERAGE_SAMPLE_SIZE = 30;
+
 export const getProfileFull = (deps: ServiceDeps) =>
   chatTool(
     {
@@ -246,20 +251,24 @@ export const compareProfileToAverage = (deps: ServiceDeps) =>
           projectId: context.projectId,
           profileId: id,
         }).catch(() => null),
-        findProfilesCore(deps, { projectId: context.projectId, limit: 100 }),
+        findProfilesCore(deps, {
+          projectId: context.projectId,
+          limit: AVERAGE_CANDIDATE_LIMIT,
+        }),
       ]);
 
       if (!thisMetrics) {
         return { error: 'Profile not found or has no events', profileId: id };
       }
 
-      // Compute averages from a sample of other profiles. We sample 100
-      // and compute their metrics in parallel; for a precise project-wide
-      // average we'd want a dedicated db helper, but this gives the LLM a
-      // useful comparison without extra schema work.
+      // Compute averages from a sample of other profiles: of the
+      // AVERAGE_CANDIDATE_LIMIT fetched above we query metrics for the first
+      // AVERAGE_SAMPLE_SIZE, in parallel. For a precise project-wide average
+      // we'd want a dedicated db helper, but this gives the LLM a useful
+      // comparison without extra schema work.
       const sampleIds = allProfiles
         .filter((p) => p.id !== id)
-        .slice(0, 30)
+        .slice(0, AVERAGE_SAMPLE_SIZE)
         .map((p) => p.id);
 
       const sampleMetrics = await Promise.all(

@@ -1,11 +1,9 @@
-// Ported from packages/trpc/src/routers/chat.ts (M5-005).
+// Ported from the V1 tRPC chat router (M5-005).
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// M11-001: every procedure is on its V1 twin's builder. `protectedProcedure`
+// runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser,
+// exactly as V1 does — `models` takes no input and needs no object-id check
+// of its own, so the handler is the query and nothing else (ADR-022 R10).
 
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import {

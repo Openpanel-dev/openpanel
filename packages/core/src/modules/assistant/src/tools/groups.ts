@@ -8,6 +8,13 @@ import {
 } from '../../../group/group.service';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
+/** How many members `get_group_metrics` pulls before bucketing activity. */
+const GROUP_METRICS_MEMBER_LIMIT = 1000;
+/** How many of those members' recent events back the 7d/30d activity counts. */
+const GROUP_METRICS_EVENT_LIMIT = 1000;
+/** How many same-type peers `compare_groups` looks at. */
+const PEER_GROUP_LIMIT = 100;
+
 export const getGroupFull = (deps: ServiceDeps) =>
   chatTool(
     {
@@ -133,8 +140,7 @@ export const getGroupMetrics = (deps: ServiceDeps) =>
   chatTool(
     {
       name: 'get_group_metrics',
-      description:
-        'Aggregate metrics for this group: total members, members active in the last 7d/30d, total revenue (sum of member.revenue), avg sessions per member.',
+      description: `Aggregate metrics for this group: total members, and how many of them were active in the last 7 days / 30 days. Activity is derived from the group members' most recent ${GROUP_METRICS_EVENT_LIMIT} events, so very large groups are undercounted.`,
       schema: z.object({
         groupId: z.string().optional(),
       }),
@@ -146,7 +152,7 @@ export const getGroupMetrics = (deps: ServiceDeps) =>
       const members = await getGroupMemberProfiles(deps, {
         projectId: context.projectId,
         groupId: id,
-        take: 1000,
+        take: GROUP_METRICS_MEMBER_LIMIT,
       });
 
       if (members.data.length === 0) {
@@ -164,7 +170,7 @@ export const getGroupMetrics = (deps: ServiceDeps) =>
         startDate: new Date(Date.now() - 30 * 86_400_000)
           .toISOString()
           .slice(0, 10),
-        limit: 1000,
+        limit: GROUP_METRICS_EVENT_LIMIT,
       });
       const activeIds7d = new Set<string>();
       const activeIds30d = new Set<string>();
@@ -193,7 +199,7 @@ export const compareGroups = (deps: ServiceDeps) =>
     {
       name: 'compare_groups',
       description:
-        'Compare this group\'s member count and activity to other groups of the same type. Useful in B2B for "is this account active vs the rest?".',
+        "Compare this group's member count against how many other groups of the same type exist, and list a few of those peers by name. Peer member counts and peer activity are NOT fetched — do not claim a ranking.",
       schema: z.object({
         groupId: z.string().optional(),
       }),
@@ -211,7 +217,7 @@ export const compareGroups = (deps: ServiceDeps) =>
       const peers = await findGroupsCore(deps, {
         projectId: context.projectId,
         type: thisGroup.group.type,
-        limit: 100,
+        limit: PEER_GROUP_LIMIT,
       });
 
       if (peers.length === 0) {

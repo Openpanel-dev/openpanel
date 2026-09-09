@@ -186,9 +186,9 @@ const PRESET_RANGES: ReadonlySet<IChartRange> = new Set([
  *   3. Nothing → default to the last 30 days (via
  *      `resolveDateRangeCore`).
  *
- * Timezone comes from `chatRunContext` (populated by the Fastify
- * wrapper once per request). Outside that context we fall back to UTC
- * — only relevant in tests / direct calls.
+ * Timezone comes from `chatRunContext` (populated by
+ * `assistant.routes.ts` once per request). Outside that context we fall
+ * back to UTC — only relevant in tests / direct calls.
  */
 export function resolveDateRange(filters?: PageContext['filters']): {
   startDate: string;
