@@ -17,7 +17,6 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import { zCreateNotificationRule } from './notification.constants';
 import {
   createOrUpdateNotificationRule,
@@ -28,32 +27,23 @@ import {
   listNotifications,
 } from './notification.service';
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const notificationRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return listNotifications(ctx, input.projectId);
     }),
 
   rules: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return listNotificationRules(ctx, input.projectId);
     }),
 
   createOrUpdateRule: protectedProcedure
     .input(zCreateNotificationRule)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
 
       // Clear the cache for the project
       await getNotificationRulesByProjectId.clear(ctx, input.projectId);
@@ -79,7 +69,7 @@ export const notificationRouter = createTRPCRouter({
   deleteRule: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const rule = await getNotificationRuleByIdOrThrow(ctx, input.id);
 
       await ctx.services.auth.requireProjectAccess({

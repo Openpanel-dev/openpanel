@@ -16,7 +16,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { TRPCNotFoundError } from '../../rpc/errors';
 // The canonical zChartEventFilter, not cohort.constants.ts's private
 // TDZ-workaround copy — matches V1's router, which imports it from
 // packages/validation's barrel rather than from cohort.validation.ts.
@@ -41,13 +41,6 @@ import {
 const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const cohortRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
@@ -57,7 +50,7 @@ export const cohortRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -83,7 +76,7 @@ export const cohortRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.id },
@@ -109,8 +102,6 @@ export const cohortRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCohortInput)
     .mutation(async ({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
-
       const db = ctx.db;
       const cohort = await db.cohort.create({
         data: {
@@ -130,7 +121,7 @@ export const cohortRouter = createTRPCRouter({
   update: protectedProcedure
     .input(zCohortUpdate)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const { id, ...data } = input;
 
       const db = ctx.db;
@@ -168,7 +159,7 @@ export const cohortRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.id },
@@ -205,7 +196,7 @@ export const cohortRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -222,7 +213,7 @@ export const cohortRouter = createTRPCRouter({
   mostEvents: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -235,7 +226,7 @@ export const cohortRouter = createTRPCRouter({
   eventsPerDay: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -248,7 +239,7 @@ export const cohortRouter = createTRPCRouter({
   popularRoutes: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -261,7 +252,7 @@ export const cohortRouter = createTRPCRouter({
   getCount: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },
@@ -289,7 +280,7 @@ export const cohortRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -320,7 +311,7 @@ export const cohortRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },
@@ -356,7 +347,7 @@ export const cohortRouter = createTRPCRouter({
   refresh: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },

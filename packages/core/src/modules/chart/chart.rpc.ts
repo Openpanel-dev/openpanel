@@ -36,21 +36,6 @@ const zShareable = z.object({
 
 const zShareableReportInput = zReportInput.and(zShareable);
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
-
 /**
  * Share-aware access: with `shareId`, the share must be valid for the report
  * and the saved report is returned; without it, the caller must be a member.
@@ -60,7 +45,11 @@ async function resolveShare(
   input: { projectId: string; shareId?: string; id?: string }
 ): Promise<NonNullable<IServiceReport> | null> {
   if (!input.shareId) {
-    await requireReadAccess(ctx, input.projectId);
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.services.auth.requireLogin(ctx.session.userId),
+      projectId: input.projectId,
+      level: 'read',
+    });
     return null;
   }
   if (!input.id) {
@@ -106,21 +95,33 @@ export const chartRouter = createTRPCRouter({
   projectCard: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.getProjectCard(input.projectId);
     }),
 
   events: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.listChartEvents(input.projectId);
     }),
 
   properties: protectedProcedure
     .input(z.object({ event: z.string().optional(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.listChartProperties(input);
     }),
 
@@ -133,7 +134,11 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.getChartPropertyValues(input);
     }),
 
@@ -156,7 +161,11 @@ export const chartRouter = createTRPCRouter({
   sankey: protectedProcedure
     .input(zReportInput)
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.getSankeyChart(input);
     }),
 
@@ -207,7 +216,11 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.bucketProfiles(input);
     }),
 
@@ -234,7 +247,11 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       return ctx.services.chart.funnelStepProfiles(input);
     }),
 });

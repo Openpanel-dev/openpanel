@@ -10,15 +10,19 @@
 // DEMO_USER_ID branch — which lives inside `validateSessionToken` itself, so
 // the no-cookie path still goes through it rather than short-circuiting here.
 //
+// M15-007: both halves arrive as `ctx.services.auth`, not as a deep import of
+// `modules/auth/src/*` (ADR-022 R22). The derive in `http/context.ts` builds
+// the `Ctx` before it installs this resolver and the resolver is lazy, so the
+// services graph is there by the time a guard asks for a session — a request
+// that never asks (every `/track`) still builds none.
+//
 // `null` means "nobody is signed in", NOT `EMPTY_SESSION`: the `session`
 // macro, the bull-board guard and the four `/live` handlers all treat the
 // resolved value as truthy-means-authenticated. tRPC is the one caller that
 // wants V1's empty shape instead, and `makeTrpcContext` maps `null` back to
 // `EMPTY_SESSION` there.
 
-import type { AppDeps, Session } from '../context';
-import { validateSessionToken } from '../modules/auth/src/login-session';
-import { decodeSessionToken } from '../modules/auth/src/token';
+import type { Ctx, Session } from '../context';
 import { runWithAlsSession } from '../modules/session/src/session-context';
 import type { CookieJar } from '../shared/cookie';
 
@@ -28,16 +32,17 @@ export const SESSION_COOKIE_NAME = 'session';
 const DEMO_ALS_SESSION_ID = '1';
 
 export async function resolveSession(
-  deps: AppDeps,
+  ctx: Ctx,
   cookies: CookieJar,
   _headers: Headers
 ): Promise<Session | null> {
   const token = cookies.get(SESSION_COOKIE_NAME);
+  const auth = ctx.services.auth;
 
   try {
     const result = await runWithAlsSession(
-      token ? decodeSessionToken(token) : DEMO_ALS_SESSION_ID,
-      () => validateSessionToken(deps, token ?? null)
+      token ? auth.decodeSessionToken(token) : DEMO_ALS_SESSION_ID,
+      () => auth.validateSessionToken(token ?? null)
     );
     return result.userId === null ? null : result;
   } catch {

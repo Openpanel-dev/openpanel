@@ -8,12 +8,7 @@
 // (ADR-011).
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { zCreateGroup, zUpdateGroup } from './group.constants';
 import {
   createGroup,
@@ -36,25 +31,6 @@ const DEFAULT_LIST_TAKE = 50;
 
 const zGroupRef = z.object({ id: z.string(), projectId: z.string() });
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireAccess(
-  ctx: TrpcContext,
-  projectId: string,
-  level: 'read' | 'write'
-) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level,
-  });
-}
-
 export const groupRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
@@ -67,13 +43,21 @@ export const groupRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupListPage(ctx, input);
     }),
 
   byId: protectedProcedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.session.userId,
+      projectId: input.projectId,
+      level: 'read',
+    });
 
     return getGroupById(ctx, input.id, input.projectId);
   }),
@@ -81,7 +65,11 @@ export const groupRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCreateGroup)
     .mutation(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'write');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
 
       return createGroup(ctx, input);
     }),
@@ -89,7 +77,11 @@ export const groupRouter = createTRPCRouter({
   update: protectedProcedure
     .input(zUpdateGroup)
     .mutation(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'write');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
 
       const { id, projectId, ...data } = input;
       return updateGroup(ctx, id, projectId, data);
@@ -98,7 +90,11 @@ export const groupRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(zGroupRef)
     .mutation(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'write');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
 
       return deleteGroup(ctx, input.id, input.projectId);
     }),
@@ -106,13 +102,21 @@ export const groupRouter = createTRPCRouter({
   types: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupTypes(ctx, input.projectId);
     }),
 
   metrics: protectedProcedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.session.userId,
+      projectId: input.projectId,
+      level: 'read',
+    });
 
     return getGroupMetrics(ctx, input.id, input.projectId);
   }),
@@ -120,7 +124,11 @@ export const groupRouter = createTRPCRouter({
   activity: protectedProcedure
     .input(zGroupRef)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupActivity(ctx, input.id, input.projectId);
     }),
@@ -128,7 +136,11 @@ export const groupRouter = createTRPCRouter({
   memberGrowth: protectedProcedure
     .input(zGroupRef)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupMemberGrowth(ctx, input.id, input.projectId);
     }),
@@ -144,7 +156,11 @@ export const groupRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupMemberProfilesPage(ctx, input);
     }),
@@ -152,7 +168,11 @@ export const groupRouter = createTRPCRouter({
   mostEvents: protectedProcedure
     .input(zGroupRef)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupMostEvents(ctx, input.id, input.projectId);
     }),
@@ -160,7 +180,11 @@ export const groupRouter = createTRPCRouter({
   popularRoutes: protectedProcedure
     .input(zGroupRef)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupPopularRoutes(ctx, input.id, input.projectId);
     }),
@@ -168,7 +192,11 @@ export const groupRouter = createTRPCRouter({
   properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupPropertyKeys(ctx, input.projectId);
     }),
@@ -176,7 +204,11 @@ export const groupRouter = createTRPCRouter({
   listByIds: protectedProcedure
     .input(z.object({ projectId: z.string(), ids: z.array(z.string()) }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getGroupsByIds(ctx, input.projectId, input.ids);
     }),

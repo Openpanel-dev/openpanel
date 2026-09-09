@@ -14,9 +14,9 @@ import superjson from 'superjson';
 import { ZodError, z } from 'zod';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
-import { EMPTY_SESSION } from '../modules/auth/src/login-session';
 import { runWithAlsSession } from '../modules/session/src/session-context';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
+import { EMPTY_SESSION } from '../shared/session';
 import { TRPCForbiddenError } from './errors';
 
 /**
@@ -125,14 +125,19 @@ export const procedure = t.procedure;
 // ---------------------------------------------------------------------------
 
 const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
-  if (!ctx.session?.userId) {
+  const session = ctx.session;
+  if (!session?.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
   }
 
   try {
+    // Narrowed, not merely copied: the spread of the checked union member is
+    // what gives every handler below a `session.userId` of type `string`, so
+    // a procedure reads it instead of re-deriving it through a per-file
+    // `requireLogin` (ADR-022 R10 — 38 of those, deleted at M15-007).
     return next({
       ctx: {
-        session: { ...ctx.session },
+        session: { ...session },
       },
     });
   } catch (error) {

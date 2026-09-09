@@ -14,14 +14,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
+import { TRPCForbiddenError } from '../../rpc/errors';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
@@ -35,7 +28,7 @@ export const clientRouter = createTRPCRouter({
   update: protectedProcedure
     .input(z.object({ id: z.string(), name: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const access = await ctx.services.auth.getClientAccess({
         userId,
         clientId: input.id,
@@ -66,7 +59,7 @@ export const clientRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       // Minting an ingestion credential - a `root` one at the caller's
       // choosing - is admin-tier, not something any org member should be
       // able to do.
@@ -97,7 +90,7 @@ export const clientRouter = createTRPCRouter({
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const client = await ctx.services.client.getClientById(input.id);
 
       if (!client?.organizationId) {

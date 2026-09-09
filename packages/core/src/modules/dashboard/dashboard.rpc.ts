@@ -12,35 +12,8 @@
 // the only check that fires.
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
-
-async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'write',
-  });
-}
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { TRPCNotFoundError } from '../../rpc/errors';
 
 export const dashboardRouter = createTRPCRouter({
   list: protectedProcedure
@@ -50,7 +23,6 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.dashboard.getDashboardsByProjectId(input.projectId);
     }),
 
@@ -62,7 +34,11 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       const dashboard = await ctx.services.dashboard.getDashboardById(
         input.id,
@@ -84,7 +60,11 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await requireWriteAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
       return ctx.services.dashboard.createDashboard(input);
     }),
 
@@ -99,7 +79,11 @@ export const dashboardRouter = createTRPCRouter({
       const dashboard = await ctx.services.dashboard.getDashboardByIdOrThrow(
         input.id
       );
-      await requireWriteAccess(ctx, dashboard.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dashboard.projectId,
+        level: 'write',
+      });
       return ctx.services.dashboard.updateDashboard(input);
     }),
 
@@ -114,7 +98,11 @@ export const dashboardRouter = createTRPCRouter({
       const dashboard = await ctx.services.dashboard.getDashboardByIdOrThrow(
         input.id
       );
-      await requireWriteAccess(ctx, dashboard.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dashboard.projectId,
+        level: 'write',
+      });
       return ctx.services.dashboard.deleteDashboard(input);
     }),
 });

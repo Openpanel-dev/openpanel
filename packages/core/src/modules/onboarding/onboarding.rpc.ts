@@ -17,7 +17,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import { zOnboardingProject } from './onboarding.constants';
 import {
   canSkipOnboarding,
@@ -28,13 +28,6 @@ function loadOrganizationAccess() {
   return import('../../shared/access-lookups');
 }
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const onboardingRouter = createTRPCRouter({
   skipOnboardingCheck: publicProcedure.query(({ ctx }) =>
     canSkipOnboarding(ctx, ctx.session.userId)
@@ -43,7 +36,7 @@ export const onboardingRouter = createTRPCRouter({
   project: protectedProcedure
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
 
       if (input.organizationId) {
         const { getOrganizationAccess } = await loadOrganizationAccess();

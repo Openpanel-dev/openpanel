@@ -21,19 +21,11 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import {
   zShareDashboard,
   zShareOverview,
   zShareReport,
 } from './share.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const shareRouter = createTRPCRouter({
   overview: publicProcedure
@@ -45,14 +37,12 @@ export const shareRouter = createTRPCRouter({
   overviewSettings: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.share.getShareOverviewSettings(input.projectId);
     }),
 
   createOverview: protectedProcedure
     .input(zShareOverview)
     .mutation(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.share.createShareOverview(input);
     }),
 
@@ -65,7 +55,6 @@ export const shareRouter = createTRPCRouter({
   dashboardSettings: protectedProcedure
     .input(z.object({ projectId: z.string(), dashboardId: z.string() }))
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.share.getShareDashboardSettings(
         input.projectId,
         input.dashboardId
@@ -75,7 +64,7 @@ export const shareRouter = createTRPCRouter({
   createDashboard: protectedProcedure
     .input(zShareDashboard)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -99,7 +88,6 @@ export const shareRouter = createTRPCRouter({
   reportSettings: protectedProcedure
     .input(z.object({ projectId: z.string(), reportId: z.string() }))
     .query(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.share.getShareReportSettings(
         input.projectId,
         input.reportId
@@ -109,7 +97,7 @@ export const shareRouter = createTRPCRouter({
   createReport: protectedProcedure
     .input(zShareReport)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,

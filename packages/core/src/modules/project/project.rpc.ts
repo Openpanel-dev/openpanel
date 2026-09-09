@@ -14,22 +14,15 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import { zOnboardingProject } from '../onboarding/onboarding.constants';
 import { zProjectUpdate } from './project.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const projectRouter = createTRPCRouter({
   getProjectWithClients: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const access = await ctx.services.auth.getProjectAccess({
         userId,
         projectId,
@@ -45,7 +38,7 @@ export const projectRouter = createTRPCRouter({
   activationStatus: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const access = await ctx.services.auth.getProjectAccess({
         userId,
         projectId,
@@ -60,7 +53,7 @@ export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ organizationId: z.string().nullable() }))
     .query(async ({ input: { organizationId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       if (organizationId === null) {
         return [];
       }
@@ -70,7 +63,7 @@ export const projectRouter = createTRPCRouter({
   update: protectedProcedure
     .input(zProjectUpdate)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.id,
@@ -98,7 +91,7 @@ export const projectRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       if (!input.organizationId) {
         throw new TRPCForbiddenError('Organization is required');
       }
@@ -132,7 +125,7 @@ export const projectRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       // Destroying a project is admin-tier, matching project.create.
       await ctx.services.auth.requireProjectAdmin({
         userId,
@@ -147,7 +140,7 @@ export const projectRouter = createTRPCRouter({
   cancelDeletion: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAdmin({
         userId,
         projectId: input.projectId,

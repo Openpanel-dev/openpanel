@@ -14,7 +14,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { TRPCNotFoundError } from '../../rpc/errors';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 
 const LIST_LIMIT_MIN = 1;
@@ -22,13 +22,6 @@ const LIST_LIMIT_MAX = 200;
 const LIST_LIMIT_DEFAULT = 50;
 const TITLE_MIN_LENGTH = 1;
 const TITLE_MAX_LENGTH = 80;
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 /**
  * Conversation management — listing, fetching, renaming, deleting.
@@ -51,7 +44,7 @@ export const conversationRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -68,7 +61,7 @@ export const conversationRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const conv = await ctx.services.conversation.getConversationById(
         input.id,
         { withMessages: true }
@@ -98,7 +91,7 @@ export const conversationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
 
       // If the conversation already exists, enforce ownership. If it
       // doesn't, verify the caller has access to the project being
@@ -142,7 +135,7 @@ export const conversationRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const conv = await ctx.services.conversation.getConversationById(
         input.id
       );

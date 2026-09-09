@@ -20,7 +20,6 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import {
   zProvider,
   zRequestResetPassword,
@@ -48,13 +47,6 @@ import {
   startOAuthSignIn,
 } from './auth.service';
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const authRouter = createTRPCRouter({
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     await signOutUser(ctx, ctx.setCookie, ctx.session?.session?.id);
@@ -81,33 +73,29 @@ export const authRouter = createTRPCRouter({
     ),
 
   totpStatus: protectedProcedure.query(({ ctx }) =>
-    getTotpStatus(ctx, requireLogin(ctx.session.userId))
+    getTotpStatus(ctx, ctx.session.userId)
   ),
 
   totpSetup: protectedProcedure.mutation(({ ctx }) =>
-    setupTotp(ctx, requireLogin(ctx.session.userId))
+    setupTotp(ctx, ctx.session.userId)
   ),
 
   totpEnable: protectedProcedure
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
-      enableTotp(ctx, requireLogin(ctx.session.userId), input.code)
+      enableTotp(ctx, ctx.session.userId, input.code)
     ),
 
   totpDisable: protectedProcedure
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(({ input, ctx }) =>
-      disableTotp(ctx, requireLogin(ctx.session.userId), input.code)
+      disableTotp(ctx, ctx.session.userId, input.code)
     ),
 
   totpRegenerateRecoveryCodes: protectedProcedure
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
-      regenerateTotpRecoveryCodes(
-        ctx,
-        requireLogin(ctx.session.userId),
-        input.code
-      )
+      regenerateTotpRecoveryCodes(ctx, ctx.session.userId, input.code)
     ),
 
   resetPassword: publicProcedure

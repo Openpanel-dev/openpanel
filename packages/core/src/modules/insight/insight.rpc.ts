@@ -12,7 +12,6 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import type { InsightPayload } from './insight.constants';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -23,13 +22,6 @@ const EXPLAIN_COLUMNS = [
   'utm_source',
 ] as const;
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const insightRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
@@ -39,7 +31,7 @@ export const insightRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId,
@@ -95,7 +87,7 @@ export const insightRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId,
@@ -112,7 +104,7 @@ export const insightRouter = createTRPCRouter({
   explain: protectedProcedure
     .input(z.object({ insightId: z.string() }))
     .mutation(async ({ input: { insightId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
 
       const db = ctx.db;
       const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =

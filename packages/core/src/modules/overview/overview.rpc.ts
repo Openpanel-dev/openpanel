@@ -20,7 +20,7 @@ import {
   publicProcedure,
   type TrpcContext,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
 import {
   getChartPrevStartEndDate,
@@ -44,21 +44,6 @@ import {
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from './overview.service';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
 
 /**
  * Share-aware access: with `shareId`, a public (optionally password-unlocked)
@@ -88,7 +73,11 @@ async function resolveOverviewAccess(
     }
     return;
   }
-  await requireReadAccess(ctx, input.projectId);
+  await ctx.services.auth.requireProjectAccess({
+    userId: ctx.services.auth.requireLogin(ctx.session.userId),
+    projectId: input.projectId,
+    level: 'read',
+  });
 }
 
 const overviewProcedure = publicProcedure.use(
@@ -421,7 +410,11 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       return ctx.services.assistant.runFilterCommand({
         query: input.query,

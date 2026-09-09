@@ -8,23 +8,13 @@
 // (ADR-011).
 
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import {
   getAvailableChatModels,
   PREFERRED_DEFAULT_MODEL_ID,
 } from './assistant.constants';
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const chatRouter = createTRPCRouter({
   models: protectedProcedure.query(({ ctx }) => {
-    requireLogin(ctx.session.userId);
-
     const providers = {
       openai: Boolean(ctx.config.ai.openai.apiKey),
       anthropic: Boolean(ctx.config.ai.anthropic.apiKey),

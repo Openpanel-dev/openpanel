@@ -12,12 +12,7 @@
 // not ported.
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { zChartEventFilter } from '../report/report.constants';
 import {
   getSessionById,
@@ -28,21 +23,6 @@ import {
 } from './session.service';
 
 const DEFAULT_LIST_TAKE = 50;
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
 
 export const sessionRouter = createTRPCRouter({
   list: protectedProcedure
@@ -59,7 +39,11 @@ export const sessionRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getSessionList(ctx, {
         ...input,
@@ -75,7 +59,11 @@ export const sessionRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getSessionDistinctValues(ctx, input.projectId, input.field);
     }),
@@ -83,7 +71,11 @@ export const sessionRouter = createTRPCRouter({
   byId: protectedProcedure
     .input(z.object({ sessionId: z.string(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getSessionById(ctx, input.sessionId, input.projectId);
     }),
@@ -97,7 +89,11 @@ export const sessionRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getSessionReplayChunksFrom(
         ctx,

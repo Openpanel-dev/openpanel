@@ -16,12 +16,8 @@
 // for it is gone.
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { TRPCNotFoundError } from '../../rpc/errors';
 import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
@@ -54,25 +50,6 @@ const zChartWindow = z.object({
   interval: zTimeInterval,
 });
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireAccess(
-  ctx: TrpcContext,
-  projectId: string,
-  level: 'read' | 'write'
-) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level,
-  });
-}
-
 function formatClickhouseDateTime(date: Date): string {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 }
@@ -89,13 +66,21 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'write');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
 
       return updateEventMeta(ctx, input);
     }),
 
   byId: protectedProcedure.input(zEventRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.session.userId,
+      projectId: input.projectId,
+      level: 'read',
+    });
 
     const event = await getEventById(ctx, input);
     if (!event) {
@@ -105,7 +90,11 @@ export const eventRouter = createTRPCRouter({
   }),
 
   details: protectedProcedure.input(zEventRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.session.userId,
+      projectId: input.projectId,
+      level: 'read',
+    });
 
     const details = await getEventDetails(ctx, input);
     if (!details) {
@@ -131,7 +120,11 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getEventListPage(ctx, input);
     }),
@@ -139,7 +132,11 @@ export const eventRouter = createTRPCRouter({
   conversionNames: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getConversionEventNames(ctx, input.projectId);
     }),
@@ -156,7 +153,11 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getConversionListPage(ctx, input);
     }),
@@ -170,7 +171,11 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getBotEventsPage(ctx, input);
     }),
@@ -184,7 +189,11 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -201,7 +210,11 @@ export const eventRouter = createTRPCRouter({
   pagesTimeseries: protectedProcedure
     .input(zChartWindow)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -217,7 +230,11 @@ export const eventRouter = createTRPCRouter({
   previousPages: protectedProcedure
     .input(zChartWindow)
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -239,7 +256,11 @@ export const eventRouter = createTRPCRouter({
   pageTimeseries: protectedProcedure
     .input(zChartWindow.extend({ origin: z.string(), path: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -257,7 +278,11 @@ export const eventRouter = createTRPCRouter({
   origin: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireAccess(ctx, input.projectId, 'read');
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getTopOrigins(ctx, input.projectId);
     }),

@@ -17,25 +17,14 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import {
-  TRPCAccessError,
-  TRPCBadRequestError,
-  TRPCNotFoundError,
-} from '../../rpc/errors';
+import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const importRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -52,7 +41,7 @@ export const importRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },
@@ -71,7 +60,7 @@ export const importRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCreateImport)
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -116,7 +105,7 @@ export const importRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },
@@ -138,7 +127,7 @@ export const importRouter = createTRPCRouter({
   retry: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },

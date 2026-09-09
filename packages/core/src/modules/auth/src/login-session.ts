@@ -10,6 +10,7 @@
 
 import type { Session, User } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
+import { EMPTY_SESSION } from '../../../shared/session';
 import { decodeSessionToken, hashSessionToken } from './token';
 
 /** Only Postgres — narrowed so `AppDeps` (http/session.ts, before
@@ -24,12 +25,6 @@ const DEMO_SESSION_ID = '1';
 export type SessionValidationResult =
   | { session: Session; user: User; userId: string }
   | { session: null; user: null; userId: null };
-
-export const EMPTY_SESSION: SessionValidationResult = {
-  session: null,
-  user: null,
-  userId: null,
-};
 
 export async function createSession(
   deps: LoginSessionDeps,

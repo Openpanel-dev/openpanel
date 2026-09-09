@@ -42,7 +42,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { TRPCNotFoundError } from '../../rpc/errors';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -58,13 +58,6 @@ const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
 
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
-}
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
 }
 
 // Helper to find widget by projectId and type
@@ -86,7 +79,6 @@ export const widgetRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ projectId: z.string(), type: zWidgetType }))
     .query(async ({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       const widget = await findWidgetByType(
         ctx.db,
         input.projectId,
@@ -111,7 +103,6 @@ export const widgetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       const db = ctx.db;
       const existing = await findWidgetByType(
         ctx.db,
@@ -158,7 +149,6 @@ export const widgetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       const db = ctx.db;
       const existing = await findWidgetByType(
         ctx.db,

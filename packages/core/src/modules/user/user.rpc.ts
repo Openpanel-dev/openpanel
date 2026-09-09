@@ -12,24 +12,16 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import { deleteSessionTokenCookie } from '../auth/auth.service';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const userRouter = createTRPCRouter({
   deletionBlockers: protectedProcedure.query(async ({ ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
+    const userId = ctx.session.userId;
     return ctx.services.user.listUserDeletionBlockers(userId);
   }),
 
   delete: protectedProcedure.mutation(async ({ ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
+    const userId = ctx.session.userId;
     await ctx.services.user.deleteUserAccount(userId);
     deleteSessionTokenCookie(ctx.config, ctx.setCookie);
     return true;
@@ -43,7 +35,7 @@ export const userRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       return ctx.services.user.updateUserProfile({ userId, ...input });
     }),
 
@@ -55,7 +47,6 @@ export const userRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      requireLogin(ctx.session.userId);
       ctx.setCookie('debugCookie', new Date().toISOString(), {
         domain: input.domain,
         sameSite: input.sameSite,
@@ -73,7 +64,6 @@ export const userRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      requireLogin(ctx.session.userId);
       ctx.setCookie('debugCookie', new Date().toISOString(), {
         domain: input.domain,
         sameSite: input.sameSite,

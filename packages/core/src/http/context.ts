@@ -52,17 +52,20 @@ export function requestContext(deps: AppDeps) {
         const cookies = wrapCookies(cookie);
         let session: Promise<Session | null> | undefined;
 
-        return {
-          ctx: extendCtx(createCtx(deps, { requestId, logger }), {
-            headers: request.headers,
-            ip: clientIp,
-            cookies,
-            session: () =>
-              (session ??= resolveSession(deps, cookies, request.headers)),
-            setCookie: (name: string, value: string, options?: CookieOptions) =>
-              writeCookie(cookie, name, value, options),
-          }),
-        };
+        // `resolveSession` reads `ctx.services.auth` (ADR-022 R22), so the
+        // resolver closes over the ctx it is installed on. Safe because it is
+        // lazy: nothing calls it during the derive.
+        const ctx: HttpCtx = extendCtx(createCtx(deps, { requestId, logger }), {
+          headers: request.headers,
+          ip: clientIp,
+          cookies,
+          session: () =>
+            (session ??= resolveSession(ctx, cookies, request.headers)),
+          setCookie: (name: string, value: string, options?: CookieOptions) =>
+            writeCookie(cookie, name, value, options),
+        });
+
+        return { ctx };
       }
     );
 }

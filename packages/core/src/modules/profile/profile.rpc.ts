@@ -8,12 +8,7 @@
 // (ADR-011).
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { zChartEventFilter } from '../report/report.constants';
 import {
   getPowerUsers,
@@ -31,24 +26,13 @@ const DEFAULT_LIST_TAKE = 50;
 
 const zProfileRef = z.object({ profileId: z.string(), projectId: z.string() });
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
-
 export const profileRouter = createTRPCRouter({
   byId: protectedProcedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
+    await ctx.services.auth.requireProjectAccess({
+      userId: ctx.session.userId,
+      projectId: input.projectId,
+      level: 'read',
+    });
 
     return getProfileById(ctx, input.profileId, input.projectId);
   }),
@@ -56,7 +40,11 @@ export const profileRouter = createTRPCRouter({
   metrics: protectedProcedure
     .input(zProfileRef)
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfileMetrics(ctx, input.profileId, input.projectId);
     }),
@@ -64,7 +52,11 @@ export const profileRouter = createTRPCRouter({
   activity: protectedProcedure
     .input(zProfileRef)
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfileActivity(ctx, input.profileId, input.projectId);
     }),
@@ -72,7 +64,11 @@ export const profileRouter = createTRPCRouter({
   mostEvents: protectedProcedure
     .input(zProfileRef)
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfileMostEvents(ctx, input.profileId, input.projectId);
     }),
@@ -80,7 +76,11 @@ export const profileRouter = createTRPCRouter({
   popularRoutes: protectedProcedure
     .input(zProfileRef)
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfilePopularRoutes(ctx, input.profileId, input.projectId);
     }),
@@ -88,7 +88,11 @@ export const profileRouter = createTRPCRouter({
   properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfilePropertyNames(ctx, input.projectId);
     }),
@@ -105,7 +109,11 @@ export const profileRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfileListPage(ctx, input);
     }),
@@ -119,7 +127,11 @@ export const profileRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getPowerUsers(ctx, input);
     }),
@@ -127,7 +139,11 @@ export const profileRouter = createTRPCRouter({
   values: protectedProcedure
     .input(z.object({ property: z.string(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireReadAccess(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
 
       return getProfileValues(ctx, input);
     }),

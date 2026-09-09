@@ -140,6 +140,24 @@ export function resetAccessChecksForTests(): void {
 }
 
 /**
+ * The one login check in the tree (ADR-022 R10).
+ *
+ * `protectedProcedure` already refuses an anonymous caller and hands the
+ * handler a `session.userId` that is a `string`, so a protected procedure
+ * needs nothing here. This is for the paths the builder cannot decide: the
+ * share-aware `chartProcedure` / `overviewProcedure`, which are public
+ * because a valid share link is an alternative to being signed in, and only
+ * demand a user when no share was presented. Until M15-007 it was copied,
+ * unexported, into 28 `*.rpc.ts` files.
+ */
+export function requireLogin(userId: string | null | undefined): string {
+  if (!userId) {
+    throw new TRPCAccessError('Not authenticated');
+  }
+  return userId;
+}
+
+/**
  * Registered in `services.ts`. Ignores BOTH arguments, and takes them only
  * because ADR-022 R3 keeps the composition root a flat list: every member
  * here is either pure, reads its own env, or — for the access checks —
@@ -169,6 +187,15 @@ export function createAuthService(
 
   return {
     ...accessChecks,
+    requireLogin,
+    /**
+     * The session cookie's other half. `http/session.ts` reaches it here
+     * rather than deep-importing `./src/login-session` (ADR-022 R22), which
+     * is also what keeps the demo-user branch inside one function.
+     */
+    validateSessionToken: (
+      token: string | null | undefined
+    ): Promise<SessionValidationResult> => validateSessionToken(deps, token),
     async getProjectAccess(args: {
       userId: string;
       projectId: string;
@@ -246,6 +273,7 @@ import { getUserAccount } from '../user/user.service';
 import {
   createSession,
   invalidateSession,
+  type SessionValidationResult,
   validateSessionToken,
 } from './src/login-session';
 import { getIsRegistrationAllowed } from './src/registration';

@@ -31,15 +31,8 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCBadRequestError } from '../../rpc/errors';
+import { TRPCBadRequestError } from '../../rpc/errors';
 import { emailCategories } from './email.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const emailRouter = createTRPCRouter({
   unsubscribe: publicProcedure
@@ -68,7 +61,6 @@ export const emailRouter = createTRPCRouter({
     }),
 
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
-    requireLogin(ctx.session.userId);
     if (!ctx.session.user?.email) {
       throw new Error('User not authenticated');
     }
@@ -91,7 +83,6 @@ export const emailRouter = createTRPCRouter({
   updatePreferences: protectedProcedure
     .input(z.object({ categories: z.record(z.string(), z.boolean()) }))
     .mutation(async ({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       const email = ctx.session.user?.email;
       if (!email) {
         throw new Error('User not authenticated');

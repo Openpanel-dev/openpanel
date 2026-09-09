@@ -13,7 +13,6 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import {
   zCreateGCSExportIntegration,
   zCreateS3ExportIntegration,
@@ -30,38 +29,23 @@ import {
   upsertIntegration,
 } from './integration.service';
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
 export const integrationRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input, ctx }) =>
-      getIntegrationById(ctx, requireLogin(ctx.session.userId), input.id)
+      getIntegrationById(ctx, ctx.session.userId, input.id)
     ),
 
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) =>
-      listIntegrationsForProject(
-        ctx,
-        requireLogin(ctx.session.userId),
-        input.projectId
-      )
+      listIntegrationsForProject(ctx, ctx.session.userId, input.projectId)
     ),
 
   createOrUpdateSlack: protectedProcedure
     .input(zCreateSlackIntegration)
     .mutation(({ input, ctx }) =>
-      createOrUpdateSlackIntegration(
-        ctx,
-        requireLogin(ctx.session.userId),
-        input
-      )
+      createOrUpdateSlackIntegration(ctx, ctx.session.userId, input)
     ),
 
   // Generic create/update for any form-configured integration. Per-type
@@ -76,7 +60,7 @@ export const integrationRouter = createTRPCRouter({
       })
     )
     .mutation(({ input, ctx }) =>
-      upsertIntegration(ctx, requireLogin(ctx.session.userId), input)
+      upsertIntegration(ctx, ctx.session.userId, input)
     ),
 
   // Back-compat alias for the export forms; delegates to the same generic path.
@@ -84,7 +68,7 @@ export const integrationRouter = createTRPCRouter({
   createOrUpdateExport: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
     .mutation(({ input, ctx }) =>
-      upsertIntegration(ctx, requireLogin(ctx.session.userId), input)
+      upsertIntegration(ctx, ctx.session.userId, input)
     ),
 
   testConnection: protectedProcedure
@@ -95,7 +79,7 @@ export const integrationRouter = createTRPCRouter({
       })
     )
     .mutation(({ input, ctx }) =>
-      testIntegrationConnection(ctx, requireLogin(ctx.session.userId), input)
+      testIntegrationConnection(ctx, ctx.session.userId, input)
     ),
 
   // Back-compat alias for the export forms; same gate as `testConnection`.
@@ -103,16 +87,12 @@ export const integrationRouter = createTRPCRouter({
   testExportConnection: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
     .mutation(({ input, ctx }) =>
-      testExportIntegrationConnection(
-        ctx,
-        requireLogin(ctx.session.userId),
-        input
-      )
+      testExportIntegrationConnection(ctx, ctx.session.userId, input)
     ),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ input: { id }, ctx }) =>
-      deleteIntegration(ctx, requireLogin(ctx.session.userId), id)
+      deleteIntegration(ctx, ctx.session.userId, id)
     ),
 });

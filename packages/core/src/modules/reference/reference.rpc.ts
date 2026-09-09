@@ -22,22 +22,15 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import { zRange } from '../report/report.constants';
 import { zCreateReference } from './reference.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const referenceRouter = createTRPCRouter({
   getReferences: protectedProcedure
     .input(z.object({ projectId: z.string(), cursor: z.number().optional() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const access = await ctx.services.auth.getProjectAccess({
         userId,
         projectId: input.projectId,
@@ -51,7 +44,6 @@ export const referenceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCreateReference)
     .mutation(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
       return ctx.services.reference.createReference(input);
     }),
 
@@ -65,7 +57,7 @@ export const referenceRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const existing = await ctx.services.reference.getReferenceByIdOrThrow(
         input.id
       );
@@ -80,7 +72,7 @@ export const referenceRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
+      const userId = ctx.session.userId;
       const existing = await ctx.services.reference.getReferenceByIdOrThrow(
         input.id
       );

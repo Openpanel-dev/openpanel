@@ -13,19 +13,11 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
 import {
   zCancelSubscription,
   zCheckout,
   zPauseSubscription,
 } from './subscription.constants';
-
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
 
 export const subscriptionRouter = createTRPCRouter({
   getCurrent: protectedProcedure
@@ -40,7 +32,7 @@ export const subscriptionRouter = createTRPCRouter({
     .input(zCheckout)
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.checkout(
-        requireLogin(ctx.session.userId),
+        ctx.session.userId,
         input,
         ctx.remoteAddress
       )
@@ -61,26 +53,20 @@ export const subscriptionRouter = createTRPCRouter({
   cancelSubscription: protectedProcedure
     .input(zCancelSubscription)
     .mutation(({ input, ctx }) =>
-      ctx.services.subscription.cancelSubscription(
-        requireLogin(ctx.session.userId),
-        input
-      )
+      ctx.services.subscription.cancelSubscription(ctx.session.userId, input)
     ),
 
   pauseSubscription: protectedProcedure
     .input(zPauseSubscription)
     .mutation(({ input, ctx }) =>
-      ctx.services.subscription.pauseSubscription(
-        requireLogin(ctx.session.userId),
-        input
-      )
+      ctx.services.subscription.pauseSubscription(ctx.session.userId, input)
     ),
 
   resumeSubscription: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.resumeSubscription(
-        requireLogin(ctx.session.userId),
+        ctx.session.userId,
         input.organizationId
       )
     ),
@@ -89,7 +75,7 @@ export const subscriptionRouter = createTRPCRouter({
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.applySaveDiscount(
-        requireLogin(ctx.session.userId),
+        ctx.session.userId,
         input.organizationId
       )
     ),
@@ -97,9 +83,6 @@ export const subscriptionRouter = createTRPCRouter({
   portal: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
-      ctx.services.subscription.portal(
-        requireLogin(ctx.session.userId),
-        input.organizationId
-      )
+      ctx.services.subscription.portal(ctx.session.userId, input.organizationId)
     ),
 });

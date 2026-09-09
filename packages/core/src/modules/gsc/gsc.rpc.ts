@@ -11,12 +11,7 @@
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { Arctic, googleGscClient } from '../auth/auth.service';
 import { zRange, zTimeInterval } from '../report/report.constants';
 
@@ -40,41 +35,26 @@ function toOverviewInterval(
     : 'day';
 }
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireRead(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
-
-async function requireWrite(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'write',
-  });
-}
-
 export const gscRouter = createTRPCRouter({
   getConnection: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      await requireRead(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'read',
+      });
       return ctx.services.gsc.getConnection(projectId);
     }),
 
   initiateOAuth: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
-      await requireWrite(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'write',
+      });
 
       const state = Arctic.generateState();
       const codeVerifier = Arctic.generateCodeVerifier();
@@ -97,14 +77,22 @@ export const gscRouter = createTRPCRouter({
   getSites: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      await requireRead(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'read',
+      });
       return ctx.services.gsc.listSites(projectId);
     }),
 
   selectSite: protectedProcedure
     .input(z.object({ projectId: z.string(), siteUrl: z.string() }))
     .mutation(async ({ input: { projectId, siteUrl }, ctx }) => {
-      await requireWrite(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'write',
+      });
 
       await ctx.services.gsc.selectSite(projectId, siteUrl);
       return { ok: true };
@@ -113,7 +101,11 @@ export const gscRouter = createTRPCRouter({
   disconnect: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
-      await requireWrite(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'write',
+      });
 
       await ctx.services.gsc.disconnect(projectId);
       return { ok: true };
@@ -122,7 +114,11 @@ export const gscRouter = createTRPCRouter({
   getOverview: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -142,7 +138,11 @@ export const gscRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -158,7 +158,11 @@ export const gscRouter = createTRPCRouter({
   getPageDetails: protectedProcedure
     .input(zGscDateInput.extend({ page: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -174,7 +178,11 @@ export const gscRouter = createTRPCRouter({
   getQueryDetails: protectedProcedure
     .input(zGscDateInput.extend({ query: z.string() }))
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -194,7 +202,11 @@ export const gscRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -210,7 +222,11 @@ export const gscRouter = createTRPCRouter({
   getSearchEngines: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -225,7 +241,11 @@ export const gscRouter = createTRPCRouter({
   getAiEngines: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -236,7 +256,11 @@ export const gscRouter = createTRPCRouter({
   getPreviousOverview: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -252,7 +276,11 @@ export const gscRouter = createTRPCRouter({
   getCannibalization: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      await requireRead(ctx, input.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input

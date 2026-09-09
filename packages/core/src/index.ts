@@ -279,7 +279,6 @@ export type { SessionValidationResult } from './modules/auth/src/login-session';
 export {
   createDemoSession,
   createSession,
-  EMPTY_SESSION,
   invalidateSession,
   validateSessionToken,
 } from './modules/auth/src/login-session';
@@ -1071,4 +1070,7 @@ export {
   safeFetch,
   safeFetchStream,
 } from './shared/safe-fetch';
+// Below the transports since M15-007 (ADR-022 R22): `rpc/base.ts` needs the
+// empty shape and may not deep-import a module to get it.
+export { EMPTY_SESSION } from './shared/session';
 export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';

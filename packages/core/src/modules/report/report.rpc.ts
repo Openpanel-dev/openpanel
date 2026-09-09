@@ -13,12 +13,8 @@
 // check that fires.
 
 import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  type TrpcContext,
-} from '../../rpc/base';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { TRPCNotFoundError } from '../../rpc/errors';
 import { zReport } from './report.constants';
 
 const zReportLayout = z.object({
@@ -32,29 +28,6 @@ const zReportLayout = z.object({
   maxH: z.number().optional(),
 });
 
-function requireLogin(userId: string | null | undefined): string {
-  if (!userId) {
-    throw new TRPCAccessError('Not authenticated');
-  }
-  return userId;
-}
-
-async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'read',
-  });
-}
-
-async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
-  await ctx.services.auth.requireProjectAccess({
-    userId: requireLogin(ctx.session.userId),
-    projectId,
-    level: 'write',
-  });
-}
-
 export const reportRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
@@ -64,7 +37,6 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { dashboardId, projectId }, ctx }) => {
-      requireLogin(ctx.session.userId);
       const dashboard = await ctx.services.dashboard.getDashboardById(
         dashboardId,
         projectId
@@ -85,7 +57,11 @@ export const reportRouter = createTRPCRouter({
     .mutation(async ({ input: { report, dashboardId }, ctx }) => {
       const dbDashboard =
         await ctx.services.dashboard.getDashboardByIdOrThrow(dashboardId);
-      await requireWriteAccess(ctx, dbDashboard.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbDashboard.projectId,
+        level: 'write',
+      });
       return ctx.services.report.createReport({
         dashboardId,
         projectId: dbDashboard.projectId,
@@ -102,7 +78,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { report, reportId }, ctx }) => {
       const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await requireWriteAccess(ctx, dbReport.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbReport.projectId,
+        level: 'write',
+      });
       return ctx.services.report.updateReport({ reportId, report });
     }),
 
@@ -115,7 +95,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId, dashboardId }, ctx }) => {
       const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await requireWriteAccess(ctx, dbReport.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbReport.projectId,
+        level: 'write',
+      });
       return ctx.services.report.moveReport({ report: dbReport, dashboardId });
     }),
 
@@ -127,7 +111,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
       const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await requireWriteAccess(ctx, dbReport.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbReport.projectId,
+        level: 'write',
+      });
       return ctx.services.report.deleteReport(reportId);
     }),
 
@@ -139,7 +127,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
       const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await requireWriteAccess(ctx, dbReport.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbReport.projectId,
+        level: 'write',
+      });
       return ctx.services.report.duplicateReport(dbReport);
     }),
 
@@ -154,7 +146,11 @@ export const reportRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCNotFoundError('Report not found');
       }
-      await requireReadAccess(ctx, report.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: report.projectId,
+        level: 'read',
+      });
       return report;
     }),
 
@@ -167,7 +163,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId, layout }, ctx }) => {
       const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await requireWriteAccess(ctx, dbReport.projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dbReport.projectId,
+        level: 'write',
+      });
       return ctx.services.report.updateReportLayout({ reportId, layout });
     }),
 
@@ -179,7 +179,11 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { dashboardId, projectId }, ctx }) => {
-      await requireReadAccess(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'read',
+      });
 
       // The access check above only proves the caller owns `projectId`. Bind
       // the caller-supplied `dashboardId` to that project as well, otherwise a
@@ -203,7 +207,11 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
-      await requireWriteAccess(ctx, projectId);
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+        level: 'write',
+      });
 
       // Same as `getLayouts`: bind the dashboard to the access-checked project
       // before deleting anything, so a foreign dashboard cannot be wiped.
