@@ -118,30 +118,21 @@ export async function resolveInsightsDateRange(
 
 // --- service ------------------------------------------------------------
 
-export interface ExportService {
-  resolveExportProjectId(
-    client: AuthenticatedClient,
-    query: { project_id?: string; projectId?: string }
-  ): Promise<ProjectIdResolution>;
-  resolveInsightsProjectId(
-    client: AuthenticatedClient,
-    params: { projectId?: string }
-  ): Promise<string>;
-  resolveInsightsDateRange(
-    projectId: string,
-    data: { startDate?: string; endDate?: string; range?: IChartRange }
-  ): Promise<{ startDate: string; endDate: string }>;
-}
-
 export function createExportService(
   deps: ServiceDeps,
   _services: () => Services
-): ExportService {
+) {
   return {
-    resolveExportProjectId: (client, query) =>
+    resolveExportProjectId: (
+      client: AuthenticatedClient,
+      query: { project_id?: string; projectId?: string }
+    ): Promise<ProjectIdResolution> =>
       resolveExportProjectId(deps, client, query),
     resolveInsightsProjectId,
-    resolveInsightsDateRange: (projectId, data) =>
+    resolveInsightsDateRange: (
+      projectId: string,
+      data: { startDate?: string; endDate?: string; range?: IChartRange }
+    ): Promise<{ startDate: string; endDate: string }> =>
       resolveInsightsDateRange(deps, projectId, data),
   };
 }

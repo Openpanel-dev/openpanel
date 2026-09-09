@@ -316,15 +316,10 @@ class LegacyInsightsScanner {
   }
 }
 
-export interface LegacyInsightsScannerService {
-  generateInsights(projectId: string): Promise<Insight[]>;
-}
-
-export function createLegacyInsightsScanner(
-  deps: ChScope
-): LegacyInsightsScannerService {
+export function createLegacyInsightsScanner(deps: ChScope) {
   const scanner = new LegacyInsightsScanner(deps);
   return {
-    generateInsights: (projectId) => scanner.generateInsights(projectId),
+    generateInsights: (projectId: string): Promise<Insight[]> =>
+      scanner.generateInsights(projectId),
   };
 }

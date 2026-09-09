@@ -127,51 +127,10 @@ export interface CreatedClient {
   secret: string;
 }
 
-export interface ClientService {
-  getClientsByOrganizationId(
-    organizationId: string
-  ): ReturnType<typeof getClientsByOrganizationId>;
-  getClientsByProjectId(
-    projectId: string
-  ): ReturnType<typeof getClientsByProjectId>;
-  getClientById(id: string): ReturnType<typeof getClientById>;
-  getClientByIdCached(id: string): Promise<IServiceClientWithProject | null>;
-  /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. Its
-   *  own create/update/delete already call this; `project.service.ts`
-   *  reaches it too, through the v1-compat singleton, to invalidate a
-   *  project's clients on a project mutation — see that file's header. */
-  clearClientByIdCache(id: string): Promise<number>;
-  listClientsForOrganization(
-    organizationId: string,
-    projectId?: string
-  ): ReturnType<typeof listClientsForOrganization>;
-  getClientForOrganization(
-    id: string,
-    organizationId: string
-  ): ReturnType<typeof getClientForOrganization>;
-  createClientForOrganization(
-    organizationId: string,
-    input: {
-      name: string;
-      projectId?: string | null;
-      type?: 'read' | 'write' | 'root';
-    }
-  ): Promise<CreatedClient | null>;
-  updateClientForOrganization(
-    id: string,
-    organizationId: string,
-    input: { name?: string }
-  ): Promise<IServiceClient | null>;
-  deleteClientForOrganization(
-    id: string,
-    organizationId: string
-  ): Promise<boolean>;
-}
-
 export function createClientService(
   deps: ServiceDeps,
   _services: () => Services
-): ClientService {
+) {
   /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
   const getClientByIdCached = cacheable(
     (id: string) => getClientById(deps, id),
@@ -258,16 +217,34 @@ export function createClientService(
   }
 
   return {
-    getClientsByOrganizationId: (organizationId) =>
+    getClientsByOrganizationId: (
+      organizationId: string
+    ): ReturnType<typeof getClientsByOrganizationId> =>
       getClientsByOrganizationId(deps, organizationId),
-    getClientsByProjectId: (projectId) =>
+    getClientsByProjectId: (
+      projectId: string
+    ): ReturnType<typeof getClientsByProjectId> =>
       getClientsByProjectId(deps, projectId),
-    getClientById: (id) => getClientById(deps, id),
-    getClientByIdCached: (id) => getClientByIdCached(id),
-    clearClientByIdCache: (id) => getClientByIdCached.clear(id),
-    listClientsForOrganization: (organizationId, projectId) =>
+    getClientById: (id: string): ReturnType<typeof getClientById> =>
+      getClientById(deps, id),
+    getClientByIdCached: (
+      id: string
+    ): Promise<IServiceClientWithProject | null> => getClientByIdCached(id),
+    /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. Its
+     *  own create/update/delete already call this; `project.service.ts`
+     *  reaches it too, through the v1-compat singleton, to invalidate a
+     *  project's clients on a project mutation — see that file's header. */
+    clearClientByIdCache: (id: string): Promise<number> =>
+      getClientByIdCached.clear(id),
+    listClientsForOrganization: (
+      organizationId: string,
+      projectId?: string
+    ): ReturnType<typeof listClientsForOrganization> =>
       listClientsForOrganization(deps, organizationId, projectId),
-    getClientForOrganization: (id, organizationId) =>
+    getClientForOrganization: (
+      id: string,
+      organizationId: string
+    ): ReturnType<typeof getClientForOrganization> =>
       getClientForOrganization(deps, id, organizationId),
     createClientForOrganization,
     updateClientForOrganization,

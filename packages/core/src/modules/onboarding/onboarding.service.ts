@@ -415,10 +415,6 @@ export async function runOnboardingCron(
   return summary;
 }
 
-export interface OnboardingService {
-  runOnboardingCron(): Promise<OnboardingCronSummary | null>;
-}
-
 /** Registered in `services.ts`. Closes over `deps.logger`, the same value
  *  `ctx.logger` is, so `ctx.services.onboarding.runOnboardingCron()` takes no
  *  arguments — same shape as organization's `runDeleteCron`, which needs no
@@ -426,8 +422,9 @@ export interface OnboardingService {
 export function createOnboardingService(
   deps: ServiceDeps,
   _services: () => Services
-): OnboardingService {
+) {
   return {
-    runOnboardingCron: () => runOnboardingCron(deps, deps.logger),
+    runOnboardingCron: (): Promise<OnboardingCronSummary | null> =>
+      runOnboardingCron(deps, deps.logger),
   };
 }

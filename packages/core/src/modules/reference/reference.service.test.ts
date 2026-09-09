@@ -128,7 +128,9 @@ afterAll(() => {
   mock.module('../../shared/date', () => realDate);
 });
 
-let subject: import('./reference.service').ReferenceService;
+let subject: ReturnType<
+  typeof import('./reference.service').createReferenceService
+>;
 beforeAll(async () => {
   const { createReferenceService } = await import('./reference.service');
   subject = createReferenceService(

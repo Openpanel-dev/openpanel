@@ -1369,65 +1369,51 @@ export async function getAnalyticsOverviewCore(
   };
 }
 
-export interface OverviewService {
-  isPageFilter(filters: IChartEventFilter[]): boolean;
-  getRawWhereClause(
-    type: 'events' | 'sessions',
-    filters: IChartEventFilter[]
-  ): SqlFragment | null;
-  getMetrics(input: IGetMetricsInput): ReturnType<typeof getMetrics>;
-  getTopPages(input: IGetTopPagesInput): ReturnType<typeof getTopPages>;
-  getTopEntryExit(
-    input: IGetTopEntryExitInput
-  ): ReturnType<typeof getTopEntryExit>;
-  getTopGeneric(input: IGetTopGenericInput): ReturnType<typeof getTopGeneric>;
-  getTopGenericSeries(
-    input: IGetTopGenericSeriesInput
-  ): ReturnType<typeof getTopGenericSeries>;
-  getUserJourney(
-    input: IGetUserJourneyInput
-  ): ReturnType<typeof getUserJourney>;
-  getTopEvents(
-    input: Parameters<typeof getTopEvents>[1]
-  ): ReturnType<typeof getTopEvents>;
-  getTopLinkOut(
-    input: Parameters<typeof getTopLinkOut>[1]
-  ): ReturnType<typeof getTopLinkOut>;
-  getMapData(
-    input: Parameters<typeof getMapData>[1]
-  ): ReturnType<typeof getMapData>;
-  getLiveData(projectId: string): Promise<ILiveData>;
-  getTrafficBreakdownCore(
-    input: Parameters<typeof getTrafficBreakdownCore>[1]
-  ): ReturnType<typeof getTrafficBreakdownCore>;
-  getSegmentDailySeriesCore(
-    input: Parameters<typeof getSegmentDailySeriesCore>[1]
-  ): Promise<SegmentDailyPoint[]>;
-  getAnalyticsOverviewCore(
-    input: GetAnalyticsOverviewInput
-  ): ReturnType<typeof getAnalyticsOverviewCore>;
-}
-
 export function createOverviewService(
   deps: ServiceDeps,
   _services: () => Services
-): OverviewService {
+) {
   return {
     isPageFilter,
     getRawWhereClause,
-    getMetrics: (input) => getMetrics(deps, input),
-    getTopPages: (input) => getTopPages(deps, input),
-    getTopEntryExit: (input) => getTopEntryExit(deps, input),
-    getTopGeneric: (input) => getTopGeneric(deps, input),
-    getTopGenericSeries: (input) => getTopGenericSeries(deps, input),
-    getUserJourney: (input) => getUserJourney(deps, input),
-    getTopEvents: (input) => getTopEvents(deps, input),
-    getTopLinkOut: (input) => getTopLinkOut(deps, input),
-    getMapData: (input) => getMapData(deps, input),
-    getLiveData: (projectId) => getLiveData(deps, projectId),
-    getTrafficBreakdownCore: (input) => getTrafficBreakdownCore(deps, input),
-    getSegmentDailySeriesCore: (input) =>
-      getSegmentDailySeriesCore(deps, input),
-    getAnalyticsOverviewCore: (input) => getAnalyticsOverviewCore(deps, input),
+    getMetrics: (input: IGetMetricsInput): ReturnType<typeof getMetrics> =>
+      getMetrics(deps, input),
+    getTopPages: (input: IGetTopPagesInput): ReturnType<typeof getTopPages> =>
+      getTopPages(deps, input),
+    getTopEntryExit: (
+      input: IGetTopEntryExitInput
+    ): ReturnType<typeof getTopEntryExit> => getTopEntryExit(deps, input),
+    getTopGeneric: (
+      input: IGetTopGenericInput
+    ): ReturnType<typeof getTopGeneric> => getTopGeneric(deps, input),
+    getTopGenericSeries: (
+      input: IGetTopGenericSeriesInput
+    ): ReturnType<typeof getTopGenericSeries> =>
+      getTopGenericSeries(deps, input),
+    getUserJourney: (
+      input: IGetUserJourneyInput
+    ): ReturnType<typeof getUserJourney> => getUserJourney(deps, input),
+    getTopEvents: (
+      input: Parameters<typeof getTopEvents>[1]
+    ): ReturnType<typeof getTopEvents> => getTopEvents(deps, input),
+    getTopLinkOut: (
+      input: Parameters<typeof getTopLinkOut>[1]
+    ): ReturnType<typeof getTopLinkOut> => getTopLinkOut(deps, input),
+    getMapData: (
+      input: Parameters<typeof getMapData>[1]
+    ): ReturnType<typeof getMapData> => getMapData(deps, input),
+    getLiveData: (projectId: string): Promise<ILiveData> =>
+      getLiveData(deps, projectId),
+    getTrafficBreakdownCore: (
+      input: Parameters<typeof getTrafficBreakdownCore>[1]
+    ): ReturnType<typeof getTrafficBreakdownCore> =>
+      getTrafficBreakdownCore(deps, input),
+    getSegmentDailySeriesCore: (
+      input: Parameters<typeof getSegmentDailySeriesCore>[1]
+    ): Promise<SegmentDailyPoint[]> => getSegmentDailySeriesCore(deps, input),
+    getAnalyticsOverviewCore: (
+      input: GetAnalyticsOverviewInput
+    ): ReturnType<typeof getAnalyticsOverviewCore> =>
+      getAnalyticsOverviewCore(deps, input),
   };
 }

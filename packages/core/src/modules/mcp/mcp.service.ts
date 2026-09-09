@@ -196,17 +196,6 @@ function logToolResult(
   );
 }
 
-export interface McpService {
-  extractToken(
-    query: Record<string, unknown>,
-    authHeader: string | undefined
-  ): ReturnType<typeof extractToken>;
-  handleStatelessMcpRequest(
-    token: string | undefined,
-    body: unknown
-  ): Promise<McpHttpResult>;
-}
-
 /**
  * Ignores BOTH arguments, and takes them only because ADR-022 R3 keeps the
  * composition root a flat list: `extractToken` is pure and
@@ -218,7 +207,7 @@ export interface McpService {
 export function createMcpService(
   _deps: ServiceDeps,
   _services: () => Services
-): McpService {
+) {
   return {
     extractToken,
     handleStatelessMcpRequest,

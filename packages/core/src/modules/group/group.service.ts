@@ -516,17 +516,14 @@ export async function getGroupCore(
   };
 }
 
-export interface GroupService {
-  byId(id: string, projectId: string): Promise<IServiceGroup | null>;
-  upsert(input: IServiceUpsertGroup): Promise<void>;
-}
-
 export function createGroupService(
   deps: ServiceDeps,
   _services: () => Services
-): GroupService {
+) {
   return {
-    byId: (id, projectId) => getGroupById(deps, id, projectId),
-    upsert: (input) => upsertGroup(deps, input),
+    byId: (id: string, projectId: string): Promise<IServiceGroup | null> =>
+      getGroupById(deps, id, projectId),
+    upsert: (input: IServiceUpsertGroup): Promise<void> =>
+      upsertGroup(deps, input),
   };
 }

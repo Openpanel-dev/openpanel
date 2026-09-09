@@ -939,53 +939,45 @@ export async function updateOrganizationMemberAccess(
   ]);
 }
 
-export interface OrganizationService {
-  get(organizationId: string): ReturnType<typeof getOrganizationById>;
-  list(userId: string | null): ReturnType<typeof getOrganizations>;
-  update(input: {
-    id: string;
-    name: string;
-    timezone: string;
-  }): ReturnType<typeof updateOrganization>;
-  scheduleDeletion(organizationId: string): Promise<void>;
-  cancelDeletion(organizationId: string): Promise<void>;
-  inviteUser(
-    input: Parameters<typeof inviteUserToOrganization>[1]
-  ): Promise<InviteUserResult>;
-  getInviteOrThrow(inviteId: string): Promise<Invite>;
-  revokeInvite(inviteId: string): Promise<Invite>;
-  removeMember(
-    input: Parameters<typeof removeOrganizationMember>[1]
-  ): Promise<void>;
-  updateMemberAccess(
-    input: Parameters<typeof updateOrganizationMemberAccess>[1]
-  ): ReturnType<typeof updateOrganizationMemberAccess>;
-  members(organizationId: string): Promise<IServiceMember[]>;
-  invitations(organizationId: string): Promise<Invite[]>;
-  getInvite(inviteId: string): ReturnType<typeof getInviteById>;
-  runDeleteCron(): Promise<DeleteCronResult>;
-}
-
 export function createOrganizationService(
   deps: ServiceDeps,
   _services: () => Services
-): OrganizationService {
+) {
   return {
-    get: (organizationId) => getOrganizationById(deps, organizationId),
-    list: (userId) => getOrganizations(deps, userId),
-    update: (input) => updateOrganization(deps, input),
-    scheduleDeletion: (organizationId) =>
+    get: (organizationId: string): ReturnType<typeof getOrganizationById> =>
+      getOrganizationById(deps, organizationId),
+    list: (userId: string | null): ReturnType<typeof getOrganizations> =>
+      getOrganizations(deps, userId),
+    update: (input: {
+      id: string;
+      name: string;
+      timezone: string;
+    }): ReturnType<typeof updateOrganization> =>
+      updateOrganization(deps, input),
+    scheduleDeletion: (organizationId: string): Promise<void> =>
       scheduleOrganizationDeletion(deps, organizationId),
-    cancelDeletion: (organizationId) =>
+    cancelDeletion: (organizationId: string): Promise<void> =>
       cancelOrganizationDeletion(deps, organizationId),
-    inviteUser: (input) => inviteUserToOrganization(deps, input),
-    getInviteOrThrow: (inviteId) => getInviteOrThrow(deps, inviteId),
-    revokeInvite: (inviteId) => revokeInvite(deps, inviteId),
-    removeMember: (input) => removeOrganizationMember(deps, input),
-    updateMemberAccess: (input) => updateOrganizationMemberAccess(deps, input),
-    members: (organizationId) => getMembers(deps, organizationId),
-    invitations: (organizationId) => getInvites(deps, organizationId),
-    getInvite: (inviteId) => getInviteById(deps, inviteId),
-    runDeleteCron: () => runDeleteCron(deps),
+    inviteUser: (
+      input: Parameters<typeof inviteUserToOrganization>[1]
+    ): Promise<InviteUserResult> => inviteUserToOrganization(deps, input),
+    getInviteOrThrow: (inviteId: string): Promise<Invite> =>
+      getInviteOrThrow(deps, inviteId),
+    revokeInvite: (inviteId: string): Promise<Invite> =>
+      revokeInvite(deps, inviteId),
+    removeMember: (
+      input: Parameters<typeof removeOrganizationMember>[1]
+    ): Promise<void> => removeOrganizationMember(deps, input),
+    updateMemberAccess: (
+      input: Parameters<typeof updateOrganizationMemberAccess>[1]
+    ): ReturnType<typeof updateOrganizationMemberAccess> =>
+      updateOrganizationMemberAccess(deps, input),
+    members: (organizationId: string): Promise<IServiceMember[]> =>
+      getMembers(deps, organizationId),
+    invitations: (organizationId: string): Promise<Invite[]> =>
+      getInvites(deps, organizationId),
+    getInvite: (inviteId: string): ReturnType<typeof getInviteById> =>
+      getInviteById(deps, inviteId),
+    runDeleteCron: (): Promise<DeleteCronResult> => runDeleteCron(deps),
   };
 }

@@ -18,7 +18,6 @@
 // ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
 // compile-time template tag, no client and no request scope.
 
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import {
@@ -45,32 +44,15 @@ import type { IServiceReport } from '../report/report.service';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { createConversionService, getConversion } from './conversion.service';
 import {
-  type buildFunnelBase,
-  type buildSessionsCte,
   createFunnelService,
   getFunnel,
-  type getFunnelCore,
-  type getFunnelGroup,
   getFunnelProfileIds,
-  type toSeries as toFunnelSeries,
 } from './funnel.service';
 import {
   createRetentionService,
-  type getEngagementCore,
   getRetentionCohort,
-  type getRetentionCohortCore,
-  type getRetentionLastSeenSeries,
-  type getRetentionSeries,
-  type getRollingActiveUsers,
-  type getRollingActiveUsersCore,
-  type getWeeklyRetentionSeriesCore,
-  type processCohortData,
 } from './retention.service';
-import {
-  createSankeyService,
-  getSankey,
-  type getUserFlowCore,
-} from './sankey.service';
+import { createSankeyService, getSankey } from './sankey.service';
 import {
   chartBucketProfilesQuery,
   eventFieldValuesQuery,
@@ -750,109 +732,16 @@ export async function getFunnelStepProfiles(
 
 // The funnel, conversion, sankey and retention services live in this module's
 // own sibling files, not in modules of their own (ADR-007 gives one service
-// per module), so they FOLD INTO `ChartService` rather than becoming four
+// per module), so they FOLD INTO `chart` rather than becoming four
 // more `Services` members: chart.service.ts is already the dispatcher every
 // caller goes through (`getFunnelChart` / `getConversionChart` /
 // `getSankeyChart` / `getRetentionChart`), and a `Services` key per file
 // would name four things that are not modules.
 
-export interface ChartService {
-  // chart
-  execute(input: IReportInput): Promise<FinalChart>;
-  executeAggregate(input: IReportInput): Promise<FinalChart>;
-  resolveReportInput(
-    report: NonNullable<IServiceReport> | null,
-    input: ShareableReportInput
-  ): IReportInput;
-  getProjectCard(projectId: string): ReturnType<typeof getProjectCard>;
-  listChartEvents(projectId: string): Promise<ChartEventOption[]>;
-  listChartProperties(
-    input: Parameters<typeof listChartProperties>[1]
-  ): Promise<string[]>;
-  getChartPropertyValues(
-    input: Parameters<typeof getChartPropertyValues>[1]
-  ): Promise<{ values: string[] }>;
-  bucketProfiles(input: ChartBucketProfilesRequest): Promise<IServiceProfile[]>;
-  funnelStepProfiles(
-    input: FunnelStepProfilesRequest
-  ): Promise<IServiceProfile[]>;
-  // funnel
-  getFunnelGroup(group?: string): ReturnType<typeof getFunnelGroup>;
-  /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
-  toFunnelSeries(
-    ...args: Parameters<typeof toFunnelSeries>
-  ): ReturnType<typeof toFunnelSeries>;
-  buildSessionsCte(
-    input: Parameters<typeof buildSessionsCte>[0]
-  ): ReturnType<typeof buildSessionsCte>;
-  getFunnelChart(chartInput: IReportInput): ReturnType<typeof getFunnelChart>;
-  getFunnel(
-    input: Parameters<typeof getFunnel>[1]
-  ): ReturnType<typeof getFunnel>;
-  getFunnelCore(
-    input: Parameters<typeof getFunnelCore>[1]
-  ): ReturnType<typeof getFunnelCore>;
-  buildFunnelBase(
-    input: Parameters<typeof buildFunnelBase>[1]
-  ): ReturnType<typeof buildFunnelBase>;
-  getFunnelProfileIds(
-    input: Parameters<typeof getFunnelProfileIds>[1]
-  ): Promise<string[]>;
-  // conversion
-  getConversionChart(
-    chartInput: IReportInput
-  ): ReturnType<typeof getConversionChart>;
-  getConversion(
-    input: Parameters<typeof getConversion>[1]
-  ): ReturnType<typeof getConversion>;
-  // sankey
-  getRawWhereClause(
-    type: 'events' | 'sessions',
-    filters: IChartEventFilter[]
-  ): SqlFragment | null;
-  getSankeyChart(input: IReportInput): ReturnType<typeof getSankeyChart>;
-  getSankey(
-    input: Parameters<typeof getSankey>[1]
-  ): ReturnType<typeof getSankey>;
-  getUserFlowCore(
-    input: Parameters<typeof getUserFlowCore>[1]
-  ): ReturnType<typeof getUserFlowCore>;
-  // retention
-  processCohortData(
-    ...args: Parameters<typeof processCohortData>
-  ): ReturnType<typeof processCohortData>;
-  getRetentionChart(
-    report: NonNullable<IServiceReport> | null,
-    input: RetentionChartInput
-  ): ReturnType<typeof getRetentionChart>;
-  getRetentionCohort(
-    input: Parameters<typeof getRetentionCohort>[1]
-  ): ReturnType<typeof getRetentionCohort>;
-  getRetentionCohortCore(
-    projectId: string
-  ): ReturnType<typeof getRetentionCohortCore>;
-  getRetentionSeries(
-    input: Parameters<typeof getRetentionSeries>[1]
-  ): ReturnType<typeof getRetentionSeries>;
-  getRetentionLastSeenSeries(
-    input: Parameters<typeof getRetentionLastSeenSeries>[1]
-  ): ReturnType<typeof getRetentionLastSeenSeries>;
-  getRollingActiveUsers(
-    input: Parameters<typeof getRollingActiveUsers>[1]
-  ): ReturnType<typeof getRollingActiveUsers>;
-  getRollingActiveUsersCore(
-    input: Parameters<typeof getRollingActiveUsersCore>[1]
-  ): ReturnType<typeof getRollingActiveUsersCore>;
-  getWeeklyRetentionSeriesCore(
-    projectId: string
-  ): ReturnType<typeof getWeeklyRetentionSeriesCore>;
-  getEngagementCore(projectId: string): ReturnType<typeof getEngagementCore>;
-}
-
 export function createChartService(
   deps: ServiceDeps,
   services: () => Services
-): ChartService {
+) {
   // The four chart sub-modules each expose their own `create*Service(deps)`
   // (ADR-007). `services.ts` binds each under its own key; `chart` composes
   // them as well, so the callers that reach a funnel/retention method through
@@ -863,31 +752,58 @@ export function createChartService(
   const retention = createRetentionService(deps, services);
 
   return {
-    execute: (input) => executeChart(deps, input),
-    executeAggregate: (input) => executeAggregateChart(deps, input),
+    // chart
+    execute: (input: IReportInput): Promise<FinalChart> =>
+      executeChart(deps, input),
+    executeAggregate: (input: IReportInput): Promise<FinalChart> =>
+      executeAggregateChart(deps, input),
     resolveReportInput,
-    getProjectCard: (projectId) => getProjectCard(deps, projectId),
-    listChartEvents: (projectId) => listChartEvents(deps, projectId),
-    listChartProperties: (input) => listChartProperties(deps, input),
-    getChartPropertyValues: (input) => getChartPropertyValues(deps, input),
-    bucketProfiles: (input) => getChartBucketProfiles(deps, input),
-    funnelStepProfiles: (input) => getFunnelStepProfiles(deps, input),
+    getProjectCard: (projectId: string): ReturnType<typeof getProjectCard> =>
+      getProjectCard(deps, projectId),
+    listChartEvents: (projectId: string): Promise<ChartEventOption[]> =>
+      listChartEvents(deps, projectId),
+    listChartProperties: (
+      input: Parameters<typeof listChartProperties>[1]
+    ): Promise<string[]> => listChartProperties(deps, input),
+    getChartPropertyValues: (
+      input: Parameters<typeof getChartPropertyValues>[1]
+    ): Promise<{ values: string[] }> => getChartPropertyValues(deps, input),
+    bucketProfiles: (
+      input: ChartBucketProfilesRequest
+    ): Promise<IServiceProfile[]> => getChartBucketProfiles(deps, input),
+    funnelStepProfiles: (
+      input: FunnelStepProfilesRequest
+    ): Promise<IServiceProfile[]> => getFunnelStepProfiles(deps, input),
+    // funnel
     getFunnelGroup: funnel.getFunnelGroup,
+    /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
     toFunnelSeries: funnel.toSeries,
     buildSessionsCte: funnel.buildSessionsCte,
-    getFunnelChart: (chartInput) => getFunnelChart(deps, chartInput),
+    getFunnelChart: (
+      chartInput: IReportInput
+    ): ReturnType<typeof getFunnelChart> => getFunnelChart(deps, chartInput),
     getFunnel: funnel.getFunnel,
     getFunnelCore: funnel.getFunnelCore,
     buildFunnelBase: funnel.buildFunnelBase,
     getFunnelProfileIds: funnel.getFunnelProfileIds,
-    getConversionChart: (chartInput) => getConversionChart(deps, chartInput),
+    // conversion
+    getConversionChart: (
+      chartInput: IReportInput
+    ): ReturnType<typeof getConversionChart> =>
+      getConversionChart(deps, chartInput),
     getConversion: conversion.getConversion,
+    // sankey
     getRawWhereClause: sankey.getRawWhereClause,
-    getSankeyChart: (input) => getSankeyChart(deps, input),
+    getSankeyChart: (input: IReportInput): ReturnType<typeof getSankeyChart> =>
+      getSankeyChart(deps, input),
     getSankey: sankey.getSankey,
     getUserFlowCore: sankey.getUserFlowCore,
+    // retention
     processCohortData: retention.processCohortData,
-    getRetentionChart: (report, input) =>
+    getRetentionChart: (
+      report: NonNullable<IServiceReport> | null,
+      input: RetentionChartInput
+    ): ReturnType<typeof getRetentionChart> =>
       getRetentionChart(deps, report, input),
     getRetentionCohort: retention.getRetentionCohort,
     getRetentionCohortCore: retention.getRetentionCohortCore,

@@ -702,52 +702,44 @@ export type {
   ReferrerSpikeCluster,
 } from './src/referrer-spikes';
 
-export interface InsightService {
-  listDailyInsightCandidates(date: string): Promise<DailyInsightCandidate[]>;
-  runProjectInsights(args: { projectId: string; date: string }): Promise<void>;
-  cleanupStaleInsights(): Promise<{ insights: number; events: number }>;
-  sendWeeklyDigests(): Promise<WeeklyDigestResult>;
-  previewWeeklyDigest(
-    projectId: string,
-    opts?: { to?: string; force?: boolean }
-  ): Promise<WeeklyDigestPreview>;
-  listInsights(args: {
-    projectId: string;
-    limit: number;
-  }): ReturnType<typeof listInsights>;
-  listAllInsights(args: {
-    projectId: string;
-    limit: number;
-  }): ReturnType<typeof listAllInsights>;
-  explainInsight(
-    input: ExplainInsightInput,
-    cacheKey: string
-  ): Promise<InsightExplanation | null>;
-  getReferrerSpikes(
-    input: GetReferrerSpikesInput
-  ): Promise<ReferrerSpikeCluster[]>;
-  scanLegacyInsights(projectId: string): Promise<LegacyInsight[]>;
-}
-
 /** `ctx.services.insight` — a thin binding of the functions above to a Ctx's logger. */
 export function createInsightService(
   deps: ServiceDeps,
   _services: () => Services
-): InsightService {
+) {
   const logger = deps.logger.child({ module: 'insight' });
 
   return {
-    listDailyInsightCandidates: (date) =>
+    listDailyInsightCandidates: (
+      date: string
+    ): Promise<DailyInsightCandidate[]> =>
       listDailyInsightCandidates(deps, date),
-    runProjectInsights: (args) => runProjectInsights(deps, { ...args, logger }),
-    cleanupStaleInsights: () => cleanupStaleInsights(deps, logger),
-    sendWeeklyDigests: () => sendWeeklyDigests(deps, logger),
-    previewWeeklyDigest: (projectId, opts) =>
+    runProjectInsights: (args: {
+      projectId: string;
+      date: string;
+    }): Promise<void> => runProjectInsights(deps, { ...args, logger }),
+    cleanupStaleInsights: (): Promise<{ insights: number; events: number }> =>
+      cleanupStaleInsights(deps, logger),
+    sendWeeklyDigests: (): Promise<WeeklyDigestResult> =>
+      sendWeeklyDigests(deps, logger),
+    previewWeeklyDigest: (
+      projectId: string,
+      opts?: { to?: string; force?: boolean }
+    ): Promise<WeeklyDigestPreview> =>
       previewWeeklyDigest(deps, projectId, opts),
-    listInsights: (args) => listInsights(deps, args),
-    listAllInsights: (args) => listAllInsights(deps, args),
+    listInsights: (args: {
+      projectId: string;
+      limit: number;
+    }): ReturnType<typeof listInsights> => listInsights(deps, args),
+    listAllInsights: (args: {
+      projectId: string;
+      limit: number;
+    }): ReturnType<typeof listAllInsights> => listAllInsights(deps, args),
     explainInsight,
-    getReferrerSpikes: (input) => getReferrerSpikes(deps, input),
-    scanLegacyInsights: (projectId) => scanLegacyInsights(deps, projectId),
+    getReferrerSpikes: (
+      input: GetReferrerSpikesInput
+    ): Promise<ReferrerSpikeCluster[]> => getReferrerSpikes(deps, input),
+    scanLegacyInsights: (projectId: string): Promise<LegacyInsight[]> =>
+      scanLegacyInsights(deps, projectId),
   };
 }

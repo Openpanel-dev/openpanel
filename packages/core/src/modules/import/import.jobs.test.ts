@@ -8,7 +8,7 @@ import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
 import { importQueueJobs } from './import.jobs';
-import type { ImportService } from './import.service';
+import type { createImportService } from './import.service';
 
 function stubLogger(): Logger {
   const noop = () => undefined;
@@ -24,7 +24,9 @@ function stubLogger(): Logger {
   return logger;
 }
 
-function stubJobCtx(importService: Partial<ImportService>): JobCtx {
+function stubJobCtx(
+  importService: Partial<ReturnType<typeof createImportService>>
+): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
     notification: {} as Services['notification'],
@@ -33,7 +35,7 @@ function stubJobCtx(importService: Partial<ImportService>): JobCtx {
     cohort: {} as Services['cohort'],
     ingest: {} as Services['ingest'],
     gsc: {} as Services['gsc'],
-    import: importService as ImportService,
+    import: importService as ReturnType<typeof createImportService>,
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
     session: {} as Services['session'],

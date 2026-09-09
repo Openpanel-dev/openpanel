@@ -711,17 +711,16 @@ export async function adjustProfileProperty(
   return { status: 'ok', profileId: profile.id };
 }
 
-export interface ProfileService {
-  byId(id: string, projectId: string): Promise<IServiceProfile | null>;
-  upsert(input: IServiceUpsertProfile, isFromEvent?: boolean): Promise<void>;
-}
-
 export function createProfileService(
   deps: ServiceDeps,
   _services: () => Services
-): ProfileService {
+) {
   return {
-    byId: (id, projectId) => getProfileById(deps, id, projectId),
-    upsert: (input, isFromEvent) => upsertProfile(deps, input, isFromEvent),
+    byId: (id: string, projectId: string): Promise<IServiceProfile | null> =>
+      getProfileById(deps, id, projectId),
+    upsert: (
+      input: IServiceUpsertProfile,
+      isFromEvent?: boolean
+    ): Promise<void> => upsertProfile(deps, input, isFromEvent),
   };
 }

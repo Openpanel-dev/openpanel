@@ -549,33 +549,32 @@ export async function subscribeToOrganizationSubscriptionUpdates(
   );
 }
 
-export interface RealtimeService {
-  getCoordinates(projectId: string): ReturnType<typeof getRealtimeCoordinates>;
-  getMapBadgeDetails(
-    input: Parameters<typeof getRealtimeMapBadgeDetails>[1]
-  ): ReturnType<typeof getRealtimeMapBadgeDetails>;
-  getActiveSessions(
-    projectId: string
-  ): ReturnType<typeof getRealtimeActiveSessions>;
-  getPaths(projectId: string): ReturnType<typeof getRealtimePaths>;
-  getReferrals(projectId: string): ReturnType<typeof getRealtimeReferrals>;
-  getGeo(projectId: string): ReturnType<typeof getRealtimeGeo>;
-  getActiveVisitorCount(projectId: string): Promise<number>;
-}
-
 export function createRealtimeService(
   deps: ServiceDeps,
   _services: () => Services
-): RealtimeService {
+) {
   return {
-    getCoordinates: (projectId) => getRealtimeCoordinates(deps, projectId),
-    getMapBadgeDetails: (input) => getRealtimeMapBadgeDetails(deps, input),
-    getActiveSessions: (projectId) =>
+    getCoordinates: (
+      projectId: string
+    ): ReturnType<typeof getRealtimeCoordinates> =>
+      getRealtimeCoordinates(deps, projectId),
+    getMapBadgeDetails: (
+      input: Parameters<typeof getRealtimeMapBadgeDetails>[1]
+    ): ReturnType<typeof getRealtimeMapBadgeDetails> =>
+      getRealtimeMapBadgeDetails(deps, input),
+    getActiveSessions: (
+      projectId: string
+    ): ReturnType<typeof getRealtimeActiveSessions> =>
       getRealtimeActiveSessions(deps, projectId),
-    getPaths: (projectId) => getRealtimePaths(deps, projectId),
-    getReferrals: (projectId) => getRealtimeReferrals(deps, projectId),
-    getGeo: (projectId) => getRealtimeGeo(deps, projectId),
-    getActiveVisitorCount: (projectId) =>
+    getPaths: (projectId: string): ReturnType<typeof getRealtimePaths> =>
+      getRealtimePaths(deps, projectId),
+    getReferrals: (
+      projectId: string
+    ): ReturnType<typeof getRealtimeReferrals> =>
+      getRealtimeReferrals(deps, projectId),
+    getGeo: (projectId: string): ReturnType<typeof getRealtimeGeo> =>
+      getRealtimeGeo(deps, projectId),
+    getActiveVisitorCount: (projectId: string): Promise<number> =>
       getActiveVisitorCount(deps, projectId),
   };
 }

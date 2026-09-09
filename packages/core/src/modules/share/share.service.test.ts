@@ -218,7 +218,7 @@ afterAll(() => {
   mock.module('../../shared/access-lookups', () => realAccessLookups);
 });
 
-let subject: import('./share.service').ShareService;
+let subject: ReturnType<typeof import('./share.service').createShareService>;
 beforeAll(async () => {
   const { createShareService } = await import('./share.service');
   subject = createShareService(

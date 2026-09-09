@@ -54,7 +54,7 @@ import {
 // Re-exported straight from source (not through the imports above, which
 // exist for `createAuthService` below) — `noExportedImports` would otherwise
 // flag every one of those imports as "only re-exported", which is false;
-// they are also this file's `AuthService` container.
+// they are also the members `createAuthService` returns.
 export { COOKIE_MAX_AGE, COOKIE_OPTIONS } from './src/constants';
 export {
   deleteSessionTokenCookie,
@@ -81,51 +81,14 @@ export {
   verifyTotpCode,
 } from './src/totp';
 
-export interface AuthService extends AccessChecks<IProjectAccess> {
-  getProjectAccess(args: {
-    userId: string;
-    projectId: string;
-  }): Promise<IProjectAccess | null>;
-  getOrganizationAccess(
-    ...args: Parameters<typeof GetOrganizationAccessFn>
-  ): ReturnType<typeof GetOrganizationAccessFn>;
-  getClientAccess(
-    ...args: Parameters<typeof GetClientAccessFn>
-  ): ReturnType<typeof GetClientAccessFn>;
-  hashPassword(password: string): Promise<string>;
-  verifyPasswordHash(hash: string, password: string): Promise<boolean>;
-  generateSessionToken(): string;
-  decodeSessionToken(token: string): string | null;
-  hashSessionToken(token: string): string;
-  generateTotpSecret(): string;
-  buildOtpauthUrl(args: { secret: string; accountName: string }): string;
-  generateQrDataUrl(otpauthUrl: string): Promise<string>;
-  verifyTotpCode(secret: string, code: string): boolean;
-  generateRecoveryCodes(count?: number): string[];
-  hashRecoveryCodes(codes: string[]): Promise<string[]>;
-  normalizeRecoveryCode(input: string): string;
-  consumeRecoveryCode(args: {
-    hashes: string[];
-    input: string;
-  }): Promise<{ valid: boolean; remaining: string[] }>;
-  setSessionTokenCookie(
-    setCookie: ISetCookie,
-    token: string,
-    expiresAt: Date
-  ): void;
-  setLastAuthProviderCookie(setCookie: ISetCookie, provider: string): void;
-  deleteSessionTokenCookie(setCookie: ISetCookie): void;
-  parseCookieDomain(url: string): {
-    domain: string | undefined;
-    secure: boolean;
-  };
-}
-
 function loadAccessLookups() {
   return import('../../shared/access-lookups');
 }
 
-let accessChecksPromise: Promise<AccessChecks<IProjectAccess>> | undefined;
+/** The ladder contract this module binds and `createAuthService` satisfies. */
+type ProjectAccessChecks = AccessChecks<IProjectAccess>;
+
+let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
 
 /**
  * The single binding of `shared/access.ts`'s ladder to real lookups
@@ -143,7 +106,7 @@ let accessChecksPromise: Promise<AccessChecks<IProjectAccess>> | undefined;
  * `ctx`, so they cannot reach a service. Operator-authorized (docs/TECH_DEBT.md
  * §5b); the exemption expires when `packages/trpc` dies at P10.
  */
-export function getAccessChecks(): Promise<AccessChecks<IProjectAccess>> {
+export function getAccessChecks(): Promise<ProjectAccessChecks> {
   if (!accessChecksPromise) {
     accessChecksPromise = Promise.all([
       loadAccessLookups(),
@@ -191,8 +154,11 @@ export function resetAccessChecksForTests(): void {
 export function createAuthService(
   _deps: ServiceDeps,
   _services: () => Services
-): AuthService {
-  return {
+) {
+  // Annotated as a whole rather than member by member: one annotation binds
+  // the ladder contract and gives all three members the explicit return type
+  // `ReturnType<typeof createAuthService>` needs (ADR-022 R5).
+  const accessChecks: ProjectAccessChecks = {
     async requireProjectAccess(args) {
       return (await getAccessChecks()).requireProjectAccess(args);
     },
@@ -202,14 +168,25 @@ export function createAuthService(
     async requireProjectAdmin(args) {
       return (await getAccessChecks()).requireProjectAdmin(args);
     },
-    async getProjectAccess(args) {
+  };
+
+  return {
+    ...accessChecks,
+    async getProjectAccess(args: {
+      userId: string;
+      projectId: string;
+    }): Promise<IProjectAccess | null> {
       return (await loadAccessLookups()).getProjectAccess(args);
     },
-    async getOrganizationAccess(args) {
-      return (await loadAccessLookups()).getOrganizationAccess(args);
+    async getOrganizationAccess(
+      ...args: Parameters<typeof GetOrganizationAccessFn>
+    ): ReturnType<typeof GetOrganizationAccessFn> {
+      return (await loadAccessLookups()).getOrganizationAccess(...args);
     },
-    async getClientAccess(args) {
-      return (await loadAccessLookups()).getClientAccess(args);
+    async getClientAccess(
+      ...args: Parameters<typeof GetClientAccessFn>
+    ): ReturnType<typeof GetClientAccessFn> {
+      return (await loadAccessLookups()).getClientAccess(...args);
     },
     hashPassword,
     verifyPasswordHash,

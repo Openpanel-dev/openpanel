@@ -593,107 +593,95 @@ export interface ShareAccessContext {
   session?: { userId?: string | null };
 }
 
-export interface ShareService {
-  getShareOverviewById(id: string): ReturnType<typeof getShareOverviewById>;
-  getShareByProjectId(
-    projectId: string
-  ): ReturnType<typeof getShareByProjectId>;
-  getShareDashboardById(id: string): ReturnType<typeof getShareDashboardById>;
-  getShareDashboardByDashboardId(
-    dashboardId: string
-  ): ReturnType<typeof getShareDashboardByDashboardId>;
-  getShareReportById(id: string): ReturnType<typeof getShareReportById>;
-  getShareReportByReportId(
-    reportId: string
-  ): ReturnType<typeof getShareReportByReportId>;
-  validateReportAccess(
-    reportId: string,
-    shareId: string,
-    shareType: 'dashboard' | 'report'
-  ): ReturnType<typeof validateReportAccess>;
-  validateShareAccess(
-    shareId: string,
-    reportId: string,
-    accessContext: ShareAccessContext
-  ): Promise<{ projectId: string; isValid: boolean }>;
-  validateOverviewShareAccess(
-    shareId: string | undefined,
-    projectId: string,
-    accessContext: ShareAccessContext
-  ): Promise<{ isValid: boolean }>;
-  getShareOverview(
-    shareId: string,
-    cookies: CookieReader
-  ): ReturnType<typeof getShareOverview>;
-  getShareOverviewSettings(
-    projectId: string
-  ): ReturnType<typeof getShareOverviewSettings>;
-  createShareOverview(
-    input: CreateShareOverviewInput
-  ): ReturnType<typeof createShareOverview>;
-  getShareDashboard(
-    shareId: string,
-    cookies: CookieReader
-  ): ReturnType<typeof getShareDashboard>;
-  getShareDashboardSettings(
-    projectId: string,
-    dashboardId: string
-  ): ReturnType<typeof getShareDashboardSettings>;
-  createShareDashboard(
-    input: CreateShareDashboardInput
-  ): ReturnType<typeof createShareDashboard>;
-  getShareDashboardReports(
-    shareId: string,
-    cookies: CookieReader
-  ): ReturnType<typeof getShareDashboardReports>;
-  getShareReport(
-    shareId: string,
-    cookies: CookieReader
-  ): ReturnType<typeof getShareReport>;
-  getShareReportSettings(
-    projectId: string,
-    reportId: string
-  ): ReturnType<typeof getShareReportSettings>;
-  createShareReport(
-    input: CreateShareReportInput
-  ): ReturnType<typeof createShareReport>;
-}
-
 export function createShareService(
   deps: ServiceDeps,
   _services: () => Services
-): ShareService {
+) {
   return {
-    getShareOverviewById: (id) => getShareOverviewById(deps, id),
-    getShareByProjectId: (projectId) => getShareByProjectId(deps, projectId),
-    getShareDashboardById: (id) => getShareDashboardById(deps, id),
-    getShareDashboardByDashboardId: (dashboardId) =>
+    getShareOverviewById: (
+      id: string
+    ): ReturnType<typeof getShareOverviewById> =>
+      getShareOverviewById(deps, id),
+    getShareByProjectId: (
+      projectId: string
+    ): ReturnType<typeof getShareByProjectId> =>
+      getShareByProjectId(deps, projectId),
+    getShareDashboardById: (
+      id: string
+    ): ReturnType<typeof getShareDashboardById> =>
+      getShareDashboardById(deps, id),
+    getShareDashboardByDashboardId: (
+      dashboardId: string
+    ): ReturnType<typeof getShareDashboardByDashboardId> =>
       getShareDashboardByDashboardId(deps, dashboardId),
-    getShareReportById: (id) => getShareReportById(deps, id),
-    getShareReportByReportId: (reportId) =>
+    getShareReportById: (id: string): ReturnType<typeof getShareReportById> =>
+      getShareReportById(deps, id),
+    getShareReportByReportId: (
+      reportId: string
+    ): ReturnType<typeof getShareReportByReportId> =>
       getShareReportByReportId(deps, reportId),
-    validateReportAccess: (reportId, shareId, shareType) =>
+    validateReportAccess: (
+      reportId: string,
+      shareId: string,
+      shareType: 'dashboard' | 'report'
+    ): ReturnType<typeof validateReportAccess> =>
       validateReportAccess(deps, reportId, shareId, shareType),
-    validateShareAccess: (shareId, reportId, accessContext) =>
+    validateShareAccess: (
+      shareId: string,
+      reportId: string,
+      accessContext: ShareAccessContext
+    ): Promise<{ projectId: string; isValid: boolean }> =>
       validateShareAccess(deps, shareId, reportId, accessContext),
-    validateOverviewShareAccess: (shareId, projectId, accessContext) =>
+    validateOverviewShareAccess: (
+      shareId: string | undefined,
+      projectId: string,
+      accessContext: ShareAccessContext
+    ): Promise<{ isValid: boolean }> =>
       validateOverviewShareAccess(deps, shareId, projectId, accessContext),
-    getShareOverview: (shareId, cookies) =>
+    getShareOverview: (
+      shareId: string,
+      cookies: CookieReader
+    ): ReturnType<typeof getShareOverview> =>
       getShareOverview(deps, shareId, cookies),
-    getShareOverviewSettings: (projectId) =>
+    getShareOverviewSettings: (
+      projectId: string
+    ): ReturnType<typeof getShareOverviewSettings> =>
       getShareOverviewSettings(deps, projectId),
-    createShareOverview: (input) => createShareOverview(deps, input),
-    getShareDashboard: (shareId, cookies) =>
+    createShareOverview: (
+      input: CreateShareOverviewInput
+    ): ReturnType<typeof createShareOverview> =>
+      createShareOverview(deps, input),
+    getShareDashboard: (
+      shareId: string,
+      cookies: CookieReader
+    ): ReturnType<typeof getShareDashboard> =>
       getShareDashboard(deps, shareId, cookies),
-    getShareDashboardSettings: (projectId, dashboardId) =>
+    getShareDashboardSettings: (
+      projectId: string,
+      dashboardId: string
+    ): ReturnType<typeof getShareDashboardSettings> =>
       getShareDashboardSettings(deps, projectId, dashboardId),
-    createShareDashboard: (input) => createShareDashboard(deps, input),
-    getShareDashboardReports: (shareId, cookies) =>
+    createShareDashboard: (
+      input: CreateShareDashboardInput
+    ): ReturnType<typeof createShareDashboard> =>
+      createShareDashboard(deps, input),
+    getShareDashboardReports: (
+      shareId: string,
+      cookies: CookieReader
+    ): ReturnType<typeof getShareDashboardReports> =>
       getShareDashboardReports(deps, shareId, cookies),
-    getShareReport: (shareId, cookies) =>
+    getShareReport: (
+      shareId: string,
+      cookies: CookieReader
+    ): ReturnType<typeof getShareReport> =>
       getShareReport(deps, shareId, cookies),
-    getShareReportSettings: (projectId, reportId) =>
+    getShareReportSettings: (
+      projectId: string,
+      reportId: string
+    ): ReturnType<typeof getShareReportSettings> =>
       getShareReportSettings(deps, projectId, reportId),
-    createShareReport: (input) => createShareReport(deps, input),
+    createShareReport: (
+      input: CreateShareReportInput
+    ): ReturnType<typeof createShareReport> => createShareReport(deps, input),
   };
 }

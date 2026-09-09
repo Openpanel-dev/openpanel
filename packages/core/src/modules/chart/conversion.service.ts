@@ -267,17 +267,13 @@ function toSeries(
 
 /** See funnel.service.ts's `createFunnelService` for why each chart
  *  sub-module carries its own factory (M10-009, ADR-007). */
-export interface ConversionService {
-  getConversion(
-    input: Parameters<typeof getConversion>[1]
-  ): ReturnType<typeof getConversion>;
-}
-
 export function createConversionService(
   deps: ServiceDeps,
   _services: () => Services
-): ConversionService {
+) {
   return {
-    getConversion: (input) => getConversion(deps, input),
+    getConversion: (
+      input: Parameters<typeof getConversion>[1]
+    ): ReturnType<typeof getConversion> => getConversion(deps, input),
   };
 }

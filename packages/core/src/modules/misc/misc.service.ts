@@ -493,13 +493,9 @@ export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
   throw new Error('Failed to ping the server');
 }
 
-export interface MiscService {
-  runPingCron(): Promise<unknown>;
-}
-
 export function createMiscService(
   deps: ServiceDeps,
   _services: () => Services
-): MiscService {
-  return { runPingCron: () => runPingCron(deps) };
+) {
+  return { runPingCron: (): Promise<unknown> => runPingCron(deps) };
 }

@@ -482,34 +482,42 @@ type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
     ? (...args: A) => R
     : never;
 
-export interface IntegrationService {
-  getById: WithoutDeps<typeof getIntegrationById>;
-  listForProject: WithoutDeps<typeof listIntegrationsForProject>;
-  upsert: WithoutDeps<typeof upsertIntegration>;
-  createOrUpdateSlack: WithoutDeps<typeof createOrUpdateSlackIntegration>;
-  testConnection: WithoutDeps<typeof testIntegrationConnection>;
-  testExportConnection: WithoutDeps<typeof testExportIntegrationConnection>;
-  delete: WithoutDeps<typeof deleteIntegration>;
-  completeSlackOAuthCallback: WithoutDeps<typeof completeSlackOAuthCallback>;
-}
-
 /** M10-009: this module had no factory at all — the one `*.service.ts` file
  *  `services.ts` did not register (docs/TECH_DEBT.md §5a). */
 export function createIntegrationService(
   deps: ServiceDeps,
   _services: () => Services
-): IntegrationService {
+) {
+  const getById: WithoutDeps<typeof getIntegrationById> = (...args) =>
+    getIntegrationById(deps, ...args);
+  const listForProject: WithoutDeps<typeof listIntegrationsForProject> = (
+    ...args
+  ) => listIntegrationsForProject(deps, ...args);
+  const upsert: WithoutDeps<typeof upsertIntegration> = (...args) =>
+    upsertIntegration(deps, ...args);
+  const createOrUpdateSlack: WithoutDeps<
+    typeof createOrUpdateSlackIntegration
+  > = (...args) => createOrUpdateSlackIntegration(deps, ...args);
+  const testConnection: WithoutDeps<typeof testIntegrationConnection> = (
+    ...args
+  ) => testIntegrationConnection(deps, ...args);
+  const testExportConnection: WithoutDeps<
+    typeof testExportIntegrationConnection
+  > = (...args) => testExportIntegrationConnection(deps, ...args);
+  const deleteBound: WithoutDeps<typeof deleteIntegration> = (...args) =>
+    deleteIntegration(deps, ...args);
+  const completeSlackOAuthCallbackBound: WithoutDeps<
+    typeof completeSlackOAuthCallback
+  > = (...args) => completeSlackOAuthCallback(deps, ...args);
+
   return {
-    getById: (...args) => getIntegrationById(deps, ...args),
-    listForProject: (...args) => listIntegrationsForProject(deps, ...args),
-    upsert: (...args) => upsertIntegration(deps, ...args),
-    createOrUpdateSlack: (...args) =>
-      createOrUpdateSlackIntegration(deps, ...args),
-    testConnection: (...args) => testIntegrationConnection(deps, ...args),
-    testExportConnection: (...args) =>
-      testExportIntegrationConnection(deps, ...args),
-    delete: (...args) => deleteIntegration(deps, ...args),
-    completeSlackOAuthCallback: (...args) =>
-      completeSlackOAuthCallback(deps, ...args),
+    getById,
+    listForProject,
+    upsert,
+    createOrUpdateSlack,
+    testConnection,
+    testExportConnection,
+    delete: deleteBound,
+    completeSlackOAuthCallback: completeSlackOAuthCallbackBound,
   };
 }

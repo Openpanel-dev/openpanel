@@ -1475,59 +1475,59 @@ type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
     ? (...args: A) => R
     : never;
 
-export interface GscService {
-  getConnection(projectId: string): Promise<GscConnectionSummary | null>;
-  listSites(projectId: string): Promise<GscSite[]>;
-  /** Also enqueues the `gscProjectBackfill` job — same as V1's router. */
-  selectSite(projectId: string, siteUrl: string): Promise<void>;
-  disconnect(projectId: string): Promise<void>;
-  resolveDateRange(
-    projectId: string,
-    input: GscDateRangeInput
-  ): ReturnType<typeof resolveGscDateRange>;
-  getOverview: WithoutDeps<typeof getGscOverview>;
-  getPreviousOverview: WithoutDeps<typeof getGscPreviousOverview>;
-  getPages: WithoutDeps<typeof getGscPages>;
-  getPageDetails: WithoutDeps<typeof getGscPageDetails>;
-  getQueryDetails: WithoutDeps<typeof getGscQueryDetails>;
-  getQueries: WithoutDeps<typeof getGscQueries>;
-  getSearchEngines: WithoutDeps<typeof getGscSearchEngines>;
-  getAiEngines: WithoutDeps<typeof getGscAiEngines>;
-  getCannibalization: typeof getGscCannibalization;
-  listConnectionsForSync(): Promise<{ projectId: string }[]>;
-  runProjectSync(projectId: string): Promise<void>;
-  runProjectBackfill(projectId: string): Promise<void>;
-}
-
 /** `ctx.services.gsc` — a thin binding of the functions above to a Ctx's logger/queues. */
-export function createGscService(
-  deps: ServiceDeps,
-  _services: () => Services
-): GscService {
+export function createGscService(deps: ServiceDeps, _services: () => Services) {
   const logger = deps.logger.child({ module: 'gsc' });
 
+  const getOverview: WithoutDeps<typeof getGscOverview> = (...args) =>
+    getGscOverview(deps, ...args);
+  const getPreviousOverview: WithoutDeps<typeof getGscPreviousOverview> = (
+    ...args
+  ) => getGscPreviousOverview(deps, ...args);
+  const getPages: WithoutDeps<typeof getGscPages> = (...args) =>
+    getGscPages(deps, ...args);
+  const getPageDetails: WithoutDeps<typeof getGscPageDetails> = (...args) =>
+    getGscPageDetails(deps, ...args);
+  const getQueryDetails: WithoutDeps<typeof getGscQueryDetails> = (...args) =>
+    getGscQueryDetails(deps, ...args);
+  const getQueries: WithoutDeps<typeof getGscQueries> = (...args) =>
+    getGscQueries(deps, ...args);
+  const getSearchEngines: WithoutDeps<typeof getGscSearchEngines> = (...args) =>
+    getGscSearchEngines(deps, ...args);
+  const getAiEngines: WithoutDeps<typeof getGscAiEngines> = (...args) =>
+    getGscAiEngines(deps, ...args);
+
   return {
-    getConnection: (projectId) => getGscConnection(deps, projectId),
-    listSites: (projectId) => listGscSites(deps, projectId),
-    selectSite: async (projectId, siteUrl) => {
+    getConnection: (projectId: string): Promise<GscConnectionSummary | null> =>
+      getGscConnection(deps, projectId),
+    listSites: (projectId: string): Promise<GscSite[]> =>
+      listGscSites(deps, projectId),
+    /** Also enqueues the `gscProjectBackfill` job — same as V1's router. */
+    selectSite: async (projectId: string, siteUrl: string): Promise<void> => {
       await selectGscSite(deps, projectId, siteUrl);
       await deps.queues.gsc.gscProjectBackfill.add({ projectId });
     },
-    disconnect: (projectId) => disconnectGscConnection(deps, projectId),
-    resolveDateRange: (projectId, input) =>
+    disconnect: (projectId: string): Promise<void> =>
+      disconnectGscConnection(deps, projectId),
+    resolveDateRange: (
+      projectId: string,
+      input: GscDateRangeInput
+    ): ReturnType<typeof resolveGscDateRange> =>
       resolveGscDateRange(deps, projectId, input),
-    getOverview: (...args) => getGscOverview(deps, ...args),
-    getPreviousOverview: (...args) => getGscPreviousOverview(deps, ...args),
-    getPages: (...args) => getGscPages(deps, ...args),
-    getPageDetails: (...args) => getGscPageDetails(deps, ...args),
-    getQueryDetails: (...args) => getGscQueryDetails(deps, ...args),
-    getQueries: (...args) => getGscQueries(deps, ...args),
-    getSearchEngines: (...args) => getGscSearchEngines(deps, ...args),
-    getAiEngines: (...args) => getGscAiEngines(deps, ...args),
+    getOverview,
+    getPreviousOverview,
+    getPages,
+    getPageDetails,
+    getQueryDetails,
+    getQueries,
+    getSearchEngines,
+    getAiEngines,
     getCannibalization: getGscCannibalization,
-    listConnectionsForSync: () => listGscConnectionsForSync(deps),
-    runProjectSync: (projectId) => runGscProjectSync(deps, projectId, logger),
-    runProjectBackfill: (projectId) =>
+    listConnectionsForSync: (): Promise<{ projectId: string }[]> =>
+      listGscConnectionsForSync(deps),
+    runProjectSync: (projectId: string): Promise<void> =>
+      runGscProjectSync(deps, projectId, logger),
+    runProjectBackfill: (projectId: string): Promise<void> =>
       runGscProjectBackfill(deps, projectId, logger),
   };
 }

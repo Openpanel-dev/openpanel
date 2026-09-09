@@ -1019,33 +1019,29 @@ export async function getCohortMemberRoutes(
   );
 }
 
-export interface CohortService {
-  updateMembership(cohortId: string): Promise<void>;
-  listRefreshableCohortIds(): Promise<string[]>;
-  /**
-   * Enqueue a recompute for a cohort.
-   *
-   * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
-   * short-circuit `add` for as long as *any* record for that id exists in
-   * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
-   * some other job in the queue finishing. That deadlocks: nothing can be
-   * added because the completed record is still there, and the record is
-   * never collected because nothing gets added. `deduplicationId`, in
-   * contrast, is released by `moveToFinished` on both completion and
-   * terminal failure, so it only collapses a compute that is genuinely still
-   * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
-   */
-  enqueueCompute(cohortId: string): Promise<void>;
-}
-
 export function createCohortService(
   deps: ServiceDeps,
   _services: () => Services
-): CohortService {
+) {
   return {
-    updateMembership: (cohortId) => updateCohortMembership(deps, cohortId),
-    listRefreshableCohortIds: () => listRefreshableCohortIds(deps),
-    enqueueCompute: async (cohortId) => {
+    updateMembership: (cohortId: string): Promise<void> =>
+      updateCohortMembership(deps, cohortId),
+    listRefreshableCohortIds: (): Promise<string[]> =>
+      listRefreshableCohortIds(deps),
+    /**
+     * Enqueue a recompute for a cohort.
+     *
+     * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
+     * short-circuit `add` for as long as *any* record for that id exists in
+     * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
+     * some other job in the queue finishing. That deadlocks: nothing can be
+     * added because the completed record is still there, and the record is
+     * never collected because nothing gets added. `deduplicationId`, in
+     * contrast, is released by `moveToFinished` on both completion and
+     * terminal failure, so it only collapses a compute that is genuinely still
+     * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
+     */
+    enqueueCompute: async (cohortId: string): Promise<void> => {
       await deps.queues.cohortCompute.cohortCompute.add(
         { cohortId },
         { deduplicationId: `cohort-${cohortId}` }

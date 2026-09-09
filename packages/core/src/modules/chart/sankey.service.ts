@@ -521,23 +521,17 @@ export async function getUserFlowCore(
 
 /** See funnel.service.ts's `createFunnelService` for why each chart
  *  sub-module carries its own factory (M10-009, ADR-007). */
-export interface SankeyService {
-  getRawWhereClause: typeof getRawWhereClause;
-  getSankey(
-    input: Parameters<typeof getSankey>[1]
-  ): ReturnType<typeof getSankey>;
-  getUserFlowCore(
-    input: Parameters<typeof getUserFlowCore>[1]
-  ): ReturnType<typeof getUserFlowCore>;
-}
-
 export function createSankeyService(
   deps: ServiceDeps,
   _services: () => Services
-): SankeyService {
+) {
   return {
     getRawWhereClause,
-    getSankey: (input) => getSankey(deps, input),
-    getUserFlowCore: (input) => getUserFlowCore(deps, input),
+    getSankey: (
+      input: Parameters<typeof getSankey>[1]
+    ): ReturnType<typeof getSankey> => getSankey(deps, input),
+    getUserFlowCore: (
+      input: Parameters<typeof getUserFlowCore>[1]
+    ): ReturnType<typeof getUserFlowCore> => getUserFlowCore(deps, input),
   };
 }

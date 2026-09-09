@@ -497,27 +497,23 @@ export async function querySessionsCore(
   );
 }
 
-export interface SessionService {
-  byId(
-    sessionId: string,
-    projectId: string
-  ): Promise<IServiceSession & { hasReplay: boolean }>;
-  /**
-   * Enqueue one `session_end` job, idempotent on the closed session's id.
-   * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
-   * @openpanel/queue producer (utils/session-handler.ts) because core could
-   * not import @openpanel/queue back (see cohort.service.ts's header).
-   */
-  enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<void>;
-}
-
 export function createSessionService(
   deps: ServiceDeps,
   _services: () => Services
-): SessionService {
+) {
   return {
-    byId: (sessionId, projectId) => getSessionById(deps, sessionId, projectId),
-    enqueueSessionEnd: async (input) => {
+    byId: (
+      sessionId: string,
+      projectId: string
+    ): Promise<IServiceSession & { hasReplay: boolean }> =>
+      getSessionById(deps, sessionId, projectId),
+    /**
+     * Enqueue one `session_end` job, idempotent on the closed session's id.
+     * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
+     * @openpanel/queue producer (utils/session-handler.ts) because core could
+     * not import @openpanel/queue back (see cohort.service.ts's header).
+     */
+    enqueueSessionEnd: async (input: EnqueueSessionEndInput): Promise<void> => {
       await deps.queues.sessions.session.add(
         sessionEndJobPayload(input),
         sessionEndEnqueueOptions(input.closedSession.id)

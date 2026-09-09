@@ -387,70 +387,10 @@ export async function getProjectForOrganization(
 // controller's `Date.now() + 24 * 60 * 60 * 1000` (REST), same duration.
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 
-export interface ProjectService {
-  getProjectById(id: string): ReturnType<typeof getProjectById>;
-  getProjectByIdCached(id: string): ReturnType<typeof getProjectById>;
-  /** Invalidates a single id in `getProjectByIdCached`'s L1 LRU + Redis —
-   *  `ingest/src/incoming-event-handler.ts` reaches it, through the
-   *  v1-compat singleton, right after marking a project's first event. */
-  clearProjectByIdCache(id: string): Promise<number>;
-  getProjectWithClients(id: string): ReturnType<typeof getProjectWithClients>;
-  getProjects(
-    input: Parameters<typeof getProjects>[1]
-  ): ReturnType<typeof getProjects>;
-  getProjectEventsCount(
-    projectId: string
-  ): ReturnType<typeof getProjectEventsCount>;
-  getLastEventPerProject(): ReturnType<typeof getLastEventPerProject>;
-  resolveClientProjectId(
-    input: Parameters<typeof resolveClientProjectId>[1]
-  ): ReturnType<typeof resolveClientProjectId>;
-  getProjectActivationStatus(
-    projectId: string
-  ): ReturnType<typeof getProjectActivationStatus>;
-  listProjectsCore(
-    input: Parameters<typeof listProjectsCore>[1]
-  ): ReturnType<typeof listProjectsCore>;
-  listProjectsForOrganization(
-    organizationId: string
-  ): ReturnType<typeof listProjectsForOrganization>;
-  getProjectForOrganization(
-    id: string,
-    organizationId: string
-  ): ReturnType<typeof getProjectForOrganization>;
-  createProjectForOrganization(
-    organizationId: string,
-    input: {
-      name: string;
-      domain?: string | null;
-      cors: string[];
-      crossDomain: boolean;
-      types: ProjectType[];
-    }
-  ): Promise<{ project: IServiceProject; client: CreatedProjectClient | null }>;
-  updateProjectForOrganization(
-    id: string,
-    organizationId: string,
-    input: {
-      name?: string;
-      domain?: string | null;
-      cors?: string[];
-      crossDomain?: boolean;
-      allowUnsafeRevenueTracking?: boolean;
-    }
-  ): Promise<IServiceProject | null>;
-  deleteProjectForOrganization(
-    id: string,
-    organizationId: string
-  ): Promise<boolean>;
-  scheduleProjectDeletion(id: string): Promise<void>;
-  cancelProjectDeletion(id: string): Promise<void>;
-}
-
 export function createProjectService(
   deps: ServiceDeps,
   _services: () => Services
-): ProjectService {
+) {
   /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
   const getProjectByIdCached = cacheable(
     (id: string) => getProjectById(deps, id),
@@ -631,21 +571,47 @@ export function createProjectService(
   }
 
   return {
-    getProjectById: (id) => getProjectById(deps, id),
-    getProjectByIdCached: (id) => getProjectByIdCached(id),
-    clearProjectByIdCache: (id) => getProjectByIdCached.clear(id),
-    getProjectWithClients: (id) => getProjectWithClients(deps, id),
-    getProjects: (input) => getProjects(deps, input),
-    getProjectEventsCount: (projectId) =>
+    getProjectById: (id: string): ReturnType<typeof getProjectById> =>
+      getProjectById(deps, id),
+    getProjectByIdCached: (id: string): ReturnType<typeof getProjectById> =>
+      getProjectByIdCached(id),
+    /** Invalidates a single id in `getProjectByIdCached`'s L1 LRU + Redis —
+     *  `ingest/src/incoming-event-handler.ts` reaches it, through the
+     *  v1-compat singleton, right after marking a project's first event. */
+    clearProjectByIdCache: (id: string): Promise<number> =>
+      getProjectByIdCached.clear(id),
+    getProjectWithClients: (
+      id: string
+    ): ReturnType<typeof getProjectWithClients> =>
+      getProjectWithClients(deps, id),
+    getProjects: (
+      input: Parameters<typeof getProjects>[1]
+    ): ReturnType<typeof getProjects> => getProjects(deps, input),
+    getProjectEventsCount: (
+      projectId: string
+    ): ReturnType<typeof getProjectEventsCount> =>
       getProjectEventsCount(deps, projectId),
-    getLastEventPerProject: () => getLastEventPerProject(deps),
-    resolveClientProjectId: (input) => resolveClientProjectId(deps, input),
-    getProjectActivationStatus: (projectId) =>
+    getLastEventPerProject: (): ReturnType<typeof getLastEventPerProject> =>
+      getLastEventPerProject(deps),
+    resolveClientProjectId: (
+      input: Parameters<typeof resolveClientProjectId>[1]
+    ): ReturnType<typeof resolveClientProjectId> =>
+      resolveClientProjectId(deps, input),
+    getProjectActivationStatus: (
+      projectId: string
+    ): ReturnType<typeof getProjectActivationStatus> =>
       getProjectActivationStatus(deps, projectId),
-    listProjectsCore: (input) => listProjectsCore(deps, input),
-    listProjectsForOrganization: (organizationId) =>
+    listProjectsCore: (
+      input: Parameters<typeof listProjectsCore>[1]
+    ): ReturnType<typeof listProjectsCore> => listProjectsCore(deps, input),
+    listProjectsForOrganization: (
+      organizationId: string
+    ): ReturnType<typeof listProjectsForOrganization> =>
       listProjectsForOrganization(deps, organizationId),
-    getProjectForOrganization: (id, organizationId) =>
+    getProjectForOrganization: (
+      id: string,
+      organizationId: string
+    ): ReturnType<typeof getProjectForOrganization> =>
       getProjectForOrganization(deps, id, organizationId),
     createProjectForOrganization,
     updateProjectForOrganization,

@@ -8,7 +8,7 @@ import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
 import { notificationQueueJobs } from './notification.jobs';
-import type { NotificationService } from './notification.service';
+import type { createNotificationService } from './notification.service';
 
 function stubLogger(): Logger {
   const noop = () => undefined;
@@ -24,10 +24,12 @@ function stubLogger(): Logger {
   return logger;
 }
 
-function stubJobCtx(notification: Partial<NotificationService>): JobCtx {
+function stubJobCtx(
+  notification: Partial<ReturnType<typeof createNotificationService>>
+): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
-    notification: notification as NotificationService,
+    notification: notification as ReturnType<typeof createNotificationService>,
     insight: {} as Services['insight'],
     integration: {} as Services['integration'],
     cohort: {} as Services['cohort'],

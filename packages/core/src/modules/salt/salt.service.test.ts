@@ -92,7 +92,7 @@ afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
 });
 
-let subject: import('./salt.service').SaltService;
+let subject: ReturnType<typeof import('./salt.service').createSaltService>;
 let fetchSalts: typeof import('./salt.service').fetchSalts;
 beforeAll(async () => {
   const mod = await import('./salt.service');

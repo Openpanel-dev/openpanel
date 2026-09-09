@@ -1232,24 +1232,21 @@ export async function insertRawEventsBatch(
 // `ctx.services.import` binding.
 // ---------------------------------------------------------------------------
 
-export interface ImportService {
-  run(
-    importId: string,
-    progress?: ImportJobProgress
-  ): Promise<{ success: true }>;
-  /** Enqueues the `import` job and returns its BullMQ job id, for `Import.jobId`. */
-  enqueue(importId: string): Promise<string>;
-}
-
 /** `ctx.services.import` — a thin binding of the job body above to a Ctx's queues. */
 export function createImportService(
   deps: ServiceDeps,
   _services: () => Services
-): ImportService {
+) {
   const logger = deps.logger.child({ module: 'import' });
 
   return {
-    run: (importId, progress) => runImportJob(deps, importId, progress, logger),
-    enqueue: (importId) => deps.queues.import.import.add({ importId }),
+    run: (
+      importId: string,
+      progress?: ImportJobProgress
+    ): Promise<{ success: true }> =>
+      runImportJob(deps, importId, progress, logger),
+    /** Enqueues the `import` job and returns its BullMQ job id, for `Import.jobId`. */
+    enqueue: (importId: string): Promise<string> =>
+      deps.queues.import.import.add({ importId }),
   };
 }

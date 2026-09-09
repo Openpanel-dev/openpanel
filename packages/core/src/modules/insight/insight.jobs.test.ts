@@ -8,7 +8,7 @@ import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
 import { insightCronJobs, insightQueueJobs } from './insight.jobs';
-import type { InsightService } from './insight.service';
+import type { createInsightService } from './insight.service';
 
 function stubLogger(): Logger {
   const noop = () => undefined;
@@ -29,13 +29,13 @@ function stubLogger(): Logger {
 // makes it unassignable afterwards — exactly what a fake `services.insight`
 // needs to be for a handler test.
 function stubJobCtx(
-  insight: Partial<InsightService>,
+  insight: Partial<ReturnType<typeof createInsightService>>,
   jobName = 'test'
 ): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
     notification: {} as Services['notification'],
-    insight: insight as InsightService,
+    insight: insight as ReturnType<typeof createInsightService>,
     gsc: {} as Services['gsc'],
     integration: {} as Services['integration'],
     cohort: {} as Services['cohort'],
@@ -146,7 +146,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
           { projectId: 'p1', date },
           { projectId: 'p2', date },
         ],
-      } as InsightService,
+      } as ReturnType<typeof createInsightService>,
       gsc: {} as Services['gsc'],
       integration: {} as Services['integration'],
       cohort: {} as Services['cohort'],

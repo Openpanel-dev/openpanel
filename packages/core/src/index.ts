@@ -216,7 +216,6 @@ export { registerDefaultMetrics } from './metrics';
 // Fastify wrapper does so inside its own already-async route registration)
 // and keep the reference.
 export type {
-  AssistantService,
   ChatApp,
   ChatRunContext,
   FilterCommandResult,
@@ -240,7 +239,6 @@ export {
 // directly, the same way V1 reached every other dissolved service here.
 export type {
   AuthProvider,
-  AuthService,
   CompleteOAuthCallbackInput,
   OAuth2Tokens,
   OAuthUser,
@@ -306,7 +304,6 @@ export type {
   ChartBucketProfilesInput,
   ChartBucketProfilesRequest,
   ChartEventOption,
-  ChartService,
   ChartSqlInput,
   CohortMetadata,
   ConcreteSeries,
@@ -402,7 +399,6 @@ export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // service here. packages/db/src/services/clients.service.ts stays a
 // re-export shim.
 export type {
-  ClientService,
   CreatedClient,
   IServiceClient,
   IServiceClientWithProject,
@@ -414,14 +410,12 @@ export { createClientService } from './modules/client/client.service';
 // here. Nothing else in the tree reached cohort.service.ts through
 // @openpanel/db's barrel, so packages/db loses the file entirely rather than
 // keeping a re-export shim (unlike gsc.ts/gsc.service.ts).
-export type { CohortService } from './modules/cohort/cohort.service';
 // Moved from @openpanel/db's services/conversation.service.ts (M5-006) —
 // packages/trpc's conversation router, apps/api's live chat route and this
 // package's own assistant.routes.ts stub call these directly. packages/db
 // keeps a re-export shim (unlike cohort, M5-003): both non-trpc call sites
 // still reach it through `@openpanel/db`'s barrel.
 export type {
-  ConversationService,
   IServiceChatMessage,
   IServiceConversation,
   IServiceConversationWithMessages,
@@ -479,7 +473,6 @@ export {
   transformMinimalEvent,
   transformSessionToEvent,
 } from './modules/event/event.service';
-export type { ExportService } from './modules/export/export.service';
 export { createExportService } from './modules/export/export.service';
 export type {
   GetGroupListOptions,
@@ -526,7 +519,6 @@ export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
 export type {
   McpAuthContext,
   McpHttpResult,
-  McpService,
 } from './modules/mcp/mcp.service';
 export {
   createMcpService,
@@ -536,7 +528,6 @@ export {
 export type {
   INotificationPayload,
   INotificationRuleCached,
-  NotificationService,
 } from './modules/notification/notification.service';
 export {
   APP_NOTIFICATION_INTEGRATION_ID,
@@ -568,7 +559,6 @@ export { checkNotificationRulesForEvent } from './modules/notification/src/notif
 export type {
   CreateOnboardingProjectResult,
   OnboardingCronSummary,
-  OnboardingService,
 } from './modules/onboarding/onboarding.service';
 export { createOnboardingService } from './modules/onboarding/onboarding.service';
 // Dissolved from @openpanel/db's services/organization.service.ts +
@@ -586,7 +576,6 @@ export type {
   IServiceMember,
   IServiceOrganization,
   IServiceProjectAccess,
-  OrganizationService,
 } from './modules/organization/organization.service';
 export {
   createOrganizationService,
@@ -610,7 +599,6 @@ export type {
   IGetUserJourneyInput,
   ILiveData,
   ILiveMinuteCount,
-  OverviewService,
   SegmentDailyPoint,
   TrafficColumn,
 } from './modules/overview/overview.service';
@@ -630,7 +618,6 @@ export type {
   IPageConversionRow,
   IPageTimeseriesRow,
   ITopPage,
-  PagesService,
 } from './modules/overview/pages.service';
 export type {
   AdjustProfilePropertyResult,
@@ -655,7 +642,6 @@ export type {
   IServiceProject,
   IServiceProjectWithClients,
   ProjectActivationStatus,
-  ProjectService,
 } from './modules/project/project.service';
 export { createProjectService } from './modules/project/project.service';
 // The six ClickHouse queries moved from packages/trpc/src/routers/realtime.ts
@@ -804,7 +790,6 @@ export { createShareService } from './modules/share/share.service';
 // map: subscription owns "S"+"C") — packages/trpc's subscription router and
 // apps/api's webhook controller call these directly, the same way V1 reaches
 // every other dissolved service here.
-export type { SubscriptionService } from './modules/subscription/subscription.service';
 export {
   createSubscriptionService,
   getCurrentSubscriptionProduct,
@@ -814,7 +799,6 @@ export {
 // packages/trpc's auth/onboarding routers call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same
 // way they reach every other dissolved service here.
-export type { UserService } from './modules/user/user.service';
 export { createUserService } from './modules/user/user.service';
 
 import {
@@ -839,7 +823,6 @@ export { isShuttingDown, setShuttingDown } from './modules/health/src/shutdown';
 // else reached it through @openpanel/db's barrel (same as cohort, M5-003).
 export type {
   ImportJobProgress,
-  ImportService,
   ImportStageResult,
   ImportSteps,
   InsertRawEventsResult,
@@ -858,7 +841,6 @@ export type {
   IngestAuthOutcome,
   IngestBuffers,
   IngestHeaders,
-  IngestService,
   IngestTransport,
   TrackOutcome,
   TrackRequest,
@@ -990,7 +972,7 @@ export {
 // `ctx.services.salt` / the v1-compat singleton instead (M10-004, see
 // salt.service.ts's header — `getSalts` is the one export still bare here,
 // for the same reason it's bare on the v1-compat seam).
-export type { SaltService, Salts } from './modules/salt/salt.service';
+export type { Salts } from './modules/salt/salt.service';
 export {
   createInitialSalts,
   createSaltService,

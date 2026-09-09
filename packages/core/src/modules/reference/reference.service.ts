@@ -135,27 +135,24 @@ export async function getChartReferences(
   });
 }
 
-export interface ReferenceService {
-  getReferenceById(id: string): Promise<Reference | null>;
-  getReferenceByIdOrThrow(id: string): Promise<Reference>;
-  listReferences(input: ListReferencesInput): Promise<Reference[]>;
-  createReference(input: CreateReferenceInput): Promise<Reference>;
-  updateReference(input: UpdateReferenceInput): Promise<Reference>;
-  deleteReference(id: string): Promise<Reference>;
-  getChartReferences(input: ChartReferencesInput): Promise<Reference[]>;
-}
-
 export function createReferenceService(
   deps: ServiceDeps,
   _services: () => Services
-): ReferenceService {
+) {
   return {
-    getReferenceById: (id) => getReferenceById(deps, id),
-    getReferenceByIdOrThrow: (id) => getReferenceByIdOrThrow(deps, id),
-    listReferences: (input) => listReferences(deps, input),
-    createReference: (input) => createReference(deps, input),
-    updateReference: (input) => updateReference(deps, input),
-    deleteReference: (id) => deleteReference(deps, id),
-    getChartReferences: (input) => getChartReferences(deps, input),
+    getReferenceById: (id: string): Promise<Reference | null> =>
+      getReferenceById(deps, id),
+    getReferenceByIdOrThrow: (id: string): Promise<Reference> =>
+      getReferenceByIdOrThrow(deps, id),
+    listReferences: (input: ListReferencesInput): Promise<Reference[]> =>
+      listReferences(deps, input),
+    createReference: (input: CreateReferenceInput): Promise<Reference> =>
+      createReference(deps, input),
+    updateReference: (input: UpdateReferenceInput): Promise<Reference> =>
+      updateReference(deps, input),
+    deleteReference: (id: string): Promise<Reference> =>
+      deleteReference(deps, id),
+    getChartReferences: (input: ChartReferencesInput): Promise<Reference[]> =>
+      getChartReferences(deps, input),
   };
 }

@@ -138,7 +138,7 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
-let subject: import('./client.service').ClientService;
+let subject: ReturnType<typeof import('./client.service').createClientService>;
 beforeAll(async () => {
   const { createClientService } = await import('./client.service');
   subject = createClientService(

@@ -20,7 +20,7 @@ export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
 // `findUniqueOrThrow` returns a chainable "fluent" client (PromiseLike, plus
 // relation-loading methods), which trips up `Services['user']['getUserById']`
 // in v1-compat.ts — a `.then(...)` wrapping a bare fluent type there can't
-// unify with the plain `Promise<User>` the interface declares.
+// unify with the plain `Promise<User>` the service member declares.
 export function getUserById(deps: ServiceDeps, id: string): Promise<User> {
   return deps.db.user.findUniqueOrThrow({
     where: {
@@ -140,28 +140,23 @@ export async function updateUserProfile(
   });
 }
 
-export interface UserService {
-  getUserById(id: string): ReturnType<typeof getUserById>;
-  getUserAccount(
-    args: Parameters<typeof getUserAccount>[1]
-  ): ReturnType<typeof getUserAccount>;
-  listUserDeletionBlockers(userId: string): Promise<UserDeletionBlocker[]>;
-  deleteUserAccount(userId: string): Promise<void>;
-  updateUserProfile(
-    input: Parameters<typeof updateUserProfile>[1]
-  ): ReturnType<typeof updateUserProfile>;
-}
-
 export function createUserService(
   deps: ServiceDeps,
   _services: () => Services
-): UserService {
+) {
   return {
-    getUserById: (id) => getUserById(deps, id),
-    getUserAccount: (args) => getUserAccount(deps, args),
-    listUserDeletionBlockers: (userId) =>
-      listUserDeletionBlockers(deps, userId),
-    deleteUserAccount: (userId) => deleteUserAccount(deps, userId),
-    updateUserProfile: (input) => updateUserProfile(deps, input),
+    getUserById: (id: string): ReturnType<typeof getUserById> =>
+      getUserById(deps, id),
+    getUserAccount: (
+      args: Parameters<typeof getUserAccount>[1]
+    ): ReturnType<typeof getUserAccount> => getUserAccount(deps, args),
+    listUserDeletionBlockers: (
+      userId: string
+    ): Promise<UserDeletionBlocker[]> => listUserDeletionBlockers(deps, userId),
+    deleteUserAccount: (userId: string): Promise<void> =>
+      deleteUserAccount(deps, userId),
+    updateUserProfile: (
+      input: Parameters<typeof updateUserProfile>[1]
+    ): ReturnType<typeof updateUserProfile> => updateUserProfile(deps, input),
   };
 }

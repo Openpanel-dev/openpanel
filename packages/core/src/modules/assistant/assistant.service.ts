@@ -79,14 +79,6 @@ export async function runFilterCommand(input: RunFilterCommandInput) {
   return run(input);
 }
 
-export interface AssistantService {
-  getChatApp(): ReturnType<typeof getChatApp>;
-  getChatRunContext(): ReturnType<typeof getChatRunContext>;
-  runFilterCommand(
-    input: RunFilterCommandInput
-  ): ReturnType<typeof runFilterCommand>;
-}
-
 /**
  * Ignores BOTH arguments, and takes them only because ADR-022 R3 keeps the
  * composition root a flat list: the three members are `@better-agent/core`
@@ -97,7 +89,7 @@ export interface AssistantService {
 export function createAssistantService(
   _deps: ServiceDeps,
   _services: () => Services
-): AssistantService {
+) {
   return {
     getChatApp,
     getChatRunContext,

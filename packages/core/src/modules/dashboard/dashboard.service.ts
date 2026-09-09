@@ -160,37 +160,36 @@ export async function deleteDashboard(
   }
 }
 
-export interface DashboardService {
-  getDashboardById(
-    id: string,
-    projectId: string
-  ): Promise<DashboardWithProject | null>;
-  getDashboardByIdOrThrow(id: string): Promise<Dashboard>;
-  getDashboardsByProjectId(projectId: string): Promise<IServiceDashboards>;
-  listDashboardsCore(input: {
-    projectId: string;
-    organizationId: string;
-  }): Promise<DashboardListItem[]>;
-  createDashboard(input: {
-    name: string;
-    projectId: string;
-  }): Promise<Dashboard>;
-  updateDashboard(input: { id: string; name: string }): Promise<Dashboard>;
-  deleteDashboard(input: { id: string; forceDelete?: boolean }): Promise<void>;
-}
-
 export function createDashboardService(
   deps: ServiceDeps,
   _services: () => Services
-): DashboardService {
+) {
   return {
-    getDashboardById: (id, projectId) => getDashboardById(deps, id, projectId),
-    getDashboardByIdOrThrow: (id) => getDashboardByIdOrThrow(deps, id),
-    getDashboardsByProjectId: (projectId) =>
-      getDashboardsByProjectId(deps, projectId),
-    listDashboardsCore: (input) => listDashboardsCore(deps, input),
-    createDashboard: (input) => createDashboard(deps, input),
-    updateDashboard: (input) => updateDashboard(deps, input),
-    deleteDashboard: (input) => deleteDashboard(deps, input),
+    getDashboardById: (
+      id: string,
+      projectId: string
+    ): Promise<DashboardWithProject | null> =>
+      getDashboardById(deps, id, projectId),
+    getDashboardByIdOrThrow: (id: string): Promise<Dashboard> =>
+      getDashboardByIdOrThrow(deps, id),
+    getDashboardsByProjectId: (
+      projectId: string
+    ): Promise<IServiceDashboards> => getDashboardsByProjectId(deps, projectId),
+    listDashboardsCore: (input: {
+      projectId: string;
+      organizationId: string;
+    }): Promise<DashboardListItem[]> => listDashboardsCore(deps, input),
+    createDashboard: (input: {
+      name: string;
+      projectId: string;
+    }): Promise<Dashboard> => createDashboard(deps, input),
+    updateDashboard: (input: {
+      id: string;
+      name: string;
+    }): Promise<Dashboard> => updateDashboard(deps, input),
+    deleteDashboard: (input: {
+      id: string;
+      forceDelete?: boolean;
+    }): Promise<void> => deleteDashboard(deps, input),
   };
 }

@@ -903,27 +903,23 @@ function isLiveSession(session: { ended_at: string }, now: number): boolean {
   );
 }
 
-export interface IngestService {
-  track(
-    request: TrackRequest,
-    produceIncomingEvent: IncomingEventProducer
-  ): Promise<TrackOutcome>;
-  checkBot(request: Parameters<typeof checkIngestBot>[1]): Promise<BotVerdict>;
-  isDuplicate: typeof isDuplicateIngestRequest;
-}
-
 export function createIngestService(
   deps: ServiceDeps,
   _services: () => Services
-): IngestService {
+) {
   return {
-    track: (request, produceIncomingEvent) =>
+    track: (
+      request: TrackRequest,
+      produceIncomingEvent: IncomingEventProducer
+    ): Promise<TrackOutcome> =>
       ingestTrack(request, {
         buffers: deps.buffers,
         produceIncomingEvent,
         deps,
       }),
-    checkBot: (request) => checkIngestBot(deps, request),
+    checkBot: (
+      request: Parameters<typeof checkIngestBot>[1]
+    ): Promise<BotVerdict> => checkIngestBot(deps, request),
     isDuplicate: isDuplicateIngestRequest,
   };
 }

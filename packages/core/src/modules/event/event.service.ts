@@ -1322,23 +1322,18 @@ export async function getTopOrigins(deps: ServiceDeps, projectId: string) {
   );
 }
 
-export interface EventService {
-  getById(input: {
-    projectId: string;
-    id: string;
-    createdAt?: Date;
-  }): Promise<IServiceEvent | null>;
-  create(
-    payload: IServiceCreateEventPayloadWithId
-  ): Promise<{ document: IClickhouseEvent }>;
-}
-
 export function createEventService(
   deps: ServiceDeps,
   _services: () => Services
-): EventService {
+) {
   return {
-    getById: (input) => getEventById(deps, input),
-    create: (payload) => createEvent(deps, payload),
+    getById: (input: {
+      projectId: string;
+      id: string;
+      createdAt?: Date;
+    }): Promise<IServiceEvent | null> => getEventById(deps, input),
+    create: (
+      payload: IServiceCreateEventPayloadWithId
+    ): Promise<{ document: IClickhouseEvent }> => createEvent(deps, payload),
   };
 }

@@ -802,61 +802,46 @@ async function dispatchPolarWebhookEvent(
   }
 }
 
-export interface SubscriptionService {
-  getCurrentSubscriptionProduct(
-    organizationId: string
-  ): ReturnType<typeof getCurrentSubscriptionProduct>;
-  checkout(
-    userId: string,
-    input: ICheckout,
-    ipAddress: string | undefined
-  ): ReturnType<typeof checkout>;
-  listProducts(organizationId: string): ReturnType<typeof listProducts>;
-  getUsage(organizationId: string): ReturnType<typeof getUsage>;
-  cancelSubscription(
-    userId: string,
-    input: ICancelSubscription
-  ): ReturnType<typeof cancelSubscription>;
-  pauseSubscription(
-    userId: string,
-    input: IPauseSubscription
-  ): ReturnType<typeof pauseSubscription>;
-  resumeSubscription(
-    userId: string,
-    organizationId: string
-  ): ReturnType<typeof resumeSubscription>;
-  applySaveDiscount(
-    userId: string,
-    organizationId: string
-  ): ReturnType<typeof applySaveDiscount>;
-  portal(userId: string, organizationId: string): ReturnType<typeof portal>;
-  handlePolarWebhookEvent(
-    rawBody: string | Buffer,
-    headers: Record<string, string>,
-    logger: Logger
-  ): Promise<void>;
-}
-
 export function createSubscriptionService(
   deps: ServiceDeps,
   _services: () => Services
-): SubscriptionService {
+) {
   return {
     getCurrentSubscriptionProduct,
-    checkout: (userId, input, ipAddress) =>
-      checkout(deps, userId, input, ipAddress),
-    listProducts: (organizationId) => listProducts(deps, organizationId),
-    getUsage: (organizationId) => getUsage(deps, organizationId),
-    cancelSubscription: (userId, input) =>
+    checkout: (
+      userId: string,
+      input: ICheckout,
+      ipAddress: string | undefined
+    ): ReturnType<typeof checkout> => checkout(deps, userId, input, ipAddress),
+    listProducts: (organizationId: string): ReturnType<typeof listProducts> =>
+      listProducts(deps, organizationId),
+    getUsage: (organizationId: string): ReturnType<typeof getUsage> =>
+      getUsage(deps, organizationId),
+    cancelSubscription: (
+      userId: string,
+      input: ICancelSubscription
+    ): ReturnType<typeof cancelSubscription> =>
       cancelSubscription(deps, userId, input),
-    pauseSubscription: (userId, input) =>
+    pauseSubscription: (
+      userId: string,
+      input: IPauseSubscription
+    ): ReturnType<typeof pauseSubscription> =>
       pauseSubscription(deps, userId, input),
-    resumeSubscription: (userId, organizationId) =>
+    resumeSubscription: (
+      userId: string,
+      organizationId: string
+    ): ReturnType<typeof resumeSubscription> =>
       resumeSubscription(deps, userId, organizationId),
-    applySaveDiscount: (userId, organizationId) =>
+    applySaveDiscount: (
+      userId: string,
+      organizationId: string
+    ): ReturnType<typeof applySaveDiscount> =>
       applySaveDiscount(deps, userId, organizationId),
     portal,
-    handlePolarWebhookEvent: (rawBody, headers, logger) =>
-      handlePolarWebhookEvent(deps, rawBody, headers, logger),
+    handlePolarWebhookEvent: (
+      rawBody: string | Buffer,
+      headers: Record<string, string>,
+      logger: Logger
+    ): Promise<void> => handlePolarWebhookEvent(deps, rawBody, headers, logger),
   };
 }

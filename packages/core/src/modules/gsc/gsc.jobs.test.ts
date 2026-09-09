@@ -8,7 +8,7 @@ import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
 import { gscCronJobs, gscQueueJobs } from './gsc.jobs';
-import type { GscService } from './gsc.service';
+import type { createGscService } from './gsc.service';
 
 function stubLogger(): Logger {
   const noop = () => undefined;
@@ -24,7 +24,10 @@ function stubLogger(): Logger {
   return logger;
 }
 
-function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
+function stubJobCtx(
+  gsc: Partial<ReturnType<typeof createGscService>>,
+  jobName = 'test'
+): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
     notification: {} as Services['notification'],
@@ -33,7 +36,7 @@ function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
     cohort: {} as Services['cohort'],
     import: {} as Services['import'],
     ingest: {} as Services['ingest'],
-    gsc: gsc as GscService,
+    gsc: gsc as ReturnType<typeof createGscService>,
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
     session: {} as Services['session'],
@@ -161,7 +164,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
           { projectId: 'p1' },
           { projectId: 'p2' },
         ],
-      } as GscService,
+      } as ReturnType<typeof createGscService>,
       organization: {} as Services['organization'],
       onboarding: {} as Services['onboarding'],
       session: {} as Services['session'],

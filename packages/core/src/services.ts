@@ -3,144 +3,42 @@
 // before it with an empty interface.
 
 import type { Ctx } from './context';
-import {
-  type AssistantService,
-  createAssistantService,
-} from './modules/assistant/assistant.service';
-import {
-  type AuthService,
-  createAuthService,
-} from './modules/auth/auth.service';
-import {
-  type ChartService,
-  createChartService,
-} from './modules/chart/chart.service';
-import {
-  type ConversionService,
-  createConversionService,
-} from './modules/chart/conversion.service';
-import {
-  createFunnelService,
-  type FunnelService,
-} from './modules/chart/funnel.service';
-import {
-  createRetentionService,
-  type RetentionService,
-} from './modules/chart/retention.service';
-import {
-  createSankeyService,
-  type SankeyService,
-} from './modules/chart/sankey.service';
-import {
-  type ClientService,
-  createClientService,
-} from './modules/client/client.service';
-import {
-  type CohortService,
-  createCohortService,
-} from './modules/cohort/cohort.service';
-import {
-  type ConversationService,
-  createConversationService,
-} from './modules/conversation/conversation.service';
-import {
-  createDashboardService,
-  type DashboardService,
-} from './modules/dashboard/dashboard.service';
-import {
-  createEventService,
-  type EventService,
-} from './modules/event/event.service';
-import {
-  createExportService,
-  type ExportService,
-} from './modules/export/export.service';
-import {
-  createGroupService,
-  type GroupService,
-} from './modules/group/group.service';
-import { createGscService, type GscService } from './modules/gsc/gsc.service';
-import {
-  createImportService,
-  type ImportService,
-} from './modules/import/import.service';
-import {
-  createIngestService,
-  type IngestService,
-} from './modules/ingest/ingest.service';
-import {
-  createInsightService,
-  type InsightService,
-} from './modules/insight/insight.service';
-import {
-  createIntegrationService,
-  type IntegrationService,
-} from './modules/integration/integration.service';
-import { createMcpService, type McpService } from './modules/mcp/mcp.service';
-import {
-  createMiscService,
-  type MiscService,
-} from './modules/misc/misc.service';
-import {
-  createNotificationService,
-  type NotificationService,
-} from './modules/notification/notification.service';
-import {
-  createOnboardingService,
-  type OnboardingService,
-} from './modules/onboarding/onboarding.service';
-import {
-  createOrganizationService,
-  type OrganizationService,
-} from './modules/organization/organization.service';
-import {
-  createOverviewService,
-  type OverviewService,
-} from './modules/overview/overview.service';
-import {
-  createPagesService,
-  type PagesService,
-} from './modules/overview/pages.service';
-import {
-  createProfileService,
-  type ProfileService,
-} from './modules/profile/profile.service';
-import {
-  createProjectService,
-  type ProjectService,
-} from './modules/project/project.service';
-import {
-  createRealtimeService,
-  type RealtimeService,
-} from './modules/realtime/realtime.service';
-import {
-  createReferenceService,
-  type ReferenceService,
-} from './modules/reference/reference.service';
-import {
-  createReportService,
-  type ReportService,
-} from './modules/report/report.service';
-import {
-  createSaltService,
-  type SaltService,
-} from './modules/salt/salt.service';
-import {
-  createSessionService,
-  type SessionService,
-} from './modules/session/session.service';
-import {
-  createShareService,
-  type ShareService,
-} from './modules/share/share.service';
-import {
-  createSubscriptionService,
-  type SubscriptionService,
-} from './modules/subscription/subscription.service';
-import {
-  createUserService,
-  type UserService,
-} from './modules/user/user.service';
+import { createAssistantService } from './modules/assistant/assistant.service';
+import { createAuthService } from './modules/auth/auth.service';
+import { createChartService } from './modules/chart/chart.service';
+import { createConversionService } from './modules/chart/conversion.service';
+import { createFunnelService } from './modules/chart/funnel.service';
+import { createRetentionService } from './modules/chart/retention.service';
+import { createSankeyService } from './modules/chart/sankey.service';
+import { createClientService } from './modules/client/client.service';
+import { createCohortService } from './modules/cohort/cohort.service';
+import { createConversationService } from './modules/conversation/conversation.service';
+import { createDashboardService } from './modules/dashboard/dashboard.service';
+import { createEventService } from './modules/event/event.service';
+import { createExportService } from './modules/export/export.service';
+import { createGroupService } from './modules/group/group.service';
+import { createGscService } from './modules/gsc/gsc.service';
+import { createImportService } from './modules/import/import.service';
+import { createIngestService } from './modules/ingest/ingest.service';
+import { createInsightService } from './modules/insight/insight.service';
+import { createIntegrationService } from './modules/integration/integration.service';
+import { createMcpService } from './modules/mcp/mcp.service';
+import { createMiscService } from './modules/misc/misc.service';
+import { createNotificationService } from './modules/notification/notification.service';
+import { createOnboardingService } from './modules/onboarding/onboarding.service';
+import { createOrganizationService } from './modules/organization/organization.service';
+import { createOverviewService } from './modules/overview/overview.service';
+import { createPagesService } from './modules/overview/pages.service';
+import { createProfileService } from './modules/profile/profile.service';
+import { createProjectService } from './modules/project/project.service';
+import { createRealtimeService } from './modules/realtime/realtime.service';
+import { createReferenceService } from './modules/reference/reference.service';
+import { createReportService } from './modules/report/report.service';
+import { createSaltService } from './modules/salt/salt.service';
+import { createSessionService } from './modules/session/session.service';
+import { createShareService } from './modules/share/share.service';
+import { createSubscriptionService } from './modules/subscription/subscription.service';
+import { createUserService } from './modules/user/user.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -158,47 +56,47 @@ export type ServiceDeps = Pick<
 //    return type cannot be computed from signatures alone. Omit one and
 //    typecheck fails with ts7022/ts7023 naming the method.
 export interface Services {
-  auth: AuthService;
-  insight: InsightService;
-  gsc: GscService;
-  cohort: CohortService;
-  import: ImportService;
-  ingest: IngestService;
-  organization: OrganizationService;
-  integration: IntegrationService;
-  onboarding: OnboardingService;
-  notification: NotificationService;
-  session: SessionService;
-  event: EventService;
-  profile: ProfileService;
-  group: GroupService;
-  chart: ChartService;
+  auth: ReturnType<typeof createAuthService>;
+  insight: ReturnType<typeof createInsightService>;
+  gsc: ReturnType<typeof createGscService>;
+  cohort: ReturnType<typeof createCohortService>;
+  import: ReturnType<typeof createImportService>;
+  ingest: ReturnType<typeof createIngestService>;
+  organization: ReturnType<typeof createOrganizationService>;
+  integration: ReturnType<typeof createIntegrationService>;
+  onboarding: ReturnType<typeof createOnboardingService>;
+  notification: ReturnType<typeof createNotificationService>;
+  session: ReturnType<typeof createSessionService>;
+  event: ReturnType<typeof createEventService>;
+  profile: ReturnType<typeof createProfileService>;
+  group: ReturnType<typeof createGroupService>;
+  chart: ReturnType<typeof createChartService>;
   // One key per `*.service.ts` (M10-009): the chart module is four files
   // besides `chart.service.ts`, so each is bound here too. `chart` keeps the
   // composed facade its own callers already use — the factories build stateless
   // closures over `deps`, so binding a sub-module twice binds the same
   // functions, not a second piece of state.
-  funnel: FunnelService;
-  conversion: ConversionService;
-  sankey: SankeyService;
-  retention: RetentionService;
-  overview: OverviewService;
-  pages: PagesService;
-  realtime: RealtimeService;
-  misc: MiscService;
-  report: ReportService;
-  dashboard: DashboardService;
-  export: ExportService;
-  share: ShareService;
-  reference: ReferenceService;
-  client: ClientService;
-  project: ProjectService;
-  user: UserService;
-  subscription: SubscriptionService;
-  salt: SaltService;
-  conversation: ConversationService;
-  assistant: AssistantService;
-  mcp: McpService;
+  funnel: ReturnType<typeof createFunnelService>;
+  conversion: ReturnType<typeof createConversionService>;
+  sankey: ReturnType<typeof createSankeyService>;
+  retention: ReturnType<typeof createRetentionService>;
+  overview: ReturnType<typeof createOverviewService>;
+  pages: ReturnType<typeof createPagesService>;
+  realtime: ReturnType<typeof createRealtimeService>;
+  misc: ReturnType<typeof createMiscService>;
+  report: ReturnType<typeof createReportService>;
+  dashboard: ReturnType<typeof createDashboardService>;
+  export: ReturnType<typeof createExportService>;
+  share: ReturnType<typeof createShareService>;
+  reference: ReturnType<typeof createReferenceService>;
+  client: ReturnType<typeof createClientService>;
+  project: ReturnType<typeof createProjectService>;
+  user: ReturnType<typeof createUserService>;
+  subscription: ReturnType<typeof createSubscriptionService>;
+  salt: ReturnType<typeof createSaltService>;
+  conversation: ReturnType<typeof createConversationService>;
+  assistant: ReturnType<typeof createAssistantService>;
+  mcp: ReturnType<typeof createMcpService>;
 }
 
 // MUST stay a hoisted `function` declaration, not a `const` arrow: one static

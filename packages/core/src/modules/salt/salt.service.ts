@@ -88,16 +88,10 @@ export async function createInitialSalts(
   }
 }
 
-export interface SaltService {
-  getSalts(): Promise<Salts>;
-  createInitialSalts(): Promise<void>;
-  rotateSalt(): Promise<{ salt: string; createdAt: Date }>;
-}
-
 export function createSaltService(
   deps: ServiceDeps,
   _services: () => Services
-): SaltService {
+) {
   const getSalts = cacheable(
     SALT_CACHE_NAME,
     () => fetchSalts(deps),
@@ -145,8 +139,8 @@ export function createSaltService(
   }
 
   return {
-    getSalts: () => getSalts(),
-    createInitialSalts: () => createInitialSalts(deps),
-    rotateSalt: () => rotateSalt(),
+    getSalts: (): Promise<Salts> => getSalts(),
+    createInitialSalts: (): Promise<void> => createInitialSalts(deps),
+    rotateSalt: (): Promise<{ salt: string; createdAt: Date }> => rotateSalt(),
   };
 }

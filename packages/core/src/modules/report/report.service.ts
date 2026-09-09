@@ -462,79 +462,53 @@ export async function resetReportLayouts(
 
 // --- service ------------------------------------------------------------
 
-export interface ReportService {
-  transformFilter(
-    filter: Partial<IChartEventFilter>,
-    index: number
-  ): IChartEventFilter;
-  transformReportEventItem(
-    item: IChartEventItem,
-    index: number
-  ): IChartEventItem;
-  transformReport(
-    report: DbReport & { layout?: ReportLayout | null }
-  ): ReturnType<typeof transformReport>;
-  mergeGlobalFilters(
-    series: IChartEventItem[],
-    globalFilters?: IChartEventFilter[]
-  ): IChartEventItem[];
-  onlyReportEvents(series: IChartEventItem[]): IChartEventItem[];
-  getReportsByDashboardId(
-    dashboardId: string
-  ): ReturnType<typeof getReportsByDashboardId>;
-  getReportById(id: string): ReturnType<typeof getReportById>;
-  getReportByIdOrThrow(id: string): ReturnType<typeof getReportByIdOrThrow>;
-  listReportsCore(
-    input: Parameters<typeof listReportsCore>[1]
-  ): ReturnType<typeof listReportsCore>;
-  getReportDataCore(
-    input: Parameters<typeof getReportDataCore>[1]
-  ): ReturnType<typeof getReportDataCore>;
-  createReport(
-    input: Parameters<typeof createReport>[1]
-  ): ReturnType<typeof createReport>;
-  updateReport(
-    input: Parameters<typeof updateReport>[1]
-  ): ReturnType<typeof updateReport>;
-  moveReport(
-    input: Parameters<typeof moveReport>[1]
-  ): ReturnType<typeof moveReport>;
-  deleteReport(reportId: string): ReturnType<typeof deleteReport>;
-  duplicateReport(report: DbReport): ReturnType<typeof duplicateReport>;
-  updateReportLayout(
-    input: Parameters<typeof updateReportLayout>[1]
-  ): ReturnType<typeof updateReportLayout>;
-  getReportLayouts(
-    input: Parameters<typeof getReportLayouts>[1]
-  ): ReturnType<typeof getReportLayouts>;
-  resetReportLayouts(
-    input: Parameters<typeof resetReportLayouts>[1]
-  ): ReturnType<typeof resetReportLayouts>;
-}
-
 export function createReportService(
   deps: ServiceDeps,
   _services: () => Services
-): ReportService {
+) {
   return {
     transformFilter,
     transformReportEventItem,
     transformReport,
     mergeGlobalFilters,
     onlyReportEvents,
-    getReportsByDashboardId: (dashboardId) =>
+    getReportsByDashboardId: (
+      dashboardId: string
+    ): ReturnType<typeof getReportsByDashboardId> =>
       getReportsByDashboardId(deps, dashboardId),
-    getReportById: (id) => getReportById(deps, id),
-    getReportByIdOrThrow: (id) => getReportByIdOrThrow(deps, id),
-    listReportsCore: (input) => listReportsCore(deps, input),
-    getReportDataCore: (input) => getReportDataCore(deps, input),
-    createReport: (input) => createReport(deps, input),
-    updateReport: (input) => updateReport(deps, input),
-    moveReport: (input) => moveReport(deps, input),
-    deleteReport: (reportId) => deleteReport(deps, reportId),
-    duplicateReport: (report) => duplicateReport(deps, report),
-    updateReportLayout: (input) => updateReportLayout(deps, input),
-    getReportLayouts: (input) => getReportLayouts(deps, input),
-    resetReportLayouts: (input) => resetReportLayouts(deps, input),
+    getReportById: (id: string): ReturnType<typeof getReportById> =>
+      getReportById(deps, id),
+    getReportByIdOrThrow: (
+      id: string
+    ): ReturnType<typeof getReportByIdOrThrow> =>
+      getReportByIdOrThrow(deps, id),
+    listReportsCore: (
+      input: Parameters<typeof listReportsCore>[1]
+    ): ReturnType<typeof listReportsCore> => listReportsCore(deps, input),
+    getReportDataCore: (
+      input: Parameters<typeof getReportDataCore>[1]
+    ): ReturnType<typeof getReportDataCore> => getReportDataCore(deps, input),
+    createReport: (
+      input: Parameters<typeof createReport>[1]
+    ): ReturnType<typeof createReport> => createReport(deps, input),
+    updateReport: (
+      input: Parameters<typeof updateReport>[1]
+    ): ReturnType<typeof updateReport> => updateReport(deps, input),
+    moveReport: (
+      input: Parameters<typeof moveReport>[1]
+    ): ReturnType<typeof moveReport> => moveReport(deps, input),
+    deleteReport: (reportId: string): ReturnType<typeof deleteReport> =>
+      deleteReport(deps, reportId),
+    duplicateReport: (report: DbReport): ReturnType<typeof duplicateReport> =>
+      duplicateReport(deps, report),
+    updateReportLayout: (
+      input: Parameters<typeof updateReportLayout>[1]
+    ): ReturnType<typeof updateReportLayout> => updateReportLayout(deps, input),
+    getReportLayouts: (
+      input: Parameters<typeof getReportLayouts>[1]
+    ): ReturnType<typeof getReportLayouts> => getReportLayouts(deps, input),
+    resetReportLayouts: (
+      input: Parameters<typeof resetReportLayouts>[1]
+    ): ReturnType<typeof resetReportLayouts> => resetReportLayouts(deps, input),
   };
 }

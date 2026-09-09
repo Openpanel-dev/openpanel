@@ -30,7 +30,7 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 let FIXTURE: typeof import('../../../../../test/fixtures').FIXTURE;
-let service: import('./chart.service').ChartService;
+let service: ReturnType<typeof import('./chart.service').createChartService>;
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
 
 type EventSeriesItem = Extract<IChartEventItem, { type: 'event' }>;

@@ -518,17 +518,13 @@ export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
 
 // -- Services surface --------------------------------------------------
 
-export interface NotificationService {
-  dispatch(
-    notification: Prisma.NotificationUncheckedCreateInput
-  ): Promise<unknown>;
-}
-
 export function createNotificationService(
   deps: ServiceDeps,
   _services: () => Services
-): NotificationService {
+) {
   return {
-    dispatch: (notification) => deliverNotification(deps, notification),
+    dispatch: (
+      notification: Prisma.NotificationUncheckedCreateInput
+    ): Promise<unknown> => deliverNotification(deps, notification),
   };
 }

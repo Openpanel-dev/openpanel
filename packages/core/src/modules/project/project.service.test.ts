@@ -199,7 +199,9 @@ afterAll(() => {
   mock.module('../../v1-compat', () => realV1Compat);
 });
 
-let subject: import('./project.service').ProjectService;
+let subject: ReturnType<
+  typeof import('./project.service').createProjectService
+>;
 beforeAll(async () => {
   const { createProjectService } = await import('./project.service');
   subject = createProjectService(

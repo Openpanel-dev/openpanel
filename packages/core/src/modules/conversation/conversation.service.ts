@@ -93,29 +93,23 @@ export async function deleteConversation(
   await deps.db.conversation.delete({ where: { id } });
 }
 
-export interface ConversationService {
-  getConversationById(
-    id: string,
-    options?: { withMessages?: boolean }
-  ): ReturnType<typeof getConversationById>;
-  listConversations(
-    input: Parameters<typeof listConversations>[1]
-  ): Promise<IServiceConversation[]>;
-  upsertConversationTitle(
-    input: Parameters<typeof upsertConversationTitle>[1]
-  ): Promise<IServiceConversation>;
-  deleteConversation(id: string): Promise<void>;
-}
-
 export function createConversationService(
   deps: ServiceDeps,
   _services: () => Services
-): ConversationService {
+) {
   return {
-    getConversationById: (id, options) =>
+    getConversationById: (
+      id: string,
+      options?: { withMessages?: boolean }
+    ): ReturnType<typeof getConversationById> =>
       getConversationById(deps, id, options),
-    listConversations: (input) => listConversations(deps, input),
-    upsertConversationTitle: (input) => upsertConversationTitle(deps, input),
-    deleteConversation: (id) => deleteConversation(deps, id),
+    listConversations: (
+      input: Parameters<typeof listConversations>[1]
+    ): Promise<IServiceConversation[]> => listConversations(deps, input),
+    upsertConversationTitle: (
+      input: Parameters<typeof upsertConversationTitle>[1]
+    ): Promise<IServiceConversation> => upsertConversationTitle(deps, input),
+    deleteConversation: (id: string): Promise<void> =>
+      deleteConversation(deps, id),
   };
 }

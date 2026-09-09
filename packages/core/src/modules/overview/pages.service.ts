@@ -219,39 +219,33 @@ export async function getPageConversionsCore(
   );
 }
 
-export interface PagesService {
-  getTopPages(input: IGetPagesInput): Promise<ITopPage[]>;
-  getPageTimeseries(
-    input: IGetPagesInput & {
-      interval: IInterval;
-      filterOrigin?: string;
-      filterPath?: string;
-    }
-  ): Promise<IPageTimeseriesRow[]>;
-  getTopPagesCore(
-    input: Parameters<typeof getTopPagesCore>[1]
-  ): ReturnType<typeof getTopPagesCore>;
-  getEntryExitPagesCore(
-    input: Parameters<typeof getEntryExitPagesCore>[1]
-  ): ReturnType<typeof getEntryExitPagesCore>;
-  getPagePerformanceCore(
-    input: Parameters<typeof getPagePerformanceCore>[1]
-  ): ReturnType<typeof getPagePerformanceCore>;
-  getPageConversionsCore(
-    input: Parameters<typeof getPageConversionsCore>[1]
-  ): Promise<IPageConversionRow[]>;
-}
-
 export function createPagesService(
   deps: ServiceDeps,
   _services: () => Services
-): PagesService {
+) {
   return {
-    getTopPages: (input) => getTopPages(deps, input),
-    getPageTimeseries: (input) => getPageTimeseries(deps, input),
-    getTopPagesCore: (input) => getTopPagesCore(deps, input),
-    getEntryExitPagesCore: (input) => getEntryExitPagesCore(deps, input),
-    getPagePerformanceCore: (input) => getPagePerformanceCore(deps, input),
-    getPageConversionsCore: (input) => getPageConversionsCore(deps, input),
+    getTopPages: (input: IGetPagesInput): Promise<ITopPage[]> =>
+      getTopPages(deps, input),
+    getPageTimeseries: (
+      input: IGetPagesInput & {
+        interval: IInterval;
+        filterOrigin?: string;
+        filterPath?: string;
+      }
+    ): Promise<IPageTimeseriesRow[]> => getPageTimeseries(deps, input),
+    getTopPagesCore: (
+      input: Parameters<typeof getTopPagesCore>[1]
+    ): ReturnType<typeof getTopPagesCore> => getTopPagesCore(deps, input),
+    getEntryExitPagesCore: (
+      input: Parameters<typeof getEntryExitPagesCore>[1]
+    ): ReturnType<typeof getEntryExitPagesCore> =>
+      getEntryExitPagesCore(deps, input),
+    getPagePerformanceCore: (
+      input: Parameters<typeof getPagePerformanceCore>[1]
+    ): ReturnType<typeof getPagePerformanceCore> =>
+      getPagePerformanceCore(deps, input),
+    getPageConversionsCore: (
+      input: Parameters<typeof getPageConversionsCore>[1]
+    ): Promise<IPageConversionRow[]> => getPageConversionsCore(deps, input),
   };
 }

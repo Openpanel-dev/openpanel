@@ -393,49 +393,41 @@ export function processCohortData(
 
 /** See funnel.service.ts's `createFunnelService` for why each chart
  *  sub-module carries its own factory (M10-009, ADR-007). */
-export interface RetentionService {
-  processCohortData: typeof processCohortData;
-  getRetentionCohort(
-    input: Parameters<typeof getRetentionCohort>[1]
-  ): ReturnType<typeof getRetentionCohort>;
-  getRetentionCohortCore(
-    projectId: string
-  ): ReturnType<typeof getRetentionCohortCore>;
-  getRetentionSeries(
-    input: Parameters<typeof getRetentionSeries>[1]
-  ): ReturnType<typeof getRetentionSeries>;
-  getRetentionLastSeenSeries(
-    input: Parameters<typeof getRetentionLastSeenSeries>[1]
-  ): ReturnType<typeof getRetentionLastSeenSeries>;
-  getRollingActiveUsers(
-    input: Parameters<typeof getRollingActiveUsers>[1]
-  ): ReturnType<typeof getRollingActiveUsers>;
-  getRollingActiveUsersCore(
-    input: Parameters<typeof getRollingActiveUsersCore>[1]
-  ): ReturnType<typeof getRollingActiveUsersCore>;
-  getWeeklyRetentionSeriesCore(
-    projectId: string
-  ): ReturnType<typeof getWeeklyRetentionSeriesCore>;
-  getEngagementCore(projectId: string): ReturnType<typeof getEngagementCore>;
-}
-
 export function createRetentionService(
   deps: ServiceDeps,
   _services: () => Services
-): RetentionService {
+) {
   return {
     processCohortData,
-    getRetentionCohort: (input) => getRetentionCohort(deps, input),
-    getRetentionCohortCore: (projectId) =>
+    getRetentionCohort: (
+      input: Parameters<typeof getRetentionCohort>[1]
+    ): ReturnType<typeof getRetentionCohort> => getRetentionCohort(deps, input),
+    getRetentionCohortCore: (
+      projectId: string
+    ): ReturnType<typeof getRetentionCohortCore> =>
       getRetentionCohortCore(deps, projectId),
-    getRetentionSeries: (input) => getRetentionSeries(deps, input),
-    getRetentionLastSeenSeries: (input) =>
+    getRetentionSeries: (
+      input: Parameters<typeof getRetentionSeries>[1]
+    ): ReturnType<typeof getRetentionSeries> => getRetentionSeries(deps, input),
+    getRetentionLastSeenSeries: (
+      input: Parameters<typeof getRetentionLastSeenSeries>[1]
+    ): ReturnType<typeof getRetentionLastSeenSeries> =>
       getRetentionLastSeenSeries(deps, input),
-    getRollingActiveUsers: (input) => getRollingActiveUsers(deps, input),
-    getRollingActiveUsersCore: (input) =>
+    getRollingActiveUsers: (
+      input: Parameters<typeof getRollingActiveUsers>[1]
+    ): ReturnType<typeof getRollingActiveUsers> =>
+      getRollingActiveUsers(deps, input),
+    getRollingActiveUsersCore: (
+      input: Parameters<typeof getRollingActiveUsersCore>[1]
+    ): ReturnType<typeof getRollingActiveUsersCore> =>
       getRollingActiveUsersCore(deps, input),
-    getWeeklyRetentionSeriesCore: (projectId) =>
+    getWeeklyRetentionSeriesCore: (
+      projectId: string
+    ): ReturnType<typeof getWeeklyRetentionSeriesCore> =>
       getWeeklyRetentionSeriesCore(deps, projectId),
-    getEngagementCore: (projectId) => getEngagementCore(deps, projectId),
+    getEngagementCore: (
+      projectId: string
+    ): ReturnType<typeof getEngagementCore> =>
+      getEngagementCore(deps, projectId),
   };
 }
