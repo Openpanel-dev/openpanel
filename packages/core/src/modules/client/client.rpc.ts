@@ -1,4 +1,4 @@
-// Ported from packages/trpc/src/routers/client.ts (M6-002).
+// Ported from V1's client router (M6-002).
 //
 // M11-001: every procedure is on its V1 twin's builder.
 // `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
@@ -15,13 +15,14 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCForbiddenError } from '../../rpc/errors';
+import { CLIENT_TYPES } from './client.service';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       // Ported verbatim: V1's `client.list` reads by projectId with no
-      // access check of its own (packages/trpc/src/routers/client.ts).
+      // access check of its own (V1's client router).
       return ctx.services.client.getClientsByProjectId(input.projectId);
     }),
 
@@ -55,7 +56,7 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         projectId: z.string(),
         organizationId: z.string(),
-        type: z.enum(['read', 'write', 'root']).optional(),
+        type: z.enum(CLIENT_TYPES).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

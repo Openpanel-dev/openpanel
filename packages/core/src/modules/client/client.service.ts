@@ -1,20 +1,16 @@
-// Moved from packages/db/src/services/clients.service.ts (M6-002, module
-// map: client owns "R,H,S" — no constants file, per the module map). packages/db
-// keeps a re-export shim: apps/api/src/utils/auth.ts and core's mcp module
-// still reach `getClientByIdCached` / `ClientType` through @openpanel/db's
-// barrel — same shape as packages/db/src/services/organization.service.ts
-// since M6-001.
+// Moved from V1's clients service (M6-002, module map: client owns "R,H,S" —
+// no constants file, per the module map). Client CRUD lives only here now;
+// no packages/db re-export shim exists in this tree.
 //
-// The /manage REST CRUD bodies (apps/api/src/controllers/manage.controller.ts's
-// listClients/getClient/createClient/updateClient/deleteClient) move here
-// too, so V1's controller and core's own client.routes.ts share one
-// implementation (DELEGATE PATTERN).
+// The /manage REST CRUD bodies (client.routes.ts's listClients/getClient/
+// createClient/updateClient/deleteClient) call the same
+// create/update/delete/list functions the tRPC router (client.rpc.ts) does.
 //
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
 // `deps.db`; the `loadDb()` lazy loader is gone. No dependency on
 // project.service.ts here (the reverse direction exists, for cache
 // invalidation) — project-ownership checks below query `db.project`
-// directly, matching V1's manage.controller.ts exactly.
+// directly.
 //
 // M15-005: `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on
 // the Postgres client rather than on the scope. Its L1 LRU has to survive
@@ -35,6 +31,13 @@ export type IServiceClientWithProject = Prisma.ClientGetPayload<{
     project: true;
   };
 }>;
+
+// Single source for the three client tiers — Prisma's own `ClientType` enum
+// (schema.prisma) is a `@openpanel/db` VALUE import, which
+// `core-uses-ctx-not-db-internals` forbids outside the four named seams, so
+// this is declared here instead and reused by client.rpc.ts / client.routes.ts.
+export const CLIENT_TYPES = ['read', 'write', 'root'] as const;
+export type ClientType = (typeof CLIENT_TYPES)[number];
 
 const FIVE_MINUTES_IN_SECONDS = 60 * 5;
 
@@ -94,7 +97,7 @@ export const getClientByIdCached = cacheablePerDb(
   FIVE_MINUTES_IN_SECONDS
 );
 
-// --- /manage REST CRUD (apps/api/src/controllers/manage.controller.ts) ---
+// --- /manage REST CRUD (client.routes.ts) ---
 
 export async function listClientsForOrganization(
   deps: ServiceDeps,
@@ -148,7 +151,7 @@ export function createClientService(
     input: {
       name: string;
       projectId?: string | null;
-      type?: 'read' | 'write' | 'root';
+      type?: ClientType;
     }
   ): Promise<CreatedClient | null> {
     if (input.projectId) {
@@ -161,6 +164,13 @@ export function createClientService(
     }
 
     const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    // FIXME(M15-104, reported not fixed): `hashPassword` here is
+    // auth.service.ts's argon2 one; every verifier
+    // (ingest/mcp/http client-auth) checks against `@openpanel/shared/server`'s
+    // scrypt `verifyPassword`. No secret minted through this path can
+    // currently authenticate. See docs/review/client.md's "Not covered by
+    // any rule" #1 — fixing the algorithm is a behaviour change, out of this
+    // task's scope.
     const client = await deps.db.client.create({
       data: {
         organizationId,

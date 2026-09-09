@@ -1,23 +1,22 @@
-// The /manage/clients REST surface (M6-002). V1's Fastify controller
-// (apps/api/src/controllers/manage.controller.ts) stays the LIVE route
-// (DELEGATE PATTERN) and delegates its CRUD bodies to client.service.ts's
-// createClientForOrganization/updateClientForOrganization/etc — the same
-// functions this route calls. Response envelopes (`{ data }` / `{ success }`)
-// match V1's `reply.send(...)` shape exactly (byte-unchanged URL surface).
+// The /manage/clients REST surface (M6-002), delegating its CRUD bodies to
+// client.service.ts's createClientForOrganization/updateClientForOrganization/
+// etc — the same functions the tRPC router (client.rpc.ts) calls. Response
+// envelopes (`{ data }` / `{ success }`) match V1's `reply.send(...)` shape
+// (byte-unchanged URL surface).
 //
 // Body schemas are local, not a client.constants.ts file: the module map
 // gives client "R,H,S" only, no "C" (unlike project, whose zCreateProject /
 // zUpdateProject moved with ProjectTypeNames).
 //
-// NAMED GAP, same as import.routes.ts / project.routes.ts: this route is not
-// yet reachable — `authenticateClient` (http/client-auth.ts) is a P8 stub
-// that always returns null, so `clientAuth` 401s every request until it is
-// filled in; main.ts also does not mount `publicApiRoutes` until a real
-// `AppDeps` exists. `allow: ['root']` mirrors V1's rule (utils/auth.ts's
-// `validateManageRequest`: only root clients may manage resources).
+// `authenticateAllowedClient` (http/client-auth.ts) is filled in and
+// `publicApiRoutes` is mounted in main.ts, so this route is live.
+// `allow: ['root']` mirrors V1's rule: only root clients may manage
+// resources. (A client minted through client.service.ts cannot currently
+// authenticate at all — see that file's FIXME on `createClientForOrganization`.)
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
+import { CLIENT_TYPES } from './client.service';
 
 const idParams = z.object({ id: z.string() });
 const listQuery = z.object({ projectId: z.string().optional() });
@@ -25,7 +24,7 @@ const listQuery = z.object({ projectId: z.string().optional() });
 const zCreateClient = z.object({
   name: z.string().min(1),
   projectId: z.string().optional(),
-  type: z.enum(['read', 'write', 'root']).optional().default('write'),
+  type: z.enum(CLIENT_TYPES).optional().default('write'),
 });
 
 const zUpdateClient = z.object({
