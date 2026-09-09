@@ -1,5 +1,5 @@
+import { slug } from '@openpanel/shared';
 import type { ServiceDeps } from '../../../../services';
-import { slug } from '../../../../shared/slug';
 import { getSettingsForProject } from '../../../organization/organization.service';
 import type { IChartEventItem } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';

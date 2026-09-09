@@ -38,16 +38,16 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 const mockVerifyPassword = mock(async () => true);
-const actualCrypto = await import('../../shared/crypto');
+const actualCrypto = await import('@openpanel/shared/server');
 const realCrypto = { ...actualCrypto };
-mock.module('../../shared/crypto', () => ({
+mock.module('@openpanel/shared/server', () => ({
   ...realCrypto,
   verifyPassword: mockVerifyPassword,
 }));
 
 afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
-  mock.module('../../shared/crypto', () => realCrypto);
+  mock.module('@openpanel/shared/server', () => realCrypto);
 });
 
 let handleStatelessMcpRequest: typeof import('./mcp.service').handleStatelessMcpRequest;

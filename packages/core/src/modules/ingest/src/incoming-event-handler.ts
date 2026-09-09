@@ -11,16 +11,15 @@
 // the row the consumer writes (ADR-018 R1). The two lookups a work scope
 // cannot supply arrive as `IncomingEventBindings` from the composition root.
 
+import { getTime, isSameDomain, parsePath } from '@openpanel/shared';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
 import type { Ctx } from '../../../context';
 import type { Logger } from '../../../logger';
-import { getTime } from '../../../shared/date';
 import {
   getReferrerWithQuery,
   parseReferrer,
 } from '../../../shared/parse-referrer';
-import { isSameDomain, parsePath } from '../../../shared/url';
 import {
   createEvent,
   type IServiceCreateEventPayload,

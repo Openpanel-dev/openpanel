@@ -4,8 +4,8 @@
 // the layer below every transport. The generic aggregates it is built on stay
 // in `shared/math.ts`.
 
+import { round } from '@openpanel/shared';
 import { isNil } from 'ramda';
-import { round } from '../../../shared/math';
 import type { PreviousValue } from '../report.constants';
 
 const PERCENT = 100;

@@ -24,6 +24,11 @@
 
 import crypto from 'node:crypto';
 import { getRedisCache } from '@openpanel/redis';
+import {
+  assertPublicUrl,
+  BlockedUrlError,
+  safeFetch,
+} from '@openpanel/shared/server';
 import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
@@ -35,11 +40,6 @@ import {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
 } from '../../shared/get-client-ip';
-import {
-  assertPublicUrl,
-  BlockedUrlError,
-  safeFetch,
-} from '../../shared/safe-fetch';
 import {
   ALLOWED_IMAGE_CONTENT_TYPES,
   normalizeContentType,

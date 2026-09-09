@@ -6,6 +6,39 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
+// packages/db reads ClickHouse row JSON through this (P11: packages/json's
+// only definition already lived here; the barrel is how a package outside
+// core reaches it, since the exports map has no ./shared/* entry).
+export { generateId, generateSecureId, getChartPrevStartEndDate, getSafeJson, resolveDateRange, shortId } from '@openpanel/shared';
+export type {
+  SafeFetchOptions,
+  SafeFetchResult,
+  SafeFetchStreamResult,
+  UserAgentInfo,
+  UserAgentResult,
+} from '@openpanel/shared/server';
+// Dissolved from packages/common/server (M4-003) — a still-live V1 package
+// (db, queue, apps/worker) reaches these the same way apps/api and core
+// itself do, until its own module lands. mcp reaches it as an internal
+// relative import now that it lives inside core (M5-007).
+export {
+  assertPublicHostname,
+  assertPublicUrl,assertSafeUrl, 
+  BlockedUrlError,
+  createHash,
+  createPinnedAgent,createPinnedLookup, 
+  decrypt,
+  decryptCredential,
+  encrypt,
+  encryptCredential,
+  generateSalt,getDevice, 
+  hashPassword,
+  isBlockedIp,
+  isEncrypted,parseUserAgent, 
+  safeFetch,
+  safeFetchStream, 
+  verifyPassword
+} from '@openpanel/shared/server';
 // The seven buffers (moved from packages/db/src/buffers, M8-001). Only the
 // FACTORY is on the barrel: they are boot singletons on `AppDeps`, built once
 // by `main.ts`, never module singletons (ADR-007). V1's
@@ -129,8 +162,9 @@ export { createAssistantService } from './modules/assistant/assistant.service';
 // Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks call
 // these directly; V1's now-deleted @openpanel/trpc auth/share/user/gsc
 // routers did too, the same way they reached the other dissolved leaf
-// packages here. `hashPassword` is renamed on the way out: `./shared/crypto`
-// already owns that name for the (unrelated) scrypt hash client secrets use.
+// packages here. `hashPassword` is renamed on the way out:
+// `@openpanel/shared/server` already owns that name for the (unrelated) scrypt
+// hash client secrets use.
 //
 // The sign-up/sign-in/TOTP/reset-password/share/OAuth-callback half (M6-003)
 // joined it here — V1's now-deleted packages/trpc auth router and
@@ -941,57 +975,14 @@ export {
   getAlsSessionId,
   runWithAlsSession,
 } from './shared/als-session';
-// Dissolved from packages/common/server (M4-003) — a still-live V1 package
-// (db, queue, apps/worker) reaches these the same way apps/api and core
-// itself do, until its own module lands. mcp reaches it as an internal
-// relative import now that it lives inside core (M5-007).
-export {
-  createHash,
-  generateSalt,
-  hashPassword,
-  verifyPassword,
-} from './shared/crypto';
-export { getChartPrevStartEndDate, resolveDateRange } from './shared/date';
-export {
-  decrypt,
-  decryptCredential,
-  encrypt,
-  encryptCredential,
-  isEncrypted,
-} from './shared/encryption';
 export {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
   getTrustedIpFromHeaders,
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
-export { generateId, generateSecureId, shortId } from './shared/id';
-// packages/db reads ClickHouse row JSON through this (P11: packages/json's
-// only definition already lived here; the barrel is how a package outside
-// core reaches it, since the exports map has no ./shared/* entry).
-export { getSafeJson } from './shared/json';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
-export type {
-  UserAgentInfo,
-  UserAgentResult,
-} from './shared/parser-user-agent';
-export { getDevice, parseUserAgent } from './shared/parser-user-agent';
 export { generateDeviceId } from './shared/profileId';
-export type {
-  SafeFetchOptions,
-  SafeFetchResult,
-  SafeFetchStreamResult,
-} from './shared/safe-fetch';
-export {
-  assertPublicHostname,
-  assertPublicUrl,
-  BlockedUrlError,
-  createPinnedAgent,
-  isBlockedIp,
-  safeFetch,
-  safeFetchStream,
-} from './shared/safe-fetch';
 // Below the transports since M15-007 (ADR-022 R22): `rpc/base.ts` needs the
 // empty shape and may not deep-import a module to get it.
 export { EMPTY_SESSION } from './shared/session';
-export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';

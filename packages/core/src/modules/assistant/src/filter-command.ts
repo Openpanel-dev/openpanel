@@ -13,10 +13,10 @@ import {
   defineTool,
   type ToolRunContext,
 } from '@better-agent/core';
+import { resolveDateRange as resolveDateRangeCore } from '@openpanel/shared';
 import { z } from 'zod';
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
-import { resolveDateRange as resolveDateRangeCore } from '../../../shared/date';
 import { listEventNamesCore } from '../../event/event.service';
 import { getTrafficBreakdownCore } from '../../overview/overview.service';
 import { getTopPagesCore } from '../../overview/pages.service';

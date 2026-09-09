@@ -1,3 +1,8 @@
+// Subject moved to @openpanel/shared (M15-010, ADR-022 R21); the suite did
+// not follow it. Nothing runs a `test` script in packages/shared yet — the
+// root `test` script names its four workspaces explicitly and root
+// package.json was outside M15-010's scope — so moving this file would take
+// it out of every gate. Move it when that line can gain the filter.
 import { describe, expect, it } from 'bun:test';
 import {
   decrypt,
@@ -5,7 +10,7 @@ import {
   encrypt,
   encryptCredential,
   isEncrypted,
-} from './encryption';
+} from '@openpanel/shared/server';
 
 // Deterministic key for the round-trips — the value the config loader would
 // hand down as `config.encryptionKey`.

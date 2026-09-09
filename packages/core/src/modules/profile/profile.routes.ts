@@ -18,9 +18,9 @@
 // /event and /tools have no request schemas today, and adding them would be a
 // behaviour change"), so the bodies are typed but not shape-validated.
 
+import { parseUserAgent } from '@openpanel/shared/server';
 import { getGeoLocation } from '../../clients/geo';
 import { defineRoutes } from '../../http/define';
-import { parseUserAgent } from '../../shared/parser-user-agent';
 import { validateIngestRequest } from '../ingest/src/client-auth';
 import {
   type AdjustProfilePropertyResult,

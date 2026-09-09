@@ -1,3 +1,4 @@
+import { generateId } from '@openpanel/shared';
 import {
   type Job as BullJob,
   Worker as BullWorker,
@@ -5,7 +6,6 @@ import {
 } from 'bullmq';
 import { type AppDeps, createCtx, extendCtx, type JobCtx } from '../context';
 import { REQUEST_ID_LENGTH, REQUEST_ID_LOG_FIELD } from '../logger';
-import { generateId } from '../shared/id';
 import { resolveJob } from './compat';
 import type { QueueDefinition, QueueMap } from './define';
 import { isEnvelope } from './envelope';

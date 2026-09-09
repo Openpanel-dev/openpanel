@@ -10,7 +10,7 @@ import {
   type SqlSlot,
   sql,
 } from '@openpanel/db/src/clickhouse/sql';
-import { stripLeadingAndTrailingSlashes } from '../../../shared/string';
+import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { getCohortIds } from '../../report/report.constants';
 import {

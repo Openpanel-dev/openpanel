@@ -1,3 +1,4 @@
+import { average, round } from '@openpanel/shared';
 import {
   Area,
   CartesianGrid,
@@ -8,7 +9,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { average, round } from '../../../utils/math';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { useReportChartContext } from '../context';
 import { RetentionTooltip } from './tooltip';

@@ -4,6 +4,10 @@
 // edges point upward (ADR-022 R22/A2).
 
 import {
+  type EncryptionKey,
+  encryptCredential,
+} from '@openpanel/shared/server';
+import {
   sendDiscordNotification,
   sendTestDiscordNotification,
 } from '../../../clients/integrations/discord';
@@ -13,10 +17,6 @@ import {
 } from '../../../clients/integrations/fetcher';
 import { ProviderError } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
-import {
-  type EncryptionKey,
-  encryptCredential,
-} from '../../../shared/encryption';
 import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,

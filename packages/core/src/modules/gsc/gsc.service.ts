@@ -24,6 +24,7 @@
 // tag: ADR-013 converts the analytics read path one query per P7 task, and
 // this module's queries haven't been converted yet.
 
+import { decrypt, encrypt } from '@openpanel/shared/server';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
@@ -31,7 +32,6 @@ import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { decrypt, encrypt } from '../../shared/encryption';
 import { googleGscClient } from '../auth/auth.service';
 
 const BACKFILL_MONTHS = 6;

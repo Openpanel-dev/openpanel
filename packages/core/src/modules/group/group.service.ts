@@ -12,9 +12,9 @@
 // through `deps.ch.insert`. The `loadChClient` lazy loader is gone
 // (docs/TECH_DEBT.md §2, §4).
 
+import { toDots } from '@openpanel/shared';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { toDots } from '../../shared/object';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
 import { formatClickhouseDate, toNullIfDefaultMinDate } from './src/dates';
 import {

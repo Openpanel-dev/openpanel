@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { slug } from '@/utils/slug';
+import { slug } from '@openpanel/shared';
 import type { LucideIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ControllerRenderProps } from 'react-hook-form';

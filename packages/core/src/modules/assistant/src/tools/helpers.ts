@@ -3,9 +3,9 @@ import {
   defineTool,
   type ToolRunContext,
 } from '@better-agent/core';
+import { resolveDateRange as resolveDateRangeCore } from '@openpanel/shared';
 import type { z } from 'zod';
 import type { CoreConfig } from '../../../../config';
-import { resolveDateRange as resolveDateRangeCore } from '../../../../shared/date';
 import type {
   IChartEventFilter,
   IChartRange,

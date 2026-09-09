@@ -263,11 +263,11 @@ export function createAuthService(
 // (`setCookie`, `cookies.get`, `logger`), so this file has no dependency on
 // the rpc layer that calls it.
 
+import { generateSecureId } from '@openpanel/shared';
+import { decrypt, encrypt } from '@openpanel/shared/server';
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-import { decrypt, encrypt } from '../../shared/encryption';
-import { generateSecureId } from '../../shared/id';
 import { connectUserToOrganization } from '../organization/organization.service';
 import { getUserAccount } from '../user/user.service';
 import {

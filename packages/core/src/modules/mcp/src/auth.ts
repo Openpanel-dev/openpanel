@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getCache } from '@openpanel/redis';
+import { verifyPassword } from '@openpanel/shared/server';
 import type { ServiceDeps, Services } from '../../../services';
-import { verifyPassword } from '../../../shared/crypto';
 
 export interface McpAuthContext {
   /**

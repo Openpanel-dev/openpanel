@@ -12,6 +12,7 @@
 // router; they moved to `services.overview.getLiveData` (src/overview.sql.ts)
 // so every query this module runs goes through the same `sql` tag (M7-005).
 
+import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import {
@@ -22,7 +23,6 @@ import {
 } from '../../rpc/base';
 import { TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
-import { getChartPrevStartEndDate } from '../../shared/date';
 import { pageContextSchema } from '../assistant/assistant.constants';
 import { getConversionEventNames } from '../event/event.service';
 import { getReferrerSpikes } from '../insight/insight.service';

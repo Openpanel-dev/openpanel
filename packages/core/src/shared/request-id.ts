@@ -4,8 +4,8 @@
 // which reads the id the producer stamped into the envelope — so the rule that
 // decides what is safe to bind to a logger lives here rather than in either.
 
+import { generateId } from '@openpanel/shared';
 import { REQUEST_ID_LENGTH } from '../logger';
-import { generateId } from './id';
 
 const DISALLOWED_REQUEST_ID_CHARS = /[^A-Za-z0-9_-]/g;
 const REQUEST_ID_MAX_LENGTH = 64;

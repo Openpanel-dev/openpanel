@@ -3,7 +3,7 @@ import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { round } from '@/utils/math';
+import { round } from '@openpanel/shared';
 import { getChartColor } from '@/utils/theme';
 import { truncate } from '@/utils/truncate';
 import { Fragment } from 'react';

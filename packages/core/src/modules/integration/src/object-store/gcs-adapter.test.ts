@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { encryptCredential } from '@openpanel/shared/server';
 import { testCoreConfig } from '../../../../../test/config-fixture';
-import { encryptCredential } from '../../../../shared/encryption';
 import { createGCSAdapter } from './gcs-adapter';
 
 /**

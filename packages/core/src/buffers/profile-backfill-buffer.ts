@@ -1,7 +1,7 @@
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
+import { getSafeJson } from '@openpanel/shared';
 import { getReplicatedTableName, TABLE_NAMES } from '../shared/ch-tables';
-import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 export interface ProfileBackfillEntry {

@@ -14,7 +14,7 @@
 // in place: reassigning the destructured binding would not reach the object
 // the validator then reads.
 
-import { getSafeJson } from '../shared/json';
+import { getSafeJson } from '@openpanel/shared';
 
 const NUMERIC = /^-?[0-9]+(\.[0-9]+)?$/i;
 

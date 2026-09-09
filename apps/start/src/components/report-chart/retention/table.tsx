@@ -1,4 +1,4 @@
-import { max, min } from '../../../utils/math';
+import { max, min } from '@openpanel/shared';
 import { useReportChartContext } from '../context';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';

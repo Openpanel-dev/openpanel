@@ -1,5 +1,5 @@
+import { getChartPrevStartEndDate } from '@openpanel/shared';
 import type { ServiceDeps } from '../../../../services';
-import { getChartPrevStartEndDate } from '../../../../shared/date';
 import {
   getOrganizationSubscriptionChartEndDate,
   getSettingsForProject,

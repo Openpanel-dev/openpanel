@@ -1,7 +1,7 @@
+import { getSuperJson } from '@openpanel/shared';
 import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
-import { getSuperJson } from '../utils/super-json';
 import { useAppContext } from './use-app-context';
 
 type UseWSOptions = {

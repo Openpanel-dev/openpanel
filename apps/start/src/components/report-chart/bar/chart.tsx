@@ -1,8 +1,8 @@
 import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import { round } from '@openpanel/shared';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { round } from '../../../utils/math';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';

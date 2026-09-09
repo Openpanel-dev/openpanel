@@ -7,9 +7,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@openpanel/shared": "workspace:*",
     "ioredis": "5.8.2",
-    "lru-cache": "11.5.1",
-    "superjson": "2.2.2"
+    "lru-cache": "11.5.1"
   },
   "devDependencies": {
     "@openpanel/core": "workspace:*",

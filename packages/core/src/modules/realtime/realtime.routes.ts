@@ -25,9 +25,9 @@
 // close every connection immediately after upgrade. That is the same gap
 // http/auth.test.ts already documents for every other session-macro route.
 
+import { setSuperJson } from '@openpanel/shared';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
-import { setSuperJson } from '../../shared/json';
 import {
   getActiveVisitorCount,
   subscribeToOrganizationSubscriptionUpdates,

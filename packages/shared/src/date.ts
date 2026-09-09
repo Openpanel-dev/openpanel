@@ -8,8 +8,10 @@
 //
 // M15-009: `getDatesFromRange` and `getChartStartEndDate` left with the report
 // vocabulary they read (`IChartRange`, `IReportInput`) — they are
-// `modules/report/src/chart-dates.ts` now. What stays here knows nothing above
-// it (ADR-022 R22).
+// `packages/core/src/modules/report/src/chart-dates.ts` now.
+//
+// M15-010: what was left knows nothing above it and nothing about the domain,
+// so it is @openpanel/shared's (ADR-022 R21).
 import { DateTime } from 'luxon';
 
 export { DateTime } from 'luxon';

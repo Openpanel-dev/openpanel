@@ -1,7 +1,7 @@
 import type { IServiceSession } from '@openpanel/core';
+import { round } from '@openpanel/shared';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Video } from 'lucide-react';
-import { round } from '../../../utils/math';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';

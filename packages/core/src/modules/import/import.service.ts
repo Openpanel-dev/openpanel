@@ -20,6 +20,7 @@
 
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
+import { toDots } from '@openpanel/shared';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import {
@@ -27,7 +28,6 @@ import {
   formatClickhouseDate,
 } from '../../shared/ch-dates';
 import { getReplicatedTableName, TABLE_NAMES } from '../../shared/ch-tables';
-import { toDots } from '../../shared/object';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IClickhouseProfile } from '../profile/profile.service';
 import type { IImportConfig } from './import.constants';

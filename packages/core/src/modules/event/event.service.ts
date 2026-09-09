@@ -28,12 +28,11 @@
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
+import { DateTime, resolveDateRange, toDots } from '@openpanel/shared';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { DateTime, resolveDateRange } from '../../shared/date';
-import { toDots } from '../../shared/object';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
   getProfileById,

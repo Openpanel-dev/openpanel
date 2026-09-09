@@ -1,5 +1,4 @@
-import { average, max, min, round, sum } from '../../../../shared/math';
-import { slug } from '../../../../shared/slug';
+import { average, max, min, round, slug, sum } from '@openpanel/shared';
 import type { FinalChart } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
 import { getPreviousMetric } from '../../../report/src/previous-metric';

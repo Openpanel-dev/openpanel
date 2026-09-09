@@ -9,10 +9,10 @@
 // value through ClickHouse's own `{name:Type}` params, and converting it to the
 // `sql` tag would change the emitted statement. Kept byte-identical.
 
+import { DateTime } from '@openpanel/shared';
 import { isProviderError } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
-import { DateTime } from '../../../shared/date';
 import type { IClickhouseEvent } from '../../event/event.service';
 import {
   type IGCSExportConfig,

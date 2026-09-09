@@ -27,13 +27,13 @@ import type {
   Project,
   ProjectType,
 } from '@openpanel/db/src/prisma-client';
+import { stripTrailingSlash } from '@openpanel/shared';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { stripTrailingSlash } from '../../shared/string';
 import { getId } from '../../slug-id';
 import { hashPassword } from '../auth/auth.service';
 import { getClientByIdCached } from '../client/client.service';

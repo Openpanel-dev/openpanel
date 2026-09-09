@@ -6,8 +6,8 @@
 // file, so both ./kafka.ts's producer and the consumer can name the payload
 // without reaching into the ingest service.
 
+import type { parseUserAgent } from '@openpanel/shared/server';
 import type { GeoLocation } from '../../../clients/geo';
-import type { parseUserAgent } from '../../../shared/parser-user-agent';
 import type { ITrackPayload } from '../ingest.constants';
 
 export interface IncomingEventPayload {

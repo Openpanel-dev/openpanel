@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isKind } from '@openpanel/core/modules/integration/integration.constants';
 import { zCreateNotificationRule } from '@openpanel/core/modules/notification/notification.constants';
+import { shortId } from '@openpanel/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import {
@@ -13,7 +14,6 @@ import {
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { shortId } from '../utils/math';
 import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
 import { ColorSquare } from '@/components/color-square';

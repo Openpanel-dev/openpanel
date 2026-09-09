@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { round } from '@/utils/math';
+import { round } from '@openpanel/shared';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
 import * as React from 'react';
 

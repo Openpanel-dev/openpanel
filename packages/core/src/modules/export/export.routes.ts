@@ -26,12 +26,12 @@
 // what `defineRoutes`'s `const T` inference can carry, same reason every
 // other module here writes its routes as one static `.get()`/`.post()` chain.
 
+import { DateTime } from '@openpanel/shared';
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
-import { DateTime } from '../../shared/date';
 import { HttpError } from '../../shared/errors';
 import type { GetEventListOptions } from '../event/event.service';
 import {

@@ -14,9 +14,9 @@
 // passes the scope it holds instead of reading a boot-scoped singleton through
 // the deleted compat seam. `generateNewSalt` clears the same instance.
 
+import { generateSalt } from '@openpanel/shared/server';
 import { cacheablePerDb } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
-import { generateSalt } from '../../shared/crypto';
 
 const SALT_CACHE_NAME = 'op:salt';
 const SALT_CACHE_TTL_SECONDS = 60 * 5;

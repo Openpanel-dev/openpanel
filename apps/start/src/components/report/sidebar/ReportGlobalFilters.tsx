@@ -1,5 +1,5 @@
+import { shortId } from '@openpanel/shared';
 import { FilterIcon, type LucideIcon } from 'lucide-react';
-import { shortId } from '../../../utils/math';
 import { addGlobalFilter } from '../reportSlice';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';
 import { PropertiesCombobox } from './PropertiesCombobox';

@@ -1,10 +1,9 @@
 import { getRedisCache, type Redis } from '@openpanel/redis';
+import { DateTime, getSafeJson } from '@openpanel/shared';
 import type { CoreConfig } from '../config';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
-import { DateTime } from '../shared/date';
-import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 // 30min of idle in event-time → session ends. Matches industry default.

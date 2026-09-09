@@ -25,9 +25,9 @@
 // module's own (docs/TECH_DEBT.md's no-lazy-loaders ruling).
 
 import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
+import { getSuperJson } from '@openpanel/shared';
 import { stubAppDeps } from '../../../test/http-fixtures';
 import * as actualAccessLookups from '../../shared/access-lookups';
-import { getSuperJson } from '../../shared/json';
 import { realtimeRoutes } from './realtime.routes';
 import * as actualService from './realtime.service';
 

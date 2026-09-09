@@ -11,9 +11,9 @@
 // is what puts the request's id on the query's log line (ADR-018 R1).
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { average, sum } from '@openpanel/shared';
 import { z } from 'zod';
 import type { ServiceDeps, Services } from '../../services';
-import { average, sum } from '../../shared/math';
 import { convertClickhouseDateToJs } from '../chart/src/dates';
 import {
   getEventFiltersWhereClause,

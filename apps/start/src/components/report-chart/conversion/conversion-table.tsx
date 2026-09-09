@@ -1,6 +1,6 @@
 import type { SortingState } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
-import { getPreviousMetric } from '../../../utils/math';
+import { getPreviousMetric } from '../../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { ReportTableToolbar } from '../common/report-table-toolbar';
 import { SerieIcon } from '../common/serie-icon';

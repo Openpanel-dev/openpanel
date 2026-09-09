@@ -1,10 +1,9 @@
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
+import { getSafeJson, toDots } from '@openpanel/shared';
 import shallowEqual from 'fast-deep-equal';
 import { formatClickhouseDate } from '../shared/ch-dates';
 import { TABLE_NAMES } from '../shared/ch-tables';
-import { getSafeJson } from '../shared/json';
-import { toDots } from '../shared/object';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 type IGroupBufferEntry = {

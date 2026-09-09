@@ -1,11 +1,11 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { getRedisCache } from '@openpanel/redis';
+import { generateSecureId } from '@openpanel/shared';
 import { type ChQueryInput, type ChScope, chQuery } from '../ch-query';
 import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
-import { generateSecureId } from '../shared/id';
 
 /**
  * What a buffer needs from the boot scope. Buffers are built once by

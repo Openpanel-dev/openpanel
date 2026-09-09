@@ -12,10 +12,10 @@
 
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
+import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import { stripTrailingSlash } from '../../shared/string';
 import { hashPassword } from '../auth/auth.service';
 import {
   runSequence,

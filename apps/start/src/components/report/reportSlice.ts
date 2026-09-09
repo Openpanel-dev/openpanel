@@ -17,10 +17,10 @@ import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
 } from '@openpanel/core/modules/report/report.constants';
+import { shortId } from '@openpanel/shared';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { z } from 'zod';
-import { shortId } from '../../utils/math';
 import type { UnionOmit } from '../../utils/union-omit';
 
 type InitialState = IReport & {

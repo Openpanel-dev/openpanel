@@ -3,8 +3,8 @@ import type {
   IChartEventItem,
 } from '@openpanel/core/modules/report/report.constants';
 import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
+import { shortId } from '@openpanel/shared';
 import { DatabaseIcon, FilterIcon, type LucideIcon } from 'lucide-react';
-import { shortId } from '../../../utils/math';
 import { ReportSegment } from '../ReportSegment';
 import { changeEvent } from '../reportSlice';
 import { FiltersList } from './filters/FiltersList';

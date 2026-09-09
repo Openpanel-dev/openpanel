@@ -1,4 +1,5 @@
 import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import { average, round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -11,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { average, getPreviousMetric, round } from '../../../utils/math';
+import { getPreviousMetric } from '../../../utils/previous-metric';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
 import { SerieIcon } from '../common/serie-icon';

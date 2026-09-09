@@ -1,4 +1,4 @@
-import { round } from '../../../../shared/math';
+import { round } from '@openpanel/shared';
 import type { IChartFormula } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
 import { evaluateFormula } from './formula';

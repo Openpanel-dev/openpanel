@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { getPreviousMetric } from '../../../utils/math';
+import { getPreviousMetric } from '../../../utils/previous-metric';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { SerieIcon } from '../common/serie-icon';

@@ -9,14 +9,13 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
+import { assertSafeUrl, createPinnedLookup, decryptCredential } from '@openpanel/shared/server';
 import {
   callProvider,
   ProviderError,
   providerErrorFrom,
 } from '../../../../clients/provider-error';
 import type { CoreConfig } from '../../../../config';
-import { decryptCredential } from '../../../../shared/encryption';
-import { assertSafeUrl, createPinnedLookup } from '../../../../shared/ssrf';
 import type { IS3ExportConfig } from '../../integration.constants';
 import type {
   IObjectStoreAdapter,

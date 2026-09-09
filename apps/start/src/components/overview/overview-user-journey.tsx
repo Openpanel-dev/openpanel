@@ -6,7 +6,7 @@ import {
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
-import { round } from '@/utils/math';
+import { round } from '@openpanel/shared';
 import { ResponsiveSankey } from '@nivo/sankey';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import {

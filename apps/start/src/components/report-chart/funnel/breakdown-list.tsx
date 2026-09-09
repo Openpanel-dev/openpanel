@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { getPreviousMetric } from '../../../utils/math';
+import { getPreviousMetric } from '../../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { Tables } from './chart';
 import { Checkbox } from '@/components/ui/checkbox';

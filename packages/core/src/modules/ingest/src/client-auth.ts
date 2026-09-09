@@ -14,9 +14,9 @@
 // ADR-011 leaves to Carl, not to a port.
 
 import { getCache } from '@openpanel/redis';
+import { verifyPassword } from '@openpanel/shared/server';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
-import { verifyPassword } from '../../../shared/crypto';
 import { headerValue, type IngestHeaders } from '../../../shared/headers';
 import {
   getClientByIdCached,

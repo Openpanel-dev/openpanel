@@ -18,9 +18,9 @@
 // ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
 // compile-time template tag, no client and no request scope.
 
+import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
-import { getChartPrevStartEndDate } from '../../shared/date';
 import { getEventMetasCached } from '../event/event.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import {

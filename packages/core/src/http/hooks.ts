@@ -12,11 +12,11 @@
 // reads the request logger off `ctx` and would otherwise import this file's
 // consumer.
 
+import { generateId } from '@openpanel/shared';
 import { Elysia } from 'elysia';
 import type { IpHeaderConfig } from '../config';
 import { REQUEST_ID_HEADER, REQUEST_ID_LENGTH } from '../logger';
 import { getClientIpFromHeaders } from '../shared/get-client-ip';
-import { generateId } from '../shared/id';
 import { sanitizeRequestId } from '../shared/request-id';
 
 /**

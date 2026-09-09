@@ -17,12 +17,12 @@
 // would spawn a pino-pretty transport worker thread per test file).
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
+import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
 import { pathOr } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-import { stripLeadingAndTrailingSlashes } from '../../shared/string';
 import type {
   IServiceCreateEventPayload,
   IServiceEvent,

@@ -12,8 +12,12 @@
  *  - core-layers-*: ADR-022 R22, one rule per layer boundary (see below).
  *  - constants-stay-isomorphic: a `*.constants.ts` file may depend on nothing
  *    but zod, another `*.constants.ts` file, or a type-only specifier.
- *  - frontend-values-only-constants: apps/start may only VALUE-import
- *    @openpanel/core or @openpanel/db through a `*.constants.ts` path.
+ *  - frontend-values-only-constants: a web app (apps/start, apps/public,
+ *    packages/sdks/*) may only VALUE-import @openpanel/core or @openpanel/db
+ *    through a `*.constants.ts` path.
+ *  - shared-root-stays-isomorphic: nothing reachable from @openpanel/shared's
+ *    root entrypoint imports a node: builtin or the server/ subtree.
+ *  - no-web-to-server: a web app may not import @openpanel/shared/server.
  *
  * Both rules match by filename pattern, not by a hardcoded package.json
  * "exists" check, so they hold vacuously (0 matches, exit 0) today, while
@@ -140,6 +144,11 @@ const R22_COMMENT =
   'to the layer that owns them), the ingest tier is handed to the clientAuth ' +
   'macro instead of imported by it, and the two registry reads moved into the ' +
   'registry. A rule that fires is the only durable fix.';
+
+// ADR-022 R12/R21 — the web tier: everything that ends up in a browser bundle.
+// apps/public and packages/sdks/* joined apps/start in M15-010; before that
+// only apps/start was named, so R12 was unguarded for the other two.
+const FRONTENDS = '^(apps/(start|public)|packages/sdks/)';
 
 // The composition root and everything above it.
 const COMPOSITION_AND_ABOVE =
@@ -330,13 +339,56 @@ module.exports = {
       name: 'frontend-values-only-constants',
       severity: 'error',
       comment:
-        'apps/start may value-import @openpanel/core or @openpanel/db only via a *.constants.ts path.',
-      from: { path: '^apps/start' },
+        'ADR-022 R12: a web app value-imports @openpanel/core or @openpanel/db only through a ' +
+        '*.constants.ts path — everything else arrives as `import type`, which is erased, so no ' +
+        'server code reaches a browser bundle. M15-010 widened the FROM side: it read `apps/start` ' +
+        'alone, which left apps/public and packages/sdks/* unguarded by R12 (ADR-022, "The ' +
+        'existing frontend boundary needs widening at the same time"). @openpanel/shared is ' +
+        'deliberately NOT in the TO list — its root entrypoint is meant to be value-imported by a ' +
+        'browser, which is what `shared-root-stays-isomorphic` below makes safe. NOTE: only ' +
+        "`apps/start packages` are cruised today (package.json's check:deps), so the " +
+        'apps/public half of this rule holds vacuously until that command names it.',
+      from: { path: FRONTENDS },
       to: {
         path: '^packages/(core|db)/',
         pathNot: '\\.constants\\.ts$',
         dependencyTypesNot: ['type-only'],
       },
+    },
+    {
+      name: 'shared-root-stays-isomorphic',
+      severity: 'error',
+      comment:
+        "ADR-022 R21: nothing reachable from @openpanel/shared's ROOT entrypoint may import a " +
+        "node: builtin or the server/ subtree. This is the load-bearing half of R21's pair: a " +
+        'root-reachable file that quietly imports node:crypto still type-checks, still bundles, ' +
+        'and puts a Node polyfill (or a broken bundle) in every browser that loads the ' +
+        'dashboard — and the import looks isomorphic at the call site, so nothing else would ' +
+        'catch it. Node-only code has its own entrypoint, @openpanel/shared/server, and the ' +
+        'reachability is computed from src/index.ts rather than per-file so a helper added three ' +
+        'hops down is covered too. dependency-cruiser reports a node: specifier with the prefix ' +
+        'stripped, hence the two spellings.',
+      from: { path: '^packages/shared/src/index\\.ts$' },
+      to: {
+        path: [
+          '^(node:)?(assert|async_hooks|buffer|child_process|cluster|crypto|dgram|dns|events|fs|http|http2|https|inspector|module|net|os|path|perf_hooks|process|querystring|readline|repl|stream|string_decoder|timers|tls|tty|url|util|v8|vm|worker_threads|zlib)(/|$)',
+          '^packages/shared/src/server/',
+        ],
+        reachable: true,
+      },
+    },
+    {
+      name: 'no-web-to-server',
+      severity: 'error',
+      comment:
+        'ADR-022 R21: a web app may not import @openpanel/shared/server. This is the readable ' +
+        "half of R21's pair — the deliberate wrong import, a frontend reaching for a " +
+        'server-only helper (crypto, encryption, safe-fetch, ssrf, parser-user-agent). Unlike ' +
+        'the root rule above it does not need reachability: the specifier itself is the ' +
+        'violation. Same caveat as frontend-values-only-constants — apps/public is not cruised ' +
+        "by package.json's check:deps yet, so that third of the FROM side is vacuous today.",
+      from: { path: FRONTENDS },
+      to: { path: '^packages/shared/src/server/' },
     },
   ],
   options: {

@@ -13,9 +13,9 @@
 // this package's own barrel (`@openpanel/core`) mid-evaluation, which a
 // relative import cannot do (docs/TECH_DEBT.md §4).
 
+import { resolveDateRange } from '@openpanel/shared';
 import type { AuthenticatedClient } from '../../http/client-auth';
 import type { ServiceDeps, Services } from '../../services';
-import { resolveDateRange } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
 import { resolveClientProjectId } from '../project/project.service';
 import type { IChartRange } from '../report/report.constants';

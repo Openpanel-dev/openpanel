@@ -10,12 +10,12 @@ import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,
 } from '@openpanel/core/modules/report/report.constants';
+import { shortId } from '@openpanel/shared';
 import { useMutation } from '@tanstack/react-query';
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { shortId } from '../../utils/math';
 import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';

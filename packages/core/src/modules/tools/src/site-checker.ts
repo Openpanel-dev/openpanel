@@ -4,18 +4,18 @@
 import * as dns from 'node:dns/promises';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import * as cheerio from 'cheerio';
-import { getGeoLocation } from '../../../clients/geo';
-import type { CoreConfig } from '../../../config';
-import type { Logger } from '../../../logger';
-import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
 import {
   assertPublicHostname,
   assertPublicUrl,
   BlockedUrlError,
   isBlockedIp,
   safeFetch,
-} from '../../../shared/safe-fetch';
+} from '@openpanel/shared/server';
+import * as cheerio from 'cheerio';
+import { getGeoLocation } from '../../../clients/geo';
+import type { CoreConfig } from '../../../config';
+import type { Logger } from '../../../logger';
+import { getClientIpFromHeaders } from '../../../shared/get-client-ip';
 import { checkRateLimit } from './rate-limit';
 
 const TIMEOUT_MS = 10_000;

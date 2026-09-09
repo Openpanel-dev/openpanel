@@ -4,7 +4,7 @@ import {
   ChartTooltipItem,
 } from '@/components/charts/chart-tooltip';
 import { useNumber } from '@/hooks/use-numer-formatter';
-import { round } from '@/utils/math';
+import { round } from '@openpanel/shared';
 import { ResponsiveSankey } from '@nivo/sankey';
 import {
   type ReactNode,

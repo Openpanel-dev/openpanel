@@ -15,12 +15,13 @@
 // (packages/redis/cachable.ts), so the caller's deps travel beside the key
 // rather than inside it, and the Redis key stays byte-identical. The remaining
 // `load*` functions are intra-package lazy imports, kept lazy for a cycle, not
-// for a client.
+// for a client — the date helpers left that set in M15-010, because
+// @openpanel/shared sits below this package and cannot cycle back into it.
 
+import { getSafeJson, resolveDateRange } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
-import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
@@ -49,10 +50,6 @@ export {
 
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
-}
-
-function loadDateService() {
-  return import('../../shared/date');
 }
 
 export interface IClickhouseSession {
@@ -461,7 +458,6 @@ export async function querySessionsCore(
   deps: ServiceDeps,
   input: QuerySessionsInput
 ): Promise<IClickhouseSession[]> {
-  const { resolveDateRange } = await loadDateService();
   const { startDate, endDate } = resolveDateRange(
     input.startDate,
     input.endDate

@@ -1,11 +1,11 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Storage } from '@google-cloud/storage';
+import { decryptCredential } from '@openpanel/shared/server';
 import {
   callProvider,
   ProviderError,
 } from '../../../../clients/provider-error';
 import type { CoreConfig } from '../../../../config';
-import { decryptCredential } from '../../../../shared/encryption';
 import {
   type IGCSExportConfig,
   parseServiceAccountKey,

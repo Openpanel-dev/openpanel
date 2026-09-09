@@ -37,8 +37,8 @@ mock.module('@openpanel/redis', () => ({
   getCache: mockGetCache,
 }));
 
-const actualCrypto = await import('../../../shared/crypto');
-mock.module('../../../shared/crypto', () => ({
+const actualCrypto = await import('@openpanel/shared/server');
+mock.module('@openpanel/shared/server', () => ({
   ...actualCrypto,
   verifyPassword: mockVerifyPassword,
 }));

@@ -13,10 +13,10 @@
 // (apps/api/src/app.ts:400), hidden from the OpenAPI document like the probes,
 // and self-hosters use it as a "is this thing on" check.
 
+import { tryCatch } from '@openpanel/shared';
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';
 import { defineRoutes } from '../../http/define';
-import { tryCatch } from '../../shared/try-catch';
 import { currentReadiness } from './src/readiness';
 
 // The first zod schema through the OpenAPI plugin (ADR-003): response schemas

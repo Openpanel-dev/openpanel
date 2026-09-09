@@ -1,3 +1,4 @@
+import { average, sum } from '@openpanel/shared';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -9,7 +10,6 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
-import { average, sum } from '../../../utils/math';
 import { useReportChartContext } from '../context';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';

@@ -1,7 +1,5 @@
 import { assertPublicUrl } from './safe-fetch';
 
-export { createPinnedLookup } from './safe-fetch';
-
 /**
  * Guard a stored, tenant-supplied URL that we are about to connect to with a
  * client we don't control the transport of (the AWS SDK, a TLS probe). When the

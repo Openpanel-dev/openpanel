@@ -1,6 +1,7 @@
-// Copied from @openpanel/core/src/shared/slug.ts (ADR-007/ADR-008:
-// frontend-values-only-constants forbids apps/start value-importing core
-// outside a *.constants.ts path).
+// Moved from packages/common/src/slug.ts (M11-006), then to
+// @openpanel/shared (M15-010, ADR-022 R21) — apps/start carried a verbatim
+// copy of it, which is deleted. Not to be confused with core's slug-id.ts,
+// which calls this.
 import _slugify from 'slugify';
 
 const slugify = (str: string) => {

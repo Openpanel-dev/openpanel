@@ -4,7 +4,7 @@
 // bottom layer could not hold them. The generic Date/Luxon math they build on
 // stays in `shared/date.ts`.
 
-import { DateTime } from '../../../shared/date';
+import { DateTime } from '@openpanel/shared';
 import type { IChartRange, IReportInput } from '../report.constants';
 
 export function getDatesFromRange(range: IChartRange, timezone: string) {

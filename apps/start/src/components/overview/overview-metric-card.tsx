@@ -1,7 +1,7 @@
 import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { timeWindows } from '@openpanel/core/modules/report/report.constants';
 import { type ReactNode, useState } from 'react';
-import { getPreviousMetric } from '../../utils/math';
+import { getPreviousMetric } from '../../utils/previous-metric';
 import { Bar } from '../charts/bar';
 import { BarChart } from '../charts/bar-chart';
 import {

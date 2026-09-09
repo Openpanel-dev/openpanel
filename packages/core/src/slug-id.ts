@@ -10,8 +10,8 @@
 // `@modelcontextprotocol/sdk` signature and only ever hold the db the route
 // closed over.
 
+import { slug } from '@openpanel/shared';
 import type { ServiceDeps } from './services';
-import { slug } from './shared/slug';
 
 export async function getId(
   deps: Pick<ServiceDeps, 'db'>,
