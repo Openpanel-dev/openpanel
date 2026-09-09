@@ -7,23 +7,16 @@
 // exports, gathered so a service can reach an outbound client through its
 // scoped `Ctx` instead of importing the module directly. Nothing is
 // constructed here — the geo readers open their mmdb lazily and the email /
-// Slack / Discord transports read their own credentials — so building it
-// costs one object literal per process.
+// Discord transports read their own credentials — so building it costs one
+// object literal per process.
 //
-// The modules under `src/modules/**` still import these functions directly.
-// Repointing them onto `ctx.clients` is the TECH_DEBT §4 wave (after P9,
-// before P12's grep gates); this handle is what that wave repoints ONTO.
+// M15-008 removed the `slack` and `ai` members: those transports moved into
+// the single module that calls each (ADR-022 A2), and a client handle cannot
+// reach up into a module. Nothing read either member.
 
-import { enrichInsights } from './ai/enrich';
-import { generateInsightExplanation } from './ai/explain';
-import { generateWeeklyNarrative } from './ai/narrative';
 import { sendEmail } from './email';
 import { getAsnInfo, getGeoLocation } from './geo';
 import { sendDiscordNotification } from './integrations/discord';
-import {
-  getSlackInstallUrl,
-  sendSlackNotification,
-} from './integrations/slack';
 
 export interface ServiceClients {
   geo: {
@@ -33,17 +26,8 @@ export interface ServiceClients {
   email: {
     sendEmail: typeof sendEmail;
   };
-  slack: {
-    sendSlackNotification: typeof sendSlackNotification;
-    getSlackInstallUrl: typeof getSlackInstallUrl;
-  };
   discord: {
     sendDiscordNotification: typeof sendDiscordNotification;
-  };
-  ai: {
-    enrichInsights: typeof enrichInsights;
-    generateInsightExplanation: typeof generateInsightExplanation;
-    generateWeeklyNarrative: typeof generateWeeklyNarrative;
   };
 }
 
@@ -51,12 +35,6 @@ export function createClients(): ServiceClients {
   return {
     geo: { getGeoLocation, getAsnInfo },
     email: { sendEmail },
-    slack: { sendSlackNotification, getSlackInstallUrl },
     discord: { sendDiscordNotification },
-    ai: {
-      enrichInsights,
-      generateInsightExplanation,
-      generateWeeklyNarrative,
-    },
   };
 }

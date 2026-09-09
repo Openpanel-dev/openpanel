@@ -6,9 +6,6 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
-// The concrete pino implementation (dissolved from @openpanel/logger,
-// M4-003). `./logger` above is the structural interface every module codes
-// against; this is what apps/api calls to build one.
 // The seven buffers (moved from packages/db/src/buffers, M8-001). Only the
 // FACTORY is on the barrel: they are boot singletons on `AppDeps`, built once
 // by `main.ts`, never module singletons (ADR-007). V1's
@@ -31,109 +28,22 @@ export type { ProfileBackfillEntry } from './buffers/profile-backfill-buffer';
 export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
 export type { SessionIngestResult } from './buffers/session-buffer';
 export { resolveSessionTimeoutMs } from './buffers/session-buffer';
-// Dissolved from @openpanel/ai (M4-005) — the chat agent app, the filter
-// command bar, insight explanation/enrichment and the worker's digest and
-// win-back emails all call these directly.
-export type {
-  InsightCategory,
-  InsightEnrichment,
-  InsightToEnrich,
-} from './clients/ai/enrich';
-export { ENRICH_VERSION, enrichInsights } from './clients/ai/enrich';
-export type {
-  BreakdownComparison,
-  DailyPoint,
-  ExplainInsightInput,
-  InsightExplanation,
-} from './clients/ai/explain';
-export { generateInsightExplanation } from './clients/ai/explain';
-export type { WeeklyNarrativeInput } from './clients/ai/narrative';
-export { generateWeeklyNarrative } from './clients/ai/narrative';
-export type { ChatModelEntry } from './clients/ai/providers';
-export {
-  ALLOWED_MODELS,
-  anthropicProvider,
-  openaiProvider,
-  resolveModel,
-} from './clients/ai/providers';
-export type { WinBackPitchInput } from './clients/ai/win-back';
-export { generateWinBackPitch } from './clients/ai/win-back';
-// The `clients` handle on AppDeps (M9-004). main.ts builds it once and hands
-// it to `AppDeps`, the same way it builds the buffers and the producers.
+// ADR-022 R13, M15-008: of the ~35 `clients/` symbols this barrel used to
+// re-export, `main.ts` imported one (`createClients`) and `apps/start` none.
+// The rest — every AI call, the Slack/Discord senders, the geo lookups, the
+// object-store adapters, the integration registry — are reached by relative
+// import inside this package and are no longer on the public surface.
+// `pino-logger` is the concrete implementation of `./logger`'s structural
+// interface; main.ts builds its own named logger from it and mirrors a fatal
+// to the real stderr with the write captured before `interceptProcessOutput`
+// wrapped the stream.
 export type { ServiceClients } from './clients/create-clients';
 export { createClients } from './clients/create-clients';
-export type { EmailData, EmailTemplate } from './clients/email';
-export { sendEmail } from './clients/email';
-// Dissolved from @openpanel/geo (M4-004) — apps/api's ingest and tools
-// controllers call these directly, the same way they reach the logger below.
-export type { AsnInfo, GeoLocation } from './clients/geo';
-export { getAsnInfo, getGeoLocation } from './clients/geo';
-// Dissolved from @openpanel/integrations (M4-005) — the export cron job, the
-// notification worker job and the Slack/webhook OAuth callback all reach
-// these directly, the same way they reach the object-store adapters below.
 export {
-  sendDiscordNotification,
-  sendTestDiscordNotification,
-} from './clients/integrations/discord';
-export {
-  clickhouseEventToExportEvent,
-  createBatch,
-  createManifest,
-  EXPORT_SCHEMA_VERSION,
-  type ExportFormat,
-  generateBatchPath,
-  getContentType,
-  getFileExtension,
-  type IBatchFile,
-  type IBatchInfo,
-  type IBatchResult,
-  type IExportEvent,
-  type IManifest,
-  MANIFEST_CONTENT_TYPE,
-  MANIFEST_FILENAME,
-  parseManifest,
-  serializeManifest,
-} from './clients/integrations/export';
-export type {
-  IObjectStoreAdapter,
-  IUploadOptions,
-  IUploadResult,
-} from './clients/integrations/object-store';
-export {
-  createGCSAdapter,
-  createS3Adapter,
-  GCSAdapter,
-  S3Adapter,
-} from './clients/integrations/object-store';
-export type {
-  ConfigOf,
-  IConfigSecret,
-  INotificationDeliverArgs,
-  INotificationDeliverPayload,
-  IServerIntegration,
-} from './clients/integrations/registry';
-export {
-  carryOverConfigSecrets,
-  encryptConfigSecrets,
-  findEncryptedSecretField,
-  findMissingSecretFields,
-  getServerIntegration,
-  redactConfigSecrets,
-} from './clients/integrations/registry';
-export { safeWebhookFetcher } from './clients/integrations/safe-fetcher';
-export {
-  getSlackInstallUrl,
-  sendSlackNotification,
-  slackInstaller,
-} from './clients/integrations/slack';
-export type { ILogger } from './clients/logger';
-export {
-  createLogger,
-  getServiceName,
-  interceptProcessOutput,
-  rawStderrWrite,
-  rawStdoutWrite,
-} from './clients/logger';
+  isRetryableStatus,
+  ProviderError,
+  type ProviderErrorOptions,
+} from './clients/provider-error';
 export type {
   AppDeps,
   CoreConfig,
@@ -951,6 +861,14 @@ export { runSiteCheck } from './modules/tools/src/site-checker';
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same
 // way they reach every other dissolved service here.
 export { createUserService } from './modules/user/user.service';
+export type { ILogger } from './pino-logger';
+export {
+  createLogger,
+  getServiceName,
+  interceptProcessOutput,
+  rawStderrWrite,
+  rawStdoutWrite,
+} from './pino-logger';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 // The RPC base is on the barrel because it is the seam every module's own
 // `<name>.rpc.ts` builds its router on: ONE tRPC instance (ADR-009), mounted

@@ -22,6 +22,12 @@
 // the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4).
 
 import { z } from 'zod';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
+import type { ServiceDeps, Services } from '../../services';
+import { getOrganizationAccess } from '../../shared/access-lookups';
+import { getAccessChecks } from '../auth/auth.service';
+import { BASE_INTEGRATIONS } from '../notification/notification.service';
+import type { IIntegrationConfig, ISlackConfig } from './integration.constants';
 import {
   carryOverConfigSecrets,
   encryptConfigSecrets,
@@ -29,19 +35,13 @@ import {
   findMissingSecretFields,
   getServerIntegration,
   redactConfigSecrets,
-} from '../../clients/integrations/registry';
-import { safeWebhookFetcher } from '../../clients/integrations/safe-fetcher';
+} from './src/registry';
+import { safeWebhookFetcher } from './src/safe-fetcher';
 import {
   getSlackInstallUrl,
   sendSlackNotification,
   slackInstaller,
-} from '../../clients/integrations/slack';
-import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
-import type { ServiceDeps, Services } from '../../services';
-import { getOrganizationAccess } from '../../shared/access-lookups';
-import { getAccessChecks } from '../auth/auth.service';
-import { BASE_INTEGRATIONS } from '../notification/notification.service';
-import type { IIntegrationConfig, ISlackConfig } from './integration.constants';
+} from './src/slack';
 import { zSlackAuthResponse } from './src/slack-contract';
 
 // Credentials are write-only: they are encrypted at rest and never travel back
@@ -315,15 +315,23 @@ export async function createOrUpdateSlackIntegration(
         },
       });
 
-  return {
-    ...res,
-    slackInstallUrl: await getSlackInstallUrl({
-      config: deps.config,
-      integrationId: res.id,
-      organizationId,
-      projectId,
-    }),
-  };
+  // `getSlackInstallUrl` returns null when no Slack app is configured on this
+  // deployment (ADR-022 R9: the client reports a missing thing as null). The
+  // decision that a Slack integration is unusable without one is this
+  // service's, not the transport's.
+  const installUrl = await getSlackInstallUrl({
+    config: deps.config,
+    integrationId: res.id,
+    organizationId,
+    projectId,
+  });
+  if (!installUrl) {
+    throw new TRPCBadRequestError(
+      'Slack is not configured on this OpenPanel deployment'
+    );
+  }
+
+  return { ...res, slackInstallUrl: installUrl };
 }
 
 // Generic, registry-driven connection test. Gated on project write access:

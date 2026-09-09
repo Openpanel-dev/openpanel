@@ -1,20 +1,30 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
+// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved
+// out of `clients/integrations/` by M15-008: it dispatches to this module's
+// own transports, so leaving it below them would have made every one of those
+// edges point upward (ADR-022 R22/A2).
 
-import type { CoreConfig } from '../../config';
-import {
-  type IIntegrationConfig,
-  looksEncrypted,
-} from '../../modules/integration/integration.constants';
-import { type EncryptionKey, encryptCredential } from '../../shared/encryption';
-import {
-  execute as executeJavaScriptTemplate,
-  validate as validateJavaScriptTemplate,
-} from '../../shared/js-runtime';
 import {
   sendDiscordNotification,
   sendTestDiscordNotification,
-} from './discord';
-import { postWebhook } from './fetcher';
+} from '../../../clients/integrations/discord';
+import {
+  postWebhook,
+  type WebhookResult,
+} from '../../../clients/integrations/fetcher';
+import { ProviderError } from '../../../clients/provider-error';
+import type { CoreConfig } from '../../../config';
+import {
+  type EncryptionKey,
+  encryptCredential,
+} from '../../../shared/encryption';
+import {
+  execute as executeJavaScriptTemplate,
+  validate as validateJavaScriptTemplate,
+} from '../../../shared/js-runtime';
+import {
+  type IIntegrationConfig,
+  looksEncrypted,
+} from '../integration.constants';
 import {
   createGCSAdapter,
   createS3Adapter,
@@ -120,6 +130,26 @@ export interface IConfigSecret<C> {
   record?: boolean;
 }
 
+/**
+ * ADR-022 R19: a delivery that the destination did not accept is a
+ * `ProviderError`, carrying the `retryable` the transport already classified.
+ * Returning the failed result instead is what let a 500 from a customer's
+ * webhook report as a delivered notification.
+ */
+async function deliverWebhook(
+  provider: string,
+  send: Promise<WebhookResult>
+): Promise<WebhookResult> {
+  const result = await send;
+  if (!result.ok) {
+    throw new ProviderError(provider, `${provider} webhook delivery failed`, {
+      status: result.status,
+      retryable: result.retryable,
+    });
+  }
+  return result;
+}
+
 const slackServer: IServerIntegration<'slack'> = {
   type: 'slack',
   // The bot token and the incoming-webhook URL are both bearer credentials for
@@ -129,13 +159,16 @@ const slackServer: IServerIntegration<'slack'> = {
   secretFields: [{ path: 'access_token' }, { path: 'incoming_webhook.url' }],
   notification: {
     deliver: ({ config, notification }) =>
-      sendSlackNotification({
-        fetcher: safeWebhookFetcher,
-        webhookUrl: config.incoming_webhook.url,
-        message: [`🔔 *${notification.title}*`, notification.message].join(
-          '\n'
-        ),
-      }),
+      deliverWebhook(
+        'slack',
+        sendSlackNotification({
+          fetcher: safeWebhookFetcher,
+          webhookUrl: config.incoming_webhook.url,
+          message: [`🔔 *${notification.title}*`, notification.message].join(
+            '\n'
+          ),
+        })
+      ),
   },
 };
 
@@ -152,13 +185,16 @@ const discordServer: IServerIntegration<'discord'> = {
   },
   notification: {
     deliver: ({ config, notification }) =>
-      sendDiscordNotification({
-        fetcher: safeWebhookFetcher,
-        webhookUrl: config.url,
-        message: [`🔔 **${notification.title}**`, notification.message].join(
-          '\n'
-        ),
-      }),
+      deliverWebhook(
+        'discord',
+        sendDiscordNotification({
+          fetcher: safeWebhookFetcher,
+          webhookUrl: config.url,
+          message: [`🔔 **${notification.title}**`, notification.message].join(
+            '\n'
+          ),
+        })
+      ),
   },
 };
 
@@ -201,11 +237,9 @@ const webhookServer: IServerIntegration<'webhook'> = {
       // user-controlled, and this runs inside our network. Re-validate the
       // destination on every send rather than trusting it from when it was
       // saved.
-      return postWebhook(
-        safeWebhookFetcher,
-        config.url,
-        body,
-        config.headers ?? {}
+      return deliverWebhook(
+        'webhook',
+        postWebhook(safeWebhookFetcher, config.url, body, config.headers ?? {})
       );
     },
   },

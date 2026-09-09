@@ -6,10 +6,14 @@
 // pattern as enrich.ts / filter-command.ts.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
-import type { CoreConfig } from '../../config';
-import { ALLOWED_MODELS, resolveModel } from './providers';
+import { callProvider } from '../../../clients/provider-error';
+import type { CoreConfig } from '../../../config';
+import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
 
 const NARRATIVE_MODEL_ID = 'gpt-4-1-mini';
+
+// Preferred model and fallback are both OpenAI — see enrich.ts.
+const NARRATIVE_PROVIDER = 'openai';
 
 function narrativeModel(config: CoreConfig) {
   const entry =
@@ -77,11 +81,13 @@ export async function generateWeeklyNarrative(
   config: CoreConfig,
   input: WeeklyNarrativeInput
 ): Promise<string> {
-  const result = (await getApp(config).run('weekly-narrative', {
-    input: JSON.stringify(input),
-    context: {},
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-  } as any)) as { structured?: { narrative: string } };
+  const result = (await callProvider(NARRATIVE_PROVIDER, () =>
+    getApp(config).run('weekly-narrative', {
+      input: JSON.stringify(input),
+      context: {},
+      // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
+    } as any)
+  )) as { structured?: { narrative: string } };
 
   return result.structured?.narrative ?? '';
 }

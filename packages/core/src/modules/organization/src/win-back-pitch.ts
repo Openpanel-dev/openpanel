@@ -8,10 +8,14 @@
 // the same facts.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
-import type { CoreConfig } from '../../config';
-import { ALLOWED_MODELS, resolveModel } from './providers';
+import { callProvider } from '../../../clients/provider-error';
+import type { CoreConfig } from '../../../config';
+import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
 
 const WIN_BACK_MODEL_ID = 'gpt-4-1-mini';
+
+// Preferred model and fallback are both OpenAI — see insight/src/enrich.ts.
+const WIN_BACK_PROVIDER = 'openai';
 
 function winBackModel(config: CoreConfig) {
   const entry =
@@ -83,11 +87,13 @@ export async function generateWinBackPitch(
   config: CoreConfig,
   input: WinBackPitchInput
 ): Promise<string> {
-  const result = (await getApp(config).run('win-back-pitch', {
-    input: JSON.stringify(input),
-    context: {},
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-  } as any)) as { structured?: { pitch: string } };
+  const result = (await callProvider(WIN_BACK_PROVIDER, () =>
+    getApp(config).run('win-back-pitch', {
+      input: JSON.stringify(input),
+      context: {},
+      // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
+    } as any)
+  )) as { structured?: { pitch: string } };
 
   // The instruction bans em dashes, but the model slips one in often enough
   // that a prompt rule alone won't hold across hundreds of sends. Commas read

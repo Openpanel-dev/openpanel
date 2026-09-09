@@ -273,7 +273,7 @@ export type IIntegrationType = IIntegrationConfig['type'];
 // ---------------------------------------------------------------------------
 // Plugin descriptor registry (core layer). Each integration declares its
 // capabilities, setup style, config schema and catalog metadata once. The
-// server (@openpanel/core's clients/integrations/registry.ts) and client
+// server (this module's src/registry.ts) and client
 // (apps/start) registries are keyed by the same `type` literal and are
 // forced to cover this union.
 // ---------------------------------------------------------------------------
@@ -482,13 +482,3 @@ type _DescriptorTypes = (typeof INTEGRATION_DESCRIPTORS)[number]['type'];
 type _AssertDescriptorCoverage = Assert<
   Equal<IIntegrationType, _DescriptorTypes>
 >;
-
-// ---------------------------------------------------------------------------
-// Discord test-notification wording (previously hardcoded in
-// clients/integrations/discord.ts's `sendTestDiscordNotification` as a
-// copy-pasted Slack message — "your Slack webhook is functioning correctly!"
-// on a Discord test send). Named and fixed here per the module map.
-// ---------------------------------------------------------------------------
-
-export const DISCORD_TEST_NOTIFICATION_MESSAGE =
-  '**🧪 Test [OpenPanel.dev](<https://openpanel.dev/>)**\nIf you can read this, your Discord webhook is functioning correctly!\n';

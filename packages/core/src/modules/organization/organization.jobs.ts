@@ -49,7 +49,7 @@ export const organizationCronJobs = {
  * The wind-down cron's dependencies, bound to the job's own ctx.
  *
  * Two reaches stay dynamic. The sibling service's two ClickHouse counts are
- * not on `OrganizationService`, and `clients/ai/win-back.ts` pulls the agent
+ * not on `OrganizationService`, and `src/win-back-pitch.ts` pulls the agent
  * runtime — a static edge from here would drag either into jobs.registry.ts's
  * eager import graph, which every core test file walks.
  */
@@ -59,7 +59,7 @@ async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
     { generateWinBackPitch },
   ] = await Promise.all([
     import('./organization.service'),
-    import('../../clients/ai/win-back'),
+    import('./src/win-back-pitch'),
   ]);
 
   const highlight: WinBackHighlightDeps = {

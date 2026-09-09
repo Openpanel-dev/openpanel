@@ -8,16 +8,16 @@
 // `@better-agent/core`'s context-free tool-handler signature ruled out doing
 // as an argument.
 import { betterAgent, defineAgent } from '@better-agent/core';
+import type { ServiceDeps } from '../../../services';
+import { type ChatAgentContext, chatContextSchema } from './context';
+import { createConversationStore } from './persistence';
+import { buildSystemPrompt } from './prompt';
 import {
   ALLOWED_MODELS,
   type ChatModelEntry,
   openaiProvider,
   resolveModel,
-} from '../../../clients/ai/providers';
-import type { ServiceDeps } from '../../../services';
-import { type ChatAgentContext, chatContextSchema } from './context';
-import { createConversationStore } from './persistence';
-import { buildSystemPrompt } from './prompt';
+} from './providers';
 import { composeChatTools } from './tools';
 
 /**

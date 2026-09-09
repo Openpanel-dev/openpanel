@@ -8,9 +8,12 @@
  *    usable as an SSRF probe.
  *
  * Injecting the transport keeps this module browser-safe (a plain `fetch`) while
- * letting server callers pass the SSRF-guarded one from `./safe-fetcher`, which
+ * letting server callers pass the SSRF-guarded one from the integration
+ * module's `src/safe-fetcher.ts`, which
  * pulls in `node:dns`/`undici` and must never reach a client bundle.
  */
+
+import { isRetryableStatus } from '../provider-error';
 
 export type WebhookFetcher = (
   url: string,
@@ -21,9 +24,20 @@ export type WebhookFetcher = (
   }
 ) => Promise<{ status: number }>;
 
+/** No response at all — the request never reached the far end. */
+const NO_RESPONSE_STATUS = 0;
+
 export interface WebhookResult {
   ok: boolean;
   status: number;
+  /**
+   * ADR-022 R19, classified once here so no caller re-derives it: 429 and 5xx
+   * are worth another delivery attempt, every other 4xx is the destination
+   * refusing this exact request. A transport failure that produced no response
+   * (DNS, connect, TLS, timeout) is retryable — nothing about the request was
+   * rejected.
+   */
+  retryable: boolean;
 }
 
 export const browserFetcher: WebhookFetcher = async (url, init) => {
@@ -47,8 +61,9 @@ export async function postWebhook(
       body: JSON.stringify(body),
     });
 
-    return { ok: status >= 200 && status < 300, status };
+    const ok = status >= 200 && status < 300;
+    return { ok, status, retryable: !ok && isRetryableStatus(status) };
   } catch {
-    return { ok: false, status: 0 };
+    return { ok: false, status: NO_RESPONSE_STATUS, retryable: true };
   }
 }

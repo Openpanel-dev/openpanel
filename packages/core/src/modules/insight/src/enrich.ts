@@ -7,8 +7,9 @@
 // writes the results back (this module stays db-free).
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
-import type { CoreConfig } from '../../config';
-import { ALLOWED_MODELS, resolveModel } from './providers';
+import { callProvider } from '../../../clients/provider-error';
+import type { CoreConfig } from '../../../config';
+import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
 
 // Bump when the prompt or output shape changes — the worker re-enriches any
 // insight whose stored enrichVersion is below this.
@@ -16,6 +17,10 @@ export const ENRICH_VERSION = 1;
 
 // Tier-1 is cheap, fast, non-reasoning work — gpt-4.1-mini is the right tier.
 const ENRICH_MODEL_ID = 'gpt-4-1-mini';
+
+// Both the preferred model and the fallback are OpenAI, so every failure this
+// call classifies is an OpenAI one.
+const ENRICH_PROVIDER = 'openai';
 
 function enrichModel(config: CoreConfig) {
   const entry =
@@ -123,11 +128,13 @@ export async function enrichInsights(
   }
 
   const input = JSON.stringify(insights);
-  const result = (await getApp(config).run('insight-enrich', {
-    input,
-    context: {},
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as filter-command.ts
-  } as any)) as { structured?: { results: InsightEnrichment[] } };
+  const result = (await callProvider(ENRICH_PROVIDER, () =>
+    getApp(config).run('insight-enrich', {
+      input,
+      context: {},
+      // biome-ignore lint/suspicious/noExplicitAny: same dodge as filter-command.ts
+    } as any)
+  )) as { structured?: { results: InsightEnrichment[] } };
 
   return result.structured?.results ?? [];
 }

@@ -1,4 +1,4 @@
-import type { IClickhouseEvent } from '../../../modules/event/event.service';
+import type { IClickhouseEvent } from '../../../event/event.service';
 
 // Local copy for the reason every modules/*/src/dates.ts gives: importing
 // @openpanel/db's clickhouse/client constructs a ClickHouse client at import

@@ -9,16 +9,7 @@
 // value through ClickHouse's own `{name:Type}` params, and converting it to the
 // `sql` tag would change the emitted statement. Kept byte-identical.
 
-import {
-  clickhouseEventToExportEvent,
-  createBatch,
-  createManifest,
-  generateBatchPath,
-  MANIFEST_CONTENT_TYPE,
-  MANIFEST_FILENAME,
-  serializeManifest,
-} from '../../../clients/integrations/export';
-import type { IObjectStoreAdapter } from '../../../clients/integrations/object-store';
+import { isProviderError } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { DateTime } from '../../../shared/date';
@@ -29,6 +20,16 @@ import {
   type IS3ExportConfig,
   isKind,
 } from '../integration.constants';
+import {
+  clickhouseEventToExportEvent,
+  createBatch,
+  createManifest,
+  generateBatchPath,
+  MANIFEST_CONTENT_TYPE,
+  MANIFEST_FILENAME,
+  serializeManifest,
+} from './export';
+import type { IObjectStoreAdapter } from './object-store';
 
 // Safety lag: never export events whose inserted_at is within this window of
 // now(), so an in-flight CH insert batch (or replica lag) can't be half-read at
@@ -172,6 +173,11 @@ export async function runFlushExportsCron(
     }
   }
 
+  // ADR-022 R19: the adapters classify, this reads the flag. A permanent
+  // refusal (bad bucket, revoked key) is logged and left alone — the next tick
+  // would refuse identically. A retryable one fails the job at the end, so a
+  // provider outage is visible rather than a green run that exported nothing.
+  let retryableFailures = 0;
   await runWithConcurrency(
     items,
     deps.config.objectStoreExport.concurrency ?? DEFAULT_CONCURRENCY,
@@ -182,16 +188,27 @@ export async function runFlushExportsCron(
         item.config,
         deps
       ).catch((error) => {
+        const retryable = !isProviderError(error) || error.retryable;
+        if (retryable) {
+          retryableFailures++;
+        }
         deps.logger.error(
           {
             err: error,
             projectId: item.projectId,
             integrationId: item.integrationId,
+            retryable,
           },
           'Export failed for project'
         );
       })
   );
+
+  if (retryableFailures > 0) {
+    throw new Error(
+      `${retryableFailures} of ${items.length} exports failed with a retryable provider error`
+    );
+  }
 }
 
 async function processExport(

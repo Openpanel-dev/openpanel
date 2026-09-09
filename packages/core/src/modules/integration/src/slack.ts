@@ -1,14 +1,16 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
+// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved
+// out of `clients/integrations/` by M15-008: this module is its only consumer
+// (ADR-022 A2).
 // Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
 import * as Slack from '@slack/bolt';
-import type { CoreConfig } from '../../config';
 import {
   browserFetcher,
   postWebhook,
   type WebhookFetcher,
   type WebhookResult,
-} from './fetcher';
+} from '../../../clients/integrations/fetcher';
+import type { CoreConfig } from '../../../config';
 
 const { LogLevel, App: SlackApp } = Slack;
 
@@ -43,6 +45,11 @@ export function slackInstaller(config: CoreConfig): InstallProvider {
   });
 }
 
+/**
+ * `null` when this deployment has no Slack app configured — ADR-022 R9: a
+ * missing thing is null, not an error. The caller decides what an absent
+ * install flow means for its own surface.
+ */
 export const getSlackInstallUrl = ({
   config,
   integrationId,
@@ -53,9 +60,9 @@ export const getSlackInstallUrl = ({
   integrationId: string;
   organizationId: string;
   projectId: string;
-}) => {
+}): Promise<string> | null => {
   if (!config.slack.clientId) {
-    throw new Error('SLACK_CLIENT_ID is not set (slack.ts)');
+    return null;
   }
   return slackInstaller(config).generateInstallUrl({
     scopes: INSTALL_SCOPES,

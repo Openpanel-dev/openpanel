@@ -53,7 +53,7 @@ const generateInsightExplanation = mock(async () => ({
   relatedReference: '',
   confidence: 'low' as const,
 }));
-mock.module('../../clients/ai/explain', () => ({
+mock.module('./src/explain', () => ({
   generateInsightExplanation,
 }));
 

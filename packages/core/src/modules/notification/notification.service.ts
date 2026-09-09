@@ -19,7 +19,6 @@
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { pathOr } from 'ramda';
 import { sendEmail } from '../../clients/email';
-import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
@@ -32,6 +31,7 @@ import {
   type IIntegrationConfig,
   isKind,
 } from '../integration/integration.constants';
+import { getServerIntegration } from '../integration/src/registry';
 import type {
   IChartEvent,
   IChartEventFilter,

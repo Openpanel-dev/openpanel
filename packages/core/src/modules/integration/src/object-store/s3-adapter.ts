@@ -9,25 +9,26 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import type { CoreConfig } from '../../../config';
-import type { IS3ExportConfig } from '../../../modules/integration/integration.constants';
-import { decryptCredential } from '../../../shared/encryption';
-import { assertSafeUrl, createPinnedLookup } from '../../../shared/ssrf';
-import { createLogger, type ILogger } from '../../logger';
+import {
+  callProvider,
+  ProviderError,
+  providerErrorFrom,
+} from '../../../../clients/provider-error';
+import type { CoreConfig } from '../../../../config';
+import { decryptCredential } from '../../../../shared/encryption';
+import { assertSafeUrl, createPinnedLookup } from '../../../../shared/ssrf';
+import type { IS3ExportConfig } from '../../integration.constants';
 import type {
   IObjectStoreAdapter,
   IUploadOptions,
   IUploadResult,
 } from './types';
 
-// Lazy: constructing a pino logger spins up a worker thread for the
-// pino-pretty transport, so a module that is merely imported (every test file
-// that reaches the object-store barrel) must not pay for one unused.
-let _logger: ILogger | null = null;
-function logger(coreConfig: CoreConfig): ILogger {
-  _logger ??= createLogger({ name: 's3-adapter', config: coreConfig });
-  return _logger;
-}
+/** ADR-022 R19: every failure that leaves this adapter is classified as this. */
+const S3_PROVIDER = 's3';
+
+// An endpoint the SSRF guard refuses is refused identically on every retry.
+const ENDPOINT_REJECTED_RETRYABLE = false;
 
 /**
  * Transport that dials only `address`, whatever DNS says at connect time.
@@ -92,9 +93,25 @@ export class S3Adapter implements IObjectStoreAdapter {
     // between the check and the connect would reach an internal host.
     // Self-hosted returns null (guard skipped) — a single tenant already owns
     // the network, and internal MinIO endpoints are a legitimate use.
-    const addresses = this.config.endpoint
-      ? await assertSafeUrl(this.coreConfig.selfHosted, this.config.endpoint)
-      : null;
+    //
+    // A refused endpoint is refused on every attempt, so it is classified
+    // permanent rather than left as a bare throw the caller would have to
+    // treat as retryable (ADR-022 R19).
+    let addresses: string[] | null = null;
+    if (this.config.endpoint) {
+      try {
+        addresses = await assertSafeUrl(
+          this.coreConfig.selfHosted,
+          this.config.endpoint
+        );
+      } catch (error) {
+        throw new ProviderError(
+          S3_PROVIDER,
+          `Endpoint '${this.config.endpoint}' is not a permitted export destination`,
+          { retryable: ENDPOINT_REJECTED_RETRYABLE, cause: error }
+        );
+      }
+    }
 
     return this.getClientWithAccessKeys(addresses?.[0]);
   }
@@ -133,14 +150,6 @@ export class S3Adapter implements IObjectStoreAdapter {
         ? { requestHandler: pinnedRequestHandler(pinnedAddress) }
         : {}),
     });
-
-    logger(this.coreConfig).debug(
-      {
-        region: this.config.region,
-        endpoint: this.config.endpoint || 'default',
-      },
-      'S3 client created with access keys'
-    );
 
     // Mark as non-expiring
     this.clientExpiresAt = 0;
@@ -213,24 +222,13 @@ export class S3Adapter implements IObjectStoreAdapter {
         },
       });
 
-      logger(this.coreConfig).debug(
-        {
-          roleArn: this.config.roleArn,
-          expiresAt: new Date(this.clientExpiresAt).toISOString(),
-        },
-        'S3 client created with assumed role'
-      );
-
       return s3Client;
     } catch (error) {
-      logger(this.coreConfig).error(
-        {
-          error,
-          roleArn: this.config.roleArn,
-        },
-        'Failed to assume role for S3 access'
+      throw providerErrorFrom(
+        S3_PROVIDER,
+        error,
+        `Failed to assume role ${this.config.roleArn} for S3 access`
       );
-      throw error;
     }
   }
 
@@ -273,36 +271,16 @@ export class S3Adapter implements IObjectStoreAdapter {
       ...this.getEncryptionParams(),
     };
 
-    try {
-      const command = new PutObjectCommand(putParams);
-      const response = await client.send(command);
+    const response = await callProvider(S3_PROVIDER, () =>
+      client.send(new PutObjectCommand(putParams))
+    );
 
-      logger(this.coreConfig).debug(
-        {
-          bucket: options.bucket,
-          key: options.key,
-          etag: response.ETag,
-        },
-        'File uploaded to S3'
-      );
-
-      return {
-        bucket: options.bucket,
-        key: options.key,
-        etag: response.ETag,
-        location: `s3://${options.bucket}/${options.key}`,
-      };
-    } catch (error) {
-      logger(this.coreConfig).error(
-        {
-          error,
-          bucket: options.bucket,
-          key: options.key,
-        },
-        'Failed to upload file to S3'
-      );
-      throw error;
-    }
+    return {
+      bucket: options.bucket,
+      key: options.key,
+      etag: response.ETag,
+      location: `s3://${options.bucket}/${options.key}`,
+    };
   }
 
   /**
@@ -349,17 +327,11 @@ export class S3Adapter implements IObjectStoreAdapter {
    * transport detail back to them. The endpoint is caller-supplied, so a
    * verbatim message ("ECONNREFUSED 10.0.0.5:22", a TLS handshake failure)
    * would make this procedure a probe for whatever the worker can reach.
-   * Errors are logged in full for operators.
    */
   private describeError(error: unknown): string {
     const name = (error as { name?: string } | null)?.name;
     const status = (error as { $metadata?: { httpStatusCode?: number } } | null)
       ?.$metadata?.httpStatusCode;
-
-    logger(this.coreConfig).warn(
-      { err: error, bucket: this.config.bucket },
-      'S3 test failed'
-    );
 
     if (status === 404 || name === 'NotFound' || name === 'NoSuchBucket') {
       return `Bucket '${this.config.bucket}' does not exist or is not accessible`;

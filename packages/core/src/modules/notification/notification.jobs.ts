@@ -8,6 +8,7 @@
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { z } from 'zod';
+import { isProviderError } from '../../clients/provider-error';
 import { defineJob } from '../../jobs/define';
 
 // A loose mirror of `Prisma.NotificationUncheckedCreateInput` — the payload
@@ -32,12 +33,32 @@ export const notificationQueueJobs = {
   sendNotification: defineJob({
     payload: z.object({ notification: notificationPayload }),
     handler: async ({ payload, ctx }) => {
-      // `payload.notification` round-tripped through BullMQ's JSON storage
-      // and the loose wire schema above — the real shape is Prisma's create
-      // input, exactly what a V1 producer put on the queue.
-      await ctx.services.notification.dispatch(
-        payload.notification as Prisma.NotificationUncheckedCreateInput
-      );
+      try {
+        // `payload.notification` round-tripped through BullMQ's JSON storage
+        // and the loose wire schema above — the real shape is Prisma's create
+        // input, exactly what a V1 producer put on the queue.
+        await ctx.services.notification.dispatch(
+          payload.notification as Prisma.NotificationUncheckedCreateInput
+        );
+      } catch (error) {
+        // ADR-022 R19: the transport classified this once. A destination that
+        // refused the request (4xx) will refuse the identical retry, so it is
+        // logged and the job completes; anything retryable is rethrown so the
+        // failure is recorded against the job.
+        if (isProviderError(error) && !error.retryable) {
+          ctx.logger.error(
+            {
+              err: error,
+              provider: error.provider,
+              status: error.status,
+              integrationId: payload.notification.integrationId,
+            },
+            'Notification permanently refused by the destination'
+          );
+          return;
+        }
+        throw error;
+      }
     },
   }),
 };

@@ -1,4 +1,7 @@
-// Ported from @openpanel/ai (dissolved into core — M4-005).
+// Ported from @openpanel/ai (dissolved into core — M4-005). Moved out of
+// `clients/ai/` by M15-008: the assistant is its only consumer, so ADR-022 A2
+// puts it in this module's `src/` — which is also what removes its upward
+// edge onto `assistant.constants`.
 //
 // SERVER-ONLY. This module instantiates `@better-agent/providers` clients from
 // the credentials the config loader parsed (ADR-022 R9: config in). Never
@@ -7,11 +10,11 @@
 // `@openpanel/core/modules/assistant/assistant.constants` instead.
 import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
-import type { CoreConfig } from '../../config';
-import type { ChatModelEntry } from '../../modules/assistant/assistant.constants';
+import type { CoreConfig } from '../../../config';
+import type { ChatModelEntry } from '../assistant.constants';
 
-export type { ChatModelEntry } from '../../modules/assistant/assistant.constants';
-export { CHAT_MODELS as ALLOWED_MODELS } from '../../modules/assistant/assistant.constants';
+export type { ChatModelEntry } from '../assistant.constants';
+export { CHAT_MODELS as ALLOWED_MODELS } from '../assistant.constants';
 
 // One provider client per process, built on first use. The credentials are
 // the same object for every caller — `loadConfig` runs once at boot — so the

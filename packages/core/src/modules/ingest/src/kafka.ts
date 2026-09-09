@@ -19,8 +19,8 @@ import {
   logLevel,
   type Producer,
 } from 'kafkajs';
-import { createLogger, type ILogger } from '../../../clients/logger';
 import type { CoreConfig, KafkaConfig } from '../../../config';
+import { createLogger, type ILogger } from '../../../pino-logger';
 // One definition, not two: the consumer already declares the dead-letter
 // message shape it hands to this producer, and both files are now siblings.
 import type { DeadLetterMessage } from './consumer';

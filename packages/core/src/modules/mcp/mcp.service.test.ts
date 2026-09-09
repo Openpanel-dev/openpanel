@@ -63,7 +63,7 @@ const mockFindUnique = mock();
 const mockGetClientByIdCached = mock();
 
 // Real pino would instantiate a pino-pretty transport worker thread whenever
-// NODE_ENV isn't 'production' (clients/logger.ts), which intermittently fails
+// NODE_ENV isn't 'production' (pino-logger.ts), which intermittently fails
 // to spawn under Bun. `deps.logger` is an argument now, so the test simply
 // hands in a noop.
 const noopLogger = {

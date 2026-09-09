@@ -1,4 +1,11 @@
 // Ported from @openpanel/geo (dissolved into core — M4-004).
+//
+// The one client with no `ProviderError` (ADR-022 R19): there is no third
+// party on the other end. Both lookups read a bundled MaxMind `.mmdb`, so an
+// IP the database does not carry is a missing thing and comes back as the
+// default value (R9), and a database that will not load fails identically on
+// every retry. `ingest.service.ts` therefore has no failure to classify —
+// it reads a value, never a throw.
 
 import { readFile } from 'node:fs/promises';
 import path, { dirname } from 'node:path';

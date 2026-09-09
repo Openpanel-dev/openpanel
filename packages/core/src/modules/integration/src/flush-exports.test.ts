@@ -6,6 +6,7 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';
 import { testCoreConfig } from '../../../../test/config-fixture';
+import type { Logger } from '../../../logger';
 import {
   clickhouseEventToExportEvent,
   createBatch,
@@ -15,15 +16,14 @@ import {
   MANIFEST_FILENAME,
   parseManifest,
   serializeManifest,
-} from '../../../clients/integrations/export';
-import { createGCSAdapter } from '../../../clients/integrations/object-store/gcs-adapter';
-import type { Logger } from '../../../logger';
+} from './export';
 import {
   type ExportIntegrationRow,
   type ExportWatermarkRow,
   type FlushExportsDeps,
   runFlushExportsCron,
 } from './flush-exports';
+import { createGCSAdapter } from './object-store/gcs-adapter';
 
 function stubLogger(): Logger {
   const noop = () => undefined;
@@ -167,7 +167,7 @@ describe('runFlushExportsCron', () => {
 
 /**
  * Exercises the object-store export path end to end against a local
- * fake-gcs-server (see clients/integrations/object-store/gcs-adapter.test.ts
+ * fake-gcs-server (see ./object-store/gcs-adapter.test.ts
  * for how to start it). The job's own ClickHouse/Postgres I/O is out of scope
  * here; what this pins down is the part a consumer depends on — batch files
  * land, then a manifest that points at them, under the partitioned path.

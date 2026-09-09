@@ -21,22 +21,22 @@
 // `legacy-scan.ts` is the last clix holdout in this module (M12-008).
 
 import { getRedisCache } from '@openpanel/redis';
-import {
-  ENRICH_VERSION,
-  enrichInsights,
-  type InsightToEnrich,
-} from '../../clients/ai/enrich';
-import {
-  type ExplainInsightInput,
-  generateInsightExplanation,
-  type InsightExplanation,
-} from '../../clients/ai/explain';
-import { generateWeeklyNarrative } from '../../clients/ai/narrative';
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import type { EngineConfig } from './src/engine';
+import {
+  ENRICH_VERSION,
+  enrichInsights,
+  type InsightToEnrich,
+} from './src/enrich';
+import {
+  type ExplainInsightInput,
+  generateInsightExplanation,
+  type InsightExplanation,
+} from './src/explain';
 import type { Insight as LegacyInsight } from './src/legacy-scan';
+import { generateWeeklyNarrative } from './src/narrative';
 import type {
   GetReferrerSpikesInput,
   ReferrerSpikeCluster,
@@ -698,7 +698,7 @@ export async function scanLegacyInsights(
 export type {
   ExplainInsightInput,
   InsightExplanation,
-} from '../../clients/ai/explain';
+} from './src/explain';
 export type {
   GetReferrerSpikesInput,
   ReferrerSpikeCluster,

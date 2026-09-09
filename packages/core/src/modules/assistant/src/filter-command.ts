@@ -14,7 +14,6 @@ import {
   type ToolRunContext,
 } from '@better-agent/core';
 import { z } from 'zod';
-import { resolveModel } from '../../../clients/ai/providers';
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
 import {
@@ -37,6 +36,7 @@ import {
   type ChatModelEntry,
   type PageContext,
 } from '../assistant.constants';
+import { resolveModel } from './providers';
 
 // Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
 // rather than import from a module.

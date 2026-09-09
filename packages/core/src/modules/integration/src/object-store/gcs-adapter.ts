@@ -1,26 +1,26 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Storage } from '@google-cloud/storage';
-import type { CoreConfig } from '../../../config';
+import {
+  callProvider,
+  ProviderError,
+} from '../../../../clients/provider-error';
+import type { CoreConfig } from '../../../../config';
+import { decryptCredential } from '../../../../shared/encryption';
 import {
   type IGCSExportConfig,
   parseServiceAccountKey,
-} from '../../../modules/integration/integration.constants';
-import { decryptCredential } from '../../../shared/encryption';
-import { createLogger, type ILogger } from '../../logger';
+} from '../../integration.constants';
 import type {
   IObjectStoreAdapter,
   IUploadOptions,
   IUploadResult,
 } from './types';
 
-// Lazy: constructing a pino logger spins up a worker thread for the
-// pino-pretty transport, so a module that is merely imported (every test file
-// that reaches the object-store barrel) must not pay for one unused.
-let _logger: ILogger | null = null;
-function logger(coreConfig: CoreConfig): ILogger {
-  _logger ??= createLogger({ name: 'gcs-adapter', config: coreConfig });
-  return _logger;
-}
+/** ADR-022 R19: every failure that leaves this adapter is classified as this. */
+const GCS_PROVIDER = 'gcs';
+
+// A credential this adapter refuses is a refusal no retry can change.
+const CREDENTIAL_REJECTED_RETRYABLE = false;
 
 /** Object written by `testConnection`; named so it is obvious in a bucket. */
 const CONNECTION_TEST_FILENAME = '.openpanel-connection-test';
@@ -69,11 +69,11 @@ export class GCSAdapter implements IObjectStoreAdapter {
     // any future caller that skips it.
     const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
     if (!parsed.ok) {
-      logger(this.coreConfig).error(
-        { reason: parsed.error },
-        'Rejected GCS credential document'
+      throw new ProviderError(
+        GCS_PROVIDER,
+        `Invalid service account key: ${parsed.error}`,
+        { retryable: CREDENTIAL_REJECTED_RETRYABLE }
       );
-      throw new Error(`Invalid service account key: ${parsed.error}`);
     }
     const { credentials } = parsed;
 
@@ -106,17 +106,12 @@ export class GCSAdapter implements IObjectStoreAdapter {
         ...(apiEndpoint ? { apiEndpoint } : {}),
       });
 
-      logger(this.coreConfig).debug(
-        {
-          projectId: credentials.project_id,
-        },
-        'GCS client created'
-      );
-
       return this.storage;
     } catch (error) {
-      logger(this.coreConfig).error({ error }, 'Failed to create GCS client');
-      throw new Error('Failed to create GCS client');
+      throw new ProviderError(GCS_PROVIDER, 'Failed to create GCS client', {
+        retryable: CREDENTIAL_REJECTED_RETRYABLE,
+        cause: error,
+      });
     }
   }
 
@@ -128,50 +123,31 @@ export class GCSAdapter implements IObjectStoreAdapter {
     const bucket = storage.bucket(options.bucket);
     const file = bucket.file(options.key);
 
-    try {
-      const content =
-        typeof options.content === 'string'
-          ? Buffer.from(options.content)
-          : options.content;
+    const content =
+      typeof options.content === 'string'
+        ? Buffer.from(options.content)
+        : options.content;
 
-      await file.save(content, {
+    await callProvider(GCS_PROVIDER, () =>
+      file.save(content, {
         contentType: options.contentType,
         resumable: false, // For small files, non-resumable is faster
         metadata: {
           contentType: options.contentType,
         },
-      });
+      })
+    );
 
-      // `save` populates `file.metadata` from the upload response, so re-reading
-      // it with getMetadata() would double the request count of every export.
-      const metadata = file.metadata;
+    // `save` populates `file.metadata` from the upload response, so re-reading
+    // it with getMetadata() would double the request count of every export.
+    const metadata = file.metadata;
 
-      logger(this.coreConfig).debug(
-        {
-          bucket: options.bucket,
-          key: options.key,
-          generation: metadata?.generation,
-        },
-        'File uploaded to GCS'
-      );
-
-      return {
-        bucket: options.bucket,
-        key: options.key,
-        etag: metadata?.etag || undefined,
-        location: `gs://${options.bucket}/${options.key}`,
-      };
-    } catch (error) {
-      logger(this.coreConfig).error(
-        {
-          error,
-          bucket: options.bucket,
-          key: options.key,
-        },
-        'Failed to upload file to GCS'
-      );
-      throw error;
-    }
+    return {
+      bucket: options.bucket,
+      key: options.key,
+      etag: metadata?.etag || undefined,
+      location: `gs://${options.bucket}/${options.key}`,
+    };
   }
 
   /**

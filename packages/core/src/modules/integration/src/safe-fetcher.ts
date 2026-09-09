@@ -1,6 +1,7 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
-import { safeFetch } from '../../shared/safe-fetch';
-import type { WebhookFetcher } from './fetcher';
+
+import type { WebhookFetcher } from '../../../clients/integrations/fetcher';
+import { safeFetch } from '../../../shared/safe-fetch';
 
 /**
  * Server-side webhook transport. Resolves the host, refuses non-publicly

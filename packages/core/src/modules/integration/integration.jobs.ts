@@ -26,9 +26,7 @@ export const integrationCronJobs = {
       // Lazy: the registry pulls the S3 and GCS SDKs, ~270ms of module
       // evaluation (measured, Bun 1.4.0) that a static edge here would add to
       // jobs.registry.ts's eager graph and so to every core test file.
-      const { getServerIntegration } = await import(
-        '../../clients/integrations/registry'
-      );
+      const { getServerIntegration } = await import('./src/registry');
 
       await runFlushExportsCron({
         db: ctx.db as unknown as ExportDb,

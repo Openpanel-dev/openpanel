@@ -9,7 +9,7 @@
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
-import type { CoreConfig } from '../config';
+import type { CoreConfig } from './config';
 
 export type ILogger = PinoLogger;
 
