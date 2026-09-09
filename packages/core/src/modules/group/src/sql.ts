@@ -3,7 +3,7 @@
 // packages/trpc/src/routers/group.ts (M7-002): the SQL text is V1's, with every
 // value bound as a `{pN:Type}` parameter instead of an escaped literal. Each
 // builder's result set was diffed against V1's on the local prod-copy; the
-// statements, params, row counts and timings are in group.sql.proof.md.
+// statements, params, row counts and timings are in sql.proof.md.
 //
 // Cluster note (docs/ENVIRONMENT.md): `groups`, `profiles` and `events` are
 // Distributed on Cloud. No query here carries an `IN (subquery)`; the `IN`
@@ -16,6 +16,9 @@ const TABLE = {
   profiles: 'profiles',
   events: 'events',
 } as const;
+
+/** The one table name `group.service.ts` needs outside a query fragment. */
+export const GROUPS_TABLE = TABLE.groups;
 
 const GROUP_COLUMNS = sql`project_id, id, type, name, properties, created_at, version`;
 

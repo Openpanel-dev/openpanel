@@ -19,7 +19,7 @@ import {
   groupsByIdsQuery,
   groupTypesQuery,
   groupUniqueProfilesQuery,
-} from './group.sql';
+} from './sql';
 
 const PROJECT_ID = 'proj-1';
 const GROUP_ID = 'grp-1';
