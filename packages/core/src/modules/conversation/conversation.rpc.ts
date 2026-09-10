@@ -5,8 +5,11 @@
 // the input parser, exactly as V1 does. `enforceAccess` reads the raw,
 // pre-zod input and only a TOP-LEVEL `projectId` (ADR-011) — `list` and
 // `rename` both take one, so their project access is already enforced
-// before the handler runs. `delete` takes only `id`, invisible to
-// `enforceAccess`, so its ownership check stays in the handler.
+// before the handler runs. `get` and `delete` take only `id`, invisible to
+// `enforceAccess`, so their ownership check stays in the handler. `get`
+// denies with NOT_FOUND rather than FORBIDDEN — the documented exception
+// the ADR-011 auth benchmark is built around (controller
+// verification/contracts/auth/README.md).
 //
 // `ctx.services.conversation` carries this module's factory (M10-004).
 //
@@ -27,11 +30,9 @@ const LIST_LIMIT_MIN = 1;
 const LIST_LIMIT_MAX = 200;
 
 /**
- * Conversation management — listing, renaming, deleting.
+ * Conversation management — listing, fetching, renaming, deleting.
  * Conversation creation is implicit (lazy) on the first message via the
- * /ai/agents/* route, so there's no `create` here. Fetching a single
- * conversation's content also goes through that route (`assistant.routes.ts`),
- * not this router — there is no `get` (ADR-022 R2, docs/review/conversation.md R2-a).
+ * /ai/agents/* route, so there's no `create` here.
  *
  * All procedures enforce ownership via `userId === session.userId` so a
  * user can never read or mutate another user's conversations.
@@ -55,6 +56,20 @@ export const conversationRouter = createTRPCRouter({
         limit: input.limit,
       })
     ),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      const conv = await ctx.services.conversation.getConversationById(
+        input.id,
+        { withMessages: true }
+      );
+      if (!conv || conv.userId !== userId) {
+        throw new TRPCNotFoundError('Conversation not found');
+      }
+      return conv;
+    }),
 
   rename: protectedProcedure
     // A conversation belongs to the caller, not to the project - titling your
