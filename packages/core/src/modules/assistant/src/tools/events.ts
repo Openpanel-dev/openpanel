@@ -2,22 +2,20 @@ import { z } from 'zod';
 import type { ServiceDeps } from '../../../../services';
 import {
   getEventPropertyValuesCore,
-  listEventPropertiesCore,
   queryEventsCore,
 } from '../../../event/event.service';
-import {
-  chatTool,
-  compactEventProperties,
-  resolveDateRange,
-  truncateRows,
-} from './helpers';
+import { chatTool, resolveDateRange, truncateRows } from './helpers';
+
+/** How many recent events `analyze_event_distribution` tallies. */
+const DISTRIBUTION_SAMPLE_LIMIT = 100;
+/** How many recent events `correlate_events` pairs up by session. */
+const CORRELATION_SAMPLE_LIMIT = 100;
 
 export const analyzeEventDistribution = (deps: ServiceDeps) =>
   chatTool(
     {
       name: 'analyze_event_distribution',
-      description:
-        'For a set of events (or all events in the current view), break down their frequency, top properties, and top sources. Useful for "which events fire the most?" questions.',
+      description: `For a set of events (or all events in the current view), break down their frequency, top countries and top devices. Computed from the ${DISTRIBUTION_SAMPLE_LIMIT} most recent matching events, NOT the whole period — \`sample_size\` is that sample, so describe the shape and never quote the counts as totals.`,
       schema: z.object({
         eventNames: z.array(z.string()).optional(),
         startDate: z.string().optional(),
@@ -36,7 +34,7 @@ export const analyzeEventDistribution = (deps: ServiceDeps) =>
         eventNames,
         startDate: range.startDate,
         endDate: range.endDate,
-        limit: 100,
+        limit: DISTRIBUTION_SAMPLE_LIMIT,
       });
 
       // Tally frequency by event name
@@ -72,8 +70,7 @@ export const correlateEvents = (deps: ServiceDeps) =>
   chatTool(
     {
       name: 'correlate_events',
-      description:
-        'Find pairs of events that frequently occur in the same session. Returns event pairs ranked by co-occurrence count.',
+      description: `Find pairs of events that frequently occur in the same session. Ranked by co-occurrence within the ${CORRELATION_SAMPLE_LIMIT} most recent events, NOT the whole period — treat the counts as a sample, never as totals.`,
       schema: z.object({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
@@ -90,7 +87,7 @@ export const correlateEvents = (deps: ServiceDeps) =>
         projectId: context.projectId,
         startDate: range.startDate,
         endDate: range.endDate,
-        limit: 100,
+        limit: CORRELATION_SAMPLE_LIMIT,
       });
 
       // Group events by sessionId, then count co-occurring event-name pairs
@@ -146,24 +143,5 @@ export const getEventPropertyDistribution = (deps: ServiceDeps) =>
         propertyKey,
       });
       return truncateRows(result.values, 100);
-    }
-  );
-
-export const listPropertiesForEvent = (deps: ServiceDeps) =>
-  chatTool(
-    {
-      name: 'list_properties_for_event',
-      description:
-        'List fields available for filtering / breakdown on a specific event (or all events). Returns `columns` (top-level event columns like `path`, `country`, `device` — use bare name) and `properties` (custom JSON keys — use prefixed as `properties.<key>`). Dotted sub-keys inside `properties` are rolled up to their root (e.g. all `__query.*` become a single `__query`); ordered by how many sub-keys roll up under each root.',
-      schema: z.object({
-        eventName: z.string().optional(),
-      }),
-    },
-    async ({ eventName }, context) => {
-      const raw = await listEventPropertiesCore(deps, {
-        projectId: context.projectId,
-        eventName,
-      });
-      return compactEventProperties(raw, { eventName });
     }
   );

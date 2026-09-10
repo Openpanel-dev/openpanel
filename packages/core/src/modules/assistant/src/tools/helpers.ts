@@ -36,7 +36,10 @@ const TOOL_TIMEOUT_MS = 30_000;
  *     or a stalled external fetch would otherwise hold the turn for
  *     the full latency of the tool. We throw with a known shape so
  *     the agent sees a clear "tool took too long" message and can
- *     decide whether to retry with narrower params or move on.
+ *     decide whether to retry with narrower params or move on. It
+ *     bounds the TURN, not the work: the race abandons the handler
+ *     rather than cancelling it, so the query behind a timed-out
+ *     tool keeps running to completion on the server.
  */
 export function chatTool(
   config: {

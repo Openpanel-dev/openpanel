@@ -105,11 +105,14 @@ const SEO_TOOLS: ToolList = [
   seo.correlateSeoWithTraffic,
 ] as ToolList;
 
+// No property-listing tool here on purpose: `base.listEventProperties` is in
+// BASE_TOOLS, so it is already registered on this page. `list_properties_for_event`
+// was a second wire name over the same handler, and the events page offered the
+// model both at once.
 const EVENTS_TOOLS: ToolList = [
   events.analyzeEventDistribution,
   events.correlateEvents,
   events.getEventPropertyDistribution,
-  events.listPropertiesForEvent,
 ] as ToolList;
 
 const INSIGHTS_TOOLS: ToolList = [

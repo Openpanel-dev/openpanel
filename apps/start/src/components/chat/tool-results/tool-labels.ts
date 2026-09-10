@@ -186,6 +186,9 @@ const PHRASES: Record<
     active: 'Loading property distribution',
     done: 'Property distribution',
   },
+  // Retired server-side — it was a second wire name over
+  // `list_event_properties`' handler — but conversations saved before that
+  // still replay tool calls under this name, so the label stays.
   list_properties_for_event: {
     active: 'Loading properties',
     done: 'Event properties',

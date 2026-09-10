@@ -18,7 +18,7 @@ export const getPagePerformance = (deps: ServiceDeps) =>
     {
       name: 'get_page_performance',
       description:
-        'Per-page performance metrics with SEO signal flags (high bounce, low engagement, good landing page). Sortable by sessions, pageviews, bounce_rate, or avg_duration.',
+        "Per-page performance metrics with SEO signal flags (high bounce, low engagement, good landing page). Sortable by sessions, pageviews, bounce_rate, or avg_duration. Inherits the current view's date range but NOT its property filters, so the numbers are project-wide and can differ from the filter-respecting `get_top_pages`.",
       schema: z.object({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
@@ -54,7 +54,7 @@ export const getPageConversions = (deps: ServiceDeps) =>
     {
       name: 'get_page_conversions',
       description:
-        'For a given conversion event, find which pages drive the most conversions. Includes conversion rate per page.',
+        "For a given conversion event, find which pages drive the most conversions. Includes conversion rate per page. Inherits the current view's date range but NOT its property filters, so the numbers are project-wide and can differ from the filter-respecting `get_top_pages`.",
       schema: z.object({
         conversionEvent: z
           .string()
@@ -88,7 +88,7 @@ export const getEntryExitPages = (deps: ServiceDeps) =>
     {
       name: 'get_entry_exit_pages',
       description:
-        'Top entry pages or top exit pages — useful for understanding where users start and where they bounce.',
+        "Top entry pages or top exit pages — useful for understanding where users start and where they bounce. Inherits the current view's date range but NOT its property filters, so the numbers are project-wide and can differ from the filter-respecting `get_top_pages`.",
       schema: z.object({
         mode: z.enum(['entry', 'exit']),
         startDate: z.string().optional(),
@@ -116,7 +116,7 @@ export const findDecliningPages = (deps: ServiceDeps) =>
     {
       name: 'find_declining_pages',
       description:
-        'Find pages where pageview volume dropped vs the immediately preceding period of the same length. Returns each declining page with absolute and percent change.',
+        "Find pages where pageview volume dropped vs the immediately preceding period of the same length. Returns each declining page with absolute and percent change. Inherits the current view's date range but NOT its property filters, so the numbers are project-wide and can differ from the filter-respecting `get_top_pages`.",
       schema: z.object({
         startDate: z.string().optional(),
         endDate: z.string().optional(),

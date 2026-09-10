@@ -16,49 +16,73 @@ import type { ChatModelEntry } from '../assistant.constants';
 export type { ChatModelEntry } from '../assistant.constants';
 export { CHAT_MODELS as ALLOWED_MODELS } from '../assistant.constants';
 
-// One provider client per process, built on first use. The credentials are
-// the same object for every caller — `loadConfig` runs once at boot — so the
-// memo cannot serve one caller another caller's key.
-let _openai: ReturnType<typeof createOpenAI> | null = null;
+// A provider client is memoized per `CoreConfig`, not per process (ADR-022
+// R16: what a thing owns dies with its owner, and nothing outlives the thing
+// that opened it). `loadConfig` runs once per boot, so a running API still
+// builds each client exactly once; a second config in the same process — a
+// test, a second boot — gets a client carrying ITS credentials rather than the
+// first config's, and both are collected with the config that produced them.
+//
+// There is nothing here to close: `createOpenAI`/`createAnthropic` return a
+// closure over a base URL and a header set that calls the global `fetch`. They
+// hold no socket, so R16's "whoever opens a connection closes it" has no
+// connection to name — only a lifetime, which is what the key fixes.
+const openaiClients = new WeakMap<
+  CoreConfig,
+  ReturnType<typeof createOpenAI>
+>();
+
 function openai(config: CoreConfig) {
-  if (!_openai) {
-    const { apiKey, baseUrl, project, organization } = config.ai.openai;
-
-    if (!apiKey) {
-      console.warn(
-        `[chat] OPENAI_API_KEY is not set. Models routed through OpenAI will fail with "x-api-key required" until you add it to the API's env.`
-      );
-    }
-
-    _openai = createOpenAI({
-      apiKey,
-      baseURL: baseUrl,
-      project,
-      organization,
-    });
+  const memoized = openaiClients.get(config);
+  if (memoized) {
+    return memoized;
   }
-  return _openai;
+
+  const { apiKey, baseUrl, project, organization } = config.ai.openai;
+
+  if (!apiKey) {
+    console.warn(
+      `[chat] OPENAI_API_KEY is not set. Models routed through OpenAI will fail with "x-api-key required" until you add it to the API's env.`
+    );
+  }
+
+  const client = createOpenAI({
+    apiKey,
+    baseURL: baseUrl,
+    project,
+    organization,
+  });
+  openaiClients.set(config, client);
+  return client;
 }
 
-let _anthropic: ReturnType<typeof createAnthropic> | null = null;
+const anthropicClients = new WeakMap<
+  CoreConfig,
+  ReturnType<typeof createAnthropic>
+>();
+
 function anthropic(config: CoreConfig) {
-  if (!_anthropic) {
-    const { apiKey, baseUrl, authToken, version } = config.ai.anthropic;
-
-    if (!apiKey) {
-      console.warn(
-        `[chat] ANTHROPIC_API_KEY is not set. Models routed through Anthropic will fail with "x-api-key required" until you add it to the API's env.`
-      );
-    }
-
-    _anthropic = createAnthropic({
-      apiKey,
-      baseURL: baseUrl,
-      authToken,
-      anthropicVersion: version,
-    });
+  const memoized = anthropicClients.get(config);
+  if (memoized) {
+    return memoized;
   }
-  return _anthropic;
+
+  const { apiKey, baseUrl, authToken, version } = config.ai.anthropic;
+
+  if (!apiKey) {
+    console.warn(
+      `[chat] ANTHROPIC_API_KEY is not set. Models routed through Anthropic will fail with "x-api-key required" until you add it to the API's env.`
+    );
+  }
+
+  const client = createAnthropic({
+    apiKey,
+    baseURL: baseUrl,
+    authToken,
+    anthropicVersion: version,
+  });
+  anthropicClients.set(config, client);
+  return client;
 }
 
 export const openaiProvider = openai;
