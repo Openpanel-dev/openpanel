@@ -33,8 +33,17 @@ import type { McpToolDeps } from './src/tools/shared';
 export type { McpAuthContext } from './src/auth';
 export { extractToken, McpAuthError } from './src/auth';
 
+/**
+ * The wire constants of the synthetic handshake. They are a CONTRACT with
+ * whatever client is on the other end of `/mcp`, not an implementation
+ * detail: `mcp.service.test.ts` pins them, because bumping
+ * `@modelcontextprotocol/sdk` does not bump them and nothing else would
+ * notice if it did.
+ */
 const MCP_PROTOCOL_VERSION = '2024-11-05';
 const MCP_PROXY_CLIENT_INFO = { name: 'mcp-proxy', version: '0' };
+/** JSON-RPC id of the synthetic `initialize`; never leaves this process. */
+const SYNTHETIC_INITIALIZE_ID = '__mcp_init__';
 
 export interface McpHttpResult {
   status: number;
@@ -125,32 +134,56 @@ async function runOnEphemeralServer(
   const server = createMcpServer(tools);
   await server.connect(serverTransport);
 
-  if (!isInitializeRequest) {
-    await new Promise<void>((resolve, reject) => {
-      clientTransport.onmessage = () => resolve();
-      clientTransport
-        .send({
-          jsonrpc: '2.0',
-          id: '__mcp_init__',
-          method: 'initialize',
-          params: {
-            protocolVersion: MCP_PROTOCOL_VERSION,
-            capabilities: {},
-            clientInfo: MCP_PROXY_CLIENT_INFO,
-          },
-        })
-        .catch(reject);
-    });
-    // No response expected for this notification.
-    await clientTransport.send({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
-    });
-  }
+  try {
+    if (!isInitializeRequest) {
+      await completeSyntheticHandshake(clientTransport);
+    }
 
-  return await new Promise<JSONRPCMessage>((resolve, reject) => {
-    clientTransport.onmessage = resolve;
-    clientTransport.send(message).catch(reject);
+    return await new Promise<JSONRPCMessage>((resolve, reject) => {
+      clientTransport.onmessage = resolve;
+      clientTransport.send(message).catch(reject);
+    });
+  } finally {
+    // ADR-022 R16: this function opened the pair, so this function closes it.
+    // `server.close()` closes `serverTransport`, and an InMemoryTransport
+    // closes its linked peer, so one call tears down both ends — and with
+    // them the SDK's response handlers and in-flight abort controllers,
+    // which a dropped-on-the-floor server would have kept alive until GC.
+    await server.close();
+  }
+}
+
+/**
+ * Fast-forward a brand-new server to its ready state.
+ *
+ * ORDER-SENSITIVE: the `initialize` response and the `notifications/initialized`
+ * that follows it must both be consumed here, before the caller installs the
+ * real response resolver — otherwise the handshake's own traffic resolves the
+ * caller's promise. It works because `InMemoryTransport` delivers synchronously
+ * and the SDK sends nothing unsolicited.
+ */
+async function completeSyntheticHandshake(
+  clientTransport: InMemoryTransport
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    clientTransport.onmessage = () => resolve();
+    clientTransport
+      .send({
+        jsonrpc: '2.0',
+        id: SYNTHETIC_INITIALIZE_ID,
+        method: 'initialize',
+        params: {
+          protocolVersion: MCP_PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: MCP_PROXY_CLIENT_INFO,
+        },
+      })
+      .catch(reject);
+  });
+  // No response expected for this notification.
+  await clientTransport.send({
+    jsonrpc: '2.0',
+    method: 'notifications/initialized',
   });
 }
 

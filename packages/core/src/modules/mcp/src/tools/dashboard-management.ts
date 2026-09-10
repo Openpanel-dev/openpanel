@@ -3,9 +3,9 @@ import { z } from 'zod';
 import type { CoreConfig } from '../../../../config';
 import type { ServiceDeps } from '../../../../services';
 import { getId } from '../../../../slug-id';
-import { getDashboardById } from '../../../dashboard/dashboard.service';
 import { getProjectById } from '../../../project/project.service';
 import { zReport } from '../../../report/report.constants';
+import { requireDashboard } from './dashboard-access';
 import { dashboardBaseUrl } from './dashboard-links';
 import {
   type McpToolDeps,
@@ -169,18 +169,6 @@ function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   };
 }
 
-async function requireDashboard(
-  deps: ServiceDeps,
-  projectId: string,
-  dashboardId: string
-) {
-  const dashboard = await getDashboardById(deps, dashboardId, projectId);
-  if (!dashboard) {
-    throw new Error('Dashboard not found');
-  }
-  return dashboard;
-}
-
 async function requireReport(
   db: ServiceDeps['db'],
   projectId: string,
@@ -277,9 +265,25 @@ function canonicalReportConfig(report: {
   };
 }
 
+/**
+ * The tool list an MCP client receives differs by `clientType`: read clients
+ * get the read tools only, root clients get both halves. The split is two
+ * functions rather than an early return inside one, so a tool cannot change
+ * audience by being added on the wrong side of a line.
+ */
 export function registerDashboardManagementTools(
   server: McpServer,
-  { context, deps, dbJsonNull }: McpToolDeps
+  tools: McpToolDeps
+) {
+  registerDashboardReadTools(server, tools);
+  if (tools.context.clientType === 'root') {
+    registerDashboardWriteTools(server, tools);
+  }
+}
+
+function registerDashboardReadTools(
+  server: McpServer,
+  { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_dashboard',
@@ -323,11 +327,12 @@ export function registerDashboardManagementTools(
         };
       })
   );
+}
 
-  if (context.clientType !== 'root') {
-    return;
-  }
-
+function registerDashboardWriteTools(
+  server: McpServer,
+  { context, deps, dbJsonNull }: McpToolDeps
+) {
   server.tool(
     'create_dashboard',
     'Create a dashboard in the resolved project.',

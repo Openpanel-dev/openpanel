@@ -27,7 +27,11 @@ import {
   expect,
   it,
   mock,
+  spyOn,
 } from 'bun:test';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import type { ServiceDeps, Services } from '../../services';
 
 const actualRedis = await import('@openpanel/redis');
@@ -110,6 +114,10 @@ const READ_CLIENT = {
   projectId: 'proj-1',
   organizationId: 'org-1',
 };
+
+// Captured before any `spyOn` replaces it, so a recording spy can still
+// deliver the message for real.
+const realSend = InMemoryTransport.prototype.send;
 
 function post(token: string | undefined, body: unknown) {
   return handleStatelessMcpRequest(deps, services, token, body);
@@ -243,6 +251,83 @@ describe('handleStatelessMcpRequest — protocol', () => {
       where: { id: 'proj-1' },
       select: expect.any(Object),
     });
+  });
+
+  it('closes the ephemeral server — and with it the transport pair it opened', async () => {
+    // ADR-022 R16. `spyOn` calls through, so the close still really happens.
+    const closeSpy = spyOn(McpServer.prototype, 'close');
+    try {
+      const res = await post(VALID_TOKEN, {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/list',
+      });
+
+      expect(res.status).toBe(200);
+      expect(closeSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      closeSpy.mockRestore();
+    }
+  });
+
+  it('closes the ephemeral server even when the transport throws', async () => {
+    const closeSpy = spyOn(McpServer.prototype, 'close');
+    const sendSpy = spyOn(InMemoryTransport.prototype, 'send');
+    sendSpy.mockImplementation(() => {
+      throw new Error('transport exploded');
+    });
+
+    try {
+      await expect(
+        post(VALID_TOKEN, { jsonrpc: '2.0', id: 7, method: 'tools/list' })
+      ).rejects.toThrow('transport exploded');
+      expect(closeSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      sendSpy.mockRestore();
+      closeSpy.mockRestore();
+    }
+  });
+
+  it('pins the synthetic handshake: protocol version, proxy client info, order', async () => {
+    const sent: JSONRPCMessage[] = [];
+    const sendSpy = spyOn(InMemoryTransport.prototype, 'send');
+    sendSpy.mockImplementation(function sendAndRecord(
+      this: InMemoryTransport,
+      message: JSONRPCMessage
+    ) {
+      sent.push(message);
+      return realSend.call(this, message);
+    });
+
+    try {
+      const res = await post(VALID_TOKEN, {
+        jsonrpc: '2.0',
+        id: 9,
+        method: 'tools/list',
+      });
+      expect(res.status).toBe(200);
+    } finally {
+      sendSpy.mockRestore();
+    }
+
+    // Client-side traffic only; the server's replies come back via onmessage.
+    const fromClient = sent.filter(
+      (message) => 'method' in message && message.method !== undefined
+    );
+    expect(fromClient.slice(0, 3)).toEqual([
+      {
+        jsonrpc: '2.0',
+        id: '__mcp_init__',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'mcp-proxy', version: '0' },
+        },
+      },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 9, method: 'tools/list' },
+    ] as JSONRPCMessage[]);
   });
 
   it('re-authenticates from scratch on every call — no session survives between requests', async () => {

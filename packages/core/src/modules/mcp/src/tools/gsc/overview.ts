@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getGscOverview } from '../../../../gsc/gsc.service';
 import {
+  MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
@@ -10,9 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-/** A daily series longer than this stops being readable and starts being noise. */
-const MAX_SERIES_POINTS = 180;
 
 export function registerGscOverviewTools(
   server: McpServer,

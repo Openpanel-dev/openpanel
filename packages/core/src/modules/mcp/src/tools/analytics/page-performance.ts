@@ -14,6 +14,12 @@ import {
 
 const DEFAULT_PERFORMANCE_LIMIT = 25;
 const MAX_PERFORMANCE_LIMIT = 500;
+/**
+ * Rows fetched before sorting in memory. The service sorts by sessions only,
+ * so every other `sortBy` needs a wide enough head to re-rank — at the cost
+ * of reading rows the caller will never see.
+ */
+const PAGE_SCAN_LIMIT = 1000;
 
 /**
  * Thresholds the tool used to stamp onto every row as a `seo_signals` object of
@@ -72,14 +78,22 @@ export function registerPagePerformanceTools(
           endDate,
           timezone,
           search,
-          limit: 1000, // fetch more, sort+slice in memory for flexibility
+          limit: PAGE_SCAN_LIMIT,
         });
 
         const col = sortBy ?? 'sessions';
         const dir = sortOrder === 'asc' ? 1 : -1;
-        const sorted = [...pages].sort(
-          (a, b) => dir * ((a[col] ?? 0) < (b[col] ?? 0) ? -1 : 1)
-        );
+        // Ties must compare 0. A comparator that answers "greater" for equal
+        // values violates the contract and leaves tied rows in an
+        // engine-dependent order.
+        const sorted = [...pages].sort((a, b) => {
+          const left = a[col] ?? 0;
+          const right = b[col] ?? 0;
+          if (left === right) {
+            return 0;
+          }
+          return dir * (left < right ? -1 : 1);
+        });
 
         return {
           seo_thresholds: SEO_THRESHOLDS,

@@ -17,6 +17,13 @@
  * get_page_performance also calls getSettingsForProject (Postgres) — real,
  * not mocked, which is why setupPostgresFixtures runs alongside the
  * ClickHouse fixture.
+ *
+ * The fixture import reaches SEVEN levels up, out of this package and into the
+ * repository root's `test/fixtures.ts`. That is deliberate and it is the one
+ * exception to `packages/core/test/preload.ts`'s "core does not import from the
+ * V1 root test directory" — which is a statement about `preload.ts` keeping
+ * `test/databases.ts` in step by hand, not a rule this suite breaks silently.
+ * Copying the seeder here would fork the schema the golden harness seeds from.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';

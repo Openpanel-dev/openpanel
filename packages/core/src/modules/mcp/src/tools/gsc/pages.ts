@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getGscPageDetails, getGscPages } from '../../../../gsc/gsc.service';
 import {
+  MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
@@ -14,7 +15,6 @@ import {
 
 const DEFAULT_GSC_LIMIT = 25;
 const MAX_GSC_LIMIT = 1000;
-const MAX_TIMESERIES_POINTS = 180;
 const DEFAULT_DETAIL_QUERIES = 25;
 
 /**
@@ -93,7 +93,7 @@ export function registerGscPageTools(
         return {
           page,
           timeseries: table(details.timeseries, {
-            limit: MAX_TIMESERIES_POINTS,
+            limit: MAX_SERIES_POINTS,
             columns: ['date', 'clicks', 'impressions', 'ctr', 'position'],
             sortedBy: 'date',
             unit: 'days',

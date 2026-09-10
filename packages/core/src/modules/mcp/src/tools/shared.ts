@@ -124,6 +124,16 @@ export function zLimit(defaultLimit: number, max: number) {
 export const MAX_RESPONSE_CHARS = 24_000;
 
 /**
+ * The most points any tool returns in one time series.
+ *
+ * A 30-day range at `interval: "hour"` is 720 points of 8 metrics each — not a
+ * chart an LLM can read, just a wall of numbers burying the summary the caller
+ * asked for. Tools either coarsen the interval to fit this budget or keep the
+ * recent end of the series; one policy, one number.
+ */
+export const MAX_SERIES_POINTS = 180;
+
+/**
  * A tabular result in columnar form.
  *
  * Row-of-objects JSON repeats every key on every row: 740 referrers cost 23k
@@ -301,6 +311,10 @@ function shrinkLargestTable(payload: unknown): boolean {
  * to size their own output via `table`, but a tool that returns something
  * unexpectedly large must degrade to a smaller answer rather than flood the
  * caller's context.
+ *
+ * SIDE EFFECT: shrinking edits `data` IN PLACE. Every caller builds the
+ * payload for this call and discards it afterwards; pass a value you still
+ * need and it comes back truncated.
  */
 export function toText(
   deps: ServiceDeps,

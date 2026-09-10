@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getAnalyticsOverviewCore } from '../../../../overview/overview.service';
 import {
+  MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
   resolveDateRange,
@@ -22,15 +23,6 @@ const POINTS_PER_DAY: Record<Interval, number> = {
   week: 1 / 7,
   month: 1 / 30,
 };
-
-/**
- * The most points we'll return in one series.
- *
- * A 30-day range at `interval: "hour"` is 720 points of 8 metrics each. That is
- * not a chart an LLM can read — it's a wall of numbers that buries the summary
- * the caller actually asked for.
- */
-const MAX_SERIES_POINTS = 180;
 
 const SERIES_COLUMNS = [
   'date',

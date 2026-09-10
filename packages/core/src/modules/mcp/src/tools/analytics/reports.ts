@@ -13,8 +13,10 @@ import {
   getReportsByDashboardId,
 } from '../../../../report/report.service';
 import { getChartStartEndDate } from '../../../../report/src/chart-dates';
+import { requireDashboard } from '../dashboard-access';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
+  MAX_SERIES_POINTS,
   type McpToolDeps,
   projectIdSchema,
   resolveProjectId,
@@ -28,7 +30,6 @@ const MAX_SERIES_LIMIT = 200;
 /** How many series get their full per-date values in the pivoted `data` block. */
 const DEFAULT_PLOTTED_SERIES = 5;
 const MAX_PLOTTED_SERIES = 25;
-const MAX_DATA_POINTS = 180;
 
 function reportUrl(
   config: CoreConfig,
@@ -104,8 +105,8 @@ function shapeChart(
   dates.sort();
 
   const trimmedDates =
-    dates.length > MAX_DATA_POINTS
-      ? dates.slice(dates.length - MAX_DATA_POINTS)
+    dates.length > MAX_SERIES_POINTS
+      ? dates.slice(dates.length - MAX_SERIES_POINTS)
       : dates;
 
   const byDate = plotted.map((serie) => {
@@ -190,10 +191,12 @@ export function registerReportTools(
     async ({ projectId: inputProjectId, dashboardId }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
+        // Bind the id to the project BEFORE reading, the way every other
+        // dashboard/report tool here does: the post-hoc check this replaced
+        // let a foreign dashboard holding zero reports answer with a normal
+        // empty table instead of an error.
+        await requireDashboard(deps, projectId, dashboardId);
         const reports = await getReportsByDashboardId(deps, dashboardId);
-        if (reports.some((r) => r.projectId !== projectId)) {
-          throw new Error('Dashboard does not belong to this project');
-        }
         const rows = reports.map((r) => ({
           id: r.id,
           name: r.name,
@@ -303,7 +306,7 @@ export function registerReportTools(
  * Deliberately returns the raw engine output here — the MCP tool reshapes it
  * for LLM consumption, the chat renderer needs the full chart.
  */
-export async function runReport(
+async function runReport(
   deps: ServiceDeps,
   input: {
     organizationId: string;
@@ -361,62 +364,6 @@ export async function runReport(
     return { ...meta, data: await getFunnel(deps, chartInput) };
   }
   if (report.chartType === 'metric') {
-    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
-  }
-  return { ...meta, data: await executeChart(deps, chartInput) };
-}
-
-/**
- * Execute an ad-hoc report config (no DB lookup — config is supplied directly).
- * Used by `generate_report` tool in chat.
- */
-export async function runReportFromConfig(
-  deps: ServiceDeps,
-  input: {
-    organizationId: string;
-    projectId: string;
-    /** Full zReportInput shape, with required startDate/endDate */
-    config: {
-      chartType: string;
-      interval: string;
-      startDate: string;
-      endDate: string;
-      [key: string]: unknown;
-    };
-  }
-): Promise<{
-  chartType: string;
-  interval: string;
-  startDate: string;
-  endDate: string;
-  report: typeof input.config & { projectId: string };
-  data: unknown;
-}> {
-  const { timezone } = await getSettingsForProject(deps, input.projectId);
-  const chartInput = {
-    ...input.config,
-    projectId: input.projectId,
-    timezone,
-  } as unknown as Parameters<typeof executeChart>[1];
-
-  const meta = {
-    chartType: input.config.chartType,
-    interval: input.config.interval,
-    startDate: input.config.startDate,
-    endDate: input.config.endDate,
-    report: { ...input.config, projectId: input.projectId },
-  };
-
-  if (input.config.chartType === 'funnel') {
-    return {
-      ...meta,
-      data: await getFunnel(
-        deps,
-        chartInput as Parameters<typeof getFunnel>[1]
-      ),
-    };
-  }
-  if (input.config.chartType === 'metric') {
     return { ...meta, data: await executeAggregateChart(deps, chartInput) };
   }
   return { ...meta, data: await executeChart(deps, chartInput) };
