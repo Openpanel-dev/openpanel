@@ -35,6 +35,15 @@ const healthReadyResponseSchema = z.object({
   thresholdMs: z.number().optional(),
 });
 
+const healthCheckResponseSchema = z.object({
+  ready: z.boolean(),
+  redis: z.boolean(),
+  db: z.boolean(),
+  ch: z.boolean(),
+  failedDependencies: z.array(z.string()),
+  workingDependencies: z.array(z.string()),
+});
+
 const SERVICE_UNAVAILABLE = 503;
 const OK = 200;
 
@@ -43,6 +52,11 @@ const ROOT_BODY = {
   status: 'ok',
   message: 'Successfully running OpenPanel.dev API',
 } as const;
+
+const rootResponseSchema = z.object({
+  status: z.literal(ROOT_BODY.status),
+  message: z.literal(ROOT_BODY.message),
+});
 
 // Hidden from the OpenAPI document — ported from V1's `schema: { hide: true }`
 // on `/healthz/live`, `/healthz/ready` and `/healthcheck`
@@ -92,12 +106,11 @@ export const healthRoutes = defineRoutes((app) =>
           ch: chResult.error?.message,
         };
 
-        const failedDependencies = Object.entries(dependencies)
-          .filter(([, ok]) => !ok)
-          .map(([name]) => name);
-        const workingDependencies = Object.entries(dependencies)
-          .filter(([, ok]) => ok)
-          .map(([name]) => name);
+        const failedDependencies: string[] = [];
+        const workingDependencies: string[] = [];
+        for (const [name, ok] of Object.entries(dependencies)) {
+          (ok ? workingDependencies : failedDependencies).push(name);
+        }
 
         const status =
           failedDependencies.length === 0 ? OK : SERVICE_UNAVAILABLE;
@@ -127,7 +140,13 @@ export const healthRoutes = defineRoutes((app) =>
           workingDependencies,
         };
       },
-      { detail: { hide: true } }
+      {
+        response: healthCheckResponseSchema,
+        detail: { hide: true },
+      }
     )
-    .get('/', () => ROOT_BODY, { detail: { hide: true } })
+    .get('/', () => ROOT_BODY, {
+      response: rootResponseSchema,
+      detail: { hide: true },
+    })
 );

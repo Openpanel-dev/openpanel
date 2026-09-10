@@ -38,25 +38,6 @@ export const importRouter = createTRPCRouter({
       });
     }),
 
-  get: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const userId = ctx.session.userId;
-      const db = ctx.db;
-      const importRecord = await db.import.findUniqueOrThrow({
-        where: { id: input.id },
-        include: { project: true },
-      });
-
-      await ctx.services.auth.requireProjectAccess({
-        userId,
-        projectId: importRecord.projectId,
-        level: 'read',
-      });
-
-      return importRecord;
-    }),
-
   create: protectedProcedure
     .input(zCreateImport)
     .mutation(async ({ input, ctx }) => {

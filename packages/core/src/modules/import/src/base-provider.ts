@@ -1,5 +1,5 @@
 import type { IClickhouseEvent } from '../../event/event.service';
-import type { BaseRawEvent, ErrorContext, ImportJobMetadata } from './types';
+import type { BaseRawEvent } from './types';
 
 export abstract class BaseImportProvider<
   TRawEvent extends BaseRawEvent = BaseRawEvent,
@@ -29,33 +29,6 @@ export abstract class BaseImportProvider<
    * Returns how many events will be imported
    */
   abstract getTotalEventsCount(): Promise<number>;
-
-  /**
-   * Optional hook: Pre-process batch
-   */
-  async beforeBatch?(events: TRawEvent[]): Promise<TRawEvent[]> {
-    return events;
-  }
-
-  /**
-   * Optional hook: Get import metadata for tracking
-   */
-  getImportMetadata?(): ImportJobMetadata;
-
-  /**
-   * Optional hook: Custom error handling
-   */
-  async onError?(error: Error, _context?: ErrorContext): Promise<void> {
-    // Default: re-throw
-    throw error;
-  }
-
-  /**
-   * Get estimated total events (optional, for progress tracking)
-   */
-  async getEstimatedTotal?(): Promise<number> {
-    return 0;
-  }
 
   /**
    * Indicates whether session IDs should be generated in SQL after import

@@ -37,13 +37,6 @@ test('list rejects an unauthenticated caller before touching a project', async (
   });
 });
 
-test('get rejects an unauthenticated caller before reading an import', async () => {
-  const caller = await anonCaller();
-  await expect(caller.get({ id: 'imp_1' })).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
-});
-
 test('create rejects an unauthenticated caller before writing an import', async () => {
   const caller = await anonCaller();
   await expect(
