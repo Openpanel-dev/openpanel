@@ -1,12 +1,9 @@
 // Ported from apps/api/src/routes/tools.router.ts +
-// apps/api/src/controllers/tools.controller.ts (M7-008). V1's Fastify router
-// stays the LIVE route (DELEGATE PATTERN) and calls the same
-// src/site-checker.ts + src/ip-lookup.ts functions this file does. Both
-// routes are hidden from the OpenAPI document, matching V1's
+// apps/api/src/controllers/tools.controller.ts (M7-008), calling the same
+// src/site-checker.ts + src/ip-lookup.ts functions this file does. Mounted
+// into publicApiRoutes since M9-004; both routes stay unauthenticated (V1's
+// shape) and hidden from the OpenAPI document, matching V1's
 // `schema: { hide: true }`.
-//
-// NAMED GAP, same as every other module here: not yet reachable — main.ts
-// does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
