@@ -103,6 +103,9 @@ function validateUrl(raw?: string): URL | null {
   }
 }
 
+// Unlike `loadCache` above, this reaches the redis singleton directly rather
+// than through `deps`/`ctx` — a known R6 gap (docs/review/misc.md), left as
+// nothing calling these two functions today holds a `deps`/`ctx` to thread.
 async function getFromCacheBinary(
   key: string
 ): Promise<{ buffer: Buffer; contentType: string } | null> {

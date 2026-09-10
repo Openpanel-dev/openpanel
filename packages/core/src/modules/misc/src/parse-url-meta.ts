@@ -69,6 +69,9 @@ function transform(data: UrlMetaData, url: string) {
   };
 }
 
+// This fetch is guarded by url-metadata's own bundled `request-filtering-agent`,
+// not by this module's `assertPublicUrl`/`safeFetch` (used for the image fetch
+// that follows) — a different SSRF implementation for this hop, not the same one.
 export async function parseUrlMeta(url: string) {
   try {
     const metadata = (await urlMetadata(url, {

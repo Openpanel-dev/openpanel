@@ -6,9 +6,6 @@
 // `GET /misc/og/clear` and `GET /misc/favicon/clear` are dropped, not ported
 // (ADR-015 entry #6: RULED + DEAD — `docs/ANSWERS.md` §1.4 confirms nothing
 // depends on them).
-//
-// NAMED GAP, same as every other module here: not yet reachable — main.ts
-// does not mount `dashboardRoutes` until a real `AppDeps` exists (P3/P4/P8).
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
