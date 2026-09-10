@@ -12,6 +12,8 @@ import type { SeriesDefinition } from './types';
 
 export type NormalizedInput = IReportInputWithDates & {
   series: SeriesDefinition[];
+  /** The project's timezone, resolved once here for the whole pipeline. */
+  timezone: string;
 };
 
 type LegacySeriesItem = Partial<IChartEvent> & { type?: string };
@@ -64,5 +66,6 @@ export async function normalize(
     ),
     startDate,
     endDate,
+    timezone,
   };
 }

@@ -13,7 +13,6 @@ import type {
   IReportInput,
 } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
-import { fetchCohortsMetadata } from './src/chart-statement';
 import { collectBreakdownCohortIds } from './src/field-resolution';
 import {
   EMPTY_BREAKDOWN_LABEL,
@@ -27,6 +26,7 @@ import {
   knownFunnelBreakdowns,
 } from './src/funnel.sql';
 import { runQuery } from './src/run-query';
+import { fetchCohortsMetadata } from './src/statement';
 
 export {
   EMPTY_BREAKDOWN_LABEL,
@@ -446,7 +446,6 @@ export function createFunnelService(
   return {
     getFunnelGroup,
     toSeries,
-    buildSessionsCte,
     getFunnel: (
       input: Parameters<typeof getFunnel>[1]
     ): ReturnType<typeof getFunnel> => getFunnel(deps, input),

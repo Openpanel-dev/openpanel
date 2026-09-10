@@ -14,7 +14,7 @@ import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { getCohortIds } from '../../report/report.constants';
 import {
-  CHART_TABLE,
+  buildCohortMembersSubselect,
   EVENT_FIELD_ALIASES,
   EVENT_TOP_LEVEL_COLUMNS,
   getGroupPropertySql,
@@ -111,9 +111,7 @@ export function getEventFiltersWhereClause(
       const profileIdExpr = eventsAlias
         ? sql.id(`${eventsAlias}.profile_id`)
         : sql.id('profile_id');
-      // V1 wrote a plain `IN (subquery)` here; ADR-013 conversions never
-      // change IN/GLOBAL IN in either direction (docs/ENVIRONMENT.md).
-      const members = sql`(SELECT profile_id FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL WHERE cohort_id IN ${sql.array('String', cohortIds)} AND project_id = ${sql.string(projectId)})`;
+      const members = buildCohortMembersSubselect(cohortIds, projectId);
       where[id] =
         operator === 'notInCohort'
           ? sql`${profileIdExpr} NOT IN ${members}`

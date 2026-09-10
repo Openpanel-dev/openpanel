@@ -18,7 +18,7 @@
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IInterval } from '../../report/report.constants';
 import { compiledText } from './compiled';
-import { CHART_TABLE } from './field-resolution';
+import { buildGroupsQuery, CHART_TABLE } from './field-resolution';
 
 /** windowFunnel counts a conversion when both steps fired. */
 const CONVERTED_STEP_COUNT = 2;
@@ -88,7 +88,7 @@ function profileJoin(fields: string[], projectId: string): SqlFragment {
 
 function groupJoin(needed: boolean, projectId: string): SqlFragment {
   return needed
-    ? sql`ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)}) AS _g ON _g.id = _group_id`
+    ? sql`ARRAY JOIN groups AS _group_id LEFT ANY JOIN (${buildGroupsQuery(projectId)}) AS _g ON _g.id = _group_id`
     : sql.empty;
 }
 

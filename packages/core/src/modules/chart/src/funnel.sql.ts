@@ -28,8 +28,10 @@ import type {
   IChartBreakdown,
   IChartEvent,
 } from '../../report/report.constants';
+import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
 import {
+  buildGroupsQuery,
   buildInlineCohortJoin,
   CHART_TABLE,
   type CohortMetadata,
@@ -52,15 +54,6 @@ export const EMPTY_BREAKDOWN_LABEL = 'Not set';
 
 /** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
 const EVENTS_ALIAS = 'events';
-
-/** Profile columns the funnel's profiles CTE may expose beyond `properties`. */
-const JOINABLE_PROFILE_COLUMNS = [
-  'email',
-  'first_name',
-  'last_name',
-  'created_at',
-  'last_seen_at',
-];
 
 /**
  * windowFunnel's 'strict_increase' mode requires every step's timestamp to be
@@ -349,7 +342,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   )} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
-    ? sql`_g AS (SELECT id, name, type, properties FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)}), `
+    ? sql`_g AS (${buildGroupsQuery(projectId)}), `
     : sql.empty;
 
   // windowFunnel is computed per primary key, so the `funnel` CTE only has to
@@ -416,7 +409,10 @@ export function funnelProfilesQuery(
   return sql`${base.ctes}SELECT DISTINCT profile_id FROM funnel WHERE ${sql.join(where, ' AND ')} LIMIT ${sql.uint64(input.limit)}`;
 }
 
-/** Exported by V1 as `buildSessionsCte`; no in-repo caller, kept as published API. */
+/**
+ * Exported by V1 as `buildSessionsCte`; no in-repo caller. Reachable only
+ * through `packages/core/src/index.ts`, which still publishes the wrapper.
+ */
 export function funnelSessionsQuery(input: {
   projectId: string;
   startDate: string;

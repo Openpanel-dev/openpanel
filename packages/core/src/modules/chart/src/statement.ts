@@ -1,11 +1,13 @@
 // V1's `getChartSql` / `getAggregateChartSql`: the Postgres cohort lookups a
-// chart needs, then the pure fragment builders in chart.sql.ts. Lives beside
-// them (not in chart.service.ts) so the engine can import it without pulling
-// the service — which imports the engine — into a cycle.
+// chart needs, then the pure fragment builders in sql.ts. Lives beside them
+// (not in chart.service.ts) so the engine can import it without pulling the
+// service — which imports the engine — into a cycle.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../../services';
 import type { IGetChartDataInput } from '../../report/report.constants';
+import type { CohortMetadata } from './field-resolution';
+import { collectBreakdownCohortIds } from './field-resolution';
 import {
   aggregateChartQuery,
   chartSeriesQuery,
@@ -13,9 +15,7 @@ import {
   type ResolvedChartBreakdowns,
   requestsAllCohortsBreakdown,
   withoutEmptyAllCohortsBreakdown,
-} from './chart.sql';
-import type { CohortMetadata } from './field-resolution';
-import { collectBreakdownCohortIds } from './field-resolution';
+} from './sql';
 
 export type ChartSqlInput = IGetChartDataInput & { timezone: string };
 export type AggregateChartSqlInput = Omit<

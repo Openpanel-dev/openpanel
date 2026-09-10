@@ -156,7 +156,9 @@ function getCompiledFormula(formula: string): mathjs.EvalFunction {
 
 /**
  * Returns true when the formula is plain arithmetic over series references.
- * Used to reject hostile formulas at the API boundary before they are stored.
+ * Nothing validates a formula before it is stored today — the guard that
+ * actually holds is `compileFormula` inside `evaluateFormula`, which rejects
+ * per evaluation and renders the series as 0.
  */
 export function isValidFormula(formula: string): boolean {
   try {

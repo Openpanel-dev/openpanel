@@ -5,7 +5,7 @@
 // project id, event name, dates, timezone, cohort ids and names, limits —
 // bound as a `{pN:Type}` parameter instead of an escaped literal. Each
 // builder's result set was diffed against V1's on the local prod-copy; the
-// statements, params, row counts and timings are in chart.sql.proof.md.
+// statements, params, row counts and timings are in sql.proof.md.
 //
 // The field resolver and filter compiler still render text (see compiled.ts);
 // their output is spliced, everything else is bound. Dates bind as V1's own
@@ -32,8 +32,13 @@ import type {
 import { compiledText, fragmentWithProfileRefs } from './compiled';
 import { formatClickhouseDate } from './dates';
 import {
+  buildAllCohortsLabelExpr,
+  buildAllCohortsMembershipQuery,
+  buildCohortMembershipQuery,
+  buildGroupsQuery,
   CHART_TABLE,
   type CohortMetadata,
+  cohortBreakdownLabelExpr,
   collectBreakdownCohortIds,
   collectProfileCteFields,
   collectProfilePropertyKeys,
@@ -50,7 +55,6 @@ import { getEventFiltersWhereClause } from './filter-where';
 
 const EVENTS_ALIAS = 'e';
 const ALL_COHORTS_ALIAS = '_all_cohorts';
-const ALL_COHORTS_UNKNOWN_LABEL = 'Unknown';
 // Cohort ids are Postgres uuids; they also name a CTE and a join alias, so
 // anything else is refused rather than inlined (V1 inlined it unchecked).
 const COHORT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -211,56 +215,6 @@ function orderByClause(orderBy: Parts): SqlFragment {
 
 // --- shared chart body ------------------------------------------------------
 
-function cohortMembershipCte(cohortId: string, projectId: string): SqlFragment {
-  return sql`
-    SELECT profile_id
-    FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL
-    WHERE cohort_id = ${sql.string(cohortId)}
-      AND project_id = ${sql.string(projectId)}
-  `;
-}
-
-function allCohortsMembershipCte(projectId: string): SqlFragment {
-  return sql`
-    SELECT profile_id, cohort_id
-    FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL
-    WHERE project_id = ${sql.string(projectId)}
-  `;
-}
-
-function allCohortsLabelExpr(cohorts: CohortMetadata[]): SqlFragment {
-  if (cohorts.length === 0) {
-    return sql`${sql.string(ALL_COHORTS_UNKNOWN_LABEL)}`;
-  }
-  const ids = sql.array(
-    'String',
-    cohorts.map((cohort) => cohort.id)
-  );
-  const names = sql.array(
-    'String',
-    cohorts.map((cohort) => cohort.name)
-  );
-  return sql`transform(${sql.id(`${ALL_COHORTS_ALIAS}.cohort_id`)}, ${ids}, ${names}, ${sql.string(ALL_COHORTS_UNKNOWN_LABEL)})`;
-}
-
-function cohortBreakdownLabel(
-  cohortId: string,
-  cohortName: string | undefined
-): SqlFragment {
-  const alias = sql.id(
-    `${getCohortAlias(assertCohortId(cohortId))}.profile_id`
-  );
-  const inLabel = sql.string(cohortName ?? 'In Cohort');
-  const notInLabel = sql.string(
-    cohortName ? `Not ${cohortName}` : 'Not In Cohort'
-  );
-  return sql`if(notEmpty(${alias}), ${inLabel}, ${notInLabel})`;
-}
-
-function groupsCte(projectId: string): SqlFragment {
-  return sql`SELECT id, name, type, properties FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)}`;
-}
-
 function profileCteSelectField(
   field: string,
   profileKeys: string[],
@@ -327,7 +281,7 @@ function chartBody({
   const joins: Parts = {};
 
   if (hasAllCohortsBreakdown) {
-    ctes[ALL_COHORTS_ALIAS] = allCohortsMembershipCte(projectId);
+    ctes[ALL_COHORTS_ALIAS] = buildAllCohortsMembershipQuery(projectId);
     joins[ALL_COHORTS_ALIAS] =
       sql`INNER JOIN _all_cohorts ON _all_cohorts.profile_id = e.profile_id`;
   }
@@ -335,7 +289,7 @@ function chartBody({
   for (const cohortId of cohortIds) {
     const cteName = `\`cohort-${cohortId}\``;
     const alias = getCohortAlias(cohortId);
-    ctes[cteName] = cohortMembershipCte(cohortId, projectId);
+    ctes[cteName] = buildCohortMembershipQuery(cohortId, projectId);
     joins[`cohort_${cohortId}`] =
       sql`LEFT ANY JOIN ${compiledText(cteName)} AS ${sql.id(alias)} ON ${sql.id(`${alias}.profile_id`)} = e.profile_id`;
   }
@@ -365,7 +319,7 @@ function chartBody({
     anyRefOn('group.', profileRefs) || event.segment === 'group';
 
   if (needsGroupArrayJoin) {
-    ctes._g = groupsCte(projectId);
+    ctes._g = buildGroupsQuery(projectId);
     joins.groups = sql`ARRAY JOIN groups AS _group_id`;
     joins.groups_table = sql`LEFT ANY JOIN _g ON _g.id = _group_id`;
   }
@@ -401,11 +355,14 @@ function breakdownLabel(
     Pick<ChartBody, 'profileKeys'>
 ): SqlFragment {
   if (isAllCohortsBreakdown(breakdown.name)) {
-    return allCohortsLabelExpr(allCohorts);
+    return buildAllCohortsLabelExpr(allCohorts, ALL_COHORTS_ALIAS);
   }
   const cohortId = extractCohortId(breakdown.name);
   if (cohortId) {
-    return cohortBreakdownLabel(cohortId, cohortMetadata.get(cohortId)?.name);
+    return cohortBreakdownLabelExpr(
+      assertCohortId(cohortId),
+      cohortMetadata.get(cohortId)?.name
+    );
   }
   return fragmentWithProfileRefs(
     getSelectPropertyKey(
@@ -781,7 +738,7 @@ export function chartBucketProfilesQuery(
   ].some((name) => name.startsWith('group.'));
   if (needsGroupJoin) {
     joins.groups = sql`ARRAY JOIN groups AS _group_id`;
-    joins.groups_cte = sql`LEFT ANY JOIN (${groupsCte(projectId)}) AS _g ON _g.id = _group_id`;
+    joins.groups_cte = sql`LEFT ANY JOIN (${buildGroupsQuery(projectId)}) AS _g ON _g.id = _group_id`;
   }
 
   for (const [key, value] of Object.entries(breakdowns)) {

@@ -22,7 +22,7 @@ comparison**.
   **`cohort_members` is empty in the prod copy** (`SELECT count() FROM
   cohort_members` = 0), so the five cohort cases are 0-row statement
   equivalences; positive-row cohort coverage lives in `openpanel_test` (same
-  precedent as `chart.sql.proof.md` and `filter-where.sql.proof.md`). The other
+  precedent as `sql.proof.md` and `filter-where.sql.proof.md`). The other
   zero-count cases are listed under *Cases that return no rows, and why*.
 - **Machine**: single-node ClickHouse 26.1.3.52 on a 4-vCPU box — timings are
   directional only; production is 2 shards × 2 replicas
@@ -52,13 +52,13 @@ double quotes, or SQL keywords):
 - `packages/core/src/modules/chart/src/field-resolution.ts:203,505` — the
   `` `cohort-<id>` `` CTE name and the backtick-quoted CTE alias
   `` `profile.properties.<key>` ``.
-- `packages/core/src/modules/chart/src/chart.sql.ts:175` — the CTE name in
+- `packages/core/src/modules/chart/src/sql.ts:175` — the CTE name in
   `WITH <name> AS (...)`.
-- `packages/core/src/modules/chart/src/chart.sql.ts:274` — the double-quoted
+- `packages/core/src/modules/chart/src/sql.ts:274` — the double-quoted
   `"profile.<field>"` CTE alias.
-- `packages/core/src/modules/chart/src/chart.sql.ts:340` — the
+- `packages/core/src/modules/chart/src/sql.ts:340` — the
   `` `cohort-<id>` `` CTE name in a JOIN.
-- `packages/core/src/modules/chart/src/chart.sql.ts:434,435,469,580` — the
+- `packages/core/src/modules/chart/src/sql.ts:434,435,469,580` — the
   `label_<n>` aliases / group-by keys and the `MATH_FUNCTION_BY_SEGMENT`
   aggregate keyword.
 - `packages/core/src/modules/chart/src/conversion.sql.ts:117` and
@@ -162,7 +162,7 @@ substrings are byte-identical to V1's; only the subject they run against
 changed. Three test files did this with a local helper that renders
 `toStatement()` and substitutes every `{pN:Type}` back to the literal V1
 emitted (single-quoted, backslash-escaped, arrays as `(a, b)` — i.e.
-`sqlstring.escape`'s output). `chart.sql.test.ts` and `funnel.sql.test.ts`
+`sqlstring.escape`'s output). `sql.test.ts` and `funnel.sql.test.ts`
 expose it as a third field `.text` on their existing `render()` result,
 alongside the untouched `.sql` / `.params`; `table-filter-where.test.ts` folds
 it into the existing `build()` helper, so its call sites are unchanged, and
@@ -173,11 +173,11 @@ and the params directly.
 
 | test | before | after |
 |---|---|---|
-| `chart.sql.test.ts` › `getChartSql` › ``qualifies properties[...] with `e.` when group join is present (fixes AMBIGUOUS_IDENTIFIER)`` | `expect(rendered.sql).not.toMatch(/(?<![._\w])properties\[/)` and `.toContain("e.properties['__query.utm_source']")` | same two assertions on `rendered.text` |
-| `chart.sql.test.ts` › `getChartSql` › `property metric (property_sum) with group join is unambiguous` | `expect(rendered.sql).toContain("e.properties['revenue_amount']")` | same on `rendered.text` |
-| `chart.sql.test.ts` › `getChartSql` › `routes bare utm_source filter through properties map` | `expect(rendered.sql).toContain("properties['__query.utm_source']")`, `.not.toMatch(/(?<![._\w])utm_source\s*=/)` | same two on `rendered.text` |
-| `chart.sql.test.ts` › `getAggregateChartSql` › `properties + group breakdown is unambiguous` | `expect(rendered.sql).toContain("e.properties['__query.utm_source']")` | same on `rendered.text` |
-| `chart.sql.test.ts` › `profile-property narrowing` › all five non-EXPLAIN tests (`projects only the referenced keys as scalar columns in the profile CTE`, `falls back to the full Map for wildcard refs`, `never narrows identifier-unsafe keys (backtick falls back to the Map)`, `collects the math-metric property too`, `creates the profile join for a metric-only profile property`) | `const { sql } = await getChartSql(...)`, assertions on `sql` | `const { text } = ...`, the SAME assertions on `text`. Every one of these tests names a `properties['<key>']` access, so the whole destructure moved rather than half of it; the two assertions in the set that carry no bound value (`properties as "profile.properties"`, `LEFT ANY JOIN profile ON profile.id = profile_id`) would still hold on `.sql` |
+| `sql.test.ts` › `getChartSql` › ``qualifies properties[...] with `e.` when group join is present (fixes AMBIGUOUS_IDENTIFIER)`` | `expect(rendered.sql).not.toMatch(/(?<![._\w])properties\[/)` and `.toContain("e.properties['__query.utm_source']")` | same two assertions on `rendered.text` |
+| `sql.test.ts` › `getChartSql` › `property metric (property_sum) with group join is unambiguous` | `expect(rendered.sql).toContain("e.properties['revenue_amount']")` | same on `rendered.text` |
+| `sql.test.ts` › `getChartSql` › `routes bare utm_source filter through properties map` | `expect(rendered.sql).toContain("properties['__query.utm_source']")`, `.not.toMatch(/(?<![._\w])utm_source\s*=/)` | same two on `rendered.text` |
+| `sql.test.ts` › `getAggregateChartSql` › `properties + group breakdown is unambiguous` | `expect(rendered.sql).toContain("e.properties['__query.utm_source']")` | same on `rendered.text` |
+| `sql.test.ts` › `profile-property narrowing` › all five non-EXPLAIN tests (`projects only the referenced keys as scalar columns in the profile CTE`, `falls back to the full Map for wildcard refs`, `never narrows identifier-unsafe keys (backtick falls back to the Map)`, `collects the math-metric property too`, `creates the profile join for a metric-only profile property`) | `const { sql } = await getChartSql(...)`, assertions on `sql` | `const { text } = ...`, the SAME assertions on `text`. Every one of these tests names a `properties['<key>']` access, so the whole destructure moved rather than half of it; the two assertions in the set that carry no bound value (`properties as "profile.properties"`, `LEFT ANY JOIN profile ON profile.id = profile_id`) would still hold on `.sql` |
 | `funnel.sql.test.ts` › `profile breakdowns` › `adds the profiles join for a profile.properties breakdown` | ``expect(sql).toContain("properties['plan'] as `profile.properties.plan`")``; the two join assertions on `sql` | the first assertion on `text`; the two join assertions stay on `sql` |
 | `funnel.sql.test.ts` › `cohort breakdowns` › `adds the cohort join for a cohort breakdown` | `expect(sql).toContain('Power users')`; the two alias assertions on `sql` | `expect(text).toContain('Power users')` — the cohort label is a bound value now; the two alias assertions stay on `sql` |
 | `funnel.sql.test.ts` › `breakdown attribution` › `attributes event-property breakdowns at the entry step` | `expect(sql).toContain("argMinIf(properties['experiment'], created_at,")`; the GROUP BY assertions on `sql` | that one assertion on `chartText(...)`; the GROUP BY assertions stay on `sql` |

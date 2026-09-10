@@ -28,7 +28,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
 } from '../../report/report.constants';
-import type { AggregateChartSqlInput, ChartSqlInput } from './chart-statement';
+import type { AggregateChartSqlInput, ChartSqlInput } from './statement';
 
 const cohortFindMany = mock(async () => []);
 // Plain-object snapshot, not the live binding — restoring from the namespace
@@ -46,8 +46,8 @@ afterAll(async () => {
 
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
 let deps: import('../../../services').ServiceDeps;
-let buildChartSql: typeof import('./chart-statement').getChartSql;
-let buildAggregateChartSql: typeof import('./chart-statement').getAggregateChartSql;
+let buildChartSql: typeof import('./statement').getChartSql;
+let buildAggregateChartSql: typeof import('./statement').getAggregateChartSql;
 
 // IGetChartDataInput has display-only fields (metric, chartType, previous,
 // etc.) that the SQL builders ignore; loosen the input type here.
@@ -134,7 +134,7 @@ beforeAll(async () => {
   ({
     getChartSql: buildChartSql,
     getAggregateChartSql: buildAggregateChartSql,
-  } = await import('./chart-statement'));
+  } = await import('./statement'));
   // EXPLAIN needs the openpanel_test schema to resolve columns against.
   const { bootstrapTestDatabases } = await import(
     '../../../../../../test/bootstrap-databases'

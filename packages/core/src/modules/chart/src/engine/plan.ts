@@ -1,6 +1,4 @@
 import { slug } from '@openpanel/shared';
-import type { ServiceDeps } from '../../../../services';
-import { getSettingsForProject } from '../../../organization/organization.service';
 import type { IChartEventItem } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
 import type { NormalizedInput } from './normalize';
@@ -10,12 +8,7 @@ import type { ConcreteSeries, Plan } from './types';
  * One placeholder per event definition; breakdown expansion happens in fetch.
  * Formulas are derived from event series, so they only exist after compute.
  */
-export async function plan(
-  deps: ServiceDeps,
-  normalized: NormalizedInput
-): Promise<Plan> {
-  const { timezone } = await getSettingsForProject(deps, normalized.projectId);
-
+export function plan(normalized: NormalizedInput): Plan {
   const concreteSeries: ConcreteSeries[] = [];
   normalized.series.forEach((definition, index) => {
     if (definition.type !== 'event') {
@@ -40,6 +33,6 @@ export async function plan(
     concreteSeries,
     definitions: normalized.series,
     input: normalized,
-    timezone,
+    timezone: normalized.timezone,
   };
 }

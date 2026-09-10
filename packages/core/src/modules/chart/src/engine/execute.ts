@@ -1,9 +1,6 @@
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import type { ServiceDeps } from '../../../../services';
-import {
-  getOrganizationSubscriptionChartEndDate,
-  getSettingsForProject,
-} from '../../../organization/organization.service';
+import { getOrganizationSubscriptionChartEndDate } from '../../../organization/organization.service';
 import type {
   FinalChart,
   IReportInput,
@@ -38,7 +35,7 @@ export async function executeChart(
   input: IReportInput
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(deps, input);
-  const executionPlan = await plan(deps, normalized);
+  const executionPlan = plan(normalized);
   const computedSeries = compute(
     await fetch(deps, executionPlan),
     executionPlan.definitions
@@ -46,7 +43,7 @@ export async function executeChart(
 
   let previousSeries: ConcreteSeries[] | null = null;
   if (input.previous) {
-    const previousPlan = await plan(deps, {
+    const previousPlan = plan({
       ...normalized,
       ...getChartPrevStartEndDate({
         startDate: normalized.startDate,
@@ -74,7 +71,7 @@ export async function executeAggregateChart(
   input: IReportInput
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(deps, input);
-  const { timezone } = await getSettingsForProject(deps, normalized.projectId);
+  const { timezone } = normalized;
   const currentPeriod = {
     startDate: normalized.startDate,
     endDate: normalized.endDate,

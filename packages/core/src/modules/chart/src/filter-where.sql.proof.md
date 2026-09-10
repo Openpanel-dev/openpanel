@@ -22,7 +22,7 @@ statement here returns a single aggregate row, so no case needed set comparison.
   prove nothing. **`cohort_members` is empty in the prod copy** (`SELECT count()
   FROM cohort_members` = 0), so the two `inCohort` cases are 0-row statement
   equivalences; positive-row cohort coverage lives in `openpanel_test` (same
-  precedent as `chart.sql.proof.md`).
+  precedent as `sql.proof.md`).
 - **Machine**: single-node ClickHouse 26.1.3.52 on a 4-vCPU box — timings are
   directional only; production is 2 shards × 2 replicas
   (`docs/ENVIRONMENT.md`). Two statements contain `IN (subquery)` on a
@@ -405,7 +405,7 @@ rejected. All three are pre-existing V1 behaviour and are reproduced, not fixed.
 
 ## `rewriteProfilePropertyRefs` — where the rewrite happens now
 
-V1 ran the rewrite over finished TEXT: `chart.sql.ts` and `funnel.sql.ts` called
+V1 ran the rewrite over finished TEXT: `sql.ts` and `funnel.sql.ts` called
 `compiledTextWithProfileRefs(clause, keys)` on the compiler's string. With the
 compiler returning fragments there is no string to rewrite, so the rewrite moved
 to `compiled.ts`'s `fragmentWithProfileRefs(fragment, keys)`, which maps
@@ -417,9 +417,9 @@ That is the same rewrite, and now it is the same rewrite *by construction*.
 `compiled.ts` recorded why the text version was safe: an escaped literal cannot
 contain `['`, so the rewrite never matched a value. A bound param is not in the
 text at all, so it cannot match even in principle — the accident became an
-invariant. Callers: `chart.sql.ts:358` and `funnel.sql.ts:149`.
+invariant. Callers: `sql.ts:358` and `funnel.sql.ts:149`.
 `compiledTextWithProfileRefs` survives for the ONE thing still rendering text,
-the field resolver (`chart.sql.ts:332`, `funnel.sql.ts:180`).
+the field resolver (`sql.ts:332`, `funnel.sql.ts:180`).
 
 Two proof cases exercise it end to end against the narrowed profile CTE — the
 wrapper selects ``properties['country'] as `profile.properties.country` `` and
@@ -549,7 +549,7 @@ SELECT toStartOfDay(created_at) AS date, sum(sign) AS total FROM sessions FINAL 
 ## `compiledText` callers left
 
 Every `compiledText(` / `compiledTextWithProfileRefs(` call that wrapped a
-`getEventFiltersWhereClause` result is gone — `chart.sql.ts` (two sites),
+`getEventFiltersWhereClause` result is gone — `sql.ts` (two sites),
 `funnel.sql.ts`, `retention.sql.ts`, `conversion.sql.ts` (via `stepCondition`),
 `sankey.sql.ts` (via `sessionEventCte`) and `overview.sql.ts` (via `rawWhere`)
 all interpolate the fragment directly now. What remains wraps **only**
@@ -560,18 +560,18 @@ field-resolution output or a static SQL literal — M12-003's job — plus
 |---|---|
 | `packages/core/src/modules/chart/src/filter-where.ts:144` | `getGroupPropertySql(name)` — field resolver |
 | `packages/core/src/modules/chart/src/filter-where.ts:243` | `getSelectPropertyKey(...)` — field resolver |
-| `packages/core/src/modules/chart/src/chart.sql.ts:178` | a CTE name (static) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:282` | a select-field list built from field-resolution output |
-| `packages/core/src/modules/chart/src/chart.sql.ts:332` | `spliced` — field resolver + profile-ref rewrite |
-| `packages/core/src/modules/chart/src/chart.sql.ts:348` | a cohort CTE name (static) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:442` | a `label_N` alias (static) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:443` | a `label_N` alias (static) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:476` | a math aggregate name (closed set) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:587` | a `label_N` alias (static) |
-| `packages/core/src/modules/chart/src/chart.sql.ts:691` | field-resolution select expression |
-| `packages/core/src/modules/chart/src/chart.sql.ts:700` | field-resolution select expression |
-| `packages/core/src/modules/chart/src/chart.sql.ts:713` | field-resolution select expression |
-| `packages/core/src/modules/chart/src/chart.sql.ts:797` | `getSelectPropertyKey(...)` — field resolver |
+| `packages/core/src/modules/chart/src/sql.ts:178` | a CTE name (static) |
+| `packages/core/src/modules/chart/src/sql.ts:282` | a select-field list built from field-resolution output |
+| `packages/core/src/modules/chart/src/sql.ts:332` | `spliced` — field resolver + profile-ref rewrite |
+| `packages/core/src/modules/chart/src/sql.ts:348` | a cohort CTE name (static) |
+| `packages/core/src/modules/chart/src/sql.ts:442` | a `label_N` alias (static) |
+| `packages/core/src/modules/chart/src/sql.ts:443` | a `label_N` alias (static) |
+| `packages/core/src/modules/chart/src/sql.ts:476` | a math aggregate name (closed set) |
+| `packages/core/src/modules/chart/src/sql.ts:587` | a `label_N` alias (static) |
+| `packages/core/src/modules/chart/src/sql.ts:691` | field-resolution select expression |
+| `packages/core/src/modules/chart/src/sql.ts:700` | field-resolution select expression |
+| `packages/core/src/modules/chart/src/sql.ts:713` | field-resolution select expression |
+| `packages/core/src/modules/chart/src/sql.ts:797` | `getSelectPropertyKey(...)` — field resolver |
 | `packages/core/src/modules/chart/src/funnel.sql.ts:79` | `STRICT_INCREASE_MODE` (static) |
 | `packages/core/src/modules/chart/src/funnel.sql.ts:180` | `getSelectPropertyKey(...)` — field resolver |
 | `packages/core/src/modules/chart/src/funnel.sql.ts:189` | a `b_N` alias (static) |
@@ -617,7 +617,7 @@ byte-for-byte; only their `filterClauses` INPUT fixtures moved from
 because `CompiledFilterClauses` is now `Record<string, SqlFragment>` while
 `buildFilterWhere` (M12-003) still returns text. `overview.sql.test.ts` moved
 its `rawFilterWhere: ''` fixtures to `rawFilterWhere: null` for the same reason.
-`chart.sql.test.ts` and `funnel.sql.test.ts` are untouched — they assert on
+`sql.test.ts` and `funnel.sql.test.ts` are untouched — they assert on
 column expressions, which still come from the field resolver.
 
 ## Reproducing a case

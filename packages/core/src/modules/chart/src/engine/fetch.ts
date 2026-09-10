@@ -8,8 +8,8 @@ import type {
   IGetChartDataInput,
 } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
-import { getAggregateChartSql, getChartSql } from '../chart-statement';
 import { runQuery } from '../run-query';
+import { getAggregateChartSql, getChartSql } from '../statement';
 import type { NormalizedInput } from './normalize';
 import type { ConcreteSeries, Plan, SeriesDefinition } from './types';
 

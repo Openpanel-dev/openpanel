@@ -9,7 +9,7 @@ import type { ServiceDeps, Services } from '../../services';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
-import { fetchCohortsMetadata } from './src/chart-statement';
+import { JOINABLE_PROFILE_COLUMNS } from './chart.constants';
 import { compiledText } from './src/compiled';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
 import {
@@ -24,19 +24,11 @@ import {
   joinFilterClauses,
 } from './src/filter-where';
 import { runQuery } from './src/run-query';
+import { fetchCohortsMetadata } from './src/statement';
 
 /** Default funnel window, in hours, when the report does not set one. */
 const DEFAULT_FUNNEL_WINDOW_HOURS = 24;
 const SECONDS_PER_HOUR = 3600;
-
-/** Profile columns the join may expose, beyond the `properties` Map. */
-const JOINABLE_PROFILE_COLUMNS = [
-  'email',
-  'first_name',
-  'last_name',
-  'created_at',
-  'last_seen_at',
-];
 
 const CONVERSION_STEP_COUNT = 2;
 

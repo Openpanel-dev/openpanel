@@ -4,10 +4,7 @@ import { alphabetIds } from '../../../report/report.constants';
 import { evaluateFormula } from './formula';
 import type { ConcreteSeries } from './types';
 
-/**
- * Compute formula series from fetched event series
- * Formulas reference event series using alphabet IDs (A, B, C, etc.)
- */
+/** Formulas reference the event series by alphabet ID (A, B, C, ...). */
 export function compute(
   fetchedSeries: ConcreteSeries[],
   definitions: Array<{
@@ -18,7 +15,7 @@ export function compute(
 ): ConcreteSeries[] {
   const results: ConcreteSeries[] = [...fetchedSeries];
 
-  // Process formulas in order (they can reference previous formulas)
+  // In definition order: a formula may reference an earlier formula.
   definitions.forEach((definition, formulaIndex) => {
     if (definition.type !== 'formula') {
       return;
@@ -29,20 +26,21 @@ export function compute(
       return;
     }
 
-    // Group ALL series (events + previously computed formulas) by breakdown signature
-    // Series with the same breakdown values should be computed together
+    // Series sharing a breakdown signature are computed together. `results`
+    // opens as a copy of `fetchedSeries`, so only the formulas earlier
+    // iterations appended still need adding.
     const seriesByBreakdown = new Map<string, ConcreteSeries[]>();
 
-    // Include both fetched event series AND previously computed formulas
     const allSeries = [
       ...fetchedSeries,
-      ...results.filter((s) => s.definitionIndex < formulaIndex),
+      ...results.filter(
+        (serie) =>
+          serie.definitionIndex < formulaIndex && !fetchedSeries.includes(serie)
+      ),
     ];
 
     allSeries.forEach((serie) => {
-      // Create breakdown signature: skip first name part (event/formula name) and use breakdown values
-      // If name.length === 1, it means no breakdowns (just event name)
-      // If name.length > 1, name[0] is event name, name[1+] are breakdown values
+      // name[0] is the event/formula name; name[1+] are the breakdown values.
       const breakdownSignature =
         serie.name.length > 1 ? serie.name.slice(1).join(':::') : '';
 
@@ -52,15 +50,12 @@ export function compute(
       seriesByBreakdown.get(breakdownSignature)!.push(serie);
     });
 
-    // Compute formula for each breakdown group
     for (const [breakdownSignature, breakdownSeries] of seriesByBreakdown) {
-      // Map series by their definition index for formula evaluation
       const seriesByIndex = new Map<number, ConcreteSeries>();
       breakdownSeries.forEach((serie) => {
         seriesByIndex.set(serie.definitionIndex, serie);
       });
 
-      // Get all unique dates across all series in this breakdown group
       const allDates = new Set<string>();
       breakdownSeries.forEach((serie) => {
         serie.data.forEach((item) => {
@@ -121,7 +116,6 @@ export function compute(
       const formulaData = sortedDates.map((date) => {
         const scope: Record<string, number> = {};
 
-        // Build scope using alphabet IDs (A, B, C, etc.)
         definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
           const readableId = alphabetIds[depIndex];
           if (!readableId) {
@@ -152,7 +146,6 @@ export function compute(
           }
         });
 
-        // Evaluate formula
         const result = evaluateFormula(formula.formula, scope);
 
         return {
@@ -162,11 +155,8 @@ export function compute(
         };
       });
 
-      // Create concrete series for this formula
       const templateSerie = breakdownSeries[0]!;
 
-      // Extract breakdown values from template series name
-      // name[0] is event/formula name, name[1+] are breakdown values
       const breakdownValues =
         templateSerie.name.length > 1 ? templateSerie.name.slice(1) : [];
 

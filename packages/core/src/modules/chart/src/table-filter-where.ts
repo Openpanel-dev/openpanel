@@ -19,8 +19,9 @@ import {
   type IChartEventFilterValue,
   type IChartFilterValueType,
 } from '../../report/report.constants';
+import { PROFILE_SELECT_COLUMNS } from '../chart.constants';
 import { formatClickhouseDate } from './dates';
-import { CHART_TABLE } from './field-resolution';
+import { buildCohortMembersSubselect, CHART_TABLE } from './field-resolution';
 import {
   buildTypedClauseFragment,
   hasTypedCast,
@@ -268,22 +269,6 @@ function compileScalarClause(
   return null;
 }
 
-/**
- * Profiles columns a `profile.<field>` filter may resolve to. Anything else is
- * not a column name and must not reach the SQL text. Kept in sync with
- * `getProfilePropertySelect` in field-resolution.ts, which lists the same set
- * for the SELECT side.
- */
-const PROFILE_COLUMNS = [
-  'id',
-  'first_name',
-  'last_name',
-  'email',
-  'avatar',
-  'created_at',
-  'last_seen_at',
-];
-
 /** Group fields that are columns rather than a `properties` lookup. */
 const GROUP_COLUMNS = ['name', 'type', 'id'];
 
@@ -299,8 +284,8 @@ function profileColumnSql(name: string): SqlFragment | null {
     const key = withoutPrefix.replace(/^properties\./, '');
     return sql`properties[${sql.string(key)}]`;
   }
-  if (PROFILE_COLUMNS.includes(withoutPrefix)) {
-    return sql.id(withoutPrefix, PROFILE_COLUMNS);
+  if (PROFILE_SELECT_COLUMNS.includes(withoutPrefix)) {
+    return sql.id(withoutPrefix, PROFILE_SELECT_COLUMNS);
   }
   return null;
 }
@@ -351,7 +336,7 @@ function buildCohortClause(
     return null;
   }
   const profileId = sql.id(ctx.profileIdExpr);
-  const members = sql`(SELECT profile_id FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL WHERE cohort_id IN ${sql.array('String', cohortIds)} AND project_id = ${sql.string(projectId)})`;
+  const members = buildCohortMembersSubselect(cohortIds, projectId);
   return filter.operator === 'notInCohort'
     ? sql`${profileId} NOT IN ${members}`
     : sql`${profileId} IN ${members}`;

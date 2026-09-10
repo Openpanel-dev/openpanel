@@ -1,9 +1,9 @@
 // Ported from packages/db/src/services/chart.service.ts, packages/db/src/
 // engine/* and the handler bodies of packages/trpc/src/routers/chart.ts
 // (M7-003). Every ClickHouse statement this module runs is a `sql` fragment
-// from src/chart.sql.ts, proven byte-equivalent to V1 in
-// src/chart.sql.proof.md; V1's chart.service and engine are re-export shims
-// onto this module and its router delegates here (DELEGATE PATTERN).
+// from src/sql.ts, proven byte-equivalent to V1 in src/sql.proof.md; V1's
+// chart.service and engine are re-export shims onto this module and its
+// router delegates here (DELEGATE PATTERN).
 //
 // The funnel, conversion, sankey and retention statements this module
 // dispatches to live in the sibling `*.service.ts` files of this module
@@ -51,17 +51,6 @@ import {
   getRetentionCohort,
 } from './retention.service';
 import { createSankeyService, getSankey } from './sankey.service';
-import {
-  chartBucketProfilesQuery,
-  eventFieldValuesQuery,
-  eventNamesWithCountQuery,
-  eventPropertyKeysQuery,
-  eventPropertyValuesQuery,
-  groupPropertyValuesQuery,
-  profilePropertyValuesQuery,
-  projectCardChartQuery,
-  projectCardMetricsQuery,
-} from './src/chart.sql';
 import { formatClickhouseDate } from './src/dates';
 import { executeAggregateChart, executeChart } from './src/engine/execute';
 import {
@@ -72,19 +61,18 @@ import {
   normalizeEventField,
 } from './src/field-resolution';
 import { runQuery } from './src/run-query';
+import {
+  chartBucketProfilesQuery,
+  eventFieldValuesQuery,
+  eventNamesWithCountQuery,
+  eventPropertyKeysQuery,
+  eventPropertyValuesQuery,
+  groupPropertyValuesQuery,
+  profilePropertyValuesQuery,
+  projectCardChartQuery,
+  projectCardMetricsQuery,
+} from './src/sql';
 
-export {
-  type ChartBucketProfilesInput,
-  ChartCohortIdError,
-} from './src/chart.sql';
-export {
-  type AggregateChartSqlInput,
-  type ChartSqlInput,
-  fetchCohortsMetadata,
-  fetchProjectCohorts,
-  getAggregateChartSql,
-  getChartSql,
-} from './src/chart-statement';
 export { rewriteProfilePropertyRefs } from './src/compiled';
 export { executeAggregateChart, executeChart } from './src/engine/execute';
 export {
@@ -126,6 +114,17 @@ export {
   type FilterTableScope,
   getEventFiltersWhereClause,
 } from './src/filter-where';
+export {
+  type ChartBucketProfilesInput,
+  ChartCohortIdError,
+} from './src/sql';
+// Types only: `packages/core/src/index.ts` re-exports these two. The four
+// statement functions beside them had no consumer through this file — the
+// engine and the sibling services import ./src/statement directly (R13).
+export type {
+  AggregateChartSqlInput,
+  ChartSqlInput,
+} from './src/statement';
 
 /**
  * Cap on distinct event property keys returned to the picker. Projects in the
@@ -770,7 +769,6 @@ export function createChartService(
     getFunnelGroup: funnel.getFunnelGroup,
     /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
     toFunnelSeries: funnel.toSeries,
-    buildSessionsCte: funnel.buildSessionsCte,
     getFunnelChart: (
       chartInput: IReportInput
     ): ReturnType<typeof getFunnelChart> => getFunnelChart(deps, chartInput),

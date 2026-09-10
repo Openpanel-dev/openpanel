@@ -4,14 +4,14 @@
 // re-export shim onto this module (DELEGATE PATTERN).
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { z } from 'zod';
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,
+  type IChartEvent,
   type IChartEventFilter,
-  zChartEvent,
 } from '../report/report.constants';
+import { DEFAULT_SANKEY_STEPS, type IGetSankeyInput } from './chart.constants';
 import {
   getEventFiltersWhereClause,
   joinFilterClauses,
@@ -26,10 +26,6 @@ import {
   sankeyTransitionsQuery,
 } from './src/sankey.sql';
 
-const DEFAULT_SANKEY_STEPS = 5;
-const MIN_SANKEY_STEPS = 2;
-const MAX_SANKEY_STEPS = 10;
-
 /** Destinations kept per node when the flow branches. */
 const TOP_DESTINATIONS_PER_NODE = 3;
 /** Links carrying less than this share of the entry sessions are dropped. */
@@ -37,25 +33,9 @@ const MIN_LINK_PERCENT = 0.25;
 const PERCENT = 100;
 const FIRST_STEP = 1;
 
-export const zGetSankeyInput = z.object({
-  projectId: z.string(),
-  startDate: z.string(),
-  endDate: z.string(),
-  steps: z
-    .number()
-    .min(MIN_SANKEY_STEPS)
-    .max(MAX_SANKEY_STEPS)
-    .default(DEFAULT_SANKEY_STEPS),
-  mode: z.enum(['between', 'after', 'before']),
-  startEvent: zChartEvent,
-  endEvent: zChartEvent.optional(),
-  exclude: z.array(z.string()).default([]),
-  include: z.array(z.string()).optional(),
-});
-
-export type IGetSankeyInput = z.infer<typeof zGetSankeyInput> & {
-  timezone: string;
-};
+// `packages/core/src/index.ts` names this file as the schema's source; the
+// schema itself lives in chart.constants.ts (R8).
+export { type IGetSankeyInput, zGetSankeyInput } from './chart.constants';
 
 export interface SankeyNode {
   id: string;
@@ -131,7 +111,7 @@ export function getRawWhereClause(
 }
 
 function toSankeyEvent(
-  event: z.infer<typeof zChartEvent> | undefined
+  event: IChartEvent | undefined
 ): SankeyEvent | undefined {
   return event
     ? {

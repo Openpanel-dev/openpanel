@@ -2,7 +2,7 @@
  * SQL-shape tests for the funnel statements. Ported from
  * packages/db/src/services/funnel-sql.test.ts (M7-004).
  *
- * Strategy, same as chart.sql.test.ts: render the statement, then run
+ * Strategy, same as sql.test.ts: render the statement, then run
  * `EXPLAIN <sql>` with its bound params against the isolated `openpanel_test`
  * ClickHouse (pinned by test/preload.ts). EXPLAIN parses and resolves columns
  * without executing, so a breakdown expression referencing a join alias that

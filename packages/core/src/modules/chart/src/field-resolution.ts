@@ -19,6 +19,7 @@
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartBreakdown } from '../../report/report.constants';
+import { PROFILE_SELECT_COLUMNS } from '../chart.constants';
 import { compiledText } from './compiled';
 
 export const CHART_TABLE = {
@@ -107,6 +108,11 @@ const ALL_COHORTS_UNKNOWN_LABEL = 'Unknown';
 const IN_COHORT_LABEL = 'In Cohort';
 const NOT_IN_COHORT_LABEL = 'Not In Cohort';
 
+/**
+ * The scalar `profiles` columns the profile CTE may project. Distinct from
+ * chart.constants.ts's PROFILE_SELECT_COLUMNS, which is the direct-SELECT
+ * allow-list: the CTE never carries `avatar` and does carry `properties`.
+ */
 const PROFILE_CTE_SCALAR_FIELDS = [
   'email',
   'first_name',
@@ -120,19 +126,6 @@ export const PROFILE_CTE_FIELDS = [
   'id',
   'properties',
   ...PROFILE_CTE_SCALAR_FIELDS,
-];
-
-// Top-level profiles columns `profile.<field>` may select, in V1's order. Same
-// set as PROFILE_COLUMNS in ./table-filter-where.ts, which resolves the filter
-// side; keep the two in sync.
-const PROFILE_SELECT_COLUMNS = [
-  'id',
-  'first_name',
-  'last_name',
-  'email',
-  'avatar',
-  'created_at',
-  'last_seen_at',
 ];
 
 // Normalize an incoming field name into its canonical form. Returns a string
@@ -196,7 +189,7 @@ export interface CohortMetadata {
 /**
  * The CTE name a single-cohort breakdown declares. Backtick-quoted because the
  * id contains dashes, which `sql.id` rejects, so it goes through the module's
- * one text seam. Callers must validate the id first — chart.sql.ts builds the
+ * one text seam. Callers must validate the id first — sql.ts builds the
  * same name behind `assertCohortId`.
  */
 export function getCohortCteName(cohortId: string): SqlFragment {
@@ -246,6 +239,34 @@ export function buildAllCohortsMembershipQuery(projectId: string): SqlFragment {
     FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL
     WHERE project_id = ${sql.string(projectId)}
   `;
+}
+
+/**
+ * The `if(notEmpty(...))` label a single-cohort breakdown selects. Callers
+ * must have validated the id — sql.ts guards with `assertCohortId`.
+ */
+export function cohortBreakdownLabelExpr(
+  cohortId: string,
+  cohortName?: string
+): SqlFragment {
+  const cohortAlias = getCohortAlias(cohortId);
+  const inLabel = sql.string(cohortName ?? IN_COHORT_LABEL);
+  const notInLabel = sql.string(
+    cohortName ? `Not ${cohortName}` : NOT_IN_COHORT_LABEL
+  );
+  return sql`if(notEmpty(${sql.id(`${cohortAlias}.profile_id`)}), ${inLabel}, ${notInLabel})`;
+}
+
+/**
+ * The membership subselect both filter compilers use for `inCohort` /
+ * `notInCohort`. V1 wrote a plain `IN (subquery)` here; ADR-013 conversions
+ * never change `IN` / `GLOBAL IN` in either direction (docs/ENVIRONMENT.md).
+ */
+export function buildCohortMembersSubselect(
+  cohortIds: string[],
+  projectId: string
+): SqlFragment {
+  return sql`(SELECT profile_id FROM ${sql.id(CHART_TABLE.cohortMembers)} FINAL WHERE cohort_id IN ${sql.array('String', cohortIds)} AND project_id = ${sql.string(projectId)})`;
 }
 
 export function buildAllCohortsLabelExpr(
@@ -306,6 +327,11 @@ export function transformPropertyKey(property: string) {
   return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
+/** The `groups` lookup the chart, funnel and conversion statements all join. */
+export function buildGroupsQuery(projectId: string): SqlFragment {
+  return sql`SELECT id, name, type, properties FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)}`;
+}
+
 // Returns a SQL expression for a group property via the _g JOIN alias
 // property format: "group.name", "group.type", "group.properties.plan"
 export function getGroupPropertySql(property: string): SqlFragment {
@@ -345,8 +371,6 @@ export function getGroupPropertySelect(property: string): SqlFragment {
 
 // Returns the SELECT expression when querying the profiles table directly (no join alias).
 // Use for fetching distinct values for profile.* properties.
-// Lists the same profiles columns as PROFILE_COLUMNS in filter-where.service.ts,
-// which resolves profile.* on the filter side; keep the two in sync.
 export function getProfilePropertySelect(property: string): SqlFragment {
   const withoutPrefix = property.replace(/^profile\./, '');
   if (PROFILE_SELECT_COLUMNS.includes(withoutPrefix)) {
@@ -411,12 +435,7 @@ export function getSelectPropertyKey(
   const extractedCohortId = cohortId || extractCohortId(property);
 
   if (extractedCohortId && projectId) {
-    const cohortAlias = getCohortAlias(extractedCohortId);
-    const inLabel = sql.string(cohortName ?? IN_COHORT_LABEL);
-    const notInLabel = sql.string(
-      cohortName ? `Not ${cohortName}` : NOT_IN_COHORT_LABEL
-    );
-    return sql`if(notEmpty(${sql.id(`${cohortAlias}.profile_id`)}), ${inLabel}, ${notInLabel})`;
+    return cohortBreakdownLabelExpr(extractedCohortId, cohortName);
   }
 
   if (property === 'has_profile') {

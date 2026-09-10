@@ -1,7 +1,7 @@
 /**
  * Integration tests for the chart module against the isolated `openpanel_test`
  * databases (pinned by test/preload.ts) — the positive-row counterpart of
- * src/chart.sql.test.ts's EXPLAIN checks, and the one place the cohort and
+ * src/sql.test.ts's EXPLAIN checks, and the one place the cohort and
  * all-cohorts paths run against seeded `cohort_members` + a Postgres cohort.
  *
  * Fixture (test/fixtures.ts, seeded per suite under its own project id so it
