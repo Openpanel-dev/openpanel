@@ -47,6 +47,11 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
+  // Sequential, not Promise.all: the early return below skips the
+  // projectAccess query entirely for any user with a membership, which a
+  // parallel fetch would give up (docs/review/onboarding.md, "Not covered
+  // by any rule" #2). Changing this trades a real memberships-found saving
+  // for the all-false path's latency — a behavior change, out of scope here.
   const db = deps.db;
   const members = await db.member.findMany({ where: { userId } });
   if (members.length > 0) {
@@ -137,8 +142,11 @@ export async function createOnboardingProject(
     input,
     userId
   );
-  if (!organization?.id) {
-    throw new Error('Organization slug is missing');
+  // Only the no-org-identified branch of createOrGetOnboardingOrganization
+  // can produce this: the organizationId branch throws (findUniqueOrThrow)
+  // rather than returning falsy, so `organization` is always non-null there.
+  if (!organization) {
+    throw new Error('Organization name or id is required');
   }
 
   const cors = [...input.cors];
@@ -227,7 +235,10 @@ function createUsageGetter(deps: ServiceDeps, org: OnboardingCronOrg) {
   };
 }
 
-const getters = {
+// Split by sync/async so a call site's own code (awaited or not) is the
+// type-level signal of which is which, instead of one object where only
+// `recommendedPlan` happens to return a Promise.
+const syncGetters = {
   firstName: (ctx: OnboardingContext) => ctx.user.firstName || undefined,
   dashboardUrl: (ctx: OnboardingContext) => {
     return `${ctx.dashboardUrl}/${ctx.org.id}`;
@@ -240,6 +251,9 @@ const getters = {
       ? format(ctx.org.subscriptionEndsAt, 'MMMM d')
       : undefined;
   },
+} as const;
+
+const asyncGetters = {
   recommendedPlan: async (ctx: OnboardingContext) => {
     const { eventsCount } = await ctx.getUsage();
     return getRecommendedPlan(
@@ -256,8 +270,8 @@ const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
     step: 'onboarding-welcome',
     template: 'onboarding-welcome',
     data: async (ctx) => ({
-      firstName: getters.firstName(ctx),
-      dashboardUrl: getters.dashboardUrl(ctx),
+      firstName: syncGetters.firstName(ctx),
+      dashboardUrl: syncGetters.dashboardUrl(ctx),
       hasData: (await ctx.getUsage()).hasData,
     }),
   }),
@@ -268,7 +282,7 @@ const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
     data: async (ctx) => {
       const usage = await ctx.getUsage();
       return {
-        firstName: getters.firstName(ctx),
+        firstName: syncGetters.firstName(ctx),
         hasData: usage.hasData,
         eventsCount: usage.eventsCount,
       };
@@ -281,8 +295,8 @@ const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
     data: async (ctx) => {
       const usage = await ctx.getUsage();
       return {
-        firstName: getters.firstName(ctx),
-        dashboardUrl: getters.dashboardUrl(ctx),
+        firstName: syncGetters.firstName(ctx),
+        dashboardUrl: syncGetters.dashboardUrl(ctx),
         hasData: usage.hasData,
         eventsCount: usage.eventsCount,
       };
@@ -293,7 +307,7 @@ const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
     step: 'onboarding-feature-request',
     template: 'onboarding-feature-request',
     data: async (ctx) => ({
-      firstName: getters.firstName(ctx),
+      firstName: syncGetters.firstName(ctx),
       hasData: (await ctx.getUsage()).hasData,
     }),
   }),
@@ -310,10 +324,10 @@ const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
     data: async (ctx) => {
       const usage = await ctx.getUsage();
       return {
-        firstName: getters.firstName(ctx),
-        billingUrl: getters.billingUrl(ctx),
-        recommendedPlan: await getters.recommendedPlan(ctx),
-        trialEndDate: getters.trialEndDate(ctx),
+        firstName: syncGetters.firstName(ctx),
+        billingUrl: syncGetters.billingUrl(ctx),
+        recommendedPlan: await asyncGetters.recommendedPlan(ctx),
+        trialEndDate: syncGetters.trialEndDate(ctx),
         hasData: usage.hasData,
         eventsCount: usage.eventsCount,
       };
