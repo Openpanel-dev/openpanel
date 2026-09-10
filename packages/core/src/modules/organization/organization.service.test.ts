@@ -187,9 +187,17 @@ const project = {
       return rows;
     }
   ),
-  delete: mock(async ({ where: { id } }: { where: { id: string } }) => {
-    projectStore.delete(id);
-  }),
+  deleteMany: mock(
+    async ({ where: { id } }: { where: { id: { in: string[] } } }) => {
+      let count = 0;
+      for (const projectId of id.in) {
+        if (projectStore.delete(projectId)) {
+          count++;
+        }
+      }
+      return { count };
+    }
+  ),
   updateMany: mock(
     async ({
       where: { organizationId },

@@ -2,13 +2,16 @@
 // packages/db/src/services/delete.service.ts (M6-001, folded together per the
 // module map: "delete.service in organization"). The mutation bodies inline
 // in packages/trpc/src/routers/organization.ts (update/delete/cancelDeletion/
-// inviteUser/revokeInvite/removeMember/updateMemberAccess) move here too, so
-// V1's router and core's own organization.rpc.ts share one implementation
-// (DELEGATE PATTERN). packages/db keeps a re-export shim for
-// organization.service.ts: its own engine + several analytics services
-// (`getSettingsForProject`) still reach it directly. packages/db loses
-// delete.service.ts entirely — nothing outside apps/worker's cron job
-// (now delegating here) reached it through @openpanel/db's barrel.
+// inviteUser/revokeInvite/removeMember/updateMemberAccess) moved here too, so
+// V1's router and core's own organization.rpc.ts shared one implementation
+// (DELEGATE PATTERN) until packages/trpc was retired. packages/db carries no
+// re-export shim for this file — its services/ directory holds only
+// access.service.ts today. `getSettingsForProject` is instead value-imported
+// directly by ten sibling packages/core modules; that's the tree-wide R3
+// sibling-access gap the composition-root fix wave tracks, not something
+// local to this file. packages/db lost delete.service.ts entirely — nothing
+// outside the `delete` cron job (now here) reached it through
+// @openpanel/db's barrel.
 //
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db` and ClickHouse as `deps.ch` (through core's own `chQuery`), so
@@ -206,20 +209,6 @@ export async function getMembers(
     ...member,
     access: access.filter((a) => a.userId === member.userId),
   })) as IServiceMember[];
-}
-
-export async function getMember(
-  deps: ServiceDeps,
-  organizationId: string,
-  userId: string
-) {
-  const db = deps.db;
-  return db.member.findFirst({
-    where: {
-      organizationId,
-      userId,
-    },
-  });
 }
 
 export async function connectUserToOrganization(
@@ -520,13 +509,13 @@ export async function deleteProjects(deps: ServiceDeps, projectIds: string[]) {
     return;
   }
 
-  for (const project of projects) {
-    await db.project.delete({
-      where: {
-        id: project.id,
+  await db.project.deleteMany({
+    where: {
+      id: {
+        in: projects.map((project) => project.id),
       },
-    });
-  }
+    },
+  });
 
   return projects;
 }

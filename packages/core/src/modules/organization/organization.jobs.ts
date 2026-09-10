@@ -51,7 +51,9 @@ export const organizationCronJobs = {
  * Two reaches stay dynamic. The sibling service's two ClickHouse counts are
  * not on `OrganizationService`, and `src/win-back-pitch.ts` pulls the agent
  * runtime — a static edge from here would drag either into jobs.registry.ts's
- * eager import graph, which every core test file walks.
+ * eager import graph, which every core test file walks. M15-119 (R11) ruled
+ * this the ADR-022 "legitimate lazy asset load" exception, not the sibling-
+ * service defect R6 forbids: kept as is.
  */
 async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
   const [
