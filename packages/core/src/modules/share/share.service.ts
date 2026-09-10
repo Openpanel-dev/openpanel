@@ -469,6 +469,9 @@ export async function createShareDashboard(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
+/** Assumes `getShareDashboard` already ran and reported `requiresPassword:
+ *  false` — throws instead of returning `lockedShare` because a caller that
+ *  reaches here without unlocking first has no locked-viewer UI to show. */
 export async function getShareDashboardReports(
   deps: ServiceDeps,
   shareId: string,
