@@ -44,9 +44,6 @@ import {
 } from './src/overview.sql';
 import { runQuery } from './src/run-query';
 
-// Toggle revenue tracking in overview queries
-const INCLUDE_REVENUE = true; // TODO: Make this configurable later
-
 // Maximum number of records to return (for detail modals)
 const MAX_RECORDS_LIMIT = 1000;
 
@@ -1030,8 +1027,9 @@ export async function getUserJourney(
     (link) => !(nodeIds.has(link.source) && nodeIds.has(link.target))
   );
   if (invalidLinks.length > 0) {
-    console.warn(
-      `UserJourney: Found ${invalidLinks.length} links with missing nodes`
+    deps.logger.warn(
+      { projectId, invalidLinkCount: invalidLinks.length },
+      'UserJourney: found links with missing nodes'
     );
     const validLinks = filteredLinks.filter(
       (link) => nodeIds.has(link.source) && nodeIds.has(link.target)
@@ -1049,7 +1047,7 @@ export async function getUserJourney(
     return node.step! >= arr[idx - 1]!.step!;
   });
   if (!stepsValid) {
-    console.warn('UserJourney: Steps are not monotonic');
+    deps.logger.warn({ projectId }, 'UserJourney: steps are not monotonic');
   }
 
   return {
