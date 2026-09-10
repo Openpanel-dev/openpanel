@@ -13,13 +13,24 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test';
 import type { IClickhouseSession } from '../../session/session.service';
 import { formatClickhouseDate } from '../../session/src/dates';
-import { getDeviceId, type SessionBufferReader } from './device-id';
+import {
+  getDeviceId,
+  type SessionBufferReader,
+  type SessionResolutionLogger,
+} from './device-id';
 
 const NOW = new Date('2026-06-08T12:00:00.000Z').getTime();
 const MINUTE = 60 * 1000;
 const SALTS = { current: 'salt-current', previous: 'salt-previous' };
 /** SESSION_TIMEOUT_MS's default: the caller resolves it from config now. */
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+/** The caller's request logger. Inputs here are an IP and a salt, so a
+ *  session-read failure must go through pino's redaction, not `console`. */
+const stubLogger = () => {
+  const error = mock((_details: unknown, _message?: string) => undefined);
+  return { error, logger: { error } as unknown as SessionResolutionLogger };
+};
 
 const BASE = {
   projectId: 'proj-1',
@@ -28,6 +39,7 @@ const BASE = {
   salts: SALTS,
   eventTimeMs: NOW,
   sessionTimeoutMs: SESSION_TIMEOUT_MS,
+  logger: stubLogger().logger,
 };
 
 // withinIdleWindow only reads `id` + `ended_at`; the rest is irrelevant here.
@@ -125,5 +137,26 @@ describe('getDeviceId — session resolution', () => {
       return args.deviceId ?? '';
     });
     expect(new Set(deviceIds).size).toBe(2); // distinct current/previous hashes
+  });
+
+  it('logs a failed session read through the caller logger, not console', async () => {
+    const { error, logger } = stubLogger();
+    const failing = {
+      getExistingSession: mock(() => {
+        throw new Error('session store unavailable');
+      }),
+    } as unknown as SessionBufferReader;
+
+    const result = await getDeviceId({
+      ...BASE,
+      logger,
+      overrideDeviceId: 'cookie-abc',
+      sessionBuffer: failing,
+    });
+
+    expect(error).toHaveBeenCalledTimes(1);
+    // Still answers with a deterministic id: the read is best-effort.
+    expect(result.deviceId).toBe('cookie-abc');
+    expect(result.sessionId).not.toBe('');
   });
 });

@@ -4,12 +4,17 @@
 
 import crypto from 'node:crypto';
 import type { SessionBuffer } from '../../../buffers/session-buffer';
+import type { Logger } from '../../../logger';
 import { generateDeviceId } from '../../../shared/profileId';
 import type { IClickhouseSession } from '../../session/session.service';
 import { convertClickhouseDateToJs } from '../../session/src/dates';
 
 /** Only the read this module needs, so a caller may pass a narrower stub. */
 export type SessionBufferReader = Pick<SessionBuffer, 'getExistingSession'>;
+
+/** Only the level this module logs at. The inputs here are an IP and a salt,
+ *  so it must be the redacting pino logger and never `console`. */
+export type SessionResolutionLogger = Pick<Logger, 'error'>;
 
 export interface DeviceIdResult {
   deviceId: string;
@@ -36,6 +41,7 @@ export async function getDeviceId({
   eventTimeMs,
   sessionBuffer,
   sessionTimeoutMs,
+  logger,
 }: {
   projectId: string;
   ip: string;
@@ -48,6 +54,7 @@ export async function getDeviceId({
   sessionBuffer: SessionBufferReader;
   /** The idle window, resolved from config by the caller. */
   sessionTimeoutMs: number;
+  logger: SessionResolutionLogger;
 }): Promise<DeviceIdResult> {
   if (overrideDeviceId) {
     // A caller-supplied device id is stable (no salt rotation), so it's the only
@@ -58,6 +65,7 @@ export async function getDeviceId({
       eventTimeMs: eventTimeMs ?? Date.now(),
       sessionBuffer,
       sessionTimeoutMs,
+      logger,
     });
   }
 
@@ -84,6 +92,7 @@ export async function getDeviceId({
     eventTimeMs: eventTimeMs ?? Date.now(),
     sessionBuffer,
     sessionTimeoutMs,
+    logger,
   });
 }
 
@@ -112,6 +121,7 @@ async function getInfoFromSession({
   eventTimeMs,
   sessionBuffer,
   sessionTimeoutMs,
+  logger,
 }: {
   projectId: string;
   /** Candidate device ids in priority order (e.g. [current, previous] salt
@@ -120,6 +130,7 @@ async function getInfoFromSession({
   eventTimeMs: number;
   sessionBuffer: SessionBufferReader;
   sessionTimeoutMs: number;
+  logger: SessionResolutionLogger;
 }): Promise<DeviceIdResult> {
   const candidates = [...new Set(deviceIds.filter(Boolean))];
   const primary = candidates[0] ?? '';
@@ -140,7 +151,7 @@ async function getInfoFromSession({
       }
     }
   } catch (error) {
-    console.error('Error resolving session for device id', error);
+    logger.error({ err: error }, 'Error resolving session for device id');
   }
 
   return {
@@ -171,11 +182,12 @@ async function getInfoFromSession({
  * Deterministic session id for (projectId, deviceId) within a time window,
  * with a grace period at the *start* of each window to avoid boundary splits.
  *
- * - windowMs: 30 minutes by default
- * - graceMs: 1 minute by default (events in first minute of a bucket map to previous bucket)
+ * - windowMs: `DEFAULT_SESSION_WINDOW_MS` (5 minutes) by default
+ * - graceMs: `DEFAULT_SESSION_GRACE_MS` (1 minute) by default (events in the
+ *   grace period at the start of a bucket map to the previous bucket)
  * - Output: base64url, 128-bit (16 bytes) truncated from SHA-256
  */
-export function getSessionId(params: {
+function getSessionId(params: {
   projectId: string;
   deviceId: string;
   eventMs?: number; // use event timestamp; defaults to Date.now()

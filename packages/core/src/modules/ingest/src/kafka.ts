@@ -232,6 +232,12 @@ export const createKafkaEventsConsumer = (
       config.kafka.maxMessagesPerPartition * KAFKA_BYTES_PER_MESSAGE,
   });
   consumers.add(consumer);
+  // Whoever opens closes: a consumer that disconnected on its own (the events
+  // handle's `stop()`) drops out of the set so shutdown never disconnects it
+  // twice and the set never retains a dead consumer.
+  consumer.on(consumer.events.DISCONNECT, () => {
+    consumers.delete(consumer);
+  });
   return consumer;
 };
 

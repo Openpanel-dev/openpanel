@@ -53,6 +53,7 @@ import {
   createTrpcFetchHandler,
   dashboardRoutes,
   debugRoutes,
+  disconnectKafka,
   enableEventsHeartbeat,
   errorHandler,
   type HttpCtx,
@@ -531,6 +532,10 @@ async function main() {
       }
       await Promise.all([workers?.close(), consumer?.stop()]);
       await deps.producers.close();
+      // Core opens the Kafka producer lazily on the first /track and the
+      // consumer at boot; `deps.producers` is the BullMQ handle, not this one.
+      // Without this an idempotent producer with in-flight batches is dropped.
+      await disconnectKafka(config.core);
       logger.info('Graceful shutdown completed');
       clearTimeout(forceExit);
       process.exit(0);

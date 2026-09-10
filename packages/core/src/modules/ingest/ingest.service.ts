@@ -94,7 +94,7 @@ export interface IngestTransport {
 
 /** What the two context builders below need: the Postgres client the salt
  *  cache keys on, and the idle window every session decision reads. */
-type IngestScope = DbScope & Pick<ServiceDeps, 'config'>;
+type IngestScope = DbScope & Pick<ServiceDeps, 'config' | 'logger'>;
 
 const QUEUE_PAYLOAD_HEADERS = [
   'user-agent',
@@ -113,13 +113,13 @@ const FALLBACK_USER_AGENT = 'unknown/1.0';
 export function getStringHeaders(
   headers: IngestHeaders
 ): Record<string, string | undefined> {
-  return Object.entries(pick(QUEUE_PAYLOAD_HEADERS, headers)).reduce(
-    (acc, [key, value]) => ({
-      ...acc,
-      [key]: value ? String(value) : undefined,
-    }),
-    {}
-  );
+  const stringHeaders: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(
+    pick(QUEUE_PAYLOAD_HEADERS, headers)
+  )) {
+    stringHeaders[key] = value ? String(value) : undefined;
+  }
+  return stringHeaders;
 }
 
 function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
@@ -273,6 +273,7 @@ async function buildContext(
     eventTimeMs: timestamp.timestamp,
     sessionBuffer: buffers.session,
     sessionTimeoutMs,
+    logger: deps.logger,
   });
 
   return {
@@ -665,6 +666,7 @@ export async function ingestLegacyEvent(
     salts,
     sessionBuffer: transport.buffers.session,
     sessionTimeoutMs: resolveSessionTimeoutMs(transport.deps.config),
+    logger: transport.deps.logger,
   });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);
@@ -918,19 +920,21 @@ export function createIngestService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  return {
-    track: (
-      request: TrackRequest,
-      produceIncomingEvent: IncomingEventProducer
-    ): Promise<TrackOutcome> =>
-      ingestTrack(request, {
-        buffers: deps.buffers,
-        produceIncomingEvent,
-        deps,
-      }),
-    checkBot: (
-      request: Parameters<typeof checkIngestBot>[1]
-    ): Promise<BotVerdict> => checkIngestBot(deps, request),
-    isDuplicate: isDuplicateIngestRequest,
-  };
+  const track = (
+    request: TrackRequest,
+    produceIncomingEvent: IncomingEventProducer
+  ): Promise<TrackOutcome> =>
+    ingestTrack(request, {
+      buffers: deps.buffers,
+      produceIncomingEvent,
+      deps,
+    });
+
+  const checkBot = (
+    request: Parameters<typeof checkIngestBot>[1]
+  ): Promise<BotVerdict> => checkIngestBot(deps, request);
+
+  const isDuplicate = isDuplicateIngestRequest;
+
+  return { track, checkBot, isDuplicate };
 }

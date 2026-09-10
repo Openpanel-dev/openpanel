@@ -87,11 +87,17 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
       });
     case 'profile-not-found':
       return status(404, { status: 404, message: 'Profile not found' });
-    default:
+    case 'profile-property-not-a-number':
       return status(400, {
         status: 400,
         message: 'Property value is not a number',
       });
+    default: {
+      // `outcome` narrows to `never`: an eighth TrackOutcome variant fails the
+      // compile here instead of silently getting the 400 above.
+      const unhandled: never = outcome;
+      return unhandled;
+    }
   }
 }
 
@@ -142,8 +148,12 @@ function windDownGuard(deps: AppDeps) {
   };
 }
 
-export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
-  app.guard(
+export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
+  // One closure over `deps` for all three routes: this is route-definition
+  // work, and three identical closures read as if it were per-request.
+  const blockWhenWoundDown = windDownGuard(deps);
+
+  return app.guard(
     {
       // V1's `duplicateHook`, registered on `preValidation` so it answers
       // before the client is ever authenticated. A guard hook runs ahead of
@@ -190,7 +200,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
           {
             clientAuth: { ingest: validateIngestRequest },
             body: zTrackHandlerPayload,
-            beforeHandle: [botGuard, windDownGuard(deps)],
+            beforeHandle: [botGuard, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:
@@ -229,7 +239,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
           },
           {
             clientAuth: { ingest: validateIngestRequest },
-            beforeHandle: [botGuard, windDownGuard(deps)],
+            beforeHandle: [botGuard, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:
@@ -272,7 +282,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
                 recordLegacyEventRequest(client.id);
               },
               botGuard,
-              windDownGuard(deps),
+              blockWhenWoundDown,
             ],
             detail: {
               tags: LEGACY_EVENT_TAGS,
@@ -281,5 +291,5 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
             },
           }
         )
-  )
-);
+  );
+});
