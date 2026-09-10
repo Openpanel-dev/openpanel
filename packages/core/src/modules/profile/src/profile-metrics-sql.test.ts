@@ -9,7 +9,7 @@
 // tag never interpolates, so the hostile value can only appear in the params.
 
 import { describe, expect, test } from 'bun:test';
-import { profileMetricsQuery } from './profile.sql';
+import { profileMetricsQuery } from './sql';
 
 const PROJECT_ID = 'test-sql-validation';
 const PROFILE_ID = 'profile-1';

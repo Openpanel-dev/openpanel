@@ -24,7 +24,7 @@ import {
   profileSessionsQuery,
   profilesByIdsQuery,
   profileValuesQuery,
-} from './profile.sql';
+} from './sql';
 
 const PROJECT_ID = 'proj-1';
 const PROFILE_ID = 'prof-1';

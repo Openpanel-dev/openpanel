@@ -1,9 +1,10 @@
 // The three /profile routes end to end through `app.handle()`: status codes
 // and text bodies match V1's controller byte for byte, and each handler hands
-// the service exactly what the controller did. `../../http/client-auth` is a
-// P8 stub (always null), so it is mocked like http/auth.test.ts does; the
-// service and the geo lookup are mocked so nothing reaches a database. Every
-// mock is registered before the subject's first (dynamic) import — AGENTS.md.
+// the service exactly what the controller did. `../../http/client-auth`'s
+// `authenticateClient` is mocked so the client principal is deterministic,
+// same as http/auth.test.ts does; the service and the geo lookup are mocked
+// so nothing reaches a database. Every mock is registered before the
+// subject's first (dynamic) import — AGENTS.md.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { stubAppDeps } from '../../../test/http-fixtures';

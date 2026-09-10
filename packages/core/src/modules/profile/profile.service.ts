@@ -5,7 +5,7 @@
 // tools, apps/api's controllers, notification.service, the buffers' types)
 // keep working while V1 runs (DELEGATE PATTERN).
 //
-// Every query is a `sql` fragment (src/profile.sql.ts), converted one at a
+// Every query is a `sql` fragment (src/sql.ts), converted one at a
 // time with a result-set proof each, per ADR-013. `buildFilterWhere` is NOT
 // converted here: it is the shared filter compiler, out of this task's scope;
 // src/filter-clauses.ts is the one bridge.
@@ -47,9 +47,9 @@ import {
   profileSessionsQuery,
   profilesByIdsQuery,
   profileValuesQuery,
-} from './src/profile.sql';
+} from './src/sql';
 
-export { profileSearchCondition } from './src/profile.sql';
+export { profileSearchCondition } from './src/sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;

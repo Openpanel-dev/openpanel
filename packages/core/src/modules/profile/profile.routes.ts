@@ -6,13 +6,9 @@
 // profile id, `400 'No projectId'`, `404 'Not found'`, `400 'Not number'`)
 // match V1's `reply.status(..).send(..)` byte for byte.
 //
-// NAMED GAP, same as import.routes.ts: not yet reachable. `authenticateClient`
-// (http/client-auth.ts) is a P8 stub that always returns null, so `clientAuth`
-// 401s every request until it is filled in, and main.ts does not mount
-// `publicApiRoutes` until a real `AppDeps` exists. `ingest` is V1's
-// `clientHook` (the SDK credential rules); V1's `isBotHook` and
-// `subscriptionHook` on this router are P8's too — the ingest module owns
-// them, not this one.
+// `ingest` is V1's `clientHook` (the SDK credential rules); V1's `isBotHook`
+// and `subscriptionHook` on this router live in the ingest module, not this
+// one.
 //
 // V1 has no request-body schema for these routes (ADR-003: "/profile, /import,
 // /event and /tools have no request schemas today, and adding them would be a
