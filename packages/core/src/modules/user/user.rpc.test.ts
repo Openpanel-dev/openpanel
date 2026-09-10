@@ -1,8 +1,7 @@
 // Only the "is anyone logged in" boundary is exercised here — no database.
-// The mutation bodies ride on @openpanel/db (lazy-loaded, see
-// user.service.ts's header); wiring this router end-to-end against a real
-// Postgres is P6's (protectedProcedure) job, not this one's — see
-// user.rpc.ts's header.
+// Wiring this router end-to-end against a real Postgres is a separate
+// concern from `protectedProcedure`'s auth guard, which is what these
+// tests cover.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -48,12 +47,5 @@ test('update rejects an unauthenticated caller before touching the profile', asy
   const caller = await anonCaller();
   await expect(
     caller.update({ firstName: 'Ralph', lastName: 'Wiggum' })
-  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-});
-
-test('debugPostCookie rejects an unauthenticated caller', async () => {
-  const caller = await anonCaller();
-  await expect(
-    caller.debugPostCookie({ sameSite: 'lax', domain: '.openpanel.dev' })
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 });

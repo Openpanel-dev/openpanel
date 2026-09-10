@@ -1,7 +1,4 @@
-// Moved from packages/db/src/services/user.service.ts (M6-001). packages/db
-// keeps a re-export shim — packages/trpc's auth/onboarding routers (not yet
-// ported) still reach `getUserById`/`getUserAccount`/`IServiceUser` through
-// @openpanel/db's barrel, same shape as packages/db/src/gsc.ts since M5-002.
+// Moved from packages/db/src/services/user.service.ts (M6-001).
 //
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
 // `deps.db`; the `loadDb()` lazy loader is gone. Every caller — including
@@ -10,8 +7,6 @@
 import type { User } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
-
-export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
 
 // Explicit `Promise<User>` return type, not inferred: Prisma's
 // `findUniqueOrThrow` returns a chainable "fluent" client (PromiseLike, plus
