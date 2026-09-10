@@ -335,6 +335,13 @@ export async function deliverNotification(
 
   const payload = notification.payload;
   const PrismaRuntime = await loadPrismaSentinels();
+  // Returning rather than throwing here (and in the missing-config branch
+  // below) resolves `notificationQueueJobs.sendNotification`'s promise
+  // normally, so BullMQ records the job as completed instead of failed —
+  // the delivery is silently dropped. Left as-is: no test exercises either
+  // branch today, and flipping the job outcome from success to failure is a
+  // behavior change out of this task's scope (docs/review/notification.md,
+  // "Not covered by any rule" #1).
   if (
     !isValidPayload<INotificationPayload>(
       payload,
@@ -517,6 +524,13 @@ export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
 
 // -- Services surface --------------------------------------------------
 
+// This wraps only `dispatch` (what notification.jobs.ts needs). Every other
+// function above and in ./src/notification-dispatch.ts is called directly —
+// by notification.rpc.ts, by session/ingest as siblings, and by index.ts's
+// barrel — not through ctx.services.notification. Consolidating that would
+// mean changing those other modules' call sites, out of this task's scope
+// (docs/review/notification.md, "Not covered by any rule" #2; the same
+// shape misc.md's MiscService finding describes for that module).
 export function createNotificationService(
   deps: ServiceDeps,
   _services: () => Services
