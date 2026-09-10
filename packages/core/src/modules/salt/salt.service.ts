@@ -1,7 +1,5 @@
 // Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts (M8-004). V1's boot (createInitialSalts)
-// and cron dispatch (rotateSalt, exported there as `salt`) stay the LIVE call
-// sites (DELEGATE PATTERN); packages/db keeps a re-export shim.
+// apps/worker/src/jobs/cron.salt.ts (M8-004).
 //
 // M10-004: reaches Postgres as `deps.db`, no `@openpanel/db` import left.
 // `main.ts` passes its own `deps` to `createInitialSalts` at boot;
@@ -34,9 +32,9 @@ export interface Salts {
   previous: string;
 }
 
-/** Only Postgres — narrowed so `main.ts`'s `AppDeps` (which has no `queues`
- *  yet at the point it calls `createInitialSalts`) satisfies it with no
- *  cast. */
+/** Only Postgres — narrowed so `main.ts`'s `AppDeps` (which never carries
+ *  `queues`; that field only exists on the per-request/per-job `Ctx`)
+ *  satisfies it with no cast. */
 type SaltDeps = Pick<ServiceDeps, 'db'>;
 
 function sleep(ms: number): Promise<void> {
@@ -75,7 +73,10 @@ export async function createInitialSalts(
     // Uncached: boot has nothing worth reusing a stale answer for.
     await fetchSalts(deps);
   } catch (error) {
-    if (!(error instanceof Error && error.message === NO_SALT_FOUND_MESSAGE)) {
+    const noSaltYet =
+      error instanceof Error && error.message === NO_SALT_FOUND_MESSAGE;
+
+    if (!noSaltYet) {
       if (retryCount >= MAX_RETRIES) {
         throw new Error(`Failed to create salts after ${MAX_RETRIES} attempts`);
       }
