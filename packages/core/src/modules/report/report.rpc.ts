@@ -171,34 +171,6 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.updateReportLayout({ reportId, layout });
     }),
 
-  getLayouts: protectedProcedure
-    .input(
-      z.object({
-        dashboardId: z.string(),
-        projectId: z.string(),
-      })
-    )
-    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
-      await ctx.services.auth.requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-        level: 'read',
-      });
-
-      // The access check above only proves the caller owns `projectId`. Bind
-      // the caller-supplied `dashboardId` to that project as well, otherwise a
-      // dashboard from another organization can be read through this handler.
-      const dashboard = await ctx.services.dashboard.getDashboardById(
-        dashboardId,
-        projectId
-      );
-      if (!dashboard) {
-        throw new TRPCNotFoundError('Dashboard not found');
-      }
-
-      return ctx.services.report.getReportLayouts({ dashboardId, projectId });
-    }),
-
   resetLayout: protectedProcedure
     .input(
       z.object({
@@ -213,8 +185,10 @@ export const reportRouter = createTRPCRouter({
         level: 'write',
       });
 
-      // Same as `getLayouts`: bind the dashboard to the access-checked project
-      // before deleting anything, so a foreign dashboard cannot be wiped.
+      // The access check above only proves the caller owns `projectId`. Bind
+      // the caller-supplied `dashboardId` to that project as well before
+      // deleting anything, otherwise a dashboard from another organization
+      // can be wiped through this handler.
       const dashboard = await ctx.services.dashboard.getDashboardById(
         dashboardId,
         projectId

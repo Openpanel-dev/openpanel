@@ -1,10 +1,8 @@
-// Moved from packages/constants/index.ts and packages/validation/src/index.ts
-// (M7-006, ADR-008's module map: report owns "C" for the chart/report/widget
-// vocabulary). Both origin files become re-export shims onto this one (same
-// shape as packages/validation/src/cohort.validation.ts since M5-003), so
-// existing packages/constants / packages/validation importers (the chart
-// engine, apps/start's report builder, packages/trpc's report/dashboard/
-// widget routers) keep resolving these symbols unchanged.
+// Ported from V1's packages/constants + packages/validation (M7-006,
+// ADR-008's module map: report owns "C" for the chart/report/widget
+// vocabulary) — neither package exists in this tree; every importer here
+// (the chart engine, apps/start's report builder) reaches these symbols
+// through this file directly.
 //
 // `getDefaultIntervalByDates` is REWRITTEN from date-fns
 // (differenceInDays/isSameDay) to plain Date math per the module map. Every

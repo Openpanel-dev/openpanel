@@ -1,7 +1,7 @@
-// Moved from packages/db/src/services/reports.service.ts, plus the
-// create/update/move/delete/duplicate/layout mutation bodies
+// Ported from V1's packages/db/src/services/reports.service.ts, plus the
+// create/update/move/delete/duplicate/layout mutation bodies V1's
 // packages/trpc/src/routers/report.ts held inline (M7-006, ADR-008's module
-// map: report owns "R,S,C").
+// map: report owns "R,S,C") — neither package exists in this tree.
 //
 // M10-003: every function takes `ServiceDeps` and reaches Postgres as
 // `deps.db`; `loadDb()` and the `@openpanel/core` self-barrel import are
