@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
+import { CONVERSATION_LIST_LIMIT_DEFAULT } from '@openpanel/core/modules/conversation/conversation.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlusIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -34,7 +35,10 @@ export function ChatDrawerHeader({
     useChatState();
 
   const { data: conversations } = useQuery(
-    trpc.conversation.list.queryOptions({ projectId, limit: 50 }),
+    trpc.conversation.list.queryOptions({
+      projectId,
+      limit: CONVERSATION_LIST_LIMIT_DEFAULT,
+    }),
   );
 
   const deleteMutation = useMutation(

@@ -7,6 +7,7 @@ import type {
   Prisma,
 } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
+import { CONVERSATION_LIST_LIMIT_DEFAULT } from './conversation.constants';
 
 export type IServiceConversation = Conversation;
 export type IServiceChatMessage = ChatMessage;
@@ -14,10 +15,7 @@ export type IServiceConversationWithMessages = Prisma.ConversationGetPayload<{
   include: { messages: true };
 }>;
 
-// Shared with conversation.rpc.ts's zod default, so the two never drift.
-export const DEFAULT_LIST_LIMIT = 50;
-
-export async function getConversationById(
+async function getConversationByIdImpl(
   deps: ServiceDeps,
   id: string,
   options: { withMessages?: boolean } = {}
@@ -31,6 +29,27 @@ export async function getConversationById(
     });
   }
   return deps.db.conversation.findUnique({ where: { id } });
+}
+
+// Overloaded so a caller's static type matches what it actually asked for,
+// instead of the three-way union every call used to get regardless of
+// `options` (docs/review/conversation.md, "Not covered by any rule" #4).
+export function getConversationById(
+  deps: ServiceDeps,
+  id: string,
+  options: { withMessages: true }
+): Promise<IServiceConversationWithMessages | null>;
+export function getConversationById(
+  deps: ServiceDeps,
+  id: string,
+  options?: { withMessages?: false }
+): Promise<IServiceConversation | null>;
+export function getConversationById(
+  deps: ServiceDeps,
+  id: string,
+  options?: { withMessages?: boolean }
+): Promise<IServiceConversation | IServiceConversationWithMessages | null> {
+  return getConversationByIdImpl(deps, id, options);
 }
 
 export async function listConversations(
@@ -47,7 +66,7 @@ export async function listConversations(
       userId: input.userId,
     },
     orderBy: { updatedAt: 'desc' },
-    take: input.limit ?? DEFAULT_LIST_LIMIT,
+    take: input.limit ?? CONVERSATION_LIST_LIMIT_DEFAULT,
   });
 }
 
@@ -93,12 +112,26 @@ export function createConversationService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
+  // Re-declared (not just re-exported) so the bound version a caller
+  // actually reaches through `ctx.services.conversation` keeps the same
+  // per-call narrowing as the standalone export above.
+  function boundGetConversationById(
+    id: string,
+    options: { withMessages: true }
+  ): Promise<IServiceConversationWithMessages | null>;
+  function boundGetConversationById(
+    id: string,
+    options?: { withMessages?: false }
+  ): Promise<IServiceConversation | null>;
+  function boundGetConversationById(
+    id: string,
+    options?: { withMessages?: boolean }
+  ): Promise<IServiceConversation | IServiceConversationWithMessages | null> {
+    return getConversationByIdImpl(deps, id, options);
+  }
+
   return {
-    getConversationById: (
-      id: string,
-      options?: { withMessages?: boolean }
-    ): ReturnType<typeof getConversationById> =>
-      getConversationById(deps, id, options),
+    getConversationById: boundGetConversationById,
     listConversations: (
       input: Parameters<typeof listConversations>[1]
     ): Promise<IServiceConversation[]> => listConversations(deps, input),

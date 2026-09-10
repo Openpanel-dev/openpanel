@@ -1,4 +1,5 @@
 import type { AppClient } from '@/agents/client';
+import { CONVERSATION_TITLE_MAX_LENGTH } from '@openpanel/core/modules/conversation/conversation.constants';
 
 /**
  * Stream a conversation title from the backend `__titler` agent.
@@ -37,11 +38,11 @@ export async function streamTitle(
       const maybe = event as { type?: string; delta?: string };
       if (maybe.type === 'TEXT_MESSAGE_CONTENT' && typeof maybe.delta === 'string') {
         accumulated += maybe.delta;
-        onDelta(accumulated.trim().slice(0, 80));
+        onDelta(accumulated.trim().slice(0, CONVERSATION_TITLE_MAX_LENGTH));
       }
     }
     if (signal?.aborted) return null;
-    return accumulated.trim().slice(0, 80) || null;
+    return accumulated.trim().slice(0, CONVERSATION_TITLE_MAX_LENGTH) || null;
   } catch (err) {
     console.error('[chat] title stream failed', err);
     return null;

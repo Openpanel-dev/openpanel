@@ -5,8 +5,8 @@
 // the input parser, exactly as V1 does. `enforceAccess` reads the raw,
 // pre-zod input and only a TOP-LEVEL `projectId` (ADR-011) — `list` and
 // `rename` both take one, so their project access is already enforced
-// before the handler runs. `get` and `delete` take only `id`, invisible to
-// `enforceAccess`, so their ownership check stays in the handler.
+// before the handler runs. `delete` takes only `id`, invisible to
+// `enforceAccess`, so its ownership check stays in the handler.
 //
 // `ctx.services.conversation` carries this module's factory (M10-004).
 //
@@ -17,17 +17,21 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
-import { DEFAULT_LIST_LIMIT } from './conversation.service';
+import {
+  CONVERSATION_LIST_LIMIT_DEFAULT,
+  CONVERSATION_TITLE_MAX_LENGTH,
+  CONVERSATION_TITLE_MIN_LENGTH,
+} from './conversation.constants';
 
 const LIST_LIMIT_MIN = 1;
 const LIST_LIMIT_MAX = 200;
-const TITLE_MIN_LENGTH = 1;
-const TITLE_MAX_LENGTH = 80;
 
 /**
- * Conversation management — listing, fetching, renaming, deleting.
+ * Conversation management — listing, renaming, deleting.
  * Conversation creation is implicit (lazy) on the first message via the
- * /ai/agents/* route, so there's no `create` here.
+ * /ai/agents/* route, so there's no `create` here. Fetching a single
+ * conversation's content also goes through that route (`assistant.routes.ts`),
+ * not this router — there is no `get` (ADR-022 R2, docs/review/conversation.md R2-a).
  *
  * All procedures enforce ownership via `userId === session.userId` so a
  * user can never read or mutate another user's conversations.
@@ -41,7 +45,7 @@ export const conversationRouter = createTRPCRouter({
           .number()
           .min(LIST_LIMIT_MIN)
           .max(LIST_LIMIT_MAX)
-          .default(DEFAULT_LIST_LIMIT),
+          .default(CONVERSATION_LIST_LIMIT_DEFAULT),
       })
     )
     .query(({ input, ctx }) =>
@@ -52,20 +56,6 @@ export const conversationRouter = createTRPCRouter({
       })
     ),
 
-  get: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const userId = ctx.session.userId;
-      const conv = await ctx.services.conversation.getConversationById(
-        input.id,
-        { withMessages: true }
-      );
-      if (!conv || conv.userId !== userId) {
-        throw new TRPCNotFoundError('Conversation not found');
-      }
-      return conv;
-    }),
-
   rename: protectedProcedure
     // A conversation belongs to the caller, not to the project - titling your
     // own chat is not a project mutation. Ownership is enforced below.
@@ -73,7 +63,10 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-        title: z.string().min(TITLE_MIN_LENGTH).max(TITLE_MAX_LENGTH),
+        title: z
+          .string()
+          .min(CONVERSATION_TITLE_MIN_LENGTH)
+          .max(CONVERSATION_TITLE_MAX_LENGTH),
         /**
          * Required so we can create the row if the titler finishes
          * before the agent's first persistence save. When the row
