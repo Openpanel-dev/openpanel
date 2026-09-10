@@ -1,8 +1,7 @@
-// The Polar webhook (M6-006), `POST /webhook/polar`. V1's Fastify controller
-// (apps/api/src/controllers/webhook.controller.ts's `polarWebhook`) stays the
-// LIVE route (DELEGATE PATTERN) and delegates to
-// subscription.service.ts's `handlePolarWebhookEvent` — the same function
-// this route calls.
+// The Polar webhook (M6-006), `POST /webhook/polar`. Ported from V1's
+// apps/api/src/controllers/webhook.controller.ts's `polarWebhook`, which
+// doesn't exist in this tree — this route is the only caller of
+// subscription.service.ts's `handlePolarWebhookEvent`.
 //
 // RAW BYTES, deliberately: `validatePolarEvent` verifies Polar's signature
 // over the exact request body, so this handler reads `await request.text()`

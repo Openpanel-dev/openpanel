@@ -1,9 +1,8 @@
-// Moved from packages/trpc/src/routers/subscription.ts (checkout, products,
-// usage, cancel/pause/resume, save-discount, portal) and from
-// apps/api/src/controllers/webhook.controller.ts's `polarWebhook` (M6-006).
-// V1's router and controller stay the LIVE routes (DELEGATE PATTERN) and
-// delegate every handler body to these functions, same as every other
-// dissolved service in this package.
+// Ported from V1's packages/trpc/src/routers/subscription.ts (checkout,
+// products, usage, cancel/pause/resume, save-discount, portal) and from
+// apps/api/src/controllers/webhook.controller.ts's `polarWebhook` (M6-006) —
+// neither exists in this tree; every caller reaches these functions through
+// this file directly (subscription.rpc.ts, subscription.routes.ts).
 //
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
@@ -64,6 +63,15 @@ const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const DEFAULT_USAGE_WINDOW_DAYS = 30;
 
+// Every mutating export below gates on this before touching Polar.
+async function requireOrgAdmin(
+  userId: string,
+  organizationId: string
+): Promise<void> {
+  const { requireOrganizationAdmin } = await getAccessChecks();
+  await requireOrganizationAdmin({ userId, organizationId });
+}
+
 export async function getCurrentSubscriptionProduct(
   deps: ServiceDeps,
   organizationId: string
@@ -83,11 +91,7 @@ export async function checkout(
   input: ICheckout,
   ipAddress: string | undefined
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({
-    userId,
-    organizationId: input.organizationId,
-  });
+  await requireOrgAdmin(userId, input.organizationId);
 
   const [user, organization] = await Promise.all([
     deps.db.user.findFirstOrThrow({ where: { id: userId } }),
@@ -195,11 +199,7 @@ export async function cancelSubscription(
   userId: string,
   input: ICancelSubscription
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({
-    userId,
-    organizationId: input.organizationId,
-  });
+  await requireOrgAdmin(userId, input.organizationId);
 
   const organization = await getOrganizationById(deps, input.organizationId);
   if (!organization.subscriptionId) {
@@ -235,11 +235,7 @@ export async function pauseSubscription(
   userId: string,
   input: IPauseSubscription
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({
-    userId,
-    organizationId: input.organizationId,
-  });
+  await requireOrgAdmin(userId, input.organizationId);
 
   const organization = await getOrganizationById(deps, input.organizationId);
   if (!organization.subscriptionId) {
@@ -277,8 +273,7 @@ export async function resumeSubscription(
   userId: string,
   organizationId: string
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({ userId, organizationId });
+  await requireOrgAdmin(userId, organizationId);
 
   const organization = await getOrganizationById(deps, organizationId);
   if (!organization.subscriptionId) {
@@ -311,8 +306,7 @@ export async function applySaveDiscount(
   userId: string,
   organizationId: string
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({ userId, organizationId });
+  await requireOrgAdmin(userId, organizationId);
 
   const discountId = deps.config.polar.saveDiscountId;
   if (!discountId) {
@@ -354,8 +348,7 @@ export async function portal(
   userId: string,
   organizationId: string
 ) {
-  const { requireOrganizationAdmin } = await getAccessChecks();
-  await requireOrganizationAdmin({ userId, organizationId });
+  await requireOrgAdmin(userId, organizationId);
 
   const organization = await getOrganizationById(deps, organizationId);
   if (!organization.subscriptionCustomerId) {
@@ -370,14 +363,13 @@ export async function portal(
 }
 
 // -- Polar webhook --------------------------------------------------------
-// Ported from apps/api/src/controllers/webhook.controller.ts's `polarWebhook`
-// + its private helpers (M6-006). V1's Fastify controller stays the LIVE
-// route (DELEGATE PATTERN) and delegates here — the same function this
-// module's own `/webhook/polar` route (subscription.routes.ts) calls.
+// Ported from V1's apps/api/src/controllers/webhook.controller.ts's
+// `polarWebhook` + its private helpers (M6-006); that controller doesn't
+// exist in this tree — this module's own `/webhook/polar` route
+// (subscription.routes.ts) is the only caller.
 // `validatePolarEvent` verifies the signature over the RAW body bytes; any
-// body parsing before this call breaks that verification, which is why both
-// callers read `await request.text()` / `request.rawBody` rather than a
-// parsed JSON body.
+// body parsing before this call breaks that verification, which is why the
+// route reads `await request.text()` rather than a parsed JSON body.
 
 type PolarEvent = ReturnType<typeof validatePolarEvent>;
 type PolarSubscriptionData = Extract<

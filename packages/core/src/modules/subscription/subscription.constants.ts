@@ -1,9 +1,7 @@
-// Moved from packages/validation/src/index.ts (M6-006, ADR-008's module map:
-// subscription owns "C"). packages/validation/src/index.ts becomes a
-// re-export shim of this file (same shape as ./notification.constants.ts
-// since M6-005), so packages/trpc's subscription router and apps/start's
-// billing forms keep resolving these symbols through packages/validation's
-// existing barrel unchanged.
+// Ported from V1's packages/validation/src/index.ts (M6-006, ADR-008's
+// module map: subscription owns "C") — that package doesn't exist in this
+// tree; apps/start's billing forms and this module's own
+// subscription.rpc.ts resolve these symbols through this file directly.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 
