@@ -3,6 +3,14 @@
 // AGENTS.md rule, which constrains a constants file's imports, and this file
 // has none.
 
+// The two list procedures' page bounds. Vocabulary, not implementation: the
+// dashboard pages that call `insight.list` / `insight.listAll` size their own
+// requests against the same numbers the procedure enforces.
+export const INSIGHT_LIST_DEFAULT_LIMIT = 50;
+export const INSIGHT_LIST_MAX_LIMIT = 100;
+export const INSIGHT_LIST_ALL_DEFAULT_LIMIT = 200;
+export const INSIGHT_LIST_ALL_MAX_LIMIT = 500;
+
 export type InsightMetricKey = 'sessions' | 'pageviews' | 'share';
 
 export type InsightMetricUnit = 'count' | 'ratio';

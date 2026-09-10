@@ -12,7 +12,13 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import type { InsightPayload } from './insight.constants';
+import {
+  INSIGHT_LIST_ALL_DEFAULT_LIMIT,
+  INSIGHT_LIST_ALL_MAX_LIMIT,
+  INSIGHT_LIST_DEFAULT_LIMIT,
+  INSIGHT_LIST_MAX_LIMIT,
+  type InsightPayload,
+} from './insight.constants';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPLAIN_COLUMNS = [
@@ -22,12 +28,21 @@ const EXPLAIN_COLUMNS = [
   'utm_source',
 ] as const;
 
+// `list` deduplicates by window AFTER the query, so it has to over-fetch or a
+// page of duplicates comes back short.
+const LIST_DEDUPE_OVERFETCH = 3;
+
 export const insightRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
-        limit: z.number().min(1).max(100).optional().default(50),
+        limit: z
+          .number()
+          .min(1)
+          .max(INSIGHT_LIST_MAX_LIMIT)
+          .optional()
+          .default(INSIGHT_LIST_DEFAULT_LIMIT),
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
@@ -43,7 +58,7 @@ export const insightRouter = createTRPCRouter({
       // nulls:last), with the statistical impactScore as the tiebreaker.
       const allInsights = await ctx.services.insight.listInsights({
         projectId,
-        limit: limit * 3,
+        limit: limit * LIST_DEDUPE_OVERFETCH,
       });
 
       // WindowKind priority: yesterday (1) > rolling_7d (2) > rolling_30d (3)
@@ -83,7 +98,12 @@ export const insightRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-        limit: z.number().min(1).max(500).optional().default(200),
+        limit: z
+          .number()
+          .min(1)
+          .max(INSIGHT_LIST_ALL_MAX_LIMIT)
+          .optional()
+          .default(INSIGHT_LIST_ALL_DEFAULT_LIMIT),
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {

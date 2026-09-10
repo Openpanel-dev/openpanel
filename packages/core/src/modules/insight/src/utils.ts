@@ -22,6 +22,13 @@ export function computeMedian(sortedValues: number[]): number {
     : (sortedValues[mid] ?? 0);
 }
 
+/** ClickHouse's JSON format returns Int columns as strings, hence `cnt`'s
+ *  widening — every caller declares it `number` and every value is coerced. */
+interface DailyCountRow {
+  date: string;
+  cnt: number | string | null;
+}
+
 /**
  * Compute weekday medians from daily breakdown data.
  * Groups by dimension, filters to matching weekday, computes median per dimension.
@@ -31,7 +38,7 @@ export function computeMedian(sortedValues: number[]): number {
  * @param getDimension - Function to extract normalized dimension from row
  * @returns Map of dimension -> median value
  */
-export function computeWeekdayMedians<T>(
+export function computeWeekdayMedians<T extends DailyCountRow>(
   data: T[],
   targetWeekday: number,
   getDimension: (row: T) => string
@@ -40,14 +47,14 @@ export function computeWeekdayMedians<T>(
   const byDimension = new Map<string, number[]>();
 
   for (const row of data) {
-    const rowWeekday = getWeekday(new Date((row as any).date));
+    const rowWeekday = getWeekday(new Date(row.date));
     if (rowWeekday !== targetWeekday) {
       continue;
     }
 
     const dim = getDimension(row);
     const values = byDimension.get(dim) ?? [];
-    values.push(Number((row as any).cnt ?? 0));
+    values.push(Number(row.cnt ?? 0));
     byDimension.set(dim, values);
   }
 
@@ -111,7 +118,8 @@ export function getEndOfDay(date: Date): Date {
 export function buildLookupMap<T>(
   results: T[],
   getKey: (row: T) => string,
-  getCount: (row: T) => number = (row) => Number((row as any).cnt ?? 0)
+  getCount: (row: T) => number = (row) =>
+    Number((row as { cnt?: number | string | null }).cnt ?? 0)
 ): Map<string, number> {
   const map = new Map<string, number>();
   for (const row of results) {

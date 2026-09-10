@@ -1,11 +1,15 @@
 import { severityBand as band } from './scoring';
-import type { MaterialDecision, PersistedInsight } from './types';
+import type {
+  InsightDirection,
+  MaterialDecision,
+  PersistedInsight,
+} from './types';
 
 export function materialDecision(
   prev: PersistedInsight | null,
   next: {
     changePct?: number;
-    direction?: 'up' | 'down' | 'flat';
+    direction?: InsightDirection;
   }
 ): MaterialDecision {
   const nextBand = band(next.changePct);
@@ -14,7 +18,7 @@ export function materialDecision(
   }
 
   // direction flip is always meaningful
-  const prevDir = (prev.direction ?? 'flat') as any;
+  const prevDir = prev.direction ?? 'flat';
   const nextDir = next.direction ?? 'flat';
   if (prevDir !== nextDir && (nextDir === 'up' || nextDir === 'down')) {
     return {
@@ -25,7 +29,7 @@ export function materialDecision(
   }
 
   // severity band change
-  const prevBand = (prev.severityBand ?? null) as any;
+  const prevBand = prev.severityBand ?? null;
   if (prevBand !== nextBand && nextBand !== null) {
     return {
       material: true,

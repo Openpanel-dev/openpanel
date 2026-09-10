@@ -8,6 +8,7 @@ import type {
   ComputeResult,
   InsightModule,
   InsightStore,
+  SeverityBand,
   WindowKind,
 } from './types';
 import { resolveWindow } from './windows';
@@ -17,6 +18,24 @@ const DEFAULT_WINDOWS: WindowKind[] = [
   'rolling_7d',
   'rolling_30d',
 ];
+
+/** Severity is an ORDER, not an alphabet — comparing the band strings with `>`
+ *  only agrees with it while the names happen to sort l < m < s. */
+const SEVERITY_RANK: Record<SeverityBand, number> = {
+  low: 1,
+  moderate: 2,
+  severe: 3,
+};
+
+function isSeverityIncrease(
+  next: SeverityBand | null | undefined,
+  prev: SeverityBand | null | undefined
+): boolean {
+  if (!(next && prev)) {
+    return false;
+  }
+  return SEVERITY_RANK[next] > SEVERITY_RANK[prev];
+}
 
 /**
  * Sanitize a string for PostgreSQL by removing null bytes (0x00).
@@ -284,7 +303,7 @@ export function createEngine(args: {
                 decision.reason === 'direction_flip'
                   ? 'direction_flip'
                   : decision.reason === 'severity_change'
-                    ? sev && prev.severityBand && sev > prev.severityBand
+                    ? isSeverityIncrease(sev, prev.severityBand)
                       ? 'severity_up'
                       : 'severity_down'
                     : 'updated';

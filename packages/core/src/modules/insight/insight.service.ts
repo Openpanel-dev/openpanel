@@ -19,8 +19,11 @@
 // (ADR-013); `createEngine` therefore takes the scope's deps rather than a bare
 // ClickHouse client, so the requestId reaches every module statement.
 // `legacy-scan.ts` is the last clix holdout in this module (M12-008).
+//
+// M15-114: the explain cache runs on `deps.redis` (ADR-022 R16) — the app
+// shell owns that connection's lifecycle; this module never opens one of
+// its own.
 
-import { getRedisCache } from '@openpanel/redis';
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
@@ -627,22 +630,19 @@ export async function listInsights(
   });
 }
 
-export async function listAllInsights(
+/**
+ * The same query as `listInsights` under the name the insights PAGE calls it
+ * by; the two differ only in the router — `insight.list` over-fetches and
+ * deduplicates by window, `insight.listAll` takes the rows as they come.
+ */
+export function listAllInsights(
   deps: ServiceDeps,
   args: {
     projectId: string;
     limit: number;
   }
-) {
-  const db = deps.db;
-  return db.projectInsight.findMany({
-    where: { projectId: args.projectId, state: 'active' },
-    orderBy: [
-      { relevanceScore: { sort: 'desc', nulls: 'last' } },
-      { impactScore: 'desc' },
-    ],
-    take: args.limit,
-  });
+): ReturnType<typeof listInsights> {
+  return listInsights(deps, args);
 }
 
 /**
@@ -655,7 +655,7 @@ export async function explainInsight(
   input: ExplainInsightInput,
   cacheKey: string
 ): Promise<InsightExplanation | null> {
-  const cached = await getRedisCache().get(cacheKey);
+  const cached = await deps.redis.get(cacheKey);
   if (cached) {
     return JSON.parse(cached) as InsightExplanation;
   }
@@ -665,7 +665,7 @@ export async function explainInsight(
   // Only cache a successful explanation — a null is a transient LLM failure
   // and should be retried on the next click.
   if (explanation) {
-    await getRedisCache().setex(
+    await deps.redis.setex(
       cacheKey,
       EXPLAIN_CACHE_TTL_SEC,
       JSON.stringify(explanation)

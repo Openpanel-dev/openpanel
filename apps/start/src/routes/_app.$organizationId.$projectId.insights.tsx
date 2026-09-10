@@ -1,3 +1,4 @@
+import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@openpanel/core/modules/insight/insight.constants';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { InsightCard } from '@/components/insights/insight-card';
@@ -71,7 +72,7 @@ function Component() {
   const { data: insights, isLoading } = useQuery(
     trpc.insight.listAll.queryOptions({
       projectId,
-      limit: 500,
+      limit: INSIGHT_LIST_ALL_MAX_LIMIT,
     }),
   );
   const navigate = useNavigate();

@@ -1,4 +1,4 @@
-import type { ComputeResult } from './types';
+import type { ComputeResult, SeverityBand } from './types';
 
 export function defaultImpactScore(r: ComputeResult): number {
   const vol = (r.currentValue ?? 0) + (r.compareValue ?? 0);
@@ -7,9 +7,7 @@ export function defaultImpactScore(r: ComputeResult): number {
   return Math.log1p(vol) * (pct * 100);
 }
 
-export function severityBand(
-  changePct?: number | null
-): 'low' | 'moderate' | 'severe' | null {
+export function severityBand(changePct?: number | null): SeverityBand | null {
   const p = Math.abs(changePct ?? 0);
   if (p < 0.1) {
     return null;

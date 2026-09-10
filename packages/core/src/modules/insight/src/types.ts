@@ -3,6 +3,14 @@ import type { StatementRunner } from './cached-query';
 
 export type Cadence = 'daily';
 
+/** Ordered least → most severe; `SEVERITY_RANK` is the order to compare on. */
+export type SeverityBand = 'low' | 'moderate' | 'severe';
+
+export type InsightDirection = 'up' | 'down' | 'flat';
+
+/** `suppressed` is legacy: `applySuppression` deletes rather than writes it. */
+export type InsightState = 'active' | 'suppressed' | 'closed';
+
 export type WindowKind = 'yesterday' | 'rolling_7d' | 'rolling_30d';
 
 export interface WindowRange {
@@ -33,7 +41,7 @@ export interface ComputeResult {
   currentValue?: number;
   compareValue?: number;
   changePct?: number; // -0.15 = -15%
-  direction?: 'up' | 'down' | 'flat';
+  direction?: InsightDirection;
   extra?: Record<string, unknown>; // share delta pp, rank, sparkline, etc.
 }
 
@@ -93,13 +101,13 @@ export interface PersistedInsight {
   moduleKey: string;
   dimensionKey: string;
   windowKind: WindowKind;
-  state: 'active' | 'suppressed' | 'closed';
+  state: InsightState;
   version: number;
   impactScore: number;
   lastSeenAt: Date;
   lastUpdatedAt: Date;
-  direction?: string | null;
-  severityBand?: string | null;
+  direction?: InsightDirection | null;
+  severityBand?: SeverityBand | null;
 }
 
 /** Material change decision used for events/notifications. */
@@ -114,7 +122,7 @@ export type MaterialReason =
 export interface MaterialDecision {
   material: boolean;
   reason: MaterialReason;
-  newSeverityBand?: 'low' | 'moderate' | 'severe' | null;
+  newSeverityBand?: SeverityBand | null;
 }
 
 /**
@@ -138,9 +146,9 @@ export interface InsightStore {
     window: WindowRange;
     card: RenderedCard;
     metrics: {
-      direction?: 'up' | 'down' | 'flat';
+      direction?: InsightDirection;
       impactScore: number;
-      severityBand?: string | null;
+      severityBand?: SeverityBand | null;
     };
     now: Date;
     decision: MaterialDecision;

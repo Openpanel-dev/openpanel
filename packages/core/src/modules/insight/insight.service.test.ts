@@ -24,10 +24,22 @@ const $executeRaw = mock((..._args: unknown[]) => {
   executeRawCalls.push(_args);
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
+// M15-114: the explain cache is `deps.redis` (ADR-022 R16), so the fake is a
+// map on the scope — no `@openpanel/redis` module mock, which would replace
+// that barrel process-wide for every other file in the run.
+const redisStore = new Map<string, string>();
+const redis = {
+  get: mock((key: string) => Promise.resolve(redisStore.get(key) ?? null)),
+  setex: mock((key: string, _ttl: number, value: string) => {
+    redisStore.set(key, value);
+    return Promise.resolve();
+  }),
+};
 // insight.service.ts never touches ClickHouse directly (it's PG-only, via
 // $executeRaw above), so `deps.ch` stays unbuilt.
 const deps = {
   db: { $executeRaw },
+  redis,
   config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
@@ -38,9 +50,19 @@ mock.module('./src/referrer-spikes', () => ({
   getReferrerSpikes: spikesQuery,
 }));
 
-const legacyGenerateInsights = mock(async () => [
-  { type: 'traffic_spike', message: 'test', data: {} },
-]);
+const LEGACY_SPIKE = {
+  type: 'traffic_spike',
+  message: 'test',
+  // A `TrafficSpikeResult` — `Insight.data` is the union of the ten detector
+  // result shapes, not `any`.
+  data: {
+    referrer_name: 'instagram.com',
+    date: '2026-09-01',
+    visitor_count: 120,
+    avg_previous_7_days: 30,
+  },
+};
+const legacyGenerateInsights = mock(async () => [LEGACY_SPIKE]);
 mock.module('./src/legacy-scan', () => ({
   createLegacyInsightsScanner: () => ({
     generateInsights: legacyGenerateInsights,
@@ -55,26 +77,6 @@ const generateInsightExplanation = mock(async () => ({
 }));
 mock.module('./src/explain', () => ({
   generateInsightExplanation,
-}));
-
-const redisStore = new Map<string, string>();
-const getRedisCache = mock(() => ({
-  get: mock((key: string) => Promise.resolve(redisStore.get(key) ?? null)),
-  setex: mock((key: string, _ttl: number, value: string) => {
-    redisStore.set(key, value);
-    return Promise.resolve();
-  }),
-}));
-// Spread the real module rather than hand-listing every export: `mock.module`
-// replaces this specifier process-wide (bun runs every test file in one
-// shared module registry without `--isolate` — see AGENTS.md), so a partial
-// factory here (this barrel also carries `getCache`, the pub/sub publisher
-// and the run-every helpers) would silently break any other consumer sharing
-// this process — e.g. the mcp module's auth.ts, which calls `getCache`.
-const actualRedis = await import('@openpanel/redis');
-mock.module('@openpanel/redis', () => ({
-  ...actualRedis,
-  getRedisCache,
 }));
 
 let subject: typeof import('./insight.service');
@@ -134,9 +136,7 @@ test('scanLegacyInsights delegates to the pre-engine detector, kept for parity',
   const result = await subject.scanLegacyInsights(deps, 'p1');
 
   expect(legacyGenerateInsights).toHaveBeenCalledWith('p1');
-  expect(result).toEqual([
-    { type: 'traffic_spike', message: 'test', data: {} },
-  ]);
+  expect(result).toEqual([LEGACY_SPIKE]);
 });
 
 test('explainInsight is a cache-aside over the AI call, keyed by the caller-supplied cacheKey', async () => {
@@ -162,6 +162,11 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
   );
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(second).toEqual(first);
+
+  // The cache it read and wrote is the one the scope handed it, not a
+  // module-level `getRedisCache()` connection nobody closes (R16).
+  expect(redis.setex).toHaveBeenCalledTimes(1);
+  expect(redis.get).toHaveBeenCalledTimes(2);
 });
 
 test('createInsightService binds every InsightService method', () => {

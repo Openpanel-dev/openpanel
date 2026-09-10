@@ -19,6 +19,10 @@ import {
 
 const DELIMITER = '|||';
 
+/** One number, two call sites: the threshold below and `enumerateDimensions`'s
+ *  fallback, which had drifted back to the pre-tightening 100. */
+const MAX_PAGES_PER_RUN = 30;
+
 /** clix inlined the value; the pageview event name now binds. */
 const SCREEN_VIEW_EVENT = sql.string('screen_view');
 
@@ -144,15 +148,20 @@ export const pageTrendsModule: InsightModule = {
   // minTotal: require at least 1% combined share (current + baseline)
   // minAbsDelta: require at least 1.0 percentage point shift
   // minPct: require at least 35% relative change in share
-  // maxDims: evaluate at most 30 pages/run (was 100)
-  thresholds: { minTotal: 100, minAbsDelta: 100, minPct: 0.35, maxDims: 30 },
+  // maxDims: evaluate at most MAX_PAGES_PER_RUN pages/run (was 100)
+  thresholds: {
+    minTotal: 100,
+    minAbsDelta: 100,
+    minPct: 0.35,
+    maxDims: MAX_PAGES_PER_RUN,
+  },
 
   async enumerateDimensions(ctx) {
     const { currentMap, baselineMap } = await fetchPageTrendAggregates(ctx);
     const topDims = selectTopDimensions(
       currentMap,
       baselineMap,
-      this.thresholds?.maxDims ?? 100
+      this.thresholds?.maxDims ?? MAX_PAGES_PER_RUN
     );
     return topDims.map((dim) => `page:${dim}`);
   },

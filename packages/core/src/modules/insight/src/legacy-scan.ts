@@ -56,10 +56,33 @@ const REFERRAL_SOURCE_MIN_SHARE = 0.5;
 
 const COMPLETED_EVENT_STATUS = 'completed';
 
+/** Whatever the detector that produced the insight selected. Three of the ten
+ *  shapes carry no date-ish column at all — see `insightPeriod`. */
+export type LegacyInsightData =
+  | TrafficSpikeResult
+  | EventSurgeResult
+  | NewVisitorTrendResult
+  | ReferralSourceResult
+  | SessionDurationResult
+  | TopContentResult
+  | BounceRateResult
+  | ReturningVisitorResult
+  | GeographicShiftResult
+  | EventCompletionResult;
+
 export interface Insight {
   type: string;
   message: string;
-  data: any;
+  data: LegacyInsightData;
+}
+
+/** The one period column a result shape carries, or '' for the shapes that
+ *  carry none — those sort last, as an Invalid Date always has. */
+function insightPeriod(data: LegacyInsightData): string {
+  const periods = data as Partial<
+    Record<'date' | 'month' | 'week' | 'quarter', string>
+  >;
+  return periods.date || periods.month || periods.week || periods.quarter || '';
 }
 
 interface TrafficSpikeResult {
@@ -305,12 +328,8 @@ class LegacyInsightsScanner {
       ...eventCompletions,
     ].sort((a, b) => {
       // Sort by most recent data first
-      const dateA = new Date(
-        a.data.date || a.data.month || a.data.week || a.data.quarter
-      );
-      const dateB = new Date(
-        b.data.date || b.data.month || b.data.week || b.data.quarter
-      );
+      const dateA = new Date(insightPeriod(a.data));
+      const dateB = new Date(insightPeriod(b.data));
       return dateB.getTime() - dateA.getTime();
     });
   }
