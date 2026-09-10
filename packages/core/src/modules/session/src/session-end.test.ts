@@ -7,28 +7,33 @@ import { describe, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import type { IServiceCreateEventPayload } from '../../event/event.service';
 import {
-  createSessionEnd,
-  getSessionEndJobId,
-  type SessionEndDeps,
-  sessionEndEnqueueOptions,
-  sessionEndJobPayload,
-} from './session-end';
-import {
   fixtureSession,
   stubLogger,
   stubRedis,
   stubStore,
-} from './session-lifecycle.fixtures';
+} from './lifecycle.fixtures';
+import {
+  createSessionEnd,
+  getSessionEndJobId,
+  type SessionEndDeps,
+  type SessionEndJobWire,
+  sessionEndEnqueueOptions,
+  sessionEndJobPayload,
+} from './session-end';
 
 const snapshot = fixtureSession();
 
+/** The event as a handler receives it, after BullMQ's JSON round-trip. */
 const payload = {
   projectId: 'proj-1',
   deviceId: 'dev-1',
   profileId: 'dev-1',
   name: 'session_end',
   properties: {},
-} as unknown as IServiceCreateEventPayload;
+} as unknown as SessionEndJobWire['event'];
+
+/** The same fields on the producer side, where `createdAt` is still a Date. */
+const producerPayload = payload as unknown as IServiceCreateEventPayload;
 
 function makeDeps(live = snapshot as ReturnType<typeof fixtureSession> | null) {
   const redis = stubRedis();
@@ -157,9 +162,11 @@ describe('enqueue shape', () => {
       profile_id: 'user-9',
     });
 
-    expect(sessionEndJobPayload({ payload, closedSession })).toEqual({
+    expect(
+      sessionEndJobPayload({ payload: producerPayload, closedSession })
+    ).toEqual({
       event: {
-        ...payload,
+        ...producerPayload,
         projectId: 'proj-1',
         deviceId: 'dev-9',
         sessionId: 'sess-9',

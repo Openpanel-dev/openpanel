@@ -9,7 +9,7 @@ import {
   stubLogger,
   stubRedis,
   stubStore,
-} from './session-lifecycle.fixtures';
+} from './lifecycle.fixtures';
 import { reapIdleSessions, type SessionReaperDeps } from './session-reaper';
 
 function makeDeps(

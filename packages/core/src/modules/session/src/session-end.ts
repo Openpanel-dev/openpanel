@@ -24,7 +24,7 @@ import {
   sessionEndsSkipped,
   sessionEventsOnClose,
 } from './session.metrics';
-import { sessionEventsQuery } from './session.sql';
+import { sessionEventsQuery } from './sql';
 
 const SESSION_END_JOB_ID_PREFIX = 'sessionEnd:v2';
 const SESSION_END_ATTEMPTS = 3;
@@ -64,6 +64,18 @@ export interface EnqueueSessionEndInput {
 /** What rides on the `sessions` queue (legacyCompat.sessions: `{ event, snapshot }`). */
 export interface SessionEndJobData {
   event: IServiceCreateEventPayload;
+  snapshot: IClickhouseSession;
+}
+
+/**
+ * `SessionEndJobData` as it comes back OFF the queue (ADR-022 R18). BullMQ
+ * stores job data as JSON, so `event.createdAt` is a string by the time a
+ * handler sees it however the producer typed it — `createSessionEnd`
+ * overwrites the field before use, and this type is what stops the next
+ * reader from trusting the `Date` the producer side declares.
+ */
+export interface SessionEndJobWire {
+  event: Omit<IServiceCreateEventPayload, 'createdAt'> & { createdAt: string };
   snapshot: IClickhouseSession;
 }
 
@@ -136,7 +148,7 @@ function isProfileBackfillEnabled(
  * event, or null when nothing was emitted (extended, gone, or already done).
  */
 export async function createSessionEnd(
-  { event: payload, snapshot }: SessionEndJobData,
+  { event: payload, snapshot }: SessionEndJobWire,
   deps: SessionEndDeps
 ): Promise<IClickhouseEvent | null> {
   const { logger } = deps;
@@ -153,6 +165,9 @@ export async function createSessionEnd(
   // Same session, unchanged → live. A different session in the slot (boundary)
   // or no blob at all → the snapshot; cleanup is then id-gated to a no-op.
   const sameSession = live && live.id === snapshot.id;
+  // Lexicographic, and only chronological because both sides are ClickHouse's
+  // fixed-width zero-padded `YYYY-MM-DD HH:mm:ss` — a fractional part on
+  // either would silently change what this compares.
   if (sameSession && live.ended_at > snapshot.ended_at) {
     sessionEndsSkipped.inc({ reason: 'extended_after_enqueue' });
     logger.info(

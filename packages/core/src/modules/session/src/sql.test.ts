@@ -17,7 +17,7 @@ import {
   sessionListQuery,
   sessionReplayChunksQuery,
   sessionsCountQuery,
-} from './session.sql';
+} from './sql';
 
 const PROJECT_ID = 'proj-1';
 

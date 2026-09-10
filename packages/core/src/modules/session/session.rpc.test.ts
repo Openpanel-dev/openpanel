@@ -52,23 +52,6 @@ test('list rejects an unauthenticated caller before querying ClickHouse', async 
   });
 });
 
-test('distinctValues rejects an unauthenticated caller before querying ClickHouse', async () => {
-  const caller = await anonCaller();
-  await expect(
-    caller.distinctValues({ projectId: 'proj_1', field: 'country' })
-  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-});
-
-test('distinctValues rejects a field outside SESSION_DISTINCT_FIELDS at the input boundary', async () => {
-  const caller = await memberCaller();
-  await expect(
-    caller.distinctValues({
-      projectId: 'proj_1',
-      field: 'profile_id' as never,
-    })
-  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
-});
-
 test('byId rejects an unauthenticated caller before querying ClickHouse', async () => {
   const caller = await anonCaller();
   await expect(
@@ -81,4 +64,15 @@ test('replayChunksFrom rejects an unauthenticated caller before querying ClickHo
   await expect(
     caller.replayChunksFrom({ projectId: 'proj_1', sessionId: 'sess_1' })
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+});
+
+test('replayChunksFrom rejects a negative fromIndex at the input boundary', async () => {
+  const caller = await memberCaller();
+  await expect(
+    caller.replayChunksFrom({
+      projectId: 'proj_1',
+      sessionId: 'sess_1',
+      fromIndex: -1,
+    })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 });

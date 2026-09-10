@@ -1,9 +1,9 @@
 // Ported from apps/worker/src/jobs/cron.session-vacuum.ts (M7-001).
 
 import type { Logger } from '../../../logger';
+import { PROJECTS_SET_KEY, wallclockSetKey } from './keys';
 import type { SessionRuntime } from './runtime';
 import { sessionsVacuumed } from './session.metrics';
-import { PROJECTS_SET_KEY, wallclockSetKey } from './session-keys';
 
 const DEFAULT_VACUUM_BATCH_SIZE = 1000;
 // Much larger than the reaper deadman, so it never races with normal reaping.

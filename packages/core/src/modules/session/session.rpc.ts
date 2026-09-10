@@ -16,10 +16,8 @@ import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { zChartEventFilter } from '../report/report.constants';
 import {
   getSessionById,
-  getSessionDistinctValues,
   getSessionList,
   getSessionReplayChunksFrom,
-  SESSION_DISTINCT_FIELDS,
 } from './session.service';
 
 const DEFAULT_LIST_TAKE = 50;
@@ -49,23 +47,6 @@ export const sessionRouter = createTRPCRouter({
         ...input,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
       });
-    }),
-
-  distinctValues: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-        field: z.enum(SESSION_DISTINCT_FIELDS),
-      })
-    )
-    .query(async ({ input, ctx }) => {
-      await ctx.services.auth.requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: input.projectId,
-        level: 'read',
-      });
-
-      return getSessionDistinctValues(ctx, input.projectId, input.field);
     }),
 
   byId: protectedProcedure

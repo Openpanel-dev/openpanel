@@ -31,6 +31,7 @@ import {
   createSessionEnd,
   type SessionEndDeps,
   type SessionEndJobData,
+  type SessionEndJobWire,
 } from './src/session-end';
 import { reapIdleSessions } from './src/session-reaper';
 import { vacuumStaleSessions } from './src/session-vacuum';
@@ -44,10 +45,15 @@ const FLUSH_SESSIONS_INTERVAL_MS = 10_000;
 const FLUSH_REPLAY_INTERVAL_MS = 10_000;
 
 // Wire-shape check only — V1 never validated it either (see
-// jobs/compat.test.ts). `event` is an IServiceCreateEventPayload after a JSON
-// round-trip (its `createdAt` is a string; the handler replaces it anyway),
-// `snapshot` an IClickhouseSession. Typed via `z.custom` so the producer side
-// (`queues.sessions.session.add`) takes the real `SessionEndJobData`.
+// jobs/compat.test.ts), and tightening it now would reject payloads the
+// running system accepts.
+//
+// The schema's INPUT is what the producer holds (`SessionEndJobData`, a real
+// `Date` on `event.createdAt`) and its OUTPUT is what a handler is actually
+// handed after BullMQ's JSON round-trip (`SessionEndJobWire`, a string there).
+// `PayloadOf` reads the input and the handler reads the output, so the two
+// stay honest without either side casting (ADR-022 R18). The transform is a
+// type seam only — it returns the value it was given.
 const sessionEndWireShape = z.object({
   event: z.object({ projectId: z.string(), deviceId: z.string() }),
   snapshot: z.object({
@@ -58,9 +64,11 @@ const sessionEndWireShape = z.object({
   }),
 });
 
-const sessionEndPayload = z.custom<SessionEndJobData>(
-  (value) => sessionEndWireShape.safeParse(value).success
-);
+const sessionEndPayload = z
+  .custom<SessionEndJobData>(
+    (value) => sessionEndWireShape.safeParse(value).success
+  )
+  .transform((value) => value as unknown as SessionEndJobWire);
 
 /**
  * The session-end job's dependencies, bound to the run's own ctx.

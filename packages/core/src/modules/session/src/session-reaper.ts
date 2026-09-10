@@ -3,6 +3,11 @@
 import type { Logger } from '../../../logger';
 import type { IServiceCreateEventPayload } from '../../event/event.service';
 import type { IClickhouseSession } from '../session.service';
+import {
+  DEFAULT_SESSION_TIMEOUT_MS,
+  PROJECTS_SET_KEY,
+  wallclockSetKey,
+} from './keys';
 import type { SessionRuntime } from './runtime';
 import {
   sessionEndsEnqueued,
@@ -10,11 +15,6 @@ import {
   sessionsReaperOrphans,
 } from './session.metrics';
 import type { EnqueueSessionEndInput } from './session-end';
-import {
-  DEFAULT_SESSION_TIMEOUT_MS,
-  PROJECTS_SET_KEY,
-  wallclockSetKey,
-} from './session-keys';
 
 const DEFAULT_REAPER_BATCH_SIZE = 5000;
 const LOCK_TTL_SECONDS = 60;

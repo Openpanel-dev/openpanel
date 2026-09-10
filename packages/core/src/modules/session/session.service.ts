@@ -1,9 +1,8 @@
-// Ported from packages/db/src/services/session.service.ts (M7-001). That file
-// is now a re-export shim over this one, so @openpanel/db importers
-// (packages/trpc's session + event routers, apps/api's insights controller,
-// apps/start's types) keep working while V1 runs (DELEGATE PATTERN).
+// Ported from packages/db/src/services/session.service.ts (M7-001); that file
+// and its re-export shim are gone (M9-CLEANUP-001), so this is the only
+// session read path.
 //
-// Every query here is a `sql` fragment (src/session.sql.ts) — the module's
+// Every query here is a `sql` fragment (src/sql.ts) — the module's
 // queries are converted, one at a time with a result-set proof each, per
 // ADR-013. `buildFilterWhere` is NOT converted here: it is the shared filter
 // compiler, out of this task's scope; src/filter-clauses.ts is the one bridge.
@@ -13,9 +12,9 @@
 // every query here (ADR-018, docs/TECH_DEBT.md §4). `getSessionsCountCached`
 // is `cacheablePerDeps` (M15-004): `cacheable` keys on the call's ARGUMENTS
 // (packages/redis/cachable.ts), so the caller's deps travel beside the key
-// rather than inside it, and the Redis key stays byte-identical. The remaining
-// `load*` functions are intra-package lazy imports, kept lazy for a cycle, not
-// for a client — the date helpers left that set in M15-010, because
+// rather than inside it, and the Redis key stays byte-identical. The one
+// remaining `load*` function is an intra-package lazy import, kept lazy for a
+// cycle, not for a client — the date helpers left that set in M15-010, because
 // @openpanel/shared sits below this package and cannot cycle back into it.
 
 import { getSafeJson, resolveDateRange } from '@openpanel/shared';
@@ -27,6 +26,11 @@ import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
 import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
+  type EnqueueSessionEndInput,
+  sessionEndEnqueueOptions,
+  sessionEndJobPayload,
+} from './src/session-end';
+import {
   hasSessionListLookback,
   querySessionsQuery,
   type SessionDistinctField,
@@ -36,17 +40,12 @@ import {
   sessionListQuery,
   sessionReplayChunksQuery,
   sessionsCountQuery,
-} from './src/session.sql';
-import {
-  type EnqueueSessionEndInput,
-  sessionEndEnqueueOptions,
-  sessionEndJobPayload,
-} from './src/session-end';
+} from './src/sql';
 
 export {
   SESSION_DISTINCT_FIELDS,
   type SessionDistinctField,
-} from './src/session.sql';
+} from './src/sql';
 
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
@@ -375,6 +374,10 @@ export async function getSessionReplayChunksFrom(
     })
   );
 
+  // `chunkIndex` is the row's position, not `row.chunk_index`, and `hasMore`
+  // counts rows the JSON filter may drop — so an unparseable chunk rewinds the
+  // client (docs/review/session.md, "not covered by any rule" #5). Correcting
+  // either changes what the endpoint returns, so it is reported, not fixed.
   return {
     data: rows
       .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
@@ -484,23 +487,20 @@ export function createSessionService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  return {
-    byId: (
-      sessionId: string,
-      projectId: string
-    ): Promise<IServiceSession & { hasReplay: boolean }> =>
-      getSessionById(deps, sessionId, projectId),
-    /**
-     * Enqueue one `session_end` job, idempotent on the closed session's id.
-     * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
-     * @openpanel/queue producer (utils/session-handler.ts) because core could
-     * not import @openpanel/queue back (see cohort.service.ts's header).
-     */
-    enqueueSessionEnd: async (input: EnqueueSessionEndInput): Promise<void> => {
-      await deps.queues.sessions.session.add(
-        sessionEndJobPayload(input),
-        sessionEndEnqueueOptions(input.closedSession.id)
-      );
-    },
-  };
+  /**
+   * Enqueue one `session_end` job, idempotent on the closed session's id.
+   * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
+   * @openpanel/queue producer (utils/session-handler.ts) because core could
+   * not import @openpanel/queue back (see cohort.service.ts's header).
+   */
+  async function enqueueSessionEnd(
+    input: EnqueueSessionEndInput
+  ): Promise<void> {
+    await deps.queues.sessions.session.add(
+      sessionEndJobPayload(input),
+      sessionEndEnqueueOptions(input.closedSession.id)
+    );
+  }
+
+  return { enqueueSessionEnd };
 }
