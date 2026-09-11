@@ -11,7 +11,9 @@
 > any more. The shipped commands are now
 > `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy` and
 > `cd /app/packages/core && bun scripts/migrate-code.ts`; see
-> `docs/DOCKER_IMAGES.md`. Everything else in this file stands.
+> `docs/DOCKER_IMAGES.md`. Since M15-204 that second path is a forwarder — the
+> migrations themselves live in `packages/db/src/code-migrations`, run by
+> `packages/db/scripts/migrate-code.ts`. Everything else in this file stands.
 
 ## What changed in the repo
 

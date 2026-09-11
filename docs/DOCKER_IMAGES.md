@@ -127,7 +127,15 @@ cd /app/packages/core && bun scripts/migrate-code.ts
 - **The version is pinned.** A bare `bunx prisma` fetches latest, which can
   drift from the generated client and the schema the image ships. The repo is
   on `prisma 6.14.0`.
-- `packages/db/prisma/schema.prisma`, `packages/db/prisma/migrations` and
+- **The code migrations moved to `@openpanel/db` in M15-204** (ADR-022, Carl's
+  rulings: they run as a script with direct database access and no services).
+  The real entrypoint is now `packages/db/scripts/migrate-code.ts`, and
+  `packages/core/scripts/migrate-code.ts` is a one-line forwarder to it, kept
+  so the command above — which the three shipped compose files still spell
+  against `packages/core` — keeps working. The forwarder goes away in the task
+  that is allowed to edit `self-hosting/*` and `.github/smoke/*`.
+- `packages/db/prisma/schema.prisma`, `packages/db/prisma/migrations`,
+  `packages/db/scripts/migrate-code.ts`, `packages/db/src/code-migrations` and
   `packages/core/scripts/migrate-code.ts` are asserted at build time by a `RUN
   test` in the runtime stage. The whole command depends on them, and the
   alternative is a self-hoster finding out at container start.

@@ -1,11 +1,6 @@
-import { db } from '@openpanel/db';
-import { shortId } from '@openpanel/shared';
-import type {
-  IChartEvent,
-  IChartEventItem,
-  IChartFormula,
-} from '../modules/report/report.constants';
-import { printBoxMessage } from './helpers';
+import { db } from '../prisma-client';
+import type { IChartEvent, IChartEventItem, IChartFormula } from './constants';
+import { printBoxMessage, shortId } from './helpers';
 
 export async function up() {
   printBoxMessage('🔄 Migrating Events to Series Format', []);

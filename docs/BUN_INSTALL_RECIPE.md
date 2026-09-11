@@ -366,6 +366,12 @@ must be right first.
 |---|---|---|
 | `migrate:deploy:code` | `pnpm with-env jiti ./src/code-migrations/migrate.ts` | `bun run with-env bun ./src/code-migrations/migrate.ts` — ADR-019 row 7b already replaces `jiti` with bun as the TS runner |
 
+> **Superseded, M15-204:** `code-migrations` left core for `@openpanel/db`
+> (ADR-022, Carl's rulings), so `packages/core` no longer declares
+> `migrate:deploy:code` at all and `packages/db`'s own entry below runs
+> `bun run with-env bun ./scripts/migrate-code.ts` directly instead of
+> filtering back to core. The rows are kept as the P13 record.
+
 ### `packages/db/package.json`
 
 | script | today | bun |

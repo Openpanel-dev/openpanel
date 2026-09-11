@@ -1,11 +1,7 @@
 import fs from 'node:fs';
 import path, { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-import { db } from '@openpanel/db';
+import { db } from '../prisma-client';
 import {
   type CodeMigrationEnv,
   getIsCluster,
@@ -15,13 +11,15 @@ import {
   printBoxMessage,
 } from './helpers';
 
+// The numbered migration files live beside this runner.
+const MIGRATIONS_DIR = dirname(fileURLToPath(import.meta.url));
+
 export async function runCodeMigrations(env: CodeMigrationEnv) {
   const args = process.argv.slice(2);
   const migration = args.filter((arg) => !arg.startsWith('--'))[0];
 
-  const migrationsDir = path.join(__dirname, '..', 'code-migrations');
   const migrations = fs
-    .readdirSync(migrationsDir)
+    .readdirSync(MIGRATIONS_DIR)
     .filter((file) => {
       const version = file.split('-')[0];
       return (
@@ -74,7 +72,7 @@ export async function runCodeMigrations(env: CodeMigrationEnv) {
   }
 
   if (migration) {
-    await runMigration(migrationsDir, migration, env);
+    await runMigration(migration, env);
   } else {
     for (const file of migrations) {
       if (finishedMigrations.some((migration) => migration.name === file)) {
@@ -82,7 +80,7 @@ export async function runCodeMigrations(env: CodeMigrationEnv) {
         continue;
       }
 
-      await runMigration(migrationsDir, file, env);
+      await runMigration(file, env);
     }
   }
 
@@ -90,14 +88,10 @@ export async function runCodeMigrations(env: CodeMigrationEnv) {
   process.exit(0);
 }
 
-async function runMigration(
-  migrationsDir: string,
-  file: string,
-  env: CodeMigrationEnv
-) {
+async function runMigration(file: string, env: CodeMigrationEnv) {
   printBoxMessage('⚡️ Running Migration ⚡️ ', [`${file}`]);
   try {
-    const migration = await import(path.join(migrationsDir, file));
+    const migration = await import(path.join(MIGRATIONS_DIR, file));
     await migration.up(env);
     if (!(getIsDry() || getShouldIgnoreRecord())) {
       await db.codeMigration.upsert({

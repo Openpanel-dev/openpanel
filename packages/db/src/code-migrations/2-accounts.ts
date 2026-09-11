@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import { db } from '@openpanel/db';
+import { db } from '../prisma-client';
 import { printBoxMessage } from './helpers';
 
 const simpleCsvParser = (csv: string): Record<string, unknown>[] => {

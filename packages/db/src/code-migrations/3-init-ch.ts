@@ -1,11 +1,4 @@
-import fs from 'node:fs';
-import path, { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
+import { formatClickhouseDate } from '../clickhouse/client';
 import {
   createDatabase,
   createMaterializedView,
@@ -15,12 +8,13 @@ import {
   moveDataBetweenTables,
   renameTable,
   runClickhouseMigrationCommands,
-} from '@openpanel/db/src/clickhouse/migration';
+} from '../clickhouse/migration';
 import {
   type CodeMigrationEnv,
   getIsCluster,
   getIsSelfHosting,
   printBoxMessage,
+  writeSqlDump,
 } from './helpers';
 
 export async function up(env: CodeMigrationEnv) {
@@ -345,18 +339,7 @@ export async function up(env: CodeMigrationEnv) {
     );
   }
 
-  fs.writeFileSync(
-    path.join(__dirname, '3-init-ch.sql'),
-    sqls
-      .map((sql) =>
-        sql
-          .trim()
-          .replace(/;$/, '')
-          .replace(/\n{2,}/g, '\n')
-          .concat(';')
-      )
-      .join('\n\n---\n\n')
-  );
+  writeSqlDump(import.meta.url, sqls);
 
   printBoxMessage('Will start migration for self-hosting setup.', [
     'This will move all data from the old tables to the new ones.',

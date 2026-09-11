@@ -1,8 +1,8 @@
-import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
+import { TABLE_NAMES } from '../clickhouse/client';
 import {
   chMigrationClient,
   runClickhouseMigrationCommands,
-} from '@openpanel/db/src/clickhouse/migration';
+} from '../clickhouse/migration';
 import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**

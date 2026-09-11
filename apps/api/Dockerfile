@@ -143,10 +143,15 @@ COPY --from=prod-deps --chown=bun:bun /app/tooling/typescript ./tooling/typescri
 # `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy`, so the schema and
 # the migrations directory are load-bearing image content, not source-tree
 # detail. Assert them at build time — the alternative is a self-hoster finding
-# out at container start. (`packages/core/scripts/migrate-code.ts` is the code
-# migrations' entrypoint and is asserted for the same reason.)
+# out at container start. The code migrations' entrypoint is asserted for the
+# same reason: it moved to `packages/db/scripts/migrate-code.ts` in M15-204,
+# and `packages/core/scripts/migrate-code.ts` — which the shipped compose files
+# still name — now forwards to it, so both are load-bearing until those files
+# are updated.
 RUN test -f /app/packages/db/prisma/schema.prisma && \
     test -d /app/packages/db/prisma/migrations && \
+    test -f /app/packages/db/scripts/migrate-code.ts && \
+    test -d /app/packages/db/src/code-migrations && \
     test -f /app/packages/core/scripts/migrate-code.ts
 
 USER bun

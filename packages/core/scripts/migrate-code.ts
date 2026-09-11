@@ -1,26 +1,11 @@
-// The shell for `src/code-migrations`. It reads the environment, the runner
-// does the work — the same split `apps/api/src/main.ts` and `config/env.ts`
-// have, and what keeps `packages/core/src` free of `process.env` (ADR-022 R7).
+// Compatibility entrypoint. `code-migrations` moved to @openpanel/db in
+// M15-204 (ADR-022, Carl's rulings), but the shipped compose files and the
+// Coolify template still run `cd /app/packages/core && bun
+// scripts/migrate-code.ts`, and those files are outside that task's scope.
+// This forwards so a self-hoster pulling the new image keeps migrating.
 //
-// `code-migrations` is not a conformance target (ADR-022, Carl's rulings): it
-// runs as a script with direct database access and no services, and it leaves
-// core for `packages/db` in its own task. This file is the seam that makes it
-// runnable without a `process.env` read inside `src/`.
+// Delete this the moment self-hosting/docker-compose.template.yml,
+// self-hosting/coolify.yml and .github/smoke/docker-compose.yml name
+// `packages/db` instead.
 
-import type { CodeMigrationEnv } from '../src/code-migrations/helpers';
-import { runCodeMigrations } from '../src/code-migrations/migrate';
-
-const TRUE_VALUES = new Set(['true', '1']);
-
-function isEnabled(value: string | undefined): boolean {
-  return value !== undefined && TRUE_VALUES.has(value.trim());
-}
-
-const env: CodeMigrationEnv = {
-  clickhouseCluster: isEnabled(process.env.CLICKHOUSE_CLUSTER),
-  selfHosted: isEnabled(process.env.SELF_HOSTED),
-  databaseUrl: process.env.DATABASE_URL,
-  clickhouseUrl: process.env.CLICKHOUSE_URL,
-};
-
-await runCodeMigrations(env);
+import '@openpanel/db/scripts/migrate-code';

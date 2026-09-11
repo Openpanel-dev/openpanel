@@ -15,7 +15,7 @@
  *
  *   pnpm with-env jiti ./src/code-migrations/21-wind-down-onboarding-pointer.ts --dry
  */
-import { db } from '@openpanel/db/src/prisma-client';
+import { db } from '../prisma-client';
 import { getIsDry, printBoxMessage } from './helpers';
 
 const RETIRED_POINTER = 'onboarding-trial-ended';

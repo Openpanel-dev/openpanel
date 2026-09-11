@@ -1,5 +1,5 @@
-import { db } from '@openpanel/db';
-import type { IReportOptions } from '../modules/report/report.constants';
+import { db } from '../prisma-client';
+import type { IReportOptions } from './constants';
 import { printBoxMessage } from './helpers';
 
 export async function up() {

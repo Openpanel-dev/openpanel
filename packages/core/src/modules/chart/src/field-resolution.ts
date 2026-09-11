@@ -35,7 +35,8 @@ export const CHART_TABLE = {
 } as const;
 
 // Top-level columns on the events table. Derived from the migration in
-// code-migrations/3-init-ch.ts (+ revenue added in 6-add-revenue-column.ts).
+// @openpanel/db's code-migrations/3-init-ch.ts (+ revenue added in
+// 6-add-revenue-column.ts).
 // Used to distinguish real columns from property keys and reject unknown
 // identifiers before they reach ClickHouse.
 export const EVENT_TOP_LEVEL_COLUMNS = new Set<string>([

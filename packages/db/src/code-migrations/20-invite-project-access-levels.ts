@@ -1,5 +1,5 @@
-import { db } from '@openpanel/db';
-import { zProjectAccessGrant } from '../modules/organization/organization.constants';
+import { db } from '../prisma-client';
+import { zProjectAccessGrant } from './constants';
 import { getIsDry, printBoxMessage } from './helpers';
 
 /**

@@ -6,7 +6,7 @@
   "scripts": {
     "codegen": "bun run with-env prisma generate && bun prisma/prisma-json-types.ts",
     "migrate": "bun run with-env prisma migrate dev",
-    "migrate:deploy:code": "bun run --filter @openpanel/core migrate:deploy:code",
+    "migrate:deploy:code": "bun run with-env bun ./scripts/migrate-code.ts",
     "migrate:deploy:db": "bun run with-env prisma migrate deploy",
     "migrate:deploy": "bun run migrate:deploy:db && bun run migrate:deploy:code",
     "duplicate-events": "bun run with-env bun ./scripts/find-duplicate-events.ts",

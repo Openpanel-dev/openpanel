@@ -2,8 +2,8 @@
 // cluster helpers that derive from them.
 //
 // M10-009: these live in `@openpanel/db/src/clickhouse/client.ts` too, and
-// that module is where the migrations (`code-migrations/`) still take them
-// from — but importing it constructs a real ClickHouse client and a real pino
+// that module is where the migrations (`@openpanel/db`'s `code-migrations/`,
+// M15-204) still take them from — but importing it constructs a real ClickHouse client and a real pino
 // logger at module load, which is the cost every `load*()` lazy loader in this
 // package existed to defer, and it is a value import of `@openpanel/db` from
 // core, which `core-uses-ctx-not-db-internals` now forbids. Core takes the

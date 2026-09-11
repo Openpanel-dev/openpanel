@@ -547,12 +547,14 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
     throw e;
   } finally {
-    // Clean up event listeners. Cast needed under core's bun-types-only
-    // `types` array (M8-005 first pulled this file into that compilation via
-    // code-migrations/): bun-types 1.4.0's `Process.off` override only
-    // declares its own "memoryPressure" overload, so the plain
-    // @types/node Signals overload TS picks under packages/db's own tsconfig
-    // isn't visible there.
+    // Clean up event listeners. bun-types 1.4.0's `Process.off` override
+    // declares only its own "memoryPressure" overload and it wins over the
+    // @types/node Signals overload, so the cast is what keeps this compiling.
+    // M8-005 first hit this via `code-migrations/`, which pulled the file into
+    // core's bun-types-only compilation; M15-204 moved that directory into this
+    // package and the edge is gone, but `bun-types` leads packages/db's own
+    // `types` array too — verified 2026-09-11 by dropping the cast and running
+    // `tsc --noEmit` here (TS2345 on both lines).
     const emitter = process as unknown as EventEmitter;
     emitter.off('SIGTERM', handleSigterm);
     emitter.off('SIGINT', handleSigint);

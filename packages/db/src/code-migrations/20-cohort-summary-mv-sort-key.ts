@@ -1,12 +1,10 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
+import { TABLE_NAMES } from '../clickhouse/client';
 import {
   createMaterializedView,
   getExistingTables,
   runClickhouseMigrationCommands,
-} from '@openpanel/db/src/clickhouse/migration';
-import { type CodeMigrationEnv, getIsCluster } from './helpers';
+} from '../clickhouse/migration';
+import { type CodeMigrationEnv, getIsCluster, writeSqlDump } from './helpers';
 
 /**
  * Re-key the cohort summary MVs for the queries that actually read them.
@@ -127,18 +125,7 @@ export async function up(env: CodeMigrationEnv) {
     );
   }
 
-  fs.writeFileSync(
-    path.join(import.meta.filename.replace('.ts', '.sql')),
-    sqls
-      .map((sql) =>
-        sql
-          .trim()
-          .replace(/;$/, '')
-          .replace(/\n{2,}/g, '\n')
-          .concat(';')
-      )
-      .join('\n\n---\n\n')
-  );
+  writeSqlDump(import.meta.url, sqls);
 
   if (process.argv.includes('--dry')) {
     console.log('🔍 DRY RUN — CREATE statements:');

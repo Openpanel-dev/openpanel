@@ -1,8 +1,8 @@
-import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
+import { TABLE_NAMES } from '../clickhouse/client';
 import {
   chMigrationClient,
   runClickhouseMigrationCommands,
-} from '@openpanel/db/src/clickhouse/migration';
+} from '../clickhouse/migration';
 import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
@@ -53,7 +53,7 @@ import { type CodeMigrationEnv, getIsCluster } from './helpers';
  * The same file is the supervised tool. Run it directly to control when
  * the work happens, or to redo part of it:
  *
- *   CLICKHOUSE_URL=... jiti packages/core/src/code-migrations/21-backfill-cohort-summary-mvs.ts
+ *   CLICKHOUSE_URL=... bun packages/db/src/code-migrations/21-backfill-cohort-summary-mvs.ts
  *
  * Flags:
  *   --dry              Print the plan and the first batch; run nothing.

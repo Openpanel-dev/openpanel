@@ -1,4 +1,4 @@
-import { db } from '@openpanel/db';
+import { db } from '../prisma-client';
 import { printBoxMessage } from './helpers';
 
 export async function up() {
