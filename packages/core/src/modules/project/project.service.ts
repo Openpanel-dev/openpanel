@@ -304,50 +304,6 @@ export async function getProjectActivationStatus(
   };
 }
 
-export async function listProjectsCore(
-  deps: ServiceDeps,
-  input: {
-    clientType: 'root' | 'read';
-    organizationId: string;
-    projectId: string | null;
-  }
-) {
-  if (input.clientType === 'root') {
-    const projects = await deps.db.project.findMany({
-      where: { organizationId: input.organizationId },
-      orderBy: { eventsCount: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        organizationId: true,
-        eventsCount: true,
-        domain: true,
-        types: true,
-      },
-    });
-    return { clientType: 'root', projects };
-  }
-
-  const project = input.projectId
-    ? await deps.db.project.findUnique({
-        where: { id: input.projectId },
-        select: {
-          id: true,
-          name: true,
-          organizationId: true,
-          eventsCount: true,
-          domain: true,
-          types: true,
-        },
-      })
-    : null;
-
-  return {
-    clientType: 'read',
-    projects: project ? [project] : [],
-  };
-}
-
 // --- /manage REST CRUD (apps/api/src/controllers/manage.controller.ts) ---
 
 export interface CreatedProjectClient {
@@ -594,9 +550,6 @@ export function createProjectService(
       projectId: string
     ): ReturnType<typeof getProjectActivationStatus> =>
       getProjectActivationStatus(deps, projectId),
-    listProjectsCore: (
-      input: Parameters<typeof listProjectsCore>[1]
-    ): ReturnType<typeof listProjectsCore> => listProjectsCore(deps, input),
     listProjectsForOrganization: (
       organizationId: string
     ): ReturnType<typeof listProjectsForOrganization> =>
