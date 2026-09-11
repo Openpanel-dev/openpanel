@@ -1,3 +1,4 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, publishEvent } from '@openpanel/redis';
 import type { IClickhouseEvent } from '../modules/event/event.service';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
@@ -257,13 +258,13 @@ export class EventBuffer extends BaseBuffer {
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
-    const rows = await this.chQuery<{ count: number }>(
-      `SELECT uniq(profile_id) AS count
-       FROM events
-       WHERE project_id = '${projectId}'
-         AND profile_id != ''
-         AND created_at >= now() - INTERVAL 5 MINUTE`
-    );
+    const rows = await this.chQuery<{ count: number }>(sql`
+      SELECT uniq(profile_id) AS count
+      FROM events
+      WHERE project_id = ${sql.string(projectId)}
+        AND profile_id != ''
+        AND created_at >= now() - INTERVAL 5 MINUTE
+    `);
     return rows[0]?.count ?? 0;
   }
 }

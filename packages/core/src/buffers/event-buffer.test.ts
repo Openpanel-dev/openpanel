@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Readable } from 'node:stream';
+import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
@@ -7,7 +8,9 @@ import { testCoreConfig } from '../../test/config-fixture';
 const realChQuery = { ...(await import('../ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
-const chQuery = mock(async (_sql: string): Promise<unknown[]> => []);
+const chQuery = mock(
+  async (_query: string | SqlFragment): Promise<unknown[]> => []
+);
 
 // M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
 // own `chQuery` (ch-query.ts) — so the insert path needs no module mock
@@ -16,7 +19,7 @@ const chQuery = mock(async (_sql: string): Promise<unknown[]> => []);
 // a pino transport worker thread per test file).
 mock.module('../ch-query', () => ({
   ...realChQuery,
-  chQuery: (_scope: unknown, sql: string) => chQuery(sql),
+  chQuery: (_scope: unknown, query: string | SqlFragment) => chQuery(query),
 }));
 
 const { EventBuffer, extractProjectId } = await import('./event-buffer');
@@ -263,7 +266,11 @@ describe('EventBuffer', () => {
     const count = await eventBuffer.getActiveVisitorCount('p9');
     expect(count).toBe(2);
     expect(chQuery).toHaveBeenCalledTimes(1);
-    expect(chQuery.mock.calls[0]![0]).toContain("project_id = 'p9'");
+    const { query, query_params } = (
+      chQuery.mock.calls[0]![0] as SqlFragment
+    ).toStatement();
+    expect(query).toContain('project_id = {p1:String}');
+    expect(query_params.p1).toBe('p9');
   });
 
   it('handles multiple sessions independently — all events go to buffer', async () => {
