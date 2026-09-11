@@ -323,7 +323,6 @@ const rawSchema = z.object({
    * boot, exactly as V1 did — changing an origin has always needed a restart.
    */
   DASHBOARD_URL: optionalString,
-  NEXT_PUBLIC_DASHBOARD_URL: optionalString,
   API_CORS_ORIGINS: optionalString,
   /**
    * Signs the three GSC OAuth cookies. Always set in a real deployment
@@ -582,7 +581,7 @@ function checkProfileBackfillProjectsHaveAFlag(
 // --- derivations ------------------------------------------------------------
 
 function deriveDashboardUrl(raw: RawEnv): string {
-  return raw.DASHBOARD_URL ?? raw.NEXT_PUBLIC_DASHBOARD_URL ?? '';
+  return raw.DASHBOARD_URL ?? '';
 }
 
 function deriveCoreConfig(raw: RawEnv): CoreConfig {

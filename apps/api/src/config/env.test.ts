@@ -195,18 +195,10 @@ describe('tuning knobs keep the module default on a malformed value', () => {
 });
 
 describe('derived values, computed once in the transform', () => {
-  it('DASHBOARD_URL wins over NEXT_PUBLIC_DASHBOARD_URL; neither means empty', () => {
+  it('dashboardUrl is DASHBOARD_URL, unset means empty', () => {
     expect(loadConfig(base).core.dashboardUrl).toBe('');
     expect(
-      loadConfig({ ...base, NEXT_PUBLIC_DASHBOARD_URL: 'https://next' }).core
-        .dashboardUrl
-    ).toBe('https://next');
-    expect(
-      loadConfig({
-        ...base,
-        DASHBOARD_URL: 'https://own',
-        NEXT_PUBLIC_DASHBOARD_URL: 'https://next',
-      }).core.dashboardUrl
+      loadConfig({ ...base, DASHBOARD_URL: 'https://own' }).core.dashboardUrl
     ).toBe('https://own');
   });
 

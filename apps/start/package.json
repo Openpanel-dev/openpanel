@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "dev": "bun run with-env vite dev --port 3000",
-    "start_deprecated": "bun run with-env node .output/server/index.mjs",
     "preview": "vite preview",
     "deploy": "bun run build && bunx wrangler deploy",
     "cf-typegen": "wrangler types",
