@@ -57,10 +57,7 @@ import {
   gscGetTopQueriesCore,
 } from '../gsc/gsc.service';
 import { getSettingsForProject } from '../organization/organization.service';
-import type {
-  IGetTopGenericInput,
-  TrafficColumn,
-} from '../overview/overview.service';
+import type { IGetTopGenericInput } from '../overview/overview.service';
 import {
   getAnalyticsOverviewCore,
   getTrafficBreakdownCore,
@@ -164,6 +161,13 @@ const zExportEvents = z.object({
     .optional(),
 });
 
+const zExportChartSeriesItem = z.object({
+  name: z.string(),
+  filters: zChartEvent.shape.filters.optional(),
+  segment: zChartEvent.shape.segment.optional(),
+  property: zChartEvent.shape.property.optional(),
+});
+
 const zExportCharts = zReport
   .pick({
     breakdowns: true,
@@ -176,27 +180,9 @@ const zExportCharts = zReport
   .extend({
     project_id: z.string().optional(),
     projectId: z.string().optional(),
-    series: z
-      .array(
-        z.object({
-          name: z.string(),
-          filters: zChartEvent.shape.filters.optional(),
-          segment: zChartEvent.shape.segment.optional(),
-          property: zChartEvent.shape.property.optional(),
-        })
-      )
-      .optional(),
+    series: z.array(zExportChartSeriesItem).optional(),
     // Backward compatibility - events will be migrated to series via preprocessing
-    events: z
-      .array(
-        z.object({
-          name: z.string(),
-          filters: zChartEvent.shape.filters.optional(),
-          segment: zChartEvent.shape.segment.optional(),
-          property: zChartEvent.shape.property.optional(),
-        })
-      )
-      .optional(),
+    events: z.array(zExportChartSeriesItem).optional(),
   });
 
 export const exportRoutes = defineRoutes((app) =>
@@ -1052,7 +1038,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           startDate,
           endDate,
-          column: query.breakdown as TrafficColumn,
+          column: query.breakdown,
         });
       },
       {
@@ -1078,7 +1064,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           startDate,
           endDate,
-          column: query.breakdown as TrafficColumn,
+          column: query.breakdown,
         });
       },
       {
@@ -1105,7 +1091,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           startDate,
           endDate,
-          column: query.breakdown as TrafficColumn,
+          column: query.breakdown,
         });
       },
       {

@@ -1,5 +1,5 @@
 // The export module owns no data of its own — it is the public read API
-// (`/export` + `/insights`, ~35 GET routes, TARGET_ARCHITECTURE §7). Every
+// (`/export` + `/insights`, 56 GET routes, TARGET_ARCHITECTURE §7). Every
 // handler in `export.routes.ts` is a thin delegate onto the overview/chart/
 // event/session/profile/group/gsc/report services already ported to core
 // (M7-001..006). This file holds only the plumbing every route shares —
