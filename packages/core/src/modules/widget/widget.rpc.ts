@@ -46,7 +46,12 @@ import {
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
-import { zWidgetOptions, zWidgetType } from '../report/report.constants';
+import {
+  zCounterWidgetOptions,
+  zRealtimeWidgetOptions,
+  zWidgetOptions,
+  zWidgetType,
+} from '../report/report.constants';
 
 const uid = new ShortUniqueId({ length: 6 });
 const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
@@ -65,9 +70,57 @@ async function findWidgetByType(
   const widgets = await db.shareWidget.findMany({
     where: { projectId },
   });
-  return widgets.find(
-    (w) => (w.options as z.infer<typeof zWidgetOptions>)?.type === type
-  );
+  return widgets.find((w) => w.options.type === type);
+}
+
+// Shared by toggle/updateOptions: same find-then-update-or-create shape,
+// differing only in which field is written and the create-time default.
+async function upsertWidgetByType(
+  db: Ctx['db'],
+  params: {
+    projectId: string;
+    organizationId: string;
+    type: z.infer<typeof zWidgetType>;
+    update: { public: boolean } | { options: z.infer<typeof zWidgetOptions> };
+    create: { public: boolean; options: z.infer<typeof zWidgetOptions> };
+  }
+) {
+  const existing = await findWidgetByType(db, params.projectId, params.type);
+
+  if (existing) {
+    return db.shareWidget.update({
+      where: { id: existing.id },
+      data: params.update,
+    });
+  }
+
+  return db.shareWidget.create({
+    data: {
+      id: uid.rnd(),
+      projectId: params.projectId,
+      organizationId: params.organizationId,
+      public: params.create.public,
+      options: params.create.options,
+    },
+  });
+}
+
+// Shared by counter/badge: both require the widget to exist, be public and
+// be a counter widget before doing anything else.
+async function findPublicCounterWidgetOrThrow(db: Ctx['db'], shareId: string) {
+  const widget = await db.shareWidget.findUnique({
+    where: { id: shareId },
+  });
+
+  if (!widget?.public) {
+    throw new TRPCNotFoundError('Widget not found');
+  }
+
+  if (widget.options.type !== 'counter') {
+    throw new TRPCNotFoundError('Invalid widget type');
+  }
+
+  return widget;
 }
 
 export const widgetRouter = createTRPCRouter({
@@ -99,39 +152,17 @@ export const widgetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = ctx.db;
-      const existing = await findWidgetByType(
-        ctx.db,
-        input.projectId,
-        input.type
-      );
-
-      if (existing) {
-        return db.shareWidget.update({
-          where: { id: existing.id },
-          data: { public: input.enabled },
-        });
-      }
-
-      // Create new widget with default options
       const defaultOptions =
         input.type === 'realtime'
-          ? {
-              type: 'realtime' as const,
-              referrers: true,
-              countries: true,
-              paths: false,
-            }
-          : { type: 'counter' as const };
+          ? zRealtimeWidgetOptions.parse({ type: 'realtime' })
+          : zCounterWidgetOptions.parse({ type: 'counter' });
 
-      return db.shareWidget.create({
-        data: {
-          id: uid.rnd(),
-          projectId: input.projectId,
-          organizationId: input.organizationId,
-          public: input.enabled,
-          options: defaultOptions,
-        },
+      return upsertWidgetByType(ctx.db, {
+        projectId: input.projectId,
+        organizationId: input.organizationId,
+        type: input.type,
+        update: { public: input.enabled },
+        create: { public: input.enabled, options: defaultOptions },
       });
     }),
 
@@ -144,51 +175,23 @@ export const widgetRouter = createTRPCRouter({
         options: zWidgetOptions,
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const db = ctx.db;
-      const existing = await findWidgetByType(
-        ctx.db,
-        input.projectId,
-        input.options.type
-      );
-
-      if (existing) {
-        return db.shareWidget.update({
-          where: { id: existing.id },
-          data: { options: input.options },
-        });
-      }
-
-      // Create new widget if it doesn't exist
-      return db.shareWidget.create({
-        data: {
-          id: uid.rnd(),
-          projectId: input.projectId,
-          organizationId: input.organizationId,
-          public: false,
-          options: input.options,
-        },
-      });
-    }),
+    .mutation(async ({ input, ctx }) =>
+      upsertWidgetByType(ctx.db, {
+        projectId: input.projectId,
+        organizationId: input.organizationId,
+        type: input.options.type,
+        update: { options: input.options },
+        create: { public: false, options: input.options },
+      })
+    ),
 
   counter: publicProcedure
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const db = ctx.db;
-      const widget = await db.shareWidget.findUnique({
-        where: {
-          id: input.shareId,
-        },
-      });
-
-      if (!widget?.public) {
-        throw new TRPCNotFoundError('Widget not found');
-      }
-
-      if (widget.options.type !== 'counter') {
-        throw new TRPCNotFoundError('Invalid widget type');
-      }
-
+      const widget = await findPublicCounterWidgetOrThrow(
+        ctx.db,
+        input.shareId
+      );
       const eventBuffer = ctx.buffers.event;
 
       return {
@@ -200,21 +203,10 @@ export const widgetRouter = createTRPCRouter({
   badge: publicProcedure
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const db = ctx.db;
-      const widget = await db.shareWidget.findUnique({
-        where: {
-          id: input.shareId,
-        },
-      });
-
-      if (!widget?.public) {
-        throw new TRPCNotFoundError('Widget not found');
-      }
-
-      if (widget.options.type !== 'counter') {
-        throw new TRPCNotFoundError('Invalid widget type');
-      }
-
+      const widget = await findPublicCounterWidgetOrThrow(
+        ctx.db,
+        input.shareId
+      );
       const { projectId } = widget;
       const { timezone } = await getSettingsForProject(ctx, projectId);
 
