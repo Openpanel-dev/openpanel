@@ -1,15 +1,15 @@
 // M10-005: realtime.service.ts takes `ServiceDeps` now, so the event buffer
 // and the ClickHouse client are HANDED IN (`deps.buffers.event`, `deps.ch`)
-// rather than mocked onto a module specifier. `@openpanel/redis` is still
-// reached lazily (see the subject's `loadRedis` header), so that one stays a
-// `mock.module` registered before the subject's first call.
+// rather than mocked onto a module specifier.
 //
-// M12-005: the subject and the real-module snapshot are STATIC imports. Bun's
-// `mock.module` swaps an already-loaded module's exports in place, and the
-// subject only reaches `@openpanel/redis` lazily at call time, so the mock
-// below still applies — measured on Bun 1.4.0, and the subscribe assertions
-// go red if it ever stops. That leaves this module with no deferred loads at
-// all (docs/TECH_DEBT.md's no-lazy-loaders ruling).
+// M12-005: the subject and the real-module snapshot are STATIC imports.
+// `@openpanel/redis` is a static import in the subject too (the R6 fix
+// removed the `loadRedis` lazy hop) — Bun's `mock.module` still applies
+// because it swaps an already-loaded module's exports in place, so a
+// consumer that imported before the mock call still sees it — measured on
+// Bun 1.4.0, and the subscribe assertions go red if it ever stops. That
+// leaves this module with no deferred loads at all (docs/TECH_DEBT.md's
+// no-lazy-loaders ruling).
 //
 // Every assertion below is the one it was before the deps switch: the same
 // project scoping, the same 30-minute window, the same filter/limit wiring,
@@ -45,7 +45,7 @@ let unsubscribeCalls = 0;
 
 // Spread the real module — a partial factory here would be a process-wide
 // hazard for every other test file mocking `@openpanel/redis` narrowly (see
-// realtime.service.ts's `loadRedis` header for why this file exists at all).
+// `@openpanel/redis`'s import at the top of realtime.service.ts).
 const realRedis = { ...actualRedis };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
