@@ -1,14 +1,22 @@
 import { beforeEach, expect, test } from 'bun:test';
+import { Elysia } from 'elysia';
 import client from 'prom-client';
 import { registry } from '../metrics';
-import { observeHttpRequest } from './http.metrics';
+import { httpMetrics, observeHttpRequest } from './http.metrics';
 
 const HISTOGRAM = 'http_request_duration_seconds';
 const SUMMARY = 'http_request_summary_seconds';
+const DROPPED = 'http_request_metrics_dropped_total';
+const HOOK_SETTLE_MS = 10;
 
 async function samples(name: string) {
   const metric = await registry.getSingleMetricAsString(name);
   return metric;
+}
+
+async function dropped() {
+  const metric = await registry.getSingleMetric(DROPPED)?.get();
+  return metric?.values[0]?.value;
 }
 
 beforeEach(() => {
@@ -78,4 +86,49 @@ test('an unmatched request produces no series (registeredRoutesOnly)', async () 
   });
 
   expect(await samples(SUMMARY)).not.toContain('status_code="404"');
+});
+
+// The 2026-09-08 crash: a global `onAfterResponse` fires for a request whose
+// `derive` never ran, `performance.now() - undefined` is NaN, prom-client
+// throws on it, and in an async hook that throw exits the process.
+test('a duration that is not a finite number >= 0 is dropped, not thrown on', async () => {
+  const unobservable = [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    undefined as unknown as number,
+    -1,
+  ];
+
+  for (const durationMs of unobservable) {
+    expect(() =>
+      observeHttpRequest({
+        method: 'GET',
+        route: '/some-route',
+        statusCode: 500,
+        durationMs,
+      })
+    ).not.toThrow();
+  }
+
+  expect(await samples(HISTOGRAM)).not.toContain('route="/some-route"');
+  expect(await samples(SUMMARY)).not.toContain('route="/some-route"');
+  // Dropped, but visible.
+  expect(await dropped()).toBe(unobservable.length);
+});
+
+test('the hook skips a request that matched no route, and drops nothing', async () => {
+  const app = new Elysia().use(httpMetrics()).get('/ok', () => 'ok');
+
+  await app.handle(new Request('http://localhost/ok'));
+  await app.handle(new Request('http://localhost/definitely-not-a-route'));
+  // `onAfterResponse` runs off the response's own microtask tail.
+  await new Promise((resolve) => setTimeout(resolve, HOOK_SETTLE_MS));
+
+  const text = await samples(HISTOGRAM);
+  expect(text).toContain('route="/ok"');
+  expect(text).not.toContain('definitely-not-a-route');
+  expect(text).not.toContain('status_code="404"');
+  // 0, not 1: the hook returns before it can compute a bad duration.
+  expect(await dropped()).toBe(0);
 });

@@ -94,6 +94,12 @@ export function requestLogging(
     .onAfterResponse(
       { as: 'global' },
       ({ ctx, request, path, query, body, timestamp, clientIpHeader }) => {
+        // The same shape as `httpMetrics`' guard: this hook is global and also
+        // runs for a request that matched no route, whose `derive` never ran.
+        // There is no request logger and no arrival timestamp to log with.
+        if (!ctx) {
+          return;
+        }
         if (UNLOGGED_METHODS.includes(request.method)) {
           return;
         }

@@ -224,6 +224,35 @@ describe('requestLogging', () => {
     });
   });
 
+  // The 2026-09-08 crash class: this hook is global, so it also fires for a
+  // request that matched no route — whose `derive` never ran. Reading
+  // `ctx.logger` off that missing ctx throws out of a hook nobody awaits, so
+  // it lands on the process, not on the request.
+  test('skips a request that matched no route instead of crashing', async () => {
+    const stub = build();
+    const crashes: unknown[] = [];
+    const record = (error: unknown) => crashes.push(error);
+    // Typed as the emitter it is: bun-types augments `NodeJS.Process` with an
+    // `off(event: 'memoryPressure')` that hides the inherited `off`.
+    const processEvents: NodeJS.EventEmitter = process;
+    processEvents.on('uncaughtException', record);
+    processEvents.on('unhandledRejection', record);
+
+    try {
+      const response = await stub.app.handle(
+        new Request('http://localhost/definitely-not-a-route')
+      );
+      await settled();
+
+      expect(response.status).toBe(404);
+      expect(crashes).toEqual([]);
+      expect(lines(stub)).toHaveLength(0);
+    } finally {
+      processEvents.off('uncaughtException', record);
+      processEvents.off('unhandledRejection', record);
+    }
+  });
+
   test('skips the health, metrics and misc surfaces and OPTIONS', async () => {
     const stub = build();
 

@@ -38,6 +38,8 @@ const UNMATCHED_ROUTES = new Set(['', '/*']);
 const MS_PER_SECOND = 1000;
 // Elysia leaves `set.status` unset on a plain successful return.
 const DEFAULT_STATUS = 200;
+const DROPPED_HELP =
+  'http request samples dropped before observation because the measured duration was not a finite number of milliseconds >= 0';
 
 export const httpRequestDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
@@ -53,20 +55,47 @@ export const httpRequestSummary = new client.Summary({
   registers: [registry],
 });
 
+// A bad sample must never take the process down, but it must not vanish
+// either: prom-client's `.observe()` throws on a non-finite value, and in an
+// async hook that throw becomes an unhandled rejection and exits the process.
+export const httpRequestSamplesDropped = new client.Counter({
+  name: 'http_request_metrics_dropped_total',
+  help: DROPPED_HELP,
+  registers: [registry],
+});
+
+/** The one shape prom-client will accept: finite, and not a negative elapsed. */
+function isMeasuredDuration(durationMs: unknown): durationMs is number {
+  return (
+    typeof durationMs === 'number' &&
+    Number.isFinite(durationMs) &&
+    durationMs >= 0
+  );
+}
+
 /**
  * Observes a single request. Exported so a test can assert the labels and the
  * unit without standing up a server.
+ *
+ * Drops, rather than throws on, a sample it cannot observe — see
+ * `httpRequestSamplesDropped`.
  */
 export function observeHttpRequest(sample: {
   method: string;
-  route: string;
+  // Elysia types this `string`, but hands the hook `undefined` when the
+  // request matched no route.
+  route: string | undefined;
   statusCode: number;
   durationMs: number;
 }): void {
   if (UNMEASURED_METHODS.has(sample.method)) {
     return;
   }
-  if (UNMATCHED_ROUTES.has(sample.route)) {
+  if (!sample.route || UNMATCHED_ROUTES.has(sample.route)) {
+    return;
+  }
+  if (!isMeasuredDuration(sample.durationMs)) {
+    httpRequestSamplesDropped.inc();
     return;
   }
 
@@ -90,6 +119,12 @@ export function observeHttpRequest(sample: {
  * The start time rides on a `derive`, not on `store` — `store` is app-level
  * state shared by every in-flight request, so a second concurrent request
  * would overwrite the first one's clock.
+ *
+ * A `derive` runs per MATCHED route; this hook is global and also runs for a
+ * request that matched nothing, where `metricsStartedAt` and `route` are both
+ * `undefined`. Such a request has no clock and no route pattern to label, and
+ * `registeredRoutesOnly` says not to observe it anyway — so the hook skips,
+ * ahead of computing an elapsed against `undefined`.
  */
 export function httpMetrics() {
   return new Elysia({ name: 'core/http/metrics' })
@@ -97,6 +132,9 @@ export function httpMetrics() {
     .onAfterResponse(
       { as: 'global' },
       ({ request, route, set, metricsStartedAt }) => {
+        if (!isMeasuredDuration(metricsStartedAt)) {
+          return;
+        }
         observeHttpRequest({
           method: request.method,
           route,
