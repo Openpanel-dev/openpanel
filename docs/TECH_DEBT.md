@@ -2043,3 +2043,79 @@ agree with the three new places.
   the new `bun-version.test.ts`.
 
 No ClickHouse SQL touched; no lockfile or manifest changed.
+
+## 2026-09-11 — M15-202, ADR-022's "Existing implementation" table re-measured
+
+Ran by: ralph (M15-202 implement task), on the finished M15 tree (branch
+`rewrite/v2`, working tree at `20f63a8f` plus this task's own diff).
+
+ADR-022's *Existing implementation* section measured the shape of the tree on
+2026-09-07/08 — before the fix wave — and every row of it was a defect the
+wave was authorised to remove. This is the same table, re-measured, so the
+claim "the wave is done" is a number rather than a feeling. Nothing here is
+carried over from the ADR's own run: each "after" figure is from a command
+run today, and the command is named beside it.
+
+**How the after column was measured.** Twelve of the thirteen rows are read
+straight off `bash tooling/gates/conformance.sh --report`, whose
+BASELINE REPRODUCTION block prints exactly these counts; the greps beside
+them are the cross-check, and where a grep and the gate disagree the reason is
+given. The gate's own two traps (an eight-line factory signature a line grep
+misses; a `ReturnType<typeof create` match that is a comment) are covered by
+`tooling/gates/conformance/rules.test.ts`.
+
+| ADR-022 row | Before (2026-09-07/08) | After (2026-09-11) | How |
+|---|---:|---:|---|
+| Composition — factories not on `(deps, services: () => Services)` | 36 of 36 | **0 of 36** | gate `R3`; `grep -rn 'export function create[A-Za-z]*Service('` over `*.service.ts` still finds all 36 factories |
+| Typing — hand-written `export interface XService` outside `services.ts` | 37 | **0** | gate `R5`; `grep -rn '^export interface [A-Za-z]*Service '` → 0 |
+| Typing — `Services` members typed `ReturnType<typeof createXService>` | 0 of 36 | **36 of 36** | gate `R5` (in code, not in the comment that documents the rule) |
+| Sibling access — `load*` dependency loaders | 55 | **0**, of 2 `load*` functions left | gate `R6`. The two survivors are the allowlisted asset loaders ADR-022 names by hand: `clients/geo.ts:27 loadDatabase` (a MaxMind `.mmdb` file) and `modules/integration/src/flush-exports.ts:330 loadCursor` (an export cursor row, read through the handle it was handed) |
+| Compat layer — `v1-compat.ts` | 2,104 lines, 71 importers | **file does not exist** | `ls packages/core/src/v1-compat.ts` → no such file. The 5 remaining textual matches under `packages/core/src` are all in three `*.sql.proof.md` files, prose describing what the seam used to do |
+| Compat layer — unsanctioned `createServices(` call sites | 1 | **0** | gate `R6` |
+| Env — `process.env.` reads in `packages/core/src` (non-test) | 172 across 50 files | **0 across 0 files** | gate `R7`, which counts the bracketed form too. The one raw-grep match left, `rpc/base.ts:251`, is a comment saying core reads none — the same false positive ADR-022 recorded against its own baseline |
+| Auth — `require(Login\|ReadAccess\|WriteAccess\|Access)` definitions outside `rpc/base.ts` and `modules/auth/` | 38 | **0** | gate `R10`. One definition survives in the tree and it is in the auth stack: `modules/auth/auth.service.ts:150 requireLogin` |
+| Layering — `shared/` importing upward | 7 | **0** | gate `R22` (`core-layers-shared-is-the-bottom`, delegated to dependency-cruiser at `error`) |
+| Layering — `http/*` and `rpc/base.ts` deep-importing `modules/*/src/*` | 8 | **0** | gate `R22` (`core-layers-transport-below-modules`) |
+| Duplication — util copies across `apps/*` and `packages/*` | 5 | **0** | gate `R21`. `packages/redis/json.ts` — the file that carried its own "keep in sync with packages/core" comment — is gone; `@openpanel/shared` exists and declares no workspace dependency |
+| Residue — `NEXT_PUBLIC_` in `packages/core/src` | 5 (of 26 in 12 files) | **0** | gate `R14` |
+| Enforcement — `dependency-cruiser` declared | installed into a cache at gate time | **declared**, `"dependency-cruiser": "18.2.0"` in the root `devDependencies` | `package.json:88`; R22 therefore ships as the cruiser rule, not ADR-022's grep fallback |
+
+**`bash tooling/gates/conformance.sh --assert` exits 0** on this tree — the
+M15 gate. Total asserted violations: 0.
+
+### One count fixed here, two still wrong, one script still red
+
+**Fixed here (ADR-022 R15, CONFORMANCE_PLAN.md §1l).** The module-scope
+construction checker looked only at `ts.isIdentifier(node.expression)`, so a
+qualified `new Arctic.Google(...)` was invisible to it, and its constructor
+set did not contain `GitHub` at all. Both spellings are in
+`modules/auth/src/oauth.ts`. The checker now resolves a qualified `new A.B()`
+to its rightmost name before the lookup, and `GitHub`/`Google` joined
+`CONNECTION_CONSTRUCTOR_NAMES`; two tests in
+`tooling/gates/conformance/rules.test.ts` pin both spellings, at module scope
+(2 violations) and inside a factory body (0). **R15 still reports 0** — all
+three arctic clients are built per call, from `config.auth.*` — so the number
+is now trustworthy rather than flattering.
+
+Worth knowing while reading that: **`rules.test.ts` is in no suite.** The root
+`test` script runs four packages plus `vitest run` over
+`vitest.workspace.ts`'s two, and `tooling/` is in neither list, so the gate's
+own regression tests — including the two ADR-022 named as mandatory before
+acceptance — only run when someone runs them by hand
+(`cd tooling/gates/conformance && bun test`: 18 pass, 0 fail, 2026-09-11).
+Pre-existing, and wiring it in means editing the root `package.json`.
+
+**Still under-counted: R14's residue scan does not reach `packages/`.**
+`tooling/gates/conformance/cli.ts:124` builds `residueFiles` from
+`packages/core`, `apps/api` and `apps/start` only, so the one surviving
+`NEXT_PUBLIC_` reference outside `apps/public` —
+`packages/payments/src/polar.ts:66` — is not seen by the rule whose label
+says "elsewhere outside `apps/public/`". Recorded, not fixed: R14 was
+M15-201's target and widening the scan is a change to what that gate asserts.
+
+**Still failing for an unrelated reason:
+`verification/golden/queue-keys/check.sh`.** It imports
+`CRON_SCHEDULES` from `packages/core/src/jobs/schedulers.ts`, which ADR-021
+moved onto the jobs themselves; the export is gone and the script dies on
+`sch.CRON_SCHEDULES.map`. Verified pre-existing by stashing this task's diff
+and re-running: same failure at `20f63a8f`.

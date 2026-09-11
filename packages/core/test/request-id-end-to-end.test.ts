@@ -182,6 +182,7 @@ function stubDeps() {
 
   const deps: AppDeps = {
     db: {} as AppDeps['db'],
+    prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
     clients: {} as AppDeps['clients'],
@@ -363,6 +364,7 @@ function chartDeps() {
   const producers = createRecordingProducers({});
   const deps: AppDeps = {
     db: {} as AppDeps['db'],
+    prisma: {} as AppDeps['prisma'],
     ch: chartClickHouse(),
     redis: {} as AppDeps['redis'],
     clients: {} as AppDeps['clients'],
@@ -545,6 +547,7 @@ function ingestDeps() {
   } as unknown as Buffers;
 
   const deps: AppDeps = {
+    prisma: {} as AppDeps['prisma'],
     db: {
       project: {
         // M15-005: the handler reads the project through
@@ -721,4 +724,241 @@ test('a second message is scoped to its own id, and an envelope without one stil
   expect(minted).toBeString();
   expect(minted).not.toBe(INGEST_REQUEST_ID);
   expect(minted).not.toBe(INGEST_OTHER_REQUEST_ID);
+});
+
+// ===========================================================================
+// Section 4 — one request, one id, all six hops (ADR-022 A3, M15-202).
+// ===========================================================================
+//
+// Sections 1-3 each prove a segment: 1 the HTTP -> job chain through a
+// MOCKED service, 2 a real converted read path with no job behind it, 3 the
+// Kafka edge. A3 names the property Carl actually asked for — "follow what
+// has happened for a certain request, and see the entire flow" — as one
+// chain, and the hops it lists are:
+//
+//   requestId minted at the edge
+//     -> ctx
+//     -> a service's bound logger
+//     -> producers.scope({ requestId })
+//     -> the { payload, meta } envelope
+//     -> the job's child logger
+//
+// Nothing below is a stand-in for a hop. The read path is
+// `ctx.services.chart.getRetentionSeries`, a REAL converted service reaching
+// ClickHouse through `deps.ch`; the enqueue is
+// `ctx.services.cohort.enqueueCompute`, a REAL service writing onto
+// `ctx.queues`; the envelope is what `wrap` produces from what the recording
+// producer captured; and the job is the REAL `cohortCompute` definition and
+// the REAL handler off `jobs.registry.ts`, which reaches ClickHouse again —
+// so the last hop is a converted read path INSIDE a job, observed on its own
+// `query info` line.
+//
+// Only the two connections are stubs, and both are the seam under test: the
+// ClickHouse client records what it was asked and the Postgres client answers
+// one row. A `load*` loader anywhere on this path, a client that built its
+// own logger, or a handler that reached past `ctx` breaks exactly one of the
+// assertions below and names itself.
+
+const CHAIN_REQUEST_ID = 'adr022-a3-one-request';
+const CHAIN_PROJECT_ID = 'chain-project';
+const CHAIN_COHORT_ID = 'chain-cohort';
+
+function chainDeps() {
+  const lines: CapturedLine[] = [];
+  const queried: string[] = [];
+  const commanded: string[] = [];
+  const inserted: string[] = [];
+  // The real registry, so the enqueue below goes through the real
+  // `cohortCompute` producer and is validated against the real payload schema.
+  const producers = createRecordingProducers(queues);
+
+  const ch = {
+    query: (params: { query: string }) => {
+      queried.push(params.query);
+      return Promise.resolve({
+        json: () => Promise.resolve({ data: [], rows: 0, meta: [] }),
+      });
+    },
+    command: (params: { query: string }) => {
+      commanded.push(params.query);
+      return Promise.resolve({});
+    },
+    insert: (params: { table: string }) => {
+      inserted.push(params.table);
+      return Promise.resolve({});
+    },
+  } as unknown as AppDeps['ch'];
+
+  const deps: AppDeps = {
+    db: {
+      cohort: {
+        findUnique: () =>
+          Promise.resolve({
+            id: CHAIN_COHORT_ID,
+            projectId: CHAIN_PROJECT_ID,
+            definition: {
+              type: 'property',
+              criteria: {
+                operator: 'and',
+                properties: [
+                  { name: 'country', operator: 'is', value: ['US'] },
+                ],
+              },
+            },
+          }),
+        update: () => Promise.resolve({}),
+      },
+    } as unknown as AppDeps['db'],
+    prisma: {} as AppDeps['prisma'],
+    ch,
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
+    buffers: {} as Buffers,
+    producers: producers as unknown as QueueProducerHandle,
+    logger: bindingLogger(lines),
+    config: testCoreConfig(),
+  };
+
+  return {
+    deps,
+    lines,
+    queried,
+    commanded,
+    inserted,
+    recorded: producers.recorded,
+  };
+}
+
+/** The route: a converted read path, then a real service's enqueue. */
+function buildChainApp(deps: AppDeps) {
+  const routes = defineRoutes((app) =>
+    app.post('/proof/chain', async ({ ctx }) => {
+      await ctx.services.chart.getRetentionSeries({
+        projectId: CHAIN_PROJECT_ID,
+      });
+      await ctx.services.cohort.enqueueCompute(CHAIN_COHORT_ID);
+      return { ok: true };
+    })
+  );
+  return new Elysia().use(requestLogging(deps)).use(routes(deps));
+}
+
+/** Every `query info` line, with the requestId its logger was bound to. */
+function queryLineIds(lines: CapturedLine[]): unknown[] {
+  return lines
+    .filter((line) => line.message === 'query info')
+    .map((line) => line.bindings.requestId);
+}
+
+test('one requestId reaches a converted read path, a real enqueue, the envelope and the job that runs it', async () => {
+  const { deps, lines, queried, commanded, inserted, recorded } = chainDeps();
+
+  const response = await buildChainApp(deps).handle(
+    new Request('http://localhost/proof/chain', {
+      method: 'POST',
+      headers: { [REQUEST_ID_HEADER]: CHAIN_REQUEST_ID },
+    })
+  );
+  await settled();
+
+  expect(response.status).toBe(200);
+
+  // Hop 3: a REAL service's ClickHouse call really ran, and its own log line
+  // carries the request's id. A silent miss here would leave every assertion
+  // below trivially true (AGENTS.md).
+  expect(queried).toHaveLength(1);
+  expect(queried[0]).toContain('FROM events');
+  expect(queryLineIds(lines)).toEqual([CHAIN_REQUEST_ID]);
+
+  // Hops 4 and 5: `producers.scope({ requestId })` stamped the envelope the
+  // real `cohort` service enqueued.
+  const enqueued = recorded.find(({ queue }) => queue === 'cohortCompute');
+  if (!enqueued) {
+    throw new Error('the route enqueued no cohortCompute job');
+  }
+  expect(enqueued.job).toBe('cohortCompute');
+  expect(enqueued.payload).toEqual({ cohortId: CHAIN_COHORT_ID });
+  expect(enqueued.meta.requestId).toBe(CHAIN_REQUEST_ID);
+
+  // Hop 6: the REAL job, off the REAL registry definition, reading the REAL
+  // envelope — and the converted read path it makes in turn.
+  const queriesBeforeJob = queried.length;
+  await runJob(
+    queues.cohortCompute,
+    {
+      id: 'job_chain_1',
+      name: enqueued.job,
+      data: wrap(enqueued.payload, enqueued.meta),
+      attemptsMade: 0,
+    },
+    deps
+  );
+
+  // The handler reached ClickHouse through `ctx.ch`, not a client of its own:
+  // one more read, plus the membership DELETE and the metadata write that
+  // `updateCohortMembership` makes on the same handle.
+  expect(queried.length).toBeGreaterThan(queriesBeforeJob);
+  expect(commanded.join('\n')).toContain('DELETE FROM');
+  expect(inserted).toContain('cohort_metadata');
+
+  // Every `query info` line in the process — the route's and the job's — is
+  // the same request. This is the assertion A3 exists for.
+  const allQueryIds = queryLineIds(lines);
+  expect(allQueryIds.length).toBeGreaterThan(1);
+  expect(new Set(allQueryIds)).toEqual(new Set([CHAIN_REQUEST_ID]));
+
+  // And the job's child logger carries the job identity alongside it, so a
+  // log search on the id shows the request AND what it caused.
+  const jobLine = lines.find(
+    (line) => line.message === 'query info' && line.bindings.job !== undefined
+  );
+  expect(jobLine?.bindings).toMatchObject({
+    requestId: CHAIN_REQUEST_ID,
+    queue: 'cohortCompute',
+    job: 'cohortCompute',
+    jobId: 'job_chain_1',
+    attempt: 1,
+  });
+});
+
+test('a job whose envelope carries no requestId is scoped to a fresh one, not to the last request', async () => {
+  const { deps, lines, recorded } = chainDeps();
+
+  await buildChainApp(deps).handle(
+    new Request('http://localhost/proof/chain', {
+      method: 'POST',
+      headers: { [REQUEST_ID_HEADER]: CHAIN_REQUEST_ID },
+    })
+  );
+  await settled();
+
+  const enqueued = recorded.find(({ queue }) => queue === 'cohortCompute');
+  if (!enqueued) {
+    throw new Error('the route enqueued no cohortCompute job');
+  }
+
+  const linesBefore = lines.length;
+  // What a scheduler enqueues: a payload with no originating request
+  // (ADR-018 R2).
+  await runJob(
+    queues.cohortCompute,
+    {
+      id: 'job_chain_2',
+      name: enqueued.job,
+      data: wrap(enqueued.payload, {}),
+      attemptsMade: 0,
+    },
+    deps
+  );
+
+  const jobIds = lines
+    .slice(linesBefore)
+    .filter((line) => line.message === 'query info')
+    .map((line) => line.bindings.requestId);
+
+  expect(jobIds.length).toBeGreaterThan(0);
+  for (const id of jobIds) {
+    expect(id).toBeString();
+    expect(id).not.toBe(CHAIN_REQUEST_ID);
+  }
 });

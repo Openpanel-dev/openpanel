@@ -16,6 +16,7 @@ import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import { getId } from '../../slug-id';
 import { hashPassword } from '../auth/auth.service';
 import {
   runSequence,
@@ -34,10 +35,6 @@ const TRIAL_DURATION_IN_DAYS = 30;
 // Generous trial allowance so trialing orgs never get flagged as
 // "limit exceeded" (the limit defaults to 0, which trips on the first event).
 const TRIAL_EVENTS_LIMIT = 10_000_000;
-
-function loadIdService() {
-  return import('../../slug-id');
-}
 
 export async function canSkipOnboarding(
   deps: ServiceDeps,
@@ -77,7 +74,6 @@ async function createOrGetOnboardingOrganization(
     return null;
   }
 
-  const { getId } = await loadIdService();
   const db = deps.db;
   const organizationId = await getId(deps, 'organization', input.organization);
 
@@ -154,7 +150,6 @@ export async function createOnboardingProject(
     cors.push('*');
   }
 
-  const { getId } = await loadIdService();
   const db = deps.db;
 
   const project = await db.project.create({

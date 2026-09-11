@@ -22,6 +22,7 @@ import {
   checkCreateServicesCallSites,
   checkDependencyLoaders,
   checkFactorySignatures,
+  checkModuleScopeConstruction,
   checkServicesMembers,
   collectEnvReads,
 } from './rules';
@@ -233,5 +234,56 @@ const c = process.env['BRACKETED'];
     const grepped = matchCount(source.text, /process\.env\./g);
     // One comment counted, one `process.env?.` missed, one `process.env[` missed.
     expect(grepped).toBe(2);
+  });
+});
+
+describe('R15 — the two constructor spellings modules/auth/src/oauth.ts uses', () => {
+  // Both arctic clients, both correct: built per call, from config. The bug
+  // M15-202 fixed was the checker, not this file — `GitHub` was not in the
+  // constructor set and `Arctic.Google` is a property access an
+  // `ts.isIdentifier` guard cannot see at all (CONFORMANCE_PLAN.md §1l).
+  const oauthShape = `
+import * as Arctic from 'arctic';
+import { GitHub } from 'arctic';
+
+export function githubClient(config: CoreConfig): GitHub {
+  return new GitHub(config.id, config.secret, config.redirect);
+}
+
+export function googleClient(config: CoreConfig): Arctic.Google {
+  return new Arctic.Google(config.id, config.secret, config.redirect);
+}
+`;
+
+  test('inside a factory body, neither is a violation', () => {
+    const source = parseSource(
+      'packages/core/src/modules/auth/src/oauth.ts',
+      oauthShape
+    );
+    expect(checkModuleScopeConstruction([source]).count).toBe(0);
+  });
+
+  test('a connection nested in another constructor still counts', () => {
+    const source = parseSource(
+      'packages/core/src/buffers/event-buffer.ts',
+      'const buffer = new Wrapper(new Redis(url));\n'
+    );
+    expect(checkModuleScopeConstruction([source]).count).toBe(1);
+  });
+
+  test('at module scope, BOTH are — the qualified one included', () => {
+    const source = parseSource(
+      'packages/core/src/modules/auth/src/oauth.ts',
+      `
+const github = new GitHub(id, secret, redirect);
+const google = new Arctic.Google(id, secret, redirect);
+`
+    );
+    const metric = checkModuleScopeConstruction([source]);
+    expect(metric.count).toBe(2);
+    expect(metric.offenders.map((offender) => offender.detail)).toEqual([
+      'new GitHub( at module scope',
+      'new Arctic.Google( at module scope',
+    ]);
   });
 });

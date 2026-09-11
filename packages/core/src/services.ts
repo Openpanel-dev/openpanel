@@ -43,7 +43,15 @@ import { createUserService } from './modules/user/user.service';
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
   Ctx,
-  'db' | 'ch' | 'redis' | 'clients' | 'buffers' | 'logger' | 'queues' | 'config'
+  | 'db'
+  | 'prisma'
+  | 'ch'
+  | 'redis'
+  | 'clients'
+  | 'buffers'
+  | 'logger'
+  | 'queues'
+  | 'config'
 >;
 
 // Two type rules the compiler enforces but cannot explain:

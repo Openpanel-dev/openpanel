@@ -21,6 +21,7 @@ import { getSafeJson, resolveDateRange } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
@@ -46,10 +47,6 @@ export {
   SESSION_DISTINCT_FIELDS,
   type SessionDistinctField,
 } from './src/sql';
-
-function loadFilterCompiler() {
-  return import('../chart/src/table-filter-where');
-}
 
 export interface IClickhouseSession {
   id: string;
@@ -217,7 +214,6 @@ async function compileSessionFilters(
   if (!filters?.length) {
     return {};
   }
-  const { buildFilterWhere } = await loadFilterCompiler();
   return buildFilterWhere(filters, projectId, {
     ...SESSION_FILTER_TABLE,
     ...range,
@@ -502,5 +498,15 @@ export function createSessionService(
     );
   }
 
-  return { enqueueSessionEnd };
+  /** `event.service.ts` reaches this through the composition root's thunk
+   *  (ADR-022 R3): `session-end.ts` statically imports the event module, so
+   *  the two are a real cycle and an import back would be the wrong answer. */
+  function getById(
+    sessionId: string,
+    projectId: string
+  ): ReturnType<typeof getSessionById> {
+    return getSessionById(deps, sessionId, projectId);
+  }
+
+  return { enqueueSessionEnd, getById };
 }

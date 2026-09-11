@@ -24,10 +24,6 @@ import {
   createOnboardingProject,
 } from './onboarding.service';
 
-function loadOrganizationAccess() {
-  return import('../../shared/access-lookups');
-}
-
 export const onboardingRouter = createTRPCRouter({
   skipOnboardingCheck: publicProcedure.query(({ ctx }) =>
     canSkipOnboarding(ctx, ctx.session.userId)
@@ -39,8 +35,10 @@ export const onboardingRouter = createTRPCRouter({
       const userId = ctx.session.userId;
 
       if (input.organizationId) {
-        const { getOrganizationAccess } = await loadOrganizationAccess();
-        const access = await getOrganizationAccess({
+        // The auth service owns every access lookup (ADR-022 R10); this
+        // procedure is protected but the organization is an input, so the
+        // builder cannot decide it.
+        const access = await ctx.services.auth.getOrganizationAccess({
           userId,
           organizationId: input.organizationId,
         });

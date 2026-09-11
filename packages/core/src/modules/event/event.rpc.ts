@@ -96,7 +96,7 @@ export const eventRouter = createTRPCRouter({
       level: 'read',
     });
 
-    const details = await getEventDetails(ctx, input);
+    const details = await getEventDetails(ctx, () => ctx.services, input);
     if (!details) {
       throw new TRPCNotFoundError('Event not found');
     }

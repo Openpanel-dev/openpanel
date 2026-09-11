@@ -13,10 +13,9 @@
 //
 // M10-009: Postgres and ClickHouse come from `ctx` (`ctx.db` / `ctx.ch`), so
 // the requestId minted at the edge reaches the query (ADR-018); the `loadDb`/
-// `loadChClient` lazy loaders are gone. Redis's `getCache` stays lazy: this
-// router lands in the eager rpc.router.ts barrel chain nearly every core test
-// file reaches and reaching @openpanel/redis at import time breaks a test that
-// partially mocks that package — see subscription.service.ts's header.
+// `loadChClient` lazy loaders are gone, and M15-202 made `getCache` a plain
+// static import too (ADR-022 R6) — the spelling subscription.service.ts,
+// modules/ingest/src/client-auth.ts and modules/mcp/src/auth.ts already use.
 //
 // M12-008: the five ClickHouse statements moved off clix onto the ADR-013
 // `sql` tag. The conversion changes how values reach the server and nothing
@@ -34,6 +33,7 @@
 // holding no client and no request scope (see ch-query.ts).
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { getCache } from '@openpanel/redis';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';
@@ -55,10 +55,6 @@ const REALTIME_TOP_LIST_LIMIT = 10;
 const EVENTS_TABLE = sql.id(TABLE_NAMES.events);
 /** `clix.exp('now() - INTERVAL 30 MINUTE')`, parenthesised as clix rendered it. */
 const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
-
-function loadCache() {
-  return import('@openpanel/redis').then((m) => m.getCache);
-}
 
 // Helper to find widget by projectId and type
 async function findWidgetByType(
@@ -221,7 +217,6 @@ export const widgetRouter = createTRPCRouter({
 
       const { projectId } = widget;
       const { timezone } = await getSettingsForProject(ctx, projectId);
-      const getCache = await loadCache();
 
       // Cache for 5 minutes since this queries 30 days of data
       const cacheKey = `widget:badge:${projectId}`;

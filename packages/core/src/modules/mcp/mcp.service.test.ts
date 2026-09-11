@@ -94,6 +94,9 @@ const noopLogger = {
 
 const deps = {
   db: { project: { findUnique: mockFindUnique } },
+  // The tool runtime is handed `Prisma.DbNull` off the scope (ADR-022 R6);
+  // nothing in this suite writes a Json column, so a marker is enough.
+  prisma: { DbNull: 'DbNull', JsonNull: 'JsonNull' },
   logger: noopLogger,
 } as unknown as ServiceDeps;
 

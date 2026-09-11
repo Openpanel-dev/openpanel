@@ -1,8 +1,8 @@
 // M10-009: the store is a FACTORY over `ServiceDeps` — `deps.db` is the boot
 // scope's client, so the requestId minted at the edge reaches every insight
 // write (ADR-018, docs/TECH_DEBT.md §4). `Prisma` here is the namespace's JSON
-// sentinel (`DbNull`), reached through `context.ts`'s declared seam
-// (`prismaSentinels()`) rather than by importing `@openpanel/db` from core.
+// sentinel (`DbNull`), which arrives on the same scope as `deps.prisma`
+// (M15-202) rather than by importing `@openpanel/db` from core.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
@@ -40,16 +40,11 @@ function toPersistedInsight(row: InsightRow): PersistedInsight {
   };
 }
 
-/** `Prisma.DbNull` is a plain sentinel value that lives in the same module as
- *  the constructed client — reached through `context.ts`'s seam so this file
- *  value-imports nothing from `@openpanel/db`. Lazy: `context.ts`
- *  value-imports `services.ts`, and this module is part of that graph. */
-function loadPrismaSentinels() {
-  return import('../../../context').then((m) => m.prismaSentinels());
-}
-
 export function createInsightStore(deps: ServiceDeps): InsightStore {
   const db = deps.db;
+  // `Prisma.DbNull` lives in the same module as the constructed client, so it
+  // arrives on the scope (ADR-022 R6) rather than through a lazy import.
+  const { DbNull } = deps.prisma;
   return {
     // `cadence` isn't read — there is only one today ('daily') — but it stays
     // on the signature because InsightStore's contract names it (V1 parity).
@@ -206,7 +201,6 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
       changeTo,
       now,
     }): Promise<void> {
-      const { DbNull } = await loadPrismaSentinels();
       await db.insightEvent.create({
         data: {
           insightId,

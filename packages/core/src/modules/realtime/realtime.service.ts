@@ -37,7 +37,10 @@
 // `realtime.sql.proof.md` beside this file.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IPublishChannels } from '@openpanel/redis';
+import {
+  type IPublishChannels,
+  subscribeToPublishedEvent,
+} from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
@@ -470,18 +473,6 @@ export function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
 // Framework-agnostic: resolve to an unsubscribe function each, exactly
 // `subscribeToPublishedEvent`'s own shape. realtime.routes.ts (Elysia/Bun)
 // awaits these directly; nothing here is HTTP- or ws-library-specific.
-//
-// `@openpanel/redis` is LAZY here for its own reason: it has no
-// import-time side effect (its
-// clients connect lazily on first use — insight.service.ts already imports
-// `getRedisCache` from it statically), but several modules' tests replace the
-// whole package with `mock.module('@openpanel/redis', () => ({ subset }))`.
-// A new static named import here would demand `subscribeToPublishedEvent` on
-// every one of those subsets the moment this module joins the eager barrel
-// chain (rpc.router.ts), breaking tests this task does not own.
-function loadRedis() {
-  return import('@openpanel/redis');
-}
 
 export function getActiveVisitorCount(
   deps: ServiceDeps,
@@ -495,7 +486,6 @@ export async function subscribeToVisitorActivity(
   projectId: string,
   onActivity: () => void
 ): Promise<() => void> {
-  const { subscribeToPublishedEvent } = await loadRedis();
   return subscribeToPublishedEvent('events', 'batch', (event) => {
     if (event.projectId === projectId) {
       onActivity();
@@ -508,7 +498,6 @@ export async function subscribeToProjectEventBatches(
   projectId: string,
   onBatch: (event: IPublishChannels['events']['batch']) => void
 ): Promise<() => void> {
-  const { subscribeToPublishedEvent } = await loadRedis();
   return subscribeToPublishedEvent('events', 'batch', (event) => {
     if (event.projectId === projectId) {
       onBatch(event);
@@ -523,7 +512,6 @@ export async function subscribeToProjectNotifications(
     notification: IPublishChannels['notification']['created']
   ) => void
 ): Promise<() => void> {
-  const { subscribeToPublishedEvent } = await loadRedis();
   return subscribeToPublishedEvent(
     'notification',
     'created',
@@ -541,7 +529,6 @@ export async function subscribeToOrganizationSubscriptionUpdates(
     message: IPublishChannels['organization']['subscription_updated']
   ) => void
 ): Promise<() => void> {
-  const { subscribeToPublishedEvent } = await loadRedis();
   return subscribeToPublishedEvent(
     'organization',
     'subscription_updated',

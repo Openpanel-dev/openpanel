@@ -18,10 +18,15 @@
 import { z } from 'zod';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
-import type {
-  getClientAccess as GetClientAccessFn,
-  getOrganizationAccess as GetOrganizationAccessFn,
-  IProjectAccess,
+// Aliased: three members of `createAuthService` below carry the same names,
+// and this file is the ONE place the ladder is bound to these lookups.
+import {
+  canWriteProject,
+  getClientAccess as getClientAccessLookup,
+  getOrganizationAccess as getOrganizationAccessLookup,
+  getProjectAccess as getProjectAccessLookup,
+  getProjectById,
+  type IProjectAccess,
 } from '../../shared/access-lookups';
 import type { ISetCookie } from '../../shared/cookie';
 import { type AccessChecks, createAccessChecks } from './src/access';
@@ -84,10 +89,6 @@ export {
   verifyTotpCode,
 } from './src/totp';
 
-function loadAccessLookups() {
-  return import('../../shared/access-lookups');
-}
-
 /** The ladder contract this module binds and `createAuthService` satisfies. */
 type ProjectAccessChecks = AccessChecks<IProjectAccess>;
 
@@ -95,13 +96,15 @@ let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
 
 /**
  * The single binding of the ladder to real lookups
- * (M10-002, docs/TECH_DEBT.md §5b) — lazy AND memoized: `createAccessChecks`
- * itself runs exactly once per process, on however many requests, no matter
- * how many of this function's callers invoke it. Nothing here runs at
- * module-import time or at `createAuthService` construction time — both
- * `access-lookups.ts` and `project.service.ts` are reached only through the
- * dynamic imports below, the first time an actual check is made. An earlier
- * attempt bound this at module scope and hung `bun test` for 30 minutes.
+ * (M10-002, docs/TECH_DEBT.md §5b) — memoized: `createAccessChecks` runs
+ * exactly once per process, on however many requests, no matter how many of
+ * this function's callers invoke it. Nothing runs at module-import time or at
+ * `createAuthService` construction time; the binding is built on the first
+ * actual check. An earlier attempt bound it at module scope and hung
+ * `bun test` for 30 minutes.
+ *
+ * Still a `Promise` because the contract is awaited at every call site and
+ * was what each module's own access file used to resolve lazily.
  *
  * `integration.service.ts` and `subscription.service.ts` import this
  * directly instead of going through `ctx.services.auth`: both are called with
@@ -109,19 +112,13 @@ let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
  */
 export function getAccessChecks(): Promise<ProjectAccessChecks> {
   if (!accessChecksPromise) {
-    accessChecksPromise = loadAccessLookups().then(
-      ({
-        getProjectAccess,
+    accessChecksPromise = Promise.resolve(
+      createAccessChecks({
+        getProjectAccess: getProjectAccessLookup,
         canWriteProject,
-        getOrganizationAccess,
+        getOrganizationAccess: getOrganizationAccessLookup,
         getProjectById,
-      }) =>
-        createAccessChecks({
-          getProjectAccess,
-          canWriteProject,
-          getOrganizationAccess,
-          getProjectById,
-        })
+      })
     );
   }
   return accessChecksPromise;
@@ -191,23 +188,23 @@ export function createAuthService(
     return (await getAccessChecks()).requireProjectAdmin(args);
   }
 
-  async function getProjectAccess(args: {
+  function getProjectAccess(args: {
     userId: string;
     projectId: string;
   }): Promise<IProjectAccess | null> {
-    return (await loadAccessLookups()).getProjectAccess(args);
+    return getProjectAccessLookup(args);
   }
 
-  async function getOrganizationAccess(
-    ...args: Parameters<typeof GetOrganizationAccessFn>
-  ): ReturnType<typeof GetOrganizationAccessFn> {
-    return (await loadAccessLookups()).getOrganizationAccess(...args);
+  function getOrganizationAccess(
+    ...args: Parameters<typeof getOrganizationAccessLookup>
+  ): ReturnType<typeof getOrganizationAccessLookup> {
+    return getOrganizationAccessLookup(...args);
   }
 
-  async function getClientAccess(
-    ...args: Parameters<typeof GetClientAccessFn>
-  ): ReturnType<typeof GetClientAccessFn> {
-    return (await loadAccessLookups()).getClientAccess(...args);
+  function getClientAccess(
+    ...args: Parameters<typeof getClientAccessLookup>
+  ): ReturnType<typeof getClientAccessLookup> {
+    return getClientAccessLookup(...args);
   }
 
   /**
@@ -287,10 +284,10 @@ export function createAuthService(
 //
 // Session/registration access is `deps.db`, via static imports of
 // `./src/login-session` and `./src/registration` (M10-004) — neither cycles
-// back to this file, so there is nothing to keep lazy there. `loadShare`
-// stays a lazy, dynamic import of `../share/share.service`: share.service.ts
-// statically imports this file's own `hashPassword`, so the two ARE a real
-// cycle (M6-004), unlike the other two.
+// back to this file, so there is nothing to keep lazy there. Share is the one
+// real cycle (M6-004) — share.service.ts statically imports this file's own
+// `hashPassword` — so `signInToShare` reaches it through the composition
+// root's `services()` thunk instead of importing it at all.
 //
 // None of these functions take a `TrpcContext`/`Ctx` directly — they take a
 // `deps: ServiceDeps` plus exactly the other primitives they touch
@@ -324,16 +321,6 @@ export type AuthProvider = 'email' | 'google' | 'github';
  *  so this file has no import from the rpc/http layer that calls it. */
 interface CookieReader {
   get(name: string): string | undefined;
-}
-
-// GENUINE CYCLE, kept lazy: `../share/share.service` statically imports this
-// file's `hashPassword`, and `signInToShare` below needs share's three
-// lookups. auth.service.ts <-> share.service.ts is the cycle; the dynamic
-// import is what keeps it a cycle ESM can evaluate. It is NOT a
-// `@openpanel/db` loader — the share lookups take `deps` like everything
-// else since M10-003.
-function loadShare() {
-  return import('../share/share.service');
 }
 
 /**
@@ -862,26 +849,29 @@ export interface SignInShareInput {
   shareType?: 'overview' | 'dashboard' | 'report';
 }
 
+/** Share's three lookups arrive through the composition root's thunk
+ *  (ADR-022 R3), not a dynamic import: `share.service.ts` statically imports
+ *  this file's `hashPassword`, so a static edge back would be a real cycle. */
 export async function signInToShare(
-  deps: ServiceDeps,
+  services: () => Services,
   input: SignInShareInput,
   setCookie: ISetCookie
 ): Promise<true> {
   const { password, shareId, shareType = 'overview' } = input;
   const { getShareOverviewById, getShareDashboardById, getShareReportById } =
-    await loadShare();
+    services().share;
 
   let share: { password: string | null; public: boolean } | null = null;
   let cookieName = '';
 
   if (shareType === 'overview') {
-    share = await getShareOverviewById(deps, shareId);
+    share = await getShareOverviewById(shareId);
     cookieName = `shared-overview-${shareId}`;
   } else if (shareType === 'dashboard') {
-    share = await getShareDashboardById(deps, shareId);
+    share = await getShareDashboardById(shareId);
     cookieName = `shared-dashboard-${shareId}`;
   } else if (shareType === 'report') {
-    share = await getShareReportById(deps, shareId);
+    share = await getShareReportById(shareId);
     cookieName = `shared-report-${shareId}`;
   }
 

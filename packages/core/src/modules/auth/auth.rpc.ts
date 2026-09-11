@@ -119,5 +119,7 @@ export const authRouter = createTRPCRouter({
 
   signInShare: publicProcedure
     .input(zSignInShare)
-    .mutation(({ input, ctx }) => signInToShare(ctx, input, ctx.setCookie)),
+    .mutation(({ input, ctx }) =>
+      signInToShare(() => ctx.services, input, ctx.setCookie)
+    ),
 });

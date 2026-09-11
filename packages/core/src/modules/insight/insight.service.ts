@@ -11,9 +11,9 @@
 // M10-009: every exported function takes `ServiceDeps` and reaches Postgres
 // as `deps.db` and ClickHouse as `deps.ch`; the `loadDb()`/`loadCh()` lazy
 // loaders are gone, so the requestId minted at the edge reaches the query
-// (ADR-018, docs/TECH_DEBT.md §4). The remaining `load*` functions are
-// intra-package lazy imports (engine, store, detection modules) kept lazy for
-// their own import cost, not for a client's.
+// (ADR-018, docs/TECH_DEBT.md §4). M15-202 removed the last five `load*`
+// functions here — engine, store, detection modules, referrer spikes and the
+// legacy detector are all plain static imports of this module's own `src/`.
 //
 // M12-007: the engine and its five detection modules run on the `sql` tag
 // (ADR-013); `createEngine` therefore takes the scope's deps rather than a bare
@@ -27,7 +27,7 @@
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import type { EngineConfig } from './src/engine';
+import { createEngine, type EngineConfig } from './src/engine';
 import {
   ENRICH_VERSION,
   enrichInsights,
@@ -38,12 +38,24 @@ import {
   generateInsightExplanation,
   type InsightExplanation,
 } from './src/explain';
-import type { Insight as LegacyInsight } from './src/legacy-scan';
+import {
+  createLegacyInsightsScanner,
+  type Insight as LegacyInsight,
+} from './src/legacy-scan';
+import {
+  devicesModule,
+  entryPagesModule,
+  geoModule,
+  pageTrendsModule,
+  referrersModule,
+} from './src/modules';
 import { generateWeeklyNarrative } from './src/narrative';
-import type {
-  GetReferrerSpikesInput,
-  ReferrerSpikeCluster,
+import {
+  type GetReferrerSpikesInput,
+  getReferrerSpikes as getReferrerSpikesQuery,
+  type ReferrerSpikeCluster,
 } from './src/referrer-spikes';
+import { createInsightStore } from './src/store';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPLAIN_CACHE_TTL_SEC = 24 * 60 * 60;
@@ -75,26 +87,6 @@ const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   },
 };
 
-function loadEngine() {
-  return import('./src/engine');
-}
-
-function loadStore(deps: ServiceDeps) {
-  return import('./src/store').then((m) => m.createInsightStore(deps));
-}
-
-function loadDetectionModules() {
-  return import('./src/modules');
-}
-
-function loadReferrerSpikesQuery() {
-  return import('./src/referrer-spikes').then((m) => m.getReferrerSpikes);
-}
-
-function loadLegacyDetector() {
-  return import('./src/legacy-scan').then((m) => m.createLegacyInsightsScanner);
-}
-
 export interface DailyInsightCandidate {
   projectId: string;
   date: string;
@@ -124,7 +116,7 @@ export async function listDailyInsightCandidates(
   deps: ServiceDeps,
   date: string
 ): Promise<DailyInsightCandidate[]> {
-  const insightStore = await loadStore(deps);
+  const insightStore = createInsightStore(deps);
   const projectIds = await insightStore.listProjectIdsForCadence('daily');
   return projectIds.map((projectId) => ({ projectId, date }));
 }
@@ -237,20 +229,15 @@ export async function runProjectInsights(
   }
 ): Promise<void> {
   const { projectId, date, logger } = args;
-  const [{ createEngine }, insightStore, detectionModules] = await Promise.all([
-    loadEngine(),
-    loadStore(deps),
-    loadDetectionModules(),
-  ]);
-
+  const insightStore = createInsightStore(deps);
   const engine = createEngine({
     store: insightStore,
     modules: [
-      detectionModules.referrersModule,
-      detectionModules.entryPagesModule,
-      detectionModules.pageTrendsModule,
-      detectionModules.geoModule,
-      detectionModules.devicesModule,
+      referrersModule,
+      entryPagesModule,
+      pageTrendsModule,
+      geoModule,
+      devicesModule,
     ],
     deps,
     config: DEFAULT_ENGINE_CONFIG,
@@ -679,8 +666,7 @@ export async function getReferrerSpikes(
   deps: ServiceDeps,
   input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
-  const query = await loadReferrerSpikesQuery();
-  return query(deps, input);
+  return getReferrerSpikesQuery(deps, input);
 }
 
 /** Pre-engine detector, kept for parity with V1 — no live callers today. */
@@ -688,7 +674,6 @@ export async function scanLegacyInsights(
   deps: ServiceDeps,
   projectId: string
 ): Promise<LegacyInsight[]> {
-  const createLegacyInsightsScanner = await loadLegacyDetector();
   return createLegacyInsightsScanner(deps).generateInsights(projectId);
 }
 

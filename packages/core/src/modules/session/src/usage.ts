@@ -7,18 +7,8 @@ import type { Organization } from '@openpanel/db/src/prisma-client';
 import { cacheablePerDeps } from '../../../cacheable-per-deps';
 import { sendEmail } from '../../../clients/email';
 import type { ServiceDeps } from '../../../services';
-
-// The two project counters stay a DYNAMIC import: jobs.registry.ts reaches
-// this file (session.jobs.ts -> session-end -> usage), and a static edge to
-// project.service.ts pulls a ClickHouse client into the registry's import
-// graph, which breaks the offline contract
-// verification/golden/queue-keys/check.sh depends on.
-function loadCounters() {
-  return Promise.all([
-    import('../../project/project.service'),
-    import('../../organization/organization.service'),
-  ]);
-}
+import { getOrganizationBillingEventsCount } from '../../organization/organization.service';
+import { getProjectEventsCount } from '../../project/project.service';
 
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
@@ -64,8 +54,6 @@ export const updateEventsCount = cacheablePerDeps(
       return;
     }
 
-    const [{ getProjectEventsCount }, { getOrganizationBillingEventsCount }] =
-      await loadCounters();
     const organizationEventsCount = await getOrganizationBillingEventsCount(
       deps,
       organization

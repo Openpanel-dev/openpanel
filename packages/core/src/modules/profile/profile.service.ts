@@ -13,14 +13,15 @@
 // M10-005: every function that touches ClickHouse or the profile buffer takes
 // `ServiceDeps` and reaches them as `deps.ch` (through ch-query.ts) and
 // `deps.buffers.profile`. The `loadChClient` / `loadProfileBuffer` lazy
-// loaders are gone (docs/TECH_DEBT.md §2, §4); `loadFilterCompiler` stays and
-// reaches a core sibling, not @openpanel/db.
+// loaders are gone (docs/TECH_DEBT.md §2, §4), and M15-202 made the last one
+// — the shared filter compiler — a plain static sibling import (ADR-022 R6).
 
 import { strip, toObject } from '@openpanel/shared';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type { IClickhouseSession } from '../session/session.service';
@@ -75,10 +76,6 @@ const PROFILE_FILTER_TARGET = {
 
 const ARRAY_INDEX_PATH_SEGMENT = /\.([0-9]+)\./g;
 const ARRAY_INDEX_PATH_TAIL = /\.([0-9]+)/g;
-
-function loadFilterCompiler() {
-  return import('../chart/src/table-filter-where');
-}
 
 export interface IProfileMetrics {
   lastSeen: Date | null;
@@ -186,7 +183,6 @@ async function compileProfileFilters(
   if (!filters?.length) {
     return {};
   }
-  const { buildFilterWhere } = await loadFilterCompiler();
   return buildFilterWhere(filters, projectId, PROFILE_FILTER_TARGET);
 }
 

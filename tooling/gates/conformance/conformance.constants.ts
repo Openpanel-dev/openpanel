@@ -108,6 +108,17 @@ export const RESIDUE_PATTERNS: readonly { label: string; pattern: RegExp }[] = [
  * R15 — constructors that open a connection or build a client. A `new` of one
  * of these, or a call to one of the factory names, at MODULE scope is the
  * violation; inside a factory body it is exactly what core is supposed to do.
+ *
+ * The name matched is the CONSTRUCTED one, however it is spelled: `new
+ * GitHub(...)` and `new Arctic.Google(...)` are the same construction, and a
+ * checker that only looked at bare identifiers could not see the second one at
+ * all (CONFORMANCE_PLAN.md §1l). `checkModuleScopeConstruction` resolves a
+ * qualified `new A.B.C()` down to `C` before looking it up here.
+ *
+ * The OAuth clients (`arctic`) are credential holders rather than sockets, so
+ * nothing about them has to be closed — but they are built from config and
+ * they are exactly what R15 means by "the app constructs": one at module scope
+ * would freeze a deployment's client id and secret into the import graph.
  */
 export const CONNECTION_CONSTRUCTOR_NAMES = new Set([
   'Redis',
@@ -121,6 +132,10 @@ export const CONNECTION_CONSTRUCTOR_NAMES = new Set([
   'Worker',
   'QueueEvents',
   'WebSocket',
+  // arctic's OAuth clients: modules/auth/src/oauth.ts builds all three per
+  // call, from `config.auth.*`.
+  'GitHub',
+  'Google',
 ]);
 export const CONNECTION_FACTORY_NAME_PATTERN =
   /^create(?:[A-Z][A-Za-z]*)?(?:Client|Connection|Redis|Db|Pool)$/;

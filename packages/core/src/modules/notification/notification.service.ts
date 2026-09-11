@@ -10,11 +10,10 @@
 // exported below. They are a separate file only so the enqueue side is not
 // dragged into every import of this one.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
+// Postgres is `deps.db` and `Prisma.DbNull` is `deps.prisma.DbNull`
+// (M15-202): nothing here imports @openpanel/db as a value, which is what
+// keeps constructing a client out of the eager barrel chain that
+// jobs.registry.ts and services.ts pull this module into.
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
@@ -36,13 +35,6 @@ import type {
   IChartEvent,
   IChartEventFilter,
 } from '../report/report.constants';
-
-/** Lazy: `context.ts` value-imports `services.ts`, so a static import here
- *  would put the whole service graph in this module's import graph — and this
- *  module is part of that graph. */
-function loadPrismaSentinels() {
-  return import('../../context').then((m) => m.prismaSentinels());
-}
 
 import type { ICreateNotificationRule } from './notification.constants';
 
@@ -334,7 +326,6 @@ export async function deliverNotification(
   });
 
   const payload = notification.payload;
-  const PrismaRuntime = await loadPrismaSentinels();
   // Returning rather than throwing here (and in the missing-config branch
   // below) resolves `notificationQueueJobs.sendNotification`'s promise
   // normally, so BullMQ records the job as completed instead of failed —
@@ -345,8 +336,8 @@ export async function deliverNotification(
   if (
     !isValidPayload<INotificationPayload>(
       payload,
-      PrismaRuntime.JsonNull,
-      PrismaRuntime.DbNull
+      deps.prisma.JsonNull,
+      deps.prisma.DbNull
     )
   ) {
     return new Error('Invalid payload');

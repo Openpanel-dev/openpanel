@@ -42,10 +42,17 @@ export type PrismaNamespace =
  * Prisma's JSON sentinels (`DbNull`, `JsonNull`): frozen constants that write
  * an explicit SQL NULL — or a JSON `null` — onto a nullable `Json?` column.
  * They are values on the namespace, not a client, so nothing about them is
- * per-request and `ServiceDeps` carries no field for them.
+ * per-request — but they are still `@openpanel/db` VALUES, and the four
+ * modules that write a `Json?` column each reached them through a lazy
+ * `load*` back into this file. ADR-022 R6 has one answer for that: the scope
+ * carries it. `main.ts` reads the two off the namespace once and puts them on
+ * `AppDeps`; every writer reads `deps.prisma.DbNull`. Two named fields, not
+ * the namespace itself — nothing else on it belongs in a request scope, and
+ * `Prisma` is a very large type for every consumer's `tsc` to walk.
  */
-export function prismaSentinels(): Promise<PrismaNamespace> {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.Prisma);
+export interface PrismaSentinels {
+  DbNull: PrismaNamespace['DbNull'];
+  JsonNull: PrismaNamespace['JsonNull'];
 }
 
 /**
@@ -83,6 +90,7 @@ export type { CoreConfig } from './config';
 /** Boot scope. Built once in apps/api's main.ts, closed once in shutdown. */
 export interface AppDeps {
   db: Db;
+  prisma: PrismaSentinels;
   ch: ClickHouseClient;
   redis: RedisClient;
   clients: ServiceClients;
@@ -95,6 +103,7 @@ export interface AppDeps {
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
 export interface Ctx {
   db: Db;
+  prisma: PrismaSentinels;
   ch: ClickHouseClient;
   redis: RedisClient;
   clients: ServiceClients;
@@ -134,6 +143,7 @@ export interface ScopeMeta {
 export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
   const ctx: Ctx = {
     db: deps.db,
+    prisma: deps.prisma,
     ch: deps.ch,
     redis: deps.redis,
     clients: deps.clients,
@@ -170,6 +180,7 @@ function installLazyServices(ctx: Ctx): void {
     get() {
       built ??= createServices({
         db: ctx.db,
+        prisma: ctx.prisma,
         ch: ctx.ch,
         redis: ctx.redis,
         clients: ctx.clients,

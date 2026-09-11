@@ -68,6 +68,7 @@ function stubJobCtx(
   };
   return {
     db: {} as AppDeps['db'],
+    prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
     redis: {} as AppDeps['redis'],
     clients: {} as AppDeps['clients'],

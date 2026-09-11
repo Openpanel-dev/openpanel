@@ -50,13 +50,14 @@ export function testServices(): () => Services {
 export async function testServiceDeps(
   overrides: Partial<ServiceDeps> = {}
 ): Promise<ServiceDeps> {
-  const [{ db }, { ch }, redis] = await Promise.all([
+  const [{ db, Prisma }, { ch }, redis] = await Promise.all([
     import('@openpanel/db/src/prisma-client'),
     import('@openpanel/db/src/clickhouse/client'),
     import('@openpanel/redis').then((m) => m.getRedisCache()),
   ]);
   return {
     db,
+    prisma: { DbNull: Prisma.DbNull, JsonNull: Prisma.JsonNull },
     ch,
     redis,
     logger: recordingLogger(),

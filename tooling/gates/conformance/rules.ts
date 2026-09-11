@@ -544,6 +544,25 @@ export function checkResidue(files: ResidueScanInput[]): Metric[] {
 // --- R15 ----------------------------------------------------------------------
 
 /**
+ * The name a `new` expression actually constructs, however it is qualified.
+ *
+ * `new GitHub(...)` is an identifier; `new Arctic.Google(...)` is a property
+ * access, and an `ts.isIdentifier` guard cannot see it at all — the checker
+ * would walk straight past a namespace-imported client
+ * (CONFORMANCE_PLAN.md §1l). Both spellings construct the same thing, so both
+ * resolve to the rightmost name here.
+ */
+function constructedName(expression: ts.Expression): string | undefined {
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  if (ts.isPropertyAccessExpression(expression)) {
+    return expression.name.text;
+  }
+  return undefined;
+}
+
+/**
  * R15 — core declares, the app constructs. Nothing in core opens a socket,
  * connection or client at import time.
  *
@@ -559,17 +578,18 @@ export function checkModuleScopeConstruction(sources: ParsedSource[]): Metric {
       if (!isAtModuleScope(node)) {
         return;
       }
-      if (
-        ts.isNewExpression(node) &&
-        ts.isIdentifier(node.expression) &&
-        CONNECTION_CONSTRUCTOR_NAMES.has(node.expression.text)
-      ) {
-        offenders.push({
-          file: source.path,
-          line: lineOf(source, node.getStart(source.sourceFile)),
-          detail: `new ${node.expression.text}( at module scope`,
-        });
-        return;
+      if (ts.isNewExpression(node)) {
+        const constructed = constructedName(node.expression);
+        if (constructed && CONNECTION_CONSTRUCTOR_NAMES.has(constructed)) {
+          offenders.push({
+            file: source.path,
+            line: lineOf(source, node.getStart(source.sourceFile)),
+            detail: `new ${node.expression.getText(source.sourceFile)}( at module scope`,
+          });
+          // Only a MATCH stops the walk: `new Wrapper(new Redis())` must
+          // still reach the inner construction.
+          return;
+        }
       }
       if (
         ts.isCallExpression(node) &&

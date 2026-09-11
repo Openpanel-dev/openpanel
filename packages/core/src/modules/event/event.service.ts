@@ -23,17 +23,20 @@
 // `loadDb` / `loadChClient` / `loadDbBuffers` lazy loaders are gone, and so
 // are the two `import('@openpanel/core')` self-barrel hops this file made for
 // `resolveDateRange` — imported straight from `shared/`
-// (docs/TECH_DEBT.md §2, §4). What stays lazy is named and
-// argued at each remaining `load*` below; none of them reach @openpanel/db.
+// (docs/TECH_DEBT.md §2, §4). M15-202 removed the last three lazy loaders
+// here: the filter compiler and `getCache` are plain static imports, and the
+// session lookup arrives through the composition root's thunk (ADR-022 R3).
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
+import { getCache } from '@openpanel/redis';
 import { DateTime, resolveDateRange, toDots } from '@openpanel/shared';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
+import { buildFilterWhere } from '../chart/src/table-filter-where';
 import {
   getProfileById,
   getProfilesCached,
@@ -102,26 +105,6 @@ const QUERY_EVENTS_FILTER_TARGET = {
   profileIdExpr: 'profile_id',
   groupsExpr: 'groups',
 } as const;
-
-// Lazy for the same reason subscription.service.ts's is: core tests that
-// partially mock `@openpanel/redis` (no `getCache`) reach this module through
-// the core barrel.
-function loadCache() {
-  return import('@openpanel/redis').then((m) => m.getCache);
-}
-
-function loadFilterCompiler() {
-  return import('../chart/src/table-filter-where');
-}
-
-// Lazy: session.service → session-end → this module is a static chain, and a
-// static edge back would be a plain import cycle evaluated in the wrong order.
-// Keep this the ONLY dynamic edge on that loop — a second one (e.g. session-end
-// lazily importing this module) panics rolldown when apps/worker bundles the
-// workspace (module_finalizers "no entry found for key").
-function loadSessionService() {
-  return import('../session/session.service');
-}
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -918,7 +901,6 @@ export async function getTopEventNames(
   deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
-  const getCache = await loadCache();
   return getCache(
     `mcp:event-names:${projectId}`,
     TOP_EVENT_NAMES_CACHE_SECONDS,
@@ -1054,7 +1036,6 @@ export async function queryEventsCore(
 ): Promise<IClickhouseEvent[]> {
   let filterClauses: CompiledFilterClauses = {};
   if (input.filters?.length) {
-    const { buildFilterWhere } = await loadFilterCompiler();
     filterClauses = buildFilterWhere(
       input.filters,
       input.projectId,
@@ -1106,8 +1087,12 @@ export async function updateEventMeta(
   });
 }
 
+/** The session half arrives through the composition root's thunk (ADR-022 R3):
+ *  `session.service` → `session-end` → this module is a static chain, so an
+ *  import back would be a plain cycle evaluated in the wrong order. */
 export async function getEventDetails(
   deps: ServiceDeps,
+  services: () => Services,
   input: {
     projectId: string;
     id: string;
@@ -1118,11 +1103,10 @@ export async function getEventDetails(
   if (!event) {
     return null;
   }
-  const { getSessionById } = await loadSessionService();
   const session = event.sessionId
-    ? await getSessionById(deps, event.sessionId, input.projectId).catch(
-        () => undefined
-      )
+    ? await services()
+        .session.getById(event.sessionId, input.projectId)
+        .catch(() => undefined)
     : undefined;
   return { event, session };
 }

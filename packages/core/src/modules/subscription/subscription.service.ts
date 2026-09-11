@@ -13,10 +13,9 @@
 //
 // M10-004: every function takes `ServiceDeps` and reaches Postgres as
 // `deps.db`; the `loadDb()`/`loadPrisma()` lazy loaders are gone.
-// `Prisma.DbNull` (the JSON-column null sentinel) has no home on `deps` — it
-// is a plain value on the namespace, not the client — so it is reached
-// through `context.ts`'s `prismaSentinels()` instead of importing
-// `@openpanel/db` here.
+// M15-202: `Prisma.DbNull` (the JSON-column null sentinel) arrives as
+// `deps.prisma` — the app shell puts the two sentinels on `AppDeps` — rather
+// than through a lazy import back into `context.ts`.
 
 import {
   applySubscriptionDiscount,
@@ -51,13 +50,6 @@ import {
   type IPauseSubscription,
   zCancellationReason,
 } from './subscription.constants';
-
-/** Lazy: `context.ts` value-imports `services.ts`, so a static import here
- *  would put the whole service graph in this module's import graph — and this
- *  module is part of that graph. */
-function loadPrismaSentinels() {
-  return import('../../context').then((m) => m.prismaSentinels());
-}
 
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
@@ -554,7 +546,7 @@ async function syncSubscriptionToOrg(
     );
   }
 
-  const { DbNull } = await loadPrismaSentinels();
+  const { DbNull } = deps.prisma;
 
   const updateData = {
     subscriptionId: data.id,

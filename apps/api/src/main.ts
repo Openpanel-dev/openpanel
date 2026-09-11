@@ -83,7 +83,7 @@ import {
   type WorkerHandle,
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
-import { db } from '@openpanel/db/src/prisma-client';
+import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
@@ -186,6 +186,10 @@ function buildDeps(): AppDeps {
     // the cache Redis, handed down so a service reaches them through its
     // request-scoped `Ctx` instead of importing them (TECH_DEBT §4).
     db,
+    // Prisma's two JSON sentinels, so the four modules that write a nullable
+    // `Json?` column read them off the scope instead of importing the client
+    // (ADR-022 R6).
+    prisma: { DbNull: Prisma.DbNull, JsonNull: Prisma.JsonNull },
     ch,
     redis: getRedisCache(),
     clients: createClients(),

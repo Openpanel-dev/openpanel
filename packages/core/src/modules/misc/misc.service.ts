@@ -16,14 +16,13 @@
 // guarded by their `.parity.test.ts` siblings). Converting the STATEMENTS is
 // ADR-013's P7 work, not this wave's.
 //
-// `getCache` (not `getRedisCache`) is lazy for the same reason
-// subscription.service.ts's header gives: a static `import { getCache } from
-// '@openpanel/redis'` here broke every core test that partially mocks
-// `@openpanel/redis` with no `getCache` export (e.g.
-// organization.service.test.ts, gsc.service.test.ts).
+// M15-202: `getCache` is a plain static import (ADR-022 R6). It was lazy to
+// survive core tests that partially mock `@openpanel/redis` without a
+// `getCache` export; those mocks snapshot the real module and spread it now,
+// so the loader bought nothing.
 
 import crypto from 'node:crypto';
-import { getRedisCache } from '@openpanel/redis';
+import { getCache, getRedisCache } from '@openpanel/redis';
 import {
   assertPublicUrl,
   BlockedUrlError,
@@ -47,10 +46,6 @@ import {
   processOgImage,
 } from './src/image-proxy';
 import { parseUrlMeta } from './src/parse-url-meta';
-
-function loadCache() {
-  return import('@openpanel/redis').then((m) => m.getCache);
-}
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24h — binary favicon/og cache
 const MAX_FETCH_BYTES = 1_000_000; // 1MB cap
@@ -371,7 +366,6 @@ export interface StatsResult {
 }
 
 export async function getStats(deps: ServiceDeps): Promise<StatsResult> {
-  const getCache = await loadCache();
   const res = await getCache(
     STATS_CACHE_KEY,
     STATS_CACHE_TTL_SECONDS,

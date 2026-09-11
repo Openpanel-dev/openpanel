@@ -148,6 +148,7 @@ test('ImportService.enqueue adds the import job onto the import queue', async ()
   const service = createImportService(
     {
       db: {} as AppDeps['db'],
+      prisma: {} as AppDeps['prisma'],
       ch: {} as AppDeps['ch'],
       redis: {} as AppDeps['redis'],
       clients: {} as AppDeps['clients'],

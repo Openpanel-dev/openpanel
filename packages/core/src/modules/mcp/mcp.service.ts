@@ -51,25 +51,6 @@ export interface McpHttpResult {
 }
 
 /**
- * `Prisma.DbNull` — the explicit-SQL-NULL sentinel `dashboard-management.ts`
- * writes onto a nullable Json column. A frozen CONSTANT, not a client and not
- * a service graph: nothing about it is per-request, and resolving it opens no
- * connection.
- *
- * It comes off `context.ts` because that is the ONE file in this package
- * `core-uses-ctx-not-db-internals` lets name `@openpanel/db`'s Prisma
- * namespace, and `ServiceDeps` has no field for it — the same door
- * `notification.service.ts`, `subscription.service.ts` and
- * `insight/src/store.ts` use for the same sentinel. The tool tree itself
- * reaches Postgres and ClickHouse through `deps`.
- */
-function dbJsonNull(): Promise<unknown> {
-  return import('../../context').then((m) =>
-    m.prismaSentinels().then((prisma) => prisma.DbNull)
-  );
-}
-
-/**
  * Handle one stateless MCP POST request end-to-end.
  *
  * Auth failures resolve to a 401 result rather than throwing, so the caller
@@ -107,7 +88,7 @@ export async function handleStatelessMcpRequest(
     'method' in message && message.method === 'initialize';
   const start = Date.now();
   const response = await runOnEphemeralServer(
-    { context, deps, dbJsonNull: await dbJsonNull(), services },
+    { context, deps, dbJsonNull: deps.prisma.DbNull, services },
     message,
     isInitializeRequest
   );
