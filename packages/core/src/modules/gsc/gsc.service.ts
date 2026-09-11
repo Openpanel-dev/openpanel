@@ -26,7 +26,6 @@
 
 import { decrypt, encrypt } from '@openpanel/shared/server';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
-import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
@@ -48,37 +47,26 @@ async function refreshGscToken(
   config: CoreConfig,
   refreshToken: string
 ): Promise<{ accessToken: string; expiresAt: Date }> {
-  const { clientId, clientSecret } = config.auth.google;
+  const { clientId, clientSecret } = config.auth.googleGsc;
   if (!(clientId && clientSecret)) {
     throw new Error(
       'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in this environment'
     );
   }
 
-  const params = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
-    refresh_token: refreshToken,
-    grant_type: 'refresh_token',
-  });
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to refresh GSC token: ${text}`);
+  // Arctic's Google client already implements this grant — same clientId/
+  // clientSecret/tokenEndpoint the authorization-code exchange below uses.
+  try {
+    const tokens =
+      await googleGscClient(config).refreshAccessToken(refreshToken);
+    return {
+      accessToken: tokens.accessToken(),
+      expiresAt: tokens.accessTokenExpiresAt(),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to refresh GSC token: ${message}`);
   }
-
-  const data = (await res.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
-  const expiresAt = new Date(Date.now() + data.expires_in * 1000);
-  return { accessToken: data.access_token, expiresAt };
 }
 
 export async function getGscAccessToken(
@@ -910,38 +898,50 @@ export async function getGscSearchEngines(
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
+  const ch = deps.ch;
 
-  const where = (window: { start: string; end: string }) =>
-    `project_id = '${projectId}'
+  const WHERE = `project_id = {projectId: String}
       AND referrer_type = 'search'
-      AND created_at >= '${window.start}'
-      AND created_at < '${window.end}'`;
+      AND created_at >= {start: String}
+      AND created_at < {end: String}`;
+  const params = (window: { start: string; end: string }) => ({
+    projectId,
+    start: window.start,
+    end: window.end,
+  });
 
-  const [engines, [currentResult], [prevResult]] = await Promise.all([
-    chQuery<{ name: string; sessions: number }>(
-      deps,
-      `SELECT
+  const [enginesRes, currentRes, prevRes] = await Promise.all([
+    ch.query({
+      query: `SELECT
         referrer_name as name,
         count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
-      WHERE ${where(windows.current)}
+      WHERE ${WHERE}
       GROUP BY name
       ORDER BY sessions DESC
-      LIMIT 10`
-    ),
-    chQuery<{ sessions: number }>(
-      deps,
-      `SELECT count(*) as sessions
+      LIMIT 10`,
+      query_params: params(windows.current),
+      format: 'JSONEachRow',
+    }),
+    ch.query({
+      query: `SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
-      WHERE ${where(windows.current)}`
-    ),
-    chQuery<{ sessions: number }>(
-      deps,
-      `SELECT count(*) as sessions
+      WHERE ${WHERE}`,
+      query_params: params(windows.current),
+      format: 'JSONEachRow',
+    }),
+    ch.query({
+      query: `SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
-      WHERE ${where(windows.previous)}`
-    ),
+      WHERE ${WHERE}`,
+      query_params: params(windows.previous),
+      format: 'JSONEachRow',
+    }),
   ]);
+
+  const engines = await enginesRes.json<{ name: string; sessions: number }>();
+  const [currentResult] = await currentRes.json<{ sessions: number }>();
+  const [prevResult] = await prevRes.json<{ sessions: number }>();
 
   return {
     engines,
@@ -959,32 +959,44 @@ export async function getGscAiEngines(
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
+  const ch = deps.ch;
 
   // Matched by name — will switch to referrer_type = 'ai' once available.
-  const where = (window: { start: string; end: string }) =>
-    `project_id = '${projectId}'
+  // AI_REFERRER_FILTER is fixed, non-user text; only the caller's own
+  // projectId/dates need to be bound.
+  const WHERE = `project_id = {projectId: String}
       AND ${AI_REFERRER_FILTER}
-      AND created_at >= '${window.start}'
-      AND created_at < '${window.end}'`;
+      AND created_at >= {start: String}
+      AND created_at < {end: String}`;
+  const params = (window: { start: string; end: string }) => ({
+    projectId,
+    start: window.start,
+    end: window.end,
+  });
 
-  const [engines, [prevResult]] = await Promise.all([
-    chQuery<{ name: string; sessions: number }>(
-      deps,
-      `${AI_REFERRER_CTE}
+  const [enginesRes, prevRes] = await Promise.all([
+    ch.query({
+      query: `${AI_REFERRER_CTE}
       SELECT ${AI_REFERRER_CANONICAL_NAME} as name, count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
-      WHERE ${where(windows.current)}
+      WHERE ${WHERE}
       GROUP BY name
-      ORDER BY sessions DESC`
-    ),
-    chQuery<{ sessions: number }>(
-      deps,
-      `${AI_REFERRER_CTE}
+      ORDER BY sessions DESC`,
+      query_params: params(windows.current),
+      format: 'JSONEachRow',
+    }),
+    ch.query({
+      query: `${AI_REFERRER_CTE}
       SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
-      WHERE ${where(windows.previous)}`
-    ),
+      WHERE ${WHERE}`,
+      query_params: params(windows.previous),
+      format: 'JSONEachRow',
+    }),
   ]);
+
+  const engines = await enginesRes.json<{ name: string; sessions: number }>();
+  const [prevResult] = await prevRes.json<{ sessions: number }>();
 
   return {
     engines,
