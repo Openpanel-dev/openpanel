@@ -131,23 +131,26 @@ services:
     restart: always
     # P9.5 collapsed the two-Dockerfile setup onto oven/bun, and P13
     # (ADR-014, M13-003) made bun the installer as well, so no second package
-    # manager exists in this image or in the repo it is built from. Nothing
-    # here may invoke one: migrations and boot run the installed binaries
-    # directly (their `#!/bin/sh` shims resolve `node` to Bun's node-fallback
-    # shim) and `bun run start` for apps/api's own script.
+    # manager exists in this image or in the repo it is built from.
     #
-    # KNOWN BREAK, pre-existing and NOT introduced by P13: `prisma` is a
-    # devDependency of packages/db, so the image's production-only install
-    # correctly omits it and the first line below cannot run. Measured against
-    # a freshly built image on 2026-09-07:
-    # `sh: ./node_modules/.bin/prisma: not found`. Recorded in
-    # docs/TECH_DEBT.md; fixing it is a decision about what the image ships,
-    # not an installer change.
+    # MIGRATIONS RUN HERE, in the api container's start command (Carl,
+    # 2026-09-08). The Prisma CLI is a devDependency of packages/db, so the
+    # image's production-only install correctly omits it; `bunx` fetches it at
+    # start instead of the image carrying the CLI plus @prisma/engines (~86 MB)
+    # for a command that runs once per deploy. The version is PINNED because a
+    # bare `bunx prisma` fetches latest, which can drift from the generated
+    # client and the schema this image ships. Accepted consequence: the api
+    # container needs npm-registry reach at start.
+    #
+    # The code migrations run through `scripts/migrate-code.ts`, the shell that
+    # reads the environment for them — `src/code-migrations/migrate.ts` only
+    # exports the runner (ADR-022 R7), and the `jiti` this line used to name is
+    # no longer a dependency of anything.
     command: >
       sh -c "
         echo 'Running migrations...'
-        cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
-        cd /app/packages/core && ./node_modules/.bin/jiti src/code-migrations/migrate.ts
+        cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+        cd /app/packages/core && bun scripts/migrate-code.ts
 
         cd /app/apps/api && bun run start
       "

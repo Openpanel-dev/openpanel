@@ -1737,6 +1737,54 @@ between them is a decision about what the image contains, not an installer
 change. M13-003's scope is the swap. The note is repeated in both compose
 templates so a self-hoster reading the file sees it.
 
+**RESOLVED by M15-203 (2026-09-11).** Carl decided the question on 2026-09-08:
+`bunx`, and migrations stay in the api container's start command. All three
+compose files now run `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy`
+— pinned, because a bare `bunx prisma` fetches latest and can drift from the
+generated client and the schema. The api image does not carry the CLI plus
+`@prisma/engines` (~86 MB) for a once-per-deploy command; the accepted cost is
+that the container needs npm-registry reach at start. `apps/api/Dockerfile`'s
+runtime stage now asserts `packages/db/prisma/schema.prisma`,
+`packages/db/prisma/migrations` and `packages/core/scripts/migrate-code.ts` at
+build time, and `.github/smoke/smoke.sh` gained `assert_migrations_ran`, because
+`sh -c` does not stop on a failed line — which is how this shipped unnoticed.
+Verified 2026-09-11 inside the built image as uid 1000 against a scratch local
+Postgres: "All migrations have been successfully applied.", then "No pending
+migrations to apply." on a re-run.
+
+Two corrections to the paragraph above, both measured 2026-09-11:
+
+- The claim that "both the old and the new image install production
+  dependencies only" is wrong about the old one. On `main`,
+  `apps/api/Dockerfile` copied `packages/db` from a build stage installed WITH
+  devDependencies, so `packages/db/node_modules/.bin/prisma` shipped by
+  construction. This was a **rewrite-introduced regression**, not a
+  longstanding gap.
+- `./node_modules/.bin/jiti` is no longer present either — `jiti` is not a
+  dependency of any workspace package any more, and
+  `src/code-migrations/migrate.ts` now only *exports* the runner (ADR-022 R7).
+  The compose files run `cd /app/packages/core && bun scripts/migrate-code.ts`
+  instead, which is the shell that reads the environment for it.
+
+### `3-init-ch.ts` cannot run against an empty ClickHouse database
+
+Found while proving M15-203's start command; **outside that task's scope, left
+unfixed**. `packages/core/src/code-migrations/3-init-ch.ts` (and its paired
+`3-init-ch.sql:1`) opens with
+
+```
+RENAME TABLE cohort_events_mv TO cohort_events_mv_tmp
+```
+
+so on a database where that materialized view does not exist yet the migration
+dies with `Table <db>.cohort_events_mv doesn't exist (UNKNOWN_TABLE, code 60)`.
+Measured 2026-09-11 twice, against two freshly created ClickHouse databases —
+once inside the built api image, once on the host with
+`bun packages/core/scripts/migrate-code.ts` — with identical output, so it is
+neither an image nor a container property. Migrations 1 and 2 apply first, so a
+fresh self-host install is left partially migrated rather than untouched. The
+api still boots: the shipped start command is one `sh -c` without `set -e`.
+
 ### Also recorded
 
 - **`.bun-version` still does not exist.** ADR-016 names it as Bun's declared

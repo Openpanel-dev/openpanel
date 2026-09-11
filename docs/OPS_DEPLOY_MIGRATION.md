@@ -5,6 +5,14 @@
 > agent has applied it. Source facts are `docs/ANSWERS.md §1.1` and `§1.3`
 > (Carl-authored, authoritative).
 
+> **SUPERSEDED, 2026-09-11 (M15-203) — the migration commands only.** Every
+> `./node_modules/.bin/prisma` / `./node_modules/.bin/jiti` invocation below is
+> a record of what a past attempt verified, and neither binary is in the image
+> any more. The shipped commands are now
+> `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy` and
+> `cd /app/packages/core && bun scripts/migrate-code.ts`; see
+> `docs/DOCKER_IMAGES.md`. Everything else in this file stands.
+
 ## What changed in the repo
 
 `apps/worker` is deleted (M9-003) and `apps/api/Dockerfile` now builds a

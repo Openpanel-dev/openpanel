@@ -81,6 +81,28 @@ assert_ssr_route() {
   echo "  $path OK (HTTP 200, ${#body} bytes)"
 }
 
+# The api container's start command runs `prisma migrate deploy` before it
+# boots, and `sh -c` does not stop on a failed line — so a broken migration
+# step is invisible: the api starts anyway and every probe stays green. That is
+# exactly how the rewrite shipped an image whose start command could not find
+# the Prisma CLI at all. Assert the step's own success line instead.
+assert_migrations_ran() {
+  local logs
+  logs=$(docker compose logs --no-color op-api 2>/dev/null || true)
+
+  if echo "$logs" | grep -qE 'sh: .*: not found|command not found'; then
+    echo "--- matching lines ---"
+    echo "$logs" | grep -nE 'sh: .*: not found|command not found' | head -20
+    fail "op-api's start command could not find a binary it invokes"
+  fi
+  if ! echo "$logs" | grep -q 'migrations have been successfully applied\|No pending migrations to apply'; then
+    echo "--- op-api logs (first 80 lines) ---"
+    echo "$logs" | head -80
+    fail "op-api never reported a successful 'prisma migrate deploy'"
+  fi
+  echo "  op-api migrations applied"
+}
+
 # An SSR failure that gets swallowed into a 200 would still show up here.
 assert_no_server_errors() {
   local svc="$1" logs
@@ -102,6 +124,9 @@ echo "==> service reachability"
 wait_for "api" "$API/healthcheck"
 wait_for "worker" "$WORKER/healthz/ready"
 wait_for "dashboard" "$DASHBOARD/api/healthcheck"
+
+echo "==> database migrations"
+assert_migrations_ran
 
 echo "==> SSR rendering (the check that would have caught main-8e60)"
 assert_ssr_route "/login"

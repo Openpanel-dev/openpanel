@@ -111,9 +111,9 @@ services:
     image: lindesvard/openpanel-api:latest
     restart: always
     # Same contract as docker-compose.template.yml's op-api: no second package
-    # manager exists in this image (P13 / ADR-014), so nothing below may invoke
-    # one. The same KNOWN, pre-existing `prisma` break applies — see the note
-    # there and docs/TECH_DEBT.md.
+    # manager exists in this image (P13 / ADR-014), migrations run in this
+    # container's start command, and the Prisma CLI is fetched by `bunx` at a
+    # PINNED version rather than shipped. See the long note there.
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...'
@@ -129,8 +129,8 @@ services:
         echo 'ClickHouse is ready'
 
         echo 'Running migrations...'
-        cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
-        cd /app/packages/core && ./node_modules/.bin/jiti src/code-migrations/migrate.ts
+        cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+        cd /app/packages/core && bun scripts/migrate-code.ts
 
         cd /app/apps/api && bun run start
       "

@@ -82,8 +82,8 @@ services:
     command: >
       sh -c "
         echo 'Running migrations...'
-        cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
-        cd /app/packages/core && ./node_modules/.bin/jiti src/code-migrations/migrate.ts
+        cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+        cd /app/packages/core && bun scripts/migrate-code.ts
 
         cd /app/apps/api && bun run start
       "
