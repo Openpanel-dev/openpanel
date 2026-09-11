@@ -381,7 +381,6 @@
         "react": "catalog:",
         "react-dom": "catalog:",
         "resend": "4.0.1",
-        "responsive-react-email": "0.0.5",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -5213,8 +5212,6 @@
     "resolve-pkg-maps": ["resolve-pkg-maps@1.0.0", "", {}, "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw=="],
 
     "resolve-workspace-root": ["resolve-workspace-root@2.0.1", "", {}, "sha512-nR23LHAvaI6aHtMg6RWoaHpdR4D881Nydkzi2CixINyg9T00KgaJdJI6Vwty+Ps8WLxZHuxsS0BseWjxSA4C+w=="],
-
-    "responsive-react-email": ["responsive-react-email@0.0.5", "", { "peerDependencies": { "react": "18.x", "react-email": "1.x" } }, "sha512-r+Z6Yp6G3Sm9eKmttsb8GVij25rXJGN2eoQ9OfMcuVMfBfq1NdytIFLBo/6wdMW1zw+ko1FEUG/zgRyK9UuYLw=="],
 
     "restore-cursor": ["restore-cursor@3.1.0", "", { "dependencies": { "onetime": "^5.1.0", "signal-exit": "^3.0.2" } }, "sha512-l+sSefzHpj5qimhFSE5a8nufZYAM3sBSVMAPtYkmC+4EH2anSGaEMXSD0izRQbu9nfyQ9y5JrVmp7E8oZrUjvA=="],
 

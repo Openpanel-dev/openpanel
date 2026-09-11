@@ -2167,3 +2167,60 @@ M15-201's target and widening the scan is a change to what that gate asserts.
 moved onto the jobs themselves; the export is gone and the script dies on
 `sch.CRON_SCHEDULES.map`. Verified pre-existing by stashing this task's diff
 and re-running: same failure at `20f63a8f`.
+
+## 2026-09-11 — M15-205, `responsive-react-email` deleted; api image measured before/after
+
+`docs/DOCKER_SLIMMING.md` §2.2 (M14-203) had already proved the cause: a
+*production* dependency, `packages/email/package.json:19`'s
+`responsive-react-email@0.0.5`, pulls `react-email@3.0.4` in as a peer, which
+pulls `next@15.0.4` and both `@next/swc-linux-x64-*` binaries — none of it
+imported anywhere (`grep -rn "responsive-react-email"` over `packages/` and
+`apps/` found only the manifest line). This task deletes the line and
+regenerates `bun.lock` + `tooling/gates/p13-lock-snapshot.json` in the same
+commit.
+
+**Measured here, following `DOCKER_SLIMMING.md` §0's method exactly** — two
+whole `openpanel-api` images, both built from `apps/api/Dockerfile` at the
+same commit (`d8e50c2f`), differing only in this task's three-file diff, never
+from an edited file in the tracked tree (the diff was `git stash`-held during
+the "before" build and restored once the build context had been read):
+
+```
+docker build -f apps/api/Dockerfile -t <tag> \
+  --build-arg DATABASE_URL=postgresql://p13-gate:p13-gate@127.0.0.1:1/p13-gate .
+```
+
+| Image | COMPRESSED (`docker image inspect .Size`) | UNCOMPRESSED (`docker history` layer sum) |
+|---|---:|---:|
+| before — `d8e50c2f`, dependency present | **341,481,099 B** (341.5 MB) | **1,472,071,590 B** (1.47 GB) |
+| after — this task's diff applied | **242,937,660 B** (242.9 MB) | **963,071,590 B** (963.1 MB) |
+| **delta** | **−98,543,439 B (−28.9 %)** | **−509,000,000 B (−34.6 %)** |
+
+The uncompressed figure is `docker history --no-trunc --format '{{.Size}}'`
+summed from Docker's rounded human units (same caveat `DOCKER_SLIMMING.md` §0
+notes about its own per-layer table), so treat it to three significant
+figures; the compressed figure is the exact byte count everything else here
+is keyed to.
+
+`docker history` on the two images is identical line-for-line except one:
+
+```
+COPY --chown=bun:bun /app/node_modules ./node_modules   1.17GB  →  661MB
+```
+
+— confirming the whole delta is the one dependency edge, nothing else moved.
+Inside the "after" image's `node_modules/.bun` store: 884 entries (was 951,
+−67); `next`, `react-email` (bare) and both `@next/swc-linux-x64-*` are
+absent; `@react-email/*` (the real, still-declared production dependency of
+`packages/email`) is unaffected. The after image boots: `docker run
+--network host` against this box's Postgres/ClickHouse/Redis gives
+`/healthz/ready` → `200` with no `Cannot find module` lines in the log.
+
+This delta (−98.5 MB compressed here) is smaller than §2.2's own
+`bun install --production` probe delta (144,263,771 B) because
+`apps/api/Dockerfile`'s `prod-deps` stage already prunes `*musl*` store
+entries (including `@next/swc-linux-x64-musl`, 54,344,971 B compressed of
+§2.2's four-entry total) as one of M15-203's cuts — that entry was already
+gone from the "before" image measured here, so this task cannot re-save it.
+The `react-email` + `next` + `@next/swc-linux-x64-gnu` chain is what remained
+to cut, and cutting it is exactly what this task does.

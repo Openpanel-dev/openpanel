@@ -16,7 +16,6 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "resend": "4.0.1",
-    "responsive-react-email": "0.0.5",
     "zod": "catalog:"
   },
   "devDependencies": {

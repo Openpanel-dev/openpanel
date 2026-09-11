@@ -346,7 +346,6 @@
     "react-dom": "19.2.3",
     "react-email": "3.0.4",
     "resend": "4.0.1",
-    "responsive-react-email": "0.0.5",
     "typescript": "5.9.3",
     "zod": "4.3.6"
   },
