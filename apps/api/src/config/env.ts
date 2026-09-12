@@ -29,6 +29,11 @@
 
 import type { CoreConfig } from '@openpanel/core';
 import { queues } from '@openpanel/core';
+// The producer's throughput knobs are shaped by the module that applies them
+// (ADR-022 R8: a module's `*.constants.ts` is the file an app may import), so
+// a renamed field fails to compile on both sides instead of going quietly
+// unread. See packages/core/src/modules/ingest/src/producer-tuning.ts.
+import type { KafkaProducerTuning } from '@openpanel/core/modules/ingest/ingest.constants';
 import { z } from 'zod';
 
 export const ROLE_VALUES = ['api', 'worker', 'all'] as const;
@@ -60,6 +65,12 @@ const DEFAULT_KAFKA_CONNECTION_TIMEOUT_MS = 2000;
 const DEFAULT_KAFKA_PRODUCER_RETRIES = 2;
 const DEFAULT_KAFKA_PRODUCER_INITIAL_RETRY_MS = 100;
 const DEFAULT_KAFKA_PRODUCER_MAX_RETRY_MS = 1000;
+/** One produce round-trip at a time — today's behaviour (M16-002 option 4). */
+const DEFAULT_KAFKA_PRODUCER_MAX_IN_FLIGHT = 1;
+/** Messages per `send()`. 1 = batching off (M16-002 option 2). */
+const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 1;
+/** A partial batch's maximum wait. Inert while the batch size is 1. */
+const DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS = 5;
 const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
@@ -417,6 +428,15 @@ const rawSchema = z.object({
   KAFKA_PRODUCER_MAX_RETRY_MS: positiveIntWithDefault(
     DEFAULT_KAFKA_PRODUCER_MAX_RETRY_MS
   ),
+  KAFKA_PRODUCER_MAX_IN_FLIGHT: positiveIntWithDefault(
+    DEFAULT_KAFKA_PRODUCER_MAX_IN_FLIGHT
+  ),
+  KAFKA_PRODUCER_BATCH_SIZE: positiveIntWithDefault(
+    DEFAULT_KAFKA_PRODUCER_BATCH_SIZE
+  ),
+  KAFKA_PRODUCER_BATCH_LINGER_MS: positiveIntWithDefault(
+    DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS
+  ),
   KAFKA_HANDLER_MAX_ATTEMPTS: positiveIntWithDefault(
     DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS
   ),
@@ -584,6 +604,46 @@ function deriveDashboardUrl(raw: RawEnv): string {
   return raw.DASHBOARD_URL ?? '';
 }
 
+/**
+ * The Kafka transport's knobs, plus the three producer tuning knobs the ingest
+ * module reads off the same object (`KafkaProducerTuning`). They are its
+ * fields rather than `KafkaConfig`'s only because
+ * `packages/core/src/config.ts` is outside M16-002's scope; the follow-up
+ * moves them onto `KafkaConfig` and this return type becomes plain
+ * `CoreConfig['kafka']`.
+ */
+function deriveKafkaConfig(
+  raw: RawEnv
+): CoreConfig['kafka'] & KafkaProducerTuning {
+  return {
+    clientId: raw.KAFKA_CLIENT_ID,
+    brokers: raw.KAFKA_BROKERS,
+    eventsTopic: raw.KAFKA_EVENTS_TOPIC,
+    // Same broker as the events topic, so a poison message is retained and
+    // countable instead of dropped (ADR-004 delivery semantics).
+    eventsDlqTopic:
+      raw.KAFKA_EVENTS_DLQ_TOPIC ?? `${raw.KAFKA_EVENTS_TOPIC}-dlq`,
+    consumerGroup: raw.KAFKA_CONSUMER_GROUP,
+    partitionsConcurrent: raw.KAFKA_PARTITIONS_CONCURRENT,
+    minMessages: raw.KAFKA_MIN_MESSAGES,
+    maxWaitMs: raw.KAFKA_MAX_WAIT_MS,
+    maxMessagesPerPartition: raw.KAFKA_MAX_MESSAGES_PER_PARTITION,
+    sessionTimeoutMs: raw.KAFKA_SESSION_TIMEOUT_MS,
+    heartbeatIntervalMs: raw.KAFKA_HEARTBEAT_INTERVAL_MS,
+    requestTimeoutMs: raw.KAFKA_REQUEST_TIMEOUT_MS,
+    connectionTimeoutMs: raw.KAFKA_CONNECTION_TIMEOUT_MS,
+    producerRetries: raw.KAFKA_PRODUCER_RETRIES,
+    producerInitialRetryMs: raw.KAFKA_PRODUCER_INITIAL_RETRY_MS,
+    producerMaxRetryMs: raw.KAFKA_PRODUCER_MAX_RETRY_MS,
+    producerMaxInFlight: raw.KAFKA_PRODUCER_MAX_IN_FLIGHT,
+    producerBatchSize: raw.KAFKA_PRODUCER_BATCH_SIZE,
+    producerBatchLingerMs: raw.KAFKA_PRODUCER_BATCH_LINGER_MS,
+    handlerMaxAttempts: raw.KAFKA_HANDLER_MAX_ATTEMPTS,
+    handlerRetryInitialMs: raw.KAFKA_HANDLER_RETRY_INITIAL_MS,
+    handlerRetryMaxMs: raw.KAFKA_HANDLER_RETRY_MAX_MS,
+  };
+}
+
 function deriveCoreConfig(raw: RawEnv): CoreConfig {
   const isProduction = raw.NODE_ENV === PRODUCTION;
   const exporter =
@@ -659,30 +719,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       saveDiscountId: raw.POLAR_SAVE_DISCOUNT_ID,
       webhookSecret: raw.POLAR_WEBHOOK_SECRET,
     },
-    kafka: {
-      clientId: raw.KAFKA_CLIENT_ID,
-      brokers: raw.KAFKA_BROKERS,
-      eventsTopic: raw.KAFKA_EVENTS_TOPIC,
-      // Same broker as the events topic, so a poison message is retained and
-      // countable instead of dropped (ADR-004 delivery semantics).
-      eventsDlqTopic:
-        raw.KAFKA_EVENTS_DLQ_TOPIC ?? `${raw.KAFKA_EVENTS_TOPIC}-dlq`,
-      consumerGroup: raw.KAFKA_CONSUMER_GROUP,
-      partitionsConcurrent: raw.KAFKA_PARTITIONS_CONCURRENT,
-      minMessages: raw.KAFKA_MIN_MESSAGES,
-      maxWaitMs: raw.KAFKA_MAX_WAIT_MS,
-      maxMessagesPerPartition: raw.KAFKA_MAX_MESSAGES_PER_PARTITION,
-      sessionTimeoutMs: raw.KAFKA_SESSION_TIMEOUT_MS,
-      heartbeatIntervalMs: raw.KAFKA_HEARTBEAT_INTERVAL_MS,
-      requestTimeoutMs: raw.KAFKA_REQUEST_TIMEOUT_MS,
-      connectionTimeoutMs: raw.KAFKA_CONNECTION_TIMEOUT_MS,
-      producerRetries: raw.KAFKA_PRODUCER_RETRIES,
-      producerInitialRetryMs: raw.KAFKA_PRODUCER_INITIAL_RETRY_MS,
-      producerMaxRetryMs: raw.KAFKA_PRODUCER_MAX_RETRY_MS,
-      handlerMaxAttempts: raw.KAFKA_HANDLER_MAX_ATTEMPTS,
-      handlerRetryInitialMs: raw.KAFKA_HANDLER_RETRY_INITIAL_MS,
-      handlerRetryMaxMs: raw.KAFKA_HANDLER_RETRY_MAX_MS,
-    },
+    kafka: deriveKafkaConfig(raw),
     buffers: {
       asyncInserts: raw.BUFFER_ASYNC_INSERTS,
       chInsertConcurrency: raw.BUFFER_CH_INSERT_CONCURRENCY,

@@ -25,6 +25,15 @@ import { createLogger, type ILogger } from '../../../pino-logger';
 // message shape it hands to this producer, and both files are now siblings.
 import type { DeadLetterMessage } from './consumer';
 import type { IncomingEventPayload } from './incoming-event';
+import {
+  createProducerBatcher,
+  type ProducerBatcher,
+} from './producer-batcher';
+import { sendWithFatalRecovery } from './producer-errors';
+import {
+  type ResolvedProducerTuning,
+  resolveProducerTuning,
+} from './producer-tuning';
 
 export type { Admin, EachBatchPayload, KafkaMessage } from 'kafkajs';
 
@@ -76,12 +85,16 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
   }
   if (!producerConnectPromise) {
     const client = getKafka(config);
+    const tuning = resolveProducerTuning(config.kafka);
     const p = client.producer({
       idempotent: true,
-      // 1 (not 5) to avoid in-flight reordering after a transient broker hiccup:
-      // with idempotency on and low retries, reordered batches trip
-      // OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
-      maxInFlightRequests: 1,
+      // Default 1 (not 5) to avoid in-flight reordering after a transient
+      // broker hiccup: with idempotency on and low retries, reordered batches
+      // trip OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
+      // KAFKA_PRODUCER_MAX_IN_FLIGHT raises it for a measurement run — read
+      // docs/KAFKA_PRODUCER_OPTIONS.md first: it is coupled to the retry
+      // policy, which is why the two are measured together and not alone.
+      maxInFlightRequests: tuning.maxInFlight,
       allowAutoTopicCreation: true,
       retry: {
         retries: config.kafka.producerRetries,
@@ -98,6 +111,12 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
           {
             brokers: config.kafka.brokers,
             topic: config.kafka.eventsTopic,
+            // The throughput knobs, logged once, so a measurement run can be
+            // tied to the configuration that produced it.
+            maxInFlight: tuning.maxInFlight,
+            batchSize: tuning.batchSize,
+            batchLingerMs: tuning.lingerMs,
+            batching: tuning.batchingEnabled,
           },
           'kafka producer connected'
         );
@@ -109,33 +128,6 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
       });
   }
   return producerConnectPromise;
-};
-
-// Kafka error codes that mean the producer's PID/sequence state is
-// permanently out of sync with the broker for some partition — only a
-// fresh PID (new producer instance) can recover.
-//   45 OUT_OF_ORDER_SEQUENCE_NUMBER
-//   46 DUPLICATE_SEQUENCE_NUMBER
-//   47 INVALID_PRODUCER_EPOCH
-//   65 UNKNOWN_PRODUCER_ID
-const FATAL_PRODUCER_ERROR_CODES = new Set<number>([45, 46, 47, 65]);
-
-const isFatalProducerError = (err: unknown): boolean => {
-  if (!err || typeof err !== 'object') {
-    return false;
-  }
-  const name = (err as { name?: string }).name;
-  // Retries-exceeded leaves the idempotent producer's sequence state
-  // suspect (broker may have persisted a batch we gave up on), so treat
-  // it as fatal-for-this-producer too.
-  if (name === 'KafkaJSNumberOfRetriesExceeded') {
-    return true;
-  }
-  if (name === 'KafkaJSProtocolError') {
-    const code = (err as { code?: number }).code;
-    return typeof code === 'number' && FATAL_PRODUCER_ERROR_CODES.has(code);
-  }
-  return false;
 };
 
 const resetProducer = (config: CoreConfig, broken: Producer): void => {
@@ -158,39 +150,68 @@ interface OutgoingMessage {
   headers?: IHeaders;
 }
 
-const send = async (
+// One send, one or many messages. The batching path (below) and the
+// unbatched path are the same call, so a batch that fails resets the producer
+// exactly like a lone message did.
+const sendMessages = (
   config: CoreConfig,
   topic: string,
-  message: OutgoingMessage
-): Promise<void> => {
-  const p = await getProducer(config);
-  try {
-    await p.send({
-      topic,
-      timeout: config.kafka.requestTimeoutMs,
-      messages: [message],
-    });
-  } catch (err) {
-    if (isFatalProducerError(err)) {
-      kafkaLogger(config).warn(
-        { err },
-        'kafka producer in fatal state; resetting for next call'
-      );
-      resetProducer(config, p);
-    }
-    throw err;
-  }
+  messages: OutgoingMessage[]
+): Promise<void> =>
+  getProducer(config).then((p) =>
+    sendWithFatalRecovery(
+      async () => {
+        await p.send({
+          topic,
+          timeout: config.kafka.requestTimeoutMs,
+          messages,
+        });
+      },
+      (err) => {
+        kafkaLogger(config).warn(
+          { err },
+          'kafka producer in fatal state; resetting for next call'
+        );
+        resetProducer(config, p);
+      }
+    )
+  );
+
+// Built on the first batched produce, from the tuning the config carries.
+// Only the events topic batches: the dead-letter path is low volume and its
+// messages are produced one poison record at a time, so it has no round-trip
+// to amortise.
+let eventsBatcher: ProducerBatcher<OutgoingMessage> | null = null;
+
+const getEventsBatcher = (
+  config: CoreConfig,
+  tuning: ResolvedProducerTuning
+): ProducerBatcher<OutgoingMessage> => {
+  eventsBatcher ??= createProducerBatcher<OutgoingMessage>({
+    batchSize: tuning.batchSize,
+    lingerMs: tuning.lingerMs,
+    send: (messages) =>
+      sendMessages(config, config.kafka.eventsTopic, messages),
+  });
+  return eventsBatcher;
 };
 
 export const produceIncomingEvent = async (
   config: CoreConfig,
   payload: IncomingEventPayload,
   partitionKey: string
-): Promise<void> =>
-  send(config, config.kafka.eventsTopic, {
+): Promise<void> => {
+  const message: OutgoingMessage = {
     key: Buffer.from(partitionKey),
     value: Buffer.from(JSON.stringify(payload)),
-  });
+  };
+  const tuning = resolveProducerTuning(config.kafka);
+  if (!tuning.batchingEnabled) {
+    await sendMessages(config, config.kafka.eventsTopic, [message]);
+    return;
+  }
+  await getEventsBatcher(config, tuning).enqueue(message);
+};
 
 // Why the reason/error/coordinates travel as headers and not in the value: the
 // value stays the producer's original bytes, so a DLQ message can be replayed
@@ -199,19 +220,21 @@ export const produceDeadLetterEvent = async (
   config: CoreConfig,
   message: DeadLetterMessage
 ): Promise<void> =>
-  send(config, config.kafka.eventsDlqTopic, {
-    key: message.key,
-    value: message.value,
-    headers: {
-      ...message.headers,
-      'dlq-source-topic': message.topic,
-      'dlq-source-partition': String(message.partition),
-      'dlq-source-offset': message.offset,
-      'dlq-reason': message.reason,
-      'dlq-error': message.error,
-      'dlq-at': new Date().toISOString(),
+  sendMessages(config, config.kafka.eventsDlqTopic, [
+    {
+      key: message.key,
+      value: message.value,
+      headers: {
+        ...message.headers,
+        'dlq-source-topic': message.topic,
+        'dlq-source-partition': String(message.partition),
+        'dlq-source-offset': message.offset,
+        'dlq-reason': message.reason,
+        'dlq-error': message.error,
+        'dlq-at': new Date().toISOString(),
+      },
     },
-  });
+  ]);
 
 const consumers = new Set<Consumer>();
 
@@ -302,6 +325,15 @@ export const sampleConsumerGroupLag = async (
 };
 
 export const disconnectKafka = async (config: CoreConfig): Promise<void> => {
+  // Whatever is still accumulating goes out before the producer closes, so a
+  // shutdown inside the linger window cannot strand an accepted event.
+  if (eventsBatcher) {
+    const batcher = eventsBatcher;
+    eventsBatcher = null;
+    await batcher.flush().catch((err) => {
+      kafkaLogger(config).error({ err }, 'kafka producer batch flush failed');
+    });
+  }
   const tasks: Promise<unknown>[] = [];
   for (const c of consumers) {
     tasks.push(

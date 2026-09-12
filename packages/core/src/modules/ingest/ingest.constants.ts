@@ -396,3 +396,24 @@ export interface DeprecatedDecrementProfilePayload {
   property: string;
   value: number;
 }
+
+// ----- The Kafka producer's throughput knobs (M16-002) -----
+//
+// `apps/api/src/config/env.ts` is the only reader of `process.env` (ADR-022
+// R7), and `<name>.constants.ts` is the one file of this module it may import
+// (R8) — so the shape of the three knobs it sets lives here, and both sides
+// break at compile time if a field is renamed. `src/producer-tuning.ts`
+// resolves them; `src/kafka.ts` applies them.
+//
+// They are optional because they ride on `config.kafka`, whose `KafkaConfig`
+// interface (`packages/core/src/config.ts`) is outside M16-002's scope and so
+// cannot declare them. See the header of `src/producer-tuning.ts`.
+
+export interface KafkaProducerTuning {
+  /** kafkajs `maxInFlightRequests`. Default 1: one round-trip at a time. */
+  producerMaxInFlight?: number;
+  /** Messages per `send()`. Default 1: batching off. */
+  producerBatchSize?: number;
+  /** A partial batch's maximum wait, in ms. Inert while batching is off. */
+  producerBatchLingerMs?: number;
+}
