@@ -88,12 +88,13 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
     const tuning = resolveProducerTuning(config.kafka);
     const p = client.producer({
       idempotent: true,
-      // Default 1 (not 5) to avoid in-flight reordering after a transient
+      // Stays 1 (not 5) to avoid in-flight reordering after a transient
       // broker hiccup: with idempotency on and low retries, reordered batches
       // trip OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
-      // KAFKA_PRODUCER_MAX_IN_FLIGHT raises it for a measurement run — read
-      // docs/KAFKA_PRODUCER_OPTIONS.md first: it is coupled to the retry
-      // policy, which is why the two are measured together and not alone.
+      // ADR-023 measured raising it at +2-3% and rejected it; batching is what
+      // amortises the round-trip. KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it
+      // for a measurement run — read docs/KAFKA_PRODUCER_OPTIONS.md first: it
+      // is coupled to the retry policy.
       maxInFlightRequests: tuning.maxInFlight,
       allowAutoTopicCreation: true,
       retry: {

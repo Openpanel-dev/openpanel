@@ -1,18 +1,22 @@
 /**
- * M16-002's non-negotiable: every default reproduces today's behaviour — one
- * produce round-trip at a time, one message per `send()`. A config that says
- * nothing about the knobs must therefore resolve to exactly that.
+ * ADR-023's decision, expressed as a test: batching is ON at the shipped
+ * defaults (size 25, linger 5 ms) and `maxInFlightRequests` stays 1. There are
+ * no fallbacks left to test — the three knobs are required `KafkaConfig`
+ * fields, so a config that omits one does not compile.
  */
 
 import { describe, expect, test } from 'bun:test';
-import {
-  resolveProducerTuning,
-  type TunedKafkaConfig,
-} from './producer-tuning';
+import type { KafkaConfig } from '../../../config';
+import { resolveProducerTuning } from './producer-tuning';
 
-const kafkaConfig = (
-  tuning: Partial<TunedKafkaConfig> = {}
-): TunedKafkaConfig =>
+/** The values `apps/api/src/config/env.ts` resolves for an empty environment. */
+const SHIPPED_DEFAULTS = {
+  producerMaxInFlight: 1,
+  producerBatchSize: 25,
+  producerBatchLingerMs: 5,
+} as const;
+
+const kafkaConfig = (tuning: Partial<KafkaConfig> = {}): KafkaConfig =>
   ({
     clientId: 'openpanel',
     brokers: [],
@@ -30,44 +34,41 @@ const kafkaConfig = (
     producerRetries: 2,
     producerInitialRetryMs: 100,
     producerMaxRetryMs: 1000,
+    ...SHIPPED_DEFAULTS,
     handlerMaxAttempts: 3,
     handlerRetryInitialMs: 100,
     handlerRetryMaxMs: 1000,
     ...tuning,
-  }) satisfies TunedKafkaConfig;
+  }) satisfies KafkaConfig;
 
 describe('resolveProducerTuning', () => {
-  test('an unconfigured config reproduces the pre-M16-002 behaviour', () => {
+  test('the shipped defaults batch at 25 with a 5 ms linger', () => {
     const tuning = resolveProducerTuning(kafkaConfig());
-    expect(tuning.maxInFlight).toBe(1);
+    expect(tuning.batchSize).toBe(25);
+    expect(tuning.lingerMs).toBe(5);
+    expect(tuning.batchingEnabled).toBe(true);
+  });
+
+  test('ADR-023 leaves maxInFlightRequests at one', () => {
+    expect(resolveProducerTuning(kafkaConfig()).maxInFlight).toBe(1);
+  });
+
+  test('a batch size of one turns batching off again', () => {
+    const tuning = resolveProducerTuning(kafkaConfig({ producerBatchSize: 1 }));
     expect(tuning.batchSize).toBe(1);
     expect(tuning.batchingEnabled).toBe(false);
   });
 
-  test('the loader-supplied defaults also leave batching off', () => {
+  test('the knobs pass through to kafkajs untouched', () => {
     const tuning = resolveProducerTuning(
       kafkaConfig({
-        producerMaxInFlight: 1,
-        producerBatchSize: 1,
-        producerBatchLingerMs: 5,
+        producerMaxInFlight: 5,
+        producerBatchSize: 50,
+        producerBatchLingerMs: 10,
       })
     );
-    expect(tuning.maxInFlight).toBe(1);
-    expect(tuning.batchingEnabled).toBe(false);
-  });
-
-  test('a batch size of two or more turns batching on', () => {
-    const tuning = resolveProducerTuning(
-      kafkaConfig({ producerBatchSize: 50, producerBatchLingerMs: 10 })
-    );
+    expect(tuning.maxInFlight).toBe(5);
     expect(tuning.batchSize).toBe(50);
     expect(tuning.lingerMs).toBe(10);
-    expect(tuning.batchingEnabled).toBe(true);
-  });
-
-  test('the in-flight knob passes through to kafkajs untouched', () => {
-    expect(
-      resolveProducerTuning(kafkaConfig({ producerMaxInFlight: 5 })).maxInFlight
-    ).toBe(5);
   });
 });

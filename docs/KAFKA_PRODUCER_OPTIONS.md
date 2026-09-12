@@ -1,12 +1,16 @@
-# The Kafka producer's throughput knobs — what to measure, and how
+# The Kafka producer's throughput knobs
 
-M16-002. This document exists so the operator's four-configuration measurement
-run, and the ADR Carl writes from it (ADR-004's producer-redesign question),
-are built on precise statements about which knob produces which behaviour.
+M16-002 built these knobs and measured them; **ADR-023 decided them**, and
+batching now ships on — `KAFKA_PRODUCER_BATCH_SIZE=25`,
+`KAFKA_PRODUCER_BATCH_LINGER_MS=5`. `KAFKA_PRODUCER_MAX_IN_FLIGHT` stays `1`:
+raising it measured +2–3%, i.e. noise, for a documented reordering hazard.
 
-**Nothing here is switched on.** Every default reproduces the behaviour
-measured in `verification/benchmarks/05-v2-saturation.md`: one produce
-round-trip at a time, one message per `send()`, awaited in the request path.
+This document is the knob reference — what each one does, and the kafkajs
+retry coupling you must understand before touching the in-flight one. The
+measurement that fed the decision is in
+`verification/benchmarks/05-v2-saturation.md` and `06-producer-options.md`; the
+throughput a self-hoster should plan with is in
+[`SCALING.md`](./SCALING.md).
 
 ## The bottleneck being measured
 
@@ -18,14 +22,15 @@ concurrency 25 → 400). The cause is in
 `maxInFlightRequests: 1`, and one awaited `send()` carrying a **single**
 message per request. ~800/s is ~1.25 ms per local ack, serialised.
 
-Four options were named. This task makes **2** and **4** measurable:
+Four options were named. M16-002 made **2** and **4** measurable; ADR-023 then
+adopted 2 and rejected 4:
 
 | # | Option | Status |
 |---|---|---|
 | 1 | More api processes | Already the cloud deployment's scaling story (Carl). A live fallback, not a candidate — nothing below has to reach 5,000 ev/s in one process. |
-| 2 | **Batch: one `send()`, many messages** | Built, default **off** — `KAFKA_PRODUCER_BATCH_SIZE` / `KAFKA_PRODUCER_BATCH_LINGER_MS`. |
-| 3 | Don't await the broker; buffer and flush async | **Deliberately not built.** It changes what a 200 response promises — a durability decision for Carl, not a performance tweak. |
-| 4 | **Raise `maxInFlightRequests`** | Built, default **1** (unchanged) — `KAFKA_PRODUCER_MAX_IN_FLIGHT`. |
+| 2 | **Batch: one `send()`, many messages** | **Adopted (ADR-023), on by default** at `KAFKA_PRODUCER_BATCH_SIZE=25` / `KAFKA_PRODUCER_BATCH_LINGER_MS=5`. Measured 744 → ~1,515 ev/s. |
+| 3 | Don't await the broker; buffer and flush async | **Deliberately not built.** It changes what a 200 response promises — a durability decision for Carl, not a performance tweak. ADR-023 defers it, it does not reject it. |
+| 4 | **Raise `maxInFlightRequests`** | **Rejected (ADR-023).** Still settable via `KAFKA_PRODUCER_MAX_IN_FLIGHT`, default **1**. |
 
 ## The knobs
 
@@ -35,9 +40,9 @@ All three are read by the config loader, `apps/api/src/config/env.ts` (the sole
 
 | Env var | Default | What it does |
 |---|---|---|
-| `KAFKA_PRODUCER_MAX_IN_FLIGHT` | `1` | kafkajs `maxInFlightRequests`: how many produce requests may be outstanding on the producer's connection at once. `1` is today's value and serialises every produce. Raising it lets requests overlap — read the retry coupling below before you do. |
-| `KAFKA_PRODUCER_BATCH_SIZE` | `1` | Messages accumulated into ONE `send()`. `1` means batching is off and the code path is byte-for-byte today's: one message, one awaited send. `>= 2` turns the accumulator on. |
-| `KAFKA_PRODUCER_BATCH_LINGER_MS` | `5` | How long a partially filled batch may wait for company before it is sent anyway. **Inert while the batch size is 1.** |
+| `KAFKA_PRODUCER_MAX_IN_FLIGHT` | `1` | kafkajs `maxInFlightRequests`: how many produce requests may be outstanding on the producer's connection at once. `1` serialises every produce. Raising it lets requests overlap — ADR-023 measured that at +2–3% and rejected it; read the retry coupling below before you do it anyway. |
+| `KAFKA_PRODUCER_BATCH_SIZE` | `25` | Messages accumulated into ONE `send()`. `>= 2` turns the accumulator on; ADR-023 ships `25`, above which the measured win is flat. `1` turns batching off, restoring the pre-ADR-023 path byte-for-byte: one message, one awaited send. |
+| `KAFKA_PRODUCER_BATCH_LINGER_MS` | `5` | How long a partially filled batch may wait for company before it is sent anyway, **added to the response time of the request that is waiting**. Under load a batch fills by size first, so this is only really paid on a quiet install — which is why ADR-023 took 5 ms over the 21%-faster 25 ms. **Inert while the batch size is 1.** |
 
 Positive integers only; a blank or malformed value fails boot, like every other
 `KAFKA_*` knob. The resolved values are logged once, on the
@@ -102,7 +107,7 @@ making it measurable.
 
 Note that option 2 sidesteps this entirely: batching amortises the round-trip
 while leaving `maxInFlightRequests`, idempotency and ordering exactly as they
-are. That is why it is the likelier candidate for adoption.
+are. That is why it is the one ADR-023 adopted.
 
 ## Reproducing the four configurations
 
@@ -112,11 +117,14 @@ documented in `docs/BENCHMARK_HARNESS.md`. The producer knobs belong to the
 and the stack is restarted between configurations.
 
 ```bash
-# 1. BASELINE — today's behaviour. No producer env at all.
-cd apps/api && API_PORT=3333 bun run dev
+# 1. BASELINE — the pre-ADR-023 path. Batching must be turned OFF explicitly
+#    now that it ships on.
+cd apps/api && API_PORT=3333 KAFKA_PRODUCER_BATCH_SIZE=1 bun run dev
 
 # 2. HIGHER IN-FLIGHT (option 4)
-cd apps/api && API_PORT=3333 KAFKA_PRODUCER_MAX_IN_FLIGHT=5 bun run dev
+cd apps/api && API_PORT=3333 \
+  KAFKA_PRODUCER_BATCH_SIZE=1 KAFKA_PRODUCER_MAX_IN_FLIGHT=5 \
+  bun run dev
 
 # 3. BATCHING (option 2)
 cd apps/api && API_PORT=3333 \
@@ -156,7 +164,7 @@ configuration 3 (e.g. size 10/25/100 at linger 5/10/25): the batch size is
 bounded in practice by how many requests are actually in flight at the offered
 concurrency, and a batch size far above that only ever fills by linger timeout.
 
-## Proof runs performed by this task (not the measurement)
+## Proof runs performed by M16-002 (not the measurement)
 
 Run by the agent on 2026-09-12 on the same 4-core box, against a
 purpose-booted `ROLE=api` api on `API_PORT=3399` producing into the running
@@ -167,8 +175,8 @@ differ from each other by 50 %.
 
 | configuration | `session-stress` emit window | P50 | P95 | checks |
 |---|---|---|---|---|
-| default (`maxInFlight=1`, batching off), run 1 | 0.9 s | 91.7 ms | 142.9 ms | 13/13 |
-| default, run 2 | 0.6 s | 67.0 ms | 79.9 ms | 13/13 |
+| M16-002's then-default (`maxInFlight=1`, batching off), run 1 | 0.9 s | 91.7 ms | 142.9 ms | 13/13 |
+| same, run 2 | 0.6 s | 67.0 ms | 79.9 ms | 13/13 |
 | `MAX_IN_FLIGHT=5 BATCH_SIZE=25 LINGER_MS=10`, run 1 | 0.5 s | 48.4 ms | 77.3 ms | 13/13 |
 | same, run 2 | 0.5 s | 45.7 ms | 95.2 ms | 13/13 |
 
@@ -182,36 +190,36 @@ the linger flush works: every one of those events left as a partial batch.
 
 ## What is still unknown
 
-- **Whether either option moves the plateau at all.** Nothing here has been
-  measured at saturation. The ~800 ev/s ceiling is attributed to the
-  serialised produce path by elimination (idle CPU, clean event loop, consumer
-  lag ≈ 0), not by an experiment that removed the serialisation.
-- **Whether the produce path is the only serialising dependency.**
-  `05-v2-saturation.md` names two other candidates it did not exonerate: the
-  Redis session-state operations and the event buffer. If the plateau holds
-  with batching on, the next suspect is one of those, not a bigger batch.
-- **The right batch size and linger for production**, and whether a linger of
-  a few ms is acceptable in the request path at all — it is latency added to
-  every `/track` that is not in a full batch.
+*(The first three entries here were answered by the ADR-023 measurement runs;
+what remains is what those runs did not settle.)*
+
+- **What binds the box above ~1,900 ev/s.** Batching moved the ceiling and
+  lowered api CPU peak from 102% to ~79% of a core, so the produce path was
+  the constraint. The next one is CPU on this box, not a known backend limit:
+  two api processes aggregated 1,936 ev/s (+28%, not 2x) with each peaking
+  lower than one did alone. Redpanda, ClickHouse and Redis were never shown to
+  bind — establishing that needs the load generated off-box or more cores.
+- **Whether the produce path was the only serialising dependency.**
+  `05-v2-saturation.md` named two other candidates it did not exonerate: the
+  Redis session-state operations and the event buffer. Batching did not make
+  them go away; it made them the next thing to look at.
+- **Whether a `linger.ms=0` semantic would recover the rest.** ADR-023 names
+  it as the follow-up worth taking: send immediately but batch whatever
+  accumulates while the previous send is in flight. It is not expressible
+  today — the schema uses `positive()` so `0` is rejected, and the accumulator
+  flushes on a timer rather than on in-flight state.
 - **The durability posture.** Both the retry coupling above and option 3 are
-  Carl's to decide; this task deliberately leaves both alone.
+  Carl's to decide; ADR-023 deliberately left both alone.
 - **Ordering under `maxInFlightRequests > 1` without batching** is exactly the
   risk the existing in-code comment describes, and it is unmeasured: a
   configuration-2 run that never hits a broker hiccup proves nothing about
   what happens when one occurs.
 
-## One structural note for whoever lands the follow-up
+## Where the three knobs live
 
-The three fields ride on `config.kafka`, but they are declared as the optional
-members of `KafkaProducerTuning` in
-`packages/core/src/modules/ingest/ingest.constants.ts` rather than on
-`KafkaConfig` in `packages/core/src/config.ts` — that file is outside
-M16-002's declared scope. The loader always sets all three; the fallbacks in
-`src/producer-tuning.ts` only apply to a `CoreConfig` built by a test fixture,
-and they reproduce today's behaviour. The follow-up is one edit: move the
-three fields onto `KafkaConfig` as required numbers, add them to
-`packages/core/test/config-fixture.ts`, delete `KafkaProducerTuning` and the
-fallbacks, and drop the intersection from `deriveKafkaConfig`'s return type.
-
-The three env vars are also missing from `.env.example`, for the same reason —
-it is not in this task's scope.
+All three are required fields of `KafkaConfig` in
+`packages/core/src/config.ts`, set by the loader
+(`apps/api/src/config/env.ts`) and resolved into `batchingEnabled` by
+`packages/core/src/modules/ingest/src/producer-tuning.ts`. There are no
+fallbacks and no second default anywhere; `packages/core/test/config-fixture.ts`
+carries the same shipped values for tests. They are listed in `.env.example`.

@@ -29,11 +29,6 @@
 
 import type { CoreConfig } from '@openpanel/core';
 import { queues } from '@openpanel/core';
-// The producer's throughput knobs are shaped by the module that applies them
-// (ADR-022 R8: a module's `*.constants.ts` is the file an app may import), so
-// a renamed field fails to compile on both sides instead of going quietly
-// unread. See packages/core/src/modules/ingest/src/producer-tuning.ts.
-import type { KafkaProducerTuning } from '@openpanel/core/modules/ingest/ingest.constants';
 import { z } from 'zod';
 
 export const ROLE_VALUES = ['api', 'worker', 'all'] as const;
@@ -65,11 +60,18 @@ const DEFAULT_KAFKA_CONNECTION_TIMEOUT_MS = 2000;
 const DEFAULT_KAFKA_PRODUCER_RETRIES = 2;
 const DEFAULT_KAFKA_PRODUCER_INITIAL_RETRY_MS = 100;
 const DEFAULT_KAFKA_PRODUCER_MAX_RETRY_MS = 1000;
-/** One produce round-trip at a time — today's behaviour (M16-002 option 4). */
+/**
+ * One produce round-trip at a time. ADR-023 rejects raising this: measured at
+ * +2-3%, i.e. noise, for a documented reordering hazard.
+ */
 const DEFAULT_KAFKA_PRODUCER_MAX_IN_FLIGHT = 1;
-/** Messages per `send()`. 1 = batching off (M16-002 option 2). */
-const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 1;
-/** A partial batch's maximum wait. Inert while the batch size is 1. */
+/** Messages per `send()`. ADR-023: batching on; the win is flat above 25. */
+const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 25;
+/**
+ * A partial batch's maximum wait. The linger is added to the request's own
+ * response time, so ADR-023 takes 5 ms (82% of the available gain) over the
+ * 25 ms that would roughly double a quiet install's ingest latency.
+ */
 const DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS = 5;
 const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
@@ -604,17 +606,8 @@ function deriveDashboardUrl(raw: RawEnv): string {
   return raw.DASHBOARD_URL ?? '';
 }
 
-/**
- * The Kafka transport's knobs, plus the three producer tuning knobs the ingest
- * module reads off the same object (`KafkaProducerTuning`). They are its
- * fields rather than `KafkaConfig`'s only because
- * `packages/core/src/config.ts` is outside M16-002's scope; the follow-up
- * moves them onto `KafkaConfig` and this return type becomes plain
- * `CoreConfig['kafka']`.
- */
-function deriveKafkaConfig(
-  raw: RawEnv
-): CoreConfig['kafka'] & KafkaProducerTuning {
+/** The Kafka transport's knobs, including the producer's three throughput ones. */
+function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
   return {
     clientId: raw.KAFKA_CLIENT_ID,
     brokers: raw.KAFKA_BROKERS,

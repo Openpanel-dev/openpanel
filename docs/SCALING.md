@@ -16,9 +16,10 @@ at a different machine.
 
 | | events/second | events/month, flat out |
 |---|---|---|
-| **What ships today** (no producer batching) | **744** | **1.96 bn** |
-| With batching enabled (batch 25 / linger 25 ms) | 1,904 | 5.01 bn |
-| Two api processes, batch 25 / linger 5 ms | 1,936 aggregate | 5.09 bn |
+| **What ships today** (producer batching on: batch 25 / linger 5 ms) | **1,515** | **3.98 bn** |
+| Batching turned off (`KAFKA_PRODUCER_BATCH_SIZE=1`) | 744 | 1.96 bn |
+| A 25 ms linger instead of 5 ms | 1,904 | 5.01 bn |
+| Two api processes at the shipped defaults | 1,936 aggregate | 5.09 bn |
 
 "Flat out" means every second of the month at that rate. **That is not your
 capacity.** Real traffic has a daily peak several times its average, and the box
@@ -26,8 +27,9 @@ has to survive the peak. Skip to
 [Peak vs average](#peak-vs-average-the-only-number-worth-planning-with) —
 that section is why this page exists.
 
-Batching is **off by default** and turning it on is pending an accepted ADR, so
-the 744 ev/s row is what an unmodified install does today.
+Producer batching is **on by default** (ADR-023: batch 25, linger 5 ms), so the
+1,515 ev/s row is what an unmodified install does today. The 744 ev/s row is
+what you get if you turn batching off.
 
 ---
 
@@ -55,12 +57,12 @@ after the load stops — not a burst rate.
 
 | Configuration | events/second | events/month, flat out |
 |---|---|---|
-| No batching — **today's default** | **744** | 1,956,571,200 (**1.96 bn**) |
+| Batch 25 / linger 5 ms — **today's default** | **1,515** | 3,984,147,000 (**3.98 bn**) |
+| No batching (`KAFKA_PRODUCER_BATCH_SIZE=1`) | 744 | 1,956,571,200 (1.96 bn) |
 | `maxInFlightRequests: 5`, no batching | 769 | 2,022,316,200 (2.02 bn) |
-| Batch 25 / linger 5 ms | 1,515 | 3,984,147,000 (3.98 bn) |
 | Batch 25 / linger 10 ms | 1,716 | 4,512,736,800 (4.51 bn) |
 | Batch 25 / linger 25 ms | 1,904 | 5,007,139,200 (5.01 bn) |
-| **Two api processes**, batch 25 / linger 5 ms | 1,936 aggregate (980 + 955) | 5,091,292,800 (5.09 bn) |
+| **Two api processes**, at the shipped defaults | 1,936 aggregate (980 + 955) | 5,091,292,800 (5.09 bn) |
 
 Two results worth stating plainly, because they close off tuning directions
 that look promising:
@@ -94,8 +96,8 @@ Worked, flat out — 100% duty cycle, every second of the month at the peak rate
 
 | events/second | x 2,629,800 | = events/month |
 |---|---|---|
-| 744 (today's default) | 744 x 2,629,800 | 1,956,571,200 — **1.96 bn** |
-| 1,515 | 1,515 x 2,629,800 | 3,984,147,000 — **3.98 bn** |
+| 744 (batching off) | 744 x 2,629,800 | 1,956,571,200 — **1.96 bn** |
+| 1,515 (today's default) | 1,515 x 2,629,800 | 3,984,147,000 — **3.98 bn** |
 | 1,904 | 1,904 x 2,629,800 | 5,007,139,200 — **5.01 bn** |
 | 1,936 | 1,936 x 2,629,800 | 5,091,292,800 — **5.09 bn** |
 | 5,000 (the project's stated target) | 5,000 x 2,629,800 | 13,149,000,000 — **13.15 bn** |
@@ -124,8 +126,8 @@ Worked at a ratio of 3:1:
 
 | peak capacity | average sustained | monthly events at 3:1 |
 |---|---|---|
-| 744 ev/s (today's default) | 248 ev/s | **~0.65 bn/month** |
-| 1,515 ev/s (batch 25 / linger 5 ms) | 505 ev/s | **~1.33 bn/month** |
+| 1,515 ev/s (today's default) | 505 ev/s | **~1.33 bn/month** |
+| 744 ev/s (batching off) | 248 ev/s | **~0.65 bn/month** |
 | 1,904 ev/s (batch 25 / linger 25 ms) | ~635 ev/s | **~1.67 bn/month** |
 | 1,936 ev/s (two api processes) | ~645 ev/s | **~1.70 bn/month** |
 
@@ -143,20 +145,29 @@ still falls behind every afternoon.
 
 ---
 
-## Turning batching on
+## Batching, and the latency it costs
 
 Batching amortises one Kafka produce round-trip across many events, which is
-where the 744 → ~1,900 ev/s difference comes from. It is configured with
+where the 744 → ~1,515 ev/s difference comes from. It is configured with
 `KAFKA_PRODUCER_BATCH_SIZE` and `KAFKA_PRODUCER_BATCH_LINGER_MS`, both
 documented in [`KAFKA_PRODUCER_OPTIONS.md`](./KAFKA_PRODUCER_OPTIONS.md).
 
-**It is off by default and it stays off until an ADR accepts it.** The measured
-rows above exist to inform that decision, not to describe what your install is
-doing right now. The trade it makes is latency: a linger of *N* ms is up to *N*
-ms added to every `/track` request that is not in an already-full batch, and the
-figures above show larger lingers buying more throughput (5 ms → 1,515,
-10 ms → 1,716, 25 ms → 1,904). Whether that latency belongs in the request path
-is exactly the open question.
+**It is on by default at batch 25 / linger 5 ms** (ADR-023). The trade it makes
+is latency: a linger of *N* ms is up to *N* ms added to every `/track` request
+that is not in an already-full batch, and larger lingers buy more throughput
+(5 ms → 1,515, 10 ms → 1,716, 25 ms → 1,904).
+
+5 ms is the default because that latency is only actually paid on a **quiet**
+install — under load a batch fills by size before the timer ever fires, which
+is why measured P50 is 168–194 ms across a 12x range of linger values. On a
+busy box a 25 ms linger is free and worth 21% more throughput; on a quiet one
+it would roughly double an ingest request's latency, and that is the install
+the default has to be safe for.
+
+To turn batching off entirely and get the 744 ev/s behaviour back, set
+`KAFKA_PRODUCER_BATCH_SIZE=1`. Nothing about durability changes either way: the
+request still waits for the broker to acknowledge its own event before it
+answers 200, so a crash mid-linger means no 200 and the client retries.
 
 ---
 

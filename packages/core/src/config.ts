@@ -106,6 +106,12 @@ export interface KafkaConfig {
   producerRetries: number;
   producerInitialRetryMs: number;
   producerMaxRetryMs: number;
+  /** kafkajs `maxInFlightRequests`. 1: one produce round-trip at a time. */
+  producerMaxInFlight: number;
+  /** Messages accumulated into one `send()`. Below 2 batching is off. */
+  producerBatchSize: number;
+  /** A partial batch's maximum wait, in ms, before it is sent anyway. */
+  producerBatchLingerMs: number;
   handlerMaxAttempts: number;
   handlerRetryInitialMs: number;
   handlerRetryMaxMs: number;
