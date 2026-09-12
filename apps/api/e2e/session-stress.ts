@@ -8,10 +8,15 @@
  *
  * Also instruments the run (BENCH-001): per-request /track latency
  * (P50/P95/P99, emit phase only), RSS/CPU of the api + worker processes
- * (>=1Hz, peak + steady-state), and Kafka consumer-group lag on the events
- * topic (>=1Hz; peak, lag at emit-end, seconds-to-zero after emit stops).
+ * (>=1Hz, peak + steady-state), Kafka consumer-group lag on the events
+ * topic (>=1Hz; peak, lag at emit-end, seconds-to-zero after emit stops),
+ * and every BullMQ queue depth + buffer pending count scraped off /metrics
+ * (>=1Hz; peak, depth at emit-end, whether it returned to zero — M16-001).
  * None of it changes what the run asserts — see `check()` calls below,
  * unchanged from the un-instrumented version.
+ *
+ * `saturation-sweep.ts` drives this script across a ladder of offered loads;
+ * see docs/BENCHMARK_HARNESS.md.
  *
  * Run (shrink the idle window; start the stack with the SAME value):
  *   SESSION_TIMEOUT_MS=4000 pnpm dev
@@ -26,12 +31,23 @@
  *   still records; it's inherent to what's measured, not background
  *   polling). Control lever for isolating whether the >=1Hz sampling itself
  *   is dragging on throughput, e.g. `E2E_RUNS=3 E2E_NO_SAMPLING=1`.
+ *   E2E_AUTH_MODE (bypass) — which ingest auth path every request takes:
+ *   `bypass` | `cors` | `secret`; see AUTH_PATH_DESCRIPTION in lib.ts. The
+ *   default keeps this script on the path the pre-existing suites were
+ *   written against; `saturation-sweep.ts` defaults to `secret`.
+ *   E2E_AUTH_WARM_REQUESTS (3) — authenticated requests sent and discarded
+ *   before recording starts, so the scrypt verify behind VERIFY_CACHE_SECONDS
+ *   is paid outside the measured window.
  */
 
 import { spawn } from 'node:child_process';
 import { formatLagSummary, LagMonitor, type LagSummary } from './lag-monitor';
 import {
   API_URL,
+  AUTH_MODE,
+  AUTH_PATH_DESCRIPTION,
+  AUTH_WARM_REQUESTS,
+  type AuthWarmResult,
   beginLatencyRecording,
   check,
   checkCount,
@@ -62,7 +78,13 @@ import {
   triggerReaper,
   WORKER_URL,
   wallclockKey,
+  warmAuthCache,
 } from './lib';
+import {
+  formatMetricsSummary,
+  MetricsMonitor,
+  type MetricsSummary,
+} from './metrics-monitor';
 import {
   formatProcessSummary,
   ProcessMonitor,
@@ -115,16 +137,24 @@ const SAMPLING_ENABLED = process.env.E2E_NO_SAMPLING !== '1';
 
 type Session = { sessionId: string; deviceId: string };
 
-interface RunResult {
+export interface RunResult {
   ok: boolean;
   failedChecks: number;
   totalChecks: number;
+  /** The offered load this run was configured with, so a sweep can label its rungs. */
+  sessions: number;
+  eventsPerSession: number;
+  concurrency: number;
+  /** Which of the three ingest auth paths every measured request took. */
+  authMode: string;
+  authWarm: AuthWarmResult | null;
   emitSeconds: number;
   eventsPerSecond: number;
   latency: LatencyStats;
   api: ProcessSummary;
   worker: ProcessSummary;
   lag: LagSummary;
+  metrics: MetricsSummary;
   samplingEnabled: boolean;
 }
 
@@ -378,23 +408,46 @@ async function reconcile(sessions: Session[], since: Date) {
 
 const portFromUrl = (url: string) => Number(new URL(url).port);
 
+/**
+ * Pay the auth cost BEFORE recording starts, so the scrypt behind
+ * `VERIFY_CACHE_SECONDS` can never land inside the measured window and be read
+ * as a knee. Discarded on purpose: the warm requests are not in the latency
+ * series, not in the reconcile counts (they use their own ip), and the
+ * sessions they open are reaped by the same drain loop as the rest.
+ */
+async function warmAuth(): Promise<AuthWarmResult | null> {
+  if (AUTH_WARM_REQUESTS <= 0) {
+    return null;
+  }
+  const warm = await warmAuthCache(AUTH_MODE, AUTH_WARM_REQUESTS);
+  console.log(
+    `   auth cache warmed: ${warm.requests} discarded requests, ` +
+      `${warm.latenciesMs.map((ms) => ms.toFixed(1)).join('/')}ms (max ${warm.maxMs?.toFixed(1)}ms)`
+  );
+  return warm;
+}
+
 async function runOnce(): Promise<RunResult> {
   console.log(
     `Session STRESS — api=${API_URL} worker=${WORKER_URL} timeout=${SESSION_TIMEOUT_MS}ms ` +
       `sessions=${SESSIONS} events=${EVENTS_PER_SESSION} concurrency=${CONCURRENCY}` +
       (SAMPLING_ENABLED ? '' : ' [sampling disabled — control run]')
   );
+  console.log(`   auth path: ${AUTH_PATH_DESCRIPTION[AUTH_MODE]}`);
   await preflight();
   await ensureFixtures();
+  const authWarm = await warmAuth();
 
   const apiMonitor = new ProcessMonitor('api', portFromUrl(API_URL));
   const workerMonitor = new ProcessMonitor('worker', portFromUrl(WORKER_URL));
   const lagMonitor = new LagMonitor();
+  const metricsMonitor = new MetricsMonitor(API_URL);
   if (SAMPLING_ENABLED) {
     await Promise.all([
       apiMonitor.start(SAMPLE_INTERVAL_MS),
       workerMonitor.start(SAMPLE_INTERVAL_MS),
       lagMonitor.start(SAMPLE_INTERVAL_MS),
+      metricsMonitor.start(SAMPLE_INTERVAL_MS),
     ]);
   }
 
@@ -410,33 +463,46 @@ async function runOnce(): Promise<RunResult> {
 
     apiMonitor.stop();
     workerMonitor.stop();
+    metricsMonitor.stop();
     await lagMonitor.stop();
 
     const api = apiMonitor.summary();
     const worker = workerMonitor.summary();
     const lag = lagMonitor.summarize(emitEndedAt);
+    const metrics = metricsMonitor.summarize(emitEndedAt);
 
     scenario('instrumentation summary');
+    console.log(`   auth path: ${AUTH_PATH_DESCRIPTION[AUTH_MODE]}`);
     console.log(`   ${formatProcessSummary(api)}`);
     console.log(`   ${formatProcessSummary(worker)}`);
     console.log(`   ${formatLagSummary(lag)}`);
+    for (const line of formatMetricsSummary(metrics)) {
+      console.log(`   ${line}`);
+    }
 
     const failedChecks = summarize();
     return {
       ok: failedChecks === 0,
       failedChecks,
       totalChecks: checkCount(),
+      sessions: SESSIONS,
+      eventsPerSession: EVENTS_PER_SESSION,
+      concurrency: CONCURRENCY,
+      authMode: AUTH_MODE,
+      authWarm,
       emitSeconds,
       eventsPerSecond: (SESSIONS * EVENTS_PER_SESSION) / emitSeconds,
       latency,
       api,
       worker,
       lag,
+      metrics,
       samplingEnabled: SAMPLING_ENABLED,
     };
   } finally {
     apiMonitor.stop();
     workerMonitor.stop();
+    metricsMonitor.stop();
     await lagMonitor.stop();
   }
 }

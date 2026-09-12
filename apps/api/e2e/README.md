@@ -1,6 +1,6 @@
 # Session E2E
 
-Two harnesses over a shared foundation (`lib.ts`), both driving the **real stack**
+Three harnesses over a shared foundation (`lib.ts`), all driving the **real stack**
 over HTTP and asserting state in **both ClickHouse and Redis**:
 
 - `session-e2e.ts` (`e2e:sessions`) — **correctness**: the full lifecycle for one
@@ -10,6 +10,11 @@ over HTTP and asserting state in **both ClickHouse and Redis**:
   sessions, then drives reaper + buffer flushes until *everything* has drained
   (every `session_end` emitted, Redis cleaned, session buffer empty) and reconciles
   the ClickHouse counts. Exits only when nothing is left open.
+- `saturation-sweep.ts` (`e2e:saturation`) — **the ramp driver**: runs
+  `session-stress.ts` across a ladder of offered loads, one child process per
+  rung, and reports the max sustainable ingest throughput and where the knee is.
+  Full knob list, the knee definition and what the numbers do NOT cover:
+  **`docs/BENCHMARK_HARNESS.md`**.
 
 ## What it covers
 
@@ -50,8 +55,13 @@ The harness triggers the reaper on demand via the worker's `/debug/cron`
 endpoint, so it never waits for the 5-minute reaper cron.
 
 ### Notes
-- Uses a dedicated, isolated project (`e2e-sessions`) and a throwaway client
-  (`ignoreCorsAndSecret`), created/upserted automatically under org `openpanel-dev`.
+- Uses a dedicated, isolated project (`e2e-sessions`) and TWO throwaway clients,
+  created/upserted automatically under org `openpanel-dev`: the original
+  `ignoreCorsAndSecret` one, and (M16-001) a second carrying a real scrypt
+  secret. `E2E_AUTH_MODE` picks which ingest auth path requests take —
+  `bypass` (default, the original client), `cors` or `secret`. See
+  `docs/BENCHMARK_HARNESS.md`; only `cors` and `secret` are shapes real traffic
+  takes.
 - Each run uses fresh device IPs, so reruns don't collide with prior state.
 - Overridable: `E2E_API_URL` (default `:3333`), `E2E_WORKER_URL` (default `:9999`).
 - The harness and the stack **must share the same `SESSION_TIMEOUT_MS`** — the
