@@ -29,9 +29,20 @@ export function createIncomingEventHandler(
   deps: AppDeps,
   bindings: IncomingEventBindings
 ) {
+  // Every event this handler buffers is produced again by a redelivery when
+  // the batch's durability gate fails, so the event buffer must not keep a
+  // re-queued copy of it too — `EventBuffer.addRedeliverable`. `createEvent()`
+  // reaches the buffer as `deps.buffers.event` and takes no ownership
+  // argument, so the ownership rides in on the scope. Built once, here, not
+  // per message: the hot path gets no work it did not already have.
+  const consumerDeps: AppDeps = {
+    ...deps,
+    buffers: { ...deps.buffers, event: deps.buffers.event.asRedeliverable() },
+  };
+
   return (payload: IncomingEventPayload, meta: IncomingEventDelivery) => {
     const requestId = incomingEventRequestId(payload);
-    const ctx = createCtx(deps, {
+    const ctx = createCtx(consumerDeps, {
       requestId,
       logger: deps.logger.child({ [REQUEST_ID_LOG_FIELD]: requestId }),
     });

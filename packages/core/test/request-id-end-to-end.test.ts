@@ -532,8 +532,15 @@ function ingestDeps() {
   const producers = createRecordingProducers(queues);
   const eventsBuffered: { id: string }[] = [];
 
+  const eventBuffer = {
+    add: (event: { id: string }) => eventsBuffered.push(event),
+    // The consumer scope reaches the buffer through this view (M18-007); it
+    // must still be the same buffer underneath.
+    asRedeliverable: () => eventBuffer,
+  };
+
   const buffers = {
-    event: { add: (event: { id: string }) => eventsBuffered.push(event) },
+    event: eventBuffer,
     profile: { add: () => Promise.resolve() },
     session: {
       getExistingSession: () => Promise.resolve(null),

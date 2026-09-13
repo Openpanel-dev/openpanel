@@ -63,7 +63,14 @@ interface MockCalls {
 const resolvedOffsets = (resolveOffset: MockCalls): string[] =>
   resolveOffset.mock.calls.map(([offset]) => offset as string);
 
-function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
+type DepOverrides = Partial<
+  Omit<EventsBatchHandlerDeps, 'openDurabilityWindow'>
+> & {
+  /** Sugar: the gate every window in this test closes with. */
+  flushBufferedEvents?: () => Promise<void>;
+};
+
+function makeDeps(overrides: DepOverrides = {}) {
   const metrics: EventsBatchHandlerDeps['metrics'] = {
     reprocessed: mock(() => undefined),
     handlerFailed: mock(() => undefined),
@@ -77,13 +84,17 @@ function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
     async () => undefined
   );
   const sleep = mock(async (_ms: number) => undefined);
-  const flushBufferedEvents = mock<
-    EventsBatchHandlerDeps['flushBufferedEvents']
-  >(async () => undefined);
+  // The gate a durability window closes with. The tests drive it directly;
+  // `openDurabilityWindow` below hands the same one to every batch, which is
+  // also what makes "opened before the first handler" assertable.
+  const flushBufferedEvents =
+    overrides.flushBufferedEvents ?? mock(async (): Promise<void> => undefined);
+  const openDurabilityWindow = mock(() => flushBufferedEvents);
+  const { flushBufferedEvents: _gate, ...depOverrides } = overrides;
   const deps: EventsBatchHandlerDeps = {
     handleEvent,
     sendToDeadLetter,
-    flushBufferedEvents,
+    openDurabilityWindow,
     logger: {
       info: mock(() => undefined),
       warn: mock(() => undefined),
@@ -95,7 +106,7 @@ function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
     initialRetryMs: 10,
     maxRetryMs: 25,
     sleep,
-    ...overrides,
+    ...depOverrides,
     metrics: { ...metrics, ...overrides.metrics },
   };
   return {
@@ -104,8 +115,8 @@ function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
     handleEvent,
     sendToDeadLetter: (overrides.sendToDeadLetter ??
       sendToDeadLetter) as typeof sendToDeadLetter,
-    flushBufferedEvents: (overrides.flushBufferedEvents ??
-      flushBufferedEvents) as typeof flushBufferedEvents,
+    flushBufferedEvents,
+    openDurabilityWindow,
     sleep,
   };
 }
@@ -508,6 +519,130 @@ describe('durability before commit', () => {
     // The failed batch never advanced the watermark, so the replay it asked
     // for is not then reported as an at-least-once duplicate.
     expect(metrics.reprocessed).not.toHaveBeenCalled();
+  });
+
+  test('opens the durability window before the first handler buffers anything', async () => {
+    // The window's lower bound is what makes the gate answer for THIS batch:
+    // a failed write drops the events it knows the broker will redeliver, so
+    // "everything queued is settled" is no longer "my events are in Redis"
+    // (M18-007).
+    let handled = 0;
+    let handledWhenOpened = -1;
+    const { deps, openDurabilityWindow } = makeDeps({
+      handleEvent: mock(async () => {
+        handled += 1;
+        return undefined;
+      }),
+    });
+    openDurabilityWindow.mockImplementation(() => {
+      handledWhenOpened = handled;
+      return async () => undefined;
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload } = makeBatch([message(0, 'a'), message(1, 'b')]);
+
+    await handler.eachBatch(payload);
+
+    expect(openDurabilityWindow).toHaveBeenCalledTimes(1);
+    expect(handledWhenOpened).toBe(0);
+  });
+
+  test('a failed flush resolves NOTHING, so a redelivery is guaranteed', async () => {
+    // Asserted directly rather than left to the drill. With the re-queue gone
+    // (M18-007) the only thing standing between a failed flush and a lost
+    // batch is that its offsets are never resolved — every message, not just
+    // the tail, and regardless of how many of them the handlers finished.
+    const { deps, handleEvent } = makeDeps({
+      flushBufferedEvents: mock(() =>
+        Promise.reject(new Error('redis is unreachable'))
+      ),
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([
+      message(0, 'a'),
+      message(1, 'b'),
+      message(2, 'a'),
+    ]);
+
+    await handler.eachBatch(payload);
+
+    expect(handleEvent).toHaveBeenCalledTimes(3);
+    expect(resolveOffset).not.toHaveBeenCalled();
+  });
+
+  test('backs off before the redelivery, and the wait grows and then caps', async () => {
+    // Observable as a growing delay, not as a fixed attempt count: the point
+    // is that a ~15s outage costs single-digit redeliveries instead of the
+    // ~162 laps drill 02's re-run measured at ~90ms each.
+    const OUTAGE_LAPS = 8;
+    const { deps, sleep } = makeDeps({
+      flushBufferedEvents: mock(() =>
+        Promise.reject(new Error('redis is unreachable'))
+      ),
+      initialRetryMs: 100,
+      maxRetryMs: 1000,
+    });
+    const handler = createEventsBatchHandler(deps);
+
+    for (let lap = 0; lap < OUTAGE_LAPS; lap++) {
+      const { payload, resolveOffset } = makeBatch([message(0, 'a')]);
+      await handler.eachBatch(payload);
+      expect(resolvedOffsets(resolveOffset)).toEqual([]);
+    }
+
+    const waits = sleep.mock.calls.map(([ms]) => ms as number);
+    expect(waits.length).toBe(OUTAGE_LAPS);
+    expect(waits[0]).toBe(100);
+    for (let lap = 1; lap < OUTAGE_LAPS; lap++) {
+      expect(waits[lap]).toBeGreaterThanOrEqual(waits[lap - 1]!);
+    }
+    // Grown, and bounded — `maxRetryMs` is the flaky-handler bound, not this
+    // one, and the cap stays far below the 30s session timeout.
+    expect(waits.at(-1)).toBeGreaterThan(waits[0]!);
+    expect(Math.max(...waits)).toBe(5000);
+    // Single digit for an outage of this length, against ~162 without it.
+    expect(waits.reduce((total, ms) => total + ms, 0)).toBeGreaterThan(15_000);
+  });
+
+  test('forgets the backoff once the batch is durable again', async () => {
+    let redisIsDown = true;
+    const { deps, sleep } = makeDeps({
+      flushBufferedEvents: mock(async () => {
+        if (redisIsDown) {
+          throw new Error('redis is unreachable');
+        }
+      }),
+      initialRetryMs: 100,
+    });
+    const handler = createEventsBatchHandler(deps);
+
+    for (let lap = 0; lap < 3; lap++) {
+      await handler.eachBatch(makeBatch([message(lap, 'a')]).payload);
+    }
+    redisIsDown = false;
+    await handler.eachBatch(makeBatch([message(3, 'a')]).payload);
+    redisIsDown = true;
+    await handler.eachBatch(makeBatch([message(4, 'a')]).payload);
+
+    const waits = sleep.mock.calls.map(([ms]) => ms as number);
+    expect(waits).toEqual([100, 200, 400, 100]);
+  });
+
+  test('does not hold the partition while the consumer is shutting down', async () => {
+    const { deps, sleep } = makeDeps({
+      flushBufferedEvents: mock(() =>
+        Promise.reject(new Error('redis is unreachable'))
+      ),
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([message(0, 'a')], {
+      isRunning: () => false,
+    });
+
+    await handler.eachBatch(payload);
+
+    expect(resolvedOffsets(resolveOffset)).toEqual([]);
+    expect(sleep).not.toHaveBeenCalled();
   });
 
   test('flushes what a shutdown-truncated batch handled, before resolving it', async () => {

@@ -37,6 +37,22 @@ const HEARTBEAT_EVERY = 16;
 
 const RETRY_BACKOFF_FACTOR = 2;
 
+/**
+ * Ceiling on the wait a batch takes before it returns from a failed
+ * durability flush and lets the broker redeliver it.
+ *
+ * The wait itself is seeded from `initialRetryMs` and doubled per consecutive
+ * failure — the consumer's own retry convention — but it is capped HERE
+ * rather than at `maxRetryMs`, which is sized for a flaky handler (1s by
+ * default) and not for a dependency that is down. Without any cap a failed
+ * flush redelivers in ~90ms and spins: drill 02's re-run measured ~162 laps
+ * per message in one 96s outage, hammering Redis and Kafka at the worst
+ * possible moment. 5s keeps a ~15s outage to single-digit redeliveries and
+ * stays well below the 30s session timeout, so waiting cannot cost the
+ * consumer its group membership (M18-007).
+ */
+const DURABILITY_RETRY_MAX_MS = 5000;
+
 /** Why a message was dead-lettered. A label value — keep the set small. */
 export type DeadLetterReason = 'parse_error' | 'handler_error';
 
@@ -77,17 +93,23 @@ export interface EventsBatchHandlerDeps {
   ) => Promise<unknown>;
   sendToDeadLetter: (message: DeadLetterMessage) => Promise<void>;
   /**
-   * Make everything the handlers buffered in process memory durable.
+   * Opens a durability window over the event buffer and returns the gate that
+   * closes it — `EventBuffer.openDurabilityWindow`.
    *
-   * Called once every message in the batch has been handled and BEFORE the
-   * first `resolveOffset`, because kafkajs commits the resolved offsets as
-   * soon as `eachBatch` returns (`autoCommit` defaults to true and this
-   * consumer does not turn it off) — not at `consumer.stop()`. It MUST reject
-   * when the write did not land: drill 03 lost 2 of 44,075 events on a
-   * graceful restart because the offsets of events that existed only in the
-   * event buffer's in-process array were committed anyway (M18-001).
+   * Opened BEFORE the batch's first handler runs, and awaited once every
+   * message has been handled and BEFORE the first `resolveOffset`, because
+   * kafkajs commits the resolved offsets as soon as `eachBatch` returns
+   * (`autoCommit` defaults to true and this consumer does not turn it off) —
+   * not at `consumer.stop()`.
+   *
+   * The gate MUST reject when the events THIS batch buffered are not in
+   * Redis: drill 03 lost 2 of 44,075 events on a graceful restart because the
+   * offsets of events that existed only in the event buffer's in-process array
+   * were committed anyway (M18-001). The window is what makes "this batch's"
+   * answerable at all, now that a failed write drops the events it knows the
+   * broker will redeliver instead of keeping them (M18-007).
    */
-  flushBufferedEvents: () => Promise<void>;
+  openDurabilityWindow: () => () => Promise<void>;
   logger: ConsumerLogger;
   metrics: ConsumerMetrics;
   onActivity: () => void;
@@ -237,15 +259,20 @@ export function createEventsBatchHandler(
     return deadLetter(message, partition, 'handler_error', result.err);
   };
 
+  // Consecutive durability failures per `topic-partition`, for the backoff
+  // below. Cleared the moment a batch's events are durable again.
+  const durabilityFailures = new Map<string, number>();
+
   /**
    * @returns false when the flush failed, which leaves the watermark where it
    * was so the redelivered batch is not then reported as a duplicate.
    */
   const bufferedEventsAreDurable = async (
-    partition: number
+    partition: number,
+    closeDurabilityWindow: () => Promise<void>
   ): Promise<boolean> => {
     try {
-      await deps.flushBufferedEvents();
+      await closeDurabilityWindow();
       return true;
     } catch (err) {
       deps.logger.error(
@@ -254,6 +281,31 @@ export function createEventsBatchHandler(
       );
       return false;
     }
+  };
+
+  /**
+   * Hold the partition before returning, so the redelivery this batch just
+   * asked for does not arrive in ~90ms and fail the same way.
+   */
+  const waitForRedelivery = async (
+    partitionKey: string,
+    partition: number,
+    heartbeat: () => Promise<void>
+  ): Promise<void> => {
+    const failures = (durabilityFailures.get(partitionKey) ?? 0) + 1;
+    durabilityFailures.set(partitionKey, failures);
+    const delayMs = Math.min(
+      deps.initialRetryMs * RETRY_BACKOFF_FACTOR ** (failures - 1),
+      DURABILITY_RETRY_MAX_MS
+    );
+    // Heartbeat first: a member that is deliberately waiting must not look
+    // like one that has died.
+    await heartbeat();
+    deps.logger.warn(
+      { partition, consecutiveFailures: failures, delayMs },
+      'waiting before letting the broker redeliver the batch'
+    );
+    await sleep(delayMs);
   };
 
   const eachBatch = async ({
@@ -268,6 +320,10 @@ export function createEventsBatchHandler(
     }
 
     const pk = `${batch.topic}-${batch.partition}`;
+    // Opened before the first handler buffers anything, so the gate answers
+    // for THIS batch's events and not for whatever else was pending when it
+    // finished (M18-007).
+    const closeDurabilityWindow = deps.openDurabilityWindow();
     // Watermark from *previous* batches. Anything at or below this that we see
     // now is a redelivery. Captured before this batch so intra-batch
     // out-of-order processing (normal, see below) is never counted.
@@ -344,7 +400,10 @@ export function createEventsBatchHandler(
     // offset resolved below is committed the instant this handler returns. If
     // that push will not land, resolve NOTHING and let the broker redeliver
     // the whole batch — a duplicate is recoverable, a loss is not.
-    if (await bufferedEventsAreDurable(batch.partition)) {
+    if (
+      await bufferedEventsAreDurable(batch.partition, closeDurabilityWindow)
+    ) {
+      durabilityFailures.delete(pk);
       // Resolve in strict ascending offset order, stopping at the first offset
       // that did not finish (e.g. an isStale/isRunning early-return mid-batch).
       // batch.messages is already ordered by offset.
@@ -357,13 +416,23 @@ export function createEventsBatchHandler(
         newHWM = Math.max(newHWM, Number(m.offset));
       }
       resolvedHWM.set(pk, newHWM);
+    } else if (isRunning() && !isStale()) {
+      // Not while shutting down: the redelivery is the next process's problem
+      // and the wait would only eat the shutdown budget.
+      await waitForRedelivery(pk, batch.partition, heartbeat);
     }
 
     await heartbeat();
     deps.onActivity();
   };
 
-  return { eachBatch, resetWatermarks: () => resolvedHWM.clear() };
+  return {
+    eachBatch,
+    resetWatermarks: () => {
+      resolvedHWM.clear();
+      durabilityFailures.clear();
+    },
+  };
 }
 
 /** The broker-facing half, supplied by whoever owns the kafkajs client. */

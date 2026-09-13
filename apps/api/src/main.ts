@@ -271,10 +271,11 @@ async function startIngestConsumer(
       }),
       sendToDeadLetter: (message) =>
         produceDeadLetterEvent(config.core, message),
-      // Runs before the batch's offsets are resolved, and THROWS if the rpush
-      // did not land. `pendingEvents` is the only in-process buffer state in
-      // the tree — every other buffer writes to Redis inside `add()`.
-      flushBufferedEvents: () => deps.buffers.event.flushPendingOrThrow(),
+      // Opened before the batch's first handler and closed before its first
+      // resolved offset; the gate THROWS if the rpush did not land.
+      // `pendingEvents` is the only in-process buffer state in the tree —
+      // every other buffer writes to Redis inside `add()`.
+      openDurabilityWindow: () => deps.buffers.event.openDurabilityWindow(),
       logger,
       metrics: ingestConsumerMetrics,
       onActivity: markEventsActivity,

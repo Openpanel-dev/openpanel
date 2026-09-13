@@ -98,6 +98,28 @@ export class EventBuffer extends BaseBuffer {
   /** Tracks consecutive flush failures for observability; reset on success. */
   private flushRetryCount = 0;
 
+  /**
+   * Events whose producer re-produces them when this buffer reports a failed
+   * flush. They are DROPPED by a failed write instead of being re-queued —
+   * see `addRedeliverable`.
+   */
+  private readonly redeliverableEvents = new WeakSet<IClickhouseEvent>();
+
+  /**
+   * The highest sequence a failed write dropped, and the failure it dropped
+   * it with. `lastDurableSeq` answers "is everything up to here in Redis?",
+   * which stopped being the same question once a write could drop events: a
+   * later write can carry the watermark past a sequence that was dropped
+   * rather than written. A durability window (`openDurabilityWindow`) compares
+   * against this so the producer that owns the dropped events is the one told
+   * about it.
+   */
+  private droppedThroughSeq = 0;
+  private lastDropFailure: unknown = null;
+
+  /** Built once, on first use; see `asRedeliverable`. */
+  private redeliverableView: EventBuffer | null = null;
+
   private queueKey = 'event_buffer:queue';
 
   constructor(deps: BufferDeps) {
@@ -167,7 +189,9 @@ export class EventBuffer extends BaseBuffer {
    * duplicate is recoverable, a dropped `pendingEvents` array is not
    * (M18-001, drill 03).
    */
-  public async flushPendingOrThrow(): Promise<void> {
+  public async flushPendingOrThrow(
+    sinceSeq: number = this.droppedThroughSeq
+  ): Promise<void> {
     const target = this.lastQueuedSeq;
 
     // Not a retry loop: each pass either waits out a write that is already
@@ -180,10 +204,11 @@ export class EventBuffer extends BaseBuffer {
 
       if (inFlight === null) {
         if (this.pendingEvents.length === 0) {
-          // Nothing pending and nothing in flight, so every sequence ever
-          // queued has been written. Unreachable unless the watermark and the
-          // array disagree; returning beats spinning.
-          return;
+          // Nothing pending and nothing in flight: every sequence queued is
+          // SETTLED — written, or dropped for the producer that owns it to
+          // produce again. Settled is not durable, which the check below is
+          // what separates.
+          break;
         }
         this.throwIfFailed(await this.flushLocalBuffer());
         continue;
@@ -196,6 +221,72 @@ export class EventBuffer extends BaseBuffer {
         this.throwIfFailed(failure);
       }
     }
+
+    // A write that dropped events did not make them durable, and the watermark
+    // alone cannot say so: it moves on with the NEXT write, which carries none
+    // of them. Without this a batch whose events were dropped by a micro-batch
+    // timer it never awaited would be told they are safe, commit its offsets,
+    // and lose them for good (M18-007).
+    if (this.droppedThroughSeq > sinceSeq) {
+      this.throwIfFailed(this.lastDropFailure);
+    }
+  }
+
+  /**
+   * Buffer an event whose producer produces it AGAIN when this buffer reports
+   * a failed flush — today the Kafka consumer, whose batch is left
+   * uncommitted and redelivered (`modules/ingest/src/consumer.ts`).
+   *
+   * Such an event is not re-queued by a failed write. Re-queueing it was
+   * right while the buffer owned the retry, and became harmful the moment
+   * Kafka took that ownership over (M18-001): the redelivery buffers a fresh
+   * copy, so the old one is a SECOND copy of one event, and every further
+   * redelivery adds another. Drill 02's re-run measured 4,759 ClickHouse rows
+   * for 230 events that way (M18-007).
+   *
+   * Producers Kafka does not redeliver — the session-end job, whose Redis
+   * `SET NX` claim makes a job retry a no-op — keep the safety net by using
+   * plain `add()`.
+   */
+  public addRedeliverable(event: IClickhouseEvent): void {
+    this.redeliverableEvents.add(event);
+    this.add(event);
+  }
+
+  /**
+   * A view of this buffer whose `add()` is `addRedeliverable()`; everything
+   * else on it is this buffer's own.
+   *
+   * The ownership has to ride in on the SCOPE because `createEvent()` reaches
+   * the buffer as `deps.buffers.event` and takes no ownership argument — so
+   * the consumer hands its handlers a scope carrying this view
+   * (`modules/ingest/src/consumer-handler.ts`) and every other transport keeps
+   * the buffer itself.
+   */
+  public asRedeliverable(): EventBuffer {
+    this.redeliverableView ??= new Proxy(this, {
+      get: (target, property) =>
+        property === 'add'
+          ? (event: IClickhouseEvent) => target.addRedeliverable(event)
+          : Reflect.get(target, property, target),
+    });
+    return this.redeliverableView;
+  }
+
+  /**
+   * Opens a durability window and returns the gate that closes it: a promise
+   * that resolves once everything buffered after this call is in Redis, and
+   * rejects when any of it was dropped instead.
+   *
+   * The LOWER bound is the point. A caller that asks "is everything queued in
+   * Redis?" cannot tell its own dropped events from another producer's, and a
+   * failed write can drop events the caller never awaited. Opening the window
+   * before the first event is buffered is what makes the answer that caller's
+   * own (M18-007).
+   */
+  public openDurabilityWindow(): () => Promise<void> {
+    const sinceSeq = this.lastQueuedSeq;
+    return () => this.flushPendingOrThrow(sinceSeq);
   }
 
   private throwIfFailed(failure: unknown): void {
@@ -274,14 +365,30 @@ export class EventBuffer extends BaseBuffer {
       this.flushRetryCount = 0;
       return null;
     } catch (error) {
-      // Re-queue failed events at the front to preserve order and avoid data loss
-      this.pendingEvents = eventsToFlush.concat(this.pendingEvents);
+      // Re-queue only the events nothing else will produce again, at the front
+      // to preserve order. A redeliverable event is already on its way back —
+      // keeping it here would hold a second copy of it until Redis returns,
+      // and one more for every redelivery in between (see `addRedeliverable`).
+      const orphaned = eventsToFlush.filter(
+        (event) => !this.redeliverableEvents.has(event)
+      );
+      const droppedCount = eventsToFlush.length - orphaned.length;
+      if (droppedCount > 0) {
+        // `coversSeq` over-states which sequences were dropped when the write
+        // mixed the two kinds. Erring high costs an extra redelivery for a
+        // window that straddled the failure; erring low would cost the events.
+        this.droppedThroughSeq = Math.max(this.droppedThroughSeq, coversSeq);
+        this.lastDropFailure = error;
+      }
+      this.pendingEvents = orphaned.concat(this.pendingEvents);
 
       this.flushRetryCount += 1;
       this.logger.warn(
         {
           err: error,
           eventCount: eventsToFlush.length,
+          requeuedCount: orphaned.length,
+          droppedForRedeliveryCount: droppedCount,
           flushRetryCount: this.flushRetryCount,
         },
         'Failed to flush local buffer to Redis; events re-queued'

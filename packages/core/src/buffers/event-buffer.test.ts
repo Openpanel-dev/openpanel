@@ -539,6 +539,110 @@ describe('EventBuffer', () => {
     });
   });
 
+  // M18-007 / drill 02 re-run: a failed flush leaves the batch's Kafka offsets
+  // unresolved (M18-001) and the fail-fast cache client (M18-003) brings the
+  // redelivery back in ~90ms. Re-queueing the failed events then holds one
+  // copy per lap — 4,759 ClickHouse rows for 230 events, measured.
+  describe('events a redelivery will produce again', () => {
+    const REDELIVERY_LAPS = 5;
+
+    /** One Kafka message's event. A redelivery builds an equal, NEW object. */
+    const kafkaEvent = (name = 'redelivered') =>
+      ({
+        project_id: 'p18',
+        name,
+        created_at: '2026-09-13 20:50:31',
+      }) as any;
+
+    const queuedNames = async (): Promise<string[]> =>
+      (await redis.lrange('event_buffer:queue', 0, -1)).map(
+        (row) => (JSON.parse(row) as { name: string }).name
+      );
+
+    it('keeps ONE copy when the same message is redelivered through a whole outage', async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+
+      for (let lap = 0; lap < REDELIVERY_LAPS; lap++) {
+        const isDurable = eventBuffer.openDurabilityWindow();
+        eventBuffer.addRedeliverable(kafkaEvent());
+        await expect(isDurable()).rejects.toThrow('WRONGTYPE');
+        // Nothing is held for a later retry: Kafka owns that now.
+        expect(eventBuffer.getPendingLocalCount()).toBe(0);
+      }
+
+      await redis.del('event_buffer:queue');
+      const isDurable = eventBuffer.openDurabilityWindow();
+      eventBuffer.addRedeliverable(kafkaEvent());
+      await isDurable();
+
+      expect(await eventBuffer.getBufferSize()).toBe(1);
+    });
+
+    it('still holds the events of a producer nothing redelivers', async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+
+      const isDurable = eventBuffer.openDurabilityWindow();
+      eventBuffer.addRedeliverable(kafkaEvent('from-the-consumer'));
+      // The session-end job's write: a BullMQ retry re-runs a job whose Redis
+      // `SET NX` claim is already taken, so this copy is the only one there is.
+      eventBuffer.add(kafkaEvent('from-the-session-end-job'));
+
+      await expect(isDurable()).rejects.toThrow('WRONGTYPE');
+      expect(eventBuffer.getPendingLocalCount()).toBe(1);
+
+      await redis.del('event_buffer:queue');
+      await eventBuffer.flush();
+
+      expect(await queuedNames()).toEqual(['from-the-session-end-job']);
+    });
+
+    it('rejects the window whose events a write it never awaited dropped', async () => {
+      // The load-bearing case. The micro-batch timer can start — and fail —
+      // the write while the batch is still handling messages, so by the time
+      // the gate is asked there is nothing pending and Redis may be healthy
+      // again. Answering "everything queued is settled" would commit the
+      // batch and lose it for good.
+      await redis.set('event_buffer:queue', 'not a list');
+
+      const isDurable = eventBuffer.openDurabilityWindow();
+      eventBuffer.addRedeliverable(kafkaEvent());
+      await eventBuffer.flush();
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+
+      await redis.del('event_buffer:queue');
+
+      await expect(isDurable()).rejects.toThrow('WRONGTYPE');
+      expect(await eventBuffer.getBufferSize()).toBe(0);
+    });
+
+    it('does not poison a window opened after the drop', async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+      const doomed = eventBuffer.openDurabilityWindow();
+      eventBuffer.addRedeliverable(kafkaEvent('doomed'));
+      await expect(doomed()).rejects.toThrow('WRONGTYPE');
+
+      await redis.del('event_buffer:queue');
+      const healthy = eventBuffer.openDurabilityWindow();
+      eventBuffer.addRedeliverable(kafkaEvent('healthy'));
+      await healthy();
+
+      expect(await queuedNames()).toEqual(['healthy']);
+    });
+
+    it("routes the consumer scope's add() through addRedeliverable", async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+      const consumerView = eventBuffer.asRedeliverable();
+
+      const isDurable = eventBuffer.openDurabilityWindow();
+      consumerView.add(kafkaEvent());
+      await expect(isDurable()).rejects.toThrow('WRONGTYPE');
+
+      // Same buffer underneath, and the event was dropped rather than held.
+      expect(consumerView.getPendingLocalCount()).toBe(0);
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+    });
+  });
+
   it('retains events in queue when ClickHouse insert fails', async () => {
     eventBuffer.add({
       project_id: 'p12',
