@@ -77,9 +77,13 @@ function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
     async () => undefined
   );
   const sleep = mock(async (_ms: number) => undefined);
+  const flushBufferedEvents = mock<
+    EventsBatchHandlerDeps['flushBufferedEvents']
+  >(async () => undefined);
   const deps: EventsBatchHandlerDeps = {
     handleEvent,
     sendToDeadLetter,
+    flushBufferedEvents,
     logger: {
       info: mock(() => undefined),
       warn: mock(() => undefined),
@@ -100,6 +104,8 @@ function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
     handleEvent,
     sendToDeadLetter: (overrides.sendToDeadLetter ??
       sendToDeadLetter) as typeof sendToDeadLetter,
+    flushBufferedEvents: (overrides.flushBufferedEvents ??
+      flushBufferedEvents) as typeof flushBufferedEvents,
     sleep,
   };
 }
@@ -400,5 +406,132 @@ describe('reprocess counter', () => {
 
     await handler.eachBatch(makeBatch([message(1, 'a')]).payload);
     expect(metrics.reprocessed).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The regression test for drill 03's loss (M18-001).
+ *
+ * The event a handler accepted lives in an in-process array until the buffer
+ * pushes it to Redis, and kafkajs commits whatever `resolveOffset` marked the
+ * moment `eachBatch` returns — `autoCommit` is on and this consumer never
+ * turns it off, so `consumer.stop()` is NOT the commit point. Resolving an
+ * offset for an event that is still only in memory is exactly how a graceful
+ * restart lost 2 of 44,075 events: the offsets were committed, the process
+ * exited, and nothing was redelivered.
+ *
+ * `resolveOffset` is therefore the commit in these tests. It is the only thing
+ * that decides what gets committed.
+ */
+describe('durability before commit', () => {
+  test('flushes the buffered events before it resolves any offset', async () => {
+    const { payload, resolveOffset } = makeBatch([
+      message(0, 'a'),
+      message(1, 'b'),
+    ]);
+    let handled = 0;
+    let resolvedWhenFlushed = -1;
+    let handledWhenFlushed = -1;
+
+    const { deps } = makeDeps({
+      handleEvent: mock(async () => {
+        handled += 1;
+        return undefined;
+      }),
+      flushBufferedEvents: mock(async () => {
+        resolvedWhenFlushed = resolveOffset.mock.calls.length;
+        handledWhenFlushed = handled;
+      }),
+    });
+    const handler = createEventsBatchHandler(deps);
+
+    await handler.eachBatch(payload);
+
+    // Nothing committed yet, and every message already handled — so the flush
+    // covers the whole batch and none of it was committed behind its back.
+    expect(resolvedWhenFlushed).toBe(0);
+    expect(handledWhenFlushed).toBe(2);
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1']);
+  });
+
+  test('resolves NO offset when the flush fails', async () => {
+    const logger = {
+      info: mock(() => undefined),
+      warn: mock(() => undefined),
+      error: mock(() => undefined),
+    };
+    const onActivity = mock(() => undefined);
+    const { deps } = makeDeps({
+      flushBufferedEvents: mock(() =>
+        Promise.reject(new Error('redis is unreachable'))
+      ),
+      logger,
+      onActivity,
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset, heartbeat } = makeBatch([
+      message(0, 'a'),
+      message(1, 'b'),
+    ]);
+
+    await handler.eachBatch(payload);
+
+    // The whole batch stays uncommitted, so the broker redelivers it. A
+    // duplicate is recoverable; a loss is not.
+    expect(resolvedOffsets(resolveOffset)).toEqual([]);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    // Still a member of the group, and still visibly alive.
+    expect(heartbeat).toHaveBeenCalled();
+    expect(onActivity).toHaveBeenCalledTimes(1);
+  });
+
+  test('redelivery after a failed flush commits, and is not flagged a duplicate', async () => {
+    let redisIsDown = true;
+    const { deps, metrics } = makeDeps({
+      flushBufferedEvents: mock(async () => {
+        if (redisIsDown) {
+          throw new Error('redis is unreachable');
+        }
+      }),
+    });
+    const handler = createEventsBatchHandler(deps);
+
+    const first = makeBatch([message(0, 'a'), message(1, 'b')]);
+    await handler.eachBatch(first.payload);
+    expect(resolvedOffsets(first.resolveOffset)).toEqual([]);
+
+    redisIsDown = false;
+    const redelivered = makeBatch([message(0, 'a'), message(1, 'b')]);
+    await handler.eachBatch(redelivered.payload);
+
+    expect(resolvedOffsets(redelivered.resolveOffset)).toEqual(['0', '1']);
+    // The failed batch never advanced the watermark, so the replay it asked
+    // for is not then reported as an at-least-once duplicate.
+    expect(metrics.reprocessed).not.toHaveBeenCalled();
+  });
+
+  test('flushes what a shutdown-truncated batch handled, before resolving it', async () => {
+    // Drill 03's shape: SIGTERM lands mid-batch, `isRunning` goes false, and
+    // the handler resolves only the prefix it finished. That prefix must be
+    // durable too — it is the window the graceful restart used to lose.
+    let handled = 0;
+    const flushBufferedEvents = mock(async () => undefined);
+    const { deps } = makeDeps({
+      flushBufferedEvents,
+      handleEvent: mock(async () => {
+        handled += 1;
+        return undefined;
+      }),
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch(
+      [message(0, 'a'), message(1, 'a'), message(2, 'a')],
+      { isRunning: () => handled < 2 }
+    );
+
+    await handler.eachBatch(payload);
+
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1']);
+    expect(flushBufferedEvents).toHaveBeenCalledTimes(1);
   });
 });

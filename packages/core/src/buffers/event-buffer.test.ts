@@ -1,4 +1,12 @@
-import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 import type { Readable } from 'node:stream';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache } from '@openpanel/redis';
@@ -54,6 +62,9 @@ beforeEach(async () => {
 afterAll(() => {
   mock.module('../ch-query', () => realChQuery);
 });
+
+/** `testCoreConfig()` leaves `microBatchSize` undefined, so the buffer's own default applies. */
+const DEFAULT_MICRO_BATCH_SIZE = 100;
 
 describe('EventBuffer', () => {
   let eventBuffer: EventBuffer;
@@ -322,6 +333,99 @@ describe('EventBuffer', () => {
     await eventBuffer.flush();
 
     expect(await eventBuffer.getBufferSize()).toBe(5);
+  });
+
+  // M18-001 / drill 03: the shutdown path has to be able to SEE a failed
+  // rpush, because it decides whether to commit the Kafka offsets on the
+  // answer. `flush()` deliberately swallows one (the micro-batch timer retries
+  // while the process lives); `flushPendingOrThrow()` does not.
+  describe('flushPendingOrThrow', () => {
+    // A failed flush re-queues its events AND arms the micro-batch timer, so
+    // without this the retry lands in whichever test runs next.
+    afterEach(async () => {
+      await redis.del('event_buffer:queue');
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (eventBuffer.getPendingLocalCount() === 0) {
+          break;
+        }
+        await eventBuffer.flush();
+      }
+      await redis.del('event_buffer:queue');
+    });
+
+    it('pushes the pending micro-batch to Redis and resolves', async () => {
+      eventBuffer.add({
+        project_id: 'p13',
+        name: 'event1',
+        created_at: new Date().toISOString(),
+      } as any);
+      expect(eventBuffer.getPendingLocalCount()).toBe(1);
+
+      await eventBuffer.flushPendingOrThrow();
+
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+      expect(await eventBuffer.getBufferSize()).toBe(1);
+    });
+
+    it('throws when the rpush does not land, and keeps the events', async () => {
+      // A string under the list key makes every rpush fail with WRONGTYPE —
+      // a real Redis refusal, without mocking the client out from under the
+      // buffer. ioredis RESOLVES such a MULTI, so this is also the regression
+      // test for reading the per-command errors.
+      await redis.set('event_buffer:queue', 'not a list');
+
+      eventBuffer.add({
+        project_id: 'p14',
+        name: 'event1',
+        created_at: new Date().toISOString(),
+      } as any);
+
+      await expect(eventBuffer.flushPendingOrThrow()).rejects.toThrow(
+        'WRONGTYPE'
+      );
+      expect(eventBuffer.getPendingLocalCount()).toBe(1);
+    });
+
+    it('waits for an in-flight micro-batch, then pushes what arrived during it', async () => {
+      // The two-pass path: a write already in flight may have started before
+      // the last `add()`, so waiting for it is not enough — a second write has
+      // to be STARTED. Crossing `microBatchSize` puts one in flight
+      // synchronously, and the event added right after it is the one that
+      // would otherwise be resolved-then-lost.
+      const inFlightBatch = DEFAULT_MICRO_BATCH_SIZE;
+      for (let index = 0; index < inFlightBatch; index++) {
+        eventBuffer.add({
+          project_id: 'p16',
+          name: 'in-flight',
+          created_at: new Date().toISOString(),
+        } as any);
+      }
+      eventBuffer.add({
+        project_id: 'p16',
+        name: 'arrived-during-the-write',
+        created_at: new Date().toISOString(),
+      } as any);
+      expect(eventBuffer.getPendingLocalCount()).toBe(1);
+
+      await eventBuffer.flushPendingOrThrow();
+
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+      expect(await eventBuffer.getBufferSize()).toBe(inFlightBatch + 1);
+    });
+
+    it('does not throw through flush(), which retries instead', async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+
+      eventBuffer.add({
+        project_id: 'p15',
+        name: 'event1',
+        created_at: new Date().toISOString(),
+      } as any);
+
+      await eventBuffer.flush();
+
+      expect(eventBuffer.getPendingLocalCount()).toBe(1);
+    });
   });
 
   it('retains events in queue when ClickHouse insert fails', async () => {

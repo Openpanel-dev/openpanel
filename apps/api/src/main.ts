@@ -88,6 +88,7 @@ import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
 import { type Config, KAFKA_QUEUE_TOKEN, loadConfig } from './config/env';
+import { runShutdownSequence } from './shutdown';
 
 // The registry key and the Redis name are the same string for all seven queues
 // (jobs.registry.ts); `queueKey` only braces it under `QUEUE_CLUSTER`.
@@ -270,6 +271,10 @@ async function startIngestConsumer(
       }),
       sendToDeadLetter: (message) =>
         produceDeadLetterEvent(config.core, message),
+      // Runs before the batch's offsets are resolved, and THROWS if the rpush
+      // did not land. `pendingEvents` is the only in-process buffer state in
+      // the tree — every other buffer writes to Redis inside `add()`.
+      flushBufferedEvents: () => deps.buffers.event.flushPendingOrThrow(),
       logger,
       metrics: ingestConsumerMetrics,
       onActivity: markEventsActivity,
@@ -527,27 +532,38 @@ async function main() {
     }, config.SHUTDOWN_FORCE_EXIT_MS);
     forceExit.unref();
 
-    try {
-      await app.stop();
-      // Only if THIS process consumes cron: waiting on a queue another replica
-      // owns would stall the whole shutdown budget on someone else's jobs.
-      if (workers && config.ENABLED_QUEUES.includes(CRON_QUEUE_NAME)) {
-        await waitForCronToDrain(deps.producers);
-      }
-      await Promise.all([workers?.close(), consumer?.stop()]);
-      await deps.producers.close();
-      // Core opens the Kafka producer lazily on the first /track and the
-      // consumer at boot; `deps.producers` is the BullMQ handle, not this one.
-      // Without this an idempotent producer with in-flight batches is dropped.
-      await disconnectKafka(config.core);
-      logger.info('Graceful shutdown completed');
-      clearTimeout(forceExit);
-      process.exit(0);
-    } catch (error) {
-      logger.error({ err: error }, 'Error during graceful shutdown');
-      clearTimeout(forceExit);
-      process.exit(1);
-    }
+    const exitCode = await runShutdownSequence(
+      {
+        stopHttpServer: async () => {
+          await app.stop();
+        },
+        drainCron: async () => {
+          if (workers && config.ENABLED_QUEUES.includes(CRON_QUEUE_NAME)) {
+            await waitForCronToDrain(deps.producers);
+          }
+        },
+        closeWorkers: async () => {
+          await workers?.close();
+        },
+        stopConsuming: async () => {
+          await consumer?.stopConsuming();
+        },
+        // The backstop. Events buffered inside a Kafka batch are already in
+        // Redis (the batch handler flushes before it resolves its offsets);
+        // this catches what was buffered outside one — a session-end job's
+        // `session_end` event, an import — which no offset covers.
+        flushEventBuffer: () => deps.buffers.event.flushPendingOrThrow(),
+        stopConsumer: async () => {
+          await consumer?.stop();
+        },
+        closeProducers: () => deps.producers.close(),
+        disconnectKafka: () => disconnectKafka(config.core),
+      },
+      logger
+    );
+
+    clearTimeout(forceExit);
+    process.exit(exitCode);
   };
 
   process.on('SIGTERM', () => {

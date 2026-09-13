@@ -17,6 +17,16 @@ import type {
 import type { IncomingEventPayload } from './incoming-event';
 
 export interface KafkaConsumerHandle {
+  /**
+   * Stop fetching, then wait for the in-flight `eachBatch` to finish. Split
+   * out from `stop()` so a graceful shutdown has a point where nothing new can
+   * enter the event buffer but the consumer has not been torn down yet — that
+   * is where shutdown flushes whatever was buffered OUTSIDE a Kafka batch
+   * (M18-001, drill 03). Events buffered inside one are already durable: see
+   * `flushBufferedEvents` below.
+   */
+  stopConsuming: () => Promise<void>;
+  /** Disconnect. Safe to call after `stopConsuming`, and without it. */
   stop: () => Promise<void>;
 }
 
@@ -66,6 +76,18 @@ export interface EventsBatchHandlerDeps {
     meta: { partition: number; offset: string }
   ) => Promise<unknown>;
   sendToDeadLetter: (message: DeadLetterMessage) => Promise<void>;
+  /**
+   * Make everything the handlers buffered in process memory durable.
+   *
+   * Called once every message in the batch has been handled and BEFORE the
+   * first `resolveOffset`, because kafkajs commits the resolved offsets as
+   * soon as `eachBatch` returns (`autoCommit` defaults to true and this
+   * consumer does not turn it off) — not at `consumer.stop()`. It MUST reject
+   * when the write did not land: drill 03 lost 2 of 44,075 events on a
+   * graceful restart because the offsets of events that existed only in the
+   * event buffer's in-process array were committed anyway (M18-001).
+   */
+  flushBufferedEvents: () => Promise<void>;
   logger: ConsumerLogger;
   metrics: ConsumerMetrics;
   onActivity: () => void;
@@ -215,6 +237,25 @@ export function createEventsBatchHandler(
     return deadLetter(message, partition, 'handler_error', result.err);
   };
 
+  /**
+   * @returns false when the flush failed, which leaves the watermark where it
+   * was so the redelivered batch is not then reported as a duplicate.
+   */
+  const bufferedEventsAreDurable = async (
+    partition: number
+  ): Promise<boolean> => {
+    try {
+      await deps.flushBufferedEvents();
+      return true;
+    } catch (err) {
+      deps.logger.error(
+        { err, partition },
+        'buffered events could not be made durable — batch left unresolved for redelivery'
+      );
+      return false;
+    }
+  };
+
   const eachBatch = async ({
     batch,
     resolveOffset,
@@ -298,18 +339,25 @@ export function createEventsBatchHandler(
       })
     );
 
-    // Resolve in strict ascending offset order, stopping at the first offset
-    // that did not finish (e.g. an isStale/isRunning early-return mid-batch).
-    // batch.messages is already ordered by offset.
-    let newHWM = priorHWM;
-    for (const m of batch.messages) {
-      if (!processed.has(m.offset)) {
-        break;
+    // Durability before commit. Handled is not the same as safe: the events
+    // are in an in-process array until they are pushed to Redis, and every
+    // offset resolved below is committed the instant this handler returns. If
+    // that push will not land, resolve NOTHING and let the broker redeliver
+    // the whole batch — a duplicate is recoverable, a loss is not.
+    if (await bufferedEventsAreDurable(batch.partition)) {
+      // Resolve in strict ascending offset order, stopping at the first offset
+      // that did not finish (e.g. an isStale/isRunning early-return mid-batch).
+      // batch.messages is already ordered by offset.
+      let newHWM = priorHWM;
+      for (const m of batch.messages) {
+        if (!processed.has(m.offset)) {
+          break;
+        }
+        resolveOffset(m.offset);
+        newHWM = Math.max(newHWM, Number(m.offset));
       }
-      resolveOffset(m.offset);
-      newHWM = Math.max(newHWM, Number(m.offset));
+      resolvedHWM.set(pk, newHWM);
     }
-    resolvedHWM.set(pk, newHWM);
 
     await heartbeat();
     deps.onActivity();
@@ -408,6 +456,12 @@ export async function startKafkaEventsConsumer(
   );
 
   return {
+    // kafkajs `stop()` is `sharedPromiseTo`, so `disconnect()`'s own internal
+    // stop() below is the already-resolved promise rather than a second
+    // teardown.
+    stopConsuming: async () => {
+      await consumer.stop();
+    },
     stop: async () => {
       await consumer.disconnect();
     },

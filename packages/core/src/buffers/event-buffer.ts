@@ -59,6 +59,14 @@ const DEFAULT_CHUNK_SIZE = 1000;
 const DEFAULT_MICRO_BATCH_MS = 10;
 const DEFAULT_MICRO_BATCH_SIZE = 100;
 
+/**
+ * How many times `drainPendingToRedis` will wait for someone else's write
+ * before it gives up on starting its own. Two passes is the normal worst case
+ * (wait for the in-flight write, then start one); the third is margin against
+ * a concurrent producer slipping a write in between.
+ */
+const MAX_FLUSH_PASSES = 3;
+
 export class EventBuffer extends BaseBuffer {
   private readonly batchSize =
     this.deps.config.buffers.event.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -73,6 +81,13 @@ export class EventBuffer extends BaseBuffer {
   private pendingEvents: IClickhouseEvent[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private isFlushing = false;
+  /**
+   * The micro-batch write currently in flight, so a caller that arrives while
+   * `isFlushing` is set waits for its result instead of being told there was
+   * nothing to do. The Kafka batch handler and shutdown are the callers that
+   * cannot tolerate that answer.
+   */
+  private inFlightFlush: Promise<unknown> | null = null;
   /** Tracks consecutive flush failures for observability; reset on success. */
   private flushRetryCount = 0;
 
@@ -124,22 +139,89 @@ export class EventBuffer extends BaseBuffer {
   }
 
   public async flush() {
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = null;
-    }
-    await this.flushLocalBuffer();
+    await this.drainPendingToRedis();
   }
 
-  private async flushLocalBuffer() {
-    if (this.isFlushing || this.pendingEvents.length === 0) {
+  /**
+   * The same flush, but it THROWS when the rpush did not land, and it does not
+   * resolve until every event that was pending when it was called is in Redis.
+   *
+   * `flush()` swallows a Redis failure on purpose — it re-queues the events and
+   * the micro-batch timer tries again, which is right while the process lives.
+   * The two callers here have no next attempt: the Kafka batch handler is about
+   * to resolve offsets that kafkajs commits as soon as it returns, and shutdown
+   * is about to exit. Both must be able to SEE the failure and decline to
+   * commit — a redelivered duplicate is recoverable, a dropped `pendingEvents`
+   * array is not (M18-001, drill 03).
+   */
+  public async flushPendingOrThrow(): Promise<void> {
+    const failure = await this.drainPendingToRedis();
+    if (failure === null) {
       return;
     }
+    throw failure instanceof Error ? failure : new Error(String(failure));
+  }
 
+  /**
+   * A write always takes the WHOLE pending array, so one write STARTED after
+   * this call covers every event that was pending when it was made. A write
+   * already in flight does not — it may have begun before the last `add()` —
+   * so wait that one out and then start our own. Deliberately not "loop until
+   * the buffer is empty": another producer (a session-end job) adding events
+   * concurrently must not be able to turn a successful flush into a failure.
+   *
+   * @returns the failure the rpush ended with, or `null` on success.
+   */
+  private async drainPendingToRedis(): Promise<unknown> {
+    for (let pass = 0; pass < MAX_FLUSH_PASSES; pass++) {
+      if (this.flushTimer) {
+        clearTimeout(this.flushTimer);
+        this.flushTimer = null;
+      }
+
+      const nothingToDrain =
+        !this.isFlushing && this.pendingEvents.length === 0;
+      if (nothingToDrain) {
+        return null;
+      }
+
+      const startsItsOwnWrite = !this.isFlushing;
+      const failure = await this.flushLocalBuffer();
+      if (failure !== null) {
+        return failure;
+      }
+      if (startsItsOwnWrite) {
+        return null;
+      }
+    }
+
+    return new Error(
+      `event buffer could not start its own flush within ${MAX_FLUSH_PASSES} passes`
+    );
+  }
+
+  /**
+   * Never rejects — `add()` calls it without awaiting. The failure comes back
+   * as the resolved value instead, for the one caller that must act on it.
+   */
+  private flushLocalBuffer(): Promise<unknown> {
+    if (this.isFlushing) {
+      return this.inFlightFlush ?? Promise.resolve(null);
+    }
+    if (this.pendingEvents.length === 0) {
+      return Promise.resolve(null);
+    }
+
+    this.inFlightFlush = this.writePendingToRedis();
+    return this.inFlightFlush;
+  }
+
+  private async writePendingToRedis(): Promise<unknown> {
     this.isFlushing = true;
 
     const eventsToFlush = this.pendingEvents;
     this.pendingEvents = [];
+    let failure: unknown = null;
 
     try {
       const redis = getRedisCache();
@@ -149,10 +231,23 @@ export class EventBuffer extends BaseBuffer {
         multi.rpush(this.queueKey, JSON.stringify(event));
       }
 
-      await multi.exec();
+      const results = await multi.exec();
+      // ioredis RESOLVES a MULTI whose individual commands failed, handing the
+      // error back per entry — so a WRONGTYPE or an out-of-memory rpush would
+      // otherwise read as a successful flush and the events would be dropped
+      // silently. The batch handler decides whether to resolve Kafka offsets
+      // on this answer, so it has to be the truth (M18-001).
+      if (results === null) {
+        throw new Error('event buffer rpush transaction was aborted');
+      }
+      const rejected = results.find(([commandError]) => commandError !== null);
+      if (rejected?.[0]) {
+        throw rejected[0];
+      }
 
       this.flushRetryCount = 0;
     } catch (error) {
+      failure = error;
       // Re-queue failed events at the front to preserve order and avoid data loss
       this.pendingEvents = eventsToFlush.concat(this.pendingEvents);
 
@@ -167,6 +262,7 @@ export class EventBuffer extends BaseBuffer {
       );
     } finally {
       this.isFlushing = false;
+      this.inFlightFlush = null;
       // Events may have accumulated while we were flushing; schedule another flush if needed
       if (this.pendingEvents.length > 0 && !this.flushTimer) {
         this.flushTimer = setTimeout(() => {
@@ -175,6 +271,8 @@ export class EventBuffer extends BaseBuffer {
         }, this.microBatchIntervalMs);
       }
     }
+
+    return failure;
   }
 
   protected getRedisListKey(): string {
