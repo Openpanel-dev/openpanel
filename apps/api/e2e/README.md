@@ -349,3 +349,22 @@ dev Redis's live queues, and it refuses to start if the event/group buffers are
 non-empty (the real `flushEvents` handler it runs would drain them). The
 un-namespaced keys' byte-identity is pinned separately by
 `packages/core/src/jobs/naming.test.ts`.
+
+## `redis-fail-fast.ts` / `redis-command-cost.ts` — the M18-003 fault proof
+
+Also independent of the session harnesses and of `pnpm dev`. `redis-fail-fast.ts`
+spawns its own API on `:3399` pointed at a TCP proxy it can stop (`docker stop`)
+or freeze (`docker pause`), and measures what `/track` costs while the Redis
+**cache** is unreachable — sustained outage, 1 s blip under load, frozen server,
+and a boot with Redis already down. `redis-command-cost.ts` measures the cost of
+a *legitimate* command, which is what bounds `CACHE_COMMAND_TIMEOUT_MS`.
+
+```bash
+cd apps/api
+LOG_LEVEL=warn dotenv -e ../../.env -- bun e2e/redis-fail-fast.ts   # M18_QUICK=1 for phases A-C
+dotenv -e ../../.env -- bun e2e/redis-command-cost.ts
+```
+
+Neither touches the shared dev stack: the proxied API uses Redis database 3 and
+its own Kafka topic, the cost bench database 4. The before/after numbers both
+produced, and the reasoning they justify, are in **`redis-fail-fast.md`**.

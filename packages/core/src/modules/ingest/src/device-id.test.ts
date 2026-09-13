@@ -139,6 +139,42 @@ describe('getDeviceId — session resolution', () => {
     expect(new Set(deviceIds).size).toBe(2); // distinct current/previous hashes
   });
 
+  /**
+   * M18-003 made the cache client fail fast, so this read now rejects in
+   * microseconds instead of after ioredis's 20-attempt reconnect cycle. The
+   * degradation itself must be untouched: the api and the worker only agree on
+   * a session because they derive the SAME id from project/device/time bucket,
+   * so a faster failure that changed the id would split every session an
+   * outage touched.
+   */
+  it('mints the SAME deterministic id whether the session read misses or rejects', async () => {
+    const { buffer: emptyStore } = stubBuffer(null);
+    const rejecting = {
+      getExistingSession: mock(() =>
+        Promise.reject(
+          new Error(
+            "Stream isn't writeable and enableOfflineQueue options is false"
+          )
+        )
+      ),
+    } as unknown as SessionBufferReader;
+
+    const onMiss = await getDeviceId({
+      ...BASE,
+      overrideDeviceId: 'cookie-abc',
+      sessionBuffer: emptyStore,
+    });
+    const onRejection = await getDeviceId({
+      ...BASE,
+      overrideDeviceId: 'cookie-abc',
+      sessionBuffer: rejecting,
+    });
+
+    expect(onRejection).toEqual(onMiss);
+    // Pinned to the value this derivation produced before the fail-fast change.
+    expect(onRejection.sessionId).toBe('wizrZalfI_J7u-QhdRttmQ');
+  });
+
   it('logs a failed session read through the caller logger, not console', async () => {
     const { error, logger } = stubLogger();
     const failing = {
