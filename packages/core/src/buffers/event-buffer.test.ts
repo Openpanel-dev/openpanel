@@ -428,6 +428,117 @@ describe('EventBuffer', () => {
     });
   });
 
+  // M18-005 / drill 03 re-run: the gate has to answer "are my events in
+  // Redis?", not "did I start the write?". Answering the second question made
+  // 221 durability failures in 5.5 minutes on a HEALTHY stack and turned 16.9%
+  // of accepted events into duplicates, because a caller that lost the race to
+  // start a write was told its already-durable events were not durable.
+  describe('flushPendingOrThrow under concurrency', () => {
+    // 24 partitions is what drill 03 ran; the callers are its `eachBatch`
+    // handlers, and the background producer stands in for the HTTP path and
+    // the session-end job adding events underneath them.
+    const CONCURRENT_CALLERS = 24;
+    const ROUNDS_PER_CALLER = 25;
+    const EVENTS_PER_ROUND = 5;
+
+    let addedEventCount = 0;
+
+    const addEvent = (name: string) => {
+      addedEventCount += 1;
+      eventBuffer.add({
+        project_id: 'p17',
+        name,
+        created_at: new Date().toISOString(),
+      } as any);
+    };
+
+    beforeEach(() => {
+      addedEventCount = 0;
+    });
+
+    afterEach(async () => {
+      await redis.del('event_buffer:queue');
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (eventBuffer.getPendingLocalCount() === 0) {
+          break;
+        }
+        await eventBuffer.flush();
+      }
+      await redis.del('event_buffer:queue');
+    });
+
+    it('resolves every concurrent caller, with zero spurious rejections', async () => {
+      let producing = true;
+      const backgroundProducer = (async () => {
+        while (producing) {
+          addEvent('background');
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      })();
+
+      const rejections: unknown[] = [];
+      await Promise.all(
+        Array.from({ length: CONCURRENT_CALLERS }, async () => {
+          for (let round = 0; round < ROUNDS_PER_CALLER; round++) {
+            for (let index = 0; index < EVENTS_PER_ROUND; index++) {
+              addEvent('batch');
+            }
+            try {
+              await eventBuffer.flushPendingOrThrow();
+            } catch (error) {
+              rejections.push(error);
+            }
+          }
+        })
+      );
+      producing = false;
+      await backgroundProducer;
+
+      expect(rejections).toEqual([]);
+      await eventBuffer.flushPendingOrThrow();
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+      expect(await eventBuffer.getBufferSize()).toBe(addedEventCount);
+    });
+
+    it('resolves a caller whose events someone else is already writing', async () => {
+      addEvent('written-by-someone-else');
+      addEvent('also-written-by-someone-else');
+
+      // `flush()` starts the write synchronously, and a write always takes the
+      // WHOLE pending array — so by the time this caller asks, its events are
+      // in a write it did not start. That is a success, not a failure.
+      const someoneElsesWrite = eventBuffer.flush();
+      expect(eventBuffer.getPendingLocalCount()).toBe(0);
+
+      await eventBuffer.flushPendingOrThrow();
+
+      expect(await eventBuffer.getBufferSize()).toBe(addedEventCount);
+      await someoneElsesWrite;
+    });
+
+    it('still rejects every concurrent caller when Redis genuinely refuses', async () => {
+      await redis.set('event_buffer:queue', 'not a list');
+
+      const results = await Promise.allSettled(
+        Array.from({ length: CONCURRENT_CALLERS }, async () => {
+          addEvent('doomed');
+          await eventBuffer.flushPendingOrThrow();
+        })
+      );
+
+      expect(results.every((result) => result.status === 'rejected')).toBe(
+        true
+      );
+      for (const result of results) {
+        expect((result as PromiseRejectedResult).reason.message).toContain(
+          'WRONGTYPE'
+        );
+      }
+      // Nothing was dropped on the way to being refused.
+      expect(eventBuffer.getPendingLocalCount()).toBe(addedEventCount);
+    });
+  });
+
   it('retains events in queue when ClickHouse insert fails', async () => {
     eventBuffer.add({
       project_id: 'p12',
