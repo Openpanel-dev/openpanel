@@ -9,13 +9,19 @@ import client from 'prom-client';
 import { registry } from '../../../metrics';
 import type { ConsumerMetrics, DeadLetterReason } from './consumer';
 
-// Kafka event messages reprocessed (same offset redelivered outside a
-// rebalance). Should stay ~0. A sustained non-zero rate means the consumer is
-// re-delivering messages it already handled — an offset-handling/duplicate bug.
-export const kafkaReprocessedTotal = new client.Counter({
-  name: 'kafka_events_reprocessed_total',
-  help: 'Kafka event messages reprocessed (offset redelivered outside a rebalance)',
-  labelNames: ['partition'],
+// Events whose producer-minted id had already been seen (M21-001). This is a
+// MARKER, not a dedupe: the event is inserted either way and this counter is
+// the whole point of the check. It replaces `kafka_events_reprocessed_total`,
+// which was keyed on a Kafka offset in one process's heap and therefore blind
+// to every duplicate that mattered — drill 08 measured 161 real duplicates and
+// 0 reprocessed increments.
+//
+// It UNDERCOUNTS by design: a duplicate whose marker could not be written
+// (Redis away) is not counted, because the check fails open rather than
+// delaying the event.
+export const duplicateEventsMarkedTotal = new client.Counter({
+  name: 'ingest_duplicate_events_marked_total',
+  help: 'Events whose producer-minted id had already been seen (marked, still inserted)',
   registers: [registry],
 });
 
@@ -65,7 +71,6 @@ export const sessionsStarted = new client.Counter({
  * — a metric is a module's business, not the entrypoint's.
  */
 export const ingestConsumerMetrics = {
-  reprocessed: (partition: string) => kafkaReprocessedTotal.inc({ partition }),
   handlerFailed: (partition: string) =>
     kafkaHandlerFailuresTotal.inc({ partition }),
   deadLettered: (partition: string, reason: DeadLetterReason) =>

@@ -33,7 +33,7 @@ import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
 import type { IncomingEventPayload } from './incoming-event';
-import { sessionsStarted } from './ingest.metrics';
+import { duplicateEventsMarkedTotal, sessionsStarted } from './ingest.metrics';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
@@ -74,6 +74,8 @@ export interface IncomingEventSessions {
 export interface IncomingEventMetrics {
   sessionStarted(kind: 'new' | 'boundary'): void;
   sessionEndEnqueued(source: 'boundary'): void;
+  /** One event whose producer-minted id had already been seen (M21-001). */
+  duplicateMarked(): void;
 }
 
 export interface IncomingEventDeps {
@@ -93,6 +95,14 @@ export interface IncomingEventDeps {
     markFirstEvent(projectId: string): Promise<unknown>;
   };
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<unknown>;
+  /**
+   * Claim the producer-minted event id. Resolves true when the id has been
+   * seen before — a redelivery — and false on its first sighting.
+   *
+   * MARK, NOT DEDUPE: the caller counts and logs, and inserts the event
+   * either way. It may reject; the caller then processes the event normally.
+   */
+  markDuplicate(eventId: string): Promise<boolean>;
   metrics: IncomingEventMetrics;
 }
 
@@ -115,6 +125,14 @@ export interface IncomingEventBindings {
     deps: Ctx,
     payload: IServiceCreateEventPayload
   ): Promise<unknown>;
+  /**
+   * `@openpanel/redis`'s `createDuplicateEventMarker`, already bound to the
+   * TTL `apps/api` parsed. Injected rather than built here because the TTL is
+   * configuration and `packages/core` reads no environment (ADR-022 R7), and
+   * because building it once at the composition root keeps the key prefix and
+   * the TTL out of the per-message path.
+   */
+  markDuplicateEvent(eventId: string): Promise<boolean>;
 }
 
 /**
@@ -142,9 +160,11 @@ export function createIncomingEventDeps(
       },
     },
     enqueueSessionEnd: (input) => ctx.services.session.enqueueSessionEnd(input),
+    markDuplicate: (eventId) => bindings.markDuplicateEvent(eventId),
     metrics: {
       sessionStarted: (kind) => sessionsStarted.inc({ kind }),
       sessionEndEnqueued: (source) => sessionEndsEnqueued.inc({ source }),
+      duplicateMarked: () => duplicateEventsMarkedTotal.inc(),
     },
   };
 }
@@ -227,12 +247,91 @@ const parseRevenue = (revenue: unknown): number | undefined => {
   return undefined;
 };
 
+/**
+ * Claim the event id and report a redelivery. THE EVENT IS INSERTED EITHER
+ * WAY — this counts and logs, it does not drop, and nothing downstream reads
+ * its answer. A false positive on a suppressing check would be silent data
+ * loss, and whether the events table ever gets dedupe is not decided here.
+ *
+ * It replaces the offset watermark, which could not see a duplicate across a
+ * rebalance, an eviction, a durability redelivery or a restart — drill 08
+ * measured 161 real duplicates and 0 of them flagged. It catches redeliveries
+ * of the SAME id: crash, eviction, durability redelivery. It does NOT catch
+ * drill 06's lost ACK, where the SDK re-sends and the producer mints a fresh
+ * id per request; SDK-supplied ids are what closes that, later.
+ *
+ * FAILS OPEN, AND NEVER REJECTS. Redis being away is exactly when redeliveries
+ * happen, so an observability counter must not be the thing that delays or
+ * loses an event — and a handler blocked on Redis is how drill 02's consumer
+ * was evicted past its session timeout, which is the one reassignment M19
+ * measured costing duplicate rows.
+ */
+function startDuplicateMark(
+  eventId: string | undefined,
+  projectId: string,
+  logger: Logger,
+  deps: IncomingEventDeps
+): Promise<void> {
+  if (!eventId) {
+    return Promise.resolve();
+  }
+  return deps
+    .markDuplicate(eventId)
+    .then((seenBefore) => {
+      if (!seenBefore) {
+        return;
+      }
+      deps.metrics.duplicateMarked();
+      logger.warn(
+        { eventId, projectId },
+        'DUPLICATE event id — already ingested, inserting it anyway'
+      );
+    })
+    .catch((error) => {
+      logger.warn(
+        { err: error, eventId },
+        'could not mark duplicate — this event is unchecked'
+      );
+    });
+}
+
 export async function incomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,
   // Logged so a duplicate row in ClickHouse can be traced back to the exact
   // partition/offset that produced it.
   meta?: IncomingEventDelivery
+) {
+  // `requestId` rides in on `deps.logger`, which the consumer scopes to this
+  // envelope's id (ADR-018 R1 renames V1's `reqId`); only the delivery
+  // coordinates are per-message news.
+  const logger = meta
+    ? deps.logger.child({
+        kafkaPartition: meta.partition,
+        kafkaOffset: meta.offset,
+      })
+    : deps.logger;
+  // Started BEFORE the handler's own Redis work and awaited AFTER it, so the
+  // marker's round trip overlaps the session buffer's GET and EVAL on the same
+  // client: healthy it costs the handler nothing measurable, and under a
+  // frozen Redis its bound is one the handler was already paying.
+  const duplicateMark = startDuplicateMark(
+    jobPayload.id,
+    jobPayload.projectId,
+    logger,
+    deps
+  );
+  try {
+    return await ingestIncomingEvent(jobPayload, deps, logger);
+  } finally {
+    await duplicateMark;
+  }
+}
+
+async function ingestIncomingEvent(
+  jobPayload: IncomingEventPayload,
+  deps: IncomingEventDeps,
+  logger: Logger
 ) {
   const {
     geo,
@@ -248,15 +347,6 @@ export async function incomingEvent(
     id: eventId,
   } = jobPayload;
   const properties: Record<string, unknown> = body.properties ?? {};
-  // `requestId` rides in on `deps.logger`, which the consumer scopes to this
-  // envelope's id (ADR-018 R1 renames V1's `reqId`); only the delivery
-  // coordinates are per-message news.
-  const logger = meta
-    ? deps.logger.child({
-        kafkaPartition: meta.partition,
-        kafkaOffset: meta.offset,
-      })
-    : deps.logger;
   const getProperty = (name: string): string | undefined => {
     // replace thing is just for older sdks when we didn't have `__`
     // remove when kiddokitchen app (24.09.02) is not used anymore

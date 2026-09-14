@@ -88,7 +88,6 @@ export interface ConsumerLogger {
 }
 
 export interface ConsumerMetrics {
-  reprocessed: (partition: string) => void;
   handlerFailed: (partition: string) => void;
   /** The message was recorded in the dead-letter list and DROPPED. */
   deadLettered: (partition: string, reason: DeadLetterReason) => void;
@@ -146,8 +145,11 @@ const errorMessage = (err: unknown): string =>
 
 export interface EventsBatchHandler {
   eachBatch: (payload: EachBatchPayload) => Promise<void>;
-  /** Called on GROUP_JOIN: a new assignment invalidates the watermarks. */
-  resetWatermarks: () => void;
+  /**
+   * Called on GROUP_JOIN: a new assignment may hand this member different
+   * partitions, so the per-partition durability backoff below starts over.
+   */
+  resetDurabilityBackoff: () => void;
 }
 
 /**
@@ -166,14 +168,6 @@ export function createEventsBatchHandler(
   deps: EventsBatchHandlerDeps
 ): EventsBatchHandler {
   const sleep = deps.sleep ?? defaultSleep;
-
-  // Highest Kafka offset we have *resolved* (committed) per `topic-partition`,
-  // tracked across batches. Used purely for the reprocess detector below: if we
-  // ever see an offset at or below this watermark again, the message is being
-  // redelivered (at-least-once duplicate) outside of a rebalance — which is the
-  // signature of an offset-handling bug. Cleared on GROUP_JOIN so legitimate
-  // post-rebalance redelivery from the last committed offset doesn't trip it.
-  const resolvedHWM = new Map<string, number>();
 
   /**
    * Park the message and DROP it. The drop is unconditional: whether the
@@ -314,8 +308,8 @@ export function createEventsBatchHandler(
   const durabilityFailures = new Map<string, number>();
 
   /**
-   * @returns false when the flush failed, which leaves the watermark where it
-   * was so the redelivered batch is not then reported as a duplicate.
+   * @returns false when the flush failed, which resolves no offset and leaves
+   * the whole batch for the broker to redeliver.
    */
   const bufferedEventsAreDurable = async (
     partition: number,
@@ -374,10 +368,6 @@ export function createEventsBatchHandler(
     // for THIS batch's events and not for whatever else was pending when it
     // finished (M18-007).
     const closeDurabilityWindow = deps.openDurabilityWindow();
-    // Watermark from *previous* batches. Anything at or below this that we see
-    // now is a redelivery. Captured before this batch so intra-batch
-    // out-of-order processing (normal, see below) is never counted.
-    const priorHWM = resolvedHWM.get(pk) ?? -1;
 
     // Group by partition key (= deviceId or `${projectId}:${profileId}`).
     // Same-key messages stay serial so sessionBuffer/session-end-job state
@@ -414,21 +404,6 @@ export function createEventsBatchHandler(
             return;
           }
 
-          // Reprocess detector: only fires for offsets already resolved in a
-          // PRIOR batch (redelivery). Intra-batch out-of-order processing
-          // across key-groups is expected and is not flagged.
-          if (Number(m.offset) <= priorHWM) {
-            deps.metrics.reprocessed(String(batch.partition));
-            deps.logger.warn(
-              {
-                partition: batch.partition,
-                offset: m.offset,
-                resolvedHighWaterMark: priorHWM,
-              },
-              'kafka offset REPROCESSED — at-least-once duplicate (outside rebalance)'
-            );
-          }
-
           // No "unresolvable" branch: a message is handled or dropped, and a
           // dropped one is still finished (M20-001). The only gap this walk
           // can now stop at is the isRunning/isStale early return above, and
@@ -457,15 +432,12 @@ export function createEventsBatchHandler(
       // Resolve in strict ascending offset order, stopping at the first offset
       // that did not finish (e.g. an isStale/isRunning early-return mid-batch).
       // batch.messages is already ordered by offset.
-      let newHWM = priorHWM;
       for (const m of batch.messages) {
         if (!processed.has(m.offset)) {
           break;
         }
         resolveOffset(m.offset);
-        newHWM = Math.max(newHWM, Number(m.offset));
       }
-      resolvedHWM.set(pk, newHWM);
     } else if (isRunning() && !isStale()) {
       // Not while shutting down: the redelivery is the next process's problem
       // and the wait would only eat the shutdown budget.
@@ -478,8 +450,7 @@ export function createEventsBatchHandler(
 
   return {
     eachBatch,
-    resetWatermarks: () => {
-      resolvedHWM.clear();
+    resetDurabilityBackoff: () => {
       durabilityFailures.clear();
     },
   };
@@ -519,10 +490,10 @@ export async function startKafkaEventsConsumer(
   // We had no logging for partition reassignment before; without it a rebalance
   // storm (a common source of at-least-once duplicates) is invisible.
   consumer.on(consumer.events.GROUP_JOIN, ({ payload }) => {
-    // A new assignment means partitions may have moved between members; reset
-    // the reprocess watermarks so legitimate resume-from-committed-offset after
-    // a rebalance is not flagged as a duplicate.
-    handler.resetWatermarks();
+    // A new assignment means partitions may have moved between members, so a
+    // consecutive-failure count carried over from the old one would pick the
+    // wrong backoff for the new one.
+    handler.resetDurabilityBackoff();
     logger.info(
       {
         memberId: payload.memberId,

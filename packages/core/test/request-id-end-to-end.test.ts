@@ -579,6 +579,9 @@ function ingestDeps() {
 
 const ingestBindings: IncomingEventBindings = {
   checkNotificationRulesForEvent: () => Promise.resolve(null),
+  // Never a duplicate here: this suite is about the requestId, and the marker
+  // must not decide anything about the row either way (M21-001).
+  markDuplicateEvent: () => Promise.resolve(false),
 };
 
 function ingestEnvelope(requestId?: string): IncomingEventPayload {

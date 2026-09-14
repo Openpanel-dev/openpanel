@@ -84,6 +84,22 @@ const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 
 /**
+ * How long a duplicate marker outlives its event (M21-001). It only has to
+ * outlive the REPLAY window, not the data: drill 08's eviction rejoin — the
+ * one reassignment that costs duplicate rows — was 3,094 ms, and drill 06's
+ * lost-ACK replay landed ~30 s after the produce. Two minutes is ~40x the
+ * first and 4x the second, and covers a process restart resuming from its last
+ * committed offset.
+ *
+ * It is the knob that decides the key count, which is `events/s x TTL`: at the
+ * 5,000 events/s the scaling requirement targets that is 600,000 live markers.
+ * Measured on this box's Redis 2026-09-14 — 200,000 real markers cost
+ * 137.6 bytes each including the expires dict — so ~79 MB. Longer is only
+ * worth buying if a redelivery window longer than this is ever observed.
+ */
+const DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS = 120_000;
+
+/**
  * The Kafka events consumer's token. Renamed from `events_kafka` — there is
  * one events transport now, so there is one token for it (ADR-004 rec 5/6,
  * docs/ANSWERS.md §1.3). Carl updates the cloud env at cutover, which is why
@@ -460,6 +476,11 @@ const rawSchema = z.object({
     DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES
   ),
 
+  // --- ingest duplicate marker ---
+  INGEST_DUPLICATE_MARKER_TTL_MS: positiveIntWithDefault(
+    DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS
+  ),
+
   // --- buffers ---
   BUFFER_ASYNC_INSERTS: definedIsTrueSchema,
   BUFFER_CH_INSERT_CONCURRENCY: optionalPositiveInt,
@@ -813,6 +834,13 @@ export interface Config {
    * `sendToDeadLetter` seam it is handed.
    */
   INGEST_DEAD_LETTER_MAX_ENTRIES: number;
+  /**
+   * How long the ingest consumer's duplicate marker key lives. Same reason it
+   * is not on `core.kafka`: the marker is keyed on the EVENT, not on a Kafka
+   * coordinate, and `packages/core` only knows the `markDuplicateEvent` seam
+   * it is handed.
+   */
+  INGEST_DUPLICATE_MARKER_TTL_MS: number;
   /** The CORS delegator's origin allowlist, in V1's own order. */
   dashboardOrigins: string[];
   /** V1's `ENABLE_VERBOSE_LOGGING`, already split. */
@@ -853,6 +881,7 @@ const envSchema = rawSchema
       COOKIE_SECRET: raw.COOKIE_SECRET,
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
       INGEST_DEAD_LETTER_MAX_ENTRIES: raw.INGEST_DEAD_LETTER_MAX_ENTRIES,
+      INGEST_DUPLICATE_MARKER_TTL_MS: raw.INGEST_DUPLICATE_MARKER_TTL_MS,
       dashboardOrigins: [
         dashboardUrl,
         ...splitTokens(raw.API_CORS_ORIGINS),

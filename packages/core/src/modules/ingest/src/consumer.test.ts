@@ -78,7 +78,6 @@ type DepOverrides = Partial<
 
 function makeDeps(overrides: DepOverrides = {}) {
   const metrics: EventsBatchHandlerDeps['metrics'] = {
-    reprocessed: mock(() => undefined),
     handlerFailed: mock(() => undefined),
     deadLettered: mock(() => undefined),
     deadLetterFailed: mock(() => undefined),
@@ -372,59 +371,72 @@ describe('unparseable messages', () => {
   });
 });
 
-describe('reprocess counter', () => {
-  test('does not fire for intra-batch out-of-order processing', async () => {
-    const { deps, metrics } = makeDeps();
-    const handler = createEventsBatchHandler(deps);
-    const { payload } = makeBatch([
-      message(0, 'a'),
-      message(1, 'b'),
-      message(2, 'a'),
-    ]);
-
-    await handler.eachBatch(payload);
-
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
-  });
-
-  test('fires once per redelivered offset in a later batch', async () => {
-    const { deps, metrics } = makeDeps();
+/**
+ * M21-001 deleted the offset watermark, whose only outputs were the
+ * `reprocessed` counter and a warn line — drill 08 measured 161 real
+ * duplicates and 0 of those lines, because `resetWatermarks()` fired on
+ * GROUP_JOIN and a failed durability flush never advanced it.
+ *
+ * These are the regression tests for the half of that claim that matters: the
+ * functional statement in the resolve loop was always `resolveOffset(m.offset)`
+ * and never read the watermark, so a redelivery must resolve and commit
+ * exactly what it did before.
+ */
+describe('a redelivery after the watermark was deleted', () => {
+  test('resolves every offset again, in ascending order', async () => {
+    const { deps } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const messages = [message(0, 'a'), message(1, 'a')];
 
-    await handler.eachBatch(makeBatch(messages).payload);
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
+    const first = makeBatch(messages);
+    await handler.eachBatch(first.payload);
+    expect(resolvedOffsets(first.resolveOffset)).toEqual(['0', '1']);
 
-    await handler.eachBatch(makeBatch(messages).payload);
-    expect(metrics.reprocessed).toHaveBeenCalledTimes(2);
-    expect(metrics.reprocessed).toHaveBeenCalledWith(String(PARTITION));
+    const redelivered = makeBatch(messages);
+    await handler.eachBatch(redelivered.payload);
+    expect(resolvedOffsets(redelivered.resolveOffset)).toEqual(['0', '1']);
   });
 
-  test('does not fire after a rebalance clears the watermarks', async () => {
-    const { deps, metrics } = makeDeps();
+  test('hands the redelivered message to the handler again', async () => {
+    const { deps, handleEvent } = makeDeps();
     const handler = createEventsBatchHandler(deps);
-    const messages = [message(0, 'a'), message(1, 'a')];
+    const messages = [message(0, 'a')];
 
     await handler.eachBatch(makeBatch(messages).payload);
-    handler.resetWatermarks();
     await handler.eachBatch(makeBatch(messages).payload);
 
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
+    // At-least-once, unchanged: the consumer does not suppress a redelivery,
+    // and nothing in this file now decides whether one is a duplicate — the
+    // marker on the event id does (incoming-event-handler.ts).
+    expect(handleEvent).toHaveBeenCalledTimes(2);
   });
 
-  test('does not fire for a dead-lettered offset re-seen only within the batch', async () => {
-    // A dead-lettered offset is resolved, so it must move the watermark just
-    // like a handled one — otherwise the next batch would flag it as a
-    // reprocess.
-    const { deps, handleEvent, metrics } = makeDeps();
+  test('still resolves a redelivered offset that was dead-lettered', async () => {
+    const { deps, handleEvent } = makeDeps();
     handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
     const handler = createEventsBatchHandler(deps);
+    const messages = [message(0, 'a')];
 
-    await handler.eachBatch(makeBatch([message(0, 'a')]).payload);
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
+    const first = makeBatch(messages);
+    await handler.eachBatch(first.payload);
+    expect(resolvedOffsets(first.resolveOffset)).toEqual(['0']);
 
-    await handler.eachBatch(makeBatch([message(1, 'a')]).payload);
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
+    const redelivered = makeBatch(messages);
+    await handler.eachBatch(redelivered.payload);
+    expect(resolvedOffsets(redelivered.resolveOffset)).toEqual(['0']);
+  });
+
+  test('resetDurabilityBackoff on GROUP_JOIN changes no offset behaviour', async () => {
+    const { deps } = makeDeps();
+    const handler = createEventsBatchHandler(deps);
+    const messages = [message(0, 'a'), message(1, 'b')];
+
+    await handler.eachBatch(makeBatch(messages).payload);
+    handler.resetDurabilityBackoff();
+
+    const afterRebalance = makeBatch(messages);
+    await handler.eachBatch(afterRebalance.payload);
+    expect(resolvedOffsets(afterRebalance.resolveOffset)).toEqual(['0', '1']);
   });
 });
 
@@ -504,9 +516,9 @@ describe('durability before commit', () => {
     expect(onActivity).toHaveBeenCalledTimes(1);
   });
 
-  test('redelivery after a failed flush commits, and is not flagged a duplicate', async () => {
+  test('redelivery after a failed flush commits', async () => {
     let redisIsDown = true;
-    const { deps, metrics } = makeDeps({
+    const { deps } = makeDeps({
       flushBufferedEvents: mock(async () => {
         if (redisIsDown) {
           throw new Error('redis is unreachable');
@@ -524,9 +536,6 @@ describe('durability before commit', () => {
     await handler.eachBatch(redelivered.payload);
 
     expect(resolvedOffsets(redelivered.resolveOffset)).toEqual(['0', '1']);
-    // The failed batch never advanced the watermark, so the replay it asked
-    // for is not then reported as an at-least-once duplicate.
-    expect(metrics.reprocessed).not.toHaveBeenCalled();
   });
 
   test('opens the durability window before the first handler buffers anything', async () => {

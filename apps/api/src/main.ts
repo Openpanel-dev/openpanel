@@ -85,6 +85,7 @@ import { ch } from '@openpanel/db/src/clickhouse/client';
 import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import {
   createDeadLetterRecorder,
+  createDuplicateEventMarker,
   getRedisCache,
   getRedisPub,
   getRedisQueue,
@@ -272,6 +273,15 @@ async function startIngestConsumer(
       // slot in its signature.
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
+        // M21-001: MARKS a redelivery, never drops one — the event is
+        // inserted either way. The CACHE client, again, and for the same
+        // reason: a handler that blocks on Redis is what got drill 02's
+        // consumer evicted past its session timeout, and an eviction is the
+        // one reassignment M19 measured costing duplicate rows.
+        markDuplicateEvent: createDuplicateEventMarker({
+          client: deps.redis,
+          ttlMs: config.INGEST_DUPLICATE_MARKER_TTL_MS,
+        }),
       }),
       // M20-001: a capped Redis list, and the event is DROPPED whether or not
       // the record lands. The Kafka DLQ it replaced
