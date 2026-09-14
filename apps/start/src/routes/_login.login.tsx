@@ -11,6 +11,11 @@ import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
+const validateSearch = z.object({
+  error: z.string().optional(),
+  correlationId: z.string().optional(),
+  inviteId: z.string().optional(),
+});
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
   head: () => ({
@@ -19,18 +24,17 @@ export const Route = createFileRoute('/_login/login')({
       { name: 'robots', content: 'noindex, follow' },
     ],
   }),
-  validateSearch: z.object({
-    error: z.string().optional(),
-    correlationId: z.string().optional(),
-    inviteId: z.string().optional(),
-  }),
-  loader: async ({ context }) => {
+  validateSearch,
+  loader: async ({ context, location }) => {
+    const search = validateSearch.safeParse(location.search);
     const [, isRegistrationAllowed] = await Promise.all([
       context.queryClient.ensureQueryData(
         context.trpc.auth.providers.queryOptions()
       ),
       context.queryClient.ensureQueryData(
-        context.trpc.auth.isRegistrationAllowed.queryOptions({})
+        context.trpc.auth.isRegistrationAllowed.queryOptions({
+          inviteId: search.success ? search.data.inviteId : undefined,
+        })
       ),
     ]);
     return isRegistrationAllowed;
@@ -59,7 +63,11 @@ function LoginPage() {
             Don't have an account?{' '}
             <a
               className="font-medium text-foreground underline"
-              href="/onboarding"
+              href={
+                inviteId
+                  ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
+                  : '/onboarding'
+              }
             >
               Create one today
             </a>

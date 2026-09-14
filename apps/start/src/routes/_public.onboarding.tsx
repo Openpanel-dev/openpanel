@@ -77,7 +77,7 @@ function Component() {
           </h1>
           <p className="text-muted-foreground">
             {inviteId
-              ? 'This invitation no longer exists or has already been used. Ask an administrator for a new one.'
+              ? 'This invitation no longer exists, has already been used, or invitations are disabled on this instance. Ask an administrator for help.'
               : "New accounts can't be created on this instance. Ask an administrator to invite you."}
           </p>
           <p className="mt-3 text-muted-foreground">
