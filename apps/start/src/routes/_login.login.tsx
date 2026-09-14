@@ -25,9 +25,15 @@ export const Route = createFileRoute('/_login/login')({
     inviteId: z.string().optional(),
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      context.trpc.auth.providers.queryOptions()
-    );
+    const [, isRegistrationAllowed] = await Promise.all([
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.providers.queryOptions()
+      ),
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.isRegistrationAllowed.queryOptions({})
+      ),
+    ]);
+    return isRegistrationAllowed;
   },
 });
 
@@ -38,6 +44,7 @@ function LoginPage() {
     trpc.auth.providers.queryOptions()
   );
   const hasOAuthProviders = providers.google || providers.github;
+  const isRegistrationAllowed = Route.useLoaderData();
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
     null
@@ -47,15 +54,17 @@ function LoginPage() {
     <div className="col w-full gap-8 text-left">
       <div>
         <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
-        <p className="text-muted-foreground">
-          Don't have an account?{' '}
-          <a
-            className="font-medium text-foreground underline"
-            href="/onboarding"
-          >
-            Create one today
-          </a>
-        </p>
+        {isRegistrationAllowed && (
+          <p className="text-muted-foreground">
+            Don't have an account?{' '}
+            <a
+              className="font-medium text-foreground underline"
+              href="/onboarding"
+            >
+              Create one today
+            </a>
+          </p>
+        )}
       </div>
       {error && (
         <Alert
