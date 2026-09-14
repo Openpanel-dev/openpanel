@@ -245,6 +245,21 @@ describe('derived values, computed once in the transform', () => {
     ).toBe('own');
   });
 
+  it('the dead-letter list cap defaults to 1000 and takes a positive integer', () => {
+    // The Kafka DLQ topic above is no longer the dead-letter destination
+    // (M20-001) — it is kept only so the seam can be swapped back.
+    expect(loadConfig(base).INGEST_DEAD_LETTER_MAX_ENTRIES).toBe(1000);
+    expect(
+      loadConfig({ ...base, INGEST_DEAD_LETTER_MAX_ENTRIES: '25' })
+        .INGEST_DEAD_LETTER_MAX_ENTRIES
+    ).toBe(25);
+    // Same doctrine as its Kafka neighbours: a cap of 0 or -5 would silently
+    // keep nothing, so it fails boot rather than becoming a surprise.
+    expect(() =>
+      loadConfig({ ...base, INGEST_DEAD_LETTER_MAX_ENTRIES: '0' })
+    ).toThrow('INGEST_DEAD_LETTER_MAX_ENTRIES');
+  });
+
   it('the log exporter and the stdout interception verdict', () => {
     expect(loadConfig(base).core.logging).toMatchObject({
       exporter: 'stdout',

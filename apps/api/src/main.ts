@@ -62,7 +62,6 @@ import {
   kafkaLogger,
   markEventsActivity,
   opsRoutes,
-  produceDeadLetterEvent,
   publicApiRoutes,
   type QueueDefinition,
   type QueueProducerHandle,
@@ -84,7 +83,12 @@ import {
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
 import { db, Prisma } from '@openpanel/db/src/prisma-client';
-import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
+import {
+  createDeadLetterRecorder,
+  getRedisCache,
+  getRedisPub,
+  getRedisQueue,
+} from '@openpanel/redis';
 import { Elysia } from 'elysia';
 import pino from 'pino';
 import { type Config, KAFKA_QUEUE_TOKEN, loadConfig } from './config/env';
@@ -269,8 +273,17 @@ async function startIngestConsumer(
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
       }),
-      sendToDeadLetter: (message) =>
-        produceDeadLetterEvent(config.core, message),
+      // M20-001: a capped Redis list, and the event is DROPPED whether or not
+      // the record lands. The Kafka DLQ it replaced
+      // (`produceDeadLetterEvent`, still exported from core) produced to a
+      // topic nothing creates — 1,592 failures, 0 successes in drill 08 — and
+      // every failure held the offset back, which was the redelivery loop.
+      // The CACHE client, not the queue client: only that one fails fast, and
+      // failing fast is the point here.
+      sendToDeadLetter: createDeadLetterRecorder({
+        client: deps.redis,
+        maxEntries: config.INGEST_DEAD_LETTER_MAX_ENTRIES,
+      }),
       // Opened before the batch's first handler and closed before its first
       // resolved offset; the gate THROWS if the rpush did not land.
       // `pendingEvents` is the only in-process buffer state in the tree —

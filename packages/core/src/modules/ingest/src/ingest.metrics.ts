@@ -29,20 +29,25 @@ export const kafkaHandlerFailuresTotal = new client.Counter({
   registers: [registry],
 });
 
-// Messages written to the dead-letter topic after their attempts were
-// exhausted (or after they failed to parse). One increment per message.
+// Messages recorded in the dead-letter list after their attempts were
+// exhausted (or after they failed to parse), then DROPPED. One increment per
+// message. The list is capped at the last N, so this counter — not the list —
+// is the only thing that tells 50,000 drops apart from 12 (M20-001). The
+// series name is unchanged: the destination moved, the meaning did not.
 export const kafkaDeadLetteredTotal = new client.Counter({
   name: 'kafka_events_dead_lettered_total',
-  help: 'Kafka event messages produced to the dead-letter topic',
+  help: 'Kafka event messages recorded in the dead-letter list and dropped',
   labelNames: ['partition', 'reason'],
   registers: [registry],
 });
 
-// The dead-letter produce itself failed. The offset is then left unresolved
-// and the message is redelivered, so this is a stuck partition, not a loss.
+// The dead-letter write itself failed, so the message was DROPPED WITHOUT
+// being recorded — Redis unreachable, most likely, which is also when handlers
+// fail. This is real loss, not a stuck partition: the offset is resolved
+// anyway and nothing retries the message (M20-001, gate M20).
 export const kafkaDeadLetterFailedTotal = new client.Counter({
   name: 'kafka_events_dead_letter_failed_total',
-  help: 'Failed attempts to produce a Kafka event message to the dead-letter topic',
+  help: 'Kafka event messages dropped without being recorded (dead-letter write failed)',
   labelNames: ['partition'],
   registers: [registry],
 });

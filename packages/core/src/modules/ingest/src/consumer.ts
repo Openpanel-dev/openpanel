@@ -1,7 +1,10 @@
 // Ported from apps/worker/src/jobs/events.kafka-consumer.ts (M8-003). The
 // delivery contract is ADR-004's and is unchanged line for line: per-key
 // serial groups, the ascending contiguous-prefix offset walk, at-least-once,
-// bounded in-consumer retry, and a dead-letter topic on exhaustion.
+// bounded in-consumer retry, and a dead-letter on exhaustion. Only the
+// dead-letter DESTINATION and its failure behaviour changed (M20-001): the
+// record goes to a capped Redis list, and the event is dropped whether or not
+// that write lands.
 //
 // The kafkajs client, the topic/consumer-group names, the DLQ producer and
 // the retry bounds are all INJECTED, and stay so now that they live one
@@ -57,10 +60,15 @@ const DURABILITY_RETRY_MAX_MS = 5000;
 export type DeadLetterReason = 'parse_error' | 'handler_error';
 
 /**
- * What the consumer hands to the dead-letter producer (./kafka.ts's
- * `produceDeadLetterEvent` is the one implementation): the value stays the
- * producer's original bytes, so a DLQ message can be replayed onto the events
- * topic unchanged.
+ * What the consumer hands to the dead-letter sink. The value stays the
+ * producer's original bytes, so the record is a faithful copy of what arrived.
+ *
+ * Two implementations satisfy this, and the seam exists so the choice is one
+ * line in `apps/api`'s wiring: `@openpanel/redis`'s `createDeadLetterRecorder`
+ * (the capped list, in use since M20-001) and ./kafka.ts's
+ * `produceDeadLetterEvent` (the DLQ topic, kept because Carl's decision was
+ * explicitly "for now"; a DLQ message produced from these bytes is replayable
+ * onto the events topic unchanged).
  */
 export interface DeadLetterMessage {
   key: Buffer | null;
@@ -82,7 +90,12 @@ export interface ConsumerLogger {
 export interface ConsumerMetrics {
   reprocessed: (partition: string) => void;
   handlerFailed: (partition: string) => void;
+  /** The message was recorded in the dead-letter list and DROPPED. */
   deadLettered: (partition: string, reason: DeadLetterReason) => void;
+  /**
+   * The message was DROPPED WITHOUT being recorded — the dead-letter write
+   * failed. Not "will be retried": nothing retries it (M20-001).
+   */
   deadLetterFailed: (partition: string) => void;
 }
 
@@ -91,6 +104,10 @@ export interface EventsBatchHandlerDeps {
     payload: IncomingEventPayload,
     meta: { partition: number; offset: string }
   ) => Promise<unknown>;
+  /**
+   * Park a poison message somewhere an operator can read it. It may reject —
+   * the caller drops the message and resolves the offset regardless.
+   */
   sendToDeadLetter: (message: DeadLetterMessage) => Promise<void>;
   /**
    * Opens a durability window over the event buffer and returns the gate that
@@ -140,7 +157,10 @@ export interface EventsBatchHandler {
  *
  * Delivery contract (ADR-004): at-least-once. An offset is resolved only once
  * its message has been handled, dead-lettered, or deliberately skipped —
- * never merely because it failed.
+ * never merely because it failed. Since M20-001 a dead-letter always counts as
+ * finished, because the message is dropped either way; the one place an
+ * unresolved offset is still correct is a failed DURABILITY flush, which
+ * leaves the whole batch for redelivery (M18-001).
  */
 export function createEventsBatchHandler(
   deps: EventsBatchHandlerDeps
@@ -155,12 +175,31 @@ export function createEventsBatchHandler(
   // post-rebalance redelivery from the last committed offset doesn't trip it.
   const resolvedHWM = new Map<string, number>();
 
+  /**
+   * Park the message and DROP it. The drop is unconditional: whether the
+   * record was stored or not, this message's offset is resolved by the caller
+   * and the event is gone from the pipeline (M20-001, gate M20).
+   *
+   * There is deliberately no retry, no backoff and no unresolved offset here.
+   * The dead-letter destination is Redis, and Redis being unavailable is
+   * exactly when handlers fail — so a failed write that held the offset back
+   * would rebuild the very redelivery loop this replaced (drill 02's re-run 2:
+   * 78-79 laps per message at ~0.62 s, no backoff; drill 08: 1,592 failed
+   * dead-letters, 0 successes). Same lesson as M18-007's `pendingEvents`
+   * re-queue: once something else owns the outcome, the safety net underneath
+   * it is the bug.
+   *
+   * The two counters are what carry the volume, since a capped list makes
+   * 50,000 drops look like 12: `deadLettered` = recorded and dropped,
+   * `deadLetterFailed` = dropped WITHOUT being recorded. Neither means
+   * "will be retried".
+   */
   const deadLetter = async (
     message: KafkaMessage,
     partition: number,
     reason: DeadLetterReason,
     err: unknown
-  ): Promise<boolean> => {
+  ): Promise<void> => {
     const label = String(partition);
     try {
       await deps.sendToDeadLetter({
@@ -174,21 +213,27 @@ export function createEventsBatchHandler(
         error: errorMessage(err),
       });
     } catch (dlqErr) {
-      // The event is not lost: leaving the offset unresolved stops the
-      // contiguous-prefix walk here, so the broker redelivers this message.
       deps.metrics.deadLetterFailed(label);
+      // The WRITE failure goes in `err` — it is the news, and only that field
+      // gets the logger's error serializer. What the message originally did
+      // wrong rides along as text.
       deps.logger.error(
-        { err: dlqErr, partition, offset: message.offset, reason },
-        'kafka dead-letter produce failed — offset left unresolved for redelivery'
+        {
+          err: dlqErr,
+          cause: errorMessage(err),
+          partition,
+          offset: message.offset,
+          reason,
+        },
+        'kafka message DROPPED without being recorded — dead-letter write failed'
       );
-      return false;
+      return;
     }
     deps.metrics.deadLettered(label, reason);
     deps.logger.error(
       { err, partition, offset: message.offset, reason },
-      'kafka message dead-lettered'
+      'kafka message dead-lettered — recorded and dropped'
     );
-    return true;
   };
 
   const runHandlerWithRetry = async (
@@ -228,11 +273,15 @@ export function createEventsBatchHandler(
     return { ok: false, err: lastErr };
   };
 
-  /** @returns true when the offset may be resolved. */
+  /**
+   * Always returns: the offset is resolvable either way. A message is handled,
+   * or it is dead-lettered and dropped — there is no third outcome, which is
+   * why the batch loop below has no unresolvable-message branch.
+   */
   const processMessage = async (
     message: KafkaMessage,
     partition: number
-  ): Promise<boolean> => {
+  ): Promise<void> => {
     let payload: IncomingEventPayload;
     try {
       if (!message.value) {
@@ -245,7 +294,8 @@ export function createEventsBatchHandler(
         'kafka message parse failed'
       );
       // Deterministic: retrying identical bytes cannot succeed.
-      return deadLetter(message, partition, 'parse_error', err);
+      await deadLetter(message, partition, 'parse_error', err);
+      return;
     }
 
     const result = await runHandlerWithRetry(
@@ -254,9 +304,9 @@ export function createEventsBatchHandler(
       message.offset
     );
     if (result.ok) {
-      return true;
+      return;
     }
-    return deadLetter(message, partition, 'handler_error', result.err);
+    await deadLetter(message, partition, 'handler_error', result.err);
   };
 
   // Consecutive durability failures per `topic-partition`, for the backoff
@@ -379,12 +429,12 @@ export function createEventsBatchHandler(
             );
           }
 
-          const resolvable = await processMessage(m, batch.partition);
-          if (!resolvable) {
-            // Stop this key-group: continuing past an unresolvable offset only
-            // adds duplicates, since the whole tail is redelivered anyway.
-            return;
-          }
+          // No "unresolvable" branch: a message is handled or dropped, and a
+          // dropped one is still finished (M20-001). The only gap this walk
+          // can now stop at is the isRunning/isStale early return above, and
+          // the only offsets left uncommitted are a whole batch whose
+          // durability flush failed — see below.
+          await processMessage(m, batch.partition);
 
           processed.add(m.offset);
           processedCount += 1;

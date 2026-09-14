@@ -10,6 +10,12 @@
  */
 
 import { describe, expect, mock, test } from 'bun:test';
+import {
+  createDeadLetterRecorder,
+  type DeadLetterMulti,
+  type DeadLetterRecord,
+  type DeadLetterRedisClient,
+} from '@openpanel/redis';
 import type { EachBatchPayload, KafkaMessage } from 'kafkajs';
 import {
   createEventsBatchHandler,
@@ -300,9 +306,9 @@ describe('handler failure', () => {
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
   });
 
-  test('leaves the offset unresolved when the dead-letter produce fails', async () => {
+  test('resolves the offset even when the dead-letter write fails', async () => {
     const { deps, handleEvent, metrics } = makeDeps({
-      sendToDeadLetter: mock(() => Promise.reject(new Error('broker down'))),
+      sendToDeadLetter: mock(() => Promise.reject(new Error('redis down'))),
     });
     handleEvent.mockImplementation(async (p: { projectId: string }) => {
       if (p.projectId === 'project-1') {
@@ -318,9 +324,11 @@ describe('handler failure', () => {
 
     await handler.eachBatch(payload);
 
+    // Dropped WITHOUT being recorded — and still acked. Holding the offset
+    // back here is what rebuilt the redelivery loop (M20-001, gate M20).
     expect(metrics.deadLetterFailed).toHaveBeenCalledWith(String(PARTITION));
-    // Nothing at or after the failed offset is acked — it is redelivered.
-    expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
+    expect(metrics.deadLettered).not.toHaveBeenCalled();
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
   });
 });
 
@@ -668,5 +676,203 @@ describe('durability before commit', () => {
 
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1']);
     expect(flushBufferedEvents).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * M20-001 end to end: the consumer wired to the REAL capped-list recorder
+ * (`@openpanel/redis`'s `createDeadLetterRecorder`) instead of a mock, against
+ * an in-memory stand-in for the one MULTI it issues. Redis itself is out of
+ * the picture; the LPUSH/LTRIM arithmetic is not.
+ */
+describe('dead letter to a capped redis list', () => {
+  const LIST_KEY = 'dead_letter:events-test';
+  const MAX_ENTRIES = 3;
+  const OK: [Error | null, unknown] = [null, 1];
+
+  /** Enough of a Redis client for one MULTI, with real list semantics. */
+  function fakeRedis(execError?: Error) {
+    const entries: string[] = [];
+    let roundTrips = 0;
+    const client: DeadLetterRedisClient = {
+      multi() {
+        const queued: (() => void)[] = [];
+        const chain: DeadLetterMulti = {
+          lpush(_key, value) {
+            queued.push(() => entries.unshift(value));
+            return chain;
+          },
+          ltrim(_key, start, stop) {
+            queued.push(() => entries.splice(stop + 1 - start));
+            return chain;
+          },
+          async exec() {
+            roundTrips += 1;
+            if (execError) {
+              throw execError;
+            }
+            for (const run of queued) {
+              run();
+            }
+            return queued.map(() => OK);
+          },
+        };
+        return chain;
+      },
+    };
+    return {
+      client,
+      records: () => entries.map((raw) => JSON.parse(raw) as DeadLetterRecord),
+      roundTrips: () => roundTrips,
+    };
+  }
+
+  function makeRecordingDeps(execError?: Error) {
+    const redis = fakeRedis(execError);
+    const built = makeDeps({
+      sendToDeadLetter: createDeadLetterRecorder({
+        client: redis.client,
+        maxEntries: MAX_ENTRIES,
+        key: LIST_KEY,
+      }),
+    });
+    return { ...built, redis };
+  }
+
+  test('a handler that exhausts its attempts leaves ONE record and a RESOLVED offset', async () => {
+    const { deps, handleEvent, metrics, redis } = makeRecordingDeps();
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([message(0, 'a')]);
+
+    await handler.eachBatch(payload);
+
+    expect(handleEvent).toHaveBeenCalledTimes(3);
+    const records = redis.records();
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      reason: 'handler_error',
+      error: 'boom',
+      offset: '0',
+      partition: PARTITION,
+      topic: TOPIC,
+      key: 'a',
+    });
+    expect(JSON.parse(records[0]?.value ?? '')).toMatchObject({
+      projectId: 'project-0',
+    });
+    // One MULTI, so one round trip per dropped event.
+    expect(redis.roundTrips()).toBe(1);
+    expect(metrics.deadLettered).toHaveBeenCalledWith(
+      String(PARTITION),
+      'handler_error'
+    );
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
+  });
+
+  test('a DEAD REDIS still resolves the offset and records nothing', async () => {
+    // Drill 02's scenario exactly: the dependency that fails the handler is
+    // the dependency the dead letter is written to. If this offset is left
+    // unresolved the redelivery loop is back, in a new place.
+    const { deps, handleEvent, metrics, redis } = makeRecordingDeps(
+      new Error(
+        "Stream isn't writeable and enableOfflineQueue options is false"
+      )
+    );
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([
+      message(0, 'a'),
+      message(1, 'a'),
+      message(2, 'a'),
+    ]);
+
+    await handler.eachBatch(payload);
+
+    expect(redis.records()).toEqual([]);
+    expect(metrics.deadLetterFailed).toHaveBeenCalledTimes(3);
+    expect(metrics.deadLettered).not.toHaveBeenCalled();
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
+  });
+
+  test('a per-command error inside the MULTI counts as not recorded', async () => {
+    // WRONGTYPE is drill 08's own fault shape, and a MULTI reports it in
+    // `exec()`'s results rather than by rejecting.
+    const redis = fakeRedis();
+    const wrongType: [Error | null, unknown] = [
+      new Error(
+        'WRONGTYPE Operation against a key holding the wrong kind of value'
+      ),
+      null,
+    ];
+    const failing: DeadLetterRedisClient = {
+      multi() {
+        const chain: DeadLetterMulti = {
+          lpush: () => chain,
+          ltrim: () => chain,
+          exec: () => Promise.resolve([wrongType, OK]),
+        };
+        return chain;
+      },
+    };
+    const { deps, handleEvent, metrics } = makeDeps({
+      sendToDeadLetter: createDeadLetterRecorder({
+        client: failing,
+        maxEntries: MAX_ENTRIES,
+        key: LIST_KEY,
+      }),
+    });
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([message(0, 'a')]);
+
+    await handler.eachBatch(payload);
+
+    expect(redis.records()).toEqual([]);
+    expect(metrics.deadLetterFailed).toHaveBeenCalledWith(String(PARTITION));
+    expect(metrics.deadLettered).not.toHaveBeenCalled();
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
+  });
+
+  test('the list never exceeds N and keeps the most recent drops', async () => {
+    const { deps, handleEvent, redis } = makeRecordingDeps();
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
+    const handler = createEventsBatchHandler(deps);
+    // One key, so one serial group: the drop order is the offset order.
+    const { payload, resolveOffset } = makeBatch(
+      [0, 1, 2, 3, 4].map((offset) => message(offset, 'a'))
+    );
+
+    await handler.eachBatch(payload);
+
+    const records = redis.records();
+    expect(records).toHaveLength(MAX_ENTRIES);
+    // Newest first, and the two oldest drops fell off the tail.
+    expect(records.map((record) => record.offset)).toEqual(['4', '3', '2']);
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2', '3', '4']);
+  });
+
+  test('a parse failure takes the same path as a handler failure', async () => {
+    const { deps, handleEvent, metrics, redis } = makeRecordingDeps();
+    const handler = createEventsBatchHandler(deps);
+    const { payload, resolveOffset } = makeBatch([
+      message(0, 'a', 'not json at all'),
+    ]);
+
+    await handler.eachBatch(payload);
+
+    expect(handleEvent).not.toHaveBeenCalled();
+    const records = redis.records();
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      reason: 'parse_error',
+      offset: '0',
+      value: 'not json at all',
+    });
+    expect(metrics.deadLettered).toHaveBeenCalledWith(
+      String(PARTITION),
+      'parse_error'
+    );
+    expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
   });
 });

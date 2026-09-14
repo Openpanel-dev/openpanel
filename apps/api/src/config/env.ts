@@ -74,6 +74,12 @@ const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 25;
  */
 const DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS = 5;
 const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
+/**
+ * How many dead-lettered events the capped Redis list keeps (M20-001). A
+ * debugging sample, not a recovery mechanism — the volume is in
+ * `kafka_events_dead_lettered_total`. Carl's "only keep the last N events".
+ */
+const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 
@@ -449,6 +455,11 @@ const rawSchema = z.object({
     DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS
   ),
 
+  // --- ingest dead-letter ---
+  INGEST_DEAD_LETTER_MAX_ENTRIES: positiveIntWithDefault(
+    DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES
+  ),
+
   // --- buffers ---
   BUFFER_ASYNC_INSERTS: definedIsTrueSchema,
   BUFFER_CH_INSERT_CONCURRENCY: optionalPositiveInt,
@@ -795,6 +806,13 @@ export interface Config {
   DISABLE_BULLBOARD: boolean;
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
+  /**
+   * The dead-letter list's cap (M20-001). It sits here rather than in
+   * `core.kafka` because the destination is no longer Kafka: `apps/api`
+   * chooses the dead-letter sink, and `packages/core` only knows the
+   * `sendToDeadLetter` seam it is handed.
+   */
+  INGEST_DEAD_LETTER_MAX_ENTRIES: number;
   /** The CORS delegator's origin allowlist, in V1's own order. */
   dashboardOrigins: string[];
   /** V1's `ENABLE_VERBOSE_LOGGING`, already split. */
@@ -834,6 +852,7 @@ const envSchema = rawSchema
       DISABLE_BULLBOARD: raw.DISABLE_BULLBOARD,
       COOKIE_SECRET: raw.COOKIE_SECRET,
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
+      INGEST_DEAD_LETTER_MAX_ENTRIES: raw.INGEST_DEAD_LETTER_MAX_ENTRIES,
       dashboardOrigins: [
         dashboardUrl,
         ...splitTokens(raw.API_CORS_ORIGINS),
