@@ -14,6 +14,28 @@
    execution (no query is committed unexecuted). Row counts and timings below are from that
    run.
 
+- **Amended by M27-001 (2026-09-15): the user-journey dedup expression is no longer V1's.** V1's
+  `arrayFilter((x, i) -> i = 1 OR x != paths_raw[i - 1], groupArray(path) as paths_raw, arrayEnumerate(paths_raw))`
+  is Theta(n^2) in the longest single session's pageview count, so `overview.userJourney` — which the
+  dashboard calls on every load — could not answer at all for a tenant with one very long session
+  (`docs/ANALYTICS_PERFORMANCE.md` section 6.1). It now reads `arrayCompact(groupArray(path))`, which is the
+  ClickHouse built-in for the same operation and is linear. The render below is the amended text.
+  Re-proved against the local prod copy on **2026-09-15**, `use_query_condition_cache=0`,
+  `max_memory_usage=6 GiB`, `memory_usage` and `elapsed_ns` read off `X-ClickHouse-Summary`:
+  - **Result sets:** `cityHash64(arraySort(groupArray(tuple(*))))` old vs new on every (project, window)
+    pair where the old spelling survives — `verdict`/`bayse`/`earlysalary-production`/`chatpaper` at 30 d
+    and `bayse` at 7 d, both statements: **identical, 10/10**.
+  - **Cost, both statements, 5 steps, 30-day window:** `verdict` 100 ms -> 71 ms · `bayse` 1,583 ms ->
+    980 ms / 182 MiB · `earlysalary-production` 1,341 ms -> 1,283 ms · `website-8103` FAIL
+    (`would use 917.36 TiB`) -> 2,304 ms / 909 MiB · `chatpaper` 7,125 ms -> 6,434 ms / 1,392 MiB.
+    `website-8103` at 1 day: FAIL (`852.36 GiB`) -> 119 ms / 27 MiB.
+  - **Row order is not part of the contract for `transitionsQuery`**, exactly as `sankey.sql.proof.md`
+    already records: it ends `ORDER BY step ASC, value DESC` and most rows share a `(step, value)` pair,
+    so ClickHouse returns them in whatever order the parallel merge produced. Measured 2026-09-15 on
+    `bayse` 30 d: 5,192 of 5,301 result rows sit in a tied group, and **the unchanged shipped statement,
+    run 10 times, returned 10 different row orders and 1 identical row set**. Set-level hashes are the
+    comparison above for that reason.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static).
   Project: `skills-directory` (293,597 events, 75,727 sessions, 2026-07-01..2026-08-25).
   Window used throughout: `2026-08-01 00:00:00`..`2026-08-08 00:00:00`, UTC.
@@ -148,7 +170,8 @@ WITH FILL FROM toStartOfDay({p4:DateTime}) TO {p5:DateTime} STEP toIntervalDay(1
 ```
 
 ```sql
--- topEntriesQuery (user-journey step 1) — same array-function shape sankey.sql.ts established (M7-004)
+-- topEntriesQuery (user-journey step 1) — same array-function shape sankey.sql.ts established (M7-004),
+-- with M27-001's arrayCompact amendment (see the note above the render)
 WITH session_paths AS (
   WITH paths_deduped_cte AS (
     WITH ordered_events AS (
@@ -159,7 +182,7 @@ WITH session_paths AS (
       ORDER BY session_id ASC, created_at ASC
     )
     SELECT session_id,
-      arraySlice(arrayFilter((x, i) -> i = 1 OR x != paths_raw[i - 1], groupArray(path) as paths_raw, arrayEnumerate(paths_raw)), 1, {p4:UInt64}) as paths_deduped
+      arraySlice(arrayCompact(groupArray(path)), 1, {p4:UInt64}) as paths_deduped
     FROM ordered_events GROUP BY session_id
   )
   SELECT session_id,

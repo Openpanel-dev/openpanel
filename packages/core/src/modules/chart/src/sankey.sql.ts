@@ -24,12 +24,17 @@ export type SankeyMode = 'after' | 'before' | 'between';
 /** How many entry events the flow starts from. */
 export const TOP_ENTRY_EVENTS = 3;
 
-/** The dedup + transition pieces every mode shares, verbatim from V1. */
-const DEDUPE_CONSECUTIVE = compiledText(`arrayFilter(
-          (x, i) -> i = 1 OR x != events_raw[i - 1],
-          groupArray(event_name) as events_raw,
-          arrayEnumerate(events_raw)
-        ) as events_deduped`);
+/**
+ * Consecutive-repeat dedup, shared by every mode. V1 spelled it as an
+ * `arrayFilter` whose lambda indexed its own captured `groupArray`, which
+ * ClickHouse re-materialises once per element: Theta(n^2) in the longest
+ * single session's event count, fatal on a tenant with one very long session
+ * (docs/ANALYTICS_PERFORMANCE.md section 6.1). `arrayCompact` is the built-in
+ * for exactly this and is linear; the result is byte-identical.
+ */
+const DEDUPE_CONSECUTIVE = compiledText(
+  'arrayCompact(groupArray(event_name)) as events_deduped'
+);
 
 /**
  * 'after' mode stops the path at the first repeated event, so a loop back to

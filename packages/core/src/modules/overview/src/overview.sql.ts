@@ -543,6 +543,12 @@ function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
   `;
 }
 
+/**
+ * `arrayCompact` drops consecutive repeats in linear time. V1's `arrayFilter`
+ * spelling was Theta(n^2) in the longest session's pageview count and could not
+ * answer for a tenant with one very long session — the same defect, and the same
+ * fix, as sankey.sql.ts's DEDUPE_CONSECUTIVE.
+ */
 function pathsDedupedCte(
   input: OrderedEventsQueryInput,
   steps: number
@@ -552,11 +558,7 @@ function pathsDedupedCte(
     SELECT
       session_id,
       arraySlice(
-        arrayFilter(
-          (x, i) -> i = 1 OR x != paths_raw[i - 1],
-          groupArray(path) as paths_raw,
-          arrayEnumerate(paths_raw)
-        ),
+        arrayCompact(groupArray(path)),
         1, ${sql.uint64(steps)}
       ) as paths_deduped
     FROM ordered_events
