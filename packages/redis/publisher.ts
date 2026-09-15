@@ -43,6 +43,85 @@ export function parsePublishedEvent<Channel extends keyof IPublishChannels>(
   return getSuperJson<IPublishChannels[Channel][typeof _type]>(message)!;
 }
 
+type ChannelMessageListener = (message: string) => void;
+
+/**
+ * Every subscriber in the process shares ONE ioredis connection
+ * (`getRedisSub()`, a module-level singleton). SUBSCRIBE and UNSUBSCRIBE on it
+ * are process-wide, so a per-subscriber UNSUBSCRIBE silences every other
+ * subscriber on that channel — measured by M23-003 as F1: closing one `/live`
+ * socket left every other open socket receiving nothing for 30 s, across
+ * routes and across projects, because `/live/events` and `/live/visitors` both
+ * ride `events:batch`.
+ *
+ * So the channel is reference-counted here rather than at each call site: the
+ * wire SUBSCRIBE happens only on 0 -> 1 and the wire UNSUBSCRIBE only on
+ * 1 -> 0. One `message` handler is installed on the shared connection for the
+ * whole process and dispatches by channel name, which also keeps the
+ * connection off Node's max-listeners warning as sockets accumulate.
+ *
+ * RECONNECT NEEDS NO HANDLING HERE. ioredis re-issues SUBSCRIBE for every
+ * channel it believes it holds when the connection comes back
+ * (`ioredis/built/redis/event_handler.js:254`, gated on `autoResubscribe`,
+ * which defaults to `true` in `redis/RedisOptions.js:45` and is not overridden
+ * for this client). Since the wire commands stay one-to-one with the 0 -> 1
+ * and 1 -> 0 edges, ioredis's own set stays exactly the set of channels with a
+ * non-zero count. Confirmed live against the local server on 2026-09-15:
+ * destroying the socket under a subscribed client and publishing after the
+ * reconnect still delivered, with no re-subscribe from here.
+ */
+const listenersByChannel = new Map<string, Set<ChannelMessageListener>>();
+
+let isDispatcherInstalled = false;
+
+// Deleting a not-yet-visited entry mid-iteration skips it, which is what an
+// unsubscribe from inside a callback should do.
+function dispatchToChannelListeners(channel: string, message: string) {
+  const listeners = listenersByChannel.get(channel);
+  if (!listeners) {
+    return;
+  }
+  for (const listener of listeners) {
+    listener(message);
+  }
+}
+
+function installDispatcherOnce() {
+  if (isDispatcherInstalled) {
+    return;
+  }
+  isDispatcherInstalled = true;
+  getRedisSub().on('message', dispatchToChannelListeners);
+}
+
+function addChannelListener(channel: string, listener: ChannelMessageListener) {
+  installDispatcherOnce();
+  const listeners = listenersByChannel.get(channel);
+  if (listeners) {
+    listeners.add(listener);
+    return;
+  }
+
+  listenersByChannel.set(channel, new Set([listener]));
+  getRedisSub().subscribe(channel);
+}
+
+function removeChannelListener(
+  channel: string,
+  listener: ChannelMessageListener,
+) {
+  const listeners = listenersByChannel.get(channel);
+  if (!listeners?.delete(listener)) {
+    return;
+  }
+  if (listeners.size > 0) {
+    return;
+  }
+
+  listenersByChannel.delete(channel);
+  getRedisSub().unsubscribe(channel);
+}
+
 export function subscribeToPublishedEvent<
   Channel extends keyof IPublishChannels,
 >(
@@ -51,22 +130,23 @@ export function subscribeToPublishedEvent<
   callback: (event: IPublishChannels[Channel][typeof type]) => void,
 ) {
   const subscribeChannel = getSubscribeChannel(channel, type);
-  getRedisSub().subscribe(subscribeChannel);
 
-  const message = (messageChannel: string, message: string) => {
-    if (subscribeChannel === messageChannel) {
-      const event = parsePublishedEvent(channel, type, message);
-      if (event) {
-        callback(event);
-      }
+  const listener: ChannelMessageListener = (message) => {
+    const event = parsePublishedEvent(channel, type, message);
+    if (event) {
+      callback(event);
     }
   };
 
-  getRedisSub().on('message', message);
+  addChannelListener(subscribeChannel, listener);
 
+  let isReleased = false;
   return () => {
-    getRedisSub().unsubscribe(subscribeChannel);
-    getRedisSub().off('message', message);
+    if (isReleased) {
+      return;
+    }
+    isReleased = true;
+    removeChannelListener(subscribeChannel, listener);
   };
 }
 
