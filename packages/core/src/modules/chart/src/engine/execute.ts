@@ -36,25 +36,28 @@ export async function executeChart(
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(deps, input);
   const executionPlan = plan(normalized);
-  const computedSeries = compute(
-    await fetch(deps, executionPlan),
-    executionPlan.definitions
-  );
+  const previousPlan = input.previous
+    ? plan({
+        ...normalized,
+        ...getChartPrevStartEndDate({
+          startDate: normalized.startDate,
+          endDate: normalized.endDate,
+        }),
+      })
+    : null;
 
-  let previousSeries: ConcreteSeries[] | null = null;
-  if (input.previous) {
-    const previousPlan = plan({
-      ...normalized,
-      ...getChartPrevStartEndDate({
-        startDate: normalized.startDate,
-        endDate: normalized.endDate,
-      }),
-    });
-    previousSeries = compute(
-      await fetch(deps, previousPlan),
-      previousPlan.definitions
-    );
-  }
+  // The two periods share nothing but the plan, so they go out together: a
+  // 3-series comparison chart is one round trip's worth of latency, not two.
+  const [computedSeries, previousSeries] = await Promise.all([
+    fetch(deps, executionPlan).then((series) =>
+      compute(series, executionPlan.definitions)
+    ),
+    previousPlan
+      ? fetch(deps, previousPlan).then((series) =>
+          compute(series, previousPlan.definitions)
+        )
+      : Promise.resolve<ConcreteSeries[] | null>(null),
+  ]);
 
   return format(
     computedSeries,
@@ -76,23 +79,19 @@ export async function executeAggregateChart(
     startDate: normalized.startDate,
     endDate: normalized.endDate,
   };
-  const computedSeries = compute(
-    await fetchAggregate(deps, normalized, currentPeriod, timezone),
-    normalized.series
-  );
-
-  let previousSeries: ConcreteSeries[] | null = null;
-  if (input.previous) {
-    previousSeries = compute(
-      await fetchAggregate(
-        deps,
-        normalized,
-        getChartPrevStartEndDate(currentPeriod),
-        timezone
-      ),
-      normalized.series
-    );
-  }
+  const [computedSeries, previousSeries] = await Promise.all([
+    fetchAggregate(deps, normalized, currentPeriod, timezone).then((series) =>
+      compute(series, normalized.series)
+    ),
+    input.previous
+      ? fetchAggregate(
+          deps,
+          normalized,
+          getChartPrevStartEndDate(currentPeriod),
+          timezone
+        ).then((series) => compute(series, normalized.series))
+      : Promise.resolve<ConcreteSeries[] | null>(null),
+  ]);
 
   return format(
     computedSeries,

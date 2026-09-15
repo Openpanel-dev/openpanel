@@ -51,6 +51,7 @@ import {
   getRetentionCohort,
 } from './retention.service';
 import { createSankeyService, getSankey } from './sankey.service';
+import { mapWithConcurrency } from './src/concurrency';
 import { formatClickhouseDate } from './src/dates';
 import { executeAggregateChart, executeChart } from './src/engine/execute';
 import {
@@ -143,6 +144,14 @@ const DEFAULT_EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT = 500;
 
 /** Profile lookups are batched so the `IN (...)` never exceeds max_query_size. */
 const BUCKET_PROFILES_BATCH_SIZE = 200;
+
+/**
+ * In-flight `profiles FINAL` batches. The bucket query is unbounded, so a busy
+ * project's chart point is 130+ batches; issuing them all at once would replace
+ * a latency problem with a ClickHouse admission-queue one on a 4-core node.
+ * Four keeps the node's `max_threads = 4` worth of work busy without queueing.
+ */
+const BUCKET_PROFILES_FETCH_CONCURRENCY = 4;
 const FUNNEL_PROFILES_BATCH_SIZE = 500;
 const FUNNEL_PROFILES_LIMIT = 1000;
 
@@ -178,17 +187,18 @@ async function getProfilesInBatches(
   projectId: string,
   batchSize: number
 ): Promise<IServiceProfile[]> {
-  const profiles: IServiceProfile[] = [];
+  const batches: string[][] = [];
   for (let index = 0; index < ids.length; index += batchSize) {
-    profiles.push(
-      ...(await getProfilesCached(
-        deps,
-        ids.slice(index, index + batchSize),
-        projectId
-      ))
-    );
+    batches.push(ids.slice(index, index + batchSize));
   }
-  return profiles;
+  // mapWithConcurrency resolves in batch order, so the caller still sees the
+  // profiles in the order the bucket query returned their ids.
+  const perBatch = await mapWithConcurrency(
+    batches,
+    BUCKET_PROFILES_FETCH_CONCURRENCY,
+    (batch) => getProfilesCached(deps, batch, projectId)
+  );
+  return perBatch.flat();
 }
 
 // --- shared report input -----------------------------------------------------

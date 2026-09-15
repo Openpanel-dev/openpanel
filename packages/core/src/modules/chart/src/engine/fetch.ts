@@ -8,12 +8,24 @@ import type {
   IGetChartDataInput,
 } from '../../../report/report.constants';
 import { alphabetIds } from '../../../report/report.constants';
+import { mapWithConcurrency } from '../concurrency';
 import { runQuery } from '../run-query';
 import { getAggregateChartSql, getChartSql } from '../statement';
 import type { NormalizedInput } from './normalize';
 import type { ConcreteSeries, Plan, SeriesDefinition } from './types';
 
 type EventDefinition = IChartEventItem & { type: 'event' };
+
+/**
+ * In-flight ClickHouse statements per period while a chart's series are
+ * fetched. ClickHouse runs each of these statements at `max_threads = 4` on a
+ * 4-core node, so extra concurrency buys overlap of round-trip and merge wait,
+ * not CPU: past a handful the statements queue behind each other and the wall
+ * clock stops improving. Four per period — and `executeChart` runs the current
+ * and previous periods together — keeps a typical 1-3 series comparison chart
+ * at one round trip while capping the fan-out at eight.
+ */
+const SERIES_FETCH_CONCURRENCY = 4;
 
 function runChartQuery(
   deps: ServiceDeps,
@@ -124,65 +136,67 @@ export async function fetch(
   deps: ServiceDeps,
   plan: Plan
 ): Promise<ConcreteSeries[]> {
-  const results: ConcreteSeries[] = [];
-
-  for (const [index, definition] of plan.definitions.entries()) {
-    if (definition.type !== 'event') {
-      continue;
+  const fetchable = [...plan.definitions.entries()].flatMap(
+    ([index, definition]) => {
+      if (definition.type !== 'event') {
+        return [];
+      }
+      const placeholder = plan.concreteSeries.find(
+        (series) => series.definitionId === definition.id
+      );
+      return placeholder ? [{ index, definition, placeholder }] : [];
     }
-    const event = definition as EventDefinition;
-    const placeholder = plan.concreteSeries.find(
-      (series) => series.definitionId === definition.id
-    );
-    if (!placeholder) {
-      continue;
-    }
+  );
 
-    const queryInput: IGetChartDataInput = {
-      event: queryEvent(event),
-      projectId: plan.input.projectId,
-      startDate: plan.input.startDate,
-      endDate: plan.input.endDate,
-      breakdowns: plan.input.breakdowns,
-      interval: plan.input.interval,
-      chartType: plan.input.chartType,
-      metric: plan.input.metric,
-      previous: plan.input.previous ?? false,
-      limit: plan.input.limit,
-      offset: plan.input.offset,
-    };
+  const perDefinition = await mapWithConcurrency(
+    fetchable,
+    SERIES_FETCH_CONCURRENCY,
+    async ({ index, definition, placeholder }) => {
+      const event = definition as EventDefinition;
+      const queryInput: IGetChartDataInput = {
+        event: queryEvent(event),
+        projectId: plan.input.projectId,
+        startDate: plan.input.startDate,
+        endDate: plan.input.endDate,
+        breakdowns: plan.input.breakdowns,
+        interval: plan.input.interval,
+        chartType: plan.input.chartType,
+        metric: plan.input.metric,
+        previous: plan.input.previous ?? false,
+        limit: plan.input.limit,
+        offset: plan.input.offset,
+      };
 
-    let rows = await runChartQuery(
-      deps,
-      await getChartSql(deps, { ...queryInput, timezone: plan.timezone }),
-      plan.timezone
-    );
-    // Nothing matched the breakdown: fall back to the plain series.
-    if (rows.length === 0 && plan.input.breakdowns.length > 0) {
-      rows = await runChartQuery(
+      let rows = await runChartQuery(
         deps,
-        await getChartSql(deps, {
-          ...queryInput,
-          breakdowns: [],
-          timezone: plan.timezone,
-        }),
+        await getChartSql(deps, { ...queryInput, timezone: plan.timezone }),
         plan.timezone
       );
-    }
+      // Nothing matched the breakdown: fall back to the plain series.
+      if (rows.length === 0 && plan.input.breakdowns.length > 0) {
+        rows = await runChartQuery(
+          deps,
+          await getChartSql(deps, {
+            ...queryInput,
+            breakdowns: [],
+            timezone: plan.timezone,
+          }),
+          plan.timezone
+        );
+      }
 
-    results.push(
-      ...expandGroupedRows({
+      return expandGroupedRows({
         rows,
         breakdowns: plan.input.breakdowns,
         event,
         definition,
         definitionIndex: index,
         seriesId: (nameParts) => `${placeholder.id}-${nameParts.join('-')}`,
-      })
-    );
-  }
+      });
+    }
+  );
 
-  return results;
+  return perDefinition.flat();
 }
 
 /**
@@ -195,41 +209,42 @@ export async function fetchAggregate(
   period: { startDate: string; endDate: string },
   timezone: string
 ): Promise<ConcreteSeries[]> {
-  const results: ConcreteSeries[] = [];
+  const fetchable = [...normalized.series.entries()].filter(
+    ([, definition]) => definition.type === 'event'
+  );
 
-  for (const [index, definition] of normalized.series.entries()) {
-    if (definition.type !== 'event') {
-      continue;
-    }
-    const event = definition as EventDefinition;
+  const perDefinition = await mapWithConcurrency(
+    fetchable,
+    SERIES_FETCH_CONCURRENCY,
+    async ([index, definition]) => {
+      const event = definition as EventDefinition;
 
-    const queryInput = {
-      event: queryEvent(event),
-      projectId: normalized.projectId,
-      startDate: period.startDate,
-      endDate: period.endDate,
-      breakdowns: normalized.breakdowns,
-      limit: normalized.limit,
-      metric: normalized.metric,
-      previous: normalized.previous,
-      timezone,
-    };
+      const queryInput = {
+        event: queryEvent(event),
+        projectId: normalized.projectId,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        breakdowns: normalized.breakdowns,
+        limit: normalized.limit,
+        metric: normalized.metric,
+        previous: normalized.previous,
+        timezone,
+      };
 
-    let rows = await runChartQuery(
-      deps,
-      await getAggregateChartSql(deps, queryInput),
-      timezone
-    );
-    if (rows.length === 0 && normalized.breakdowns.length > 0) {
-      rows = await runChartQuery(
+      let rows = await runChartQuery(
         deps,
-        await getAggregateChartSql(deps, { ...queryInput, breakdowns: [] }),
+        await getAggregateChartSql(deps, queryInput),
         timezone
       );
-    }
+      if (rows.length === 0 && normalized.breakdowns.length > 0) {
+        rows = await runChartQuery(
+          deps,
+          await getAggregateChartSql(deps, { ...queryInput, breakdowns: [] }),
+          timezone
+        );
+      }
 
-    results.push(
-      ...expandGroupedRows({
+      return expandGroupedRows({
         rows,
         breakdowns: normalized.breakdowns,
         event,
@@ -237,9 +252,9 @@ export async function fetchAggregate(
         definitionIndex: index,
         seriesId: (nameParts) =>
           `${event.name}-${nameParts.join('-')}-${index}`,
-      })
-    );
-  }
+      });
+    }
+  );
 
-  return results;
+  return perDefinition.flat();
 }
