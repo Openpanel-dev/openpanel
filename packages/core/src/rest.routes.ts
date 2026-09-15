@@ -37,6 +37,18 @@ const OPENAPI_SPEC_PATH = '/openapi.json';
 // endpoint (ADR-003: "the transform that hides /metrics from the spec").
 const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 
+// How long one collected exposition is served for before it is collected
+// again. M29-001a measured a single `registry.metrics()` at 70-80 ms of the
+// api's ONLY JavaScript thread on an idle process against 0.5-0.8 ms for
+// `/healthz`, nearly all of it inside prom-client's heap-space collector,
+// which on Bun is a JSC heap walk whose cost grows with the heap; under
+// write load and a >=1 Hz scrape that was 21.96 % of the thread and every
+// millisecond of it is a millisecond no event can be ingested. 5 s is chosen
+// to sit strictly below the shortest scrape interval a Prometheus is sanely
+// configured with, so a real scraper still collects fresh on every scrape,
+// while a pathologically frequent one pays at most one collection per window.
+const METRICS_EXPOSITION_TTL_MS = 5000;
+
 // A factory always takes `deps` even where its body is empty so a module
 // addition never changes the signature. Return types are left inferred, as
 // `defineRoutes`'s `RouteApp` is: `.use()`'d plugins widen Elysia's type
@@ -93,6 +105,43 @@ export const dashboardRoutes = (deps: AppDeps) =>
     .use(realtimeRoutes(deps))
     .use(miscRoutes(deps));
 
+// The `/metrics` body, collected at most once per METRICS_EXPOSITION_TTL_MS.
+// Every series and every series NAME is unchanged - the endpoint still serves
+// the one core registry's full exposition, including the heap metrics; what
+// changes is how often that exposition is recomputed. Consequence to know:
+// the scrape-time gauges (buffer, queue, session) are now as old as the
+// snapshot, i.e. up to the TTL, which is the price of not walking the heap on
+// every request.
+let metricsExposition: { body: string; expiresAt: number } | null = null;
+// Concurrent scrapes share one collection instead of queueing N heap walks
+// behind each other on the single thread.
+let metricsExpositionInFlight: Promise<string> | null = null;
+
+async function collectMetricsExposition(): Promise<string> {
+  const body = await registry.metrics();
+  metricsExposition = {
+    body,
+    expiresAt: Date.now() + METRICS_EXPOSITION_TTL_MS,
+  };
+  return body;
+}
+
+function readMetricsExposition(): Promise<string> {
+  const cached = metricsExposition;
+  if (cached && Date.now() < cached.expiresAt) {
+    return Promise.resolve(cached.body);
+  }
+  if (!metricsExpositionInFlight) {
+    // A failed collection must not be cached, and must reject exactly as
+    // `registry.metrics()` did before - the route's error handling is
+    // unchanged.
+    metricsExpositionInFlight = collectMetricsExposition().finally(() => {
+      metricsExpositionInFlight = null;
+    });
+  }
+  return metricsExpositionInFlight;
+}
+
 // `httpMetrics` is on the ops surface because that is where `/metrics` is
 // served and every role mounts it (TARGET_ARCHITECTURE §18: "HTTP and default
 // metrics register everywhere"). Its hook is `{ as: 'global' }`, so it covers
@@ -115,7 +164,7 @@ export const opsRoutes = (deps: AppDeps) =>
     )
     .get('/metrics', async ({ set }) => {
       set.headers['content-type'] = registry.contentType;
-      return await registry.metrics();
+      return await readMetricsExposition();
     });
 
 // The local-only ops surface. It is bound HERE rather than in
