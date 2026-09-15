@@ -73,7 +73,9 @@ function Component() {
       <div className="col w-full gap-8 py-4 text-left">
         <div>
           <h1 className="mb-2 font-bold text-3xl text-foreground">
-            {inviteId ? 'Invitation not valid' : 'Registration is disabled'}
+            {inviteId
+              ? 'Registration is unavailable'
+              : 'Registration is disabled'}
           </h1>
           <p className="text-muted-foreground">
             {inviteId
