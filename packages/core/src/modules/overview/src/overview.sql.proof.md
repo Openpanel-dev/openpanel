@@ -36,6 +36,50 @@
     run 10 times, returned 10 different row orders and 1 identical row set**. Set-level hashes are the
     comparison above for that reason.
 
+- **Amended by M28-001 (2026-09-15): `metricsWithPageFilterQuery` reads each source table once.**
+  The shipped shape referenced `overall_unique_visitors` twice and `session_agg` twice, and
+  **a ClickHouse CTE is re-executed once per reference** — so the statement performed **four
+  `events` scans and two `sessions FINAL` scans**, not the three `docs/ANALYTICS_PERFORMANCE.md`
+  section 6.10 counted. Measured on the local prod copy, `chatpaper` 30 d filtered on its busiest
+  path: the whole statement read **60,569,110 rows = 4 x 13,393,722 + 2 x 3,497,111**, and removing
+  each scalar reference in turn dropped exactly one scan's worth (47,175,388 -> 33,781,666 ->
+  30,284,555). Section 6.10's *"ClickHouse may already share those scans"* is therefore **measured
+  false**, and its 1,453 ms / 30,350,044-row baseline is the cost of the statement with those two
+  extra references removed, i.e. roughly half the real one.
+  The query now reads `events` once into `filtered_screen_views`, aggregates it once with
+  `GROUP BY date WITH ROLLUP`, and broadcasts the window-wide totals off that rollup row with
+  `max(if(date = <rollup>, x, NULL)) OVER ()` instead of re-scanning. Same for `sessions`. Both
+  aggregates keep their rollup row through the `LEFT JOIN` so the two totals rows pair up — that is
+  what carries `overall_bounce_rate` onto days the sessions aggregate has no row for — and the
+  rollup row is dropped afterwards. `src/metrics-page-filter.test.ts` pins both that case and the
+  NULL-when-nothing-matches nullability the old scalar subqueries had.
+  Re-proved against the local prod copy on **2026-09-15**, `use_query_condition_cache=0`,
+  `max_memory_usage=6 GiB`, `elapsed_ns`/`read_rows`/`memory_usage` read off `X-ClickHouse-Summary`:
+  - **Result sets: `FORMAT JSONCompact` `meta` + `data`, compared byte-for-byte, old vs new —
+    identical on 38 of 38 cases.** All five anchors; windows 1 d / 7 d / 30 d / 56 d; intervals
+    minute / hour / day / week / month; and the edge cases that decide the rewrite: a page filter
+    matching nothing (all five projects), `verdict` — which has no `screen_view` events at all — a
+    path that is never any session's `entry_path`, and a `bayse` path whose event days and session
+    days **do not overlap at all**, which is the case the naive fold gets wrong.
+  - **Cost, 30-day window, busiest path, median of 3:**
+
+| project | old ms | old rows_read | new ms | new rows_read |
+|---|---:|---:|---:|---:|
+| `bayse` | 1,554 | 68,873,974 | **495** | **17,496,956** |
+| `earlysalary-production` | 1,863 | 62,275,058 | **706** | **15,875,922** |
+| `website-8103` | 1,551 | 49,471,404 | **520** | **12,384,061** |
+| `chatpaper` | 2,901 | 60,569,110 | **1,118** | **16,890,833** |
+| `verdict` (no `screen_view` at all) | 182 | 1,673,650 | **66** | **828,633** |
+
+  Peak memory is slightly higher (`chatpaper` 98 MiB -> 186 MiB), because one pass now holds the
+  per-row `lead()` window and the daily aggregate together instead of building them in separate
+  scans. At 56 days on `bayse` the statement goes 3,317 ms / 154,168,912 rows -> 1,031 ms /
+  38,968,107 rows.
+  - **The M7-005 render case below** (`skills-directory`, `2026-08-01`..`2026-08-08`, no filter)
+    re-run on 2026-09-15: same 7 rows, byte-identical, **65 ms / 475,054 rows -> 30 ms /
+    131,039 rows**. Its row in the per-query table further down is M7-005's original measurement
+    and is left as the historical record.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static).
   Project: `skills-directory` (293,597 events, 75,727 sessions, 2026-07-01..2026-08-25).
   Window used throughout: `2026-08-01 00:00:00`..`2026-08-08 00:00:00`, UTC.

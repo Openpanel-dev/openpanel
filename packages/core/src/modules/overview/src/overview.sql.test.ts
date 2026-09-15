@@ -74,7 +74,7 @@ describe('overview.sql — parses against ClickHouse', () => {
     );
   });
 
-  it('metricsWithPageFilterQuery — the 5-CTE page-filtered metrics query', async () => {
+  it('metricsWithPageFilterQuery — the single-scan page-filtered metrics query', async () => {
     await explain(
       OV.metricsWithPageFilterQuery({
         projectId: PROJECT_ID,

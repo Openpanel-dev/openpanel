@@ -210,11 +210,18 @@ export function metricsWithPageFilterQuery(
   input: PageFilterMetricsQueryInput
 ): SqlFragment {
   const rollupDate = rollupDateLiteral(input.interval);
-  const eventsDateBucket = toStartOf('e.created_at', input.interval);
+  const dateBucket = toStartOf('created_at', input.interval);
 
-  const rawScreenViewDurations = sql`
+  // One pass over `events`, carrying the per-row duration the daily average
+  // needs alongside the columns every other metric aggregates. A CTE is
+  // re-executed once per reference, so each source is read exactly once here
+  // and the window-wide totals are lifted off its own `WITH ROLLUP` row rather
+  // than from a second scan (M28-001).
+  const filteredScreenViews = sql`
     SELECT
-      ${toStartOf('created_at', input.interval)} AS date,
+      ${dateBucket} AS date,
+      profile_id,
+      session_id,
       dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration
     FROM events
     WHERE project_id = ${sql.string(input.projectId)}
@@ -223,15 +230,22 @@ export function metricsWithPageFilterQuery(
       ${rawWhere(input.rawEventFilterWhere)}
   `;
 
-  const avgDurationByDate = sql`
-    SELECT date, round(avgIf(duration, duration > 0), 2) / 1000 AS avg_session_duration
-    FROM raw_screen_view_durations
+  const eventAgg = sql`
+    SELECT
+      date,
+      uniq(profile_id) AS unique_visitors,
+      uniq(session_id) AS total_sessions,
+      count(*) AS total_screen_views,
+      round((count(*) * 1.) / uniq(session_id), 2) AS views_per_session,
+      round(avgIf(duration, duration > 0), 2) / 1000 AS avg_session_duration
+    FROM filtered_screen_views
     GROUP BY date
+    WITH ROLLUP
   `;
 
   const sessionAgg = sql`
     SELECT
-      ${toStartOf('created_at', input.interval)} AS date,
+      ${dateBucket} AS date,
       round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate
     FROM sessions FINAL
     WHERE sign = 1
@@ -243,42 +257,72 @@ export function metricsWithPageFilterQuery(
     ORDER BY date ASC
   `;
 
-  const overallUniqueVisitors = sql`
-    SELECT uniq(profile_id) AS unique_visitors, uniq(session_id) AS total_sessions
-    FROM events
-    WHERE project_id = ${sql.string(input.projectId)}
-      AND name = 'screen_view'
-      AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
-      ${rawWhere(input.rawEventFilterWhere)}
+  // `max(if(<rollup row>, x, NULL)) OVER ()` broadcasts the totals row's value
+  // onto every daily row, and stays NULL when the aggregate produced no rollup
+  // row at all — which is the nullability the old scalar subqueries had, and
+  // which `getMetricsWithPageFilter` reads to tell "no data" from "zero".
+  const overallOf = (column: string): SqlFragment =>
+    sql`max(if(date = ${rollupDate}, ${sql.id(column)}, NULL)) OVER ()`;
+
+  const eventStats = sql`
+    SELECT
+      date,
+      unique_visitors,
+      total_sessions,
+      total_screen_views,
+      views_per_session,
+      avg_session_duration,
+      ${overallOf('unique_visitors')} AS overall_unique_visitors,
+      ${overallOf('total_sessions')} AS overall_total_sessions
+    FROM event_agg
+  `;
+
+  const sessionStats = sql`
+    SELECT date, bounce_rate, ${overallOf('bounce_rate')} AS overall_bounce_rate
+    FROM session_agg
+  `;
+
+  // Both sides keep their rollup row through the join so that the two totals
+  // rows meet each other: that pairing is what carries `overall_bounce_rate`
+  // onto days the session aggregate has no row for. The rollup row itself is
+  // dropped afterwards, once the window function has read it.
+  const joined = sql`
+    SELECT
+      e.date AS date,
+      s.bounce_rate AS bounce_rate,
+      e.unique_visitors AS unique_visitors,
+      e.total_sessions AS total_sessions,
+      e.avg_session_duration AS avg_session_duration,
+      e.total_screen_views AS total_screen_views,
+      e.views_per_session AS views_per_session,
+      e.overall_unique_visitors AS overall_unique_visitors,
+      e.overall_total_sessions AS overall_total_sessions,
+      max(s.overall_bounce_rate) OVER () AS overall_bounce_rate
+    FROM event_stats AS e
+    LEFT JOIN session_stats AS s ON e.date = s.date
   `;
 
   return sql`
     WITH
+      filtered_screen_views AS (${filteredScreenViews}),
+      event_agg AS (${eventAgg}),
+      event_stats AS (${eventStats}),
       session_agg AS (${sessionAgg}),
-      overall_bounce_rate AS (SELECT bounce_rate FROM session_agg WHERE date = ${rollupDate}),
-      daily_session_stats AS (SELECT date, bounce_rate FROM session_agg WHERE date != ${rollupDate}),
-      overall_unique_visitors AS (${overallUniqueVisitors}),
-      raw_screen_view_durations AS (${rawScreenViewDurations}),
-      avg_duration_by_date AS (${avgDurationByDate})
+      session_stats AS (${sessionStats}),
+      joined AS (${joined})
     SELECT
-      ${eventsDateBucket} AS date,
-      dss.bounce_rate as bounce_rate,
-      uniq(e.profile_id) AS unique_visitors,
-      uniq(e.session_id) AS total_sessions,
-      coalesce(dur.avg_session_duration, 0) AS avg_session_duration,
-      count(*) AS total_screen_views,
-      round((count(*) * 1.) / uniq(e.session_id), 2) AS views_per_session,
-      (SELECT unique_visitors FROM overall_unique_visitors) AS overall_unique_visitors,
-      (SELECT total_sessions FROM overall_unique_visitors) AS overall_total_sessions,
-      (SELECT bounce_rate FROM overall_bounce_rate) AS overall_bounce_rate
-    FROM events AS e
-    LEFT JOIN daily_session_stats AS dss ON ${eventsDateBucket} = dss.date
-    LEFT JOIN avg_duration_by_date AS dur ON ${eventsDateBucket} = dur.date
-    WHERE e.project_id = ${sql.string(input.projectId)}
-      AND e.name = 'screen_view'
-      AND ${dateRangeWhere('e.created_at', input.startDate, input.endDate)}
-      ${rawWhere(input.rawEventFilterWhere)}
-    GROUP BY date, dss.bounce_rate, dur.avg_session_duration
+      date,
+      bounce_rate,
+      unique_visitors,
+      total_sessions,
+      avg_session_duration,
+      total_screen_views,
+      views_per_session,
+      overall_unique_visitors,
+      overall_total_sessions,
+      overall_bounce_rate
+    FROM joined
+    WHERE date != ${rollupDate}
     ORDER BY date ASC
     ${fillClause(input.interval, input.startDate, input.endDate)}
   `;
