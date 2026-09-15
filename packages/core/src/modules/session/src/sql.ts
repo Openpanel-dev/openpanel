@@ -107,6 +107,12 @@ export function hasSessionListLookback(query: {
   );
 }
 
+// `ORDER BY created_at DESC` stays as it is. `sessions` has the same
+// `(project_id, toDate(created_at), created_at)` key shape as `events`, but `FINAL`
+// blocks the read-in-order optimisation, so naming `toDate(created_at)` first buys
+// nothing: measured 2026-09-15 on the prod copy, 30-day list, both spellings read the
+// identical row count on all five anchor projects (chatpaper 4,209,818) and are within
+// noise over 3 warm runs. See docs/ANALYTICS_PERFORMANCE.md §6.4 and M27-002.
 export function sessionListQuery(query: SessionListQuery): SqlFragment {
   const {
     projectId,

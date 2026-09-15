@@ -2,6 +2,26 @@
 
 Every query builder in `src/sql.ts` (`profile.sql.ts` at proof time; renamed under R1, M15-121) was executed twice against the same data — once as V1 (the `git HEAD` service/router code, `3300f2a0`) and once as V2 (core's service, which renders the builder) — through one patched ClickHouse client that captured each statement, its `query_params`, `clickhouse_settings`, wall time and the raw JSON response. The two responses were compared on `data` (every row, every column, as JSON) and `meta` (column names and types). Statements without an `ORDER BY` were compared as row sets, because ClickHouse's parallel aggregation returns them in a different order run to run — V1 against itself too.
 
+- **Amended by M27-002 (2026-09-15): `profileRecentEventsQuery`'s ORDER BY is no longer V1's text.**
+  Same re-spelling as `event/src/sql.proof.md` records for `eventListQuery`, for the same reason: the
+  `events` sort key is `(project_id, toDate(created_at), created_at, name)` and `ORDER BY created_at DESC`
+  alone cannot use it (`docs/ANALYTICS_PERFORMANCE.md` §6.4). It now reads
+  `ORDER BY toDate(created_at) DESC, created_at DESC`; `toDate` is monotonic in `created_at`, so the order
+  is unchanged. Only the `-- V2` render of `profileRecentEventsQuery` (case
+  `profileRowQuery + profileRecentEventsQuery`, statement 2) carries it; the `-- V1` line is left as V1
+  wrote it. Re-proved against the local prod copy on **2026-09-15**, `use_query_condition_cache=0`,
+  numbers off `X-ClickHouse-Summary`, on each project's busiest identified profile of 2026-08:
+  - **Result sets:** both spellings as `FORMAT TSVRaw` compared by `sha256sum` (bytes and row order) on
+    `verdict`, `bayse`, `earlysalary-production`, `chatpaper`: **identical, 4/4**.
+  - **Cost, `LIMIT 20`, `read_rows` / warm `elapsed_ns`:** `verdict` 17,280,491 rows / 295 ms ->
+    **139,246 rows / 21 ms** · `bayse` 10,195,851 / 183 ms -> 204,800 / 24 ms ·
+    `earlysalary-production` 245,751 / 26-43 ms -> 180,217 / 31-47 ms · `chatpaper` 663,537 / 33-44 ms ->
+    245,762 / 26-34 ms. On the two projects where `idx_profile_id` already pruned the read the two
+    spellings are within run-to-run noise over 5 warm iterations each; the win is on the two where it
+    did not.
+  - The per-statement `rows_read V1/V2` and `wall V1/V2` figures below are from the 2026-09-04 run and
+    therefore describe the pre-amendment V2 text.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static), project `redcollege` unless noted; cases needing rows the prod-copy lacks (`cohort_members`, `events_bots` are empty there) also ran on the isolated `openpanel_test` database with 3,380 events copied from `redcollege` under project `m7-002-proof`, plus seeded cohort/bot rows (deleted afterwards).
 - **Machine**: single-node ClickHouse 26.1.3.52 on a 4-vCPU box — timings are directional only; production is 2 shards × 2 replicas (`docs/ENVIRONMENT.md`). `rows_read` differences on JOIN statements are ClickHouse's per-run accounting of the right-hand side, not a plan difference: the SQL text is identical up to `{pN:Type}` binding.
 - **Verdict**: 20 cases / 23 statements, all IDENTICAL. No conversion changed a result set.
@@ -140,7 +160,7 @@ SELECT id, first_name, last_name, email, avatar, properties, project_id, is_exte
 -- V1
 SELECT * FROM events WHERE project_id = 'redcollege' AND profile_id = '107145' ORDER BY created_at DESC LIMIT 7
 -- V2
-SELECT * FROM events WHERE project_id = {p1:String} AND profile_id = {p2:String} ORDER BY created_at DESC LIMIT {p3:UInt64}
+SELECT * FROM events WHERE project_id = {p1:String} AND profile_id = {p2:String} ORDER BY toDate(created_at) DESC, created_at DESC LIMIT {p3:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"107145","p3":7}
 ```
 

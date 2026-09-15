@@ -294,12 +294,13 @@ export function profileRowQuery(query: {
     `;
 }
 
+/** `toDate(created_at)` leads the ORDER BY so it matches the events sort key; see eventListQuery. */
 export function profileRecentEventsQuery(query: {
   projectId: string;
   profileId: string;
   limit: number;
 }): SqlFragment {
-  return sql`SELECT * FROM ${sql.id(TABLE.events)} WHERE project_id = ${sql.string(query.projectId)} AND profile_id = ${sql.string(query.profileId)} ORDER BY created_at DESC LIMIT ${sql.uint64(query.limit)}`;
+  return sql`SELECT * FROM ${sql.id(TABLE.events)} WHERE project_id = ${sql.string(query.projectId)} AND profile_id = ${sql.string(query.profileId)} ORDER BY toDate(created_at) DESC, created_at DESC LIMIT ${sql.uint64(query.limit)}`;
 }
 
 export function profileSessionsQuery(query: {

@@ -121,7 +121,7 @@ describe('single-profile lookups', () => {
     }).toStatement();
 
     expect(events.query).toBe(
-      'SELECT * FROM events WHERE project_id = {p1:String} AND profile_id = {p2:String} ORDER BY created_at DESC LIMIT {p3:UInt64}'
+      'SELECT * FROM events WHERE project_id = {p1:String} AND profile_id = {p2:String} ORDER BY toDate(created_at) DESC, created_at DESC LIMIT {p3:UInt64}'
     );
     expect(sessions.query).toBe(
       'SELECT * FROM sessions WHERE project_id = {p1:String} AND profile_id = {p2:String} AND sign = 1 ORDER BY created_at DESC LIMIT {p3:UInt64}'

@@ -46,7 +46,7 @@ describe('eventListQuery', () => {
     const { query, query_params } = eventListQuery(minimal).toStatement();
 
     expect(query).toBe(
-      'SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} ORDER BY created_at DESC, id ASC LIMIT {p2:UInt64}'
+      'SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p2:UInt64}'
     );
     expect(query_params).toEqual({ p1: PROJECT_ID, p2: 50 });
   });
@@ -122,7 +122,7 @@ describe('eventListQuery', () => {
     }).toStatement();
 
     expect(query).toBe(
-      "SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p2:String} AND device_id != '' AND profile_id = {p3:String} group by did) AND profile_id = device_id) OR profile_id = {p4:String}) AND session_id = {p5:String} AND has(groups, {p6:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p7:String} AND project_id = {p8:String}) AND toDate(created_at) BETWEEN toDate({p9:String}) AND toDate({p10:String}) AND name IN {p11:Array(String)} AND (path = '/') AND name IN {p12:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p13:UInt64}"
+      "SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p2:String} AND device_id != '' AND profile_id = {p3:String} group by did) AND profile_id = device_id) OR profile_id = {p4:String}) AND session_id = {p5:String} AND has(groups, {p6:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p7:String} AND project_id = {p8:String}) AND toDate(created_at) BETWEEN toDate({p9:String}) AND toDate({p10:String}) AND name IN {p11:Array(String)} AND (path = '/') AND name IN {p12:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p13:UInt64}"
     );
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toEqual({

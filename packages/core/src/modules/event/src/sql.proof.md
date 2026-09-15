@@ -2,6 +2,27 @@
 
 Every query builder in `sql.ts` was executed twice against the same data — once as V1 (the `git HEAD` service/router code, `3300f2a0`) and once as V2 (core's service, which renders the builder) — through one patched ClickHouse client that captured each statement, its `query_params`, `clickhouse_settings`, wall time and the raw JSON response. The two responses were compared on `data` (every row, every column, as JSON) and `meta` (column names and types). Statements without an `ORDER BY` were compared as row sets, because ClickHouse's parallel aggregation returns them in a different order run to run — V1 against itself too.
 
+- **Amended by M27-002 (2026-09-15): `eventListQuery`'s ORDER BY is no longer V1's text.** V1 spells it
+  `ORDER BY created_at DESC, id ASC`. The `events` sort key is
+  `(project_id, toDate(created_at), created_at, name)`, and ClickHouse will not bridge the monotonic
+  `toDate` wrapper on its own, so that spelling reads the whole window and sorts it
+  (`docs/ANALYTICS_PERFORMANCE.md` §6.4). It now reads
+  `ORDER BY toDate(created_at) DESC, created_at DESC, id ASC`, which is the key's own prefix. `toDate` is
+  monotonic in `created_at`, so the total order — including the `id` tiebreak — is unchanged. The 31 `-- V2`
+  renders below carry the amended text; the `-- V1` lines are left as V1 wrote them, so each pair now
+  differs by exactly that clause. Re-proved against the local prod copy on **2026-09-15**,
+  `use_query_condition_cache=0`, `max_memory_usage=6 GiB`, numbers off `X-ClickHouse-Summary`:
+  - **Result sets:** the full default projection (all 30 `EVENT_LIST_COLUMNS`), both spellings run as
+    `FORMAT TSVRaw` and compared by `sha256sum` — which compares emitted bytes *and* row order — over
+    5 projects (`verdict`, `bayse`, `earlysalary-production`, `website-8103`, `chatpaper`) × 3 windows
+    (1 d / 7 d / 30 d) × 2 page sizes (50, 500): **identical, 30/30**.
+  - **Cost, 30-day window, `LIMIT 50`, `read_rows` / `elapsed_ns`:** `verdict` 23,001,347 rows / 1,303 ms
+    -> **2,496,245 rows / 89 ms** · `bayse` 16,858,438 / 762 ms -> 2,162,391 / 64 ms ·
+    `earlysalary-production` 15,269,819 / 696 ms -> 1,998,830 / 75 ms · `website-8103` 12,232,245 / 540 ms
+    -> 2,007,353 / 66 ms · `chatpaper` 13,320,063 / 623 ms -> 1,982,384 / 57 ms.
+  - The per-statement `rows_read V1/V2` and `wall V1/V2` figures below are from the 2026-09-04 run and
+    therefore describe the pre-amendment V2 text.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static), project `redcollege` unless noted; cases needing rows the prod-copy lacks (`cohort_members`, `events_bots` are empty there) also ran on the isolated `openpanel_test` database with 3,380 events copied from `redcollege` under project `m7-002-proof`, plus seeded cohort/bot rows (deleted afterwards).
 - **Machine**: single-node ClickHouse 26.1.3.52 on a 4-vCPU box — timings are directional only; production is 2 shards × 2 replicas (`docs/ENVIRONMENT.md`). `rows_read` differences on JOIN statements are ClickHouse's per-run accounting of the right-hand side, not a plan difference: the SQL text is identical up to `{pN:Type}` binding.
 - **Verdict**: 26 cases / 51 statements, all IDENTICAL. No conversion changed a result set.
@@ -16,7 +37,7 @@ The harness was a throwaway script (it needed verbatim copies of the V1 sources 
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} ORDER BY created_at DESC, id ASC LIMIT {p5:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p5:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":0.5,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":50}
 ```
 
@@ -26,7 +47,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} ORDER BY created_at DESC, id ASC LIMIT {p5:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p5:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":1,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":50}
 ```
 
@@ -38,7 +59,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, properties, country, city, region, longitude, latitude, os, os_version, browser, browser_version, device, brand, model, path, origin, referrer, referrer_name, referrer_type, imported_at, sdk_name, sdk_version, revenue, groups FROM events e WHERE project_id = 'redcollege' AND toDate(created_at) BETWEEN toDate('2026-08-15 00:00:00') AND toDate('2026-08-20 23:59:59') ORDER BY created_at DESC, id ASC LIMIT 20 OFFSET 40
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, properties, country, city, region, longitude, latitude, os, os_version, browser, browser_version, device, brand, model, path, origin, referrer, referrer_name, referrer_type, imported_at, sdk_name, sdk_version, revenue, groups FROM events e WHERE project_id = {p1:String} AND toDate(created_at) BETWEEN toDate({p2:String}) AND toDate({p3:String}) ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64} OFFSET {p5:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, properties, country, city, region, longitude, latitude, os, os_version, browser, browser_version, device, brand, model, path, origin, referrer, referrer_name, referrer_type, imported_at, sdk_name, sdk_version, revenue, groups FROM events e WHERE project_id = {p1:String} AND toDate(created_at) BETWEEN toDate({p2:String}) AND toDate({p3:String}) ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64} OFFSET {p5:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"2026-08-15 00:00:00","p3":"2026-08-20 23:59:59","p4":20,"p5":40}
 ```
 
@@ -50,7 +71,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, prop
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-26 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-26 00:00:00' AND project_id = 'redcollege' AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = 'redcollege' AND device_id != '' AND profile_id = '107145' group by did) AND profile_id = device_id) OR profile_id = '107145') AND session_id = '0kiE1SjOk6U6_WDCbuyLeQ' AND name IN ('screen_view','link_out') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p10:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p10:UInt64}
 -- V2 params: {"p1":"2026-08-26 00:00:00","p2":0.5,"p3":"2026-08-26 00:00:00","p4":"redcollege","p5":"redcollege","p6":"107145","p7":"107145","p8":"0kiE1SjOk6U6_WDCbuyLeQ","p9":["screen_view","link_out"],"p10":50}
 ```
 
@@ -60,7 +81,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-26 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-26 00:00:00' AND project_id = 'redcollege' AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = 'redcollege' AND device_id != '' AND profile_id = '107145' group by did) AND profile_id = device_id) OR profile_id = '107145') AND session_id = '0kiE1SjOk6U6_WDCbuyLeQ' AND name IN ('screen_view','link_out') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p10:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p10:UInt64}
 -- V2 params: {"p1":"2026-08-26 00:00:00","p2":1,"p3":"2026-08-26 00:00:00","p4":"redcollege","p5":"redcollege","p6":"107145","p7":"107145","p8":"0kiE1SjOk6U6_WDCbuyLeQ","p9":["screen_view","link_out"],"p10":50}
 ```
 
@@ -70,7 +91,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-26 00:00:00', 3) - INTERVAL 2 DAY AND created_at < '2026-08-26 00:00:00' AND project_id = 'redcollege' AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = 'redcollege' AND device_id != '' AND profile_id = '107145' group by did) AND profile_id = device_id) OR profile_id = '107145') AND session_id = '0kiE1SjOk6U6_WDCbuyLeQ' AND name IN ('screen_view','link_out') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p10:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p5:String} AND device_id != '' AND profile_id = {p6:String} group by did) AND profile_id = device_id) OR profile_id = {p7:String}) AND session_id = {p8:String} AND name IN {p9:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p10:UInt64}
 -- V2 params: {"p1":"2026-08-26 00:00:00","p2":2,"p3":"2026-08-26 00:00:00","p4":"redcollege","p5":"redcollege","p6":"107145","p7":"107145","p8":"0kiE1SjOk6U6_WDCbuyLeQ","p9":["screen_view","link_out"],"p10":50}
 ```
 
@@ -82,7 +103,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = 'redcollege') as profile on profile.id = profile_id WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND has(groups, '395') AND profile.properties['cargo'] = 'Profesora' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND profile.properties['cargo'] = 'Profesora' ORDER BY created_at DESC, id ASC LIMIT {p7:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND profile.properties['cargo'] = 'Profesora' ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p7:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"2026-08-24 00:00:00","p3":0.5,"p4":"2026-08-24 00:00:00","p5":"redcollege","p6":"395","p7":50}
 ```
 
@@ -92,7 +113,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = 'redcollege') as profile on profile.id = profile_id WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND has(groups, '395') AND profile.properties['cargo'] = 'Profesora' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND profile.properties['cargo'] = 'Profesora' ORDER BY created_at DESC, id ASC LIMIT {p7:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e LEFT ANY JOIN (SELECT id, properties FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND profile.properties['cargo'] = 'Profesora' ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p7:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"2026-08-24 00:00:00","p3":1,"p4":"2026-08-24 00:00:00","p5":"redcollege","p6":"395","p7":50}
 ```
 
@@ -104,7 +125,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = 'redcollege') AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND has(groups, '271') AND _g.type = 'establecimiento' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND _g.type = 'establecimiento' ORDER BY created_at DESC, id ASC LIMIT {p7:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND _g.type = 'establecimiento' ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p7:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"2026-08-24 00:00:00","p3":0.5,"p4":"2026-08-24 00:00:00","p5":"redcollege","p6":"271","p7":50}
 ```
 
@@ -114,7 +135,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = 'redcollege') AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND has(groups, '271') AND _g.type = 'establecimiento' ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND _g.type = 'establecimiento' ORDER BY created_at DESC, id ASC LIMIT {p7:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE created_at >= toDateTime64({p2:String}, 3) - INTERVAL {p3:Float64} DAY AND created_at < {p4:String} AND project_id = {p5:String} AND has(groups, {p6:String}) AND _g.type = 'establecimiento' ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p7:UInt64}
 -- V2 params: {"p1":"redcollege","p2":"2026-08-24 00:00:00","p3":1,"p4":"2026-08-24 00:00:00","p5":"redcollege","p6":"271","p7":50}
 ```
 
@@ -133,7 +154,7 @@ Both sides raise the same ClickHouse error (V1 has always failed this input; V2 
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":0.5,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -143,7 +164,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":1,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -153,7 +174,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 2 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":2,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -163,7 +184,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 4 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":4,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -173,7 +194,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 8 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":8,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -183,7 +204,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 16 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":16,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -193,7 +214,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 32 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":32,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -203,7 +224,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 64 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":64,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -213,7 +234,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 128 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":128,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -223,7 +244,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 256 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":256,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -233,7 +254,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 512 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":512,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -243,7 +264,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1024 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":1024,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -253,7 +274,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1825 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'redcollege' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'redcollege') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":1825,"p3":"2026-08-24 00:00:00","p4":"redcollege","p5":"cohort-1","p6":"redcollege","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -269,7 +290,7 @@ _Database: `openpanel_test`._
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 0.5 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'm7-002-proof' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'm7-002-proof') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":0.5,"p3":"2026-08-24 00:00:00","p4":"m7-002-proof","p5":"cohort-1","p6":"m7-002-proof","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -279,7 +300,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-08-24 00:00:00', 3) - INTERVAL 1 DAY AND created_at < '2026-08-24 00:00:00' AND project_id = 'm7-002-proof' AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = 'cohort-1' AND project_id = 'm7-002-proof') AND name IN ('link_out','banner_click') ORDER BY created_at DESC, id ASC LIMIT 50
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY created_at DESC, id ASC LIMIT {p8:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String} AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p5:String} AND project_id = {p6:String}) AND name IN {p7:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p8:UInt64}
 -- V2 params: {"p1":"2026-08-24 00:00:00","p2":1,"p3":"2026-08-24 00:00:00","p4":"m7-002-proof","p5":"cohort-1","p6":"m7-002-proof","p7":["link_out","banner_click"],"p8":50}
 ```
 
@@ -291,7 +312,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 0.5 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":0.5,"p3":"redcollege","p4":10}
 ```
 
@@ -301,7 +322,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 1 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":1,"p3":"redcollege","p4":10}
 ```
 
@@ -311,7 +332,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 2 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":2,"p3":"redcollege","p4":10}
 ```
 
@@ -321,7 +342,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 4 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":4,"p3":"redcollege","p4":10}
 ```
 
@@ -331,7 +352,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 8 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":8,"p3":"redcollege","p4":10}
 ```
 
@@ -341,7 +362,7 @@ SELECT created_at, project_id, id, name, device_id, profile_id, session_id, coun
 -- V1
 SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64('2026-09-04 06:37:07', 3) - INTERVAL 16 DAY AND project_id = 'redcollege' ORDER BY created_at DESC, id ASC LIMIT 10
 -- V2
-SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY created_at DESC, id ASC LIMIT {p4:UInt64}
+SELECT created_at, project_id, id, name, device_id, profile_id, session_id, country, city, os, browser, path FROM events e WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND project_id = {p3:String} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p4:UInt64}
 -- V2 params: {"p1":"2026-09-04 06:37:07","p2":16,"p3":"redcollege","p4":10}
 ```
 
