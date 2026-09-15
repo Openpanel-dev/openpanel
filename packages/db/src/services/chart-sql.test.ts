@@ -434,6 +434,24 @@ describe('chart.service / getAggregateChartSql', () => {
   });
 
   itCH(
+    'one_event_per_user + group filter drops the out-of-scope WHERE',
+    async () => {
+      const sql = await getAggregateChartSql({
+        event: event({
+          segment: 'one_event_per_user',
+          filters: [{ name: 'group.plan', operator: 'is', value: ['pro'] }],
+        }),
+        breakdowns: [],
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      await explain(sql);
+    },
+  );
+
+  itCH(
     'one_event_per_user + property breakdown resolves the events alias',
     async () => {
       const sql = await getAggregateChartSql({

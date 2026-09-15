@@ -1169,6 +1169,12 @@ export async function getAggregateChartSql({
         ORDER BY profile_id, created_at DESC
       ) as e`;
     sb.joins = {};
+    // Filters were already applied inside the subquery. A profile or group
+    // filter's join (and any ARRAY JOIN alias like _group_id) is scoped to
+    // it and is gone now that sb.joins is cleared, so re-emitting WHERE here
+    // would produce "Unknown identifier `_group_id`"/`profile.*`. Clear it,
+    // matching getChartSql.
+    sb.where = {};
 
     const sql = rewriteProfilePropertyRefs(getSql(), profileProps.keys);
     console.log('-- Aggregate Chart --');
