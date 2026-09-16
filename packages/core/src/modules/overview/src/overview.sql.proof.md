@@ -80,6 +80,33 @@
     131,039 rows**. Its row in the per-query table further down is M7-005's original measurement
     and is left as the historical record.
 
+- **Amended by M39-002 (2026-09-16): `FINAL` dropped from the sign-weighted `sessions` aggregates**
+  `topEntryExitQuery`, `topGenericQuery` and `topGenericSeriesTimeSeriesQuery` (plus the three
+  `insight/src/referrer-spikes.ts` statements). Every output column is a grouping key or a sum that is
+  linear in `sign`. A collapsible pair is `(+1, V)` and `(-1, V)` with identical columns
+  (`session-buffer.ts` builds the `-1` as `{ ...existing, sign: -1 }`), so it sums to 0 in the same
+  group, under the same filter, and `HAVING sum(sign) > 0` sees the same sums. **`bounceRate`
+  (`countIf(sign = 1)`) and `pages.sql.ts` are not linear and keep `FINAL`.**
+  Proof, run 2026-09-16 21:48–21:52 UTC on the local prod copy, read-only, `wait_end_of_query=1`,
+  `use_query_cache=0`, `use_query_condition_cache=0`. Statements were rendered by the real builders
+  (the referrer-spike ones were captured from `getReferrerSpikes` through a recording `deps.ch`), and
+  the old form is the same text with ` FINAL` put back. Result-set hash `count(), sum(sipHash64(formatRow('TSV', *)))`:
+  **312 of 312 statements identical.** The anchors were `chatpaper`, `verdict`, `bayse`,
+  `earlysalary-production` and `website-8103` over 2026-08-01..08-30, plus `e2e-sessions` over
+  2026-09-01..09-15, which holds the box's 21 unmerged `-1` rows. The cases covered entry/exit,
+  six `topGeneric` columns (with and without a prefix), four series intervals, no filter, a
+  `country` filter and a page filter (the `distinct_sessions` CTE), and spikes at
+  hour/day/week, UTC and `Europe/Stockholm`. The spike cases include a forced step 1, because every
+  `e2e-sessions` referrer is `''`. A non-linear control (`count()` without `FINAL`) **did** differ on
+  `e2e-sessions`, which shows the probe can detect the unmerged rows. Row *order* differs only
+  within ties: the sort-key column sequence (`sessions` / `date` / `total`) was identical in every
+  ordered case.
+  Cost, warm, 3 runs, shipped → no `FINAL`: `chatpaper` `topGenericQuery` 169–182 → 53–57 ms,
+  `topEntryExitQuery` 610–635 → 376–381 ms, series (day) 191–195 → 76–80 ms, spikes steps 1/2/3
+  139–141 / 139–140 / 128–136 → 41–43 / 43–45 / 41–43 ms (3,571,254 → 3,448,379 rows read);
+  `verdict` `topGenericQuery` 47–51 → 18 ms, `topEntryExitQuery` 61–86 → 26–30 ms, series
+  52–56 → 24 ms.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static).
   Project: `skills-directory` (293,597 events, 75,727 sessions, 2026-07-01..2026-08-25).
   Window used throughout: `2026-08-01 00:00:00`..`2026-08-08 00:00:00`, UTC.

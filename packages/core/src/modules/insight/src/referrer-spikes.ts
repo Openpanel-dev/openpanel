@@ -132,7 +132,7 @@ export async function getReferrerSpikes(
     total: number;
   }>(
     deps,
-    sql`SELECT referrer_name, sum(sign) AS total FROM ${sessionsTable} FINAL WHERE ${window} AND referrer_name != '' AND referrer_name IS NOT NULL${filtersWhere} GROUP BY referrer_name HAVING sum(sign) >= ${sql.uint64(MIN_SESSIONS_FLOOR)} ORDER BY total DESC LIMIT ${sql.uint64(MAX_REFERRERS)}`,
+    sql`SELECT referrer_name, sum(sign) AS total FROM ${sessionsTable} WHERE ${window} AND referrer_name != '' AND referrer_name IS NOT NULL${filtersWhere} GROUP BY referrer_name HAVING sum(sign) >= ${sql.uint64(MIN_SESSIONS_FLOOR)} ORDER BY total DESC LIMIT ${sql.uint64(MAX_REFERRERS)}`,
     settings
   );
 
@@ -147,12 +147,12 @@ export async function getReferrerSpikes(
   const [spikeRowsRaw, bucketTotalRowsRaw] = await Promise.all([
     chQuery<{ date: string; referrer_name: string; sessions: number }>(
       deps,
-      sql`SELECT ${bucket} AS date, referrer_name, sum(sign) AS sessions FROM ${sessionsTable} FINAL WHERE ${window} AND referrer_name IN ${sql.array('String', referrerNames)}${filtersWhere} GROUP BY date, referrer_name HAVING sum(sign) > 0 ORDER BY date ASC`,
+      sql`SELECT ${bucket} AS date, referrer_name, sum(sign) AS sessions FROM ${sessionsTable} WHERE ${window} AND referrer_name IN ${sql.array('String', referrerNames)}${filtersWhere} GROUP BY date, referrer_name HAVING sum(sign) > 0 ORDER BY date ASC`,
       settings
     ),
     chQuery<{ date: string; total: number }>(
       deps,
-      sql`SELECT ${bucket} AS date, sum(sign) AS total FROM ${sessionsTable} FINAL WHERE ${window}${filtersWhere} GROUP BY date HAVING sum(sign) > 0`,
+      sql`SELECT ${bucket} AS date, sum(sign) AS total FROM ${sessionsTable} WHERE ${window}${filtersWhere} GROUP BY date HAVING sum(sign) > 0`,
       settings
     ),
   ]);

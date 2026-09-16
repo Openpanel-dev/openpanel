@@ -422,7 +422,7 @@ export function topEntryExitQuery(input: TopEntryExitQueryInput): SqlFragment {
       sum(sign) as sessions,
       sum(sign * screen_view_count) as pageviews,
       sum(revenue * sign) as revenue
-    FROM sessions FINAL
+    FROM sessions
     WHERE project_id = ${sql.string(input.projectId)}
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
       ${
@@ -507,7 +507,7 @@ export function topGenericQuery(input: TopGenericQueryInput): SqlFragment {
   return sql`
     ${distinctSessionsCteHeader(input.distinctSessionsCte)}
     SELECT ${topGenericSelect(input.column, input.prefixColumn)}
-    FROM sessions FINAL
+    FROM sessions
     WHERE project_id = ${sql.string(input.projectId)}
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
       ${
@@ -552,7 +552,7 @@ export function topGenericSeriesTimeSeriesQuery(
     SELECT
       ${toStartOf('created_at', input.interval)} AS date,
       ${topGenericSelect(input.column, input.prefixColumn)}
-    FROM sessions FINAL
+    FROM sessions
     WHERE project_id = ${sql.string(input.projectId)}
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
       ${rawWhere(input.rawFilterWhere)}
