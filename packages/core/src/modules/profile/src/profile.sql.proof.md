@@ -517,3 +517,48 @@ parts and partitions, so more wide-column ranges are read. This was not verified
 id) and `profile.service.ts:581` (`find` by id, in `powerUsers` row order). None of these reads the
 statement's row order. The chart drill-down (`chart.service.ts:213`, `getProfilesInBatches`)
 flattens batches in ClickHouse order, and that order was never defined (M37-002 §5).
+
+### M38-001 re-verification (2026-09-16, 18:14–18:16 UTC)
+
+The task was queued again after `a5de15cc` landed. The statement was left unchanged and checked
+again with fresh id sets: sampled with `ORDER BY cityHash64(id, 'm38r')`, a different seed from
+above. The bucket sets were the first 200 and the first 1,000 `DISTINCT profile_id` values for
+2026-08-20. Setup was the same as above: SELECT only, `use_query_cache=0`, ids bound as
+`{ids:Array(String)}`, warm page cache (not controlled), 3 runs per statement, `FORMAT Null`
+for the timings. `optimize_move_to_prewhere_if_final` was still `0` and unchanged, and
+`openpanel.events` read 321,192,097 rows afterwards.
+
+**Harness trap.** The bucket query has no `ORDER BY` (M37-002 §5). If it is re-run separately for
+the old and new statement, each gets a *different* id set, and the results then "differ"
+(`verdict` 553 vs 555 rows). **The id set must be fetched once and then bound into both
+statements.** Every pair below was run that way.
+
+| project | id set | rows | server hash (old = new) | sorted TSVRaw sha256 (old = new) | read_rows (old = new) | MiB old → new | ms old → new (3 runs) |
+|---|---|--:|--:|---|--:|--:|---|
+| chatpaper | 200 sampled | 200 | 6044796785930619165 | 0703cff63baa2122 | 1,777,024 | 673 → 339 | 273–277 → 145–150 |
+| chatpaper | 1,000 sampled | 1000 | 5118306366967811222 | eac298181769fc78 | 1,850,752 | 701 → 645 | 290–294 → 215–227 |
+| chatpaper | bucket 200 | 200 | 2748211310319356327 | 754e2bc6157f695d | 1,793,408 | 679 → **189** | 274–285 → **105–120** |
+| chatpaper | bucket 1,000 | 1000 | 5238269254189401937 | 61b52e790eb31ba9 | 1,850,752 | 701 → **196** | 290–292 → **113–119** |
+| verdict | 200 sampled | 200 | 7985449783458714454 | 77f9befd42dc88c2 | 908,672 | 375 → 284 | 150–153 → 100–101 |
+| verdict | 1,000 sampled | 1000 | 12521734476894561923 | 8021782b8712c0c9 | 916,864 | 379 → 359 | 156–157 → 114–116 |
+| verdict | bucket 200 | 99 | 14408474298995108646 | e2213ef60e4d5a49 | 892,288 | 368 → 105 | 146–147 → 57–60 |
+| verdict | bucket ≤1,000 | 553 | 9329860756388786918 | 54070a37ae21af23 | 916,864 | 379 → 136 | 148–158 → 70–73 |
+| bayse | 200 sampled | 200 | 15279523433519712370 | e163fbea8a9613fb | 400,928 | 197 → 144 | 85–88 → 61–68 |
+| bayse | 1,000 sampled | 1000 | 3597386053856923017 | 976b8a4a265a3361 | 400,928 | 197 → 156 | 86–95 → 68–71 |
+| bayse | bucket 200 | 67 | 15475558395705370151 | 942bd52c2f664459 | 400,928 | 197 → 82 | 85–92 → 42–45 |
+| bayse | bucket ≤1,000 | 454 | 7213855973727416649 | c2c2da5bb64327c9 | 400,928 | 197 → 148 | 88–93 → 65–68 |
+| earlysalary-production | 200 sampled | 200 | 17838043424397308023 | 48925bfd2828b164 | 1,418,340 | 674 → 415 | 230–234 → 150 |
+| earlysalary-production | 1,000 sampled | 1000 | 159571559975720793 | 2cbd707917a26725 | 1,827,940 | 861 → 799 | 289–290 → 222–230 |
+| earlysalary-production | bucket 200 | 195 | 1770102371015330504 | 88215b4312829db2 | 885,860 | 428 → 111 | 155–164 → 53–58 |
+| earlysalary-production | bucket ≤1,000 | 974 | 16534687301997138277 | 82ceee10f8e2f477 | 959,588 | 464 → 125 | 171–180 → 61–65 |
+| website-8103 | 200 sampled | 200 | 17137450707755332480 | 90779f0deb7b8b50 | 57,184 | 27 → 13 | 18–20 → 14–20 |
+| website-8103 | 1,000 sampled | 1000 | 10463793702330735470 | 2c684ab785246424 | 57,184 | 27 → 13 | 22–23 → 15–17 |
+| website-8103 | bucket (no non-empty ids) | 0 | 4761183170873013810 | e3b0c44298fc1c14 | 0 | 0 → 0 | 3 → 1–2 |
+
+All 19 pairs were identical. The server hashes for `bayse` bucket 200 and for
+`earlysalary-production` bucket 200 and ≤1,000 are the same values as in the first table, so the
+bucket sets and the results reproduced across runs. This section's `sha256` is `sort | sha256sum` over the
+`TSVRaw` output. For the same result it does not match the first table's sha, so that table must
+have used a different method. Compare only the server hashes across the two tables.
+The figures from M37-002 were reproduced again: 683 → 194 MiB for a 200-id batch and 702 → 196 MiB
+for a 1,000-id statement.
