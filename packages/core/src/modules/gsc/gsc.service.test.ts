@@ -388,6 +388,33 @@ test('getGscOverview returns the ClickHouse rows as-is', async () => {
   expect(result).toEqual(rows);
 });
 
+const TOP_N_READS = [
+  ['getGscPages', 'GROUP BY page'],
+  ['getGscQueries', 'GROUP BY query'],
+] as const;
+
+for (const [name, groupBy] of TOP_N_READS) {
+  test(`${name} spills its GROUP BY at 1 GiB and caps the read at 3 GiB`, async () => {
+    const rows = [
+      { clicks: 3, impressions: 9, ctr: 0.3, position: 2, page: '/a' },
+    ];
+    ch.query.mockClear();
+    ch.query.mockImplementationOnce(async () => ({ json: async () => rows }));
+
+    const result = await subject[name](deps, 'p1', '2026-09-01', '2026-09-03');
+
+    expect(result).toEqual(rows);
+    const [params] = ch.query.mock.calls[0] as unknown as [
+      { query: string; clickhouse_settings: Record<string, string> },
+    ];
+    expect(params.query).toContain(groupBy);
+    expect(params.clickhouse_settings).toEqual({
+      max_bytes_before_external_group_by: String(1024 ** 3),
+      max_memory_usage: String(3 * 1024 ** 3),
+    });
+  });
+}
+
 test('gscGetOverviewCore aggregates the daily rows into a summary', async () => {
   ch.query.mockImplementationOnce(async () => ({
     json: async () => [

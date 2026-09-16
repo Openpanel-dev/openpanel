@@ -24,6 +24,7 @@
 // tag: ADR-013 converts the analytics read path one query per P7 task, and
 // this module's queries haven't been converted yet.
 
+import type { ClickHouseSettings } from '@clickhouse/client';
 import { decrypt, encrypt } from '@openpanel/shared/server';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import type { CoreConfig } from '../../config';
@@ -37,6 +38,20 @@ const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
 const CANNIBALIZATION_CACHE_TTL_SEC = 60 * 60 * 4;
 const GSC_ROW_LIMIT = 25_000;
+const GIB = 1024 ** 3;
+const TOP_N_SPILL_BYTES = GIB;
+const TOP_N_MEMORY_LIMIT_BYTES = 3 * GIB;
+
+/**
+ * The top-N page/query reads hash every distinct key in the window before
+ * `LIMIT` applies (a year of a large property: 24.5M keys, 6.8 GiB peak), and
+ * the SEO page issues both at once. Spilling the GROUP BY to disk bounds that
+ * without changing a row; the cap stops one read from exhausting the server.
+ */
+const GSC_TOP_N_QUERY_SETTINGS: ClickHouseSettings = {
+  max_bytes_before_external_group_by: String(TOP_N_SPILL_BYTES),
+  max_memory_usage: String(TOP_N_MEMORY_LIMIT_BYTES),
+};
 
 export interface GscSite {
   siteUrl: string;
@@ -412,6 +427,7 @@ export async function getGscPages(
     `,
     query_params: { projectId, startDate, endDate, limit },
     format: 'JSONEachRow',
+    clickhouse_settings: GSC_TOP_N_QUERY_SETTINGS,
   });
   return result.json();
 }
@@ -697,6 +713,7 @@ export async function getGscQueries(
     `,
     query_params: { projectId, startDate, endDate, limit },
     format: 'JSONEachRow',
+    clickhouse_settings: GSC_TOP_N_QUERY_SETTINGS,
   });
   return result.json();
 }
