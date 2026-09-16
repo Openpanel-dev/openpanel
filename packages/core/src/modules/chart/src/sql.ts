@@ -670,6 +670,8 @@ export interface ChartBucketProfilesInput {
   interval: IInterval;
   event: Pick<IChartEvent, 'name' | 'filters'>;
   breakdowns: Record<string, string>;
+  /** Cap on the ids handed to the drill-down modal. */
+  limit: number;
 }
 
 function bucketEquals(interval: IInterval, bucketDate: string): SqlFragment {
@@ -707,7 +709,7 @@ function profileFieldsToSelect(refs: string[]): SqlFragment[] {
 export function chartBucketProfilesQuery(
   input: ChartBucketProfilesInput
 ): SqlFragment {
-  const { projectId, event, interval, bucketDate, breakdowns } = input;
+  const { projectId, event, interval, bucketDate, breakdowns, limit } = input;
   const breakdownKeys = Object.keys(breakdowns);
 
   const where: Parts = {};
@@ -746,5 +748,5 @@ export function chartBucketProfilesQuery(
     where[`breakdown_${key}`] = sql`${propertyKey} = ${sql.string(value)}`;
   }
 
-  return sql`SELECT DISTINCT profile_id FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(joins)} ${whereClause(where)}`;
+  return sql`SELECT DISTINCT profile_id FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(joins)} ${whereClause(where)} LIMIT ${sql.uint64(limit)}`;
 }

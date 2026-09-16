@@ -146,12 +146,22 @@ const DEFAULT_EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT = 500;
 const BUCKET_PROFILES_BATCH_SIZE = 200;
 
 /**
- * In-flight `profiles FINAL` batches. The bucket query is unbounded, so a busy
- * project's chart point is 130+ batches; issuing them all at once would replace
+ * In-flight `profiles FINAL` batches. Issuing every batch at once would replace
  * a latency problem with a ClickHouse admission-queue one on a 4-core node.
  * Four keeps the node's `max_threads = 4` worth of work busy without queueing.
  */
 const BUCKET_PROFILES_FETCH_CONCURRENCY = 4;
+
+/**
+ * Cap on the ids one chart data point hands the drill-down modal. The bucket
+ * query used to be unbounded, so a busy project's point returned a 31,447-id
+ * tail (`docs/ANALYTICS_PERFORMANCE.md` section 6.7) that the modal renders
+ * through a virtualizer and nobody scrolls to, after paying for every one of
+ * them in `profiles FINAL` batches. Same number as FUNNEL_PROFILES_LIMIT: both
+ * feed the same modal, so the two drill-downs should not disagree on depth.
+ */
+const BUCKET_PROFILES_LIMIT = 1000;
+
 const FUNNEL_PROFILES_BATCH_SIZE = 500;
 const FUNNEL_PROFILES_LIMIT = 1000;
 
@@ -655,6 +665,7 @@ export async function getChartBucketProfiles(
       interval: input.interval,
       event: serie,
       breakdowns: input.breakdowns ?? {},
+      limit: BUCKET_PROFILES_LIMIT,
     })
   );
   const ids = rows.map((row) => row.profile_id).filter(Boolean);

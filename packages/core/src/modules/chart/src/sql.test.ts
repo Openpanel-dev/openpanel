@@ -641,3 +641,46 @@ describe('single-pass total_count', () => {
     );
   });
 });
+
+describe('chartBucketProfilesQuery', () => {
+  const bucket = {
+    projectId: PROJECT_ID,
+    bucketDate: START,
+    interval: 'day' as const,
+    event: { name: 'screen_view', filters: [] },
+    breakdowns: {},
+  };
+
+  it('binds the caller-supplied LIMIT so the drill-down never gets the whole tail', async () => {
+    const { chartBucketProfilesQuery } = await import('./sql');
+    const rendered = render(chartBucketProfilesQuery({ ...bucket, limit: 7 }));
+
+    expect(rendered.sql).toMatch(/LIMIT \{p\d+:UInt64\}$/);
+    expect(rendered.text).toEndWith('LIMIT 7');
+  });
+
+  it('keeps the LIMIT last when joins and breakdowns are present', async () => {
+    const { chartBucketProfilesQuery } = await import('./sql');
+    const rendered = render(
+      chartBucketProfilesQuery({
+        ...bucket,
+        event: {
+          name: 'screen_view',
+          filters: [
+            {
+              id: 'f1',
+              name: 'profile.email',
+              operator: 'is' as const,
+              value: ['a@example.com'],
+            },
+          ],
+        },
+        breakdowns: { country: 'US' },
+        limit: 1000,
+      })
+    );
+
+    expect(rendered.text).toEndWith('LIMIT 1000');
+    await explain(rendered);
+  });
+});

@@ -837,16 +837,71 @@ SELECT distinct path as values FROM events WHERE project_id = {p1:String} AND cr
 -- V2 params: {"p1":"secure-privacy","p2":"screen_view","p3":100000}
 ```
 
+**Amended by M31-001 (2026-09-16): the six `chartBucketProfilesQuery` statements below are no longer
+V1-identical, by decision.** V1's bucket statement has no `LIMIT`, so one chart data point hands the
+drill-down modal every distinct profile in the bucket — 31,447 ids on `chatpaper`, which the modal's
+virtual list never shows and which the `profiles FINAL` follow-up then pays for in 158 batches
+(`docs/ANALYTICS_PERFORMANCE.md` §6.7, Group C fix 6; approved by Carl on 2026-09-15). Every `-- V2`
+statement below now ends in `LIMIT {pN:UInt64}`, bound to `BUCKET_PROFILES_LIMIT = 1000` — the same
+cap `getFunnelStepProfiles` already applies to the same modal. The `-- V1` statements are left exactly
+as V1 wrote them, so the two columns differ in that one clause by design.
+
+Re-measured against the local prod copy on **2026-09-16**, `use_query_condition_cache=0`,
+`session_timezone=UTC`, `default_format=Null`, `wait_end_of_query=1`; `result_rows`/`read_rows`/
+`elapsed_ns` read off `X-ClickHouse-Summary`. Old = the same rendered statement with the `LIMIT`
+clause stripped. Wall clock is the **range over the runs stated per block** — this is a 4-core box
+and its run-to-run spread is wider than most of the deltas here, so only ranges are reported.
+
+Six statement cases, 2 runs each side:
+
+| case | old rows / read / ms | new rows / read / ms |
+|---|---|---|
+| day bucket, screen_view, no breakdowns | 4,092 / 212,951 / 14.8-16.7 | **1,000** / 188,385-196,575 / 14.4-15.6 |
+| hour bucket, wildcard event, country filter | 181 / 212,951 / 10.8-12.1 | 181 / 212,951 / 12.0-12.7 |
+| minute bucket | 8 / 212,951 / 13.7-15.7 | 8 / 212,951 / 10.2-15.8 |
+| week bucket + breakdowns country/path | 0 / 204,759 / 16.1-17.5 | 0 / 204,759 / 16.9-19.1 |
+| month bucket + profile filter/breakdown join | 0 / 573,041 / 101.5-136.6 | 0 / 573,041 / 102.4-105.7 |
+| day bucket + group filter/breakdown join | 0 / 216,310 / 23.1-26.9 | 0 / 216,310 / 19.9-23.3 |
+
+§6.7's worst case — `chatpaper`, `screen_view`, day bucket `2026-08-20` (the bucket that yields
+§6.7's 31,447) — 3 runs each:
+
+| variant | rows / read / ms |
+|---|---|
+| old, no `LIMIT` | 31,447 / 573,385 / 35.6-42.9 |
+| new, `LIMIT 1000` | **1,000** / 24,573-73,724 / 10.7-12.6 |
+| `ORDER BY profile_id LIMIT 1000` (not taken) | 1,000 / 573,385 / 46.6-48.4 |
+
+**Five of the six statement cases still return the same rows as V1** — they yield fewer than 1,000
+ids, so the cap never bites, and their wall-clock columns overlap in both directions: the `LIMIT` is
+free, not faster, where it does not truncate. Only the day bucket truncates among the six; the
+`chatpaper` case is the one where it pays.
+
+Where the cap does bite, the capped result is a **strict subset** of the old one:
+`profile_id NOT IN (old set)` counted **0** on both truncating buckets, each returned 1,000 rows
+holding 1,000 distinct ids (`DISTINCT` is applied before `LIMIT`). ClickHouse stops reading once the
+cap is met, so `chatpaper` falls from 573,385 rows read to 24,573-73,724 — that figure is a range,
+not a constant, because where the readers stop varies per run.
+
+**Which 1,000 is not deterministic, by inheritance.** The statement has no `ORDER BY` — neither does
+`getFunnelStepProfiles`' bounded equivalent — so the subset depends on which parts the reader
+finishes first. Measured on `chatpaper`'s bucket: 7 runs at default settings produced 2 distinct
+result sets (`cityHash64(arraySort(groupArray(profile_id)))`), and `max_threads=1` produced a third,
+stable across its own 3 runs. Making it stable costs the whole read saving: `ORDER BY profile_id
+LIMIT 1000` reads the full pre-fix 573,385 rows and is *slower* than the unbounded original.
+Recorded, not taken — this task is the `LIMIT` only, and the funnel sibling has the same property
+today.
+
 ### chartBucketProfilesQuery — getProfiles day bucket, screen_view, no breakdowns
 
-**statement** — IDENTICAL; rows V1/V2 = 4092/4092; rows_read V1/V2 = 212951/49148; wall V1/V2 = 18 ms / 17 ms; clickhouse_settings: session_timezone=UTC (both).
+**statement** — was IDENTICAL as captured on 2026-09-04 (rows V1/V2 = 4092/4092; rows_read V1/V2 = 212951/49148; wall V1/V2 = 18 ms / 17 ms; clickhouse_settings: session_timezone=UTC (both)); **since M31-001 this is the one case among the six whose result the `LIMIT` truncates — V2 returns 1,000 of those 4,092 ids** (see the amendment above).
 
 ```sql
 -- V1
 SELECT DISTINCT profile_id FROM events e WHERE project_id = 'secure-privacy' AND toStartOfDay(created_at) = toDate('2026-07-07 00:00:00') AND name = 'screen_view'
 -- V2
-SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfDay(created_at) = toDate({p2:String}) AND name = {p3:String}
--- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 00:00:00","p3":"screen_view"}
+SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfDay(created_at) = toDate({p2:String}) AND name = {p3:String} LIMIT {p4:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 00:00:00","p3":"screen_view","p4":1000}
 ```
 
 ### chartBucketProfilesQuery — getProfiles hour bucket, wildcard event, country filter
@@ -857,8 +912,8 @@ SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toSt
 -- V1
 SELECT DISTINCT profile_id FROM events e WHERE country = 'US' AND project_id = 'secure-privacy' AND toStartOfHour(created_at) = toDateTime('2026-07-07 10:00:00')
 -- V2
-SELECT DISTINCT profile_id FROM events e WHERE country = 'US' AND project_id = {p1:String} AND toStartOfHour(created_at) = toDateTime({p2:String})
--- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 10:00:00"}
+SELECT DISTINCT profile_id FROM events e WHERE country = 'US' AND project_id = {p1:String} AND toStartOfHour(created_at) = toDateTime({p2:String}) LIMIT {p3:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 10:00:00","p3":1000}
 ```
 
 ### chartBucketProfilesQuery — getProfiles minute bucket
@@ -869,8 +924,8 @@ SELECT DISTINCT profile_id FROM events e WHERE country = 'US' AND project_id = {
 -- V1
 SELECT DISTINCT profile_id FROM events e WHERE project_id = 'secure-privacy' AND toStartOfMinute(created_at) = toDateTime('2026-07-07 10:15:00') AND name = 'screen_view'
 -- V2
-SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfMinute(created_at) = toDateTime({p2:String}) AND name = {p3:String}
--- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 10:15:00","p3":"screen_view"}
+SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfMinute(created_at) = toDateTime({p2:String}) AND name = {p3:String} LIMIT {p4:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"2026-07-07 10:15:00","p3":"screen_view","p4":1000}
 ```
 
 ### chartBucketProfilesQuery — getProfiles week bucket + breakdowns country/path
@@ -881,8 +936,8 @@ SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toSt
 -- V1
 SELECT DISTINCT profile_id FROM events e WHERE project_id = 'secure-privacy' AND toStartOfWeek(toDateTime(created_at)) = toDate('2026-07-06 00:00:00') AND name = 'screen_view' AND country = 'US' AND path = '/'
 -- V2
-SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfWeek(toDateTime(created_at)) = toDate({p2:String}) AND name = {p3:String} AND country = {p4:String} AND path = {p5:String}
--- V2 params: {"p1":"secure-privacy","p2":"2026-07-06 00:00:00","p3":"screen_view","p4":"US","p5":"/"}
+SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toStartOfWeek(toDateTime(created_at)) = toDate({p2:String}) AND name = {p3:String} AND country = {p4:String} AND path = {p5:String} LIMIT {p6:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"2026-07-06 00:00:00","p3":"screen_view","p4":"US","p5":"/","p6":1000}
 ```
 
 ### chartBucketProfilesQuery — getProfiles month bucket + profile filter/breakdown join
@@ -893,8 +948,8 @@ SELECT DISTINCT profile_id FROM events e WHERE project_id = {p1:String} AND toSt
 -- V1
 SELECT DISTINCT profile_id FROM events e LEFT ANY JOIN (SELECT id, email, properties, first_name FROM profiles FINAL WHERE project_id = 'secure-privacy') as profile on profile.id = profile_id WHERE project_id = 'secure-privacy' AND toStartOfMonth(toDateTime(created_at)) = toDate('2026-07-01 00:00:00') AND name = 'screen_view' AND profile.properties['os'] = 'Mac OS' AND profile.first_name = 'x'
 -- V2
-SELECT DISTINCT profile_id FROM events e LEFT ANY JOIN (SELECT id, email, properties, first_name FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE project_id = {p2:String} AND toStartOfMonth(toDateTime(created_at)) = toDate({p3:String}) AND name = {p4:String} AND profile.properties['os'] = {p5:String} AND profile.first_name = {p6:String}
--- V2 params: {"p1":"secure-privacy","p2":"secure-privacy","p3":"2026-07-01 00:00:00","p4":"screen_view","p5":"Mac OS","p6":"x"}
+SELECT DISTINCT profile_id FROM events e LEFT ANY JOIN (SELECT id, email, properties, first_name FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE project_id = {p2:String} AND toStartOfMonth(toDateTime(created_at)) = toDate({p3:String}) AND name = {p4:String} AND profile.properties['os'] = {p5:String} AND profile.first_name = {p6:String} LIMIT {p7:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"secure-privacy","p3":"2026-07-01 00:00:00","p4":"screen_view","p5":"Mac OS","p6":"x","p7":1000}
 ```
 
 ### chartBucketProfilesQuery — getProfiles day bucket + group filter/breakdown join
@@ -905,6 +960,6 @@ SELECT DISTINCT profile_id FROM events e LEFT ANY JOIN (SELECT id, email, proper
 -- V1
 SELECT DISTINCT profile_id FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = 'secure-privacy') AS _g ON _g.id = _group_id WHERE _g.type = 'company' AND project_id = 'secure-privacy' AND toStartOfDay(created_at) = toDate('2026-07-07 00:00:00') AND name = 'screen_view' AND _g.name = 'Secureprivacy' AND properties['__title'] = 'Secure Privacy'
 -- V2
-SELECT DISTINCT profile_id FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE _g.type = 'company' AND project_id = {p2:String} AND toStartOfDay(created_at) = toDate({p3:String}) AND name = {p4:String} AND _g.name = {p5:String} AND properties['__title'] = {p6:String}
--- V2 params: {"p1":"secure-privacy","p2":"secure-privacy","p3":"2026-07-07 00:00:00","p4":"screen_view","p5":"Secureprivacy","p6":"Secure Privacy"}
+SELECT DISTINCT profile_id FROM events e ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p1:String}) AS _g ON _g.id = _group_id WHERE _g.type = 'company' AND project_id = {p2:String} AND toStartOfDay(created_at) = toDate({p3:String}) AND name = {p4:String} AND _g.name = {p5:String} AND properties['__title'] = {p6:String} LIMIT {p7:UInt64}
+-- V2 params: {"p1":"secure-privacy","p2":"secure-privacy","p3":"2026-07-07 00:00:00","p4":"screen_view","p5":"Secureprivacy","p6":"Secure Privacy","p7":1000}
 ```
