@@ -5,13 +5,18 @@
  * all-cohorts paths run against seeded `cohort_members` + a Postgres cohort.
  *
  * Fixture (test/fixtures.ts, seeded per suite under its own project id so it
- * can run concurrently with V1's suites): Alice — 3 events 2 days ago
+ * can run concurrently with V1's suites, with the clock pinned to
+ * test/fixture-clock.ts's 12:00 UTC anchor): Alice — 3 events 2 days ago
  * (Chrome, page_view /home); Charlie — 5 events 5 days ago (Firefox,
  * screen_view + page_view /shop, purchase 9900); Bob — no events. This suite
  * adds one static cohort ("Firefox users") holding Charlie.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
+import {
+  pinFixtureClock,
+  releaseFixtureClock,
+} from '../../../test/fixture-clock';
 import type { IChartEventItem, IReportInput } from '../report/report.constants';
 
 const TEST_PROJECT_ID = 'chart-integration-test';
@@ -30,6 +35,7 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 let FIXTURE: typeof import('../../../../../test/fixtures').FIXTURE;
+let fixtureNow: Date;
 let service: ReturnType<typeof import('./chart.service').createChartService>;
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
 
@@ -73,6 +79,7 @@ beforeAll(async () => {
   );
   await bootstrapTestDatabases();
   await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  fixtureNow = pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
   const { db } = await import('@openpanel/db/src/prisma-client');
@@ -113,6 +120,7 @@ afterAll(async () => {
   await db.cohort.deleteMany({ where: { id: COHORT_ID } });
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
   await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  releaseFixtureClock();
 });
 
 function seriesNamed<TSerie extends { names: string[] }>(
@@ -335,7 +343,9 @@ describe('getProjectCard', () => {
 
 describe('getChartBucketProfiles', () => {
   it('returns the profiles behind one data point, honoring breakdowns', async () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS).toISOString();
+    const twoDaysAgo = new Date(
+      fixtureNow.getTime() - 2 * DAY_MS
+    ).toISOString();
     const profiles = await service.bucketProfiles({
       projectId: TEST_PROJECT_ID,
       date: twoDaysAgo,
@@ -358,7 +368,9 @@ describe('getChartBucketProfiles', () => {
   });
 
   it('selects only whitelisted profile columns for profile.* references', async () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS).toISOString();
+    const twoDaysAgo = new Date(
+      fixtureNow.getTime() - 2 * DAY_MS
+    ).toISOString();
     const profiles = await service.bucketProfiles({
       projectId: TEST_PROJECT_ID,
       date: twoDaysAgo,

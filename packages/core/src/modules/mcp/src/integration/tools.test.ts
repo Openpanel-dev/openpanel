@@ -8,7 +8,9 @@
  * apps/api/src/routes/insights.router.test.ts uses) in beforeAll/afterAll,
  * under its own project/org id so it can run concurrently with that suite.
  *
- * Fixture data (test/fixtures.ts's FIXTURE):
+ * Fixture data (test/fixtures.ts's FIXTURE), seeded and queried with the clock
+ * pinned to test/fixture-clock.ts's 12:00 UTC anchor so "5 days ago" is one
+ * calendar day whatever time the suite runs:
  *   Alice   — 3 events: session_start, page_view(/home), session_end  — 2 days ago — country: US, browser: Chrome
  *   Bob     — 0 events (inactive)                                      — profile created 90 days ago — country: SE
  *   Charlie — 5 events: session_start, screen_view, page_view(/shop), purchase, session_end — 5 days ago — browser: Firefox
@@ -27,6 +29,10 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
+import {
+  pinFixtureClock,
+  releaseFixtureClock,
+} from '../../../../../test/fixture-clock';
 import type { McpToolDeps } from '../tools/shared';
 
 const TEST_PROJECT_ID = 'mcp-integration-test';
@@ -97,6 +103,7 @@ beforeAll(async () => {
   );
   await bootstrapTestDatabases();
   await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
   // M15-003: the tools take `deps`/`services` as arguments, so the suite
@@ -117,6 +124,7 @@ afterAll(async () => {
   const fixtures = await import('../../../../../../../test/fixtures');
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
   await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
+  releaseFixtureClock();
 });
 
 const CTX = {
