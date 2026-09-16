@@ -52,6 +52,16 @@ case where that is still not enough — a bare `LIMIT` — is treated separately
   Three deliberate behaviour changes are recorded in §Behaviour changes — none
   of them is a difference in any executed result set.
 
+- **Amended by M36-005 (2026-09-16): `getCohortMemberEvents` (D4/E4) and
+  `getCohortMemberRoutes` (D6/E6) are bounded to a window.** They had no date
+  filter, so they read the project's whole event history however small the
+  cohort was (`docs/UNPROVEN_ENDPOINTS.md` §4.4, cause D). Each now carries
+  `created_at BETWEEN toDateTime({pN:String}) AND toDateTime({pN:String})`
+  right after `project_id`, spelled as M31-003 spelled it, and the procedures
+  default to the `3m` range `profile.powerUsers` got. This is a deliberate
+  semantic change, so D4/D6/E4/E6 below are the record of the old text, not
+  the current one. Measurements are in the M36-005 section at the end.
+
 ## A — `buildEventCriteriaQuery`: every event-criteria branch
 
 The two summary MVs, the three timeframe shapes, the three frequency operators and all six event-property operator branches (`is` / `isNot` single and multi, `contains`, `doesNotContain`, the `default` fall-through) plus the no-property path. `buildTimeConstraint`'s column is now a parameter rather than a `.replace('created_at','event_date')` over finished text; A1–A3 are the proof that the substituted column is byte-identical.
@@ -1274,3 +1284,160 @@ TOTAL   sqlstring 82 → 36    clix 73 → 73    sql-builder 6 → 6
 Nothing else moved. The one surviving `sqlstring` token in the module is the
 word inside this file's and the service's header comments, which the gate does
 not count.
+
+## M36-005 — the window on `mostEvents` / `popularRoutes` (2026-09-16)
+
+**What changed.** `cohortMemberEventsQuery` / `cohortMemberRoutesQuery` (now
+pure builders, pinned by `src/cohort-activity-sql.test.ts`) add
+`AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String})`
+after `project_id`. `cohort.mostEvents` / `cohort.popularRoutes` accept the
+report vocabulary's `range` / `startDate` / `endDate`, and `range` defaults to
+**`3m`**. The cohort detail route passes no range, so every user gets `3m`. The
+`IN (subquery)` on `cohort_members` is unchanged (see §Distribution). The
+window changes no distribution semantics.
+
+**Method.** The HEAD service file was copied into the module, and both it and
+the new one were called in one Bun process against a fake `deps.ch` that
+recorded `{query, query_params}`. No statement was retyped. The copy was deleted
+afterwards. Each statement then ran against the local prod copy through the
+HTTP interface, with `database=openpanel` and `use_query_condition_cache=0`.
+The only edit was `FROM cohort_members`, which was qualified to a scratch
+database, the same cross-database method as `UNPROVEN_ENDPOINTS_RAW.md` §3.3.
+The numbers come from `X-ClickHouse-Summary`. Each statement ran 3 times,
+interleaved, and the median is shown. Rows and bytes did not vary between runs.
+The run was on 2026-09-16, 15:29–15:32 UTC.
+
+**Cohorts.** `cohort_members` is empty in the prod copy, so real profile ids
+were written to a scratch database, `openpanel_m36005` (dropped afterwards).
+`openpanel` was only read: `events` = 321,192,037 before and after. Each anchor
+got two cohorts:
+
+- `spread-1000`: 1,000 ids in `cityHash64` order, spread across the project.
+- `heavy-1000`: the 1,000 ids with the most events. This is the skew a real
+  predicate-selected cohort has.
+
+`bayse` also used M33's 10,000-member cohort (`openpanel_m33`, read only). Ids
+are identified ones (`profile_id != device_id`). `chatpaper` has no identified
+profiles, so it uses anonymous ids. **`website-8103` could not be measured:**
+every event has `profile_id = ''`, so no cohort there can match an event.
+
+**The caveat this copy forces (the same one M31-003 hit).** Every anchor's
+events span 2026-07-01 → 2026-08-25, about 8 weeks. That is inside any `3m`
+window, whether it is anchored on today (`2026-06-16 → 2026-09-17`, what the
+code produced) or on the copy's last day (`2026-05-25 → 2026-08-26`, what a live
+server would read). **So at the default the window prunes nothing here.** The
+`30d` and `7d` columns (anchored on the copy's last day) show what the window
+buys once a tenant is older than it. On a live tenant older than three months,
+the default moves from the "default" column toward those columns. No project on
+this box can show that directly.
+
+### Cost: rows read, then median wall time
+
+| statement | project, cohort | unbounded (before) | default `3m` (after) | `30d` | `7d` |
+|---|---|---|---|---|---|
+| events | `bayse`, spread-1000 | 38,253,027 / 663 ms | 38,253,027 / 978 ms | 17,060,606 / 461 ms | 5,256,379 / 147 ms |
+| events | `bayse`, heavy-1000 | 38,253,027 / 908 ms | 38,253,027 / 1,261 ms | 17,060,606 / 571 ms | 5,256,379 / 193 ms |
+| events | `bayse`, M33 10,000 | 38,257,027 / 897 ms | 38,257,027 / 1,258 ms | 17,064,606 / 569 ms | 5,260,379 / 189 ms |
+| routes | `bayse`, spread-1000 | 38,253,027 / 485 ms | 38,253,027 / 650 ms | 17,060,606 / 311 ms | 5,256,379 / 97 ms |
+| routes | `bayse`, heavy-1000 | 38,253,027 / 592 ms | 38,253,027 / 760 ms | 17,060,606 / 362 ms | 5,256,379 / 113 ms |
+| routes | `bayse`, M33 10,000 | 38,257,027 / 588 ms | 38,257,027 / 773 ms | 17,064,606 / 364 ms | 5,260,379 / 118 ms |
+| events | `verdict`, spread-1000 | 44,170,383 / 841 ms | 44,170,383 / 1,124 ms | 23,202,147 / 635 ms | 4,827,286 / 150 ms |
+| events | `verdict`, heavy-1000 | 44,170,383 / 887 ms | 44,170,383 / 1,151 ms | 23,202,147 / 635 ms | 4,827,286 / 146 ms |
+| routes | `verdict`, both | 2,731,360 / 34–40 ms | 2,731,360 / 39–42 ms | 1,520,694 / 29–30 ms | 423,728 / 13–15 ms |
+| events | `earlysalary-production`, spread-1000 | 26,793,684 / 481 ms | 26,793,684 / 697 ms | 15,472,396 / 411 ms | 3,471,150 / 100 ms |
+| events | `earlysalary-production`, heavy-1000 | 26,793,684 / 510 ms | 26,793,684 / 720 ms | 15,472,396 / 424 ms | 3,471,150 / 101 ms |
+| routes | `earlysalary-production`, both | 26,793,684 / 407 ms | 26,793,684 / 514–526 ms | 15,472,396 / 310–312 ms | 3,471,150 / 76–80 ms |
+| events | `chatpaper`, both | 19,804,629 / 183–187 ms | 19,804,629 / 246–254 ms | 13,515,386 / 171–176 ms | 2,669,273 / 49–51 ms |
+| routes | `chatpaper`, spread-1000 | 19,804,629 / 717 ms | 19,804,629 / 805 ms | 13,515,386 / 563 ms | 2,669,273 / 115 ms |
+| routes | `chatpaper`, heavy-1000 | 19,804,629 / 681 ms | 19,804,629 / 778 ms | 13,515,386 / 562 ms | 2,669,273 / 117 ms |
+
+(`verdict` has no `screen_view` events. `earlysalary-production` has none for
+these cohorts. Their `routes` rows return 0 rows either way.)
+
+Bytes read, `bayse` spread-1000 events: 1,662 MiB unbounded, 1,948 MiB at the
+default, 862 MiB at `30d`, 260 MiB at `7d`.
+
+**Read plainly:**
+
+- **On this copy the default is a cost, not a saving.** The `BETWEEN` adds
+  `created_at` to the columns read and prunes nothing. That makes the default
+  **12–48 % slower** at the same row count: `bayse` events is 663 → 978 ms,
+  +286 MiB read. M31-003 measured the same floor price on `powerUsers`.
+- **The saving appears once the window is narrower than the history.**
+  - At `30d`, `bayse` reads **2.2× fewer rows**.
+  - At `7d` it reads **7.3× fewer** and runs **4.5× faster** than unbounded.
+  - `verdict` events at `7d`: 44.2 M → 4.8 M rows, 841 → 150 ms.
+- **The guarantee is the point.** After this change, neither statement can read
+  more than three months of a tenant's events. Before it, they read all of
+  them, and the cost grew with the tenant's age.
+
+### What a user sees — result sets, on real anchors
+
+**At the default, nothing changes on any anchor.** The window covers all the
+data, so the answer must be the same. It is, and this was checked on the full
+**un-`LIMIT`ed** `GROUP BY` result:
+`count(), sum(cityHash64(key, count))` gave identical row counts and hashes for
+
+- `bayse` spread-1000 events (108 names),
+- `verdict` spread-1000 events (36),
+- `earlysalary-production` heavy-1000 events (64),
+- `chatpaper` spread-1000 routes (5,139 paths),
+- `chatpaper` heavy-1000 routes (148,452 paths).
+
+The shipped top-10 was also identical in order and counts on every other
+default-window cell in the cost table, with one exception, explained next.
+
+**One apparent difference is a pre-existing tie, not this change.**
+`chatpaper` heavy-1000 routes at the default kept 8 of its 10 paths. Its counts
+at ranks 8–12 are all `3`, and `ORDER BY count DESC` has no tiebreak.
+**Five runs of the unchanged, unbounded statement returned 5 different
+orderings.** The full result set is identical (above). `popularRoutes` and
+`mostEvents` are therefore already nondeterministic at a tie on the `LIMIT`
+boundary, like `powerUsersQuery` (M31-003). Never compare them by ordered rows.
+This change touches no `ORDER BY`.
+
+**What a user would see if the window did bite.** This is the `3m` default's
+effect on a tenant with more than three months of history, approximated with
+narrower windows on this copy. Each cell is how many of the unbounded top-10
+entries survive:
+
+| cohort | `30d` | `7d` |
+|---|---|---|
+| `bayse` spread-1000, events / routes | 7 of 10 / 8 of 10 | 8 / 6 |
+| `bayse` heavy-1000, events / routes | 8 / 8 | 7 / 8 |
+| `bayse` M33 10,000, events / routes | 7 / 9 | 6 / 8 |
+| `verdict` spread-1000 / heavy-1000, events | 9 / 10 (same set, reordered) | 9 / 9 |
+| `earlysalary-production` spread-1000 / heavy-1000, events | 10 (reordered) / 8 | 9 / 8 |
+| `chatpaper` spread-1000 / heavy-1000, routes | 8 / 7 | 4 / 1 (tie-dominated, see above) |
+| `chatpaper` spread-1000, events | 0 of 1: its only non-`screen_view` event is older than 30 d | 0 of 1 |
+
+The top entry was the same in every `30d` cell except that last one. At `7d`,
+it also changed for `verdict` events and `chatpaper` heavy-1000 routes.
+
+**What the page shows differently.** The two cards read "Popular events" and
+"Most visted pages" (sic), with no time label either before or after. They now
+count the member's activity in the last three months, not all time:
+
+- **Any tenant or cohort whose events all fall inside three months:**
+  identical, as measured above.
+- **Older tenants:** the counts are smaller, and the ranking reflects recent
+  activity. A cohort whose members were active only more than three months ago
+  shows empty cards. That is the `chatpaper` 0-of-1 case, at a shorter window.
+- The "Events per day" chart beside the cards is still 30 days, and was not
+  changed.
+
+M36-005 did not change the page to name the window. `apps/start` is outside the
+task's scope.
+
+### Golden prediction
+
+**Zero golden cases change.** No `verification/golden` case reaches these
+statements, for three reasons:
+
+- The 137 cases replay REST routes.
+- `cohort.mostEvents` and `cohort.popularRoutes` are tRPC-only. Their only
+  callers are `cohort.rpc.ts` and the cohort detail route.
+- The capture's `dataset.emptyTables` lists `cohort_members`.
+
+The one case whose id contains "cohort", `insights-retention-cohort`, is served
+by `chart/retention.service`, which this change does not touch.

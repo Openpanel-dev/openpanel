@@ -35,6 +35,7 @@ import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
+import { formatClickhouseDate } from '../../shared/ch-dates';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {
@@ -923,31 +924,70 @@ export async function listCohortMemberProfiles(
   return { data, count };
 }
 
-export async function getCohortMemberEvents(
-  deps: ServiceDeps,
+/**
+ * The window `mostEvents` / `popularRoutes` read. Both had no date filter, so
+ * they scanned the project's whole event history however small the cohort
+ * (docs/UNPROVEN_ENDPOINTS.md §4.4). `YYYY-MM-DD HH:mm:ss`, as
+ * `getChartStartEndDate` returns it.
+ */
+export interface CohortActivityWindow {
+  startDate: string;
+  endDate: string;
+}
+
+const DEFAULT_COHORT_ACTIVITY_LIMIT = 10;
+
+/** Spelled as `overview/src/pages.sql.ts` and `profile/src/sql.ts` spell it. */
+function createdAtWithin({
+  startDate,
+  endDate,
+}: CohortActivityWindow): SqlFragment {
+  return sql`created_at BETWEEN toDateTime(${sql.string(formatClickhouseDate(startDate))}) AND toDateTime(${sql.string(formatClickhouseDate(endDate))})`;
+}
+
+function cohortMemberIdsSubquery(
+  projectId: string,
+  cohortId: string
+): SqlFragment {
+  return sql`
+    SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+    WHERE cohort_id = ${sql.string(cohortId)}
+      AND project_id = ${sql.string(projectId)}
+  `;
+}
+
+export function cohortMemberEventsQuery(
   projectId: string,
   cohortId: string,
-  limit = 10
-): Promise<{ name: string; count: number }[]> {
+  window: CohortActivityWindow,
+  limit: number
+): SqlFragment {
   // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
   // written — a conversion changes the binding of values and nothing about the
   // distribution semantics (docs/ENVIRONMENT.md).
-  return chQuery<{ name: string; count: number }>(
-    deps,
-    sql`
+  return sql`
     SELECT name, count() AS count
     FROM ${sql.id(TABLE.events)}
     WHERE project_id = ${sql.string(projectId)}
-      AND profile_id IN (
-        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
-        WHERE cohort_id = ${sql.string(cohortId)}
-          AND project_id = ${sql.string(projectId)}
-      )
+      AND ${createdAtWithin(window)}
+      AND profile_id IN (${cohortMemberIdsSubquery(projectId, cohortId)})
       AND name NOT IN ('screen_view', 'session_start', 'session_end')
     GROUP BY name
     ORDER BY count DESC
     LIMIT ${sql.uint64(limit)}
-  `
+  `;
+}
+
+export function getCohortMemberEvents(
+  deps: ServiceDeps,
+  projectId: string,
+  cohortId: string,
+  window: CohortActivityWindow,
+  limit = DEFAULT_COHORT_ACTIVITY_LIMIT
+): Promise<{ name: string; count: number }[]> {
+  return chQuery<{ name: string; count: number }>(
+    deps,
+    cohortMemberEventsQuery(projectId, cohortId, window, limit)
   );
 }
 
@@ -984,30 +1024,37 @@ export async function getCohortEventsPerDay(
   return rows.map((r) => ({ date: String(r.date), count: Number(r.count) }));
 }
 
-export async function getCohortMemberRoutes(
-  deps: ServiceDeps,
+export function cohortMemberRoutesQuery(
   projectId: string,
   cohortId: string,
-  limit = 10
-): Promise<{ path: string; count: number }[]> {
+  window: CohortActivityWindow,
+  limit: number
+): SqlFragment {
   // `IN (subquery)` on the Distributed `cohort_members`: kept as V1 wrote it.
-  return chQuery<{ path: string; count: number }>(
-    deps,
-    sql`
+  return sql`
     SELECT path, count() AS count
     FROM ${sql.id(TABLE.events)}
     WHERE project_id = ${sql.string(projectId)}
-      AND profile_id IN (
-        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
-        WHERE cohort_id = ${sql.string(cohortId)}
-          AND project_id = ${sql.string(projectId)}
-      )
+      AND ${createdAtWithin(window)}
+      AND profile_id IN (${cohortMemberIdsSubquery(projectId, cohortId)})
       AND name = 'screen_view'
       AND path != ''
     GROUP BY path
     ORDER BY count DESC
     LIMIT ${sql.uint64(limit)}
-  `
+  `;
+}
+
+export function getCohortMemberRoutes(
+  deps: ServiceDeps,
+  projectId: string,
+  cohortId: string,
+  window: CohortActivityWindow,
+  limit = DEFAULT_COHORT_ACTIVITY_LIMIT
+): Promise<{ path: string; count: number }[]> {
+  return chQuery<{ path: string; count: number }>(
+    deps,
+    cohortMemberRoutesQuery(projectId, cohortId, window, limit)
   );
 }
 

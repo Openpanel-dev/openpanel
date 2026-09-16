@@ -17,10 +17,12 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
+import { getSettingsForProject } from '../organization/organization.service';
 // The canonical zChartEventFilter, not cohort.constants.ts's private
 // TDZ-workaround copy — matches V1's router, which imports it from
 // packages/validation's barrel rather than from cohort.validation.ts.
-import { zChartEventFilter } from '../report/report.constants';
+import { zChartEventFilter, zRange } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import {
   zCohortDefinition,
   zCohortInput,
@@ -40,6 +42,22 @@ import {
 
 const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
+
+/**
+ * `mostEvents` and `popularRoutes` read the project's whole history before
+ * this window existed (docs/UNPROVEN_ENDPOINTS.md §4.4). The default is the
+ * one `profile.powerUsers` got for the same cause (M31-003); the cohort page
+ * passes no range, so this is what it shows.
+ */
+const COHORT_ACTIVITY_DEFAULT_RANGE = '3m';
+
+const zCohortActivityInput = z.object({
+  projectId: z.string(),
+  cohortId: z.string(),
+  range: zRange.default(COHORT_ACTIVITY_DEFAULT_RANGE),
+  startDate: z.string().nullish(),
+  endDate: z.string().nullish(),
+});
 
 export const cohortRouter = createTRPCRouter({
   list: protectedProcedure
@@ -211,7 +229,7 @@ export const cohortRouter = createTRPCRouter({
     }),
 
   mostEvents: protectedProcedure
-    .input(z.object({ projectId: z.string(), cohortId: z.string() }))
+    .input(zCohortActivityInput)
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
@@ -220,7 +238,13 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getCohortMemberEvents(ctx, input.projectId, input.cohortId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      return getCohortMemberEvents(
+        ctx,
+        input.projectId,
+        input.cohortId,
+        getChartStartEndDate(input, timezone)
+      );
     }),
 
   eventsPerDay: protectedProcedure
@@ -237,7 +261,7 @@ export const cohortRouter = createTRPCRouter({
     }),
 
   popularRoutes: protectedProcedure
-    .input(z.object({ projectId: z.string(), cohortId: z.string() }))
+    .input(zCohortActivityInput)
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
       await ctx.services.auth.requireProjectAccess({
@@ -246,7 +270,13 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getCohortMemberRoutes(ctx, input.projectId, input.cohortId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      return getCohortMemberRoutes(
+        ctx,
+        input.projectId,
+        input.cohortId,
+        getChartStartEndDate(input, timezone)
+      );
     }),
 
   getCount: protectedProcedure
