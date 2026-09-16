@@ -237,12 +237,16 @@ export function sessionByIdQuery(query: {
   sessionId: string;
   projectId: string;
 }): SqlFragment {
+  // FINAL turns off automatic PREWHERE, so without it every column is read for
+  // every granule FINAL widens the id's skip-index hit to. Safe before the
+  // merge: a -1 row is a copy of its +1, so both pass. `sign` must stay in
+  // WHERE — filtering it first drops the -1 and resurrects the stale +1.
   return sql`
     SELECT *
     FROM ${sql.id(TABLE.sessions)} FINAL
-    WHERE id = ${sql.string(query.sessionId)}
+    PREWHERE id = ${sql.string(query.sessionId)}
       AND project_id = ${sql.string(query.projectId)}
-      AND sign = 1
+    WHERE sign = 1
   `;
 }
 

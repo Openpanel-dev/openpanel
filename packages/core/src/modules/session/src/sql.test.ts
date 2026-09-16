@@ -149,13 +149,13 @@ describe('replay and byId', () => {
     });
   });
 
-  test('sessionByIdQuery and sessionHasReplayQuery keep V1 text', () => {
+  test('sessionByIdQuery prewheres the id and keeps sign under FINAL; sessionHasReplayQuery keeps V1 text', () => {
     const byId = sessionByIdQuery({
       sessionId: 'sess-1',
       projectId: PROJECT_ID,
     }).toStatement();
     expect(collapse(byId.query)).toBe(
-      'SELECT * FROM sessions FINAL WHERE id = {p1:String} AND project_id = {p2:String} AND sign = 1'
+      'SELECT * FROM sessions FINAL PREWHERE id = {p1:String} AND project_id = {p2:String} WHERE sign = 1'
     );
 
     const hasReplay = sessionHasReplayQuery({
