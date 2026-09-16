@@ -51,7 +51,9 @@ const subscribeToProjectEventBatches = mock(
 
 const subscribeToProjectNotifications = mock(async () => () => undefined);
 const subscribeToOrganizationSubscriptionUpdates = mock(
-  async () => () => undefined
+  async (_organizationId: string, _onUpdate: (message: unknown) => void) =>
+    () =>
+      undefined
 );
 
 let activeVisitorCount = 0;
@@ -306,6 +308,34 @@ test('wsOrganizationEvents: session but no org access -> "No access" then close'
     userId: 'user_1',
     organizationId: 'org_1',
   });
+});
+
+// M30-003 / F2: `organization:subscription_updated` is an instance-wide
+// channel. Before the fix the open handler subscribed to it unscoped, so a
+// member of org_1 was sent the `organizationId` of every OTHER organization
+// whose subscription changed. The scope handed to the subscription must be the
+// id `getOrganizationAccess` just proved this caller is a member of — the
+// filter itself is asserted in realtime.service.test.ts.
+test('wsOrganizationEvents: subscribes scoped to the organization the caller is a member of', async () => {
+  session = { userId: 'user_1' };
+  organizationAccess = { role: 'org:member' };
+
+  const { ws } = await connect('/live/organization/org_1');
+
+  while (subscribeToOrganizationSubscriptionUpdates.mock.calls.length === 0) {
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+
+  expect(getOrganizationAccess).toHaveBeenCalledWith({
+    userId: 'user_1',
+    organizationId: 'org_1',
+  });
+  expect(subscribeToOrganizationSubscriptionUpdates).toHaveBeenCalledWith(
+    'org_1',
+    expect.any(Function)
+  );
+
+  ws.close();
 });
 
 test('wsProjectNotifications: no session -> "No active session" then close', async () => {

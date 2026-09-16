@@ -523,8 +523,18 @@ export async function subscribeToProjectNotifications(
   );
 }
 
-/** V1: `wsOrganizationEvents` — every subscriber, no per-org filter (V1 has none either). */
+/**
+ * V1: `wsOrganizationEvents`. Scoped to the single organization the caller's
+ * membership was verified against, exactly as the three siblings above scope
+ * to a verified `projectId`.
+ *
+ * The channel is instance-wide: without this filter every subscriber saw the
+ * `organizationId` of every organization whose subscription changed, which is
+ * a cross-tenant identifier leak (M30-003 / F2). V1 had no filter either —
+ * this is a deliberate divergence, approved 2026-09-15.
+ */
 export async function subscribeToOrganizationSubscriptionUpdates(
+  organizationId: string,
   onUpdate: (
     message: IPublishChannels['organization']['subscription_updated']
   ) => void
@@ -532,7 +542,11 @@ export async function subscribeToOrganizationSubscriptionUpdates(
   return subscribeToPublishedEvent(
     'organization',
     'subscription_updated',
-    onUpdate
+    (message) => {
+      if (message.organizationId === organizationId) {
+        onUpdate(message);
+      }
+    }
   );
 }
 

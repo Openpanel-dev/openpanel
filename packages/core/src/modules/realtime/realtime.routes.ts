@@ -179,9 +179,15 @@ export const realtimeRoutes = defineRoutes((app) =>
 
         rememberUnsubscribe(
           ws,
-          await subscribeToOrganizationSubscriptionUpdates((message) => {
-            ws.send(setSuperJson(message));
-          })
+          // `organizationId` only reaches the subscription once
+          // `getOrganizationAccess` has proved this caller is a member of it,
+          // so the scope is the caller's own membership, not their input.
+          await subscribeToOrganizationSubscriptionUpdates(
+            organizationId,
+            (message) => {
+              ws.send(setSuperJson(message));
+            }
+          )
         );
       },
       close(ws) {

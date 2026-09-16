@@ -156,15 +156,23 @@ test('subscribeToProjectNotifications subscribes on notification:created and fil
   expect(onNotification).toHaveBeenCalledTimes(1);
 });
 
-test('subscribeToOrganizationSubscriptionUpdates subscribes on organization:subscription_updated, unfiltered', async () => {
+// M30-003 / F2: the `organization:subscription_updated` channel is
+// instance-wide. Unfiltered, a subscriber saw the `organizationId` of every
+// organization whose subscription changed — including ones it is not a
+// member of. This test is red without the filter.
+test('subscribeToOrganizationSubscriptionUpdates subscribes on organization:subscription_updated and filters by organizationId', async () => {
   const onUpdate = mock((_message: unknown) => undefined);
-  await subject.subscribeToOrganizationSubscriptionUpdates(onUpdate);
+  await subject.subscribeToOrganizationSubscriptionUpdates('org_1', onUpdate);
 
   const [channel, type, callback] = subscribeToPublishedEvent.mock.calls[0]!;
   expect(channel).toBe('organization');
   expect(type).toBe('subscription_updated');
 
+  (callback as (event: unknown) => void)({ organizationId: 'org_other' });
+  expect(onUpdate).not.toHaveBeenCalled();
+
   (callback as (event: unknown) => void)({ organizationId: 'org_1' });
+  expect(onUpdate).toHaveBeenCalledTimes(1);
   expect(onUpdate).toHaveBeenCalledWith({ organizationId: 'org_1' });
 });
 
