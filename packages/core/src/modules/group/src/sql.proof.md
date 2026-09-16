@@ -114,6 +114,26 @@ SELECT g AS group_id, uniqExact(profile_id) AS member_count, max(created_at) AS 
 
 Result (first rows, identical on both sides): `[{"group_id":"271","member_count":76,"last_active_at":"2026-08-25 02:16:23.865"}]`
 
+#### M36-003 — `hasAny(groups, …)` base-row prefilter
+
+The shipped statement tested only the `ARRAY JOIN` alias `g`, which cannot move to PREWHERE, so every identified event of the project had `created_at` and `groups` read before a row was rejected. The builder now also emits `AND hasAny(groups, {p2:Array(String)})` ahead of `g IN {p3:Array(String)}` (the ids bound twice). A row whose `groups` shares nothing with the ids cannot yield a `g` in them, so the result set is the same by construction. It is also measured: on 2026-09-16 at 14:26 UTC both statements ran through `curl` on `:8123` with `use_query_condition_cache=0`, against the prod copy (read-only). Each ran 3× with `FORMAT Null`. The results were compared as sorted `FORMAT TSVRaw` sha256, and also as `cityHash64(arraySort(groupArray(tuple(*))))`. The ids are each project's 50 newest groups. The five busy anchors have no groups, so they were given `stub-web`'s ids: that measures the scan floor any busy project with groups pays.
+
+| project | before | after | rows_read before/after | result rows before/after | result |
+|---|---|---|---|---|---|
+| `stub-web` | 29–42 ms, 77.5 MiB | 39–49 ms, 14.3 MiB | 786,321 / 786,321 | 6 / 6 | IDENTICAL |
+| `secure-privacy` | 40–48 ms, 50.3 MiB | 16–19 ms, 8.1 MiB | 556,965 / 556,965 | 8 / 8 | IDENTICAL |
+| `redcollege` | 20–25 ms, 16.5 MiB | 35–41 ms, 10.5 MiB | 216,593 / 216,593 | 48 / 48 | IDENTICAL |
+| `strackr` | 20–29 ms, 22.2 MiB | 20–22 ms, 7.9 MiB | 262,122 / 262,122 | 40 / 40 | IDENTICAL |
+| `companysize` | 8–9 ms, 7.6 MiB | 5–6 ms, 0.8 MiB | 97,980 / 97,980 | 0 / 0 | IDENTICAL |
+| `web-app-7030` | 11–17 ms, 11.6 MiB | 13–15 ms, 9.0 MiB | 122,343 / 122,343 | 45 / 45 | IDENTICAL |
+| `verdict` (floor) | **1,274–1,277 ms, 3,164.5 MiB** | **177–180 ms, 337.0 MiB** | 44,164,383 / same | 0 / 0 | IDENTICAL |
+| `bayse` (floor) | **1,004–1,009 ms, 3,155.0 MiB** | **153–157 ms, 291.8 MiB** | 38,246,986 / same | 0 / 0 | IDENTICAL |
+| `earlysalary-production` (floor) | 844–874 ms, 2,925.7 MiB | 111–114 ms, 204.4 MiB | 26,787,643 / same | 0 / 0 | IDENTICAL |
+| `website-8103` (floor) | 64–65 ms, 50.8 MiB | **95–98 ms, 176.4 MiB** | 23,126,247 / same | 0 / 0 | IDENTICAL |
+| `chatpaper` (floor) | 580–591 ms, 1,323.1 MiB | 84–85 ms, 151.0 MiB | 19,797,588 / same | 0 / 0 | IDENTICAL |
+
+`EXPLAIN actions=1` shows that `profile_id != device_id` was already a PREWHERE before the change; only the alias test was not. `website-8103` has no identified events, so that PREWHERE already rejected every row after reading `profile_id` and `device_id`. The added `hasAny` now also reads the `groups` offsets (8 bytes per row), which makes it the one project here that got slower. The statement has no `ORDER BY` and the service folds it into a `Map`, so row order is not part of the output. `hasAny` takes a bound array literal, not a subquery, so the `IN` vs `GLOBAL IN` distributed-table trap does not apply. **Not measured:** a busy project where many rows match, because no busy project on this copy has groups.
+
 ### groupsByIdsQuery
 
 **statement** — IDENTICAL; rows V1/V2 = 2/2; rows_read V1/V2 = 3359/3359; wall V1/V2 = 5.2 ms / 4.9 ms; clickhouse_settings same.

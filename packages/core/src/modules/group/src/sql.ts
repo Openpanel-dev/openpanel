@@ -106,11 +106,16 @@ export function groupPropertyKeysQuery(projectId: string): SqlFragment {
   `;
 }
 
-/** Identified members only: anonymous events carry `profile_id = device_id`. */
+/**
+ * Identified members only: anonymous events carry `profile_id = device_id`.
+ * `hasAny` repeats the `g IN` test on the base row so it can run as a
+ * PREWHERE; the alias test alone reads every event of the project.
+ */
 export function groupStatsQuery(query: {
   projectId: string;
   groupIds: readonly string[];
 }): SqlFragment {
+  const groupIds = sql.array('String', query.groupIds);
   return sql`
     SELECT
       g AS group_id,
@@ -119,7 +124,8 @@ export function groupStatsQuery(query: {
     FROM ${sql.id(TABLE.events)}
     ARRAY JOIN groups AS g
     WHERE project_id = ${sql.string(query.projectId)}
-      AND g IN ${sql.array('String', query.groupIds)}
+      AND hasAny(groups, ${groupIds})
+      AND g IN ${groupIds}
       AND profile_id != device_id
     GROUP BY g
   `;

@@ -130,9 +130,20 @@ describe('single-group lookups', () => {
 
     expect(text).toContain('ARRAY JOIN groups AS g');
     expect(text).toContain(
-      'AND g IN {p2:Array(String)} AND profile_id != device_id GROUP BY g'
+      'AND g IN {p3:Array(String)} AND profile_id != device_id GROUP BY g'
     );
-    expect(query_params).toEqual({ p1: PROJECT_ID, p2: ['a'] });
+    expect(query_params).toEqual({ p1: PROJECT_ID, p2: ['a'], p3: ['a'] });
+  });
+
+  test('groupStatsQuery prefilters base rows before the ARRAY JOIN alias', () => {
+    const { query } = groupStatsQuery({
+      projectId: PROJECT_ID,
+      groupIds: ['a'],
+    }).toStatement();
+
+    expect(collapse(query)).toContain(
+      'AND hasAny(groups, {p2:Array(String)}) AND g IN {p3:Array(String)}'
+    );
   });
 });
 
