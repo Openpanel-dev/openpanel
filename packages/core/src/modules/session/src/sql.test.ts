@@ -35,11 +35,12 @@ describe('sessionListQuery', () => {
     const text = collapse(query);
 
     expect(text).toContain(
-      "toBool(src.session_id != '') as hasReplay FROM sessions FINAL LEFT JOIN"
+      "toBool(src.session_id != '') as hasReplay FROM sessions LEFT JOIN"
     );
+    expect(text).not.toContain('FINAL');
     expect(text).toContain('started_at > now() - INTERVAL {p2:Float64} DAY');
-    expect(text).toMatch(
-      /AND created_at >= toDateTime64\(\{p4:String\}, 3\) - INTERVAL \{p5:Float64\} DAY ORDER BY created_at DESC LIMIT \{p6:UInt64\}/
+    expect(text).toContain(
+      'WHERE project_id = {p3:String} AND created_at >= toDateTime64({p4:String}, 3) - INTERVAL {p5:Float64} DAY AND sign = 1 AND (id, version) GLOBAL NOT IN ( SELECT id, version FROM sessions WHERE project_id = {p6:String} AND created_at >= toDateTime64({p7:String}, 3) - INTERVAL {p8:Float64} DAY AND sign = -1 ) ORDER BY created_at DESC LIMIT {p9:UInt64}'
     );
     expect(text).not.toContain('created_at <');
     expect(text).not.toContain('profile_id =');
@@ -49,12 +50,15 @@ describe('sessionListQuery', () => {
       p2: 0.5,
       p3: PROJECT_ID,
       p5: 0.5,
-      p6: 50,
+      p6: PROJECT_ID,
+      p8: 0.5,
+      p9: 50,
     });
+    expect(query_params.p7).toBe(query_params.p4);
     expect(query_params.p4).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
   });
 
-  test('cursor page: lookback anchored at the cursor plus the `created_at <` boundary', () => {
+  test('cursor page: lookback anchored at the cursor plus the `created_at <` boundary, in both the page and the −1 subquery', () => {
     const cursor = new Date('2026-07-10T12:34:56.789Z');
     const { query, query_params } = sessionListQuery({
       projectId: PROJECT_ID,
@@ -65,13 +69,17 @@ describe('sessionListQuery', () => {
     const text = collapse(query);
 
     expect(text).toContain(
-      'AND created_at >= toDateTime64({p4:String}, 3) - INTERVAL {p5:Float64} DAY AND created_at < {p6:String}'
+      'AND created_at >= toDateTime64({p4:String}, 3) - INTERVAL {p5:Float64} DAY AND created_at < {p6:String} AND sign = 1'
     );
-    expect(query_params.p4).toBe('2026-07-10 12:34:56');
-    expect(query_params.p6).toBe('2026-07-10 12:34:56');
+    expect(text).toContain(
+      'WHERE project_id = {p7:String} AND created_at >= toDateTime64({p8:String}, 3) - INTERVAL {p9:Float64} DAY AND created_at < {p10:String} AND sign = -1 )'
+    );
+    for (const key of ['p4', 'p6', 'p8', 'p10']) {
+      expect(query_params[key]).toBe('2026-07-10 12:34:56');
+    }
   });
 
-  test('explicit date range: no lookback window, calendar-day BETWEEN, search and filters spliced', () => {
+  test('explicit date range: no lookback window, calendar-day BETWEEN in both, search and filters only on the page', () => {
     const { query, query_params } = sessionListQuery({
       projectId: PROJECT_ID,
       take: 10,
@@ -89,15 +97,17 @@ describe('sessionListQuery', () => {
 
     expect(text).not.toContain('toDateTime64');
     expect(text).toContain(
-      "AND toDate(created_at) BETWEEN toDate({p4:String}) AND toDate({p5:String}) AND profile_id = {p6:String} AND (entry_path ILIKE {p7:String} OR exit_path ILIKE {p8:String} OR referrer ILIKE {p9:String} OR referrer_name ILIKE {p10:String}) AND country = 'SE' AND device = 'mobile' ORDER BY"
+      "AND toDate(created_at) BETWEEN toDate({p4:String}) AND toDate({p5:String}) AND sign = 1 AND (id, version) GLOBAL NOT IN ( SELECT id, version FROM sessions WHERE project_id = {p6:String} AND toDate(created_at) BETWEEN toDate({p7:String}) AND toDate({p8:String}) AND sign = -1 ) AND profile_id = {p9:String} AND (entry_path ILIKE {p10:String} OR exit_path ILIKE {p11:String} OR referrer ILIKE {p12:String} OR referrer_name ILIKE {p13:String}) AND country = 'SE' AND device = 'mobile' ORDER BY"
     );
     expect(query_params).toMatchObject({
       p4: '2026-07-01 00:00:00',
       p5: '2026-07-31 23:59:59',
-      p6: 'user-1',
-      p7: '%checkout%',
+      p7: '2026-07-01 00:00:00',
+      p8: '2026-07-31 23:59:59',
+      p9: 'user-1',
       p10: '%checkout%',
-      p11: 10,
+      p13: '%checkout%',
+      p14: 10,
     });
   });
 

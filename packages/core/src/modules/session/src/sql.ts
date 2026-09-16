@@ -107,44 +107,20 @@ export function hasSessionListLookback(query: {
   );
 }
 
-// `ORDER BY created_at DESC` stays as it is. `sessions` has the same
-// `(project_id, toDate(created_at), created_at)` key shape as `events`, but `FINAL`
-// blocks the read-in-order optimisation, so naming `toDate(created_at)` first buys
-// nothing: measured 2026-09-15 on the prod copy, 30-day list, both spellings read the
-// identical row count on all five anchor projects (chatpaper 4,209,818) and are within
-// noise over 3 warm runs. See docs/ANALYTICS_PERFORMANCE.md §6.4 and M27-002.
-export function sessionListQuery(query: SessionListQuery): SqlFragment {
-  const {
-    projectId,
-    take,
-    cursor,
-    lookbackDays,
-    startDate,
-    endDate,
-    profileId,
-    search,
-    filterClauses = {},
-  } = query;
+// The rows of `sessions` this list page may show: project, lookback window,
+// cursor boundary and calendar-day range. The −1 subquery repeats these so it
+// only holds the window's unmerged backlog; a −1 is a copy of its +1, so it
+// shares that row's `created_at` and falls in the same window.
+function sessionListWindow(query: SessionListQuery): SqlFragment {
+  const { projectId, cursor, lookbackDays, startDate, endDate } = query;
   const hasDateRange = Boolean(startDate && endDate);
   const lookbackAnchor = sql.string(formatClickhouseDate(cursor ?? new Date()));
-  const lookback = sql.float64(lookbackDays);
 
-  return sql`
-    SELECT ${sql.join(
-      SESSION_LIST_COLUMNS.map((column) => sql.id(column, SESSION_LIST_COLUMNS))
-    )}, toBool(src.session_id != '') as hasReplay
-    FROM ${sql.id(TABLE.sessions)} FINAL
-    LEFT JOIN (
-      SELECT DISTINCT session_id
-      FROM ${sql.id(TABLE.sessionReplayChunks)}
-      WHERE project_id = ${sql.string(projectId)}
-        AND started_at > now() - INTERVAL ${lookback} DAY
-    ) AS src ON src.session_id = id
-    WHERE project_id = ${sql.string(projectId)}
+  return sql`project_id = ${sql.string(projectId)}
       ${optional(
         hasSessionListLookback(query),
         () =>
-          sql`AND created_at >= toDateTime64(${lookbackAnchor}, 3) - INTERVAL ${lookback} DAY`
+          sql`AND created_at >= toDateTime64(${lookbackAnchor}, 3) - INTERVAL ${sql.float64(lookbackDays)} DAY`
       )}
       ${optional(
         cursor instanceof Date,
@@ -153,7 +129,38 @@ export function sessionListQuery(query: SessionListQuery): SqlFragment {
       )}
       ${optional(hasDateRange, () =>
         calendarDayRange(startDate as Date, endDate as Date)
-      )}
+      )}`;
+}
+
+// No `FINAL`: it read every column of the whole window and blocked read-in-order
+// (chatpaper 1.1 s → 0.15 s, M38-002 / M39-004, see sql.proof.md). A +1 whose
+// `(id, version)` has a −1 is a pending collapse, which `FINAL` would have
+// removed. Plain `sign = 1` alone returns those stale rows, and `LIMIT 1 BY id`
+// drops the orphan +1 duplicates `FINAL` keeps. `GLOBAL` builds the −1 set once
+// on the initiator instead of once per shard (docs/ENVIRONMENT.md).
+export function sessionListQuery(query: SessionListQuery): SqlFragment {
+  const { projectId, take, lookbackDays, profileId, search } = query;
+  const { filterClauses = {} } = query;
+
+  return sql`
+    SELECT ${sql.join(
+      SESSION_LIST_COLUMNS.map((column) => sql.id(column, SESSION_LIST_COLUMNS))
+    )}, toBool(src.session_id != '') as hasReplay
+    FROM ${sql.id(TABLE.sessions)}
+    LEFT JOIN (
+      SELECT DISTINCT session_id
+      FROM ${sql.id(TABLE.sessionReplayChunks)}
+      WHERE project_id = ${sql.string(projectId)}
+        AND started_at > now() - INTERVAL ${sql.float64(lookbackDays)} DAY
+    ) AS src ON src.session_id = id
+    WHERE ${sessionListWindow(query)}
+      AND sign = 1
+      AND (id, version) GLOBAL NOT IN (
+        SELECT id, version
+        FROM ${sql.id(TABLE.sessions)}
+        WHERE ${sessionListWindow(query)}
+          AND sign = -1
+      )
       ${optional(profileId, () => sql`AND profile_id = ${sql.string(profileId as string)}`)}
       ${optional(search, () => searchCondition(search as string))}
       ${spliceCompiledFilters(filterClauses)}
