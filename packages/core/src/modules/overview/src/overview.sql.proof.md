@@ -107,6 +107,47 @@
   `verdict` `topGenericQuery` 47–51 → 18 ms, `topEntryExitQuery` 61–86 → 26–30 ms, series
   52–56 → 24 ms.
 
+- **Amended by M39-003 (2026-09-16): the `metricsWithPageFilterQuery` bounce rate drops `FINAL` and
+  is now sign-weighted.** `countIf(is_bounce = 1 AND sign = 1) * 100. / countIf(sign = 1) FROM sessions
+  FINAL WHERE sign = 1` became `sumIf(sign, is_bounce = 1) * 100. / sum(sign) FROM sessions` with no
+  `sign` filter, plus `HAVING sum(sign) > 0` after `WITH ROLLUP`. The old form is not linear in
+  `sign`, so dropping `FINAL` alone counts the stale `+1` of every uncollapsed pair. That is the
+  "naive drop" control below.
+  **The two checks M38-002 left open.** Both were run on a scratch `openpanel_m39003` database
+  (`sessions`/`events` created `AS openpanel.*`, merges stopped, seeded in separate parts), with a
+  bucket and a whole window whose sessions all cancel:
+  1. *Division by zero.* A bucket with `sum(sign) = 0` evaluates to `0 * 100. / 0` = **`nan`**, not an
+     error. Without `HAVING`, a net-zero day came out as a `bounce_rate = nan` row. A net-zero window
+     came out as `overall_bounce_rate = nan` on every row, and `getMetricsWithPageFilter`'s
+     `?? 0` would have passed that `nan` through. `FINAL` had produced no such rows.
+  2. *`WITH ROLLUP` on net zero.* ClickHouse emits no rollup row for an empty input, but it does
+     emit one (`nan`) for rows that sum to zero. `HAVING sum(sign) > 0` is applied to the rollup row
+     as well (verified), so both cases return to `FINAL`'s shape: the bucket is absent, and with no
+     rollup row `overall_bounce_rate` is `NULL`, which is the "no data" signal
+     `metrics-page-filter.test.ts` pins. `sum(sign)` equals `FINAL`'s surviving `+1` count whenever
+     every `-1` has its `+1`, which is the `session-buffer.ts` invariant.
+  **Proof**, run 2026-09-16 21:57–22:05 UTC, read-only on `openpanel`, `wait_end_of_query=1`,
+  `use_query_cache=0`, `use_query_condition_cache=0`, `session_timezone=UTC`. The statements were
+  rendered by the real builder, and the old form is the same text with the previous `sessionAgg`
+  put back. `count(), sum(sipHash64(formatRow('TSV', *)))` was compared for the whole statement
+  **and** for `session_stats` alone (the join hides session-only buckets): **158 of 158 hashes
+  identical over 79 cases.** Cases: `chatpaper`, `verdict`, `bayse`, `earlysalary-production` and
+  `website-8103`, each at 30 d/day, with no filter and with `path=/`; 7 d/hour; 8 w/week with
+  `country=US`; 2 mo/month; 1 d/minute. `e2e-sessions` (the box's 21 unmerged `-1` rows) at
+  day/week/hour, a 1 h minute window, the 1 s window holding the `-1` rows, and `country=SE`. The
+  scratch net-zero-day project (pending pairs, a pair whose replacement moved day and path, a
+  cancelled-only day) and net-zero-window project, at day/hour/week/month × no filter /
+  matching / non-matching / other path, plus minute and single-day windows.
+  **Control:** the naive drop (`FINAL` removed, `countIf`/`WHERE sign = 1` kept) **differed** on 5 of
+  6 unmerged cases (e2e-sessions day and both minute windows; the scratch project day, with 3 → 4
+  rows, and minute, with 5 → 7 rows). The probe therefore does detect the wrong answer.
+  **Cost**, warm, 3 runs each, 2026-09-16 22:05–22:06 UTC, load 1.4–2.4, 30 d/day, shipped → new.
+  `session_agg` alone: `chatpaper` 139–159 → 45–49 ms (3,571,254 → 3,448,379 rows, 103 → 73 MiB);
+  `chatpaper` with `path=/` 203–228 → 87–89 ms; `verdict` 40–44 → 14–19; `bayse` 28–33 → 11–12;
+  `earlysalary-production` 33–34 → 14–15. Whole statement: `chatpaper` 2,737–2,829 → 2,616–2,623 ms,
+  `path=/` 734–741 → 611–623; `verdict` 63–66 → 40–43; `bayse` 416–421 → 397–404;
+  `earlysalary-production` 507–513 → 493–509. The `events` side dominates the whole statement.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static).
   Project: `skills-directory` (293,597 events, 75,727 sessions, 2026-07-01..2026-08-25).
   Window used throughout: `2026-08-01 00:00:00`..`2026-08-08 00:00:00`, UTC.

@@ -243,17 +243,20 @@ export function metricsWithPageFilterQuery(
     WITH ROLLUP
   `;
 
+  // Sign-weighted instead of `FINAL`: an uncollapsed (+1, V)/(-1, V) pair nets
+  // to 0. `HAVING` drops buckets (and the rollup row) whose sessions all
+  // cancelled — `FINAL` never produced those rows, and they would read `nan`.
   const sessionAgg = sql`
     SELECT
       ${dateBucket} AS date,
-      round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate
-    FROM sessions FINAL
-    WHERE sign = 1
-      AND project_id = ${sql.string(input.projectId)}
+      round((sumIf(sign, is_bounce = 1) * 100.) / sum(sign), 2) AS bounce_rate
+    FROM sessions
+    WHERE project_id = ${sql.string(input.projectId)}
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
       ${rawWhere(input.rawSessionFilterWhere)}
     GROUP BY date
     WITH ROLLUP
+    HAVING sum(sign) > 0
     ORDER BY date ASC
   `;
 
