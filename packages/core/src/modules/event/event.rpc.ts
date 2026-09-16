@@ -38,6 +38,16 @@ import {
 
 const DEFAULT_BOTS_LIMIT = 8;
 
+/**
+ * `pagesTimeseries` returns every page in the project, so its size is the
+ * project's page cardinality, not its traffic: unbounded it is 5,050,763 rows
+ * / 486 MiB on the busiest anchor (M31-002). 50 is enough to carry any chart
+ * legend or table page the result could feed, and caps the response at
+ * `50 x buckets`. The origin+path-filtered `pageTimeseries` below is bounded
+ * by its own filters and stays unbounded here.
+ */
+const PAGES_TIMESERIES_TOP_PAGES_PER_BUCKET = 50;
+
 const zEventRef = z.object({
   id: z.string(),
   projectId: z.string(),
@@ -224,6 +234,7 @@ export const eventRouter = createTRPCRouter({
         endDate,
         timezone,
         interval: input.interval,
+        topPagesPerBucket: PAGES_TIMESERIES_TOP_PAGES_PER_BUCKET,
       });
     }),
 

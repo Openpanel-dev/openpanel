@@ -60,3 +60,58 @@ GROUP BY vbc.path, vbc.origin ORDER BY unique_converters DESC LIMIT {p12:UInt64}
 ```
 
 Full renders exercised by `pages.sql.test.ts`'s `EXPLAIN`-based parse gate.
+
+## M31-002 — `topPagesPerBucket`, the optional bound on `pageTimeseriesQuery`
+
+- **Date**: 2026-09-16. **Data**: local prod-copy `openpanel` (read-only `SELECT`/`EXPLAIN`).
+  Window `2026-07-26 00:00:00`..`2026-08-25 00:00:00` UTC, `interval: 'day'`,
+  `use_query_condition_cache=0`, `max_memory_usage=6 GB`, statements rendered by the builder
+  itself (`toStatement()`) and executed with their bound `param_pN`.
+
+Unbounded, the query is one row per `(origin, path, bucket)`, so its size is the project's page
+cardinality rather than its traffic. `topPagesPerBucket` keeps the `n` busiest pages per bucket.
+
+**Result sets — bounded vs unbounded, `sum(cityHash64(...))` over the whole set:**
+
+| project | unbounded rows | `n = 50` rows | verdict |
+|---|---:|---:|---|
+| `chatpaper` | 5,050,763 | 1,500 | truncated (2.68 M distinct pages) |
+| `website-8103` | 200,687 | 1,500 | truncated |
+| `bayse` | 14,604 | 1,500 | truncated |
+| `earlysalary-production` | 33 | 33 | **IDENTICAL hash** — 2 pages, always under the bound |
+| `verdict` | 30 | 30 | **IDENTICAL hash** — no `screen_view`; all 30 are `WITH FILL` rows |
+
+`verdict` is the proof that the bound does not eat the fill: `EXPLAIN PLAN` shows
+`Filling > LimitBy`, i.e. ClickHouse fills **after** `LIMIT BY`, so an empty bucket still gets
+its filled row and never spends the bucket's quota.
+
+The truncated set is exactly the top `n`: an independent `row_number() OVER (PARTITION BY date
+ORDER BY pageviews DESC, origin ASC, path ASC) <= 50` produced the identical hash on all three
+truncated projects (`bayse` 13709211731794099286, `website-8103` 6888520080080211176,
+`chatpaper` 566149299824503912).
+
+**Why `origin ASC, path ASC` is part of the ranking, not decoration.** On `chatpaper` the 50th
+place is 4–5 pageviews with **17–30 pages tied at that value** in every bucket. Without the
+tiebreak the endpoint returned a different top-50 on every single call (3 runs, 3 different
+hashes); with it, 3 runs, 1 hash. It costs nothing on four of five anchors and ~0.9–1.1 s on
+`chatpaper`, whose 2.68 M-row sort is the only one large enough to notice.
+
+**Timing and response size** (median of 3, `FORMAT Null`):
+
+| project | unbounded | `n = 50` | response unbounded -> bounded |
+|---|---|---|---|
+| `chatpaper` | 1,603 ms / 1,556 MiB peak | 2,539 ms / 1,556 MiB peak | **485.7 MiB -> 0.67 MiB** |
+| `website-8103` | 512 ms | 545 ms | 23.5 MiB -> 0.29 MiB |
+| `bayse` | 336 ms | 344 ms | 2.06 MiB -> 0.20 MiB |
+| `earlysalary-production` | 378 ms | 385 ms | unchanged |
+| `verdict` | 39 ms | 34 ms | unchanged |
+
+ClickHouse server time is **not** the win here and was not expected to be: the scan is
+unchanged (13,401,914 rows read either way on `chatpaper`) and the added sort columns cost
+~1 s there. What disappears is the response — and with it the ~5 s of serialisation M25-001
+measured between this query's ClickHouse time and `event.pagesTimeseries`' procedure time.
+
+Omitting `topPagesPerBucket` renders the query exactly as before: token-identical and
+parameter-identical to the version at `4b7afb8e`, differing only by trailing whitespace where
+the two conditional fragments render empty. `event.pageTimeseries` (the `origin`+`path`-filtered
+variant) never passes it and is unchanged.

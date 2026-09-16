@@ -64,6 +64,14 @@ export function getTopPages(
   );
 }
 
+export interface IGetPageTimeseriesInput extends IGetPagesInput {
+  interval: IInterval;
+  filterOrigin?: string;
+  filterPath?: string;
+  /** Unbounded when omitted; see `PageTimeseriesQueryInput`. */
+  topPagesPerBucket?: number;
+}
+
 export function getPageTimeseries(
   deps: ServiceDeps,
   {
@@ -74,11 +82,8 @@ export function getPageTimeseries(
     interval,
     filterOrigin,
     filterPath,
-  }: IGetPagesInput & {
-    interval: IInterval;
-    filterOrigin?: string;
-    filterPath?: string;
-  }
+    topPagesPerBucket,
+  }: IGetPageTimeseriesInput
 ): Promise<IPageTimeseriesRow[]> {
   return runQuery<IPageTimeseriesRow>(
     deps,
@@ -89,6 +94,7 @@ export function getPageTimeseries(
       interval,
       filterOrigin,
       filterPath,
+      topPagesPerBucket,
     }),
     timezone
   );
@@ -227,11 +233,7 @@ export function createPagesService(
     getTopPages: (input: IGetPagesInput): Promise<ITopPage[]> =>
       getTopPages(deps, input),
     getPageTimeseries: (
-      input: IGetPagesInput & {
-        interval: IInterval;
-        filterOrigin?: string;
-        filterPath?: string;
-      }
+      input: IGetPageTimeseriesInput
     ): Promise<IPageTimeseriesRow[]> => getPageTimeseries(deps, input),
     getTopPagesCore: (
       input: Parameters<typeof getTopPagesCore>[1]

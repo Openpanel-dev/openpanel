@@ -61,6 +61,21 @@ describe('pages.sql — parses against ClickHouse', () => {
     );
   });
 
+  it('pageTimeseriesQuery — topPagesPerBucket (WITH FILL then LIMIT n BY)', async () => {
+    // `WITH FILL` binds to the ORDER BY expression it follows, so a `DESC`
+    // ranking column appended after it is rejected outright — this case pins
+    // the working spelling.
+    await explain(
+      PG.pageTimeseriesQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        interval: 'day',
+        topPagesPerBucket: 50,
+      })
+    );
+  });
+
   it('pageConversionsQuery', async () => {
     await explain(
       PG.pageConversionsQuery({

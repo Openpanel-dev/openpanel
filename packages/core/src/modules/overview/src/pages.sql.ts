@@ -108,6 +108,15 @@ export interface PageTimeseriesQueryInput {
   interval: IInterval;
   filterOrigin?: string;
   filterPath?: string;
+  /**
+   * Keep only the `n` busiest pages in each date bucket. Omitted means
+   * unbounded, which is one row per (origin, path, bucket) and on a project
+   * with per-user URL segments is millions of rows — see pages.sql.proof.md.
+   * `origin`/`path` break the ranking's ties so the truncated set is stable
+   * between calls; without them ClickHouse returns a different top-n on every
+   * run (measured, M31-002).
+   */
+  topPagesPerBucket?: number;
 }
 
 export function pageTimeseriesQuery(
@@ -119,6 +128,19 @@ export function pageTimeseriesQuery(
   const pathFilter = input.filterPath
     ? sql`AND e.path = ${sql.string(input.filterPath)}`
     : sql.empty;
+
+  // `WITH FILL` attaches to the ORDER BY expression it follows, so the
+  // ranking columns go after it, not before. ClickHouse fills AFTER
+  // `LIMIT BY` (EXPLAIN PLAN: Filling > LimitBy), so empty buckets are still
+  // filled and never spend the bucket's quota.
+  const bucketRanking =
+    input.topPagesPerBucket === undefined
+      ? sql.empty
+      : sql`, pageviews DESC, origin ASC, path ASC`;
+  const bucketLimit =
+    input.topPagesPerBucket === undefined
+      ? sql.empty
+      : sql`LIMIT ${sql.uint64(input.topPagesPerBucket)} BY date`;
 
   return sql`
     SELECT
@@ -136,7 +158,8 @@ export function pageTimeseriesQuery(
       ${pathFilter}
     GROUP BY e.origin, e.path, date
     ORDER BY date ASC
-    ${fillClause(input.interval, input.startDate, input.endDate)}
+    ${fillClause(input.interval, input.startDate, input.endDate)}${bucketRanking}
+    ${bucketLimit}
   `;
 }
 
