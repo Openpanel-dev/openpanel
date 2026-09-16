@@ -16,6 +16,7 @@
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { compiledText } from './compiled';
+import { formatClickhouseDate } from './dates';
 import { CHART_TABLE } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';
 
@@ -45,8 +46,36 @@ const COUNT_CRITERIA: Record<IRetentionCriteria, string> = {
   on: '=',
 };
 
-/** Week-over-week active-user retention, one row per week. */
-export function retentionSeriesQuery(projectId: string): SqlFragment {
+/**
+ * Without both dates the statement reads the project's whole lifetime, as V1
+ * did: the MCP tools pass none and their contracts rely on it (M34-002).
+ */
+export interface RetentionSeriesQueryInput {
+  projectId: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+/** Same spelling as `overview/src/pages.sql.ts` and `profile/src/sql.ts`. */
+function createdAtWithin({
+  startDate,
+  endDate,
+}: RetentionSeriesQueryInput): SqlFragment {
+  if (!(startDate && endDate)) {
+    return sql.empty;
+  }
+  return sql`AND created_at BETWEEN toDateTime(${sql.string(formatClickhouseDate(startDate))}) AND toDateTime(${sql.string(formatClickhouseDate(endDate))})`;
+}
+
+/**
+ * Week-over-week active-user retention, one row per week, within the window
+ * when one is given (Group C fix 8); a week whose following week falls
+ * outside it reports zero retained users.
+ */
+export function retentionSeriesQuery(
+  input: RetentionSeriesQueryInput
+): SqlFragment {
+  const { projectId } = input;
   return sql`
     WITH weekly_active AS (
       SELECT
@@ -55,6 +84,7 @@ export function retentionSeriesQuery(projectId: string): SqlFragment {
       FROM ${sql.id(CHART_TABLE.events)}
       WHERE project_id = ${sql.string(projectId)}
         AND profile_id != device_id
+        ${createdAtWithin(input)}
       GROUP BY profile_id, week
     )
     SELECT
@@ -100,8 +130,14 @@ export function rollingActiveUsersQuery(
     GROUP BY date`;
 }
 
-/** Days-since-last-seen distribution over identified profiles. */
-export function retentionLastSeenSeriesQuery(projectId: string): SqlFragment {
+/**
+ * Days-since-last-seen distribution over identified profiles; with a window, a
+ * profile last seen before it is no longer counted (fix 8).
+ */
+export function retentionLastSeenSeriesQuery(
+  input: RetentionSeriesQueryInput
+): SqlFragment {
+  const { projectId } = input;
   return sql`
     WITH last_active AS (
         SELECT
@@ -109,6 +145,7 @@ export function retentionLastSeenSeriesQuery(projectId: string): SqlFragment {
             profile_id
         FROM ${sql.id(CHART_TABLE.events)}
         WHERE (project_id = ${sql.string(projectId)}) AND (device_id != profile_id)
+          ${createdAtWithin(input)}
         GROUP BY profile_id
     )
     SELECT

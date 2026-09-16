@@ -11,6 +11,7 @@ import { testServiceDeps } from '../../../test/service-deps';
 import type { ServiceDeps } from '../../services';
 import {
   getRetentionCohort,
+  getRetentionLastSeenSeries,
   getRetentionSeries,
   type IRetentionCohortRow,
   processCohortData,
@@ -22,6 +23,9 @@ const PROJECT_ID = 'test-retention-cohort';
 // same `ServiceDeps` main.ts does (pointed at `openpanel_test` by preload.ts).
 let deps: ServiceDeps;
 const { day, week } = RETENTION_FIXTURE;
+/** RU1-RU5 and WU1-WU2, per the dataset table in retention-fixtures.ts. */
+const DAY_SCENARIO_USERS = 5;
+const WEEK_SCENARIO_USERS = 2;
 
 // bun:test's `toEqual` overloads (unlike vitest's) reject a `readonly` actual
 // against a mutable expected type — the blueprint fixture is `as const`. Pure
@@ -238,6 +242,56 @@ describe('getRetentionSeries', () => {
   it('computes week-over-week active-user retention', async () => {
     const rows = await getRetentionSeries(deps, { projectId: PROJECT_ID });
     expect(rows).toEqual(mutable(RETENTION_BLUEPRINT.weeklySeries));
+  });
+
+  it('only reads events inside the requested window', async () => {
+    const rows = await getRetentionSeries(deps, {
+      projectId: PROJECT_ID,
+      startDate: week.start,
+      endDate: week.end,
+    });
+    expect(rows).toEqual(mutable(RETENTION_BLUEPRINT.weeklySeries.slice(1)));
+  });
+
+  it('reads the same series through a window spanning every event', async () => {
+    const rows = await getRetentionSeries(deps, {
+      projectId: PROJECT_ID,
+      startDate: day.start,
+      endDate: week.end,
+    });
+    expect(rows).toEqual(mutable(RETENTION_BLUEPRINT.weeklySeries));
+  });
+});
+
+describe('getRetentionLastSeenSeries', () => {
+  beforeAll(async () => {
+    deps = await testServiceDeps();
+    await setupRetentionFixtures(PROJECT_ID);
+  });
+
+  afterAll(async () => {
+    await teardownRetentionFixtures(PROJECT_ID);
+  });
+
+  async function usersSeen(window: { startDate?: string; endDate?: string }) {
+    const rows = await getRetentionLastSeenSeries(deps, {
+      projectId: PROJECT_ID,
+      ...window,
+    });
+    return rows.reduce((total, row) => total + row.users, 0);
+  }
+
+  it('counts every identified profile when no window is given', async () => {
+    expect(await usersSeen({})).toBe(DAY_SCENARIO_USERS + WEEK_SCENARIO_USERS);
+  });
+
+  it('counts only profiles seen inside the requested window', async () => {
+    expect(await usersSeen({ startDate: day.start, endDate: day.end })).toBe(
+      DAY_SCENARIO_USERS
+    );
+    expect(await usersSeen({ startDate: week.start, endDate: week.end })).toBe(
+      WEEK_SCENARIO_USERS
+    );
   });
 });
 

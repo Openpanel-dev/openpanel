@@ -115,3 +115,89 @@ Omitting `topPagesPerBucket` renders the query exactly as before: token-identica
 parameter-identical to the version at `4b7afb8e`, differing only by trailing whitespace where
 the two conditional fragments render empty. `event.pageTimeseries` (the `origin`+`path`-filtered
 variant) never passes it and is unchanged.
+
+## M34-002 — `page_titles` bounded to the query's own range (Group C fix 8, remainder)
+
+- **Date**: 2026-09-16, 09:02–09:06 UTC. **Data**: local prod-copy `openpanel`, read-only `SELECT`
+  (`events` read 321,191,847 before the run). `use_query_condition_cache=0`,
+  `session_timezone=UTC`, `max_memory_usage=6 GB`. Both statements rendered by the builders
+  themselves — "before" is `pages.sql.ts` at `26a56aa0`, "after" is this change — and bound through
+  `param_pN=`. Timings interleave old/new, median of 3, `FORMAT Null`, from `X-ClickHouse-Summary`.
+- Windows: `1d` = 2026-08-24, `7d` = 2026-08-18 -> 08-24, `30d` = 2026-07-26 -> 08-24 (all
+  `23:59:59`-closed).
+
+The `page_titles` CTE read `created_at >= now() - INTERVAL 30 DAY`, whatever the caller asked for.
+It now reads `created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String})` — the
+spelling the other two CTEs and M31-003 already use. Only the title column can change: the pages
+and their numbers come from `screen_view_durations` and `sessions`, which were already bounded.
+
+**The approved change:** a page whose title shows up **only outside the requested range** now gets
+an empty title. The reverse also happens: a page viewed in the range whose only titles are more than
+30 days before *now* used to have an empty title and now gets one.
+
+### Result sets — before vs after, joined on `(origin, path)`, no `LIMIT`
+
+| project | window | pages (both) | numeric columns differ | title differs |
+|---|---|---:|---:|---:|
+| `verdict` | 1d / 7d / 30d | 0 / 0 / 0 (no `screen_view`) | 0 | 0 |
+| `earlysalary-production` | 1d / 7d / 30d | 1 / 2 / 2 | 0 | 0 |
+| `website-8103` | 1d / 7d / 30d | 3,918 / 13,995 / 104,824 | 0 | 0 |
+| `bayse` | 1d / 7d / 30d | 440 / 2,036 / 7,653 | 0 | 67 / 124 / 4,638 |
+| `chatpaper` | 1d / 7d | 62,198 / 594,845 | 0 | 192 / 12,915 |
+
+(`chatpaper` 30d was not joined: each side is 2.68 M pages.) **The pages and every numeric column
+are identical everywhere.** Only titles differ, and part of that difference is not caused by this
+change: `anyLast` already flickered **before** it (see the M7-005 section above). The old statement
+compared with itself gave 14 differing titles on `bayse` 7d and 888 on `chatpaper` 1d. The new
+statement compared with itself gave 75 on `bayse` 7d.
+
+To measure only the approved effect, I counted **whether any non-empty title exists** for each
+page in each window. That count does not flicker:
+
+| project | window | loses its only title (titled only outside range, inside old window) | gains a title (titled only in range, outside old window) |
+|---|---|---:|---:|
+| `bayse` | 1d / 7d / 30d | 7 / 3 / 1 | 0 / 0 / **4,950** |
+| `chatpaper` | 1d / 7d | 70 / **3,311** | 0 / 0 |
+| `website-8103` | 1d / 7d / 30d | 0 / 0 / 0 | 0 / 0 / 0 |
+
+On this copy, the old window was 2026-08-17 -> "now" (2026-09-16), so it held only the last eight
+days of data. That is why a 30-day report on `bayse` *gained* 4,950 titles: those pages were titled
+only before 08-17.
+
+### Timing (median of 3, `LIMIT 50`)
+
+| project / window | before (`now() - 30 DAY`) | after (range) |
+|---|---|---|
+| `verdict` 1d | 50 ms / 596,328 rows / 7 MiB read | 39 ms / 186,788 / 5 MiB |
+| `verdict` 30d | 159 ms / 2,752,863 / 49 MiB | 164 ms / 3,784,293 / 52 MiB |
+| `bayse` 1d | 452 ms / 6,691,332 / 1,743 MiB | **103 ms / 1,809,700 / 241 MiB** |
+| `bayse` 7d | 563 ms / 10,991,899 / 1,944 MiB | 533 ms / 10,394,455 / 1,765 MiB |
+| `bayse` 30d | 1,047 ms / 23,230,204 / 2,502 MiB | 1,937 ms / 34,436,987 / 6,122 MiB |
+| `earlysalary-production` 1d | 860 ms / 4,549,922 / 9,208 MiB | **232 ms / 1,482,682 / 1,314 MiB** |
+| `earlysalary-production` 7d | 968 ms / 7,146,746 / 9,457 MiB | 930 ms / 6,651,762 / 8,265 MiB |
+| `earlysalary-production` 30d | 1,583 ms / 19,631,267 / 10,618 MiB | 4,120 ms / 31,137,529 / 39,818 MiB |
+| `website-8103` 1d | 986 ms / 3,025,109 / 4,542 MiB | **326 ms / 879,433 / 459 MiB** |
+| `website-8103` 7d | 1,196 ms / 4,822,514 / 4,708 MiB | 1,083 ms / 4,474,243 / 4,069 MiB |
+| `website-8103` 30d | 2,285 ms / 14,965,439 / 5,661 MiB | 5,702 ms / 24,735,702 / 23,842 MiB |
+| `chatpaper` 1d | 452 ms / 3,456,236 / 537 MiB | **143 ms / 950,030 / 67 MiB** |
+| `chatpaper` 7d | 1,168 ms / 6,208,658 / 759 MiB | 1,079 ms / 5,865,077 / 695 MiB |
+| `chatpaper` 30d | 6,706 ms / 19,798,407 / 1,848 MiB | 8,671 ms / 30,300,939 / 3,957 MiB |
+
+(`verdict` 7d: 51 ms either way.) **Short windows get rid of the 30-day floor: 3–4x faster at 1d.**
+The 30d rows get slower, and **this copy exaggerates that**. With the copy's last event on
+2026-08-25, the old CTE read only eight days of data here. In production, "now" is current, so the
+old CTE always read a full 30 days, and a 30d report reads about the same amount either way. The
+real cost is for windows **longer than 30 days**: they now read the `properties` Map over the whole
+range (§6.5 flagged this as the price of fix 8). Removing that Map read altogether is the separate
+`__title` materialisation option in §6.5, and it was not proposed.
+
+### Golden coverage
+
+Only `getPagePerformanceCore` (`/insights/:projectId/pages/performance`) reaches this builder from
+the REST surface. That covers the three `insights-pages-performance-*` cases, all on
+`secure-privacy`, 2026-08-20. I ran each case's statement (`limit: 1000`, with the case's
+`search`) and compared the results. The new statement matches both the old one as of today and the
+old one with `now()` pinned to the capture instant (`2026-09-07 02:43:03`): same pages, numbers and
+titles. It also matches every page in the captured response: 28/28, 28/28 and 6/6 titles equal.
+These cases are `clock-anchored` (`require-same-utc-day`), so the gate reports them as stale. The
+reason given for that rule is this CTE's `now()`, which no longer exists.

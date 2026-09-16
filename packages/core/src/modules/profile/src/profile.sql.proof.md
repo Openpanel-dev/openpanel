@@ -414,3 +414,15 @@ unchanged, on 2026-09-16: `chatpaper` returned **4 distinct** ordered-row hashes
 **5 distinct**. The top-50 *set* was stable across all of them. This is pre-existing (M31-003 changed
 no `ORDER BY`), and it is why the table above compares sets — an ordered-row diff of this builder
 reports a difference that is not a change.
+
+### M34-002 — the rest of fix 8
+
+- **`page_titles` in `event.pages` / `event.previousPages`**: done. It uses the same
+  `created_at BETWEEN toDateTime(..) AND toDateTime(..)` spelling. The proof is in
+  `overview/src/pages.sql.proof.md`, section "M34-002".
+- **The REST retention series** (`/insights/:projectId/retention`, `/engagement`): done, after the
+  task was re-scoped to `chart` and `export`. `retentionSeriesQuery` and
+  `retentionLastSeenSeriesQuery` use the same `created_at BETWEEN toDateTime(..) AND toDateTime(..)`
+  spelling. Both routes now accept `range` / `startDate` / `endDate`, and the default is `3m`, the
+  same as here. The default is applied on the routes only: the MCP tools that call the same
+  service without dates still read all time. The proof is in `chart/src/retention.sql.proof.md`, section "M34-002".

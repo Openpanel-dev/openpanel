@@ -176,3 +176,97 @@ WITH cohort_users AS ( SELECT profile_id AS userID, toDate(min(created_at)) AS c
 WITH cohort_users AS ( SELECT profile_id AS userID, toDate(min(created_at)) AS cohort_interval FROM cohort_events_mv WHERE project_id = {p1:String} AND created_at >= toDateTime({p2:String}) AND created_at <= toDateTime({p3:String}) GROUP BY profile_id ), last_event AS ( SELECT profile_id, toDate(created_at) AS event_date FROM cohort_events_mv WHERE project_id = {p4:String} AND created_at >= toDateTime({p5:String}) AND created_at <= toDateTime({p6:String}) + INTERVAL {p7:UInt64} DAY ), retention_matrix AS ( SELECT f.cohort_interval, l.profile_id, dateDiff({p8:String}, f.cohort_interval, toDate(l.event_date)) AS x_after_cohort FROM cohort_users AS f INNER JOIN last_event AS l ON f.userID = l.profile_id WHERE l.event_date >= f.cohort_interval AND dateDiff({p9:String}, f.cohort_interval, toDate(l.event_date)) <= {p10:UInt64} ), interval_users AS ( SELECT cohort_interval, groupUniqArrayIf(profile_id, x_after_cohort >= {p11:UInt64}) AS interval_0_users, groupUniqArrayIf(profile_id, x_after_cohort >= {p12:UInt64}) AS interval_1_users, groupUniqArrayIf(profile_id, x_after_cohort >= {p13:UInt64}) AS interval_2_users, groupUniqArrayIf(profile_id, x_after_cohort >= {p14:UInt64}) AS interval_3_users FROM retention_matrix GROUP BY cohort_interval ), cohort_sizes AS ( SELECT cohort_interval, COUNT(DISTINCT userID) AS total_first_event_count FROM cohort_users GROUP BY cohort_interval ) SELECT interval_users.cohort_interval AS cohort_interval, cs.total_first_event_count AS total_first_event_count, length(interval_0_users) AS interval_0_user_count, length(interval_1_users) AS interval_1_user_count, length(interval_2_users) AS interval_2_user_count, length(interval_3_users) AS interval_3_user_count FROM interval_users LEFT JOIN cohort_sizes AS cs ON interval_users.cohort_interval = cs.cohort_interval ORDER BY cohort_interval ASC
 -- V2 params: {"p1":"verdict","p2":"2026-07-06 00:00:00","p3":"2026-07-09 23:59:59","p4":"verdict","p5":"2026-07-06 00:00:00","p6":"2026-07-09 23:59:59","p7":3,"p8":"DAY","p9":"DAY","p10":3,"p11":0,"p12":1,"p13":2,"p14":3}
 ```
+
+## M34-002 — the REST retention series bounded to a window (Group C fix 8, remainder)
+
+- **Date**: 2026-09-16, 09:20–09:30 UTC. **Data**: local prod-copy `openpanel`, read-only
+  (`readonly=2`; `events` read 321,191,857 before the run). `use_query_condition_cache=0`,
+  `max_memory_usage` 12 GiB. **Both statements were rendered by the builders themselves.** "Before" is
+  `retention.sql.ts` at `26a56aa0`, copied next to this file for the run and deleted afterwards.
+  "After" is this change. Parameters were bound through `param_pN=`. Timings are the median of 3
+  `FORMAT Null` runs, taken from `X-ClickHouse-Summary`. Each builder's three runs were back to back,
+  not interleaved. The result hash is the sha256 of one extra `FORMAT JSONEachRow` run. Only counts,
+  timings and hashes were kept; no row left the box.
+- **Windows**: `1d` = 2026-08-25, `7d` = 2026-08-19 -> 08-25, `30d` = 2026-07-27 -> 08-25
+  (`23:59:59`-closed; the copy's last event is 2026-08-25 08:49). `default3m` is what a caller
+  naming no window got on the run day: `2026-06-16 00:00:00` -> `2026-09-17 00:00:00`.
+
+Both `weekly_active` (series) and `last_active` (engagement) read every identified event the project
+ever had. They now also carry `AND created_at BETWEEN toDateTime({pN:String}) AND
+toDateTime({pM:String})`, the same spelling as `pages.sql.ts` and `profile/src/sql.ts`.
+`/insights/:projectId/retention` and `/engagement` now accept `range` / `startDate` / `endDate`,
+resolved by `resolveInsightsDateRange` like the sibling routes, with
+`RETENTION_SERIES_DEFAULT_RANGE = '3m'` when `range` is omitted. That default lives **on the
+routes only**. A service caller that passes no `startDate`/`endDate` still gets the all-time
+statement, token-for-token and parameter-for-parameter the one at `26a56aa0` (checked by rendering
+both builders). Only whitespace differs, because the bound fragment renders empty.
+
+**The approved change:**
+- series: a week before the window disappears, and a week the window cuts in half counts only its
+  in-window users.
+- engagement: a profile whose last event is before the window is no longer counted. With `3m` it
+  stays wider than the 60-day `churned_60_plus` bucket, so that bucket still gets users.
+- **Not changed:** the MCP tools `get_weekly_retention_series` (`mcp/.../active-users.ts`) and
+  `get_user_last_seen_distribution` (`mcp/.../engagement.ts`). They call the service with only
+  `projectId`, so they keep reading all time. Their contracts depend on that: up to
+  `MAX_WEEKLY_POINTS = 260` weeks, and a `churned_60_plus_days` bucket that must count profiles gone
+  for longer than any default window. Bounding them is a decision for the `mcp` module. It is out of
+  this task's scope and is handed forward.
+
+> **Correction (attempt 2).** The first attempt put the `3m` fallback in the shared service
+> functions. That silently capped both MCP tools to ~13 weeks and dropped long-churned profiles from
+> the engagement distribution. Review rejected it. The fallback now lives only in
+> `export.routes.ts`, and `retention.service.test.ts` keeps the no-window call asserting the full
+> all-time series and all seven fixture profiles.
+
+### Result sets and cost — before (all-time) vs after
+
+`R` = result rows. Hash = the first 12 hex digits of the JSON result's sha256.
+
+| project | statement | before (all-time) | after 1d | after 7d | after 30d | after `default3m` |
+|---|---|---|---|---|---|---|
+| `verdict` | series | 3,004 ms / 88.33 M rows / 63 MiB / R 9 / `700f4be4a890` | 36 ms / 0.60 M | 385 ms / 8.69 M | 1,648 ms / 44.59 M | 3,123 ms / 88.33 M / R 9 / **`700f4be4a890`** |
+| `verdict` | lastSeen | 1,238 ms / 44.16 M / R 56 / `6476bf15f406` | 21 ms / 0.30 M | 142 ms / 4.35 M | 673 ms / 22.30 M | 1,288 ms / 44.16 M / R 56 / **`6476bf15f406`** |
+| `bayse` | series | 2,423 ms / 76.49 M / R 9 / `8fdc236bf7e1` | 32 ms / 0.65 M | 334 ms / 9.30 M | 1,216 ms / 33.36 M | 2,601 ms / 76.49 M / **`8fdc236bf7e1`** |
+| `bayse` | lastSeen | 1,039 ms / 38.25 M / R 56 / `0b08b3135340` | 16 ms / 0.33 M | 146 ms / 4.65 M | 522 ms / 16.68 M | 1,123 ms / 38.25 M / **`0b08b3135340`** |
+| `earlysalary-production` | series | 2,159 ms / 53.58 M / 271 MiB / R 9 / `ac3fdda7c4c3` | 48 ms / 0.84 M | 285 ms / 5.96 M | 1,330 ms / 30.10 M | 2,293 ms / 53.58 M / **`ac3fdda7c4c3`** |
+| `earlysalary-production` | lastSeen | 964 ms / 26.79 M / R 56 / `f9ac35c14bc3` | 24 ms / 0.42 M | 153 ms / 2.98 M | 586 ms / 15.05 M | 1,041 ms / 26.79 M / **`f9ac35c14bc3`** |
+| `website-8103` | series | 131 ms / 46.25 M / R 0 | 24 ms / 0.53 M | 40 ms / 3.81 M | 185 ms / 24.24 M | 332 ms / 46.25 M / R 0 |
+| `website-8103` | lastSeen | 63 ms / 23.13 M / R 0 | 11 ms / 0.26 M | 20 ms / 1.91 M | 90 ms / 12.12 M | 163 ms / 23.13 M / R 0 |
+| `chatpaper` | series | 1,160 ms / 39.59 M / R 0 | 34 ms / 0.64 M | 163 ms / 4.64 M | 894 ms / 26.46 M | 1,288 ms / 39.59 M / R 0 |
+| `chatpaper` | lastSeen | 583 ms / 19.80 M / R 0 | 15 ms / 0.32 M | 83 ms / 2.32 M | 447 ms / 13.23 M | 640 ms / 19.80 M / R 0 |
+| `secure-privacy` | series | 75 ms / 1.11 M / R 9 / `87ee95b1e36e` | 30 ms / 0.36 M | 23 ms / 0.36 M | 50 ms / 0.97 M | 81 ms / 1.11 M / **`87ee95b1e36e`** |
+| `secure-privacy` | lastSeen | 37 ms / 0.56 M / R 56 / `cddc379beaa3` | 9 ms / 0.18 M | 11 ms / 0.18 M | 27 ms / 0.48 M | 38 ms / 0.56 M / **`cddc379beaa3`** |
+
+(`website-8103` and `chatpaper` have no identified profiles (`profile_id != device_id`), so both
+statements return 0 rows either way.) The series reads each project's events **twice**, because
+ClickHouse runs the `weekly_active` CTE once per reference. The self-join needs it on both sides.
+
+**What this shows.**
+- **`default3m` is byte-identical to the old all-time statement on all six projects.** On the run
+  day, every identified event in the copy (earliest 2026-07-01) is inside the default window, so the
+  answer is the same and so is the work (same `read_rows`; timings are within run-to-run noise).
+- **Short windows are what gets cheaper:** 1d is 30–80x cheaper, and 7d is 7–8x cheaper.
+- **This copy hides the real cost, and it cuts both ways, as with `page_titles`.** The copy holds
+  only ~8 weeks of data, so "all-time" here is small. In production, the old statement read the
+  tenant's **whole lifetime** on every call. There, a `3m` default is a strict improvement for any
+  tenant older than three months. The cost that is genuinely new is for **explicit windows longer
+  than the tenant's lifetime**, and there is none: a window can never read more rows than all-time
+  did. Unlike `page_titles`, this fix cannot make any statement more expensive than before. The one
+  thing it adds is on the REST routes: a Postgres lookup of the project timezone, the same one the
+  sibling `/insights` routes already do.
+
+### Golden coverage — predicted: zero changes today, with a known date when that stops
+
+The cases are `insights-retention-weekly` (`verdict`), `insights-retention-weekly-secure` and
+`insights-engagement` (`verdict`). All three call the REST routes with **no query**, so they get
+`default3m`. The
+table above shows the identical result for both projects on the run day. The `insights-engagement`
+normaliser works on dates and on summary sums, which are unchanged because the row set is unchanged.
+
+**These cases stop being time-independent.** `insights-retention-weekly*` is marked
+`deterministic`. That was true when the statement read all time. With a `3m` default, the window
+start is `now - 3 months`. It passes the two projects' first identified event (2026-07-01, in UTC)
+on **2026-10-02** (UTC; an organisation timezone other than UTC moves this by hours). From then on, the first week row (`2026-06-28`) shrinks and the cases differ
+for a reason that has nothing to do with code. To stay reproducible, a re-capture would have to pin
+`startDate`/`endDate`. That is M34-003's call; this task may not touch `verification/`.

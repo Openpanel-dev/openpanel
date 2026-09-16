@@ -38,12 +38,16 @@ function searchClause(search: string | undefined): SqlFragment {
 }
 
 export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
+  // M34-002: titles come from the requested range, not V1's `now() - 30 DAY`,
+  // which read a month of the widest Map column for any window and made the
+  // answer depend on the wall clock. A page titled only outside the range now
+  // resolves to '' (approved, Group C fix 8).
   const titlesCte = sql`
     SELECT concat(origin, path) as page_key, anyLast(properties['__title']) as title
     FROM events
     WHERE project_id = ${sql.string(input.projectId)}
       AND name = 'screen_view'
-      AND created_at >= now() - INTERVAL 30 DAY
+      AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
     GROUP BY origin, path
   `;
 

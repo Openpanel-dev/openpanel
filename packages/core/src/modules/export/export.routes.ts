@@ -33,6 +33,7 @@ import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
 import { HttpError } from '../../shared/errors';
+import { RETENTION_SERIES_DEFAULT_RANGE } from '../chart/chart.constants';
 import type { GetEventListOptions } from '../event/event.service';
 import {
   getEventList,
@@ -363,6 +364,19 @@ async function getOverviewGeneric(
   });
 }
 
+/** Both retention series read `RETENTION_SERIES_DEFAULT_RANGE` unless the caller names a window. */
+async function resolveRetentionSeriesWindow(
+  ctx: Ctx,
+  projectId: string,
+  query: z.infer<typeof zDateRange>
+) {
+  const window = await resolveInsightsDateRange(ctx, projectId, {
+    ...query,
+    range: query.range ?? RETENTION_SERIES_DEFAULT_RANGE,
+  });
+  return { projectId, ...window };
+}
+
 const zEntryExitQuery = zDateRange.extend({
   mode: z.enum(['entry', 'exit']).default('entry'),
 });
@@ -574,16 +588,19 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/retention',
-      async ({ params, client, ctx }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(ctx, client, params);
-        return ctx.services.chart.getWeeklyRetentionSeriesCore(projectId);
+        return ctx.services.chart.getWeeklyRetentionSeriesCore(
+          await resolveRetentionSeriesWindow(ctx, projectId, query)
+        );
       },
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
+        query: zDateRange,
         detail: {
           tags: INSIGHTS_TAGS,
-          description: 'Get weekly retention series data.',
+          description: `Get weekly retention series data within the date range (default \`${RETENTION_SERIES_DEFAULT_RANGE}\`).`,
         },
       }
     )
@@ -1133,16 +1150,19 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/engagement',
-      async ({ params, client, ctx }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(ctx, client, params);
-        return ctx.services.chart.getEngagementCore(projectId);
+        return ctx.services.chart.getEngagementCore(
+          await resolveRetentionSeriesWindow(ctx, projectId, query)
+        );
       },
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
+        query: zDateRange,
         detail: {
           tags: INSIGHTS_TAGS,
-          description: 'Get engagement metrics for the project.',
+          description: `Get engagement metrics for profiles seen within the date range (default \`${RETENTION_SERIES_DEFAULT_RANGE}\`).`,
         },
       }
     )

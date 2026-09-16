@@ -14,6 +14,7 @@ import type { IChartEventFilter } from '../report/report.constants';
 import {
   type IRetentionCriteria,
   type IRetentionInterval,
+  type RetentionSeriesQueryInput,
   retentionCohortQuery,
   retentionLastSeenSeriesQuery,
   retentionSeriesQuery,
@@ -44,9 +45,7 @@ const ROLLING_ACTIVE_USER_LABELS: Record<number, string> = {
 const RETENTION_PERCENTAGE_DECIMALS = 2;
 const RETENTION_COUNT_DECIMALS = 0;
 
-interface IGetWeekRetentionInput {
-  projectId: string;
-}
+type IGetWeekRetentionInput = RetentionSeriesQueryInput;
 
 export interface IServiceRetentionRollingActiveUsers {
   date: string;
@@ -88,21 +87,21 @@ export interface IGetRetentionCohortInput {
 // self-joins that much smaller set to its next week.
 export function getRetentionSeries(
   deps: ServiceDeps,
-  { projectId }: IGetWeekRetentionInput
+  input: IGetWeekRetentionInput
 ) {
   return runQuery<{
     date: string;
     active_users: number;
     retained_users: number;
     retention: number;
-  }>(deps, retentionSeriesQuery(projectId));
+  }>(deps, retentionSeriesQuery(input));
 }
 
 // https://medium.com/@andre_bodro/how-to-fast-calculating-mau-in-clickhouse-fd793559b229
 // Rolling active users
 export function getRollingActiveUsers(
   deps: ServiceDeps,
-  { projectId, days }: IGetWeekRetentionInput & { days: number }
+  { projectId, days }: { projectId: string; days: number }
 ) {
   return runQuery<IServiceRetentionRollingActiveUsers>(
     deps,
@@ -112,12 +111,12 @@ export function getRollingActiveUsers(
 
 export function getRetentionLastSeenSeries(
   deps: ServiceDeps,
-  { projectId }: IGetWeekRetentionInput
+  input: IGetWeekRetentionInput
 ) {
   return runQuery<{
     days: number;
     users: number;
-  }>(deps, retentionLastSeenSeriesQuery(projectId));
+  }>(deps, retentionLastSeenSeriesQuery(input));
 }
 
 export async function getRollingActiveUsersCore(
@@ -137,9 +136,9 @@ export async function getRollingActiveUsersCore(
 
 export async function getWeeklyRetentionSeriesCore(
   deps: ServiceDeps,
-  projectId: string
+  input: IGetWeekRetentionInput
 ) {
-  return getRetentionSeries(deps, { projectId });
+  return getRetentionSeries(deps, input);
 }
 
 // Weekly active-user retention cohort over the last 12 weeks, computed by the
@@ -159,8 +158,11 @@ export async function getRetentionCohortCore(
   });
 }
 
-export async function getEngagementCore(deps: ServiceDeps, projectId: string) {
-  const raw = await getRetentionLastSeenSeries(deps, { projectId });
+export async function getEngagementCore(
+  deps: ServiceDeps,
+  input: IGetWeekRetentionInput
+) {
+  const raw = await getRetentionLastSeenSeries(deps, input);
 
   let active_0_7 = 0;
   let active_8_14 = 0;
@@ -421,12 +423,11 @@ export function createRetentionService(
     ): ReturnType<typeof getRollingActiveUsersCore> =>
       getRollingActiveUsersCore(deps, input),
     getWeeklyRetentionSeriesCore: (
-      projectId: string
+      input: IGetWeekRetentionInput
     ): ReturnType<typeof getWeeklyRetentionSeriesCore> =>
-      getWeeklyRetentionSeriesCore(deps, projectId),
+      getWeeklyRetentionSeriesCore(deps, input),
     getEngagementCore: (
-      projectId: string
-    ): ReturnType<typeof getEngagementCore> =>
-      getEngagementCore(deps, projectId),
+      input: IGetWeekRetentionInput
+    ): ReturnType<typeof getEngagementCore> => getEngagementCore(deps, input),
   };
 }

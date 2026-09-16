@@ -6,6 +6,14 @@
 import { z } from 'zod';
 import { zChartEvent } from '../report/report.constants';
 
+/**
+ * Window the REST retention routes (`/insights/:projectId/retention`,
+ * `/engagement`) read when the caller names none; M31-003's default for the
+ * same fix, wider than engagement's 60-day churn bucket. Not applied to
+ * callers of the service that pass no dates: those still read all time.
+ */
+export const RETENTION_SERIES_DEFAULT_RANGE = '3m';
+
 /** User-flow depth: how many events one sankey path may span. */
 export const DEFAULT_SANKEY_STEPS = 5;
 

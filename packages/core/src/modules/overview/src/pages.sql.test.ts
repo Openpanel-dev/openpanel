@@ -3,7 +3,7 @@
  * `overview.sql.test.ts` — see its header comment.
  */
 
-import { beforeAll, describe, it } from 'bun:test';
+import { beforeAll, describe, expect, it } from 'bun:test';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 
 const PROJECT_ID = 'test-sql-validation';
@@ -46,6 +46,25 @@ describe('pages.sql — parses against ClickHouse', () => {
     await explain(
       PG.topPagesQuery({ projectId: PROJECT_ID, startDate: START, endDate: END })
     );
+  });
+
+  it('topPagesQuery — page_titles is bounded to the requested range', () => {
+    const { query, query_params } = PG.topPagesQuery({
+      projectId: PROJECT_ID,
+      startDate: START,
+      endDate: END,
+    }).toStatement();
+    const titlesCte = query.slice(
+      query.indexOf('page_titles AS ('),
+      query.indexOf('screen_view_durations AS (')
+    );
+
+    expect(query).not.toContain('now()');
+    expect(titlesCte).toContain(
+      'created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String})'
+    );
+    expect(query_params.p2).toBe(START);
+    expect(query_params.p3).toBe(END);
   });
 
   it('pageTimeseriesQuery — with origin/path filters, week bucket', async () => {
