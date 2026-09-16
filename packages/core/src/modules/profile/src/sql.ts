@@ -161,10 +161,13 @@ export function profilesByIdsQuery(query: {
   projectId: string;
   ids: readonly string[];
 }): SqlFragment {
+  // FINAL turns off automatic PREWHERE, so without it every column (mostly
+  // `properties`) is read for the whole project range. Safe before the FINAL
+  // merge: both conditions are sort-key columns, shared by every row version.
   return sql`
     SELECT ${PROFILE_COLUMNS_FRAGMENT}
     FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE
+    PREWHERE
       project_id = ${sql.string(query.projectId)} AND
       id IN ${sql.array('String', query.ids)}
   `;

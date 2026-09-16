@@ -35,6 +35,7 @@ const WINDOW = {
   endDate: '2026-09-16 23:59:59',
 };
 const COLUMN_LIST = PROFILE_COLUMNS.join(', ');
+const PLAIN_WHERE = /\sWHERE\s/;
 
 function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -99,15 +100,16 @@ describe('single-profile lookups', () => {
     expect(row.query_params).toEqual({ p1: PROJECT_ID, p2: HOSTILE });
   });
 
-  test('profilesByIdsQuery binds the id list as one Array(String) param', () => {
+  test('profilesByIdsQuery filters by sort key in PREWHERE, binding ids as one Array(String)', () => {
     const { query, query_params } = profilesByIdsQuery({
       projectId: PROJECT_ID,
       ids: ['a', HOSTILE],
     }).toStatement();
 
     expect(collapse(query)).toContain(
-      'WHERE project_id = {p1:String} AND id IN {p2:Array(String)}'
+      'FROM profiles FINAL PREWHERE project_id = {p1:String} AND id IN {p2:Array(String)}'
     );
+    expect(query).not.toMatch(PLAIN_WHERE);
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toEqual({ p1: PROJECT_ID, p2: ['a', HOSTILE] });
   });

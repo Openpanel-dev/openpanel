@@ -426,3 +426,94 @@ reports a difference that is not a change.
   spelling. Both routes now accept `range` / `startDate` / `endDate`, and the default is `3m`, the
   same as here. The default is applied on the routes only: the MCP tools that call the same
   service without dates still read all time. The proof is in `chart/src/retention.sql.proof.md`, section "M34-002".
+
+## M38-001 — explicit PREWHERE on `profilesByIdsQuery` (2026-09-16)
+
+`FINAL` turns off automatic PREWHERE (`optimize_move_to_prewhere_if_final = 0` on this server), so
+the V1 shape read all 11 columns for every row in the project's key range. The statement now reads:
+
+```sql
+SELECT id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups FROM profiles FINAL PREWHERE project_id = {p1:String} AND id IN {p2:Array(String)}
+```
+
+The setting was **not** changed server-wide or in `CLICKHOUSE_SETTINGS`. The PREWHERE is on this one
+statement only. Both conditions use sort-key columns only, and every version of a
+`ReplacingMergeTree` row shares them, so filtering before the `FINAL` merge drops no version that
+the merge would keep. The `IN` takes a bound literal array, not a subquery, so `GLOBAL IN` does not
+apply. On a `Distributed` table, the shards receive the PREWHERE with the rest of the statement, and
+`FINAL` stays per shard, as before.
+
+**Method.** 2026-09-16, 17:40–17:55 UTC, single node, ClickHouse 26.1.3.52, prod copy `openpanel`
+(SELECT only), HTTP with `use_query_cache=0` and the client's settings. The ids were bound as
+`{p2:Array(String)}`, the same as production. **The page cache was warm and not controlled.**
+Every pair was compared three ways: the row count, sha256 of the sorted `FORMAT TSVRaw` output,
+and `cityHash64(arraySort(groupArray(cityHash64(tuple(*)))))` computed on the server. The hashes
+are truncated to 16 hex characters. No rows left the box or were printed.
+
+**Result sets: identical in all 18 prod-copy pairs and all 9 duplicate-version pairs.** Only the
+unordered row order differs. The statement has no `ORDER BY`, and all six `getProfiles` /
+`getProfilesCached` callers index the result by `id` (see "Callers" below).
+
+| project | id set | rows | sorted sha (old = new) | server hash (old = new) |
+|---|---|--:|---|--:|
+| verdict | 200 sampled + 2 missing | 200 | 990ff37720bbd9ee | 2207503090764657581 |
+| verdict | 1,000 sampled | 1000 | 52f97c198baf11aa | 10633293728532801169 |
+| verdict | 2026-08-20 bucket, first 200 | 113 | 89e5dfe568bc840f | 3782160794143776797 |
+| verdict | 2026-08-20 bucket, ≤1,000 | 557 | f923bf2f66e0f529 | 9998950015958726181 |
+| bayse | 200 sampled + 2 missing | 200 | a3c5fa45f03e566f | 5808497201729836461 |
+| bayse | 1,000 sampled | 1000 | 6bccde35694a0d5d | 15599780444145327832 |
+| bayse | 2026-08-20 bucket, first 200 | 67 | 787b5b61b92fab5e | 15475558395705370151 |
+| bayse | 2026-08-20 bucket, ≤1,000 | 476 | ab1ba0dac490c5f6 | 17356756279215469892 |
+| earlysalary-production | 200 sampled + 2 missing | 200 | c672481141af7754 | 10996104250063144912 |
+| earlysalary-production | 1,000 sampled | 1000 | e385c4fe9b40e97b | 4868776334728909166 |
+| earlysalary-production | 2026-08-20 bucket, first 200 | 195 | 7fd9304dd609e859 | 1770102371015330504 |
+| earlysalary-production | 2026-08-20 bucket, ≤1,000 | 974 | f1ad3f126d5466aa | 16534687301997138277 |
+| website-8103 | 200 sampled + 2 missing | 200 | fc35ccc87636163b | 14505134278598945611 |
+| website-8103 | 1,000 sampled | 1000 | 5a906205e04747c6 | 6368711441762070328 |
+| chatpaper | 200 sampled + 2 missing | 200 | caf0a176212258cb | 9471910246293331129 |
+| chatpaper | 1,000 sampled | 1000 | 5c278c8382b2413b | 13601208562850535735 |
+| chatpaper | `screen_view` 2026-08-20 bucket, first 200 | 200 | aa019808e0770ee3 | 17930342762468771172 |
+| chatpaper | `screen_view` 2026-08-20 bucket, 1,000 | 1000 | 01cb23d19b21b6e9 | 12578565101048520051 |
+
+Key to the id sets. "Sampled" means `ORDER BY cityHash64(id) LIMIT n` over the project's profiles.
+"Missing" means one unknown id and one quote-injection string. "Bucket" means
+`DISTINCT profile_id` from `events` on that day. `website-8103` has no non-empty bucket ids.
+
+**Duplicate versions.** The prod copy has no un-merged duplicates (M37-002 §4), so it cannot
+exercise the `FINAL` merge. A scratch database, `openpanel_m38`, held a copy of the `profiles` DDL
+with **synthetic** rows only: 5 inserts with merges stopped, 20 parts, and 75,000 rows over 15,000
+`(project_id, id)` keys. Each key had 5 versions, with `created_at` spread across 4 partitions and
+tied `last_seen_at` values. Old and new returned the same result for 200, 1,000 and 5,000 ids in each
+of 3 projects:
+
+| project | ids | rows | sorted sha (old = new) |
+|---|--:|--:|---|
+| proj-a | 201 / 1000 / 5000 | 200 / 1000 / 5000 | e0eb58de4d3d5c46 / 715b257a3034cabb / f0394f87bd48b50a |
+| proj-b | 201 / 1000 / 5000 | 200 / 1000 / 5000 | 0027b01ee499da6f / d1da354936467673 / 881ec0da794c33ca |
+| proj-c | 201 / 1000 / 5000 | 200 / 1000 / 5000 | c32dab9e4f45d2a5 / 4e594a31dd87bf2f / 2f73bcde4061e82e |
+
+**Cost** (`X-ClickHouse-Summary`, `FORMAT Null`, warm cache). `chatpaper` runs 3 times each and the
+other projects once:
+
+| project / id set | read_rows (old = new) | bytes old → new | ClickHouse ms old → new |
+|---|--:|--:|--:|
+| chatpaper, bucket 200 | 1,809,792 | 686.2 → **191.4 MiB** | 278–280 → **105–108** |
+| chatpaper, bucket 1,000 | 1,850,752 | 701.6 → **196.3 MiB** | 285–287 → **111–117** |
+| chatpaper, 200 sampled | 1,793,408 | 680.0 → 372.2 MiB | 275–281 → 159–167 |
+| chatpaper, 1,000 sampled | 1,850,752 | 701.6 → 663.8 MiB | 290–298 → 217–220 |
+| verdict, bucket ≤1,000 | 916,864 | 379.8 → 136.1 MiB | 149 → 67 |
+| bayse, bucket ≤1,000 | 400,928 | 197.8 → 149.5 MiB | 86 → 63 |
+| earlysalary-production, bucket ≤1,000 | 959,588 | 464.6 → 125.5 MiB | 169 → 62 |
+| website-8103, 1,000 sampled | 57,184 | 27.2 → 13.5 MiB | 19 → 15 |
+
+These reproduce M37-002's figures of 683 → 194 MiB and 702 → 196 MiB. As predicted, `read_rows` does
+not fall. The bytes saved depend on the id set. Ids drawn uniformly by hash across the whole table
+save less: 1,000 sampled `chatpaper` ids read 664 MiB. The likely cause is that those ids touch more
+parts and partitions, so more wide-column ranges are read. This was not verified. No case read more.
+
+**Callers.** `getProfiles` / `getProfilesCached` are called from `event.service.ts:433`
+(`attachProfiles`, Map by id), `session.service.ts:296` (Map by id), `cohort.service.ts:919` and
+`group.service.ts:355` (Map by id, re-ordered by the page's ids), `realtime.service.ts:365` (Map by
+id) and `profile.service.ts:581` (`find` by id, in `powerUsers` row order). None of these reads the
+statement's row order. The chart drill-down (`chart.service.ts:213`, `getProfilesInBatches`)
+flattens batches in ClickHouse order, and that order was never defined (M37-002 §5).
