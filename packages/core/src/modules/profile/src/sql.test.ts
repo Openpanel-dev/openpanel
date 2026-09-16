@@ -30,6 +30,10 @@ const PROJECT_ID = 'proj-1';
 const PROFILE_ID = 'prof-1';
 const HOSTILE = "x' OR 1=1 --";
 const NO_FILTERS = {};
+const WINDOW = {
+  startDate: '2026-06-16 00:00:00',
+  endDate: '2026-09-16 23:59:59',
+};
 const COLUMN_LIST = PROFILE_COLUMNS.join(', ');
 
 function collapse(text: string): string {
@@ -136,19 +140,25 @@ describe('single-profile lookups', () => {
 });
 
 describe('profileListQuery', () => {
-  test('plain page: project only, no OFFSET at offset 0', () => {
+  test('plain page: project + window, no OFFSET at offset 0', () => {
     const { query, query_params } = profileListQuery({
       projectId: PROJECT_ID,
       take: 50,
       offset: 0,
       filterClauses: NO_FILTERS,
+      ...WINDOW,
     }).toStatement();
     const text = collapse(query);
 
     expect(text).toBe(
-      'SELECT * FROM profiles FINAL WHERE project_id = {p1:String} ORDER BY created_at DESC LIMIT {p2:UInt64}'
+      'SELECT * FROM profiles FINAL WHERE project_id = {p1:String} AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String}) ORDER BY created_at DESC LIMIT {p4:UInt64}'
     );
-    expect(query_params).toEqual({ p1: PROJECT_ID, p2: 50 });
+    expect(query_params).toEqual({
+      p1: PROJECT_ID,
+      p2: '2026-06-16 00:00:00',
+      p3: '2026-09-16 23:59:59',
+      p4: 50,
+    });
   });
 
   test('search + isExternal + filters + offset all splice in V1 order', () => {
@@ -159,18 +169,19 @@ describe('profileListQuery', () => {
       search: 'ann',
       isExternal: true,
       filterClauses: { f0: sql`(properties['plan'] = 'pro')` },
+      ...WINDOW,
     }).toStatement();
     const text = collapse(query);
 
     expect(text).toContain(
-      "WHERE project_id = {p1:String} AND ((id ILIKE {p2:String} OR email ILIKE {p3:String} OR first_name ILIKE {p4:String} OR last_name ILIKE {p5:String} OR concat(first_name, ' ', last_name) ILIKE {p6:String})) AND is_external = {p7:Bool} AND (properties['plan'] = 'pro') ORDER BY created_at DESC LIMIT {p8:UInt64} OFFSET {p9:UInt64}"
+      "WHERE project_id = {p1:String} AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String}) AND ((id ILIKE {p4:String} OR email ILIKE {p5:String} OR first_name ILIKE {p6:String} OR last_name ILIKE {p7:String} OR concat(first_name, ' ', last_name) ILIKE {p8:String})) AND is_external = {p9:Bool} AND (properties['plan'] = 'pro') ORDER BY created_at DESC LIMIT {p10:UInt64} OFFSET {p11:UInt64}"
     );
     expect(query_params).toMatchObject({
       p1: PROJECT_ID,
-      p2: '%ann%',
-      p7: true,
-      p8: 50,
-      p9: 100,
+      p4: '%ann%',
+      p9: true,
+      p10: 50,
+      p11: 100,
     });
   });
 
@@ -180,6 +191,7 @@ describe('profileListQuery', () => {
       search: 'ann',
       isExternal: false,
       filterClauses: { f0: sql`(email != '')` },
+      ...WINDOW,
     };
     const page = collapse(
       profileListQuery({ ...list, take: 1, offset: 0 }).toStatement().query
@@ -326,21 +338,47 @@ describe('the trpc router queries', () => {
       projectId: PROJECT_ID,
       take: 50,
       offset: 0,
+      ...WINDOW,
     }).toStatement();
     const later = powerUsersQuery({
       projectId: PROJECT_ID,
       take: 50,
       offset: 50,
+      ...WINDOW,
     }).toStatement();
 
     expect(collapse(first.query)).toEndWith(
-      'GROUP BY profile_id ORDER BY count() DESC LIMIT {p2:UInt64}'
+      'GROUP BY profile_id ORDER BY count() DESC LIMIT {p4:UInt64}'
     );
-    expect(first.query_params).toEqual({ p1: PROJECT_ID, p2: 50 });
+    expect(first.query_params).toEqual({
+      p1: PROJECT_ID,
+      p2: '2026-06-16 00:00:00',
+      p3: '2026-09-16 23:59:59',
+      p4: 50,
+    });
     expect(collapse(later.query)).toEndWith(
-      'LIMIT {p2:UInt64} OFFSET {p3:UInt64}'
+      'LIMIT {p4:UInt64} OFFSET {p5:UInt64}'
     );
-    expect(later.query_params).toEqual({ p1: PROJECT_ID, p2: 50, p3: 50 });
+    expect(later.query_params).toEqual({
+      p1: PROJECT_ID,
+      p2: '2026-06-16 00:00:00',
+      p3: '2026-09-16 23:59:59',
+      p4: 50,
+      p5: 50,
+    });
+  });
+
+  test('powerUsers is bounded to the window it was given', () => {
+    const { query } = powerUsersQuery({
+      projectId: PROJECT_ID,
+      take: 50,
+      offset: 0,
+      ...WINDOW,
+    }).toStatement();
+
+    expect(collapse(query)).toContain(
+      'project_id = {p1:String} AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String}) GROUP BY profile_id'
+    );
   });
 });
 

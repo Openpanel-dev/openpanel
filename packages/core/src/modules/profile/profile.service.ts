@@ -31,6 +31,7 @@ import {
   toNullIfDefaultMinDate,
 } from './src/dates';
 import type { CompiledFilterClauses } from './src/filter-clauses';
+import type { ProfileWindow } from './src/sql';
 import {
   findProfilesQuery,
   powerUsersQuery,
@@ -253,7 +254,7 @@ export const getProfilesCached = cacheablePerDeps(
   PROFILES_CACHE_SECONDS
 );
 
-export interface GetProfileListOptions {
+export interface GetProfileListOptions extends ProfileWindow {
   projectId: string;
   take: number;
   cursor?: number;
@@ -271,6 +272,8 @@ export async function getProfileList(
     filters,
     search,
     isExternal,
+    startDate,
+    endDate,
   }: GetProfileListOptions
 ): Promise<IServiceProfile[]> {
   const data = await chQuery<IClickhouseProfile>(
@@ -281,6 +284,8 @@ export async function getProfileList(
       offset: Math.max(0, (cursor ?? 0) * take),
       search,
       isExternal,
+      startDate,
+      endDate,
       filterClauses: await compileProfileFilters(filters, projectId),
     })
   );
@@ -294,6 +299,8 @@ export async function getProfileListCount(
     filters,
     isExternal,
     search,
+    startDate,
+    endDate,
   }: Omit<GetProfileListOptions, 'cursor' | 'take'>
 ): Promise<number> {
   const data = await chQuery<{ count: number }>(
@@ -302,6 +309,8 @@ export async function getProfileListCount(
       projectId,
       search,
       isExternal,
+      startDate,
+      endDate,
       filterClauses: await compileProfileFilters(filters, projectId),
     })
   );
@@ -553,7 +562,7 @@ export async function getProfileListPage(
 
 export async function getPowerUsers(
   deps: ServiceDeps,
-  input: {
+  input: ProfileWindow & {
     projectId: string;
     cursor?: number;
     take: number;
@@ -565,6 +574,8 @@ export async function getPowerUsers(
       projectId: input.projectId,
       take: input.take,
       offset: input.cursor ? input.cursor * input.take : 0,
+      startDate: input.startDate,
+      endDate: input.endDate,
     })
   );
   const profiles = await getProfiles(

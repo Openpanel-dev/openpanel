@@ -22,6 +22,18 @@ Every query builder in `src/sql.ts` (`profile.sql.ts` at proof time; renamed und
   - The per-statement `rows_read V1/V2` and `wall V1/V2` figures below are from the 2026-09-04 run and
     therefore describe the pre-amendment V2 text.
 
+- **Amended by M31-003 (2026-09-16): `profileListQuery`, `profileListCountQuery` and `powerUsersQuery`
+  are bounded to an explicit window.** M25 Group C fix 8, approved by Carl on 2026-09-15: all three
+  had no date filter at all, so their cost grew with the tenant's lifetime rather than with anything
+  the caller chose (`docs/ANALYTICS_PERFORMANCE.md` §6.8). Each now carries
+  `created_at BETWEEN toDateTime({pN:String}) AND toDateTime({pN:String})`, spelled as
+  `overview/src/pages.sql.ts` spells it. **This is the approved semantic change** — "power users of
+  all time" is now "power users of the range" — so these three cases are no longer V1-identical by
+  construction, and the V1 lines below stand as the record of what they used to be. `created_at` is
+  the column both tables can prune on (`profiles` is `PARTITION BY toYYYYMM(created_at)`; `events`
+  has it in the sort key) and the column the list already orders by; `profiles.last_seen_at` is in
+  neither and would prune nothing. See the M31-003 section at the end for the measurements.
+
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static), project `redcollege` unless noted; cases needing rows the prod-copy lacks (`cohort_members`, `events_bots` are empty there) also ran on the isolated `openpanel_test` database with 3,380 events copied from `redcollege` under project `m7-002-proof`, plus seeded cohort/bot rows (deleted afterwards).
 - **Machine**: single-node ClickHouse 26.1.3.52 on a 4-vCPU box — timings are directional only; production is 2 shards × 2 replicas (`docs/ENVIRONMENT.md`). `rows_read` differences on JOIN statements are ClickHouse's per-run accounting of the right-hand side, not a plan difference: the SQL text is identical up to `{pN:Type}` binding.
 - **Verdict**: 20 cases / 23 statements, all IDENTICAL. No conversion changed a result set.
@@ -335,3 +347,70 @@ Expression ((Project names + (Projection + (Change column names to column identi
 
 Parsed and resolved (73.6 ms). The plan shows one `ReadFromMergeTree` on `events` — the property the string tests guard; the `profiles` CTE is consumed through scalar subqueries, which ClickHouse evaluates ahead of the plan it prints. The result-set diff for the same builder on a real profile is the `profileMetricsQuery` case above.
 
+## M31-003 — the explicit window (2026-09-16)
+
+Run against the local prod-copy `openpanel` on **2026-09-16**, `use_query_condition_cache=0`,
+`session_timezone=UTC`, numbers off `X-ClickHouse-Summary`, every statement rendered by the builder
+itself (not retyped) and bound through `param_pN=`. Old and new were **interleaved** within each
+5-iteration loop so neither owns the warm cache; the ms column is the median of 5, the rows/bytes
+columns are invariant across iterations. `LIMIT 50`, which is `DEFAULT_LIST_TAKE`.
+
+**A caveat this copy forces, stated first.** The copy's whole history fits inside three months —
+`events` end 2026-08-25 and `profiles.created_at` spans 2026-07-01 -> 2026-08-30 — so at the default
+`3m` range the window covers **all** the data and cannot prune anything. The `3m` column below is
+therefore the *floor* case (what the change costs when it buys nothing), and the `7d` column is what
+it buys as soon as the window is narrower than the tenant's history. On a tenant older than the
+window the `3m` column moves toward the `7d` one; nothing on this box can show that, because no
+project here is older than the window.
+
+### `powerUsersQuery` (`events`)
+
+| project | unbounded (V1) | default `3m` | `7d` (2026-08-18 -> 08-25) |
+|---|---|---|---|
+| `verdict` | 657 ms / 44,164,383 rows / 1017 MiB | 834 ms / 44,164,383 / 1354 MiB | **105 ms / 4,821,286 / 154 MiB** |
+| `earlysalary-production` | 621 ms / 26,787,424 / 1624 MiB | 725 ms / 26,787,424 / 1828 MiB | **100 ms / 3,465,150 / 228 MiB** |
+| `chatpaper` | 666 ms / 19,797,378 / 888 MiB | 777 ms / 19,797,378 / 1039 MiB | **101 ms / 2,662,273 / 134 MiB** |
+
+At a window narrower than the data this is **6.3x fewer rows and ~6x faster**. At the default on this
+copy it is **15-27 % slower**, and that is not noise: the `BETWEEN` adds `created_at` to the columns
+read (+337 / +204 / +151 MiB) while pruning nothing, because everything is inside the window. That is
+the unavoidable floor price of any date filter on this table, and it is bounded — after the change
+the endpoint can never read more than three months, where before it read the tenant's whole life.
+
+### `profileListQuery` / `profileListCountQuery` (`profiles`)
+
+| statement | project | unbounded (V1) | default `3m` | `7d` |
+|---|---|---|---|---|
+| list | `chatpaper` | 309 ms / 1,858,944 / 707 MiB | 292 ms / 1,858,944 / 707 MiB | **125 ms / 794,624 / 301 MiB** |
+| list | `earlysalary-production` | 278 ms / 1,827,940 / 861 MiB | 279 ms / 1,827,940 / 861 MiB | **128 ms / 851,968 / 406 MiB** |
+| list | `verdict` | 156 ms / 916,864 / 380 MiB | 155 ms / 916,864 / 380 MiB | **71 ms / 434,176 / 178 MiB** |
+| count | `chatpaper` | 65 ms / 1,662,816 / 74 MiB | 78 ms / 1,662,816 / 87 MiB | **40 ms / 745,472 / 39 MiB** |
+| count | `earlysalary-production` | 49 ms / 1,624,345 / 95 MiB | 54 ms / 1,624,345 / 107 MiB | **24 ms / 802,816 / 33 MiB** |
+| count | `verdict` | 30 ms / 745,312 / 32 MiB | 37 ms / 745,312 / 37 MiB | **31 ms / 385,024 / 19 MiB** |
+
+The list pays **nothing** at the default — `SELECT *` already read `created_at` — and halves at a
+narrower window. Only the count pays the extra column (+5 to +13 ms), for the same reason
+`powerUsers` does.
+
+### Result sets: what changed, and what did not
+
+The window is a pure restriction, so where it covers all the data the answer must be unchanged. It
+is, on every anchor — compared as result **sets** (`sorted(rows)`, sha256), `LIMIT 50`:
+
+| query | `verdict` | `chatpaper` | `earlysalary-production` | `bayse` | `website-8103` |
+|---|---|---|---|---|---|
+| `powerUsersQuery` unbounded vs default `3m` | IDENTICAL | IDENTICAL | IDENTICAL | IDENTICAL | IDENTICAL |
+| `profileListQuery` unbounded vs default `3m` | IDENTICAL | IDENTICAL | — | — | — |
+| `profileListCountQuery` unbounded vs default `3m` | 696,160 = 696,160 | 1,609,483 = 1,609,483 | — | — | — |
+
+At `7d` they differ, which is the approved change: `verdict`'s top-50 power users keep **23 of 50**
+ids, `bayse` **39 of 50**; the profile count falls 1,609,483 -> 208,529 on `chatpaper` and
+696,160 -> 92,275 on `verdict`.
+
+**One thing to know before comparing `powerUsersQuery` by ordered rows: it was already
+nondeterministic, and still is.** `ORDER BY count() DESC` has no tiebreak, so equal-count rows come
+back in whatever order the parallel aggregation produced. Five runs of the **unbounded** statement,
+unchanged, on 2026-09-16: `chatpaper` returned **4 distinct** ordered-row hashes, `earlysalary-production`
+**5 distinct**. The top-50 *set* was stable across all of them. This is pre-existing (M31-003 changed
+no `ORDER BY`), and it is why the table above compares sets — an ordered-row diff of this builder
+reports a difference that is not a change.

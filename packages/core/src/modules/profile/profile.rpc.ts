@@ -9,7 +9,9 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { zChartEventFilter } from '../report/report.constants';
+import { getSettingsForProject } from '../organization/organization.service';
+import { zChartEventFilter, zRange } from '../report/report.constants';
+import { getChartStartEndDate } from '../report/src/chart-dates';
 import {
   getPowerUsers,
   getProfileActivity,
@@ -23,6 +25,22 @@ import {
 } from './profile.service';
 
 const DEFAULT_LIST_TAKE = 50;
+
+/**
+ * `list` and `powerUsers` had no date filter at all, so their cost grew with
+ * the tenant's lifetime rather than with anything the caller chose
+ * (`docs/ANALYTICS_PERFORMANCE.md` §6.8: 44.2 M rows read for one page of 50).
+ * Both now take the report vocabulary's window; this is the default when the
+ * caller names none, and it is the range §6.8 itself uses to describe the
+ * change ("a power user over 90 days is not the same set as over all time").
+ */
+const PROFILE_WINDOW_DEFAULT_RANGE = '3m';
+
+const zProfileWindow = {
+  range: zRange.default(PROFILE_WINDOW_DEFAULT_RANGE),
+  startDate: z.string().nullish(),
+  endDate: z.string().nullish(),
+};
 
 const zProfileRef = z.object({ profileId: z.string(), projectId: z.string() });
 
@@ -106,6 +124,7 @@ export const profileRouter = createTRPCRouter({
         search: z.string().optional(),
         isExternal: z.boolean().optional(),
         filters: z.array(zChartEventFilter).default([]),
+        ...zProfileWindow,
       })
     )
     .query(async ({ input, ctx }) => {
@@ -115,7 +134,11 @@ export const profileRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getProfileListPage(ctx, input);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      return getProfileListPage(ctx, {
+        ...input,
+        ...getChartStartEndDate(input, timezone),
+      });
     }),
 
   powerUsers: protectedProcedure
@@ -124,6 +147,7 @@ export const profileRouter = createTRPCRouter({
         projectId: z.string(),
         cursor: z.number().optional(),
         take: z.number().default(DEFAULT_LIST_TAKE),
+        ...zProfileWindow,
       })
     )
     .query(async ({ input, ctx }) => {
@@ -133,7 +157,11 @@ export const profileRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getPowerUsers(ctx, input);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      return getPowerUsers(ctx, {
+        ...input,
+        ...getChartStartEndDate(input, timezone),
+      });
     }),
 
   values: protectedProcedure

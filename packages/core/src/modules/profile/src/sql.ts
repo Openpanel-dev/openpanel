@@ -55,6 +55,25 @@ function optional(
   return condition ? fragment() : sql.empty;
 }
 
+function toDateTimeLiteral(value: string): string {
+  return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/** Same spelling `overview/src/pages.sql.ts` uses, so the two read alike. */
+function dateRangeWhere(
+  column: string,
+  startDate: string,
+  endDate: string
+): SqlFragment {
+  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
+}
+
+/** The window every profile-list / power-user statement is now bounded to. */
+export interface ProfileWindow {
+  startDate: string;
+  endDate: string;
+}
+
 /**
  * Multi-token profile search: every whitespace-separated token (max 5) must
  * match SOME of id/email/first/last/full name, case-insensitively. `null`
@@ -151,7 +170,7 @@ export function profilesByIdsQuery(query: {
   `;
 }
 
-export interface ProfileListQuery {
+export interface ProfileListQuery extends ProfileWindow {
   projectId: string;
   search?: string;
   isExternal?: boolean;
@@ -159,13 +178,20 @@ export interface ProfileListQuery {
   filterClauses: CompiledFilterClauses;
 }
 
-/** V1's `WHERE project_id = .. [AND search] [AND is_external = ..] [AND filters]`. */
+/**
+ * V1's `WHERE project_id = .. [AND search] [AND is_external = ..] [AND filters]`,
+ * plus the M31-003 window: V1 read every profile the project ever had, so the
+ * cost grew with the tenant's lifetime rather than with anything the caller
+ * asked for. `created_at` is the column the list already orders by, so the
+ * bound and the order agree.
+ */
 function profileListCondition(query: ProfileListQuery): SqlFragment {
   const search = profileSearchCondition(query.search);
-  return sql`project_id = ${sql.string(query.projectId)}${optional(
-    search,
-    () => sql` AND ${search as SqlFragment}`
-  )}${optional(
+  return sql`project_id = ${sql.string(query.projectId)} AND ${dateRangeWhere(
+    'created_at',
+    query.startDate,
+    query.endDate
+  )}${optional(search, () => sql` AND ${search as SqlFragment}`)}${optional(
     query.isExternal !== undefined,
     () => sql` AND is_external = ${sql.bool(query.isExternal as boolean)}`
   )} ${spliceCompiledFilters(query.filterClauses)}`;
@@ -345,17 +371,25 @@ export function profilePropertyNamesQuery(projectId: string): SqlFragment {
   return sql`SELECT distinct mapKeys(properties) as keys from ${sql.id(TABLE.profiles)} where project_id = ${sql.string(projectId)};`;
 }
 
-export function powerUsersQuery(query: {
-  projectId: string;
-  take: number;
-  offset: number;
-}): SqlFragment {
+/**
+ * M31-003: bounded to the caller's window. Unbounded this ranked every event
+ * the project ever recorded (44.2 M rows on the busiest anchor), so "power
+ * users of all time" is now "power users of the range".
+ */
+export function powerUsersQuery(
+  query: ProfileWindow & {
+    projectId: string;
+    take: number;
+    offset: number;
+  }
+): SqlFragment {
   return sql`
         SELECT profile_id, count(*) as count
         FROM ${sql.id(TABLE.events)}
         WHERE
           profile_id != ''
           AND project_id = ${sql.string(query.projectId)}
+          AND ${dateRangeWhere('created_at', query.startDate, query.endDate)}
           GROUP BY profile_id
           ORDER BY count() DESC
           LIMIT ${sql.uint64(query.take)} ${optional(query.offset, () => sql`OFFSET ${sql.uint64(query.offset)}`)}`;
