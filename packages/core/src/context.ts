@@ -5,6 +5,7 @@
 // (ADR-007 decision 18, ADR-018 R1).
 
 import type { Buffers } from './buffers/create-buffers';
+import { bindReadsToSignal } from './ch-abortable';
 import type { CoreConfig } from './config';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
@@ -123,6 +124,12 @@ export interface HttpCtx extends Ctx {
   /** Memoized: two guards and a handler asking cost one lookup. */
   session: () => Promise<Session | null>;
   setCookie(name: string, value: string, options?: CookieOptions): void;
+  /**
+   * Aborting it stops this request's ClickHouse reads. The request-context
+   * derive aborts it when the client disconnects; a transport with a deadline
+   * aborts it when the deadline passes. Set only on read (GET/HEAD) requests.
+   */
+  cancellation?: AbortController;
 }
 
 /** What a job run adds. */
@@ -134,6 +141,8 @@ export interface ScopeMeta {
   requestId: string;
   /** Already child()-bound by the caller — createCtx does not bind it. */
   logger: Logger;
+  /** When it aborts, the scope's ClickHouse reads stop (`bindReadsToSignal`). */
+  signal?: AbortSignal;
 }
 
 /**
@@ -144,7 +153,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
   const ctx: Ctx = {
     db: deps.db,
     prisma: deps.prisma,
-    ch: deps.ch,
+    ch: scope.signal ? bindReadsToSignal(deps.ch, scope.signal) : deps.ch,
     redis: deps.redis,
     clients: deps.clients,
     buffers: deps.buffers,

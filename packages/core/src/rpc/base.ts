@@ -17,6 +17,7 @@ import type { Logger } from '../logger';
 import { runWithAlsSession } from '../shared/als-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
 import { EMPTY_SESSION } from '../shared/session';
+import { cancelledCallError, raceCancellation } from './deadline';
 import { TRPCForbiddenError } from './errors';
 
 /**
@@ -89,13 +90,31 @@ const t = initTRPC
 
 export const createTRPCRouter = t.router;
 export const middleware = t.middleware;
+
+/**
+ * Answers the caller as soon as the request's work is cancelled (deadline or
+ * disconnect), rather than when the work notices.
+ */
+const stopWhenCancelled = t.middleware(async ({ ctx, next }) => {
+  const signal = ctx.cancellation?.signal;
+  if (!signal) {
+    return next();
+  }
+  const result = await raceCancellation(next(), signal);
+  // An aborted read surfaces as a transport error; report why it stopped.
+  if (!result.ok && signal.aborted) {
+    throw cancelledCallError(signal.reason);
+  }
+  return result;
+});
+
 /**
  * The bare procedure. It authenticates NOTHING. Use one of the three builders
  * below unless a procedure's V1 twin was written on `procedure` itself — the
  * only ones are the share-aware `chartProcedure`/`overviewProcedure` bases,
  * and those are `publicProcedure` plus their own middleware.
  */
-export const procedure = t.procedure;
+export const procedure = t.procedure.use(stopWhenCancelled);
 
 // ---------------------------------------------------------------------------
 // The procedure stack (M11-001), ported from packages/trpc/src/trpc.ts:35-155.

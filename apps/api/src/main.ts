@@ -67,6 +67,7 @@ import {
   type QueueProducerHandle,
   queueKey,
   queues,
+  RPC_DEADLINE_MS,
   rawStderrWrite,
   registerBufferMetrics,
   registerDefaultMetrics,
@@ -105,6 +106,15 @@ const BOOTSTRAP_LOG_LEVEL = 'info';
 const CRON_DRAIN_TIMEOUT_MS = 60_000;
 const CRON_DRAIN_POLL_MS = 500;
 const FATAL_EXIT_DELAY_MS = 1000;
+const MS_PER_SECOND = 1000;
+// Set here because Elysia's Bun adapter otherwise injects `idleTimeout: 30`,
+// which severed slow dashboard calls without a response (M36-001). It must
+// outlast the tRPC deadline so the deadline's error is delivered first; the
+// margin covers the ~1.6 s event-loop stall measured at the end of a large
+// drill-down plus Bun's up-to-1 s timer granularity.
+const HTTP_IDLE_TIMEOUT_MARGIN_SECONDS = 10;
+const HTTP_IDLE_TIMEOUT_SECONDS =
+  RPC_DEADLINE_MS / MS_PER_SECOND + HTTP_IDLE_TIMEOUT_MARGIN_SECONDS;
 
 /**
  * `config/env.ts` is the sole `process.env` reader on this path; an invalid
@@ -597,7 +607,11 @@ async function main() {
     shutdown('SIGINT');
   });
 
-  app.listen(config.listen, () => {
+  const listenOptions = {
+    ...config.listen,
+    idleTimeout: HTTP_IDLE_TIMEOUT_SECONDS,
+  };
+  app.listen(listenOptions, () => {
     logger.info(
       {
         role,

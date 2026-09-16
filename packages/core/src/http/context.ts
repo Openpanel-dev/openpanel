@@ -29,6 +29,8 @@ const UNLOGGED_PATH_PREFIXES = [
   '/misc',
 ];
 const UNLOGGED_METHODS = ['OPTIONS'];
+/** A write keeps running to completion without its client, as it always did. */
+const CANCELLABLE_METHODS = new Set(['GET', 'HEAD']);
 const LOGGED_INGEST_HEADERS = [
   'openpanel-client-id',
   'openpanel-sdk-name',
@@ -51,19 +53,26 @@ export function requestContext(deps: AppDeps) {
         const logger = deps.logger.child({ [REQUEST_ID_LOG_FIELD]: requestId });
         const cookies = wrapCookies(cookie);
         let session: Promise<Session | null> | undefined;
+        const cancellation = CANCELLABLE_METHODS.has(request.method)
+          ? cancelOnDisconnect(request.signal)
+          : undefined;
 
         // `resolveSession` reads `ctx.services.auth` (ADR-022 R22), so the
         // resolver closes over the ctx it is installed on. Safe because it is
         // lazy: nothing calls it during the derive.
-        const ctx: HttpCtx = extendCtx(createCtx(deps, { requestId, logger }), {
-          headers: request.headers,
-          ip: clientIp,
-          cookies,
-          session: () =>
-            (session ??= resolveSession(ctx, cookies, request.headers)),
-          setCookie: (name: string, value: string, options?: CookieOptions) =>
-            writeCookie(cookie, name, value, options),
-        });
+        const ctx: HttpCtx = extendCtx(
+          createCtx(deps, { requestId, logger, signal: cancellation?.signal }),
+          {
+            headers: request.headers,
+            ip: clientIp,
+            cookies,
+            session: () =>
+              (session ??= resolveSession(ctx, cookies, request.headers)),
+            setCookie: (name: string, value: string, options?: CookieOptions) =>
+              writeCookie(cookie, name, value, options),
+            cancellation,
+          }
+        );
 
         return { ctx };
       }
@@ -142,6 +151,18 @@ export function requestLogging(
         );
       }
     );
+}
+
+// Bun aborts `request.signal` when the client goes away — a disconnect, the
+// server's idle timeout, or a closed websocket — but not after a response.
+function cancelOnDisconnect(requestSignal: AbortSignal): AbortController {
+  const cancellation = new AbortController();
+  requestSignal.addEventListener(
+    'abort',
+    () => cancellation.abort(requestSignal.reason),
+    { once: true, signal: cancellation.signal }
+  );
+  return cancellation;
 }
 
 function wrapCookies(cookie: ElysiaCookies): CookieJar {

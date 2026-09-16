@@ -179,6 +179,46 @@ describe('the derived HttpCtx', () => {
   });
 });
 
+describe('the request cancellation', () => {
+  const build = () => {
+    const seen: HttpCtx[] = [];
+    const app = new Elysia()
+      .use(requestContext(stubAppDeps().deps))
+      .get('/read', ({ ctx }) => {
+        seen.push(ctx);
+        return 'ok';
+      })
+      .post('/write', ({ ctx }) => {
+        seen.push(ctx);
+        return 'ok';
+      });
+    return { app, seen };
+  };
+
+  test('a read request is cancelled when its client goes away', async () => {
+    const { app, seen } = build();
+    const client = new AbortController();
+
+    await app.handle(
+      new Request('http://localhost/read', { signal: client.signal })
+    );
+    const cancellation = seen[0]?.cancellation;
+    client.abort();
+
+    expect(cancellation).toBeInstanceOf(AbortController);
+    expect(cancellation?.signal.aborted).toBe(true);
+  });
+
+  test('a write request carries no cancellation and keeps its client', async () => {
+    const { app, seen } = build();
+
+    await app.handle(new Request('http://localhost/write', { method: 'POST' }));
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.cancellation).toBeUndefined();
+  });
+});
+
 describe('requestLogging', () => {
   const build = (verboseClientIds?: string[]) => {
     const stub = stubAppDeps();

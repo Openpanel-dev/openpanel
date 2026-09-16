@@ -950,6 +950,7 @@ export {
   protectedProcedureWithoutAccess,
   publicProcedure,
 } from './rpc/base';
+export { RPC_DEADLINE_MS } from './rpc/deadline';
 export {
   TRPCAccessError,
   TRPCBadRequestError,

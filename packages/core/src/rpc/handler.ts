@@ -1,11 +1,12 @@
 // The tRPC mount: the official fetch adapter, one handler, one `onError`
 // (ADR-009).
 //
-// The three `onError` branches are V1's (apps/api/src/app.ts:175-206) with one
-// change and no others: the fields come from `ctx` and the `Request`, because
-// under a fetch adapter `req` is a `Request` and has neither `socket` nor a
-// logger. The messages, the levels, the payload keys and the `organization.list`
-// drop are unchanged.
+// Three of the four `onError` branches are V1's (apps/api/src/app.ts:175-206)
+// with one change and no others: the fields come from `ctx` and the `Request`,
+// because under a fetch adapter `req` is a `Request` and has neither `socket`
+// nor a logger. The messages, the levels, the payload keys and the
+// `organization.list` drop are unchanged. The fourth, `CLIENT_CLOSED_REQUEST`,
+// is M36-001's cancellation, which V1 did not have.
 
 import type { AnyRouter, TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
@@ -18,6 +19,7 @@ import {
   type TrpcContext,
   type TrpcContextOptions,
 } from './base';
+import { armDeadline, RPC_DEADLINE_MS } from './deadline';
 
 /**
  * The fetch adapter derives the procedure path with
@@ -38,6 +40,13 @@ export interface TrpcErrorReport {
 
 /** Silenced deliberately: the dashboard probes it while signed out. */
 const SILENCED_UNAUTHORIZED_PATH = 'organization.list';
+
+/**
+ * A deadline is sent as 504, not tRPC's 408: Chromium silently resends a
+ * request that got a 408 on a reused connection, which would run the same
+ * too-slow work twice. The body still says `TIMEOUT` / `httpStatus: 408`.
+ */
+const DEADLINE_HTTP_STATUS = 504;
 
 /**
  * `bootLogger` is the fallback for when `createContext` itself threw — there is
@@ -83,6 +92,12 @@ export function createTrpcOnError(
       return;
     }
 
+    // Nobody is listening for the answer; the request was abandoned, not failed.
+    if (report.error.code === 'CLIENT_CLOSED_REQUEST') {
+      logger.warn(payload, 'trpc request abandoned');
+      return;
+    }
+
     logger.error(payload, 'trpc error');
   };
 }
@@ -94,6 +109,8 @@ export interface TrpcFetchHandlerOptions extends TrpcContextOptions {
   /** `onError` resolves the abuser's IP from trusted headers only. */
   ipHeaders: IpHeaderConfig;
   endpoint?: string;
+  /** How long one call may run before it is stopped. */
+  deadlineMs?: number;
 }
 
 /**
@@ -107,17 +124,30 @@ export function createTrpcFetchHandler(options: TrpcFetchHandlerOptions) {
     logger,
     ipHeaders,
     endpoint = TRPC_ENDPOINT,
+    deadlineMs = RPC_DEADLINE_MS,
     ...contextOptions
   } = options;
   const onError = createTrpcOnError(logger, ipHeaders);
 
-  return (request: Request, ctx: HttpCtx): Promise<Response> =>
-    fetchRequestHandler({
-      endpoint,
-      req: request,
-      router,
-      createContext: ({ resHeaders }) =>
-        makeTrpcContext(ctx, resHeaders, contextOptions),
-      onError,
-    });
+  return async (request: Request, ctx: HttpCtx): Promise<Response> => {
+    const disarmDeadline = ctx.cancellation
+      ? armDeadline(ctx.cancellation, deadlineMs)
+      : undefined;
+    try {
+      return await fetchRequestHandler({
+        endpoint,
+        req: request,
+        router,
+        createContext: ({ resHeaders }) =>
+          makeTrpcContext(ctx, resHeaders, contextOptions),
+        onError,
+        responseMeta: ({ errors }) =>
+          errors.some((error) => error.code === 'TIMEOUT')
+            ? { status: DEADLINE_HTTP_STATUS }
+            : {},
+      });
+    } finally {
+      disarmDeadline?.();
+    }
+  };
 }

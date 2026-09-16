@@ -166,6 +166,26 @@ test('boot handles are passed through by reference', () => {
   expect(ctx.buffers).toBe(deps.buffers);
 });
 
+test('a scope signal binds only the ClickHouse client to it', async () => {
+  const { deps } = stubDeps();
+  const query = mock(async (_params: unknown) => undefined);
+  deps.ch = { query } as unknown as AppDeps['ch'];
+  const controller = new AbortController();
+
+  const ctx = createCtx(deps, {
+    requestId: REQUEST_ID,
+    logger: deps.logger,
+    signal: controller.signal,
+  });
+  await ctx.ch.query({ query: 'SELECT 1' });
+
+  expect(ctx.ch).not.toBe(deps.ch);
+  expect(ctx.db).toBe(deps.db);
+  expect(query.mock.calls[0]?.[0]).toMatchObject({
+    abort_signal: controller.signal,
+  });
+});
+
 test('extendCtx adds transport extras without building services', () => {
   createServices.mockClear();
 

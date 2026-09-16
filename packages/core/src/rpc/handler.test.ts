@@ -278,3 +278,94 @@ test('a batched request resolves every procedure in the segment', async () => {
     { result: { data: { json: { pong: true } } } },
   ]);
 });
+
+// ------------------------------------------------- deadline and disconnect
+
+const SHORT_DEADLINE_MS = 20;
+const NEVER_FINISHES_MS = 60_000;
+
+const slowRouter = createTRPCRouter({
+  // Ignores every signal, so only the cancellation race can answer it.
+  stuck: procedure.query(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, NEVER_FINISHES_MS).unref();
+      })
+  ),
+});
+
+function mountCancellable() {
+  const logger = capturingLogger();
+  const cancellation = new AbortController();
+  const { ctx } = stubHttpCtx({ logger, cancellation });
+  const handler = createTrpcFetchHandler({
+    router: slowRouter,
+    logger,
+    cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
+    deadlineMs: SHORT_DEADLINE_MS,
+  });
+  return {
+    logger,
+    cancellation,
+    call: () =>
+      handler(new Request('https://api.openpanel.dev/trpc/stuck'), ctx),
+  };
+}
+
+interface ErrorBody {
+  error: {
+    json: { message: string; data: { code: string; httpStatus: number } };
+  };
+}
+
+test('a call past the deadline is answered with an explained TIMEOUT, sent as 504', async () => {
+  const mounted = mountCancellable();
+
+  const response = await mounted.call();
+
+  expect(response.status).toBe(504);
+  const body = (await response.json()) as ErrorBody;
+  expect(body.error.json.data.code).toBe('TIMEOUT');
+  // The dashboard reads this to decide against retrying.
+  expect(body.error.json.data.httpStatus).toBe(408);
+  expect(body.error.json.message).toContain('took longer than 0.02 seconds');
+  expect(mounted.cancellation.signal.aborted).toBe(true);
+  expect(mounted.logger.lines[0]?.level).toBe('error');
+});
+
+test('a client disconnect stops the call and is logged as abandoned', async () => {
+  const mounted = mountCancellable();
+
+  const pending = mounted.call();
+  mounted.cancellation.abort(new DOMException('gone', 'AbortError'));
+  const response = await pending;
+
+  expect(response.status).toBe(499);
+  const body = (await response.json()) as ErrorBody;
+  expect(body.error.json.data.code).toBe('CLIENT_CLOSED_REQUEST');
+  expect(mounted.logger.lines[0]?.level).toBe('warn');
+  expect(mounted.logger.lines[0]?.message).toBe('trpc request abandoned');
+});
+
+test('a call that finishes in time disarms the deadline', async () => {
+  const logger = capturingLogger();
+  const cancellation = new AbortController();
+  const { ctx } = stubHttpCtx({ logger, cancellation });
+  const handler = createTrpcFetchHandler({
+    router,
+    logger,
+    cookieOptions: COOKIE_OPTIONS,
+    ipHeaders: testCoreConfig().ipHeaders,
+    deadlineMs: SHORT_DEADLINE_MS,
+  });
+
+  const response = await handler(
+    new Request('https://api.openpanel.dev/trpc/ping'),
+    ctx
+  );
+  await new Promise((resolve) => setTimeout(resolve, SHORT_DEADLINE_MS * 2));
+
+  expect(response.status).toBe(200);
+  expect(cancellation.signal.aborted).toBe(false);
+});
