@@ -26,6 +26,49 @@ Both statements of every sankey mode were executed twice against the same data �
     1,504 MiB · `website-8103` FAIL (`would use 2.03 PiB`) -> 2,607 ms / 1,035 MiB · `chatpaper`
     13,453 ms -> 12,639 ms / 2,132 MiB. `website-8103` at 1 day: FAIL (`768.88 GiB`) -> 147 ms / 20 MiB.
 
+- **Amended by M31-004 (2026-09-16): the statements are unchanged, but windows over 93 days no longer reach them.**
+  `arrayCompact` turned the sankey from *fails* into *slow*; it did not make the window cheap. Both
+  statements still scan every event in the range and hold one `groupArray` per session, so cost is
+  linear in the window and `steps` bounds the answer, not the work. Re-measured on the local
+  production copy on **2026-09-16**, `use_query_condition_cache=0`, `max_memory_usage=6 GiB`,
+  `elapsed_ns` / `read_rows` / `memory_usage` read off `X-ClickHouse-Summary`, `bayse`, mode
+  `after`, 3 steps, per statement:
+
+  | window | topEntries | transitions | read_rows | peak memory |
+  |---|---|---|---:|---|
+  | 7 d | 871 ms | 731 ms | 10,271,382 | 515 / 519 MiB |
+  | 14 d | 1,315 ms | 1,284 ms | 19,020,434 | 831 / 832 MiB |
+  | 30 d | 2,361 ms | 2,196 ms | 33,961,756 | 1,329 / 1,324 MiB |
+  | 45 d | 3,125 ms | 2,965 ms | 50,967,354 | 1,770 / 1,772 MiB |
+  | 56 d (the whole copy) | 3,832 ms | 3,954 ms | 76,461,848 | 2,060 / 2,061 MiB |
+
+  **The copy holds only 56 days (2026-07-01 -> 2026-08-25), so `3m`, `6m` and `12m` all read the
+  same 76.46 M rows and cost the same 3.8 s + 4.0 s here** — a 12-month window cannot be measured
+  on this data, only extrapolated. The five points above are linear at ~60 ms and ~31 MiB per day
+  per statement, which puts a real 12-month tenant of bayse's shape at ~22 s and ~11.8 GiB per
+  statement, twice per call, against a 13.72 GiB overcommit ceiling.
+
+  `getSankeyChart` therefore refuses a window wider than `MAX_SANKEY_WINDOW_DAYS` (93, the widest
+  span the picker's `3m` can produce) with a `BAD_REQUEST` naming the limit, before either
+  statement is built. Measured the same day, 3 runs in-process against a `deps` proxy that throws
+  if ClickHouse is touched: **0.474 / 0.043 / 0.012 ms, no ClickHouse contact**; the proxy is the
+  standing regression gate in `sankey.service.test.ts`.
+
+  **Where the bound is applied, and what it deliberately leaves alone.** §12 fix 9's endpoint
+  column reads `chart.sankey` *specifically*, because it is the dashboard range picker that offers
+  `12m`/`lastYear`. The check therefore sits in `getSankeyChart` — the `chart.sankey` entry point,
+  and the place where `getChartStartEndDate` turns a picked range into dates — not in `getSankey`,
+  which is the shared chokepoint three other surfaces reach through `getUserFlowCore`:
+  the REST `/insights/:projectId/user_flow` route, the MCP `get_user_flow` tool and the assistant
+  tool. Those three take caller-supplied dates rather than picker ranges, are outside fix 9's
+  endpoint list, and keep their existing behaviour; `get_user_flow`'s own integration test asks for
+  `2000-01-01`..`2099-01-01` and still passes unchanged.
+
+  **Residual (recorded, not fixed here):** those three surfaces can still ask for a 12-month
+  sankey and pay the ~22 s x 2 this section measures. Bounding them is a separate decision per
+  surface — the MCP and REST tools have their own limit vocabulary (`zLimit`, `resolveDateRange`)
+  and live outside this task's scope.
+
 - **Verdict**: 23 cases, 0 not identical.
 
 ### sankey topEntries — after, screen_view, 3 steps (golden insights-user-flow-after)

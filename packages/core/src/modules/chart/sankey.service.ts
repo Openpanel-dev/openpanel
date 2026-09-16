@@ -4,6 +4,7 @@
 // re-export shim onto this module (DELEGATE PATTERN).
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
@@ -11,7 +12,12 @@ import {
   type IChartEvent,
   type IChartEventFilter,
 } from '../report/report.constants';
-import { DEFAULT_SANKEY_STEPS, type IGetSankeyInput } from './chart.constants';
+import {
+  DEFAULT_SANKEY_STEPS,
+  type IGetSankeyInput,
+  MAX_SANKEY_WINDOW_DAYS,
+} from './chart.constants';
+import { convertClickhouseDateToJs } from './src/dates';
 import {
   getEventFiltersWhereClause,
   joinFilterClauses,
@@ -28,6 +34,7 @@ import {
 
 /** Destinations kept per node when the flow branches. */
 const TOP_DESTINATIONS_PER_NODE = 3;
+const MILLISECONDS_PER_DAY = 86_400_000;
 /** Links carrying less than this share of the entry sessions are dropped. */
 const MIN_LINK_PERCENT = 0.25;
 const PERCENT = 100;
@@ -119,6 +126,39 @@ function toSankeyEvent(
         whereClause: getRawWhereClause('events', event.filters),
       }
     : undefined;
+}
+
+/**
+ * Refuses a `chart.sankey` window wider than MAX_SANKEY_WINDOW_DAYS.
+ *
+ * Refused rather than shortened: a flow computed over a narrower range than the
+ * one asked for is a different diagram, and nothing in the rendered result says
+ * so. An unparseable date is left alone — the statement itself is where a
+ * malformed range is rejected.
+ *
+ * Applied by `getSankeyChart`, the `chart.sankey` entry point, and not by
+ * `getSankey` itself: §12 fix 9 bounds that procedure specifically, because it
+ * is the range picker that offers `12m`/`lastYear`. The REST
+ * `/insights/:projectId/user_flow` route, the MCP `get_user_flow` tool and the
+ * assistant tool take caller-supplied dates and are outside fix 9's endpoint
+ * list; see sankey.sql.proof.md for that residual.
+ */
+export function assertSankeyWindowIsAnswerable(
+  startDate: string,
+  endDate: string
+): void {
+  const start = convertClickhouseDateToJs(startDate).getTime();
+  const end = convertClickhouseDateToJs(endDate).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    return;
+  }
+
+  const windowDays = Math.floor((end - start) / MILLISECONDS_PER_DAY);
+  if (windowDays > MAX_SANKEY_WINDOW_DAYS) {
+    throw new TRPCBadRequestError(
+      `User flow can cover at most ${MAX_SANKEY_WINDOW_DAYS} days and the selected range covers ${windowDays}. Pick a shorter range — "Last 3 months" is the longest one supported.`
+    );
+  }
 }
 
 export async function getSankey(

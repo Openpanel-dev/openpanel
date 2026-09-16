@@ -50,7 +50,11 @@ import {
   createRetentionService,
   getRetentionCohort,
 } from './retention.service';
-import { createSankeyService, getSankey } from './sankey.service';
+import {
+  assertSankeyWindowIsAnswerable,
+  createSankeyService,
+  getSankey,
+} from './sankey.service';
 import { mapWithConcurrency } from './src/concurrency';
 import { formatClickhouseDate } from './src/dates';
 import { executeAggregateChart, executeChart } from './src/engine/execute';
@@ -525,6 +529,10 @@ export async function getConversionChart(
 export async function getSankeyChart(deps: ServiceDeps, input: IReportInput) {
   const { timezone } = await getSettingsForProject(deps, input.projectId);
   const currentPeriod = getChartStartEndDate(input, timezone);
+  assertSankeyWindowIsAnswerable(
+    currentPeriod.startDate,
+    currentPeriod.endDate
+  );
 
   const options = input.options;
   if (!options || options.type !== 'sankey') {

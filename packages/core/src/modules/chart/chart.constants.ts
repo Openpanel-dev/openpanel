@@ -8,6 +8,27 @@ import { zChartEvent } from '../report/report.constants';
 
 /** User-flow depth: how many events one sankey path may span. */
 export const DEFAULT_SANKEY_STEPS = 5;
+
+/**
+ * Longest window `chart.sankey` will answer, in days.
+ *
+ * Both of its statements scan every event in the range and hold one
+ * `groupArray` per session, so cost is linear in the window and `steps` bounds
+ * the answer rather than the work. Measured on the local production copy
+ * (2026-09-16, `bayse`, mode `after`, 3 steps, `use_query_condition_cache=0`),
+ * per statement: 871 ms / 515 MiB at 7 days, 2,361 ms / 1,329 MiB at 30,
+ * 3,832 ms / 2,060 MiB at 56 - about 60 ms and 31 MiB per day. The range
+ * picker offers `12m` and `lastYear`, which extrapolates to ~22 s and
+ * ~11.8 GiB per statement, twice per call: past what a node can answer at all.
+ *
+ * 93 is the widest span the picker's `3m` option can produce - the 92-day
+ * June-August quarter plus the half-open end-of-day boundary
+ * `getDatesFromRange` adds - so every option up to `3m` is served and `6m`,
+ * `12m`, `lastYear` and a long `yearToDate` or `custom` are refused. Refused,
+ * not silently shortened: see `assertSankeyWindowIsAnswerable` in
+ * sankey.service.ts, applied by `getSankeyChart`.
+ */
+export const MAX_SANKEY_WINDOW_DAYS = 93;
 const MIN_SANKEY_STEPS = 2;
 const MAX_SANKEY_STEPS = 10;
 
