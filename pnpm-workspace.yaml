@@ -7,6 +7,18 @@ packages:
 # pnpm 11 no longer reads the "pnpm" field in package.json — these moved here.
 patchedDependencies:
   nuqs: patches/nuqs.patch
+  # @polar-sh/sdk 0.49 validates every response against generated zod schemas,
+  # and its `discord` benefit schema still requires `properties.guild_token` —
+  # a field the Polar API no longer returns (it is the Discord bot token).
+  # One strict schema for a field we never read took down everything that
+  # embeds a product: `products.list` 500'd `subscription.products` (the whole
+  # billing page) as soon as the Supporter products carried the Discord
+  # benefit, and `validateEvent` throws on any Supporter webhook before
+  # webhook.controller gets to ignore it, so Polar retries it forever.
+  # The patch makes `guild_token` optional. Deliberately unpinned: a version
+  # bump should re-apply it and fail loudly if upstream reworked that file,
+  # rather than silently drop it under allowUnusedPatches below.
+  "@polar-sh/sdk": patches/@polar-sh__sdk.patch
 
 # nuqs is an apps/start dependency, but the api and worker images install a
 # subset of the workspace (their Dockerfiles copy only their own and their
