@@ -13,7 +13,7 @@ import { sql } from './sql';
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';
-const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:8123';
+const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:23123';
 
 /** Port 1 is privileged and unbindable without root, so it is reliably refused. */
 const DEAD_NODE_URL = 'http://127.0.0.1:1';

@@ -17,7 +17,7 @@
  * data. WITH FILL TO < FROM is a runtime check, so it's covered by a plain
  * string assertion instead.
  *
- * Requires a locally reachable CH at http://localhost:8123/openpanel. All
+ * Requires a locally reachable CH at http://localhost:23123/openpanel. All
  * `itCH` tests auto-skip if CH is unreachable.
  */
 

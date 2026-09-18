@@ -14,7 +14,7 @@ test('a non-exported internal path does not resolve', async () => {
 
 test('preload pins infrastructure at local addresses', () => {
   expect(process.env.CLICKHOUSE_URL).toBe(
-    'http://localhost:8123/openpanel_test'
+    'http://localhost:23123/openpanel_test'
   );
   expect(process.env.SELF_HOSTED).toBe('true');
 });

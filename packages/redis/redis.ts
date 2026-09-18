@@ -53,7 +53,7 @@ export const QUEUE_CLIENT_OPTIONS: RedisOptions = {
 
 export { Redis };
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:23379';
 
 export interface ExtendedRedis extends Redis {
   getJson: <T = any>(key: string) => Promise<T | null>;

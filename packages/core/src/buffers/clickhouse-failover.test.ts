@@ -26,7 +26,7 @@ function loadClickHouse() {
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';
-const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:8123';
+const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:23123';
 const DEAD_NODE_URL = 'http://127.0.0.1:1';
 const CLICKHOUSE_TEST_REQUEST_TIMEOUT_MS = 120_000;
 

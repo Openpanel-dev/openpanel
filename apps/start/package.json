@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run with-env vite dev --port 3000",
+    "dev": "bun run with-env vite dev --port ${WEB_PORT:-3000}",
     "preview": "vite preview",
     "deploy": "bun run build && bunx wrangler deploy",
     "cf-typegen": "wrangler types",

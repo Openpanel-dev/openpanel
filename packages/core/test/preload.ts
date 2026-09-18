@@ -10,7 +10,7 @@
 // loaded. Kept in step with test/databases.ts by hand — core does not import
 // from the V1 root test directory.
 process.env.DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5432/openpanel_test?schema=public';
-process.env.CLICKHOUSE_URL = 'http://localhost:8123/openpanel_test';
-process.env.REDIS_URL = 'redis://localhost:6379';
+  'postgresql://postgres:postgres@localhost:23432/openpanel_test?schema=public';
+process.env.CLICKHOUSE_URL = 'http://localhost:23123/openpanel_test';
+process.env.REDIS_URL = 'redis://localhost:23379';
 process.env.SELF_HOSTED = 'true';

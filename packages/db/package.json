@@ -6,6 +6,7 @@
   "scripts": {
     "codegen": "bun run with-env prisma generate && bun prisma/prisma-json-types.ts",
     "migrate": "bun run with-env prisma migrate dev",
+    "studio": "bun run with-env prisma studio --port ${STUDIO_PORT:-5555} --browser none",
     "migrate:deploy:code": "bun run with-env bun ./scripts/migrate-code.ts",
     "migrate:deploy:db": "bun run with-env prisma migrate deploy",
     "migrate:deploy": "bun run migrate:deploy:db && bun run migrate:deploy:code",

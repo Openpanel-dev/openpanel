@@ -492,7 +492,7 @@ echo
   set +a
   PROOF_NAMESPACE="$PROOF_NAMESPACE" bun -e '
     const { Redis } = await import("@openpanel/redis");
-    const redis = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379");
+    const redis = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:23379");
     const pattern = `bull:*-${process.env.PROOF_NAMESPACE}:*`;
     let cursor = "0";
     let removed = 0;

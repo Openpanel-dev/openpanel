@@ -46,7 +46,7 @@ import { loadConfig } from '../src/config/env';
 
 /** Isolates the proof from the shared dev Redis — see the header. */
 const NAMESPACE = 'm9001proof';
-const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:23379';
 const JOB_WAIT_TIMEOUT_MS = 20_000;
 const JOB_POLL_INTERVAL_MS = 100;
 const REAL_HANDLER_QUEUE = 'cron';

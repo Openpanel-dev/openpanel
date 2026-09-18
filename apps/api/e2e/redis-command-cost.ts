@@ -109,7 +109,7 @@ async function time(iterations: number, run: () => Promise<unknown>) {
 }
 
 async function main() {
-  const url = new URL(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+  const url = new URL(process.env.REDIS_URL || 'redis://127.0.0.1:23379');
   url.pathname = `/${BENCH_REDIS_DB}`;
   const redis = new Redis(url.toString());
   const rows = Array.from({ length: EVENT_BUFFER_BATCH_SIZE }, (_, index) =>

@@ -2,6 +2,7 @@ import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
 import {
   chMigrationClient,
   createTable,
+  migrationDatabase,
   runClickhouseMigrationCommands,
 } from '../clickhouse/migration';
 import { type CodeMigrationEnv, getIsCluster, writeSqlDump } from './helpers';
@@ -108,10 +109,10 @@ async function createOldSessions() {
     const endDate = startDate;
     startDate = new Date(startDate.getTime() + 1000 * 60 * 60 * 24);
     sqls.push(`
-      INSERT INTO openpanel.sessions
+      INSERT INTO ${migrationDatabase()}.sessions
         WITH unique_sessions AS (
           SELECT session_id, min(created_at) as first_event_at
-          FROM openpanel.events
+          FROM ${migrationDatabase()}.events
           WHERE 
             created_at BETWEEN '${formatClickhouseDate(endDate)}' AND '${formatClickhouseDate(startDate)}'
             AND session_id != ''

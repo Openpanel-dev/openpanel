@@ -5,6 +5,7 @@ import {
   createTable,
   dropTable,
   getExistingTables,
+  migrationDatabase,
   moveDataBetweenTables,
   renameTable,
   runClickhouseMigrationCommands,
@@ -64,7 +65,7 @@ export async function up(env: CodeMigrationEnv) {
   }
 
   sqls.push(
-    createDatabase('openpanel', isClustered),
+    createDatabase(migrationDatabase(), isClustered),
     // Create new tables
     ...createTable({
       name: 'self_hosting',
@@ -356,7 +357,7 @@ export async function up(env: CodeMigrationEnv) {
       existingTables.map(
         (table) =>
           `docker compose exec -it op-ch clickhouse-client --query "${dropTable(
-            `openpanel.${table}_tmp`,
+            `${migrationDatabase()}.${table}_tmp`,
             false
           )}"`
       )

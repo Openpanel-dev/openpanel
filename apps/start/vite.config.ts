@@ -27,8 +27,16 @@ if (process.env.NITRO) {
   plugins.unshift(cloudflare({ viteEnvironment: { name: 'ssr' } }));
 }
 
+// Behind the hub's Caddy the page is `https://<name>.openpanel.cc`: Vite has to accept that Host,
+// and its HMR client has to dial 443 over wss instead of the dev port.
+const behindProxy = (process.env.DASHBOARD_URL ?? '').startsWith('https://');
+
 const config = defineConfig({
   plugins,
+  server: {
+    allowedHosts: ['.openpanel.cc'],
+    ...(behindProxy ? { hmr: { protocol: 'wss', clientPort: 443 } } : {}),
+  },
   ssr: {
     noExternal: ['react-syntax-highlighter', 'lowlight', 'highlight.js'],
   },

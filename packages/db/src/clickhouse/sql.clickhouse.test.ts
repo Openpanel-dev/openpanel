@@ -18,7 +18,7 @@ import { sql } from './sql';
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';
-const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:8123';
+const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:23123';
 
 /**
  * Well above the app default (30s): this suite shares one local node with

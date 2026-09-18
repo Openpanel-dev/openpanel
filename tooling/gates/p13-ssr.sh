@@ -249,9 +249,9 @@ export_smoke_app_env() {
   export BATCH_INTERVAL=10000
   export ALLOW_REGISTRATION=true
   export ALLOW_INVITATION=true
-  export REDIS_URL=redis://localhost:6379
-  export CLICKHOUSE_URL=http://localhost:8123/openpanel_test
-  export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/openpanel_test?schema=public'
+  export REDIS_URL=redis://localhost:23379
+  export CLICKHOUSE_URL=http://localhost:23123/openpanel_test
+  export DATABASE_URL='postgresql://postgres:postgres@localhost:23432/openpanel_test?schema=public'
   export DATABASE_URL_DIRECT="$DATABASE_URL"
   export DASHBOARD_URL="http://localhost:$DASHBOARD_PORT"
   export API_URL="http://localhost:$API_PORT"

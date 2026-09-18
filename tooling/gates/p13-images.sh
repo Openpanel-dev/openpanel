@@ -228,7 +228,7 @@ docker run -d --name "$API_CONTAINER" --network host \
   -e ALLOW_INVITATION=true \
   -e BATCH_SIZE=5000 \
   -e BATCH_INTERVAL=10000 \
-  -e REDIS_URL='redis://localhost:6379' \
+  -e REDIS_URL='redis://localhost:23379' \
   -e CLICKHOUSE_URL='http://localhost:8123/openpanel_test' \
   -e DATABASE_URL='postgresql://postgres:postgres@localhost:5432/openpanel_test?schema=public' \
   -e DATABASE_URL_DIRECT='postgresql://postgres:postgres@localhost:5432/openpanel_test?schema=public' \

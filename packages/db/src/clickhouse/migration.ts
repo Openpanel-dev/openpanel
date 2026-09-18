@@ -34,6 +34,22 @@ const CLUSTER_REPLICA_PATH =
 
 const replicated = (tableName: string) => `${tableName}_replicated`;
 
+/**
+ * The database the migrations create and query, from `CLICKHOUSE_URL`'s path the same way the
+ * client resolves it, so an isolated database (a hub worktree's `openpanel_<name>`) migrates
+ * into itself and not into `openpanel`.
+ */
+export function migrationDatabase(): string {
+  const raw = (process.env.CLICKHOUSE_URL ?? '').split(',')[0]?.trim();
+  if (!raw) return 'openpanel';
+  try {
+    const name = new URL(raw).pathname.replace(/^\/+|\/+$/g, '');
+    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : 'openpanel';
+  } catch {
+    return 'openpanel';
+  }
+}
+
 export const chMigrationClient = createClient({
   url: process.env.CLICKHOUSE_URL,
   request_timeout: 3_600_000, // 1 hour in milliseconds
@@ -174,7 +190,8 @@ export function dropColumns(
 export async function getExistingTables() {
   try {
     const existingTablesQuery = await chMigrationClient.query({
-      query: `SELECT name FROM system.tables WHERE database = 'openpanel'`,
+      query: `SELECT name FROM system.tables WHERE database = {database:String}`,
+      query_params: { database: migrationDatabase() },
       format: 'JSONEachRow',
     });
     return (await existingTablesQuery.json<{ name: string }>())

@@ -189,3 +189,9 @@ dist
 .DS_Store
 
 *.tsbuildinfo
+
+# hub worktrees and their markers
+.worktrees/
+.worktree-port
+.worktree-db
+WORKTREE.md
