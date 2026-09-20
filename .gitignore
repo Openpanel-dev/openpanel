@@ -195,3 +195,14 @@ dist
 .worktree-port
 .worktree-db
 WORKTREE.md
+
+# seed output and playwright auth state
+.seed.json
+apps/start/e2e/.auth/
+
+# playwright output
+apps/start/test-results/
+apps/start/playwright-report/
+
+# SQL dumps the ClickHouse code-migration runner writes next to each migration
+packages/db/src/code-migrations/*.sql

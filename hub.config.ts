@@ -1,3 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+/** The product's MCP on this worktree's API, authenticated with the seed's root client. */
+function seededMcp(w: { dir: string; url(process: string): string }): Record<string, { url: string }> {
+  try {
+    const seed = JSON.parse(readFileSync(join(w.dir, '.seed.json'), 'utf8'));
+    if (typeof seed?.mcp?.token !== 'string') return {};
+    return { openpanel: { url: `${w.url('api')}/mcp?token=${seed.mcp.token}` } };
+  } catch {
+    return {};
+  }
+}
+
 // The one file the hub reads from this repo. Its shape is `hub.config.d.ts` in the hub repo,
 // which type-checks this file in its own tests; a field the hub does not know fails there.
 export default {
@@ -6,7 +20,7 @@ export default {
   worktreesDir: '.worktrees',
   github: 'Openpanel-dev/openpanel',
   domains: { local: 'local.openpanel.cc', remote: 'openpanel.cc' },
-  install: 'bun install && bun run --filter @openpanel/db codegen',
+  install: 'bun install && bun run --filter @openpanel/db codegen && bunx playwright install chromium',
 
   // port = 21000 + block×100 + offset. Main checkout is block 0.
   processes: {
@@ -18,6 +32,10 @@ export default {
 
   // Injected as process env. Wins over .env because dotenv-cli runs without -o.
   env: (w) => ({
+    // The dashboard's SSR runs under the Cloudflare Vite plugin, whose worker only sees wrangler
+    // vars and .env.local unless told to take the process env; without this it would SSR
+    // against production's API_URL.
+    CLOUDFLARE_INCLUDE_PROCESS_ENV: 'true',
     API_PORT: w.port('api'),
     API_HOST: '127.0.0.1', // Bun.serve defaults to 0.0.0.0
     WEB_PORT: w.port('web'),
@@ -48,6 +66,12 @@ export default {
     redis: { index: (block) => block }, // always per worktree
     kafka: { topics: (n) => [`events-${n}`, `events-${n}-dlq`] },
     migrate: 'bun run --filter @openpanel/db migrate:deploy',
+    // Presets of packages/seed; each writes .seed.json and prints the logins it created.
+    seed: {
+      small: 'bun run --filter @openpanel/seed seed -- --size small --reset',
+      medium: 'bun run --filter @openpanel/seed seed -- --size medium --reset',
+      large: 'bun run --filter @openpanel/seed seed -- --size large --reset',
+    },
   },
 
   checks: {
@@ -63,6 +87,16 @@ export default {
     postgres: (w) => `docker compose -f ${w.root}/docker-compose.yml exec op-db psql -U postgres ${w.db.postgresName}`,
     // rpk has no REPL: list this worktree's topics, then leave a shell in the container with rpk on PATH.
     kafka: (w) => `docker compose -f ${w.root}/docker-compose.yml exec op-rp sh -c 'rpk topic list; echo; echo "this worktree: ${w.db.kafkaTopics.join(' ')}"; exec sh'`,
+  },
+
+  // Every agent the hub launches can drive the dashboard in a real browser (--ignore-https-errors
+  // only skips certificate checks for the hub's local CA; cookies and login are unaffected), and
+  // talks to this worktree's own OpenPanel MCP once the seed has written its root-client token.
+  agents: {
+    mcp: (w) => ({
+      playwright: { command: 'npx', args: ['-y', '@playwright/mcp@latest', '--isolated', '--ignore-https-errors'] },
+      ...seededMcp(w),
+    }),
   },
 
   stack: { up: 'docker compose up -d op-db op-kv op-ch op-rp', cwd: '.' },

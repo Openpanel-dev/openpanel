@@ -13,8 +13,8 @@
  * migrates them. Nothing in test/ may hard-code a database name.
  */
 
-const POSTGRES_ORIGIN = 'postgresql://postgres:postgres@localhost:5432';
-const CLICKHOUSE_ORIGIN = 'http://localhost:8123';
+const POSTGRES_ORIGIN = 'postgresql://postgres:postgres@localhost:23432';
+const CLICKHOUSE_ORIGIN = 'http://localhost:23123';
 
 export const TEST_POSTGRES_DATABASE = 'openpanel_test';
 export const TEST_CLICKHOUSE_DATABASE = 'openpanel_test';
@@ -39,4 +39,4 @@ export const TEST_CLICKHOUSE_URL = clickhouseUrl(TEST_CLICKHOUSE_DATABASE);
  * holds no prod copy and no golden, so it carries neither hazard this module
  * exists to remove.
  */
-export const TEST_REDIS_URL = 'redis://localhost:6379';
+export const TEST_REDIS_URL = 'redis://localhost:23379';
