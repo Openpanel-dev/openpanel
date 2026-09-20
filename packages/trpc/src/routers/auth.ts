@@ -77,6 +77,23 @@ async function consumeInviteForUser(
 }
 
 export const authRouter = createTRPCRouter({
+  /**
+   * Which optional OAuth-backed features this instance has credentials for.
+   * The dashboard uses it to hide the social login buttons and the Search
+   * Console settings on self-hosted instances that haven't configured them.
+   * Booleans only: the client id/secret never leave the API.
+   */
+  providers: publicProcedure.query(() => ({
+    google: Boolean(
+      process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REDIRECT_URI
+    ),
+    github: Boolean(
+      process.env.GITHUB_CLIENT_ID && process.env.GITHUB_REDIRECT_URI
+    ),
+    gsc: Boolean(
+      process.env.GOOGLE_CLIENT_ID && process.env.GSC_GOOGLE_REDIRECT_URI
+    ),
+  })),
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     deleteSessionTokenCookie(ctx.setCookie);
     if (ctx.session?.session?.id) {

@@ -9,6 +9,8 @@
     "[Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)",
     "[Reverse proxy setup](/docs/self-hosting/reverse-proxy)",
     "[Environment Variables](/docs/self-hosting/environment-variables)",
+    "[Social login (Google & GitHub)](/docs/self-hosting/social-login)",
+    "[Google Search Console](/docs/self-hosting/google-search-console)",
     "[High volume setup](/docs/self-hosting/high-volume)",
     "supporter-access-latest-docker-images",
     "changelog"

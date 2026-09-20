@@ -151,10 +151,20 @@ services:
       - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
       # Others
       - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
       - ALLOW_REGISTRATION=${OPENPANEL_ALLOW_REGISTRATION:-false}
       - ALLOW_INVITATION=${OPENPANEL_ALLOW_INVITATION:-true}
       - EMAIL_SENDER=${OPENPANEL_EMAIL_SENDER}
       - RESEND_API_KEY=${RESEND_API_KEY}
+      # Optional: social login (https://openpanel.dev/docs/self-hosting/social-login)
+      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${OPENPANEL_GOOGLE_REDIRECT_URI}
+      - GITHUB_CLIENT_ID=${OPENPANEL_GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${OPENPANEL_GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URI=${OPENPANEL_GITHUB_REDIRECT_URI}
+      # Optional: Google Search Console (https://openpanel.dev/docs/self-hosting/google-search-console)
+      - GSC_GOOGLE_REDIRECT_URI=${OPENPANEL_GSC_GOOGLE_REDIRECT_URI}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s
@@ -205,6 +215,11 @@ services:
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       # Set coolify FQDN domain
       - API_URL=$SERVICE_FQDN_OPAPI
+      # Must match the API's key: the worker decrypts GSC tokens during sync
+      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
+      # Optional: Google Search Console sync needs the Google OAuth client
+      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s

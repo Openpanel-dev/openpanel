@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,9 @@ let envs = {
   DATABASE_URL: '',
   DOMAIN_NAME: '',
   COOKIE_SECRET: generatePassword(32),
+  // AES-256 key for at-rest encryption (GSC tokens, 2FA secrets). Must be
+  // exactly 32 bytes / 64 hex chars, so it can't reuse generatePassword.
+  ENCRYPTION_KEY: randomBytes(32).toString('hex'),
   RESEND_API_KEY: '',
   EMAIL_SENDER: '',
 };
@@ -145,6 +149,7 @@ function writeEnvFile(envs: EnvVars) {
 
   const newEnvFile = envTemplate
     .replace('$COOKIE_SECRET', envs.COOKIE_SECRET)
+    .replace('$ENCRYPTION_KEY', envs.ENCRYPTION_KEY)
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
