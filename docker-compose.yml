@@ -62,6 +62,25 @@ services:
       - "19092:19092" # Kafka API (external)
       - "9644:9644"   # Admin API
 
+  # Opt-in (profile "kafka-auth"): standalone broker that requires SASL, with a
+  # TLS listener, for verifying KAFKA_SSL/KAFKA_SASL_* support.
+  # See docker/redpanda/auth-entrypoint.sh. Not started by `pnpm dock:up`.
+  op-rp-auth:
+    image: redpandadata/redpanda:v25.1.4
+    profiles: ["kafka-auth"]
+    entrypoint: ["/auth-entrypoint.sh"]
+    volumes:
+      - ./docker/data/op-rp-auth-certs:/certs
+      - ./docker/redpanda/auth-entrypoint.sh:/auth-entrypoint.sh:ro
+    ports:
+      - "19093:19093" # Kafka API, SASL required, plaintext
+      - "19094:19094" # Kafka API, SASL required, TLS
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health -X admin.hosts=localhost:9644 | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   op-rp-console:
     image: redpandadata/console:v3.7.2
     restart: always

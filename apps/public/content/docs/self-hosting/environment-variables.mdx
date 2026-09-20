@@ -742,6 +742,8 @@ OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka 
 
 Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
 
+Connections are unauthenticated plaintext by default. For managed or production clusters, enable TLS with `KAFKA_SSL` and SASL authentication (`plain`, `scram-sha-256` or `scram-sha-512`) with the `KAFKA_SASL_*` variables below.
+
 <Callout>
 The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
 </Callout>
@@ -760,6 +762,98 @@ KAFKA_BROKERS=redpanda:9092
 # Multiple brokers
 KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
 ```
+
+### KAFKA_SSL
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false` (automatically `true` when SASL credentials are set)
+
+Connect to the brokers over TLS. Set this to `true` for a TLS-only cluster without authentication. When `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD` are set, TLS is enabled automatically; set `KAFKA_SSL=false` explicitly to send SASL over plaintext (only sensible on a trusted internal network).
+
+**Example**:
+```bash
+KAFKA_SSL=true
+```
+
+### KAFKA_SSL_CA_PATH
+
+**Type**: `string`
+**Required**: No
+**Default**: None (system trust store)
+
+Path to a PEM-encoded CA certificate (or bundle) to trust in addition to the system trust store. Use this when your brokers present certificates signed by a private or self-signed CA. Requires TLS to be enabled.
+
+**Example**:
+```bash
+KAFKA_SSL_CA_PATH=/etc/openpanel/kafka-ca.pem
+```
+
+### KAFKA_SSL_REJECT_UNAUTHORIZED
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `true`
+
+Whether to reject broker certificates that cannot be verified. Only set to `false` for local development against a self-signed broker; prefer `KAFKA_SSL_CA_PATH` in production. Requires TLS to be enabled.
+
+**Example**:
+```bash
+KAFKA_SSL_REJECT_UNAUTHORIZED=false
+```
+
+### KAFKA_SASL_USERNAME
+
+**Type**: `string`
+**Required**: No (required together with `KAFKA_SASL_PASSWORD` to enable SASL)
+**Default**: None
+
+SASL username. Setting a username without a password (or vice versa) is a configuration error and the process refuses to start. Credential values are never logged.
+
+**Example**:
+```bash
+KAFKA_SASL_USERNAME=openpanel
+```
+
+### KAFKA_SASL_PASSWORD
+
+**Type**: `string`
+**Required**: No (required together with `KAFKA_SASL_USERNAME` to enable SASL)
+**Default**: None
+
+SASL password.
+
+**Example**:
+```bash
+KAFKA_SASL_PASSWORD=your-secret
+```
+
+### KAFKA_SASL_MECHANISM
+
+**Type**: `string`
+**Required**: No
+**Default**: `scram-sha-512`
+
+SASL mechanism to authenticate with. One of `plain`, `scram-sha-256` or `scram-sha-512` (case-insensitive). Any other value is rejected at startup, before a Kafka client is created.
+
+**Example**:
+```bash
+# TLS + SASL/SCRAM-SHA-512 (the default when credentials are set)
+KAFKA_BROKERS=kafka-1.example.com:9093,kafka-2.example.com:9093
+KAFKA_SASL_USERNAME=openpanel
+KAFKA_SASL_PASSWORD=your-secret
+
+# TLS + SASL/PLAIN with a private CA
+KAFKA_BROKERS=kafka.internal:9093
+KAFKA_SASL_MECHANISM=plain
+KAFKA_SASL_USERNAME=openpanel
+KAFKA_SASL_PASSWORD=your-secret
+KAFKA_SSL_CA_PATH=/etc/openpanel/kafka-ca.pem
+```
+
+<Callout>
+The producer runs in idempotent mode, so the SASL principal needs the `IdempotentWrite` cluster permission in addition to `Write`/`Describe` on the topic and `Read` on the consumer group. Managed Kafka providers usually grant this by default; on a locked-down cluster you may need to add it explicitly.
+</Callout>
 
 ### KAFKA_EVENTS_TOPIC
 

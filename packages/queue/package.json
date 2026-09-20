@@ -4,7 +4,8 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@openpanel/db": "workspace:*",
