@@ -1,7 +1,11 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import ipaddr from 'ipaddr.js';
-import { Agent, fetch as undiciFetch } from 'undici';
+// The bare `undici` specifier resolves to Bun's built-in shim, whose `Agent`
+// is an empty class (no `close()`, and the `dispatcher` option is not honoured).
+// The subpath bypasses the shim and loads the npm package, which is the one
+// whose connection pinning this guard relies on.
+import { Agent, fetch as undiciFetch } from 'undici/index.js';
 
 /**
  * SSRF guard for the endpoints that fetch user-supplied URLs (the favicon/OG
@@ -131,17 +135,30 @@ export async function assertPublicHostname(
 }
 
 /**
- * A `lookup` that resolves every hostname to `address`, so a socket cannot end
- * up anywhere other than the address we just validated. Shared by the undici
- * dispatcher below and by clients whose transport we don't own (the AWS SDK),
- * which otherwise re-resolve the hostname themselves and can be steered
- * elsewhere by a DNS answer that changes after the check (rebinding).
+ * A `lookup` that resolves every hostname to the validated `addresses`, so a
+ * socket cannot end up anywhere other than an address we just checked. Shared
+ * by the undici dispatcher below and by clients whose transport we don't own
+ * (the AWS SDK), which otherwise re-resolve the hostname themselves and can be
+ * steered elsewhere by a DNS answer that changes after the check (rebinding).
+ *
+ * The whole validated list is handed over rather than only the first entry:
+ * dual-stack hosts often list IPv6 first, and pinning to that alone fails on
+ * machines without an IPv6 route. Happy-eyeballs picks a reachable one.
  *
  * Signature-compatible with both `net.LookupFunction` and undici's connect
  * `lookup`; the two type it slightly differently, so call sites cast.
  */
-export function createPinnedLookup(address: string) {
-  const family = net.isIPv6(address) ? 6 : 4;
+export function createPinnedLookup(addresses: string | string[]) {
+  const list = Array.isArray(addresses) ? addresses : [addresses];
+  const [first] = list;
+  if (!first) {
+    throw new BlockedUrlError('No validated address to pin');
+  }
+  const entries = list.map((address) => ({
+    address,
+    family: net.isIPv6(address) ? 6 : 4,
+  }));
+  const firstFamily = entries[0]!.family;
   return (
     _hostname: string,
     options: { all?: boolean },
@@ -152,23 +169,23 @@ export function createPinnedLookup(address: string) {
     ) => void
   ) => {
     if (options.all) {
-      callback(null, [{ address, family }]);
+      callback(null, entries);
       return;
     }
-    callback(null, address, family);
+    callback(null, first, firstFamily);
   };
 }
 
 /**
- * A dispatcher that only ever connects to `address`, so the socket cannot end
- * up somewhere other than the address we just validated.
+ * A dispatcher that only ever connects to one of `addresses`, so the socket
+ * cannot end up somewhere other than an address we just validated.
  */
-export function createPinnedAgent(address: string): Agent {
+export function createPinnedAgent(addresses: string | string[]): Agent {
   return new Agent({
     connect: {
       // undici types this as net.LookupFunction; the shared implementation is
       // signature-compatible but typed loosely so node's Agent can use it too.
-      lookup: createPinnedLookup(address) as unknown as net.LookupFunction,
+      lookup: createPinnedLookup(addresses) as unknown as net.LookupFunction,
     },
   });
 }
@@ -289,8 +306,8 @@ async function walkToFinalResponse(
   let current = input instanceof URL ? input : new URL(input);
 
   for (let hop = 0; ; hop++) {
-    const [address] = await assertPublicUrl(current);
-    const agent = createPinnedAgent(address!);
+    const addresses = await assertPublicUrl(current);
+    const agent = createPinnedAgent(addresses);
 
     let response: Awaited<ReturnType<typeof undiciFetch>>;
     try {
