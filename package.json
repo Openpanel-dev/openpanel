@@ -52,7 +52,7 @@
     "vue": "3.5.25"
   },
   "scripts": {
-    "test": "bun run --filter @openpanel/core test && bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter start test && vitest run",
+    "test": "bun run --filter @openpanel/core test && bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter @openpanel/seed test && bun run --filter start test && vitest run",
     "gen:bots": "bun run --filter @openpanel/core gen:bots",
     "gen:referrers": "bun run --filter @openpanel/core gen:referrers",
     "dock:up": "docker compose up -d",
@@ -63,6 +63,9 @@
     "codegen": "bun run --filter @openpanel/db codegen && bun run --filter @openpanel/core codegen",
     "migrate": "bun run --filter @openpanel/db migrate",
     "migrate:deploy": "bun run --filter @openpanel/db migrate:deploy",
+    "seed": "bun run --filter @openpanel/seed seed --",
+    "send": "bun run --filter @openpanel/seed send --",
+    "e2e": "bun run --filter start e2e --",
     "postinstall:workspaces": "bun run --filter public postinstall && bun run --filter @openpanel/testbed postinstall",
     "dev": "bun run --filter @openpanel/api testing & bun run --filter start dev & wait",
     "dev:public": "bun run --filter public dev",

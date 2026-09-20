@@ -238,6 +238,7 @@
         "@biomejs/biome": "1.9.4",
         "@cloudflare/vite-plugin": "1.33.2",
         "@openpanel/db": "workspace:*",
+        "@playwright/test": "1.63.0",
         "@tanstack/devtools-event-client": "0.3.3",
         "@testing-library/dom": "10.4.1",
         "@testing-library/react": "16.3.0",
@@ -550,6 +551,21 @@
         "@openpanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
         "tsup": "7.3.0",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/seed": {
+      "name": "@openpanel/seed",
+      "version": "0.0.1",
+      "dependencies": {
+        "@node-rs/argon2": "2.0.2",
+        "@openpanel/db": "workspace:*",
+        "@openpanel/shared": "workspace:*",
+      },
+      "devDependencies": {
+        "@openpanel/tsconfig": "workspace:*",
+        "@types/node": "catalog:",
+        "bun-types": "1.4.0",
         "typescript": "catalog:",
       },
     },
@@ -1579,6 +1595,8 @@
 
     "@openpanel/sdk-info": ["@openpanel/sdk-info@workspace:packages/sdks/_info"],
 
+    "@openpanel/seed": ["@openpanel/seed@workspace:packages/seed"],
+
     "@openpanel/shared": ["@openpanel/shared@workspace:packages/shared"],
 
     "@openpanel/testbed": ["@openpanel/testbed@workspace:apps/testbed"],
@@ -1902,6 +1920,8 @@
     "@pinojs/redact": ["@pinojs/redact@0.4.0", "", {}, "sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
+
+    "@playwright/test": ["@playwright/test@1.63.0", "", { "dependencies": { "playwright": "1.63.0" }, "bin": { "playwright": "cli.js" } }, "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ=="],
 
     "@polar-sh/sdk": ["@polar-sh/sdk@0.49.0", "", { "dependencies": { "standardwebhooks": "^1.0.0", "zod": "^3.25.65 || ^4.0.0" } }, "sha512-9UYb70iKjJCtWYlu0OF5HLYBLmkxHwqr2RlXwuxXQgRGqq56IQWlVG+NO7e1YJ7I5GW0CBHhGIjRbQ9hYM6ycQ=="],
 
@@ -4850,6 +4870,10 @@
     "pkg-dir": ["pkg-dir@3.0.0", "", { "dependencies": { "find-up": "^3.0.0" } }, "sha512-/E57AYkoeQ25qkxMj5PBOVgF8Kiu/h7cYS30Z5+R7WaiCCBfLq58ZI/dSeaEKb9WVJV5n/03QwrN3IeWIFllvw=="],
 
     "pkg-types": ["pkg-types@2.3.3", "", { "dependencies": { "confbox": "^0.3.1", "exsolve": "^1.1.1", "pathe": "^2.0.3" } }, "sha512-j/lCFdcppV0JxWpCEITdbDltBxPP6cHT+yNJ6Go2OgoSA9518X847X9z0p6LtA4Nc16+eQzCZjRrWanTGvHJ5w=="],
+
+    "playwright": ["playwright@1.63.0", "", { "dependencies": { "playwright-core": "1.63.0" }, "bin": { "playwright": "cli.js" } }, "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg=="],
+
+    "playwright-core": ["playwright-core@1.63.0", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg=="],
 
     "please-upgrade-node": ["please-upgrade-node@3.2.0", "", { "dependencies": { "semver-compare": "^1.0.0" } }, "sha512-gQR3WpIgNIKwBMVLkpMUeR3e1/E1y42bqDQZfql+kDeXd8COYfM8PQA4X6y7a8u9Ua9FHmsrrmirW2vHs45hWg=="],
 
