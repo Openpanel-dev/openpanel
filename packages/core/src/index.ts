@@ -9,7 +9,14 @@
 // packages/db reads ClickHouse row JSON through this (P11: packages/json's
 // only definition already lived here; the barrel is how a package outside
 // core reaches it, since the exports map has no ./shared/* entry).
-export { generateId, generateSecureId, getChartPrevStartEndDate, getSafeJson, resolveDateRange, shortId } from '@openpanel/shared';
+export {
+  generateId,
+  generateSecureId,
+  getChartPrevStartEndDate,
+  getSafeJson,
+  resolveDateRange,
+  shortId,
+} from '@openpanel/shared';
 export type {
   SafeFetchOptions,
   SafeFetchResult,
@@ -23,21 +30,25 @@ export type {
 // relative import now that it lives inside core (M5-007).
 export {
   assertPublicHostname,
-  assertPublicUrl,assertSafeUrl, 
+  assertPublicUrl,
+  assertSafeUrl,
   BlockedUrlError,
   createHash,
-  createPinnedAgent,createPinnedLookup, 
+  createPinnedAgent,
+  createPinnedLookup,
   decrypt,
   decryptCredential,
   encrypt,
   encryptCredential,
-  generateSalt,getDevice, 
+  generateSalt,
+  getDevice,
   hashPassword,
   isBlockedIp,
-  isEncrypted,parseUserAgent, 
+  isEncrypted,
+  parseUserAgent,
   safeFetch,
-  safeFetchStream, 
-  verifyPassword
+  safeFetchStream,
+  verifyPassword,
 } from '@openpanel/shared/server';
 // The seven buffers (moved from packages/db/src/buffers, M8-001). Only the
 // FACTORY is on the barrel: they are boot singletons on `AppDeps`, built once
@@ -77,6 +88,10 @@ export {
   ProviderError,
   type ProviderErrorOptions,
 } from './clients/provider-error';
+// The one config VALUE the loader needs from core: the accepted SASL
+// mechanisms, so `KAFKA_SASL_MECHANISM` is validated against the list the
+// client actually supports rather than a second copy of it.
+export { KAFKA_SASL_MECHANISMS, type KafkaSaslMechanism } from './config';
 export type {
   AppDeps,
   CoreConfig,

@@ -81,6 +81,14 @@ export function testCoreConfig(
       handlerMaxAttempts: 3,
       handlerRetryInitialMs: 100,
       handlerRetryMaxMs: 1000,
+      security: {
+        ssl: {
+          enabled: false,
+          caPath: undefined,
+          rejectUnauthorized: undefined,
+        },
+        sasl: undefined,
+      },
     },
     buffers: {
       asyncInserts: false,

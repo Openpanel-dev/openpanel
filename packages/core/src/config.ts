@@ -85,6 +85,31 @@ export interface PolarConfig {
   webhookSecret: string | undefined;
 }
 
+export const KAFKA_SASL_MECHANISMS = [
+  'plain',
+  'scram-sha-256',
+  'scram-sha-512',
+] as const;
+export type KafkaSaslMechanism = (typeof KAFKA_SASL_MECHANISMS)[number];
+
+/**
+ * TLS/SASL for an external broker. Unauthenticated plaintext when nothing is
+ * set. The loader has already checked the combination is coherent (a full
+ * credential pair, a known mechanism, TLS options only with TLS); the CA file
+ * itself is read where the client is built, so an unreadable path fails there
+ * with its own message.
+ */
+export interface KafkaSecurityConfig {
+  ssl: {
+    enabled: boolean;
+    caPath: string | undefined;
+    rejectUnauthorized: boolean | undefined;
+  };
+  sasl:
+    | { mechanism: KafkaSaslMechanism; username: string; password: string }
+    | undefined;
+}
+
 /**
  * The Kafka transport's knobs. Every one is resolved: kafkajs is handed these
  * values verbatim, so a `??` at the call site would be a second default.
@@ -115,6 +140,7 @@ export interface KafkaConfig {
   handlerMaxAttempts: number;
   handlerRetryInitialMs: number;
   handlerRetryMaxMs: number;
+  security: KafkaSecurityConfig;
 }
 
 /** Per-buffer sizing. `undefined` keeps the buffer's own documented default. */

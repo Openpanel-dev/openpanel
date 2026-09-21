@@ -38,6 +38,10 @@ const kafkaConfig = (tuning: Partial<KafkaConfig> = {}): KafkaConfig =>
     handlerMaxAttempts: 3,
     handlerRetryInitialMs: 100,
     handlerRetryMaxMs: 1000,
+    security: {
+      ssl: { enabled: false, caPath: undefined, rejectUnauthorized: undefined },
+      sasl: undefined,
+    },
     ...tuning,
   }) satisfies KafkaConfig;
 

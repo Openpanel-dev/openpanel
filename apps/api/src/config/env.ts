@@ -27,8 +27,8 @@
 //     documented default on a malformed value, which is what the modules did
 //     when they parsed these themselves.
 
-import type { CoreConfig } from '@openpanel/core';
-import { queues } from '@openpanel/core';
+import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
+import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
 import { z } from 'zod';
 
 export const ROLE_VALUES = ['api', 'worker', 'all'] as const;
@@ -82,6 +82,7 @@ const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
 const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
+const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
 
 /**
  * How long a duplicate marker outlives its event (M21-001). It only has to
@@ -165,6 +166,54 @@ const trueOrOneSchema = z.preprocess(
     .transform((value) => value === TRUE_STRING || value === ONE_STRING)
 );
 
+/**
+ * `true`/`1` or `false`/`0`, `undefined` when unset. Anything else fails boot:
+ * these switch TLS on a broker connection, where a typo must not silently
+ * mean "off".
+ */
+const strictOptionalBoolean = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || STRICT_BOOLEAN_STRINGS.has(value)) {
+        return;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `must be "true" or "false" (got "${value}")`,
+      });
+    })
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : value === TRUE_STRING || value === ONE_STRING
+    )
+);
+
+/** Case-insensitive; an unknown mechanism fails boot before a client exists. */
+const kafkaSaslMechanismSchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .transform((value) => value?.toLowerCase())
+    .superRefine((value, ctx) => {
+      if (
+        value === undefined ||
+        (KAFKA_SASL_MECHANISMS as readonly string[]).includes(value)
+      ) {
+        return;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Unsupported KAFKA_SASL_MECHANISM "${value}". Supported: ${KAFKA_SASL_MECHANISMS.join(', ')}`,
+      });
+    })
+    .transform((value) => value as KafkaSaslMechanism | undefined)
+);
+
 /** Any defined value means on — V1's spelling for DISABLE_WORKERS. */
 const definedIsTrueSchema = z.preprocess(
   blankToUndefined,
@@ -175,6 +224,12 @@ const definedIsTrueSchema = z.preprocess(
 );
 
 const ZERO_STRING = '0';
+const STRICT_BOOLEAN_STRINGS = new Set([
+  TRUE_STRING,
+  ONE_STRING,
+  FALSE_STRING,
+  ZERO_STRING,
+]);
 
 /** On unless explicitly switched off with `false` or `0`. */
 const onUnlessDisabledSchema = z.preprocess(
@@ -470,6 +525,13 @@ const rawSchema = z.object({
   KAFKA_HANDLER_RETRY_MAX_MS: positiveIntWithDefault(
     DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS
   ),
+  /** TLS/SASL for an external broker; unauthenticated plaintext when unset. */
+  KAFKA_SSL: strictOptionalBoolean,
+  KAFKA_SSL_CA_PATH: optionalString,
+  KAFKA_SSL_REJECT_UNAUTHORIZED: strictOptionalBoolean,
+  KAFKA_SASL_USERNAME: optionalString,
+  KAFKA_SASL_PASSWORD: optionalString,
+  KAFKA_SASL_MECHANISM: kafkaSaslMechanismSchema,
 
   // --- ingest dead-letter ---
   INGEST_DEAD_LETTER_MAX_ENTRIES: positiveIntWithDefault(
@@ -584,6 +646,53 @@ function checkKafkaHeartbeatFitsSession(
   });
 }
 
+/** SASL credentials go over TLS unless KAFKA_SSL=false opts out explicitly. */
+function kafkaSslEnabled(raw: RawEnv): boolean {
+  const saslEnabled =
+    raw.KAFKA_SASL_USERNAME !== undefined ||
+    raw.KAFKA_SASL_PASSWORD !== undefined;
+  return raw.KAFKA_SSL ?? saslEnabled;
+}
+
+/** Half a credential pair, or a mechanism with none, is a misconfiguration. */
+function checkKafkaSaslIsComplete(raw: RawEnv, ctx: z.RefinementCtx): void {
+  const hasUsername = raw.KAFKA_SASL_USERNAME !== undefined;
+  const hasPassword = raw.KAFKA_SASL_PASSWORD !== undefined;
+  if (hasUsername && hasPassword) {
+    return;
+  }
+  if (hasUsername || hasPassword) {
+    const missing = hasUsername ? 'KAFKA_SASL_PASSWORD' : 'KAFKA_SASL_USERNAME';
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Kafka SASL is partially configured: ${missing} is missing (both KAFKA_SASL_USERNAME and KAFKA_SASL_PASSWORD are required)`,
+    });
+    return;
+  }
+  if (raw.KAFKA_SASL_MECHANISM !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        'KAFKA_SASL_MECHANISM is set but KAFKA_SASL_USERNAME and KAFKA_SASL_PASSWORD are missing',
+    });
+  }
+}
+
+/** A CA or a verification switch on a plaintext connection does nothing. */
+function checkKafkaTlsOptionsHaveTls(raw: RawEnv, ctx: z.RefinementCtx): void {
+  const hasTlsOptions =
+    raw.KAFKA_SSL_CA_PATH !== undefined ||
+    raw.KAFKA_SSL_REJECT_UNAUTHORIZED !== undefined;
+  if (!hasTlsOptions || kafkaSslEnabled(raw)) {
+    return;
+  }
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message:
+      'KAFKA_SSL_CA_PATH / KAFKA_SSL_REJECT_UNAUTHORIZED require TLS; set KAFKA_SSL=true',
+  });
+}
+
 /** The reaper's deadman closes sessions; below the idle window it closes live ones. */
 function checkReaperDeadmanOutlivesSession(
   raw: RawEnv,
@@ -666,6 +775,27 @@ function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
     handlerMaxAttempts: raw.KAFKA_HANDLER_MAX_ATTEMPTS,
     handlerRetryInitialMs: raw.KAFKA_HANDLER_RETRY_INITIAL_MS,
     handlerRetryMaxMs: raw.KAFKA_HANDLER_RETRY_MAX_MS,
+    security: deriveKafkaSecurity(raw),
+  };
+}
+
+function deriveKafkaSecurity(raw: RawEnv): CoreConfig['kafka']['security'] {
+  const hasCredentials =
+    raw.KAFKA_SASL_USERNAME !== undefined &&
+    raw.KAFKA_SASL_PASSWORD !== undefined;
+  return {
+    ssl: {
+      enabled: kafkaSslEnabled(raw),
+      caPath: raw.KAFKA_SSL_CA_PATH,
+      rejectUnauthorized: raw.KAFKA_SSL_REJECT_UNAUTHORIZED,
+    },
+    sasl: hasCredentials
+      ? {
+          mechanism: raw.KAFKA_SASL_MECHANISM ?? DEFAULT_KAFKA_SASL_MECHANISM,
+          username: raw.KAFKA_SASL_USERNAME as string,
+          password: raw.KAFKA_SASL_PASSWORD as string,
+        }
+      : undefined,
   };
 }
 
@@ -863,6 +993,8 @@ const envSchema = rawSchema
     checkRoleConsumesSomething(raw, ctx);
     checkOtlpHasKey(raw, ctx);
     checkKafkaHeartbeatFitsSession(raw, ctx);
+    checkKafkaSaslIsComplete(raw, ctx);
+    checkKafkaTlsOptionsHaveTls(raw, ctx);
     checkReaperDeadmanOutlivesSession(raw, ctx);
     checkVacuumOutlivesReaper(raw, ctx);
     checkProfileBackfillProjectsHaveAFlag(raw, ctx);

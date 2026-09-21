@@ -245,6 +245,80 @@ describe('derived values, computed once in the transform', () => {
     ).toBe('own');
   });
 
+  it('kafka security is plaintext without auth when nothing is set', () => {
+    expect(loadConfig(base).core.kafka.security).toEqual({
+      ssl: { enabled: false, caPath: undefined, rejectUnauthorized: undefined },
+      sasl: undefined,
+    });
+  });
+
+  it('KAFKA_SSL=true (or 1) enables TLS on its own; the CA path and switch ride along', () => {
+    expect(
+      loadConfig({ ...base, KAFKA_SSL: 'true' }).core.kafka.security.ssl
+    ).toEqual({
+      enabled: true,
+      caPath: undefined,
+      rejectUnauthorized: undefined,
+    });
+    expect(
+      loadConfig({
+        ...base,
+        KAFKA_SSL: '1',
+        KAFKA_SSL_CA_PATH: '/certs/ca.pem',
+        KAFKA_SSL_REJECT_UNAUTHORIZED: 'false',
+      }).core.kafka.security.ssl
+    ).toEqual({
+      enabled: true,
+      caPath: '/certs/ca.pem',
+      rejectUnauthorized: false,
+    });
+  });
+
+  it('SASL credentials imply TLS and default to scram-sha-512', () => {
+    expect(
+      loadConfig({
+        ...base,
+        KAFKA_SASL_USERNAME: 'op',
+        KAFKA_SASL_PASSWORD: 'secret',
+      }).core.kafka.security
+    ).toEqual({
+      ssl: { enabled: true, caPath: undefined, rejectUnauthorized: undefined },
+      sasl: { mechanism: 'scram-sha-512', username: 'op', password: 'secret' },
+    });
+  });
+
+  it('accepts every mechanism case-insensitively', () => {
+    for (const mechanism of [
+      'plain',
+      'scram-sha-256',
+      'scram-sha-512',
+    ] as const) {
+      expect(
+        loadConfig({
+          ...base,
+          KAFKA_SASL_USERNAME: 'op',
+          KAFKA_SASL_PASSWORD: 'secret',
+          KAFKA_SASL_MECHANISM: mechanism.toUpperCase(),
+        }).core.kafka.security.sasl?.mechanism
+      ).toBe(mechanism);
+    }
+  });
+
+  it('KAFKA_SSL=false sends SASL over plaintext when asked explicitly', () => {
+    expect(
+      loadConfig({
+        ...base,
+        KAFKA_SSL: 'false',
+        KAFKA_SASL_USERNAME: 'op',
+        KAFKA_SASL_PASSWORD: 'secret',
+        KAFKA_SASL_MECHANISM: 'plain',
+      }).core.kafka.security
+    ).toEqual({
+      ssl: { enabled: false, caPath: undefined, rejectUnauthorized: undefined },
+      sasl: { mechanism: 'plain', username: 'op', password: 'secret' },
+    });
+  });
+
   it('the dead-letter list cap defaults to 1000 and takes a positive integer', () => {
     // The Kafka DLQ topic above is no longer the dead-letter destination
     // (M20-001) — it is kept only so the seam can be swapped back.
@@ -334,6 +408,69 @@ describe('cross-field invariants, checked before the transform', () => {
         SESSION_VACUUM_STALE_THRESHOLD_MS: '60000',
       })
     ).toThrow(/must exceed the reaper deadman/);
+  });
+
+  it('refuses half a Kafka SASL credential pair, naming the missing half', () => {
+    expect(() => loadConfig({ ...base, KAFKA_SASL_USERNAME: 'op' })).toThrow(
+      /KAFKA_SASL_PASSWORD is missing/
+    );
+    expect(() =>
+      loadConfig({ ...base, KAFKA_SASL_PASSWORD: 'secret' })
+    ).toThrow(/KAFKA_SASL_USERNAME is missing/);
+  });
+
+  it('refuses a SASL mechanism without credentials', () => {
+    expect(() =>
+      loadConfig({ ...base, KAFKA_SASL_MECHANISM: 'plain' })
+    ).toThrow(/KAFKA_SASL_MECHANISM is set but/);
+  });
+
+  it('refuses an unsupported SASL mechanism before any client exists', () => {
+    expect(() =>
+      loadConfig({
+        ...base,
+        KAFKA_SASL_USERNAME: 'op',
+        KAFKA_SASL_PASSWORD: 'secret',
+        KAFKA_SASL_MECHANISM: 'oauthbearer',
+      })
+    ).toThrow(
+      'Unsupported KAFKA_SASL_MECHANISM "oauthbearer". Supported: plain, scram-sha-256, scram-sha-512'
+    );
+  });
+
+  it('refuses TLS-only options on a plaintext connection', () => {
+    expect(() =>
+      loadConfig({ ...base, KAFKA_SSL_CA_PATH: '/certs/ca.pem' })
+    ).toThrow(/require TLS/);
+    expect(() =>
+      loadConfig({
+        ...base,
+        KAFKA_SSL: 'false',
+        KAFKA_SSL_REJECT_UNAUTHORIZED: 'false',
+      })
+    ).toThrow(/require TLS/);
+  });
+
+  it('refuses a non-boolean KAFKA_SSL', () => {
+    expect(() => loadConfig({ ...base, KAFKA_SSL: 'yes' })).toThrow(
+      /must be "true" or "false" \(got "yes"\)/
+    );
+  });
+
+  it('never puts the SASL password in a boot error', () => {
+    let message = '';
+    try {
+      loadConfig({
+        ...base,
+        KAFKA_SASL_USERNAME: 'op',
+        KAFKA_SASL_PASSWORD: 'hunter2-secret',
+        KAFKA_SASL_MECHANISM: 'nope',
+      });
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toContain('Unsupported KAFKA_SASL_MECHANISM');
+    expect(message).not.toContain('hunter2-secret');
   });
 
   it('refuses a profile-backfill project list with the flag off', () => {

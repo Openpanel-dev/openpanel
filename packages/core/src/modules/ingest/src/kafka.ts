@@ -26,6 +26,11 @@ import { createLogger, type ILogger } from '../../../pino-logger';
 import type { DeadLetterMessage } from './consumer';
 import type { IncomingEventPayload } from './incoming-event';
 import {
+  describeKafkaSecurity,
+  type ResolvedKafkaSecurity,
+  resolveKafkaSecurity,
+} from './kafka-security';
+import {
   createProducerBatcher,
   type ProducerBatcher,
 } from './producer-batcher';
@@ -59,18 +64,31 @@ export const assertKafkaConfigured = (config: KafkaConfig): void => {
       'KAFKA_BROKERS is not set. Kafka/Redpanda is the only events transport — set KAFKA_BROKERS to a comma-separated broker list.'
     );
   }
+  // Reads the CA file, so an unreadable KAFKA_SSL_CA_PATH fails here at boot
+  // rather than on the first produce/consume.
+  getKafkaSecurity(config);
+};
+
+// Memoised like the client below: the CA file is read once per process.
+let kafkaSecurity: ResolvedKafkaSecurity | null = null;
+const getKafkaSecurity = (config: KafkaConfig): ResolvedKafkaSecurity => {
+  kafkaSecurity ??= resolveKafkaSecurity(config.security);
+  return kafkaSecurity;
 };
 
 let kafka: Kafka | null = null;
 const getKafka = (config: CoreConfig): Kafka => {
   assertKafkaConfigured(config.kafka);
   if (!kafka) {
+    const security = getKafkaSecurity(config.kafka);
     kafka = new Kafka({
       clientId: config.kafka.clientId,
       brokers: config.kafka.brokers,
       logLevel: logLevel.WARN,
       requestTimeout: config.kafka.requestTimeoutMs,
       connectionTimeout: config.kafka.connectionTimeoutMs,
+      ssl: security.ssl,
+      sasl: security.sasl,
     });
   }
   return kafka;
@@ -112,6 +130,8 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
           {
             brokers: config.kafka.brokers,
             topic: config.kafka.eventsTopic,
+            // `ssl: bool` and the mechanism only — never a credential.
+            ...describeKafkaSecurity(getKafkaSecurity(config.kafka)),
             // The throughput knobs, logged once, so a measurement run can be
             // tied to the configuration that produced it.
             maxInFlight: tuning.maxInFlight,
