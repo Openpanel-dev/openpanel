@@ -446,6 +446,6 @@ code. Never invent a cross-module abstraction to deduplicate two call sites.
 **Always think hot path.** This is an ingestion platform: `/track`, the Kafka
 consumer and the buffers get no per-request work that could have been per-boot.
 
-**Format with ultracite, only on the files you changed, named explicitly**
-(`npx ultracite fix <files...>`). Never bare and never on `.` — the repo has
-never been bulk-formatted.
+**Format with ultracite** (`npx ultracite fix <files...>`). The package is
+formatted and safe-fixed as of 2026-09-21; a bare run only touches what
+drifted, so it is fine, but the files you changed must come out clean.

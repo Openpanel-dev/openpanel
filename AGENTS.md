@@ -85,7 +85,9 @@ a one-line fix does not need the full suite, a query or ingest change always doe
 | Anything shared (`packages/shared`, `packages/db`, config, deps) | — | `bun run typecheck` and `bun run test` in full |
 
 Always before you finish: `bun run typecheck`, and `npx ultracite fix <files you changed>`
-(never bare or on `.` — the repo is not bulk-formatted). Report what you ran and what you saw;
+(the repo is formatted and safe-fixed as of 2026-09-21, so a bare `bun run fix` is also
+fine; `bun run check` still reports a few hundred lint errors that need judgment, so only
+the files you touched have to come out clean). Report what you ran and what you saw;
 a screenshot or a query result is evidence, "should work" is not.
 
 Sending real events (`bun run send`, uses the seeded clients and `$API_URL`):
@@ -156,8 +158,9 @@ on the same data.
 
 ## Code style
 
-Formatting and linting is ultracite (Biome), **only on the files you changed**. Do not
-hand-format against it and do not disable rules to make a check pass.
+Formatting and linting is ultracite (Biome 2). Do not hand-format against it and do not
+disable rules to make a check pass. Generated and vendored files are excluded in
+`biome.json`; add to that list rather than reformatting build output.
 
 - Constants over magic numbers: named, at the top of the file or in the module's
   `<name>.constants.ts`.
