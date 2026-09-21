@@ -649,18 +649,6 @@ export function groupPropertyValuesQuery(
   return sql`SELECT distinct ${expression} as values FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND deleted = 0 AND ${expression} != '' AND ${expression} IS NOT NULL ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
 
-/** Distinct values of an events column / property over the last six months. */
-export function eventFieldValuesQuery(
-  projectId: string,
-  selectExpression: SqlFragment,
-  event: string
-): SqlFragment {
-  // V1 only skipped the name clause for `*` — an empty event name filters on ''.
-  const eventName =
-    event !== '*' ? sql` AND name = ${sql.string(event)}` : sql.empty;
-  return sql`SELECT distinct ${selectExpression} as values FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(projectId)} AND created_at > (now() - INTERVAL 6 MONTH)${eventName} ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
-}
-
 // --- getProfiles ------------------------------------------------------------
 
 export interface ChartBucketProfilesInput {

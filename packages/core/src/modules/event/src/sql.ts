@@ -24,7 +24,7 @@ import {
   QUERY_EVENTS_EQUALITY_COLUMNS,
   type QueryEventsEqualityColumn,
 } from '../event.constants';
-import { formatClickhouseDate } from './dates';
+import { formatClickhouseDate, formatClickhouseDateTime64 } from './dates';
 import {
   type CompiledFilterClauses,
   compiledFilterFragments,
@@ -61,8 +61,24 @@ function optional(
   return condition ? fragment() : sql.empty;
 }
 
-function calendarDayRange(startDate: Date, endDate: Date): SqlFragment {
-  return sql`toDate(created_at) BETWEEN toDate(${sql.string(formatClickhouseDate(startDate))}) AND toDate(${sql.string(formatClickhouseDate(endDate))})`;
+/**
+ * Each bound applies on its own and at the exact timestamp: `toDate()` on both
+ * sides of a BETWEEN truncated them to calendar days, so an end of midnight
+ * silently included the whole day (#477).
+ */
+function exactDateBounds(startDate?: Date, endDate?: Date): SqlFragment[] {
+  const bounds: SqlFragment[] = [];
+  if (startDate) {
+    bounds.push(
+      sql`created_at >= toDateTime64(${sql.string(formatClickhouseDateTime64(startDate))}, 3)`
+    );
+  }
+  if (endDate) {
+    bounds.push(
+      sql`created_at <= toDateTime64(${sql.string(formatClickhouseDateTime64(endDate))}, 3)`
+    );
+  }
+  return bounds;
 }
 
 export interface EventFilterJoins {
@@ -165,9 +181,7 @@ function eventListConditions(query: EventListQuery): SqlFragment[] {
       sql`profile_id IN (SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL WHERE cohort_id = ${sql.string(query.cohortId)} AND project_id = ${projectId})`
     );
   }
-  if (query.startDate && query.endDate) {
-    conditions.push(calendarDayRange(query.startDate, query.endDate));
-  }
+  conditions.push(...exactDateBounds(query.startDate, query.endDate));
   if (query.events && query.events.length > 0) {
     conditions.push(sql`name IN ${sql.array('String', query.events)}`);
   }
@@ -229,9 +243,7 @@ export function eventsCountQuery(query: EventsCountQuery): SqlFragment {
       sql`profile_id IN (SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL WHERE cohort_id = ${sql.string(query.cohortId)} AND project_id = ${projectId})`
     );
   }
-  if (query.startDate && query.endDate) {
-    conditions.push(calendarDayRange(query.startDate, query.endDate));
-  }
+  conditions.push(...exactDateBounds(query.startDate, query.endDate));
   if (query.events && query.events.length > 0) {
     conditions.push(sql`name IN ${sql.array('String', query.events)}`);
   }
@@ -369,11 +381,15 @@ function queryEventsConditions(query: QueryEventsQuery): SqlFragment[] {
   return conditions;
 }
 
+/**
+ * Without an explicit order ClickHouse returns whatever it reads first, so a
+ * bare LIMIT hands back an arbitrary slice of the window, not the newest.
+ */
 export function queryEventsQuery(query: QueryEventsQuery): SqlFragment {
   return sql`SELECT * FROM ${sql.id(TABLE.events)} WHERE ${sql.join(
     queryEventsConditions(query),
     ' AND '
-  )} LIMIT ${sql.uint64(query.limit)}`;
+  )} ORDER BY created_at DESC LIMIT ${sql.uint64(query.limit)}`;
 }
 
 // ---- packages/trpc/src/routers/event.ts's inline queries

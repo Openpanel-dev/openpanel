@@ -692,13 +692,15 @@ async function compileEventFilters(
 }
 
 /**
- * V1 applied the lookback window for a Date cursor and for "no cursor and no
- * date range" — where a numeric `cursor` of 0 counts as no cursor, so the
- * first numeric page is windowed and later pages are not.
+ * The lookback window applies for a Date cursor and when there is no cursor
+ * and no date bound at all. A numeric cursor of 0 is the first page, not "no
+ * cursor", and either date bound alone is enough to skip the window (#477).
  */
 function hasEventListLookback(options: GetEventListOptions): boolean {
   const { cursor, startDate, endDate } = options;
-  return cursor instanceof Date || !(cursor || (startDate && endDate));
+  return (
+    cursor instanceof Date || (cursor === undefined && !startDate && !endDate)
+  );
 }
 
 export async function getEventList(

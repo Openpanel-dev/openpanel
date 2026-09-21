@@ -122,7 +122,7 @@ describe('eventListQuery', () => {
     }).toStatement();
 
     expect(query).toBe(
-      "SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p2:String} AND device_id != '' AND profile_id = {p3:String} group by did) AND profile_id = device_id) OR profile_id = {p4:String}) AND session_id = {p5:String} AND has(groups, {p6:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p7:String} AND project_id = {p8:String}) AND toDate(created_at) BETWEEN toDate({p9:String}) AND toDate({p10:String}) AND name IN {p11:Array(String)} AND (path = '/') AND name IN {p12:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p13:UInt64}"
+      "SELECT created_at, id, name FROM events e WHERE project_id = {p1:String} AND ((device_id IN (SELECT device_id as did FROM events WHERE project_id = {p2:String} AND device_id != '' AND profile_id = {p3:String} group by did) AND profile_id = device_id) OR profile_id = {p4:String}) AND session_id = {p5:String} AND has(groups, {p6:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p7:String} AND project_id = {p8:String}) AND created_at >= toDateTime64({p9:String}, 3) AND created_at <= toDateTime64({p10:String}, 3) AND name IN {p11:Array(String)} AND (path = '/') AND name IN {p12:Array(String)} ORDER BY toDate(created_at) DESC, created_at DESC, id ASC LIMIT {p13:UInt64}"
     );
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toEqual({
@@ -134,12 +134,34 @@ describe('eventListQuery', () => {
       p6: 'grp-1',
       p7: 'coh-1',
       p8: PROJECT_ID,
-      p9: '2026-08-01 00:00:00',
-      p10: '2026-08-31 23:59:59',
+      p9: '2026-08-01 00:00:00.000',
+      p10: '2026-08-31 23:59:59.000',
       p11: ['a', HOSTILE],
       p12: ['signup'],
       p13: 50,
     });
+  });
+
+  test('date bounds are exact timestamps and apply independently (#477)', () => {
+    const endOnly = eventListQuery({
+      ...minimal,
+      endDate: new Date('2026-09-03T00:00:00.000Z'),
+    }).toStatement();
+    expect(endOnly.query).toContain(
+      'WHERE project_id = {p1:String} AND created_at <= toDateTime64({p2:String}, 3) ORDER BY'
+    );
+    expect(endOnly.query).not.toContain('toDate(created_at) BETWEEN');
+    expect(endOnly.query_params.p2).toBe('2026-09-03 00:00:00.000');
+
+    const startOnly = eventListQuery({
+      ...minimal,
+      startDate: new Date('2026-08-01T12:34:56.789Z'),
+    }).toStatement();
+    expect(startOnly.query).toContain(
+      'WHERE project_id = {p1:String} AND created_at >= toDateTime64({p2:String}, 3) ORDER BY'
+    );
+    // Millisecond precision survives: created_at is DateTime64(3).
+    expect(startOnly.query_params.p2).toBe('2026-08-01 12:34:56.789');
   });
 
   test('empty events / conversionNames lists add no clause', () => {
@@ -186,7 +208,7 @@ describe('eventsCountQuery', () => {
     }).toStatement();
 
     expect(query).toBe(
-      "SELECT count(*) as count FROM events e WHERE project_id = {p1:String} AND profile_id = {p2:String} AND has(groups, {p3:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p4:String} AND project_id = {p5:String}) AND toDate(created_at) BETWEEN toDate({p6:String}) AND toDate({p7:String}) AND name IN {p8:Array(String)} AND (path = '/')"
+      "SELECT count(*) as count FROM events e WHERE project_id = {p1:String} AND profile_id = {p2:String} AND has(groups, {p3:String}) AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE cohort_id = {p4:String} AND project_id = {p5:String}) AND created_at >= toDateTime64({p6:String}, 3) AND created_at <= toDateTime64({p7:String}, 3) AND name IN {p8:Array(String)} AND (path = '/')"
     );
     expect(query).not.toContain('device_id IN');
     expect(query_params).toMatchObject({ p1: PROJECT_ID, p2: HOSTILE });
@@ -286,9 +308,22 @@ describe('queryEventsQuery', () => {
       limit: 100,
     }).toStatement();
     expect(query).toBe(
-      'SELECT * FROM events WHERE project_id = {p1:String} LIMIT {p2:UInt64}'
+      'SELECT * FROM events WHERE project_id = {p1:String} ORDER BY created_at DESC LIMIT {p2:UInt64}'
     );
     expect(query_params).toEqual({ p1: PROJECT_ID, p2: 100 });
+  });
+
+  // Callers label these rows newest-first, so the cut has to happen after the
+  // sort rather than wherever the scan starts (#476).
+  test('takes the newest rows, not an arbitrary slice', () => {
+    const { query } = queryEventsQuery({
+      projectId: PROJECT_ID,
+      equals: {},
+      filterClauses: NO_FILTERS,
+      limit: 20,
+    }).toStatement();
+    expect(query.indexOf('ORDER BY created_at DESC')).toBeGreaterThan(-1);
+    expect(query.indexOf('ORDER BY')).toBeLessThan(query.indexOf('LIMIT'));
   });
 
   test('equality columns follow V1 order regardless of input order; keys bind too', () => {
@@ -306,7 +341,7 @@ describe('queryEventsQuery', () => {
     }).toStatement();
 
     expect(query).toBe(
-      'SELECT * FROM events WHERE project_id = {p1:String} AND session_id = {p2:String} AND profile_id = {p3:String} AND profile_id IN {p4:Array(String)} AND name IN {p5:Array(String)} AND path = {p6:String} AND country = {p7:String} AND browser = {p8:String} AND properties[{p9:String}] = {p10:String} AND created_at BETWEEN {p11:String} AND {p12:String} AND (1 = 1) LIMIT {p13:UInt64}'
+      'SELECT * FROM events WHERE project_id = {p1:String} AND session_id = {p2:String} AND profile_id = {p3:String} AND profile_id IN {p4:Array(String)} AND name IN {p5:Array(String)} AND path = {p6:String} AND country = {p7:String} AND browser = {p8:String} AND properties[{p9:String}] = {p10:String} AND created_at BETWEEN {p11:String} AND {p12:String} AND (1 = 1) ORDER BY created_at DESC LIMIT {p13:UInt64}'
     );
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toMatchObject({
