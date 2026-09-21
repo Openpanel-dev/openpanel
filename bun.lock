@@ -614,6 +614,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@polar-sh/sdk@0.49.0": "patches/@polar-sh__sdk.patch",
+  },
   "overrides": {
     "embla-carousel": "8.0.0-rc22",
     "esm-env": "npm:esm-env-runtime@^0.1.0",
