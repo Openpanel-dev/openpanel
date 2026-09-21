@@ -17,7 +17,10 @@ import type { ServiceDeps } from '../../../services';
 import { executeAggregateChart, executeChart } from '../../chart/chart.service';
 import { getFunnel } from '../../chart/funnel.service';
 import { getSettingsForProject } from '../../organization/organization.service';
-import { getReportById } from '../../report/report.service';
+import {
+  getReportById,
+  type IServiceReport,
+} from '../../report/report.service';
 import { getChartStartEndDate } from '../../report/src/chart-dates';
 
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
@@ -63,6 +66,12 @@ export async function runReport(
       startDate: string;
       endDate: string;
       dashboard_url: string;
+      /**
+       * The saved config in the same `zReportInput` shape `runReportFromConfig`
+       * returns, so the chat renderer can draw the chart instead of only
+       * reading the numbers off `data`.
+       */
+      report: Omit<NonNullable<IServiceReport>, 'layout'>;
       data: unknown;
     }
 > {
@@ -83,6 +92,12 @@ export async function runReport(
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 
+  // `layout` is the dashboard grid position, not part of the chart config —
+  // everything else `transformReport` returns already matches `zReportInput`
+  // (the DB `events` column arrives here as `series`). `id` stays on, so the
+  // renderer can tell an already-saved report from an ad-hoc one.
+  const { layout: _layout, ...config } = report;
+
   const meta = {
     id: report.id,
     name: report.name,
@@ -97,6 +112,7 @@ export async function runReport(
       input.projectId,
       input.reportId
     ),
+    report: config,
   };
 
   if (report.chartType === 'funnel') {

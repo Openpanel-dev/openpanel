@@ -86,22 +86,27 @@ function ChatReportInner({
           report={report as unknown as IReportInput}
         />
       </div>
-      {value.dashboard_url && (
+      {(value.dashboard_url || !report.id) && (
         <div className="flex items-center justify-between gap-2 border-t px-3 py-1.5">
-          <a
-            className="text-muted-foreground text-sm hover:underline"
-            href={value.dashboard_url}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Open in dashboard →
-          </a>
+          {value.dashboard_url && (
+            <a
+              className="text-muted-foreground text-sm hover:underline"
+              href={value.dashboard_url}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Open in dashboard →
+            </a>
+          )}
           {!report.id && (
             <Button
-              className="h-6 text-sm"
+              className="ml-auto h-6 text-sm"
               onClick={() =>
                 pushModal('SaveReport', {
-                  report: report as unknown as IReport,
+                  report: {
+                    ...report,
+                    name: value.name ?? report.name,
+                  } as unknown as IReport,
                   disableRedirect: true,
                 })
               }

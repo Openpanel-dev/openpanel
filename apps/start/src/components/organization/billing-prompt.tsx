@@ -116,6 +116,9 @@ export default function BillingPrompt({
           });
         }
       },
+      onError(error) {
+        toast.error(error.message);
+      },
     })
   );
   const portal = useMutation(
@@ -241,8 +244,7 @@ export default function BillingPrompt({
           op.track('billing_prompt_upgrade_clicked', {
             type,
             cta: 'checkout',
-            price:
-              'priceAmount' in bestPrice ? bestPrice.priceAmount / 100 : 0,
+            price: 'priceAmount' in bestPrice ? bestPrice.priceAmount / 100 : 0,
           });
           checkout.mutate({
             organizationId: organization.id,
@@ -261,7 +263,7 @@ export default function BillingPrompt({
     <div className="mx-auto w-full max-w-xl px-4 py-12 md:py-20">
       <div className="relative overflow-hidden rounded-lg border bg-card">
         <div
-          className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full opacity-20 blur-3xl"
+          className="-top-16 -right-16 pointer-events-none absolute h-64 w-64 rounded-full opacity-20 blur-3xl"
           style={{
             background: `radial-gradient(circle, ${copy.gradient} 0%, transparent 70%)`,
           }}

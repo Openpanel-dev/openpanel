@@ -1,4 +1,5 @@
-import { Link } from '@tanstack/react-router';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { Link, useParams } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDownIcon,
@@ -17,12 +18,10 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { useParams } from '@tanstack/react-router';
 
 export default function SidebarOrganizationMenu({
   organization,
@@ -123,27 +122,38 @@ export function ActionCTAButton() {
   ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
+  const actionCount = ACTIONS.length;
 
   useEffect(() => {
+    if (actionCount === 0) {
+      return;
+    }
     const interval = setInterval(() => {
-      setCurrentActionIndex((prevIndex) => (prevIndex + 1) % ACTIONS.length);
+      setCurrentActionIndex((prevIndex) => (prevIndex + 1) % actionCount);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [actionCount]);
+
+  // Members (non-admins) have no org-level actions; render nothing instead of
+  // indexing into an empty list.
+  const currentAction = ACTIONS[currentActionIndex];
+  if (!currentAction) {
+    return null;
+  }
 
   return (
     <div className="mb-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            type="button"
             className={cn(
               'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'text-[13px] font-medium text-foreground',
+              'font-medium text-[13px] text-foreground',
               'transition-colors hover:bg-def-300',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
+            type="button"
           >
             <PlusIcon className="size-5 shrink-0" />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
@@ -161,7 +171,7 @@ export function ActionCTAButton() {
                     duration: 0.3,
                   }}
                 >
-                  {ACTIONS[currentActionIndex].label}
+                  {currentAction.label}
                 </motion.span>
               </AnimatePresence>
             </div>
