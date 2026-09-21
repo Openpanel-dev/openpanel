@@ -34,7 +34,7 @@ import {
   findEncryptedSecretField,
   findMissingSecretFields,
   getServerIntegration,
-  redactConfigSecrets,
+  redactIntegration,
 } from './src/registry';
 import { safeWebhookFetcher } from './src/safe-fetcher';
 import {
@@ -43,18 +43,6 @@ import {
   slackInstaller,
 } from './src/slack';
 import { zSlackAuthResponse } from './src/slack-contract';
-
-// Credentials are write-only: they are encrypted at rest and never travel back
-// to a client. `read` on a project is bare membership, so returning the stored
-// ciphertext would hand every project member the org's object-store keys — and
-// because `decryptCredential` accepts any `enc:` blob under the single global
-// key, that ciphertext is a replayable bearer token, not an opaque handle.
-function redactIntegration<T extends { config: unknown }>(integration: T): T {
-  const config = redactConfigSecrets(integration.config);
-  return config === integration.config
-    ? integration
-    : { ...integration, config };
-}
 
 // A client never legitimately holds a ciphertext (see redactIntegration), so
 // one arriving on the wire is an attempt to replay a secret lifted from another
@@ -244,20 +232,24 @@ export async function upsertIntegration(
 
   const config = encryptConfigSecrets(deps.config.encryptionKey, submitted);
 
-  if (input.id) {
-    return db.integration.update({
-      where: { id: input.id, organizationId },
-      data: { name: input.name, config },
-    });
-  }
-  return db.integration.create({
-    data: {
-      name: input.name,
-      organizationId,
-      projectId: input.projectId,
-      config,
-    },
-  });
+  // The stored row holds more than the caller sent: secrets carried over from
+  // the previous config, and the encrypted ones as ciphertext. Neither may go
+  // back out.
+  const row = input.id
+    ? await db.integration.update({
+        where: { id: input.id, organizationId },
+        data: { name: input.name, config },
+      })
+    : await db.integration.create({
+        data: {
+          name: input.name,
+          organizationId,
+          projectId: input.projectId,
+          config,
+        },
+      });
+
+  return redactIntegration(row);
 }
 
 export async function createOrUpdateSlackIntegration(
@@ -393,9 +385,13 @@ export async function deleteIntegration(
 
   await assertIntegrationAccess(userId, integration, 'write');
 
-  return db.integration.delete({
+  await db.integration.delete({
     where: { id },
   });
+
+  // The deleted row still carries its config; the client only needs to know
+  // which id is gone.
+  return { id };
 }
 
 // -- Slack OAuth callback -----------------------------------------------

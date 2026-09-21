@@ -412,6 +412,26 @@ export function redactConfigSecrets<C>(config: C): C {
   return mapSecrets(config, (value) => (value === '' ? undefined : ''));
 }
 
+// Credentials are write-only: they are encrypted at rest and never travel back
+// to a client. `read` on a project is bare membership, so returning the stored
+// ciphertext would hand every project member the org's object-store keys — and
+// because `decryptCredential` accepts any `enc:` blob under the single global
+// key, that ciphertext is a replayable bearer token, not an opaque handle.
+//
+// Every function that returns an integration row — here and in the
+// notification service, which embeds the rows attached to each rule — goes
+// through this. Returning a row straight from Prisma is how the Slack bot
+// token, the Slack incoming-webhook url and webhook header values reached any
+// client that could list notification rules.
+export function redactIntegration<T extends { config: unknown }>(
+  integration: T
+): T {
+  const config = redactConfigSecrets(integration.config);
+  return config === integration.config
+    ? integration
+    : { ...integration, config };
+}
+
 /**
  * Restore secrets the client left blank from the stored row, so an edit that
  * doesn't retype them keeps working now that reads are redacted. Record values

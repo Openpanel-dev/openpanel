@@ -65,10 +65,10 @@ import {
   isKnownEventField,
   normalizeEventField,
 } from './src/field-resolution';
+import { eventFieldValuesQuery } from './src/field-values.sql';
 import { runQuery } from './src/run-query';
 import {
   chartBucketProfilesQuery,
-  eventFieldValuesQuery,
   eventNamesWithCountQuery,
   eventPropertyKeysQuery,
   eventPropertyValuesQuery,
@@ -444,11 +444,12 @@ export async function getChartPropertyValues(
   }
   const rows = await runQuery<{ values: string[] }>(
     deps,
-    eventFieldValuesQuery(
+    eventFieldValuesQuery({
       projectId,
-      getSelectPropertyKey(resolvedProperty),
-      event
-    )
+      column: resolvedProperty,
+      selectExpression: getSelectPropertyKey(resolvedProperty),
+      event,
+    })
   );
   return {
     values: pipe(

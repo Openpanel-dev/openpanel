@@ -30,12 +30,14 @@ import {
   type IIntegrationConfig,
   isKind,
 } from '../integration/integration.constants';
-import { getServerIntegration } from '../integration/src/registry';
+import {
+  getServerIntegration,
+  redactIntegration,
+} from '../integration/src/registry';
 import type {
   IChartEvent,
   IChartEventFilter,
 } from '../report/report.constants';
-
 import type { ICreateNotificationRule } from './notification.constants';
 
 export const APP_NOTIFICATION_INTEGRATION_ID = 'app';
@@ -405,7 +407,9 @@ export async function listNotificationRules(
           (integration.id === EMAIL_NOTIFICATION_INTEGRATION_ID &&
             rule.sendToEmail)
       ),
-      ...rule.integrations,
+      // The attached rows carry the credentials the worker delivers with;
+      // the dashboard only reads id, name and config.type.
+      ...rule.integrations.map(redactIntegration),
     ],
   }));
 }

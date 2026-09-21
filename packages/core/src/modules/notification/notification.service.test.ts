@@ -268,6 +268,51 @@ test('listNotificationRules merges the app/email pseudo-integrations onto real o
   expect(result[0]?.integrations.map((i) => i.id)).toEqual(['app', 'slack_1']);
 });
 
+test('listNotificationRules returns no credential values from the attached integrations', async () => {
+  ruleStore.set(
+    'rule_1',
+    makeRule({
+      id: 'rule_1',
+      integrations: [
+        {
+          id: 'slack_1',
+          name: 'Slack',
+          config: {
+            type: 'slack',
+            access_token: 'xoxb-secret',
+            incoming_webhook: { url: 'https://hooks.slack.com/T/B/secret' },
+          },
+        } as never,
+        {
+          id: 'hook_1',
+          name: 'Hook',
+          config: {
+            type: 'webhook',
+            url: 'https://example.com/hook',
+            headers: { Authorization: 'Bearer very-secret' },
+          },
+        } as never,
+      ],
+    })
+  );
+
+  const result = await subject.listNotificationRules(deps, 'proj_1');
+  const serialized = JSON.stringify(result);
+
+  expect(serialized).not.toContain('xoxb-secret');
+  expect(serialized).not.toContain('/T/B/secret');
+  expect(serialized).not.toContain('very-secret');
+  // What the rule card reads survives.
+  expect(result[0]?.integrations.map((i) => i.id)).toEqual([
+    'slack_1',
+    'hook_1',
+  ]);
+  expect(result[0]?.integrations[1]).toMatchObject({
+    name: 'Hook',
+    config: { type: 'webhook', headers: { Authorization: '' } },
+  });
+});
+
 test('createOrUpdateNotificationRule rejects an integration from another project', async () => {
   integrationStore.set('slack_1', {
     id: 'slack_1',
