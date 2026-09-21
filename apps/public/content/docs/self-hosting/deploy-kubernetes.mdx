@@ -262,7 +262,7 @@ secrets:
 ```
 
 <Callout>
-Set up Google OAuth in [Google Cloud Console](https://console.cloud.google.com). Add authorized redirect URI: `https://your-domain.com/api/oauth/google/callback`
+Set up Google OAuth in [Google Cloud Console](https://console.cloud.google.com). Add authorized redirect URI: `https://your-domain.com/api/oauth/google/callback`. The full walkthrough is in the [social login guide](/docs/self-hosting/social-login). The chart does not currently have values for GitHub login or the [Google Search Console integration](/docs/self-hosting/google-search-console); those need `GITHUB_*`, `GSC_GOOGLE_REDIRECT_URI` and `ENCRYPTION_KEY` on the API (and worker) pods.
 </Callout>
 
 #### Redis Configuration

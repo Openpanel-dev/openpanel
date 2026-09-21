@@ -34,6 +34,7 @@ import {
   disableTotp,
   enableTotp,
   extendSessionCookie,
+  getConfiguredProviders,
   getTotpStatus,
   regenerateTotpRecoveryCodes,
   requestPasswordReset,
@@ -48,6 +49,16 @@ import {
 } from './auth.service';
 
 export const authRouter = createTRPCRouter({
+  /**
+   * Which optional OAuth-backed features this instance has credentials for.
+   * The dashboard hides the social login buttons and the Search Console
+   * settings on a self-hosted instance that has not configured them.
+   * Booleans only: the client id/secret never leave the API.
+   */
+  providers: publicProcedure.query(({ ctx }) =>
+    getConfiguredProviders(ctx.config)
+  ),
+
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     await signOutUser(ctx, ctx.setCookie, ctx.session?.session?.id);
   }),

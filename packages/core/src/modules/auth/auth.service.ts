@@ -367,6 +367,25 @@ export type StartOAuthSignInResult =
   | { type: 'github'; url: string }
   | { type: 'google'; url: string };
 
+export interface ConfiguredProviders {
+  google: boolean;
+  github: boolean;
+  gsc: boolean;
+}
+
+/** A provider counts as configured only when a sign-in could complete: the
+ *  client id AND its redirect URI. The secret is never reported. */
+export function getConfiguredProviders(
+  config: CoreConfig
+): ConfiguredProviders {
+  const { google, github, googleGsc } = config.auth;
+  return {
+    google: Boolean(google.clientId && google.redirectUri),
+    github: Boolean(github.clientId && github.redirectUri),
+    gsc: Boolean(googleGsc.clientId && googleGsc.redirectUri),
+  };
+}
+
 /**
  * No registration check here. At this point we have no identity for the
  * caller — the IdP hasn't been hit yet — so we cannot tell a returning user

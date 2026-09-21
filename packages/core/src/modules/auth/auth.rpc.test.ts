@@ -5,6 +5,7 @@
 // see auth.rpc.ts's header.
 
 import { expect, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
@@ -29,6 +30,39 @@ async function anonCaller() {
   });
   return authRouter.createCaller(trpcCtx);
 }
+
+test('providers reports which OAuth features are configured, as booleans only', async () => {
+  const anon = await anonCaller();
+  expect(await anon.providers()).toEqual({
+    google: false,
+    github: false,
+    gsc: false,
+  });
+
+  const config = testCoreConfig();
+  config.auth.google = {
+    clientId: 'google-id',
+    clientSecret: 'google-secret',
+    redirectUri: 'https://api.example.com/oauth/google/callback',
+  };
+  config.auth.googleGsc = {
+    ...config.auth.google,
+    redirectUri: 'https://api.example.com/gsc/callback',
+  };
+  // A GitHub client id without its redirect URI cannot complete a sign-in.
+  config.auth.github = {
+    clientId: 'github-id',
+    clientSecret: 'github-secret',
+    redirectUri: '',
+  };
+  const { ctx } = stubHttpCtx({ config }, EMPTY_SESSION);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  const providers = await authRouter.createCaller(trpcCtx).providers();
+  expect(providers).toEqual({ google: true, github: false, gsc: true });
+  expect(JSON.stringify(providers)).not.toContain('secret');
+});
 
 test('totpStatus rejects an unauthenticated caller', async () => {
   const caller = await anonCaller();

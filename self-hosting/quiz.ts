@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,6 +21,9 @@ let envs = {
   DATABASE_URL: '',
   DOMAIN_NAME: '',
   COOKIE_SECRET: generatePassword(32),
+  // AES-256 key for at-rest encryption (GSC tokens, 2FA secrets). Must be
+  // exactly 32 bytes / 64 hex chars, so it can't reuse generatePassword.
+  ENCRYPTION_KEY: randomBytes(32).toString('hex'),
   RESEND_API_KEY: '',
   EMAIL_SENDER: '',
   KAFKA_EVENTS_TOPIC_PARTITIONS,
@@ -48,7 +52,7 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
   const caddyfileTemplatePath = path.resolve(
     __dirname,
     'caddy',
-    'Caddyfile.template',
+    'Caddyfile.template'
   );
   const caddyfilePath = path.resolve(__dirname, 'caddy', 'Caddyfile');
   fs.writeFileSync(
@@ -58,12 +62,12 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
       .replaceAll('$DOMAIN_NAME', domainName.replace(/https?:\/\//, ''))
       .replaceAll(
         '$BASIC_AUTH_PASSWORD',
-        bcrypt.hashSync(basicAuthPassword, 10),
+        bcrypt.hashSync(basicAuthPassword, 10)
       )
       .replaceAll(
         '$SSL_CONFIG',
-        domainName.includes('localhost:443') ? '\n\ttls internal' : '',
-      ),
+        domainName.includes('localhost:443') ? '\n\ttls internal' : ''
+      )
   );
 }
 
@@ -90,7 +94,7 @@ function searchAndReplaceDockerCompose(replacements: [string, string][]) {
   const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
   const dockerComposeReplaced = replacements.reduce(
     (acc, [search, replace]) => acc.replaceAll(search, replace),
-    dockerComposeContent,
+    dockerComposeContent
   );
 
   fs.writeFileSync(dockerComposePath, dockerComposeReplaced);
@@ -119,7 +123,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
       if (Array.isArray(serviceConfig.depends_on)) {
         // Handle legacy array format
         serviceConfig.depends_on = serviceConfig.depends_on.filter(
-          (dep) => dep !== serviceName,
+          (dep) => dep !== serviceName
         );
       } else {
         // Handle new object format
@@ -155,6 +159,7 @@ function writeEnvFile(envs: EnvVars) {
 
   const newEnvFile = envTemplate
     .replace('$COOKIE_SECRET', envs.COOKIE_SECRET)
+    .replace('$ENCRYPTION_KEY', envs.ENCRYPTION_KEY)
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
@@ -163,7 +168,10 @@ function writeEnvFile(envs: EnvVars) {
     .replace('$API_URL', `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`)
     .replace('$RESEND_API_KEY', envs.RESEND_API_KEY)
     .replace('$EMAIL_SENDER', envs.EMAIL_SENDER)
-    .replace('$KAFKA_EVENTS_TOPIC_PARTITIONS', envs.KAFKA_EVENTS_TOPIC_PARTITIONS);
+    .replace(
+      '$KAFKA_EVENTS_TOPIC_PARTITIONS',
+      envs.KAFKA_EVENTS_TOPIC_PARTITIONS
+    );
 
   fs.writeFileSync(
     envPath,
@@ -172,7 +180,7 @@ function writeEnvFile(envs: EnvVars) {
       .filter((line) => {
         return !line.includes('=""');
       })
-      .join('\n'),
+      .join('\n')
   );
 }
 
@@ -183,7 +191,7 @@ function writeRedpandaBootstrap(partitions: string) {
   const templatePath = path.resolve(
     __dirname,
     'redpanda',
-    'bootstrap.template.yaml',
+    'bootstrap.template.yaml'
   );
   const bootstrapPath = path.resolve(__dirname, 'redpanda', 'bootstrap.yaml');
 
@@ -191,7 +199,7 @@ function writeRedpandaBootstrap(partitions: string) {
     bootstrapPath,
     fs
       .readFileSync(templatePath, 'utf-8')
-      .replaceAll('$KAFKA_EVENTS_TOPIC_PARTITIONS', partitions),
+      .replaceAll('$KAFKA_EVENTS_TOPIC_PARTITIONS', partitions)
   );
 }
 
@@ -219,11 +227,11 @@ async function initiateOnboarding() {
   ];
 
   console.log(
-    '******************************************************************************\n',
+    '******************************************************************************\n'
   );
   console.log(message.join('\n'));
   console.log(
-    '\n******************************************************************************',
+    '\n******************************************************************************'
   );
 
   // Domain name
@@ -423,7 +431,7 @@ async function initiateOnboarding() {
   console.log('Updating docker-compose.yml file...\n');
   fs.copyFileSync(
     path.resolve(__dirname, 'docker-compose.template.yml'),
-    path.resolve(__dirname, 'docker-compose.yml'),
+    path.resolve(__dirname, 'docker-compose.yml')
   );
 
   if (envs.CLICKHOUSE_URL) {
@@ -468,7 +476,7 @@ async function initiateOnboarding() {
       `Start OpenPanel with "./start" inside the self-hosting directory`,
       '',
       '',
-    ].join('\n'),
+    ].join('\n')
   );
 }
 

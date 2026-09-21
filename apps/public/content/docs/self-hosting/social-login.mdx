@@ -1,0 +1,168 @@
+---
+title: Social login (Google & GitHub)
+description: Let users sign in to your self-hosted OpenPanel with their Google or GitHub account
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel supports signing in with Google and GitHub in addition to email and password. Both are optional. Email/password login always works, and the social login buttons only appear when the provider is configured.
+
+Enabling a provider takes three steps:
+
+1. Create an OAuth application at the provider and register OpenPanel's callback URL.
+2. Add the client ID, client secret and callback URL to your environment.
+3. Restart the API.
+
+## Before you start
+
+You need two URLs from your deployment:
+
+| Variable | What it is | Example |
+|---|---|---|
+| `DASHBOARD_URL` | The public URL users open in the browser | `https://analytics.example.com` |
+| `API_URL` | The public URL of the API. With the default Docker Compose / Caddy setup this is the dashboard URL plus `/api` | `https://analytics.example.com/api` |
+
+The OAuth callback (the URL the provider redirects back to) always lives on the API:
+
+| Provider | Callback URL | Environment variable |
+|---|---|---|
+| Google | `${API_URL}/oauth/google/callback` | `GOOGLE_REDIRECT_URI` |
+| GitHub | `${API_URL}/oauth/github/callback` | `GITHUB_REDIRECT_URI` |
+
+With the example above that is `https://analytics.example.com/api/oauth/google/callback` and `https://analytics.example.com/api/oauth/github/callback`.
+
+<Callout>
+The callback URL is not derived from `API_URL`. You must set `GOOGLE_REDIRECT_URI` / `GITHUB_REDIRECT_URI` yourself, and the value must be identical to what you register at the provider: same scheme, same host, same `/api` prefix, no trailing slash. If your API is served from its own subdomain such as `https://api.example.com`, drop the `/api` segment.
+</Callout>
+
+<Callout type="warn">
+The API and the dashboard must share a domain so the session cookie set by the API callback is readable by the dashboard. `analytics.example.com` + `analytics.example.com/api` works, and so does `app.example.com` + `api.example.com`. `example.com` + `example.org` does not. See [`CUSTOM_COOKIE_DOMAIN`](/docs/self-hosting/environment-variables#custom_cookie_domain) and [`COOKIE_TLDS`](/docs/self-hosting/environment-variables#cookie_tlds) if your domain layout is unusual. Use HTTPS in production; session cookies are marked `secure` whenever `DASHBOARD_URL` uses `https://`.
+</Callout>
+
+## Google
+
+<Steps>
+<Step>
+### Create or pick a Google Cloud project
+
+Go to the [Google Cloud Console](https://console.cloud.google.com/) and select an existing project or create a new one. Any project works; it does not need billing enabled.
+</Step>
+
+<Step>
+### Configure the OAuth consent screen
+
+Open "APIs & Services" and then "OAuth consent screen" (newer consoles call this "Google Auth Platform" and "Branding").
+
+Choose "External" as the user type unless every user is in your Google Workspace organisation. In that case "Internal" is simpler and skips verification entirely. Fill in an app name, support email and developer contact; users see the app name on the consent dialog.
+
+The sign-in flow only uses the `openid`, `email` and `profile` scopes. These are non-sensitive and need no verification.
+
+An External app starts in Testing mode, which limits sign-in to up to 100 Google accounts that you list as test users. That is fine for a private instance. If you want anyone with a Google account to be able to sign in, click "Publish app". Because only non-sensitive scopes are used, publishing does not require a Google review.
+
+<Callout>
+If you also plan to enable the [Google Search Console integration](/docs/self-hosting/google-search-console), read the notes there before choosing Testing or Published. The choice affects how long Search Console tokens stay valid.
+</Callout>
+</Step>
+
+<Step>
+### Create OAuth client credentials
+
+Open "APIs & Services", "Credentials", "Create credentials", "OAuth client ID" and fill in:
+
+| Field | Value |
+|---|---|
+| Application type | Web application |
+| Name | Anything, e.g. `OpenPanel` |
+| Authorized JavaScript origins | Your `DASHBOARD_URL`, e.g. `https://analytics.example.com` |
+| Authorized redirect URIs | `${API_URL}/oauth/google/callback`, e.g. `https://analytics.example.com/api/oauth/google/callback` |
+
+Click "Create" and copy the client ID (ends with `.apps.googleusercontent.com`) and client secret (starts with `GOCSPX-`).
+</Step>
+
+<Step>
+### Add the environment variables
+
+```bash title=".env"
+GOOGLE_CLIENT_ID=123456789012-abcdefghijklmnop.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx
+GOOGLE_REDIRECT_URI=https://analytics.example.com/api/oauth/google/callback
+```
+</Step>
+</Steps>
+
+## GitHub
+
+<Steps>
+<Step>
+### Create a GitHub OAuth App
+
+Go to "Settings", "Developer settings", "OAuth Apps", "New OAuth App" on [github.com](https://github.com/settings/developers). You can create it under your personal account or under an organisation (from the organisation's settings page). Both work the same way.
+
+| Field | Value |
+|---|---|
+| Application name | Anything, e.g. `OpenPanel` |
+| Homepage URL | Your `DASHBOARD_URL`, e.g. `https://analytics.example.com` |
+| Authorization callback URL | `${API_URL}/oauth/github/callback`, e.g. `https://analytics.example.com/api/oauth/github/callback` |
+
+Leave "Enable Device Flow" unchecked and click "Register application".
+</Step>
+
+<Step>
+### Generate a client secret
+
+On the app page, copy the client ID, then click "Generate a new client secret" and copy the secret. GitHub only shows it once.
+</Step>
+
+<Step>
+### Add the environment variables
+
+```bash title=".env"
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GITHUB_REDIRECT_URI=https://analytics.example.com/api/oauth/github/callback
+```
+</Step>
+</Steps>
+
+<Callout>
+OpenPanel requests the `user:email` and `user:read` scopes and uses the account's primary, verified email address. Users whose primary GitHub email is unverified will see `GitHub email not found or not verified`.
+</Callout>
+
+## Apply the configuration
+
+All six variables belong to the API service. The dashboard and worker do not use them; the dashboard asks the API which providers are configured and renders buttons accordingly. Giving every service the full set is harmless, which is what the Docker Compose setup does.
+
+How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to `self-hosting/.env` (the generated file already contains a commented-out template) and recreate the API container:
+
+```bash
+docker compose up -d --force-recreate op-api
+```
+
+With Coolify, the bundled template exposes them as `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET`, `OPENPANEL_GOOGLE_REDIRECT_URI`, `OPENPANEL_GITHUB_CLIENT_ID`, `OPENPANEL_GITHUB_CLIENT_SECRET` and `OPENPANEL_GITHUB_REDIRECT_URI`. For any other setup, add them to the API's environment the same way you set `COOKIE_SECRET` and restart the API.
+
+## Things to know
+
+Registration rules still apply. A social login that would create a new user is subject to [`ALLOW_REGISTRATION`](/docs/self-hosting/environment-variables#allow_registration) and [`ALLOW_INVITATION`](/docs/self-hosting/environment-variables#allow_invitation). The very first user is always allowed. After that, users need an invite link or `ALLOW_REGISTRATION=true`. Existing users can always sign in.
+
+Accounts are not linked automatically. If someone signed up with email/password and later clicks "Sign in with Google" using the same address, they are sent back to the login page with `Please sign in using your original authentication method`. The same applies between Google and GitHub. Users must keep using the method they signed up with.
+
+Each provider is independent. Configure one, the other, or both. The login page only shows buttons for providers the API has a client ID and redirect URI for.
+
+OpenPanel remembers the last provider a browser signed in with (a one-year cookie) and marks that button on the login page with "Used last time".
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Google shows `Error 400: redirect_uri_mismatch`; GitHub shows "The redirect_uri MUST match the registered callback URL" | `GOOGLE_REDIRECT_URI` / `GITHUB_REDIRECT_URI` differs from the URL registered at the provider. Check `http` vs `https`, the `/api` prefix and trailing slashes. |
+| Google shows `Error 401: invalid_client`, or the authorization URL has an empty `client_id` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` is not set on the API service, or the API was not restarted after changing `.env`. |
+| Redirected to `/login?error=Missing oauth parameters` or `OAuth state mismatch` | The state cookie set before the redirect was not sent back to the API. Usually the API and dashboard are on different registrable domains, `DASHBOARD_URL` is wrong, or the browser blocks cookies. See the cookie callout above. |
+| `/login?error=Registrations are not allowed` | New user and `ALLOW_REGISTRATION=false` with no valid invite. Send an invite from the organisation settings or set `ALLOW_REGISTRATION=true`. |
+| `/login?error=Please sign in using your original authentication method` | An account with that email already exists via another method. Sign in with that method instead. |
+| `/login?error=GitHub email not found or not verified` | The user's primary email on GitHub is not verified. Verify it under GitHub settings, "Emails". |
+| `/login?error=Email not verified with Google` | Google reports the email as unverified. This is rare and usually a Workspace account with a pending domain. |
+| Google login works for you but others get "Access blocked: This app has not completed the Google verification process" | The consent screen is in Testing and the user is not listed as a test user. Add them, or publish the app. |
+| Buttons do not appear on the login page | The API does not have both the client ID and the redirect URI for that provider (`GOOGLE_CLIENT_ID` + `GOOGLE_REDIRECT_URI`, or `GITHUB_CLIENT_ID` + `GITHUB_REDIRECT_URI`), or it was not restarted after you added them. |
+
+Every error redirect includes a `correlationId` query parameter. Search the API logs for it to see the full error.
