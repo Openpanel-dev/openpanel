@@ -90,7 +90,7 @@
     "typescript": "catalog:"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.3.15",
     "depcheck": "1.4.7",
     "dependency-cruiser": "18.2.0",
     "simple-git-hooks": "2.12.1",

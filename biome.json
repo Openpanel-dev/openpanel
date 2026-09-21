@@ -1,5 +1,20 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!apps/public/public/**",
+      "!apps/start/src/routeTree.gen.ts",
+      "!apps/api/scripts/mock-big.json",
+      "!packages/db/src/generated/**",
+      "!packages/core/src/modules/import/src/providers/__fixtures__/*.json"
+    ]
+  },
   "assist": {
     "actions": {
       "source": {
@@ -9,20 +24,12 @@
             "groups": [
               ":BUN:",
               ":NODE:",
-              [
-                "npm:*",
-                "npm:*/**"
-              ],
+              ["npm:*", "npm:*/**"],
               ":PACKAGE_WITH_PROTOCOL:",
               ":URL:",
               ":PACKAGE:",
-              [
-                "/**"
-              ],
-              [
-                "#*",
-                "#*/**"
-              ],
+              ["/**"],
+              ["#*", "#*/**"],
               ":PATH:"
             ]
           }
@@ -99,5 +106,17 @@
     "ultracite/biome/react",
     "ultracite/biome/next",
     "ultracite/biome/remix"
+  ],
+  "overrides": [
+    {
+      "includes": ["packages/core/src/clients/datacenter-asns.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNumericSeparators": "off"
+          }
+        }
+      }
+    }
   ]
 }

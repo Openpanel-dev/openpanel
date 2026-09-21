@@ -159,7 +159,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.3.15",
     "@cloudflare/vite-plugin": "1.33.2",
     "@openpanel/db": "workspace:*",
     "@playwright/test": "1.63.0",
