@@ -1,10 +1,9 @@
 'use client';
 import NumberFlow from '@number-flow/react';
-
-import { cn } from '@/lib/utils';
 import { PRICING } from '@openpanel/payments/prices';
 import { useState } from 'react';
 import { Slider } from './ui/slider';
+import { cn } from '@/lib/utils';
 
 export function PricingSlider() {
   const [index, setIndex] = useState(2);
@@ -14,15 +13,15 @@ export function PricingSlider() {
   return (
     <>
       <Slider
-        value={[index]}
         max={PRICING.length}
+        onValueChange={(value) => setIndex(value[0])}
         step={1}
         tooltip={
           match
             ? `${formatNumber(match.events)} events per month`
             : `More than ${formatNumber(PRICING[PRICING.length - 1].events)} events`
         }
-        onValueChange={(value) => setIndex(value[0])}
+        value={[index]}
       />
 
       {match ? (
@@ -30,7 +29,6 @@ export function PricingSlider() {
           <div>
             <NumberFlow
               className="text-5xl"
-              value={match.price}
               format={{
                 style: 'currency',
                 currency: 'USD',
@@ -38,12 +36,13 @@ export function PricingSlider() {
                 maximumFractionDigits: 1,
               }}
               locales={'en-US'}
+              value={match.price}
             />
-            <span className="text-sm text-muted-foreground ml-2">/ month</span>
+            <span className="ml-2 text-muted-foreground text-sm">/ month</span>
           </div>
           <span
             className={cn(
-              'text-sm text-muted-foreground italic opacity-100',
+              'text-muted-foreground text-sm italic opacity-100',
               match.price === 0 && 'opacity-0'
             )}
           >

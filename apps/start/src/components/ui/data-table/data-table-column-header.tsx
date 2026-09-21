@@ -1,17 +1,11 @@
 import type { Column } from '@tanstack/react-table';
 import {
-  ChevronDown,
   ChevronDownIcon,
-  ChevronUp,
-  ChevronUpIcon,
-  ChevronsUpDown,
   ChevronsUpDownIcon,
-  EyeOff,
+  ChevronUpIcon,
   EyeOffIcon,
-  X,
   XIcon,
 } from 'lucide-react';
-
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -33,7 +27,7 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
-  if (!column.getCanSort() && !column.getCanHide()) {
+  if (!(column.getCanSort() || column.getCanHide())) {
     return <div className={cn(className)}>{title}</div>;
   }
 
@@ -41,7 +35,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'text-[10px] uppercase -ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-accent focus:outline-none focus:ring-1 focus:ring-ring data-[state=open]:bg-accent [&_svg]:size-3 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+          '-ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] uppercase hover:bg-accent focus:outline-none focus:ring-1 focus:ring-ring data-[state=open]:bg-accent [&_svg]:size-3 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
           className
         )}
         {...props}
@@ -60,16 +54,16 @@ export function DataTableColumnHeader<TData, TValue>({
         {column.getCanSort() && (
           <>
             <DropdownMenuCheckboxItem
-              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
               checked={column.getIsSorted() === 'asc'}
+              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
               onClick={() => column.toggleSorting(false)}
             >
               <ChevronUpIcon className="size-4" />
               Asc
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
               checked={column.getIsSorted() === 'desc'}
+              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
               onClick={() => column.toggleSorting(true)}
             >
               <ChevronDownIcon className="size-4" />
@@ -88,8 +82,8 @@ export function DataTableColumnHeader<TData, TValue>({
         )}
         {column.getCanHide() && (
           <DropdownMenuCheckboxItem
-            className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
             checked={!column.getIsVisible()}
+            className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
             onClick={() => column.toggleVisibility(false)}
           >
             <EyeOffIcon className="size-4" />

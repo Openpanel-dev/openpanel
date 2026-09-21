@@ -1,17 +1,15 @@
-import { changeVisibleSeries } from '@/components/report/reportSlice';
-import { useTRPC } from '@/integrations/trpc/react';
-import { useDispatch } from '@/redux';
-import type { RouterOutputs } from '@/trpc/client';
 import { useQuery } from '@tanstack/react-query';
-
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useChartInput, useReportChartContext } from '../context';
-import { useVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
-import { Chart, Summary } from './chart';
 import { BreakdownList } from './breakdown-list';
+import { Chart, Summary } from './chart';
+import { changeVisibleSeries } from '@/components/report/reportSlice';
+import { useVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
+import { useTRPC } from '@/integrations/trpc/react';
+import { useDispatch } from '@/redux';
 
 export function ReportFunnelChart() {
   const { isLazyLoading, report, shareId, isEditMode } =
@@ -61,8 +59,8 @@ export function ReportFunnelChart() {
       <Chart data={res.data} visibleBreakdowns={visibleBreakdowns} />
       <BreakdownList
         data={res.data}
-        visibleSeriesIds={visibleBreakdowns.map((b) => b.id)}
         setVisibleSeries={setVisibleSeries}
+        visibleSeriesIds={visibleBreakdowns.map((b) => b.id)}
       />
     </div>
   );

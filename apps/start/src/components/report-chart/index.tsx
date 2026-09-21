@@ -1,8 +1,6 @@
 import { mergeDeepRight } from 'ramda';
-import React, { memo, type RefObject, useEffect, useRef } from 'react';
+import { type RefObject, useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
-
-import { shallowEqual } from 'react-redux';
 import { ReportAreaChart } from './area';
 import { ReportBarChart } from './bar';
 import type { ReportChartProps } from './context';

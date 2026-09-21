@@ -1,6 +1,6 @@
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OnboardingLeftPanel } from '@/components/onboarding-left-panel';
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_public')({
   component: OnboardingLayout,

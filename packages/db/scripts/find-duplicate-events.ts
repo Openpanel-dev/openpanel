@@ -29,9 +29,9 @@
  *                          flag the script only reports.
  */
 import {
-  TABLE_NAMES,
   ch,
   getReplicatedTableName,
+  TABLE_NAMES,
 } from '../src/clickhouse/client';
 
 // ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ function parseSince(raw: string): Date {
   const relative = raw.match(/^(\d+)([hd])$/);
   if (relative) {
     const amount = Number.parseInt(relative[1]!, 10);
-    const unitMs = relative[2] === 'h' ? 3600_000 : 86_400_000;
+    const unitMs = relative[2] === 'h' ? 3_600_000 : 86_400_000;
     return new Date(Date.now() - amount * unitMs);
   }
   const parsed = new Date(raw);
@@ -244,7 +244,7 @@ function* bucketRanges(
   since: Date,
   bucket: Bucket
 ): Generator<{ start: Date; end: Date }> {
-  const stepMs = bucket === 'day' ? 86_400_000 : 3600_000;
+  const stepMs = bucket === 'day' ? 86_400_000 : 3_600_000;
   // Align the first bucket to the start of the day/hour.
   const start = new Date(since);
   if (bucket === 'day') {
@@ -261,10 +261,10 @@ function* bucketRanges(
 async function deleteDuplicates(args: Args): Promise<void> {
   const target = getReplicatedTableName(TABLE_NAMES.events);
   console.log(
-    `\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n` +
+    '\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n' +
       `   Target: ${target}\n` +
-      `   Note: ClickHouse mutations run asynchronously; rows disappear once the\n` +
-      `   mutation completes server-side.\n`
+      '   Note: ClickHouse mutations run asynchronously; rows disappear once the\n' +
+      '   mutation completes server-side.\n'
   );
 
   let grandTotal = 0;
@@ -316,8 +316,8 @@ async function deleteDuplicates(args: Args): Promise<void> {
 
   console.log(
     `\nSubmitted deletes for ${grandTotal.toLocaleString()} duplicate rows.\n` +
-      `Watch system.mutations for completion:\n` +
-      `  SELECT * FROM system.mutations WHERE is_done = 0\n`
+      'Watch system.mutations for completion:\n' +
+      '  SELECT * FROM system.mutations WHERE is_done = 0\n'
   );
 }
 

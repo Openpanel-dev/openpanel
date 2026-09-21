@@ -184,7 +184,9 @@ const DEFAULT_GRADIENT_STYLE: React.CSSProperties = {
 function useColorScheme(colorScheme: ColorScheme): 'light' | 'dark' {
   const [systemScheme, setSystemScheme] = React.useState<'light' | 'dark'>(
     () => {
-      if (typeof window === 'undefined') return 'light';
+      if (typeof window === 'undefined') {
+        return 'light';
+      }
       return window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
@@ -192,7 +194,9 @@ function useColorScheme(colorScheme: ColorScheme): 'light' | 'dark' {
   );
 
   React.useEffect(() => {
-    if (colorScheme !== 'auto') return;
+    if (colorScheme !== 'auto') {
+      return;
+    }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => {
@@ -242,9 +246,13 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
     // Determine which colors to use based on scheme
     const effectiveColors = React.useMemo(() => {
       // If explicit colors prop is provided, use it
-      if (colors) return colors;
+      if (colors) {
+        return colors;
+      }
       // If colorClasses is provided, don't use inline colors
-      if (colorClasses) return undefined;
+      if (colorClasses) {
+        return undefined;
+      }
 
       // Use scheme-specific colors or defaults
       const lightColors = colorsLight ?? DEFAULT_COLORS_LIGHT;
@@ -328,11 +336,13 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 
     return (
       <div
+        aria-label={`Avatar for ${name}`}
+        className={`${bgColorClass ?? ''} ${className ?? ''}`}
+        data-facehash-avatar=""
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         ref={ref}
         role="img"
-        aria-label={`Avatar for ${name}`}
-        data-facehash-avatar=""
-        className={`${bgColorClass ?? ''} ${className ?? ''}`}
         style={{
           position: 'relative',
           display: 'flex',
@@ -345,13 +355,12 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
           ...(bgColorHex && { backgroundColor: bgColorHex }),
           ...style,
         }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         {...props}
       >
         {/* Gradient overlay */}
         {variant === 'gradient' && (
           <div
+            aria-hidden="true"
             className={gradientOverlayClass}
             style={{
               position: 'absolute',
@@ -359,18 +368,17 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
               pointerEvents: 'none',
               ...(gradientOverlayClass ? {} : DEFAULT_GRADIENT_STYLE),
             }}
-            aria-hidden="true"
           />
         )}
 
         {/* Face container with 3D transform */}
         <div
-          data-facehash-avatar-face=""
           className={
             usesCssHover && interactive
               ? 'group-hover:[transform:var(--facehash-hover-transform)]'
               : undefined
           }
+          data-facehash-avatar-face=""
           style={
             {
               position: 'absolute',

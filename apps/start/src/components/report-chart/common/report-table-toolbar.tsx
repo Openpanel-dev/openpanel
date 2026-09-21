@@ -1,6 +1,6 @@
+import { List, Rows3, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { List, Rows3, Search, X } from 'lucide-react';
 
 interface ReportTableToolbarProps {
   grouped?: boolean;
@@ -18,31 +18,31 @@ export function ReportTableToolbar({
   onUnselectAll,
 }: ReportTableToolbarProps) {
   return (
-    <div className="col md:row md:items-center gap-2 p-2 border-b md:justify-between">
+    <div className="col md:row gap-2 border-b p-2 md:items-center md:justify-between">
       {onSearchChange && (
-        <div className="relative flex-1 w-full md:max-w-sm">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <div className="relative w-full flex-1 md:max-w-sm">
+          <Search className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            className="pl-8"
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search..."
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-8"
           />
         </div>
       )}
       <div className="flex items-center gap-2">
         {onToggleGrouped && (
           <Button
-            variant={'outline'}
-            size="sm"
-            onClick={onToggleGrouped}
             icon={grouped ? Rows3 : List}
+            onClick={onToggleGrouped}
+            size="sm"
+            variant={'outline'}
           >
             {grouped ? 'Grouped' : 'Flat'}
           </Button>
         )}
         {onUnselectAll && (
-          <Button variant="outline" size="sm" onClick={onUnselectAll} icon={X}>
+          <Button icon={X} onClick={onUnselectAll} size="sm" variant="outline">
             Unselect All
           </Button>
         )}

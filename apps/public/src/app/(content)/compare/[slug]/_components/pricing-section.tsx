@@ -1,10 +1,10 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import { ArrowRightIcon, CheckIcon } from 'lucide-react';
+import Link from 'next/link';
 import { Section, SectionHeader } from '@/components/section';
 import type { ComparePricing } from '@/lib/compare';
-import { ArrowRightIcon, CheckIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
 
 interface PricingSectionProps {
   pricing: ComparePricing;
@@ -47,69 +47,69 @@ export function PricingSection({
   return (
     <Section className="container">
       <SectionHeader
-        title={pricing.title}
         description={pricing.intro}
+        title={pricing.title}
         variant="sm"
       />
 
       {/* Pricing comparison */}
       <motion.div
+        className="mt-12 grid gap-6 md:grid-cols-2"
         initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
         variants={containerVariants}
-        className="grid md:grid-cols-2 gap-6 mt-12"
+        viewport={{ once: true, margin: '-100px' }}
+        whileInView="visible"
       >
         {/* OpenPanel Card */}
         <motion.div
+          className="col group relative gap-4 overflow-hidden rounded-2xl border bg-background p-6 transition-all duration-300 hover:border-emerald-500/30"
           variants={cardVariants}
-          className="col gap-4 p-6 rounded-2xl border bg-background group relative overflow-hidden hover:border-emerald-500/30 transition-all duration-300"
         >
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-br opacity-100 blur-2xl dark:from-emerald-500/5 dark:via-transparent dark:to-green-500/5 light:from-emerald-800/10 light:via-transparent light:to-green-900/10 group-hover:opacity-150 transition-opacity duration-500" />
-          <div className="col gap-3 relative z-10">
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-br light:from-emerald-800/10 light:via-transparent light:to-green-900/10 opacity-100 blur-2xl transition-opacity duration-500 group-hover:opacity-150 dark:from-emerald-500/5 dark:via-transparent dark:to-green-500/5" />
+          <div className="col relative z-10 gap-3">
             <div className="col gap-2">
-              <h3 className="text-xl font-semibold">OpenPanel</h3>
-              <p className="text-sm text-muted-foreground font-medium">
+              <h3 className="font-semibold text-xl">OpenPanel</h3>
+              <p className="font-medium text-muted-foreground text-sm">
                 {pricing.openpanel.model}
               </p>
             </div>
-            <div className="col gap-2 mt-2">
+            <div className="col mt-2 gap-2">
               {openpanelPoints.map((point, index) => (
                 <motion.div
-                  key={index}
+                  className="row group/item items-start gap-2"
                   initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
+                  key={index}
                   transition={{ delay: index * 0.1 }}
-                  className="row gap-2 items-start group/item"
+                  viewport={{ once: true }}
+                  whileInView={{ opacity: 1, x: 0 }}
                 >
-                  <CheckIcon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 group-hover/item:scale-110 transition-transform duration-300" />
-                  <p className="text-sm text-muted-foreground flex-1 group-hover/item:text-foreground transition-colors duration-300">
+                  <CheckIcon className="mt-0.5 size-4 shrink-0 text-emerald-600 transition-transform duration-300 group-hover/item:scale-110 dark:text-emerald-400" />
+                  <p className="flex-1 text-muted-foreground text-sm transition-colors duration-300 group-hover/item:text-foreground">
                     {point.trim()}
                   </p>
                 </motion.div>
               ))}
             </div>
             <motion.div
+              className="col mt-2 gap-2"
               initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
               transition={{ delay: 0.3 }}
-              className="col gap-2 mt-2"
+              viewport={{ once: true }}
+              whileInView={{ opacity: 1 }}
             >
-              <div className="row gap-2 items-center p-3 rounded-lg bg-muted/30 border border-emerald-500/10">
-                <span className="text-xs font-medium text-muted-foreground">
+              <div className="row items-center gap-2 rounded-lg border border-emerald-500/10 bg-muted/30 p-3">
+                <span className="font-medium text-muted-foreground text-xs">
                   Free tier:
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   Self-hosting (unlimited events)
                 </span>
               </div>
-              <div className="row gap-2 items-center p-3 rounded-lg bg-muted/30 border border-emerald-500/10">
-                <span className="text-xs font-medium text-muted-foreground">
+              <div className="row items-center gap-2 rounded-lg border border-emerald-500/10 bg-muted/30 p-3">
+                <span className="font-medium text-muted-foreground text-xs">
                   Free trial:
                 </span>
-                <span className="text-xs text-muted-foreground">30 days</span>
+                <span className="text-muted-foreground text-xs">30 days</span>
               </div>
             </motion.div>
           </div>
@@ -117,29 +117,29 @@ export function PricingSection({
 
         {/* Competitor Card */}
         <motion.div
+          className="col group relative gap-4 overflow-hidden rounded-2xl border bg-background p-6 transition-all duration-300 hover:border-orange-500/30"
           variants={cardVariants}
-          className="col gap-4 p-6 rounded-2xl border bg-background group relative overflow-hidden hover:border-orange-500/30 transition-all duration-300"
         >
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-br opacity-100 blur-2xl dark:from-orange-500/5 dark:via-transparent dark:to-amber-500/5 light:from-orange-800/10 light:via-transparent light:to-amber-900/10 group-hover:opacity-150 transition-opacity duration-500" />
-          <div className="col gap-3 relative z-10">
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-br light:from-orange-800/10 light:via-transparent light:to-amber-900/10 opacity-100 blur-2xl transition-opacity duration-500 group-hover:opacity-150 dark:from-orange-500/5 dark:via-transparent dark:to-amber-500/5" />
+          <div className="col relative z-10 gap-3">
             <div className="col gap-2">
-              <h3 className="text-xl font-semibold">{competitorName}</h3>
-              <p className="text-sm text-muted-foreground font-medium">
+              <h3 className="font-semibold text-xl">{competitorName}</h3>
+              <p className="font-medium text-muted-foreground text-sm">
                 {pricing.competitor.model}
               </p>
             </div>
-            <div className="col gap-2 mt-2">
+            <div className="col mt-2 gap-2">
               {competitorPoints.map((point, index) => (
                 <motion.div
-                  key={index}
+                  className="row group/item items-start gap-2"
                   initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
+                  key={index}
                   transition={{ delay: index * 0.1 }}
-                  className="row gap-2 items-start group/item"
+                  viewport={{ once: true }}
+                  whileInView={{ opacity: 1, x: 0 }}
                 >
-                  <CheckIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5 group-hover/item:scale-110 transition-transform duration-300" />
-                  <p className="text-sm text-muted-foreground flex-1 group-hover/item:text-foreground transition-colors duration-300">
+                  <CheckIcon className="mt-0.5 size-4 shrink-0 text-orange-600 transition-transform duration-300 group-hover/item:scale-110 dark:text-orange-400" />
+                  <p className="flex-1 text-muted-foreground text-sm transition-colors duration-300 group-hover/item:text-foreground">
                     {point.trim()}
                   </p>
                 </motion.div>
@@ -147,16 +147,16 @@ export function PricingSection({
             </div>
             {pricing.competitor.free_tier && (
               <motion.div
+                className="row mt-2 items-center gap-2 rounded-lg border border-orange-500/10 bg-muted/30 p-3"
                 initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="row gap-2 items-center mt-2 p-3 rounded-lg bg-muted/30 border border-orange-500/10"
+                viewport={{ once: true }}
+                whileInView={{ opacity: 1 }}
               >
-                <span className="text-xs font-medium text-muted-foreground">
+                <span className="font-medium text-muted-foreground text-xs">
                   Free tier:
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {pricing.competitor.free_tier}
                 </span>
               </motion.div>
@@ -164,18 +164,18 @@ export function PricingSection({
             {pricing.competitor.pricing_url && (
               <motion.div
                 initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
+                viewport={{ once: true }}
+                whileInView={{ opacity: 1 }}
               >
                 <Link
+                  className="row group/link mt-2 items-center gap-2 text-primary text-xs transition-colors duration-300 hover:text-primary/80"
                   href={pricing.competitor.pricing_url}
-                  target="_blank"
                   rel="noopener noreferrer"
-                  className="row gap-2 items-center text-xs text-primary hover:text-primary/80 transition-colors duration-300 mt-2 group/link"
+                  target="_blank"
                 >
                   <span>View pricing</span>
-                  <ArrowRightIcon className="size-3 group-hover/link:translate-x-1 transition-transform duration-300" />
+                  <ArrowRightIcon className="size-3 transition-transform duration-300 group-hover/link:translate-x-1" />
                 </Link>
               </motion.div>
             )}

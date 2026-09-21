@@ -1,9 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { cn } from '@/utils/cn';
 import { ArrowUpIcon, StopCircleIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useChatRuntime } from './chat-runtime';
 import { ModelPicker } from './model-picker';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/utils/cn';
 
 /**
  * Composer card.
@@ -30,17 +30,19 @@ export function ChatDrawerFooter() {
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const value = text.trim();
-    if (!value || isStreaming) return;
+    if (!value || isStreaming) {
+      return;
+    }
     send(value);
     setText('');
   };
 
   return (
-    <form onSubmit={submit} className="px-3 pb-3 pt-2">
+    <form className="px-3 pt-2 pb-3" onSubmit={submit}>
       <div
         className={cn(
           'rounded-xl border bg-card transition-shadow',
-          'focus-within:ring-1 focus-within:ring-ring focus-within:border-ring'
+          'focus-within:border-ring focus-within:ring-1 focus-within:ring-ring'
         )}
       >
         {/*
@@ -58,46 +60,46 @@ export function ChatDrawerFooter() {
           drafted text sends on the next Enter press.
         */}
         <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything about your data…"
-          rows={2}
           className={cn(
-            'block w-full bg-transparent text-sm leading-[1.5] text-foreground',
+            'block w-full bg-transparent text-foreground text-sm leading-[1.5]',
             'placeholder:text-muted-foreground/70',
-            'resize-none border-0 outline-none ring-0 shadow-none',
+            'resize-none border-0 shadow-none outline-none ring-0',
             'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
-            'min-h-[48px] max-h-[200px] px-3 pt-3 pb-1'
+            'max-h-[200px] min-h-[48px] px-3 pt-3 pb-1'
           )}
+          onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               submit();
             }
           }}
+          placeholder="Ask anything about your data…"
+          ref={textareaRef}
+          rows={2}
+          value={text}
         />
         <div className="flex items-center justify-between gap-2 px-2 pb-2">
           <ModelPicker />
           {isStreaming ? (
             <Button
-              type="button"
-              size="icon"
-              variant="secondary"
-              className="size-7 rounded-md shrink-0"
-              onClick={stop}
               aria-label="Stop generating"
+              className="size-7 shrink-0 rounded-md"
+              onClick={stop}
+              size="icon"
+              type="button"
+              variant="secondary"
             >
               <StopCircleIcon className="size-3.5" />
             </Button>
           ) : (
             <Button
-              type="submit"
-              size="icon"
-              variant="default"
-              className="size-7 rounded-md shrink-0"
-              disabled={!text.trim()}
               aria-label="Send message"
+              className="size-7 shrink-0 rounded-md"
+              disabled={!text.trim()}
+              size="icon"
+              type="submit"
+              variant="default"
             >
               <ArrowUpIcon className="size-3.5" />
             </Button>

@@ -1,9 +1,3 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import React, {
   forwardRef,
   useCallback,
@@ -11,6 +5,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export interface ChartClickMenuItem {
   label: string;
@@ -227,10 +227,10 @@ export const ChartClickMenu = forwardRef<
   }, [children, handleChartClick]);
 
   return (
-    <div ref={containerRef} className="relative h-full w-full">
+    <div className="relative h-full w-full" ref={containerRef}>
       <DropdownMenu
-        open={clickPosition !== null}
         onOpenChange={handleOpenChange}
+        open={clickPosition !== null}
       >
         <DropdownMenuTrigger asChild>
           <div
@@ -245,9 +245,9 @@ export const ChartClickMenu = forwardRef<
         <DropdownMenuContent align="start" side="bottom" sideOffset={5}>
           {menuItems.map((item) => (
             <DropdownMenuItem
+              disabled={item.disabled}
               key={item.label}
               onClick={() => handleItemClick(item)}
-              disabled={item.disabled}
             >
               {item.icon && <span className="mr-2">{item.icon}</span>}
               {item.label}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  type ErrorClass,
   classifyError,
+  type ErrorClass,
   isRetriableConnectionError,
 } from './round-robin';
 

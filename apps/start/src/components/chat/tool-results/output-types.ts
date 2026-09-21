@@ -59,7 +59,9 @@ export function isProfileFullError(
 }
 
 export function asProfileFullOutput(value: unknown): ProfileFullOutput | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
   return value as ProfileFullOutput;
 }
 
@@ -80,7 +82,9 @@ export type ReportOutput = {
 };
 
 export function asReportOutput(value: unknown): ReportOutput | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
   return value as ReportOutput;
 }
 

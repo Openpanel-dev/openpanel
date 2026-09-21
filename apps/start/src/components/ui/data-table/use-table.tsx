@@ -1,18 +1,18 @@
+import type {
+  ColumnFiltersState,
+  PaginationState,
+  Row,
+} from '@tanstack/react-table';
 import {
   type ColumnDef,
   type ColumnPinningState,
-  type Updater,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import type {
-  ColumnFiltersState,
-  PaginationState,
-} from '@tanstack/react-table';
-import type { Row } from '@tanstack/react-table';
 import {
   type Options,
   type Parser,
@@ -77,7 +77,9 @@ export function useTable<TData>({
       Record<string, Parser<string> | Parser<string[]> | Parser<number[]>>
     >((acc, column) => {
       const columnId = (column.id ?? (column as any).accessorKey)?.toString();
-      if (!columnId) return acc;
+      if (!columnId) {
+        return acc;
+      }
       const variant = column.meta?.variant;
 
       switch (variant) {
@@ -110,9 +112,13 @@ export function useTable<TData>({
   const initialColumnFilters: ColumnFiltersState = useMemo(() => {
     return Object.entries(qsFilters).reduce<ColumnFiltersState>(
       (filters, [key, value]) => {
-        if (value === null || value === undefined) return filters;
+        if (value === null || value === undefined) {
+          return filters;
+        }
         if (Array.isArray(value)) {
-          if (value.length > 0) filters.push({ id: key, value });
+          if (value.length > 0) {
+            filters.push({ id: key, value });
+          }
         } else if (value !== '') {
           filters.push({ id: key, value });
         }
@@ -136,7 +142,9 @@ export function useTable<TData>({
     value: [number, number]
   ) => {
     const cellDate = row.getValue<Date>(columnId);
-    if (!cellDate) return false;
+    if (!cellDate) {
+      return false;
+    }
 
     const [rawStart, rawEnd] = value; // epoch ms from date inputs (local)
 
@@ -183,8 +191,12 @@ export function useTable<TData>({
       const nextPerPage = nextPagination.pageSize;
 
       // Only write to the URL when values truly change to avoid reload loops
-      if (nextPage !== page) void setPage(nextPage);
-      if (nextPerPage !== perPage) void setPerPage(nextPerPage);
+      if (nextPage !== page) {
+        void setPage(nextPage);
+      }
+      if (nextPerPage !== perPage) {
+        void setPerPage(nextPerPage);
+      }
     },
     state: {
       pagination,

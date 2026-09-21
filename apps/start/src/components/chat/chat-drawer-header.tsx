@@ -1,3 +1,8 @@
+import { CONVERSATION_LIST_LIMIT_DEFAULT } from '@openpanel/core/modules/conversation/conversation.constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MessageSquarePlusIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useChatState } from './chat-context';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,11 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
-import { CONVERSATION_LIST_LIMIT_DEFAULT } from '@openpanel/core/modules/conversation/conversation.constants';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MessageSquarePlusIcon, Trash2Icon, XIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useChatState } from './chat-context';
 
 /**
  * Header — conversation picker, model picker, new chat, close.
@@ -67,32 +67,32 @@ export function ChatDrawerHeader({
 
   return (
     <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
+              className="max-w-[200px] truncate font-medium text-sm"
               size="sm"
-              className="font-medium text-sm truncate max-w-[200px]"
+              variant="ghost"
             >
               {activeTitle}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="w-72 max-h-96 overflow-y-auto"
+            className="max-h-96 w-72 overflow-y-auto"
           >
             <DropdownMenuLabel>Conversations</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {(!conversations || conversations.length === 0) && (
-              <div className="px-2 py-3 text-sm text-muted-foreground">
+              <div className="px-2 py-3 text-muted-foreground text-sm">
                 No conversations yet. Start typing to create one.
               </div>
             )}
             {conversations?.map((c) => (
               <DropdownMenuItem
-                key={c.id}
                 className="flex items-center justify-between gap-2"
+                key={c.id}
                 onSelect={() => switchConversation(c.id)}
               >
                 <span className="truncate">{c.title ?? 'Untitled chat'}</span>
@@ -104,21 +104,21 @@ export function ChatDrawerHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex shrink-0 items-center gap-1">
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => newConversation()}
           aria-label="New conversation"
+          onClick={() => newConversation()}
+          size="sm"
           title="New conversation"
+          variant="ghost"
         >
           <MessageSquarePlusIcon className="size-4" />
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
           aria-label="Close chat"
+          onClick={onClose}
+          size="sm"
+          variant="ghost"
         >
           <XIcon className="size-4" />
         </Button>
@@ -168,15 +168,15 @@ function InlineDeleteButton({ onConfirm }: { onConfirm: () => void }) {
 
   return (
     <button
-      type="button"
-      onClick={handleClick}
+      aria-label={armed ? 'Confirm delete' : 'Delete conversation'}
       className={
         armed
-          ? 'shrink-0 rounded bg-destructive p-1 text-white hover:bg-destructive/90 transition-colors'
-          : 'shrink-0 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors'
+          ? 'shrink-0 rounded bg-destructive p-1 text-white transition-colors hover:bg-destructive/90'
+          : 'shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive'
       }
-      aria-label={armed ? 'Confirm delete' : 'Delete conversation'}
+      onClick={handleClick}
       title={armed ? 'Click again to confirm' : 'Delete'}
+      type="button"
     >
       {armed ? <Trash2Icon className="size-3" /> : <XIcon className="size-3" />}
     </button>

@@ -42,12 +42,12 @@ const TRACK_URL = `${BASE_URL}/track`;
 // ---------------------------------------------------------------------------
 
 function mulberry32(seed) {
-  return function () {
+  return () => {
     seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
+    seed = (seed + 0x6d_2b_79_f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
   };
 }
 
@@ -168,7 +168,7 @@ function makeIP(index) {
   ];
   const base = ranges[index % ranges.length];
   const a = base[0];
-  const b = Math.floor(index / 65025) % 256;
+  const b = Math.floor(index / 65_025) % 256;
   const c = Math.floor(index / 255) % 256;
   const d = (index % 255) + 1;
   return `${a}.${b}.${c}.${d}`;
@@ -185,14 +185,14 @@ const PRODUCTS = [
     category: 'Electronics',
     price: 8999,
   },
-  { id: 'prod_002', name: 'Running Shoes', category: 'Sports', price: 12999 },
+  { id: 'prod_002', name: 'Running Shoes', category: 'Sports', price: 12_999 },
   { id: 'prod_003', name: 'Coffee Maker', category: 'Kitchen', price: 5499 },
   { id: 'prod_004', name: 'Yoga Mat', category: 'Sports', price: 2999 },
   {
     id: 'prod_005',
     name: 'Smart Watch',
     category: 'Electronics',
-    price: 29999,
+    price: 29_999,
   },
   { id: 'prod_006', name: 'Blender', category: 'Kitchen', price: 7999 },
   { id: 'prod_007', name: 'Backpack', category: 'Travel', price: 4999 },
@@ -207,7 +207,7 @@ const PRODUCTS = [
     id: 'prod_010',
     name: 'Standing Desk',
     category: 'Furniture',
-    price: 45999,
+    price: 45_999,
   },
 ];
 
@@ -1142,9 +1142,15 @@ function generateIdentity(sessionIndex, sessionRng) {
 
 // Which sessions belong to which group (roughly 1/6 each)
 function getGroupForSession(sessionIndex) {
-  if (sessionIndex % 6 === 0) return GROUPS[0];
-  if (sessionIndex % 6 === 1) return GROUPS[1];
-  if (sessionIndex % 6 === 2) return GROUPS[2];
+  if (sessionIndex % 6 === 0) {
+    return GROUPS[0];
+  }
+  if (sessionIndex % 6 === 1) {
+    return GROUPS[1];
+  }
+  if (sessionIndex % 6 === 2) {
+    return GROUPS[2];
+  }
   return null;
 }
 
@@ -1319,7 +1325,7 @@ async function main() {
 
   await withConcurrency(sessionTasks, CONCURRENCY);
 
-  console.log(`\nDone!`);
+  console.log('\nDone!');
   console.log(`  Sessions: ${SESSION_COUNT}`);
   console.log(`  Events sent: ${totalEvents}`);
   console.log(`  Errors: ${errors}`);

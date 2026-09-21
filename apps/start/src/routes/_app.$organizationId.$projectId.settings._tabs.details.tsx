@@ -1,10 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import DeleteProject from '@/components/settings/delete-project';
 import EditProjectDetails from '@/components/settings/edit-project-details';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/details'

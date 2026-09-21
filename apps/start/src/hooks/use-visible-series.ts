@@ -1,5 +1,5 @@
-import type { IChartData } from '@/trpc/client';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { IChartData } from '@/trpc/client';
 
 export type IVisibleSeries = ReturnType<typeof useVisibleSeries>['series'];
 
@@ -26,7 +26,9 @@ export function useVisibleSeries(
       const valid = savedVisibleSeries.filter((id) =>
         series.some((s) => s.id === id)
       );
-      if (valid.length > 0) return valid;
+      if (valid.length > 0) {
+        return valid;
+      }
     }
     return series.slice(0, max).map((s) => s.id);
   };

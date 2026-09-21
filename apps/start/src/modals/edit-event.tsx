@@ -1,3 +1,10 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
+import { PaintBucketIcon, UndoIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
 import {
   EventIconColors,
   EventIconMapper,
@@ -6,20 +13,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
-import { AnimatePresence, motion } from 'framer-motion';
-import { PaintBucketIcon, UndoIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-
-import { Input } from '@/components/ui/input';
-import { popModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
 
 interface Props {
   id: string;
@@ -68,8 +66,8 @@ export default function EditEvent({ id }: Props) {
   return (
     <ModalContent>
       <ModalHeader
-        title={`Edit: ${event?.name}`}
         text={`Changes here will affect all "${event?.name}" events`}
+        title={`Edit: ${event?.name}`}
       />
       <div className="col gap-4">
         <div>
@@ -78,7 +76,9 @@ export default function EditEvent({ id }: Props) {
             <Checkbox
               checked={conversion}
               onCheckedChange={(checked) => {
-                if (checked === 'indeterminate') return;
+                if (checked === 'indeterminate') {
+                  return;
+                }
                 setConversion(checked);
               }}
             />
@@ -90,16 +90,16 @@ export default function EditEvent({ id }: Props) {
         <AnimatePresence mode="wait">
           {step === 'icon' ? (
             <motion.div
-              key="icon-step"
-              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: 20 }}
+              key="icon-step"
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
                 <div className="font-medium leading-none">Pick an icon</div>
                 {
-                  <button type="button" onClick={() => setStep('color')}>
+                  <button onClick={() => setStep('color')} type="button">
                     <Badge variant="outline">
                       Select color
                       <PaintBucketIcon className="ml-1 h-3 w-3" />
@@ -109,9 +109,9 @@ export default function EditEvent({ id }: Props) {
               </div>
               <Input
                 className="mb-4"
-                value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search for an icon"
+                value={search}
               />
               <div className={iconGrid}>
                 {Object.entries(EventIconMapper)
@@ -120,18 +120,18 @@ export default function EditEvent({ id }: Props) {
                   )
                   .map(([name, Icon]) => (
                     <button
-                      type="button"
-                      key={name}
-                      onClick={() => {
-                        setIcon(name);
-                        setStep('color');
-                      }}
                       className={cn(
                         'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
                         name === selectedIcon
                           ? 'scale-110 ring-1 ring-black'
                           : '[&_svg]:opacity-50'
                       )}
+                      key={name}
+                      onClick={() => {
+                        setIcon(name);
+                        setStep('color');
+                      }}
+                      type="button"
                     >
                       <Icon size={16} />
                     </button>
@@ -140,15 +140,15 @@ export default function EditEvent({ id }: Props) {
             </motion.div>
           ) : (
             <motion.div
-              key="color-step"
-              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: 20 }}
+              key="color-step"
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
                 <div className="font-medium leading-none">Pick a color</div>
-                <button type="button" onClick={() => setStep('icon')}>
+                <button onClick={() => setStep('icon')} type="button">
                   <Badge variant="outline">
                     Select icon
                     <UndoIcon className="ml-1 h-3 w-3" />
@@ -159,29 +159,29 @@ export default function EditEvent({ id }: Props) {
               <div className={iconGrid}>
                 {EventIconColors.map((color) => (
                   <button
-                    type="button"
-                    key={color}
-                    onClick={() => {
-                      setColor(color);
-                    }}
                     className={cn(
                       'flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all',
                       color === selectedColor ? 'ring-1 ring-black' : '',
                       getBg(color)
                     )}
+                    key={color}
+                    onClick={() => {
+                      setColor(color);
+                    }}
+                    type="button"
                   >
                     {SelectedIcon ? (
-                      <SelectedIcon size={16} className={getText(color)} />
+                      <SelectedIcon className={getText(color)} size={16} />
                     ) : (
                       <svg
                         className={`${getText(color)} opacity-70`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
                         fill="currentColor"
+                        height="24"
                         stroke="currentColor"
                         strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        width="24"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
                         <circle cx="12.1" cy="12.1" r="4" />
                       </svg>

@@ -1,16 +1,15 @@
-import { ButtonContainer } from '@/components/button-container';
-import { SelectDashboard } from '@/components/dashboards/select-dashboard';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { ButtonContainer } from '@/components/button-container';
+import { SelectDashboard } from '@/components/dashboards/select-dashboard';
+import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type MoveReportProps = {
   reportId: string;
@@ -65,27 +64,27 @@ export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
           render={({ field }) => {
             return (
               <SelectDashboard
-                value={field.value}
+                excludeDashboardId={dashboardId}
                 onChange={field.onChange}
                 projectId={projectId!}
-                excludeDashboardId={dashboardId}
+                value={field.value}
               />
             );
           }}
         />
         <ButtonContainer>
           <Button
-            type="button"
-            variant="outline"
             onClick={() => popModal()}
             size="default"
+            type="button"
+            variant="outline"
           >
             Cancel
           </Button>
           <Button
-            type="submit"
             disabled={!formState.isValid || move.isPending}
             size="default"
+            type="submit"
           >
             Move
           </Button>

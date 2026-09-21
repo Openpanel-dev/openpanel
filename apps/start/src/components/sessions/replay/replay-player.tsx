@@ -1,6 +1,6 @@
-import { useReplayContext } from '@/components/sessions/replay/replay-context';
-import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
+import { useReplayContext } from '@/components/sessions/replay/replay-context';
 
 import 'rrweb-player/dist/style.css';
 
@@ -17,7 +17,9 @@ function getRecordedDimensions(
     'height' in meta.data
   ) {
     const { width, height } = meta.data as { width: number; height: number };
-    if (width > 0 && height > 0) return { width, height };
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
   }
   return null;
 }
@@ -54,7 +56,9 @@ export function ReplayPlayer({
   );
 
   useEffect(() => {
-    if (!events.length || !containerRef.current) return;
+    if (!(events.length && containerRef.current)) {
+      return;
+    }
 
     // Clear any previous player DOM
     containerRef.current.innerHTML = '';
@@ -74,7 +78,9 @@ export function ReplayPlayer({
 
     import('rrweb-player')
       .then((module) => {
-        if (!containerRef.current || !mounted) return;
+        if (!(containerRef.current && mounted)) {
+          return;
+        }
 
         const PlayerConstructor = module.default;
         player = new PlayerConstructor({
@@ -115,30 +121,38 @@ export function ReplayPlayer({
         // kept in sync by ui-update-player-state above.
         let wasPlaying = false;
         handleVisibilityChange = () => {
-          if (!player) return;
+          if (!player) {
+            return;
+          }
           if (document.hidden) {
             wasPlaying = playingState;
-            if (wasPlaying) player.pause();
-          } else {
             if (wasPlaying) {
-              player.play();
-              wasPlaying = false;
+              player.pause();
             }
+          } else if (wasPlaying) {
+            player.play();
+            wasPlaying = false;
           }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         // Notify context — marks isReady = true and sets initial duration
         const meta = player.getMetaData();
-        if (meta.totalTime > 0) setDuration(meta.totalTime);
+        if (meta.totalTime > 0) {
+          setDuration(meta.totalTime);
+        }
         onPlayerReady(player, meta.startTime);
       })
       .catch(() => {
-        if (mounted) setImportError(true);
+        if (mounted) {
+          setImportError(true);
+        }
       });
 
     const onWindowResize = () => {
-      if (!containerRef.current || !mounted || !playerRef.current?.$set) return;
+      if (!(containerRef.current && mounted && playerRef.current?.$set)) {
+        return;
+      }
       const { width: w, height: h } = calcDimensions(
         containerRef.current.offsetWidth,
         aspectRatio
@@ -177,7 +191,7 @@ export function ReplayPlayer({
 
   if (importError) {
     return (
-      <div className="flex h-[320px] items-center justify-center bg-black text-sm text-muted-foreground">
+      <div className="flex h-[320px] items-center justify-center bg-black text-muted-foreground text-sm">
         Failed to load replay player.
       </div>
     );
@@ -186,8 +200,8 @@ export function ReplayPlayer({
   return (
     <div className="relative flex w-full justify-center overflow-hidden">
       <div
-        ref={containerRef}
         className="w-full"
+        ref={containerRef}
         style={{ maxHeight: '70vh' }}
       />
     </div>

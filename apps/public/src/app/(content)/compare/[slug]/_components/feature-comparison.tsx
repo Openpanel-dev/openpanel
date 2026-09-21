@@ -1,13 +1,12 @@
-import { Section, SectionHeader } from '@/components/section';
-import { CompareFeatureGroup } from '@/lib/compare';
 import { CheckIcon, XIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Section, SectionHeader } from '@/components/section';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import type { CompareFeatureGroup } from '@/lib/compare';
 
 interface FeatureComparisonProps {
   featureGroups: CompareFeatureGroup[];
@@ -21,39 +20,39 @@ function renderFeatureValue(value: boolean | string) {
       <XIcon className="size-5 text-red-500" />
     );
   }
-  return <span className="text-sm text-muted-foreground">{value}</span>;
+  return <span className="text-muted-foreground text-sm">{value}</span>;
 }
 
 export function FeatureComparison({ featureGroups }: FeatureComparisonProps) {
   return (
     <Section className="container">
       <SectionHeader
-        title="Feature comparison"
-        description="Detailed breakdown of capabilities"
         align="center"
+        description="Detailed breakdown of capabilities"
+        title="Feature comparison"
       />
-      <div className="mt-12 col gap-4">
+      <div className="col mt-12 gap-4">
         {featureGroups.map((group) => (
-          <div key={group.group} className="border rounded-3xl overflow-hidden">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value={group.group} className="border-0">
+          <div className="overflow-hidden rounded-3xl border" key={group.group}>
+            <Accordion className="w-full" collapsible type="single">
+              <AccordionItem className="border-0" value={group.group}>
                 <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                  <h3 className="text-lg font-semibold">{group.group}</h3>
+                  <h3 className="font-semibold text-lg">{group.group}</h3>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-6">
                   <div className="col gap-4">
                     {group.features.map((feature) => (
                       <div
+                        className="grid gap-4 border-b py-3 last:border-b-0 md:grid-cols-3"
                         key={feature.name}
-                        className="grid md:grid-cols-3 gap-4 py-3 border-b last:border-b-0"
                       >
                         <div className="font-medium text-sm">
                           {feature.name}
                         </div>
-                        <div className="row gap-2 items-center">
+                        <div className="row items-center gap-2">
                           {renderFeatureValue(feature.openpanel)}
                         </div>
-                        <div className="row gap-2 items-center text-muted-foreground">
+                        <div className="row items-center gap-2 text-muted-foreground">
                           {renderFeatureValue(feature.competitor)}
                         </div>
                       </div>

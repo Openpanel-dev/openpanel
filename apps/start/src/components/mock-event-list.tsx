@@ -1,8 +1,7 @@
-import { EventListItem } from '@/components/events/event-list-item';
+import type { IServiceEventMinimal } from '@openpanel/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-
-import type { IServiceEventMinimal } from '@openpanel/core';
+import { EventListItem } from '@/components/events/event-list-item';
 
 const useWebEventGenerator = () => {
   const [events, setEvents] = useState<IServiceEventMinimal[]>([]);
@@ -116,20 +115,20 @@ export const MockEventList = () => {
 
   return (
     <div className="hide-scrollbar h-screen overflow-y-auto">
-      <div className="text-background-foreground py-16 text-center text-2xl font-bold">
+      <div className="py-16 text-center font-bold text-2xl text-background-foreground">
         Real time data
         <br />
         at your fingertips
       </div>
-      <AnimatePresence mode="popLayout" initial>
+      <AnimatePresence initial mode="popLayout">
         <div className="flex flex-col gap-4 p-4">
           {state.map((event) => (
             <motion.div
-              key={event.id}
-              layout
-              initial={{ opacity: 0, x: -400, scale: 0.5 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 200, scale: 1.2 }}
+              initial={{ opacity: 0, x: -400, scale: 0.5 }}
+              key={event.id}
+              layout
               transition={{ duration: 0.6, type: 'spring' }}
             >
               <EventListItem {...event} minimal />

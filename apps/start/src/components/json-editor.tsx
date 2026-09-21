@@ -1,11 +1,11 @@
 'use client';
 
-import { basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { Compartment, EditorState, type Extension } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from './theme-provider';
 
@@ -67,7 +67,9 @@ export function JsonEditor({
 
   // Create editor once on mount
   useEffect(() => {
-    if (!editorRef.current || viewRef.current) return;
+    if (!editorRef.current || viewRef.current) {
+      return;
+    }
 
     const themeCompartment = new Compartment();
     themeCompartmentRef.current = themeCompartment;
@@ -159,7 +161,9 @@ export function JsonEditor({
 
   // Update theme using compartment
   useEffect(() => {
-    if (!viewRef.current || !themeCompartmentRef.current) return;
+    if (!(viewRef.current && themeCompartmentRef.current)) {
+      return;
+    }
 
     viewRef.current.dispatch({
       effects: themeCompartmentRef.current.reconfigure(
@@ -170,7 +174,9 @@ export function JsonEditor({
 
   // Update language using compartment
   useEffect(() => {
-    if (!viewRef.current || !languageCompartmentRef.current) return;
+    if (!(viewRef.current && languageCompartmentRef.current)) {
+      return;
+    }
 
     viewRef.current.dispatch({
       effects: languageCompartmentRef.current.reconfigure(
@@ -182,7 +188,9 @@ export function JsonEditor({
 
   // Update editor content when value changes externally
   useEffect(() => {
-    if (!viewRef.current || isUpdatingRef.current) return;
+    if (!viewRef.current || isUpdatingRef.current) {
+      return;
+    }
 
     const currentContent = viewRef.current.state.doc.toString();
     if (currentContent !== value) {
@@ -202,11 +210,11 @@ export function JsonEditor({
   return (
     <div className={className}>
       <div
+        className={`rounded-md ${isValid ? '' : 'ring-1 ring-destructive'}`}
         ref={editorRef}
-        className={`rounded-md ${!isValid ? 'ring-1 ring-destructive' : ''}`}
       />
       {!isValid && (
-        <p className="mt-1 text-sm text-destructive">
+        <p className="mt-1 text-destructive text-sm">
           {error ||
             `Invalid ${language === 'javascript' ? 'JavaScript' : 'JSON'}. Please check your syntax.`}
         </p>

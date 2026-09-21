@@ -1,6 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Widget } from '@/components/widget';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { ActivityIcon } from 'lucide-react';
@@ -12,6 +9,9 @@ import {
   WidgetTitle,
 } from '../overview/overview-widget';
 import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Widget } from '@/components/widget';
+import { useTRPC } from '@/integrations/trpc/react';
 
 type Props = {
   profileId: string;
@@ -53,19 +53,19 @@ export const LatestEvents = ({
   }, [query.data?.data?.length]);
 
   return (
-    <Widget className="w-full overflow-hidden h-full" ref={ref}>
+    <Widget className="h-full w-full overflow-hidden" ref={ref}>
       <WidgetHead>
         <WidgetTitle icon={ActivityIcon}>Latest Events</WidgetTitle>
         <WidgetAbsoluteButtons>
-          <Button variant="outline" size="sm" onClick={handleShowMore}>
+          <Button onClick={handleShowMore} size="sm" variant="outline">
             All
           </Button>
         </WidgetAbsoluteButtons>
       </WidgetHead>
 
-      <ScrollArea ref={scrollRef} className="h-0 p-4">
+      <ScrollArea className="h-0 p-4" ref={scrollRef}>
         {query.data?.data?.map((event) => (
-          <div key={event.id} className="mb-4">
+          <div className="mb-4" key={event.id}>
             <EventListItem {...event} />
           </div>
         ))}

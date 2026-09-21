@@ -1,9 +1,6 @@
-import { Badge } from '@/components/ui/badge';
-import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
-
 import { Button, type ButtonProps } from './button';
 import { DumpCheckbox } from './checkbox';
 import {
@@ -12,6 +9,8 @@ import {
   PopoverPortal,
   PopoverTrigger,
 } from './popover';
+import { Badge } from '@/components/ui/badge';
+import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
@@ -60,6 +59,7 @@ export function ComboboxAdvanced({
     const checked = !!value.find((s) => s === desanitize(item.value));
     return (
       <CommandItem
+        className={'flex cursor-pointer items-center gap-2'}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -72,7 +72,6 @@ export function ComboboxAdvanced({
               : [...value, desanitize(item.value)]
           );
         }}
-        className={'flex cursor-pointer items-center gap-2'}
         value={item.value}
       >
         <DumpCheckbox checked={checked} />
@@ -102,7 +101,7 @@ export function ComboboxAdvanced({
   }, [inputValue, selectables, items]);
 
   const trigger = children ?? (
-    <Button variant={'outline'} className={className} size={size} autoHeight>
+    <Button autoHeight className={className} size={size} variant={'outline'}>
       <div className="flex w-full flex-wrap gap-1">
         {value.length === 0 && placeholder}
         {value.map((val) => {
@@ -118,23 +117,23 @@ export function ComboboxAdvanced({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent className="w-full max-w-md p-0" align="start">
+        <PopoverContent align="start" className="w-full max-w-md p-0">
           <Command shouldFilter={false}>
             <CommandInput
+              onValueChange={setInputValue}
               placeholder="Search"
               value={inputValue}
-              onValueChange={setInputValue}
             />
             <VirtualList
-              height={Math.min(items.length * 32, 300)}
               data={data.map((item) => ({
                 ...item,
                 label: sanitize(item.label),
                 value: sanitize(item.value),
               }))}
+              height={Math.min(items.length * 32, 300)}
               itemHeight={32}
               itemKey="value"
             >

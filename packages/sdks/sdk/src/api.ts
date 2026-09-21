@@ -55,7 +55,9 @@ export class Api {
         ...options,
       });
 
-      if (response.status === 401) return null;
+      if (response.status === 401) {
+        return null;
+      }
 
       if (response.status !== 200 && response.status !== 202) {
         throw new Error(`HTTP error! status: ${response.status}`);

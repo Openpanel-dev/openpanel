@@ -2,9 +2,9 @@
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { useChart, useChartStable } from './chart-context';
 import { shortDateFmt } from './chart-formatters';
+import { cn } from '@/lib/utils';
 
 export interface XAxisProps {
   /** Number of ticks to show (including first and last). Default: 5. Used when `tickMode` is `"domain"`. */

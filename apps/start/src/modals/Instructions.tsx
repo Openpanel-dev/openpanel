@@ -1,5 +1,7 @@
-import Syntax from '@/components/syntax';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { IServiceClient } from '@openpanel/core';
+import type { frameworks } from '@openpanel/sdk-info';
+import { ExternalLinkIcon, XIcon } from 'lucide-react';
+import { popModal } from '.';
 import { Button, LinkButton } from '@/components/ui/button';
 import {
   SheetContent,
@@ -7,12 +9,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ExternalLinkIcon, XIcon } from 'lucide-react';
-
-import type { IServiceClient } from '@openpanel/core';
-import type { frameworks } from '@openpanel/sdk-info';
-
-import { popModal } from '.';
 
 type Props = {
   client: IServiceClient | null;
@@ -26,20 +22,20 @@ const Header = ({ framework }: Pick<Props, 'framework'>) => (
 );
 
 const Footer = ({ framework }: Pick<Props, 'framework'>) => (
-  <SheetFooter className="absolute bottom-0 left-0 right-0 p-4">
+  <SheetFooter className="absolute right-0 bottom-0 left-0 p-4">
     <Button
-      variant={'secondary'}
       className="flex-1"
-      onClick={() => popModal()}
       icon={XIcon}
+      onClick={() => popModal()}
+      variant={'secondary'}
     >
       Close
     </Button>
     <LinkButton
-      target="_blank"
-      href={framework.href}
       className="flex-1"
+      href={framework.href}
       icon={ExternalLinkIcon}
+      target="_blank"
     >
       More details
     </LinkButton>
@@ -49,7 +45,7 @@ const Footer = ({ framework }: Pick<Props, 'framework'>) => (
 const Instructions = ({ framework }: Props) => {
   return (
     <iframe
-      className="w-full h-full"
+      className="h-full w-full"
       src={framework.href}
       title={framework.name}
     />

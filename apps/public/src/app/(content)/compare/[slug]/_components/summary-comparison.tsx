@@ -1,7 +1,7 @@
+import { CheckIcon, XIcon } from 'lucide-react';
 import { FeatureCard } from '@/components/feature-card';
 import { Section, SectionHeader } from '@/components/section';
-import { CompareSummary } from '@/lib/compare';
-import { CheckIcon, XIcon } from 'lucide-react';
+import type { CompareSummary } from '@/lib/compare';
 
 interface SummaryComparisonProps {
   summary: CompareSummary;
@@ -15,34 +15,34 @@ export function SummaryComparison({
   return (
     <Section className="container">
       <SectionHeader
-        title="Quick comparison"
-        description={summary.one_liner}
         align="center"
+        description={summary.one_liner}
+        title="Quick comparison"
       />
-      <div className="grid md:grid-cols-2 gap-6 mt-12">
+      <div className="mt-12 grid gap-6 md:grid-cols-2">
         <FeatureCard
-          title="Best for OpenPanel"
-          description=""
           className="border-green-500/20 bg-green-500/5"
+          description=""
+          title="Best for OpenPanel"
         >
-          <ul className="col gap-3 mt-4">
+          <ul className="col mt-4 gap-3">
             {summary.best_for_openpanel.map((item) => (
-              <li key={item} className="row gap-2 items-start text-sm">
-                <CheckIcon className="size-4 shrink-0 mt-0.5 text-green-500" />
+              <li className="row items-start gap-2 text-sm" key={item}>
+                <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-500" />
                 <span>{item}</span>
               </li>
             ))}
           </ul>
         </FeatureCard>
         <FeatureCard
-          title={`Best for ${competitorName}`}
-          description=""
           className="border-muted"
+          description=""
+          title={`Best for ${competitorName}`}
         >
-          <ul className="col gap-3 mt-4">
+          <ul className="col mt-4 gap-3">
             {summary.best_for_competitor.map((item) => (
-              <li key={item} className="row gap-2 items-start text-sm">
-                <XIcon className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+              <li className="row items-start gap-2 text-sm" key={item}>
+                <XIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 <span className="text-muted-foreground">{item}</span>
               </li>
             ))}

@@ -28,7 +28,7 @@ export function Dot({ className, size = 8, animated }: DotProps) {
     >
       <div
         className={cn(
-          'absolute !m-0  rounded-full',
+          '!m-0 absolute rounded-full',
           animated !== false && 'animate-ping',
           className
         )}
@@ -36,7 +36,7 @@ export function Dot({ className, size = 8, animated }: DotProps) {
       />
       <div
         className={cn(
-          'absolute !m-0 rounded-full',
+          '!m-0 absolute rounded-full',
           filterCn(['animate-', 'group-hover/row'], className)
         )}
         style={style}

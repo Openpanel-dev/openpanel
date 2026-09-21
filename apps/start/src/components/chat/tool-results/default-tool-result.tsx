@@ -13,11 +13,11 @@ export function DefaultToolResult({ part }: ToolResultProps) {
 
   return (
     <ToolStateGuard
-      state={part.state}
       errorText={part.errorText}
+      state={part.state}
       toolName={toolName}
     >
-      <DefaultInner toolName={toolName} output={part.output} />
+      <DefaultInner output={part.output} toolName={toolName} />
     </ToolStateGuard>
   );
 }
@@ -34,7 +34,7 @@ function DefaultInner({
   if (output == null) {
     return (
       <ResultCard title={getToolPhrase(toolName, 'done')}>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+        <div className="px-3 py-2 text-muted-foreground text-sm">
           No result.
         </div>
       </ResultCard>
@@ -44,7 +44,7 @@ function DefaultInner({
   if (typeof output === 'string') {
     return (
       <ResultCard title={getToolPhrase(toolName, 'done')}>
-        <div className="px-3 py-2 text-sm whitespace-pre-wrap">{output}</div>
+        <div className="whitespace-pre-wrap px-3 py-2 text-sm">{output}</div>
       </ResultCard>
     );
   }
@@ -55,9 +55,9 @@ function DefaultInner({
   return (
     <ToolDoneBadge toolName={toolName}>
       <button
-        type="button"
+        className="-mx-2.5 -my-2 flex w-[calc(100%+1.25rem)] items-center gap-1 px-2.5 py-1.5 text-left text-muted-foreground text-sm hover:bg-muted/40"
         onClick={() => setExpanded((e) => !e)}
-        className="flex items-center gap-1 -mx-2.5 -my-2 px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted/40 w-[calc(100%+1.25rem)] text-left"
+        type="button"
       >
         <ChevronRightIcon
           className={`size-3 transition-transform ${expanded ? 'rotate-90' : ''}`}
@@ -69,7 +69,7 @@ function DefaultInner({
         </span>
       </button>
       {expanded && (
-        <pre className="mt-2 -mx-2.5 -mb-2 px-2.5 py-2 border-t text-[11px] font-mono whitespace-pre-wrap break-all max-h-64 overflow-y-auto bg-muted/20">
+        <pre className="-mx-2.5 mt-2 -mb-2 max-h-64 overflow-y-auto whitespace-pre-wrap break-all border-t bg-muted/20 px-2.5 py-2 font-mono text-[11px]">
           {JSON.stringify(output, null, 2)}
         </pre>
       )}

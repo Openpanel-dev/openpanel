@@ -1,5 +1,6 @@
+import { PopoverPortal } from '@radix-ui/react-popover';
 import { format } from 'date-fns';
-
+import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -9,8 +10,6 @@ import {
 } from '@/components/ui/popover';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { PopoverPortal } from '@radix-ui/react-popover';
-import { CalendarIcon } from 'lucide-react';
 
 export function DateTimePicker({
   value,
@@ -43,11 +42,11 @@ export function DateTimePicker({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={'outline'}
           className={cn(
             'w-full pl-3 text-left font-normal',
             !value && 'text-muted-foreground'
           )}
+          variant={'outline'}
         >
           {value ? (
             format(value, 'MM/dd/yyyy HH:mm')
@@ -61,57 +60,57 @@ export function DateTimePicker({
         <PopoverContent className="w-auto p-0">
           <div className="sm:flex">
             <Calendar
-              mode="single"
-              selected={value}
-              onSelect={handleDateSelect}
               initialFocus
+              mode="single"
+              onSelect={handleDateSelect}
+              selected={value}
             />
-            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+            <div className="flex flex-col divide-y sm:h-[300px] sm:flex-row sm:divide-x sm:divide-y-0">
               <ScrollArea className="w-64 sm:w-auto">
-                <div className="flex sm:flex-col p-2">
+                <div className="flex p-2 sm:flex-col">
                   {Array.from({ length: 24 }, (_, i) => i)
                     .reverse()
                     .map((hour) => (
                       <Button
+                        className="aspect-square shrink-0 sm:w-full"
                         key={hour}
+                        onClick={() =>
+                          handleTimeChange('hour', hour.toString())
+                        }
                         size="icon"
                         variant={
                           value && value.getHours() === hour
                             ? 'default'
                             : 'ghost'
                         }
-                        className="sm:w-full shrink-0 aspect-square"
-                        onClick={() =>
-                          handleTimeChange('hour', hour.toString())
-                        }
                       >
                         {hour}
                       </Button>
                     ))}
                 </div>
-                <ScrollBar orientation="horizontal" className="sm:hidden" />
+                <ScrollBar className="sm:hidden" orientation="horizontal" />
               </ScrollArea>
               <ScrollArea className="w-64 sm:w-auto">
-                <div className="flex sm:flex-col p-2">
+                <div className="flex p-2 sm:flex-col">
                   {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
                     <Button
+                      className="aspect-square shrink-0 sm:w-full"
                       key={minute}
+                      onClick={() =>
+                        handleTimeChange('minute', minute.toString())
+                      }
                       size="icon"
                       variant={
                         value && value.getMinutes() === minute
                           ? 'default'
                           : 'ghost'
                       }
-                      className="sm:w-full shrink-0 aspect-square"
-                      onClick={() =>
-                        handleTimeChange('minute', minute.toString())
-                      }
                     >
                       {minute.toString().padStart(2, '0')}
                     </Button>
                   ))}
                 </div>
-                <ScrollBar orientation="horizontal" className="sm:hidden" />
+                <ScrollBar className="sm:hidden" orientation="horizontal" />
               </ScrollArea>
             </div>
           </div>

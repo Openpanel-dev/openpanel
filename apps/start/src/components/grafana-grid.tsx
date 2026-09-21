@@ -70,22 +70,22 @@ export function GrafanaGrid({
       `}</style>
       <div className="-m-4">
         <ResponsiveGridLayout
-          className="layout"
-          layouts={layouts}
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          className="layout"
           cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={100}
-          draggableHandle=".drag-handle"
           compactType="vertical"
-          preventCollision={false}
-          margin={[16, 16]}
-          transformScale={1}
-          useCSSTransforms={true}
-          onLayoutChange={onLayoutChange}
-          onDragStop={onDragStop}
-          onResizeStop={onResizeStop}
+          draggableHandle=".drag-handle"
           isDraggable={isDraggable}
           isResizable={isResizable}
+          layouts={layouts}
+          margin={[16, 16]}
+          onDragStop={onDragStop}
+          onLayoutChange={onLayoutChange}
+          onResizeStop={onResizeStop}
+          preventCollision={false}
+          rowHeight={100}
+          transformScale={1}
+          useCSSTransforms={true}
         >
           {children}
         </ResponsiveGridLayout>

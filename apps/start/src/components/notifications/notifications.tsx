@@ -1,7 +1,7 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { NotificationsTable } from './table';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function Notifications() {
   const { projectId } = useAppParams();

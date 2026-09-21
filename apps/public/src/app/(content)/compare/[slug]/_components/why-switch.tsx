@@ -1,15 +1,15 @@
-import { Section, SectionHeader } from '@/components/section';
-import { CompareSummary } from '@/lib/compare';
 import {
-  UsersIcon,
-  SparklesIcon,
-  SearchIcon,
-  MoonIcon,
-  ShieldIcon,
-  ServerIcon,
-  ZapIcon,
   CheckCircleIcon,
+  MoonIcon,
+  SearchIcon,
+  ServerIcon,
+  ShieldIcon,
+  SparklesIcon,
+  UsersIcon,
+  ZapIcon,
 } from 'lucide-react';
+import { Section, SectionHeader } from '@/components/section';
+import type { CompareSummary } from '@/lib/compare';
 
 interface WhySwitchProps {
   summary: CompareSummary;
@@ -32,16 +32,16 @@ export function WhySwitch({ summary }: WhySwitchProps) {
   return (
     <Section className="container">
       <SectionHeader
-        title={summary.title}
         description={summary.intro}
+        title={summary.title}
         variant="sm"
       />
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+      <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         {benefits.map((benefit, index) => {
           const Icon = benefitIcons[index] || CheckCircleIcon;
           return (
-            <div key={benefit} className="col gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 center-center">
+            <div className="col gap-3" key={benefit}>
+              <div className="center-center size-10 rounded-lg bg-primary/10">
                 <Icon className="size-5 text-primary" />
               </div>
               <h3 className="font-semibold text-sm">{benefit}</h3>

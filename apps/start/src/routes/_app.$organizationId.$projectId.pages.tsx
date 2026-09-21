@@ -1,9 +1,9 @@
-import { PagesTable } from '@/components/pages/table';
+import { createFileRoute } from '@tanstack/react-router';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { PagesTable } from '@/components/pages/table';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { createFileRoute } from '@tanstack/react-router';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/pages')({
   component: Component,
@@ -18,9 +18,9 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Pages"
-        description="Access all your pages here"
         className="mb-8"
+        description="Access all your pages here"
+        title="Pages"
       />
       <PagesTable projectId={projectId} />
     </PageContainer>

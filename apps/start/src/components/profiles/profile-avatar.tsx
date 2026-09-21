@@ -1,8 +1,8 @@
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/facehash';
 import { cn } from '@/utils/cn';
 import { type GetProfileNameProps, getProfileName } from '@/utils/getters';
-import type { VariantProps } from 'class-variance-authority';
-import { cva } from 'class-variance-authority';
 
 interface ProfileAvatarProps
   extends VariantProps<typeof variants>,
@@ -36,11 +36,11 @@ export function ProfileAvatar({
 
   return (
     <Avatar className={cn(variants({ className, size }), className)}>
-      {isValidAvatar && <AvatarImage src={avatar} className="rounded-full" />}
+      {isValidAvatar && <AvatarImage className="rounded-full" src={avatar} />}
       <AvatarFallback
-        name={name ?? 'Unknown'}
-        facehash
         className="rounded-full"
+        facehash
+        name={name ?? 'Unknown'}
       />
     </Avatar>
   );

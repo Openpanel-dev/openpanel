@@ -1,9 +1,8 @@
+import { useReportChartContext } from '../context';
+import { MetricCard } from './metric-card';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-
-import { useReportChartContext } from '../context';
-import { MetricCard } from './metric-card';
 
 interface Props {
   data: IChartData;
@@ -26,8 +25,8 @@ export function Chart({ data }: Props) {
         return (
           <MetricCard
             key={serie.id}
-            serie={serie}
             metric={metric}
+            serie={serie}
             unit={unit}
           />
         );

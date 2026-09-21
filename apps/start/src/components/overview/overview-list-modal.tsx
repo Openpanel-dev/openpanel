@@ -1,12 +1,11 @@
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { ModalContent } from '@/modals/Modal/Container';
-import { cn } from '@/utils/cn';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SearchIcon } from 'lucide-react';
 import type React from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { Input } from '../ui/input';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { ModalContent } from '@/modals/Modal/Container';
 
 const ROW_HEIGHT = 36;
 
@@ -19,28 +18,28 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
   const offset = circumference - percentage * circumference;
 
   return (
-    <svg width={size} height={size} className="flex-shrink-0">
+    <svg className="flex-shrink-0" height={size} width={size}>
       <circle
+        className="text-def-200"
         cx={size / 2}
         cy={size / 2}
-        r={radius}
         fill="none"
+        r={radius}
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        className="text-def-200"
       />
       <circle
+        className="transition-all"
         cx={size / 2}
         cy={size / 2}
-        r={radius}
         fill="none"
+        r={radius}
         stroke="#3ba974"
-        strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
+        strokeWidth={strokeWidth}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        className="transition-all"
       />
     </svg>
   );
@@ -131,21 +130,21 @@ export function OverviewListModal<T extends OverviewListItem>({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <ModalContent className="flex !max-h-[90vh] flex-col p-0 gap-0 sm:max-w-2xl">
+    <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0 sm:max-w-2xl">
       {/* Sticky Header */}
-      <div className="flex-shrink-0 border-b border-border">
+      <div className="flex-shrink-0 border-border border-b">
         <div className="p-6 pb-4">
-          <DialogTitle className="text-lg font-semibold mb-4">
+          <DialogTitle className="mb-4 font-semibold text-lg">
             {title}
           </DialogTitle>
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              type="search"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              type="search"
+              value={searchQuery}
             />
           </div>
           {headerContent}
@@ -153,13 +152,13 @@ export function OverviewListModal<T extends OverviewListItem>({
 
         {/* Column Headers */}
         <div
-          className="grid px-4 py-2 text-sm font-medium text-muted-foreground bg-def-100"
+          className="grid bg-def-100 px-4 py-2 font-medium text-muted-foreground text-sm"
           style={{
             gridTemplateColumns:
               `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
           }}
         >
-          <div className="text-left truncate">{columnName}</div>
+          <div className="truncate text-left">{columnName}</div>
           {hasRevenue && <div className="text-right">Revenue</div>}
           {hasPageviews && <div className="text-right">Views</div>}
           {showSessions && <div className="text-right">Sessions</div>}
@@ -168,8 +167,8 @@ export function OverviewListModal<T extends OverviewListItem>({
 
       {/* Virtualized Scrollable Body */}
       <div
+        className="min-h-0 flex-1 overflow-y-auto"
         ref={scrollAreaRef}
-        className="flex-1 min-h-0 overflow-y-auto"
         style={{ maxHeight: '60vh' }}
       >
         <div
@@ -181,7 +180,9 @@ export function OverviewListModal<T extends OverviewListItem>({
         >
           {virtualItems.map((virtualRow) => {
             const item = filteredData[virtualRow.index];
-            if (!item) return null;
+            if (!item) {
+              return null;
+            }
 
             const percentage = item.sessions / maxSessions;
             const revenuePercentage =
@@ -189,8 +190,8 @@ export function OverviewListModal<T extends OverviewListItem>({
 
             return (
               <div
+                className="group/row absolute top-0 left-0 w-full"
                 key={keyExtractor(item)}
-                className="absolute top-0 left-0 w-full group/row"
                 style={{
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
@@ -199,14 +200,14 @@ export function OverviewListModal<T extends OverviewListItem>({
                 {/* Background bar */}
                 <div className="absolute inset-0 overflow-hidden">
                   <div
-                    className="h-full bg-def-200 group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900 transition-colors"
+                    className="h-full bg-def-200 transition-colors group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900"
                     style={{ width: `${percentage * 100}%` }}
                   />
                 </div>
 
                 {/* Row content */}
                 <div
-                  className="relative grid h-full items-center px-4 border-b border-border"
+                  className="relative grid h-full items-center border-border border-b px-4"
                   style={{
                     gridTemplateColumns:
                       `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
@@ -221,7 +222,7 @@ export function OverviewListModal<T extends OverviewListItem>({
                   {hasRevenue && (
                     <div className="flex items-center justify-end gap-2">
                       <span
-                        className="font-semibold font-mono text-sm"
+                        className="font-mono font-semibold text-sm"
                         style={{ color: '#3ba974' }}
                       >
                         {(item.revenue ?? 0) > 0
@@ -236,14 +237,14 @@ export function OverviewListModal<T extends OverviewListItem>({
 
                   {/* Pageviews cell */}
                   {hasPageviews && (
-                    <div className="text-right font-semibold font-mono text-sm">
+                    <div className="text-right font-mono font-semibold text-sm">
                       {number.short(item.pageviews)}
                     </div>
                   )}
 
                   {/* Sessions cell */}
                   {showSessions && (
-                    <div className="text-right font-semibold font-mono text-sm">
+                    <div className="text-right font-mono font-semibold text-sm">
                       {number.short(item.sessions)}
                     </div>
                   )}
@@ -255,7 +256,7 @@ export function OverviewListModal<T extends OverviewListItem>({
 
         {/* Empty state */}
         {filteredData.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
             {searchQuery ? 'No results found' : 'No data available'}
           </div>
         )}
@@ -263,7 +264,7 @@ export function OverviewListModal<T extends OverviewListItem>({
 
       {/* Fixed Footer */}
       {footer && (
-        <div className="flex-shrink-0 border-t border-border p-4">{footer}</div>
+        <div className="flex-shrink-0 border-border border-t p-4">{footer}</div>
       )}
     </ModalContent>
   );

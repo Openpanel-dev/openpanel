@@ -119,7 +119,7 @@ async function main() {
   const state = process.argv[2];
   const orgId = process.argv[3] ?? 'openpanel-dev';
 
-  if (!state || !recipes[state]) {
+  if (!(state && recipes[state])) {
     console.error(
       `Usage: set-subscription-state <state> [orgId]\n\nStates: ${Object.keys(recipes).join(', ')}`
     );

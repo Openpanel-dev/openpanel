@@ -1,16 +1,19 @@
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import DeleteAccount from '@/components/settings/delete-account';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { SaveIcon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
 
 const validator = z.object({
   firstName: z.string(),
@@ -64,16 +67,16 @@ function Component() {
           mutation.mutate(values);
         })}
       >
-        <Widget className="max-w-screen-md w-full">
+        <Widget className="w-full max-w-screen-md">
           <WidgetHead>
             <span className="title">Profile</span>
           </WidgetHead>
-          <WidgetBody className="gap-4 col">
+          <WidgetBody className="col gap-4">
             <InputWithLabel
-              label="Email"
-              value={user.email}
               disabled
+              label="Email"
               readOnly
+              value={user.email}
             />
             <InputWithLabel
               label="First name"
@@ -86,12 +89,12 @@ function Component() {
               defaultValue={user.lastName ?? ''}
             />
             <Button
-              size="sm"
-              type="submit"
-              disabled={!formState.isDirty || mutation.isPending}
               className="self-end"
+              disabled={!formState.isDirty || mutation.isPending}
               icon={SaveIcon}
               loading={mutation.isPending}
+              size="sm"
+              type="submit"
             >
               Save
             </Button>

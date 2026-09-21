@@ -106,7 +106,7 @@ async function promptForInput(polar: Polar) {
             },
           });
 
-          if (!org || !org.members || org.members.length === 0) {
+          if (!(org && org.members) || org.members.length === 0) {
             return [{ name: 'No members found', value: '', disabled: true }];
           }
 
@@ -160,7 +160,9 @@ async function main() {
         name: 'polarApiKey',
         message: 'Enter your Polar API key:',
         validate: (input: string) => {
-          if (!input) return 'API key is required';
+          if (!input) {
+            return 'API key is required';
+          }
           return true;
         },
       },

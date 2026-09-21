@@ -1,6 +1,3 @@
-import { useTRPC } from '@/integrations/trpc/react';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Bar } from '../charts/bar';
@@ -12,6 +9,9 @@ import {
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { MetricCardShell } from './overview-metric-card';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -76,7 +76,7 @@ export function OverviewLiveHistogram({
     <MetricCardShell>
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
             Live · 30 min
           </span>
           <span className="relative flex h-2 w-2 items-center justify-center">
@@ -84,7 +84,7 @@ export function OverviewLiveHistogram({
               className={cn(
                 'absolute inline-flex h-full w-full rounded-full opacity-75',
                 totalSessions > 0
-                  ? 'bg-emerald-500 animate-ping'
+                  ? 'animate-ping bg-emerald-500'
                   : 'bg-destructive'
               )}
             />
@@ -97,18 +97,18 @@ export function OverviewLiveHistogram({
           </span>
         </div>
         <div className="mt-1 flex items-baseline gap-0.5 leading-none">
-          <span className="truncate font-mono font-semibold text-xl text-foreground tracking-tight tabular-nums">
+          <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums tracking-tight">
             {number.short(displayCount)}
           </span>
         </div>
-        <div className="mt-0.5 flex items-center justify-between gap-2 truncate text-[11px] leading-none text-muted-foreground">
+        <div className="mt-0.5 flex items-center justify-between gap-2 truncate text-[11px] text-muted-foreground leading-none">
           <span className="truncate">{displayLabel}</span>
           {referrers.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5">
               {referrers.slice(0, 3).map((ref, index) => (
                 <div
-                  key={`${ref.referrer}-${ref.count}-${index}`}
                   className="flex items-center gap-0.5"
+                  key={`${ref.referrer}-${ref.count}-${index}`}
                   title={`${ref.referrer} · ${ref.count}`}
                 >
                   <SerieIcon name={ref.referrer} />
@@ -123,19 +123,19 @@ export function OverviewLiveHistogram({
       <div className="mt-1.5 h-[40px]">
         {chartData.length > 0 && (
           <BarChart
-            data={chartData}
-            xDataKey="time"
-            aspectRatio="auto"
-            className="h-full"
-            margin={{ top: 6, right: 0, bottom: 4, left: 0 }}
             animationDuration={0}
+            aspectRatio="auto"
             barGap={0.25}
+            className="h-full"
+            data={chartData}
+            margin={{ top: 6, right: 0, bottom: 4, left: 0 }}
+            xDataKey="time"
           >
             <OPStatHoverBridge onHoverChange={setHover} />
             <Bar
+              animate={false}
               dataKey="sessionCount"
               fill={PRIMARY_COLOR}
-              animate={false}
               lineCap={2}
             />
           </BarChart>

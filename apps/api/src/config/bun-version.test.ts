@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'bun:test';
 
 // ADR-016 rule 5 wants the Bun pin asserted in three places: .bun-version,
 // scripts/doctor.sh, and a boot log line — and all three must agree with

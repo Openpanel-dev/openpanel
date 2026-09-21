@@ -1,6 +1,6 @@
-import { cn } from '@/utils/cn';
-import { type VariantProps, cva } from 'class-variance-authority';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { cn } from '@/utils/cn';
 
 const deltaChipVariants = cva(
   'flex items-center justify-center gap-1 rounded-full font-semibold',
@@ -12,7 +12,7 @@ const deltaChipVariants = cva(
         default: 'bg-muted text-muted-foreground',
       },
       size: {
-        xs: 'px-1.5 py-0 leading-none text-[10px]',
+        xs: 'px-1.5 py-0 text-[10px] leading-none',
         sm: 'px-2 py-1 text-xs',
         md: 'px-2 py-1 text-sm',
         lg: 'px-2 py-1 text-base',
@@ -57,9 +57,9 @@ export function DeltaChip({
       )}
     >
       {variant === 'inc' ? (
-        <ArrowUpIcon size={iconVariants[size || 'md']} className="shrink-0" />
+        <ArrowUpIcon className="shrink-0" size={iconVariants[size || 'md']} />
       ) : variant === 'dec' ? (
-        <ArrowDownIcon size={iconVariants[size || 'md']} className="shrink-0" />
+        <ArrowDownIcon className="shrink-0" size={iconVariants[size || 'md']} />
       ) : null}
       <span>{children}</span>
     </div>

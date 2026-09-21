@@ -36,29 +36,33 @@ export function OPSeriesDots({ dots }: OPSeriesDotsProps) {
     setMounted(true);
   }, []);
 
-  if (!mounted || !containerRef.current || !tooltipData) return null;
+  if (!(mounted && containerRef.current && tooltipData)) {
+    return null;
+  }
 
   return createPortal(
     <svg
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 z-[51]"
-      width="100%"
       height="100%"
+      width="100%"
     >
       <g transform={`translate(${margin.left}, ${margin.top})`}>
         {dots.map((dot) => {
           const xPos = tooltipData.xPositions?.[dot.dataKey] ?? tooltipData.x;
           const yPos = tooltipData.yPositions[dot.dataKey];
-          if (yPos == null) return null;
+          if (yPos == null) {
+            return null;
+          }
           const radius = dot.radius ?? (dot.label ? 8 : 5);
           return (
             <OPDot
-              key={dot.dataKey}
-              x={xPos}
-              y={yPos}
               color={dot.color}
+              key={dot.dataKey}
               label={dot.label}
               radius={radius}
+              x={xPos}
+              y={yPos}
             />
           );
         })}
@@ -85,18 +89,18 @@ function OPDot({ x, y, color, label, radius }: OPDotProps) {
   return (
     <motion.g style={{ x: animatedX, y: animatedY }}>
       <circle
-        r={radius}
         fill={color}
+        r={radius}
         stroke="var(--chart-background)"
         strokeWidth={2}
       />
       {label && (
         <text
           dy={radius * 0.35}
-          textAnchor="middle"
           fill="white"
           fontSize={radius * 1.2}
           fontWeight={700}
+          textAnchor="middle"
         >
           {label}
         </text>

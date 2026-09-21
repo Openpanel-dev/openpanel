@@ -50,7 +50,9 @@ async function promptForInput() {
       name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
-        if (!input) return 'API key is required';
+        if (!input) {
+          return 'API key is required';
+        }
         return true;
       },
     },
@@ -126,8 +128,12 @@ async function promptForInput() {
       name: 'price',
       message: 'Enter price',
       validate: (input: number) => {
-        if (!Number.isInteger(input)) return false;
-        if (input < 0) return false;
+        if (!Number.isInteger(input)) {
+          return false;
+        }
+        if (input < 0) {
+          return false;
+        }
         return true;
       },
     },
@@ -136,8 +142,12 @@ async function promptForInput() {
       name: 'eventsLimit',
       message: 'Enter events limit:',
       validate: (input: number) => {
-        if (!Number.isInteger(input)) return false;
-        if (input < 0) return false;
+        if (!Number.isInteger(input)) {
+          return false;
+        }
+        if (input < 0) {
+          return false;
+        }
         return true;
       },
     },

@@ -1,3 +1,8 @@
+import { PopoverPortal } from '@radix-ui/react-popover';
+import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
+import VirtualList from 'rc-virtual-list';
+import * as React from 'react';
+import { EventIcon } from '../events/event-icon';
 import type { ButtonProps } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,11 +19,6 @@ import {
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { PopoverPortal } from '@radix-ui/react-popover';
-import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
-import VirtualList from 'rc-virtual-list';
-import * as React from 'react';
-import { EventIcon } from '../events/event-icon';
 
 /**
  * Type-safe ComboboxEvents component that supports both single and multiple selection.
@@ -129,30 +129,30 @@ export function ComboboxEvents<
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          disabled={disabled}
-          size={size}
-          variant="outline"
-          role="combobox"
           aria-expanded={open}
           className={cn(
             'justify-between',
             !!error && 'border-destructive',
             className
           )}
+          disabled={disabled}
+          role="combobox"
+          size={size}
+          variant="outline"
         >
           <div className="flex min-w-0 items-center">
             {current?.meta ? (
               <EventIcon
-                name={current.name}
-                meta={current.meta}
-                size="xs"
                 className="mr-2 shrink-0"
+                meta={current.meta}
+                name={current.name}
+                size="xs"
               />
             ) : (
-              <GanttChartIcon size={16} className="mr-2 shrink-0" />
+              <GanttChartIcon className="mr-2 shrink-0" size={16} />
             )}
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {renderTriggerContent()}
@@ -163,52 +163,54 @@ export function ComboboxEvents<
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent
-          className="w-full max-w-[33em] max-sm:max-w-[100vw] p-0"
           align={align}
+          className="w-full max-w-[33em] p-0 max-sm:max-w-[100vw]"
           portal={portal}
         >
           <Command shouldFilter={false}>
             {searchable === true && (
               <CommandInput
+                onValueChange={setSearch}
                 placeholder="Search event..."
                 value={search}
-                onValueChange={setSearch}
               />
             )}
 
             <CommandEmpty>Nothing selected</CommandEmpty>
             <VirtualList
-              height={300}
+              className="w-[33em] max-sm:max-w-[100vw]"
               data={items.filter((item) => {
-                if (search === '') return true;
+                if (search === '') {
+                  return true;
+                }
                 return item.name.toLowerCase().includes(search.toLowerCase());
               })}
+              height={300}
               itemHeight={32}
               itemKey="value"
-              className="w-[33em] max-sm:max-w-[100vw]"
             >
               {(item) => {
                 return (
                   <CommandItem
                     className={cn(
-                      'p-4 py-2.5 gap-4',
+                      'gap-4 p-4 py-2.5',
                       selectedValues.includes(item.name as T) && 'bg-accent'
                     )}
                     key={item.name}
-                    value={item.name}
                     onSelect={(currentValue) => {
                       handleSelection(item.name);
                     }}
+                    value={item.name}
                   >
                     {selectedValues.includes(item.name as T) ? (
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />
                     ) : (
-                      <EventIcon name={item.name} meta={item.meta} size="sm" />
+                      <EventIcon meta={item.meta} name={item.name} size="sm" />
                     )}
-                    <span className="font-medium flex-1 truncate">
+                    <span className="flex-1 truncate font-medium">
                       {item.name === '*' ? 'Any events' : item.name}
                     </span>
-                    <span className="text-muted-foreground font-mono font-medium">
+                    <span className="font-medium font-mono text-muted-foreground">
                       {number.short(item.count)}
                     </span>
                   </CommandItem>

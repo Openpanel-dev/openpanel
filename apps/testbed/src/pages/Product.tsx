@@ -50,9 +50,9 @@ export function ProductPage({ products, onAddToCart }: Props) {
             Lorem ipsum dolor sit amet consectetur adipiscing elit.
           </p>
           <button
-            type="button"
             className="primary"
             onClick={() => onAddToCart(product)}
+            type="button"
           >
             Add to cart
           </button>

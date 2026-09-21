@@ -46,7 +46,9 @@ export function startReplayRecorder(
   let flushTimer: ReturnType<typeof setInterval> | null = null;
 
   function flush(isFullSnapshot: boolean): void {
-    if (buffer.length === 0) return;
+    if (buffer.length === 0) {
+      return;
+    }
 
     const payloadJson = JSON.stringify(buffer);
     const payloadBytes = new TextEncoder().encode(payloadJson).length;
@@ -114,7 +116,9 @@ export function startReplayRecorder(
     maskTextFn:
       maskAllText && unmaskTextSelector
         ? (text, element) => {
-            if (element?.closest(unmaskTextSelector)) return text;
+            if (element?.closest(unmaskTextSelector)) {
+              return text;
+            }
             return text.replace(/\S/g, '*');
           }
         : undefined,

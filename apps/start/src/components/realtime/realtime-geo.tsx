@@ -1,11 +1,11 @@
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { useTRPC } from '@/integrations/trpc/react';
-import { countries } from '@/translations/countries';
 import { useQuery } from '@tanstack/react-query';
 import { prop, uniqBy } from 'ramda';
 import { OverviewWidgetTable } from '../overview/overview-widget-table';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { countries } from '@/translations/countries';
 
 interface RealtimeGeoProps {
   projectId: string;
@@ -29,14 +29,14 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
     .slice(0, 8);
 
   return (
-    <div className="col h-full card">
-      <div className="row justify-between items-center p-4 pb-0">
+    <div className="col card h-full">
+      <div className="row items-center justify-between p-4 pb-0">
         <div className="font-medium text-muted-foreground">Geo</div>
         <div className="row gap-1">
           {unique.map((item) => (
             <Tooltiper
-              key={item.country}
               content={countries[item.country as keyof typeof countries]}
+              key={item.country}
             >
               <SerieIcon key={item.country} name={item.country} />
             </Tooltiper>
@@ -44,9 +44,6 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
         </div>
       </div>
       <OverviewWidgetTable
-        data={data ?? []}
-        keyExtractor={(item) => item.country + item.city}
-        getColumnPercentage={(item) => item.count / maxCount}
         columns={[
           {
             name: 'Country / City',
@@ -59,7 +56,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
                   content={`${item.country} / ${item.city}`}
                   side="left"
                 >
-                  <div className="row items-center gap-2 min-w-0 relative">
+                  <div className="row relative min-w-0 items-center gap-2">
                     <SerieIcon name={item.country} />
                     {item.city || '(Not set)'}
                   </div>
@@ -81,7 +78,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
             responsive: { priority: 4 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.count)}
                   </span>
@@ -95,7 +92,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
             responsive: { priority: 2 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.unique_sessions)}
                   </span>
@@ -104,6 +101,9 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
             },
           },
         ]}
+        data={data ?? []}
+        getColumnPercentage={(item) => item.count / maxCount}
+        keyExtractor={(item) => item.country + item.city}
       />
     </div>
   );

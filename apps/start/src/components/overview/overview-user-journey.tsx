@@ -1,13 +1,7 @@
-import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
-import { round } from '@openpanel/shared';
 import { ResponsiveSankey } from '@nivo/sankey';
+import { round } from '@openpanel/shared';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowRightIcon } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import {
   type ReactNode,
@@ -17,15 +11,20 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { truncate } from '@/utils/truncate';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowRightIcon } from 'lucide-react';
 import { useTheme } from '../theme-provider';
 import { Widget, WidgetBody } from '../widget';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
+import {
+  ChartTooltipContainer,
+  ChartTooltipHeader,
+  ChartTooltipItem,
+} from '@/components/charts/chart-tooltip';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
+import { truncate } from '@/utils/truncate';
 
 interface OverviewUserJourneyProps {
   projectId: string;
@@ -77,12 +76,16 @@ function SankeyPortalTooltip({
 
   useLayoutEffect(() => {
     const el = anchorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     // Nivo renders the tooltip content inside an absolutely-positioned wrapper <div>.
     // The wrapper is the immediate parent of our rendered content.
     const wrapper = el.parentElement;
-    if (!wrapper) return;
+    if (!wrapper) {
+      return;
+    }
 
     const update = () => {
       setAnchorRect(wrapper.getBoundingClientRect());
@@ -104,10 +107,16 @@ function SankeyPortalTooltip({
   }, []);
 
   useLayoutEffect(() => {
-    if (!mounted) return;
-    if (!anchorRect) return;
+    if (!mounted) {
+      return;
+    }
+    if (!anchorRect) {
+      return;
+    }
     const tooltipEl = tooltipRef.current;
-    if (!tooltipEl) return;
+    if (!tooltipEl) {
+      return;
+    }
 
     const rect = tooltipEl.getBoundingClientRect();
     const vw = window.innerWidth;
@@ -138,12 +147,12 @@ function SankeyPortalTooltip({
   return (
     <>
       {/* Render a tiny (screen-reader-only) anchor inside Nivo's tooltip wrapper. */}
-      <span ref={anchorRef} className="sr-only" />
+      <span className="sr-only" ref={anchorRef} />
       {mounted &&
         createPortal(
           <div
-            ref={tooltipRef}
             className="pointer-events-none fixed z-[9999]"
+            ref={tooltipRef}
             style={{
               left: pos.left,
               top: pos.top,
@@ -188,7 +197,9 @@ export default function OverviewUserJourney({
 
   // Process data for Sankey - nodes are already sorted by step then value from backend
   const sankeyData = useMemo(() => {
-    if (!data) return { nodes: [], links: [] };
+    if (!data) {
+      return { nodes: [], links: [] };
+    }
 
     return {
       nodes: data.nodes.map((node: any) => ({
@@ -207,7 +218,9 @@ export default function OverviewUserJourney({
   }, [data]);
 
   const totalSessions = useMemo(() => {
-    if (!sankeyData.nodes || sankeyData.nodes.length === 0) return 0;
+    if (!sankeyData.nodes || sankeyData.nodes.length === 0) {
+      return 0;
+    }
     // Total sessions used by backend for percentages is the sum of entry nodes (step 1).
     // Fall back to summing all nodes if step is missing for some reason.
     const step1 = sankeyData.nodes.filter((n: any) => n.data?.step === 1);
@@ -226,10 +239,10 @@ export default function OverviewUserJourney({
         <WidgetButtons>
           {stepOptions.map((option) => (
             <button
-              type="button"
+              className={cn((steps ?? 5) === option && 'active')}
               key={option}
               onClick={() => setSteps(option)}
-              className={cn((steps ?? 5) === option && 'active')}
+              type="button"
             >
               {option} Steps
             </button>
@@ -238,78 +251,34 @@ export default function OverviewUserJourney({
       </WidgetHead>
       <WidgetBody>
         {query.isLoading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-sm text-muted-foreground">Loading...</div>
+          <div className="flex h-96 items-center justify-center">
+            <div className="text-muted-foreground text-sm">Loading...</div>
           </div>
         ) : sankeyData.nodes.length === 0 ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex h-96 items-center justify-center">
+            <div className="text-muted-foreground text-sm">
               No journey data available
             </div>
           </div>
         ) : (
           <div
+            className="relative aspect-square w-full md:aspect-[2]"
             ref={containerRef}
-            className="w-full relative aspect-square md:aspect-[2]"
           >
             <ResponsiveSankey
-              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-              data={sankeyData}
-              colors={(node: any) => node.nodeColor}
-              nodeBorderRadius={2}
               animate={false}
-              nodeBorderWidth={0}
-              nodeOpacity={0.8}
+              colors={(node: any) => node.nodeColor}
+              data={sankeyData}
+              label={(node: any) => {
+                const label = showPath(
+                  node.data?.label || node.label || node.id
+                );
+                return truncate(label, 30, 'middle');
+              }}
+              labelTextColor={appTheme === 'dark' ? '#e2e8f0' : '#0f172a'}
+              linkBlendMode={'normal'}
               linkContract={1}
               linkOpacity={0.3}
-              linkBlendMode={'normal'}
-              nodeTooltip={({ node }: any) => {
-                const label = node?.data?.label ?? node?.label ?? node?.id;
-                const value = node?.data?.value ?? node?.value ?? 0;
-                const step = node?.data?.step;
-                const pct =
-                  typeof node?.data?.percentage === 'number'
-                    ? node.data.percentage
-                    : totalSessions > 0
-                      ? (value / totalSessions) * 100
-                      : 0;
-                const color =
-                  node?.color ??
-                  node?.data?.nodeColor ??
-                  node?.data?.color ??
-                  node?.nodeColor ??
-                  '#64748b';
-
-                return (
-                  <SankeyPortalTooltip>
-                    <ChartTooltipContainer className="min-w-[250px]">
-                      <ChartTooltipHeader>
-                        <div className="min-w-0 flex-1 font-medium break-words">
-                          <span className="opacity-40 mr-1">
-                            {showDomain(label)}
-                          </span>
-                          {showPath(label)}
-                        </div>
-                        {typeof step === 'number' && (
-                          <div className="shrink-0 text-muted-foreground">
-                            Step {step}
-                          </div>
-                        )}
-                      </ChartTooltipHeader>
-                      <ChartTooltipItem color={color} innerClassName="gap-2">
-                        <div className="flex items-center justify-between gap-8 font-mono font-medium">
-                          <div className="text-muted-foreground">Sessions</div>
-                          <div>{number.format(value)}</div>
-                        </div>
-                        <div className="flex items-center justify-between gap-8 font-mono font-medium">
-                          <div className="text-muted-foreground">Share</div>
-                          <div>{number.format(round(pct, 1))} %</div>
-                        </div>
-                      </ChartTooltipItem>
-                    </ChartTooltipContainer>
-                  </SankeyPortalTooltip>
-                );
-              }}
               linkTooltip={({ link }: any) => {
                 const sourceLabel =
                   link?.source?.data?.label ??
@@ -346,14 +315,14 @@ export default function OverviewUserJourney({
                   <SankeyPortalTooltip>
                     <ChartTooltipContainer>
                       <ChartTooltipHeader>
-                        <div className="min-w-0 flex-1 font-medium break-words">
-                          <span className="opacity-40 mr-1">
+                        <div className="min-w-0 flex-1 break-words font-medium">
+                          <span className="mr-1 opacity-40">
                             {showDomain(sourceLabel)}
                           </span>
                           {showPath(sourceLabel)}
-                          <ArrowRightIcon className="size-2 inline-block mx-3" />
+                          <ArrowRightIcon className="mx-3 inline-block size-2" />
                           {!isSameDomain && (
-                            <span className="opacity-40 mr-1">
+                            <span className="mr-1 opacity-40">
                               {showDomain(targetLabel)}
                             </span>
                           )}
@@ -368,7 +337,7 @@ export default function OverviewUserJourney({
                       </ChartTooltipHeader>
 
                       <ChartTooltipItem color={color} innerClassName="gap-2">
-                        <div className="flex items-center justify-between gap-8 font-mono font-medium">
+                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
                           <div className="text-muted-foreground">Sessions</div>
                           <div>{number.format(value)}</div>
                         </div>
@@ -389,20 +358,64 @@ export default function OverviewUserJourney({
                   </SankeyPortalTooltip>
                 );
               }}
-              label={(node: any) => {
-                const label = showPath(
-                  node.data?.label || node.label || node.id
-                );
-                return truncate(label, 30, 'middle');
-              }}
-              labelTextColor={appTheme === 'dark' ? '#e2e8f0' : '#0f172a'}
+              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+              nodeBorderRadius={2}
+              nodeBorderWidth={0}
+              nodeOpacity={0.8}
               nodeSpacing={10}
+              nodeTooltip={({ node }: any) => {
+                const label = node?.data?.label ?? node?.label ?? node?.id;
+                const value = node?.data?.value ?? node?.value ?? 0;
+                const step = node?.data?.step;
+                const pct =
+                  typeof node?.data?.percentage === 'number'
+                    ? node.data.percentage
+                    : totalSessions > 0
+                      ? (value / totalSessions) * 100
+                      : 0;
+                const color =
+                  node?.color ??
+                  node?.data?.nodeColor ??
+                  node?.data?.color ??
+                  node?.nodeColor ??
+                  '#64748b';
+
+                return (
+                  <SankeyPortalTooltip>
+                    <ChartTooltipContainer className="min-w-[250px]">
+                      <ChartTooltipHeader>
+                        <div className="min-w-0 flex-1 break-words font-medium">
+                          <span className="mr-1 opacity-40">
+                            {showDomain(label)}
+                          </span>
+                          {showPath(label)}
+                        </div>
+                        {typeof step === 'number' && (
+                          <div className="shrink-0 text-muted-foreground">
+                            Step {step}
+                          </div>
+                        )}
+                      </ChartTooltipHeader>
+                      <ChartTooltipItem color={color} innerClassName="gap-2">
+                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
+                          <div className="text-muted-foreground">Sessions</div>
+                          <div>{number.format(value)}</div>
+                        </div>
+                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
+                          <div className="text-muted-foreground">Share</div>
+                          <div>{number.format(round(pct, 1))} %</div>
+                        </div>
+                      </ChartTooltipItem>
+                    </ChartTooltipContainer>
+                  </SankeyPortalTooltip>
+                );
+              }}
             />
           </div>
         )}
       </WidgetBody>
       <WidgetFooter>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-muted-foreground text-xs">
           Shows the most common paths users take through your application
         </div>
       </WidgetFooter>

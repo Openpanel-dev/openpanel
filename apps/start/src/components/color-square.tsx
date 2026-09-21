@@ -7,7 +7,7 @@ export function ColorSquare({ children, className, color }: ColorSquareProps) {
   return (
     <div
       className={cn(
-        'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-blue-600 text-sm font-medium text-white [.mini_&]:h-4 [.mini_&]:w-4 [.mini_&]:text-[0.6rem] font-mono',
+        'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-blue-600 font-medium font-mono text-sm text-white [.mini_&]:h-4 [.mini_&]:w-4 [.mini_&]:text-[0.6rem]',
         className
       )}
       style={{ backgroundColor: color }}

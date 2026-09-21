@@ -8,13 +8,13 @@ interface CompareOverviewProps {
 export function CompareOverview({ overview }: CompareOverviewProps) {
   return (
     <Section className="container">
-      <article className="col gap-6 max-w-3xl">
-        <h2 className="text-3xl md:text-4xl font-semibold">{overview.title}</h2>
+      <article className="col max-w-3xl gap-6">
+        <h2 className="font-semibold text-3xl md:text-4xl">{overview.title}</h2>
         <div className="col gap-4">
           {overview.paragraphs.map((paragraph) => (
             <p
+              className="text-base text-muted-foreground leading-relaxed md:text-lg"
               key={paragraph.slice(0, 48)}
-              className="text-muted-foreground leading-relaxed text-base md:text-lg"
             >
               {paragraph}
             </p>

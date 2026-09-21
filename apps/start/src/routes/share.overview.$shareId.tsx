@@ -1,3 +1,6 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -15,9 +18,6 @@ import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
-import { z } from 'zod';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
@@ -59,9 +59,9 @@ export const Route = createFileRoute('/share/overview/$shareId')({
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
     <FullPageEmptyState
-      title="Share not found"
-      description="The overview you are looking for does not exist."
       className="min-h-[calc(100vh-theme(spacing.16))]"
+      description="The overview you are looking for does not exist."
+      title="Share not found"
     />
   ),
 });
@@ -105,7 +105,7 @@ function RouteComponent() {
         </div>
       )}
       <div className="sticky-header [animation-range:50px_100px]!">
-        <div className="p-4 col gap-2 mx-auto max-w-7xl">
+        <div className="col mx-auto max-w-7xl gap-2 p-4">
           <div className="row justify-between">
             <div className="flex gap-2">
               <OverviewRange />

@@ -1,8 +1,7 @@
-import { FeatureCard, FeatureCardContainer } from '@/components/feature-card';
-import { cn } from '@/lib/utils';
 import { ArrowRightIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FeatureCardContainer } from '@/components/feature-card';
 
 interface CompareCardProps {
   name: string;
@@ -20,27 +19,27 @@ export function CompareCard({
   return (
     <Link href={url}>
       <FeatureCardContainer>
-        <div className="row gap-3 items-center">
+        <div className="row items-center gap-3">
           {logo && (
-            <div className="relative size-10 shrink-0 rounded-lg overflow-hidden border bg-background p-1.5">
+            <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border bg-background p-1.5">
               <Image
-                src={logo}
                 alt={`${name} logo`}
-                width={40}
+                className="h-full w-full object-contain"
                 height={40}
-                className="object-contain w-full h-full"
+                src={logo}
+                width={40}
               />
             </div>
           )}
-          <div className="col gap-1 flex-1 min-w-0">
-            <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
+          <div className="col min-w-0 flex-1 gap-1">
+            <h3 className="font-semibold text-lg transition-colors group-hover:text-primary">
               {name}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="line-clamp-2 text-muted-foreground text-sm">
               {description}
             </p>
           </div>
-          <ArrowRightIcon className="opacity-0 group-hover:opacity-100 size-5 shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
+          <ArrowRightIcon className="size-5 shrink-0 text-muted-foreground opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary group-hover:opacity-100" />
         </div>
       </FeatureCardContainer>
     </Link>

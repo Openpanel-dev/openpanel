@@ -1,15 +1,3 @@
-import { Card, CardActions, CardActionsItem } from '@/components/card';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import FullPageLoadingState from '@/components/full-page-loading-state';
-import { ProjectLink } from '@/components/links';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { pushModal, showConfirm } from '@/modals';
-import { cn } from '@/utils/cn';
-import { cohortMembersToCSV, downloadCSV } from '@/utils/csv-download';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
@@ -22,6 +10,18 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Card, CardActions, CardActionsItem } from '@/components/card';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { ProjectLink } from '@/components/links';
+import { PageContainer } from '@/components/page-container';
+import { PageHeader } from '@/components/page-header';
+import { Button } from '@/components/ui/button';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { pushModal, showConfirm } from '@/modals';
+import { cn } from '@/utils/cn';
+import { cohortMembersToCSV, downloadCSV } from '@/utils/csv-download';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/cohorts'
@@ -88,12 +88,12 @@ function Component() {
 
   if (cohorts.length === 0) {
     return (
-      <FullPageEmptyState title="No cohorts" icon={UsersIcon}>
+      <FullPageEmptyState icon={UsersIcon} title="No cohorts">
         <p>You have not created any cohorts for this project yet</p>
         <Button
-          onClick={() => pushModal('AddCohort')}
           className="mt-14"
           icon={PlusIcon}
+          onClick={() => pushModal('AddCohort')}
         >
           Create cohort
         </Button>
@@ -104,15 +104,15 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Cohorts"
-        description="Create and manage user segments based on events and properties"
-        className="mb-8"
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddCohort')}>
             <span className="max-sm:hidden">Create cohort</span>
             <span className="sm:hidden">Cohort</span>
           </Button>
         }
+        className="mb-8"
+        description="Create and manage user segments based on events and properties"
+        title="Cohorts"
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {cohorts.map((cohort) => {
@@ -122,20 +122,20 @@ function Component() {
               : cohort.profileCount;
           const displayCount = count ?? 0;
           return (
-            <Card key={cohort.id} hover>
+            <Card hover key={cohort.id}>
               <ProjectLink
-                to="/cohorts/$cohortId"
-                params={{ cohortId: cohort.id }}
                 className="flex flex-col p-4 outline-none"
+                params={{ cohortId: cohort.id }}
+                to="/cohorts/$cohortId"
               >
                 <div className="col gap-2">
                   <div className="font-medium">{cohort.name}</div>
                   {cohort.description && (
-                    <div className="line-clamp-2 text-sm text-muted-foreground">
+                    <div className="line-clamp-2 text-muted-foreground text-sm">
                       {cohort.description}
                     </div>
                   )}
-                  <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
                     <div className="flex items-center gap-1">
                       <UsersIcon size={14} />
                       <span>
@@ -150,7 +150,7 @@ function Component() {
                     )}
                   </div>
                   {cohort.isStatic && (
-                    <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                    <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
                       Static
                     </div>
                   )}
@@ -158,31 +158,30 @@ function Component() {
               </ProjectLink>
 
               <CardActions>
-                <CardActionsItem className="w-full" asChild>
+                <CardActionsItem asChild className="w-full">
                   <button
-                    type="button"
                     onClick={() => handleDownload(cohort.id, cohort.name)}
+                    type="button"
                   >
                     <DownloadIcon size={16} />
                     Download
                   </button>
                 </CardActionsItem>
                 {!cohort.isStatic && (
-                  <CardActionsItem className="w-full" asChild>
+                  <CardActionsItem asChild className="w-full">
                     <button
-                      type="button"
                       onClick={() => {
                         refresh.mutate({ cohortId: cohort.id });
                       }}
+                      type="button"
                     >
                       <RefreshCwIcon size={16} />
                       Refresh
                     </button>
                   </CardActionsItem>
                 )}
-                <CardActionsItem className="w-full" asChild>
+                <CardActionsItem asChild className="w-full">
                   <button
-                    type="button"
                     onClick={() => {
                       pushModal('EditCohort', {
                         id: cohort.id,
@@ -192,14 +191,14 @@ function Component() {
                         isStatic: cohort.isStatic,
                       });
                     }}
+                    type="button"
                   >
                     <PencilIcon size={16} />
                     Edit
                   </button>
                 </CardActionsItem>
-                <CardActionsItem className="w-full text-destructive" asChild>
+                <CardActionsItem asChild className="w-full text-destructive">
                   <button
-                    type="button"
                     onClick={() => {
                       showConfirm({
                         title: 'Delete cohort',
@@ -207,6 +206,7 @@ function Component() {
                         onConfirm: () => deletion.mutate({ id: cohort.id }),
                       });
                     }}
+                    type="button"
                   >
                     <TrashIcon size={16} />
                     Delete

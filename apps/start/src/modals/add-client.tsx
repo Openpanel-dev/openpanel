@@ -1,3 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { SaveIcon } from 'lucide-react';
+import type { SubmitHandler } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -5,19 +14,8 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
-import { handleError } from '@/integrations/trpc/react';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { SaveIcon } from 'lucide-react';
-import type { SubmitHandler } from 'react-hook-form';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { popModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
 
 const validation = z.object({
   name: z.string().min(1),
@@ -65,14 +63,14 @@ export default function AddClient() {
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader title="Success" text={'Your client is created'} />
+          <ModalHeader text={'Your client is created'} title="Success" />
           <CreateClientSuccess {...mutation.data} />
           <div className="mt-4 flex gap-4">
             <a
               className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
               href="https://openpanel.dev/docs"
-              target="_blank"
               rel="noreferrer"
+              target="_blank"
             >
               Read docs
             </a>
@@ -91,8 +89,8 @@ export default function AddClient() {
             <div>
               <Label>Client name</Label>
               <Input
-                placeholder="Eg. My App Client"
                 error={form.formState.errors.name?.message}
+                placeholder="Eg. My App Client"
                 {...form.register('name')}
               />
             </div>
@@ -108,9 +106,6 @@ export default function AddClient() {
                       <Combobox
                         {...field}
                         className="w-full"
-                        onChange={(value) => {
-                          field.onChange(value);
-                        }}
                         items={[
                           {
                             value: 'write',
@@ -125,9 +120,12 @@ export default function AddClient() {
                             label: 'Root (access export API)',
                           },
                         ]}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         placeholder="Select a project"
                       />
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="mt-2 text-muted-foreground text-sm">
                         {field.value === 'write' &&
                           'Write: Is the default client type and is used for ingestion of data'}
                         {field.value === 'read' &&
@@ -142,16 +140,16 @@ export default function AddClient() {
             </div>
             <DialogFooter>
               <Button
+                onClick={() => popModal()}
                 type="button"
                 variant={'secondary'}
-                onClick={() => popModal()}
               >
                 Cancel
               </Button>
               <Button
-                type="submit"
                 icon={SaveIcon}
                 loading={mutation.isPending}
+                type="submit"
               >
                 Create
               </Button>

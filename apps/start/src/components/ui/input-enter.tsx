@@ -1,8 +1,6 @@
-import { motion } from 'framer-motion';
-
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { CornerDownLeftIcon } from 'lucide-react';
-import { type InputHTMLAttributes, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from './badge';
 import { Input, type InputProps } from './input';
 
@@ -28,7 +26,6 @@ export function InputEnter({
     <div className="relative w-full">
       <Input
         {...props}
-        value={internalValue}
         onChange={(e) => {
           setInternalValue(e.target.value);
           if (immediate) {
@@ -41,19 +38,20 @@ export function InputEnter({
             onChangeValue(internalValue);
           }
         }}
+        value={internalValue}
       />
-      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+      <div className="absolute top-1/2 right-2 -translate-y-1/2">
         <AnimatePresence>
           {!immediate && internalValue !== value && (
             <motion.button
-              key="refresh"
-              type="button"
-              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              key="refresh"
               onClick={() => onChangeValue(internalValue)}
+              type="button"
             >
-              <Badge variant="secondary" className="gap-1 px-1.5 py-0 text-xs">
+              <Badge className="gap-1 px-1.5 py-0 text-xs" variant="secondary">
                 Press
                 <CornerDownLeftIcon className="h-3 w-3" />
               </Badge>

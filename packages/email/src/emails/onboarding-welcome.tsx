@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { List } from '../components/list';
@@ -48,20 +47,20 @@ export function OnboardingWelcome({
           <List
             items={[
               <Link
-                key="install"
                 href={withUtm(
                   'https://openpanel.dev/docs/get-started/install-openpanel',
                   'onboarding-welcome'
                 )}
+                key="install"
               >
                 Install the tracking script
               </Link>,
               <Link
-                key="track"
                 href={withUtm(
                   'https://openpanel.dev/docs/get-started/track-events',
                   'onboarding-welcome'
                 )}
+                key="track"
               >
                 Track custom events
               </Link>,

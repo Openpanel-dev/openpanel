@@ -1,18 +1,16 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { ButtonContainer } from '@/components/button-container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
@@ -72,10 +70,10 @@ export default function AddDashboard() {
           {...register('name')}
         />
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Create
           </Button>
         </ButtonContainer>

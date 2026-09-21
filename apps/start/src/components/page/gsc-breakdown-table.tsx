@@ -1,8 +1,8 @@
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
+import { useQuery } from '@tanstack/react-query';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
 
 interface GscBreakdownTableProps {
   projectId: string;
@@ -64,9 +64,6 @@ export function GscBreakdownTable({
       </div>
       {isLoading ? (
         <OverviewWidgetTable
-          data={[1, 2, 3, 4, 5]}
-          keyExtractor={(i) => String(i)}
-          getColumnPercentage={() => 0}
           columns={[
             {
               name: breakdownLabel,
@@ -94,12 +91,12 @@ export function GscBreakdownTable({
               render: () => <Skeleton className="h-4 w-8" />,
             },
           ]}
+          data={[1, 2, 3, 4, 5]}
+          getColumnPercentage={() => 0}
+          keyExtractor={(i) => String(i)}
         />
       ) : (
         <OverviewWidgetTable
-          data={breakdownRows}
-          keyExtractor={(item) => String(item[breakdownKey])}
-          getColumnPercentage={(item) => (item.clicks as number) / maxClicks}
           columns={[
             {
               name: breakdownLabel,
@@ -163,6 +160,9 @@ export function GscBreakdownTable({
               },
             },
           ]}
+          data={breakdownRows}
+          getColumnPercentage={(item) => (item.clicks as number) / maxClicks}
+          keyExtractor={(item) => String(item[breakdownKey])}
         />
       )}
     </div>

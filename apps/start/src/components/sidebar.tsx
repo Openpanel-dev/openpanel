@@ -147,13 +147,13 @@ export function SidebarContainer({
               </a>
               {projectId && (
                 <button
-                  type="button"
+                  aria-label="Open AI chat"
+                  className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={() =>
                     chatOpen ? closeChat() : openChatForContext()
                   }
-                  className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                   title="Open AI chat (⌘J)"
-                  aria-label="Open AI chat"
+                  type="button"
                 >
                   <SparklesIcon size={16} />
                 </button>

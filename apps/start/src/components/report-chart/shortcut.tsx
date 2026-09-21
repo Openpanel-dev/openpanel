@@ -25,6 +25,7 @@ export const ReportChartShortcut = ({
 }: ChartRootShortcutProps) => {
   return (
     <ReportChart
+      options={options ?? {}}
       report={{
         projectId,
         range,
@@ -36,7 +37,6 @@ export const ReportChartShortcut = ({
         lineType,
         metric: 'sum',
       }}
-      options={options ?? {}}
     />
   );
 };

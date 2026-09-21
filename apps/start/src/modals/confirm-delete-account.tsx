@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const CONFIRMATION = 'DELETE';
 
@@ -30,11 +30,11 @@ export default function ConfirmDeleteAccount() {
   return (
     <ModalContent>
       <ModalHeader
-        title="Delete account"
         text="Your account and all of your personal data will be permanently deleted. Organizations you created that have no other admin will also be removed, along with their projects and events. This cannot be undone."
+        title="Delete account"
       />
       <div className="col gap-2">
-        <label className="text-sm font-medium" htmlFor="confirm-delete-account">
+        <label className="font-medium text-sm" htmlFor="confirm-delete-account">
           Type <span className="font-bold">{CONFIRMATION}</span> to confirm
         </label>
         <Input

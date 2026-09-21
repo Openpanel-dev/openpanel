@@ -109,7 +109,11 @@ export function useLineSegmentHighlight({
 }
 
 function clampIndex(idx: number, length: number): number {
-  if (idx < 0) return 0;
-  if (idx >= length) return length - 1;
+  if (idx < 0) {
+    return 0;
+  }
+  if (idx >= length) {
+    return length - 1;
+  }
   return idx;
 }

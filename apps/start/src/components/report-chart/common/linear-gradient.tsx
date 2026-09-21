@@ -12,7 +12,7 @@ export const SolidToDashedGradient: React.FC<GradientProps> = ({
   const stops = generateSolidToDashedLinearGradient(percentage, baseColor);
 
   return (
-    <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id={id} x1="0" x2="1" y1="0" y2="0">
       {stops.map((stop, index) => (
         <stop
           key={index as any}

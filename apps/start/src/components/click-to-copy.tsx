@@ -1,7 +1,6 @@
-import { clipboard } from '@/utils/clipboard';
 import { toast } from 'sonner';
-
 import { Tooltiper } from './ui/tooltip';
+import { clipboard } from '@/utils/clipboard';
 
 type Props = {
   children: React.ReactNode;
@@ -12,9 +11,9 @@ type Props = {
 const ClickToCopy = ({ children, value }: Props) => {
   return (
     <Tooltiper
-      content="Click to copy"
       asChild
       className="cursor-pointer"
+      content="Click to copy"
       onClick={() => {
         clipboard(value);
         toast('Copied to clipboard');

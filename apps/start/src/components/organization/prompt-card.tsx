@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PromptCardProps {
   title: string;
@@ -23,38 +23,38 @@ export function PromptCard({
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 0, x: 100, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
+          className="fixed right-0 bottom-0 z-50 max-w-sm p-4"
           exit={{ opacity: 0, x: 100, scale: 0.95 }}
+          initial={{ opacity: 0, x: 100, scale: 0.95 }}
           transition={{
             type: 'spring',
             stiffness: 300,
             damping: 30,
           }}
-          className="fixed bottom-0 right-0 z-50 p-4 max-w-sm"
         >
-          <div className="bg-card border rounded-lg shadow-[0_0_100px_50px_var(--color-background)] col gap-6 py-6 overflow-hidden">
-            <div className="relative px-6 col gap-1">
+          <div className="col gap-6 overflow-hidden rounded-lg border bg-card py-6 shadow-[0_0_100px_50px_var(--color-background)]">
+            <div className="col relative gap-1 px-6">
               <div
-                className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full opacity-30 blur-3xl pointer-events-none"
+                className="pointer-events-none absolute -right-10 -bottom-10 h-64 w-64 rounded-full opacity-30 blur-3xl"
                 style={{
                   background: `radial-gradient(circle, ${gradientColor} 0%, transparent 70%)`,
                 }}
               />
               <div className="row items-center justify-between">
-                <h2 className="text-xl font-semibold max-w-[200px] leading-snug">
+                <h2 className="max-w-[200px] font-semibold text-xl leading-snug">
                   {title}
                 </h2>
                 <Button
-                  variant="ghost"
-                  size="icon"
                   className="rounded-full"
                   onClick={onClose}
+                  size="icon"
+                  variant="ghost"
                 >
                   <XIcon className="size-4" />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
 
             {children}

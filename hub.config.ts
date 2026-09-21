@@ -8,7 +8,9 @@ function seededMcp(w: {
 }): Record<string, { url: string }> {
   try {
     const seed = JSON.parse(readFileSync(join(w.dir, '.seed.json'), 'utf8'));
-    if (typeof seed?.mcp?.token !== 'string') return {};
+    if (typeof seed?.mcp?.token !== 'string') {
+      return {};
+    }
     return {
       openpanel: { url: `${w.url('api')}/mcp?token=${seed.mcp.token}` },
     };

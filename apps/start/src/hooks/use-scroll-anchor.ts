@@ -18,12 +18,10 @@ export const useScrollAnchor = () => {
   }, []);
 
   useEffect(() => {
-    if (messagesRef.current) {
-      if (isAtBottom && !isVisible) {
-        messagesRef.current.scrollIntoView({
-          block: 'end',
-        });
-      }
+    if (messagesRef.current && isAtBottom && !isVisible) {
+      messagesRef.current.scrollIntoView({
+        block: 'end',
+      });
     }
   }, [isAtBottom, isVisible]);
 

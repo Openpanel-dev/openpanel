@@ -9,7 +9,9 @@ export function fancyMinutes(time: number) {
     return `${hours}h ${remainingMinutes}m`;
   }
   const seconds = round(time - minutes * 60, 0);
-  if (minutes === 0) return `${seconds}s`;
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
   return `${minutes}m ${seconds}s`;
 }
 
@@ -53,7 +55,7 @@ export const formatCurrency =
       // Get currency symbol
       const currencyFormatter = new Intl.NumberFormat(locale, {
         style: 'currency',
-        currency: currency,
+        currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       });
@@ -64,7 +66,7 @@ export const formatCurrency =
     }
     return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: currency,
+      currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 1,
     }).format(amount);

@@ -1,9 +1,9 @@
 'use client';
 
+import { useEffect, useMemo, useRef } from 'react';
 import { InfiniteMovingCards } from '@/components/infinite-moving-cards';
 import { Section, SectionHeader } from '@/components/section';
 import { TwitterCard } from '@/components/twitter-card';
-import { useEffect, useMemo, useRef } from 'react';
 
 const testimonials = [
   {
@@ -111,7 +111,9 @@ export function Testimonials() {
 
   useEffect(() => {
     const scrollerElement = scrollerRef.current;
-    if (!scrollerElement) return;
+    if (!scrollerElement) {
+      return;
+    }
 
     const handleScroll = () => {
       // When we've scrolled to the end of the first set, reset to the beginning
@@ -165,21 +167,21 @@ export function Testimonials() {
     <Section className="overflow-hidden">
       <div className="container mb-16">
         <SectionHeader
-          title="Loved by builders everywhere"
           description="From indie hackers to global teams, OpenPanel helps people understand their users effortlessly."
+          title="Loved by builders everywhere"
         />
       </div>
       <div className="relative -mx-4 px-4">
         {/* Gradient masks for fade effect */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+          className="pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-32"
           style={{
             background:
               'linear-gradient(to right, hsl(var(--background)), transparent)',
           }}
         />
         <div
-          className="absolute right-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+          className="pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-32"
           style={{
             background:
               'linear-gradient(to left, hsl(var(--background)), transparent)',
@@ -187,19 +189,19 @@ export function Testimonials() {
         />
 
         <InfiniteMovingCards
-          items={testimonials}
-          direction="left"
-          pauseOnHover
-          speed="slow"
           className="gap-8"
+          direction="left"
+          items={testimonials}
+          pauseOnHover
           renderItem={(item) => (
             <TwitterCard
-              name={item.name}
-              handle={item.handle}
-              content={item.content}
               avatarUrl={item.avatarUrl}
+              content={item.content}
+              handle={item.handle}
+              name={item.name}
             />
           )}
+          speed="slow"
         />
       </div>
     </Section>

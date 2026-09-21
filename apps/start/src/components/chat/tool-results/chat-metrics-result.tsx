@@ -10,8 +10,8 @@ import type { ToolResultProps } from './types';
 export function ChatMetricsResult({ part }: ToolResultProps) {
   return (
     <ToolStateGuard
-      state={part.state}
       errorText={part.errorText}
+      state={part.state}
       toolName={part.type.replace(/^tool-/, '')}
     >
       <ChatMetricsInner output={part.output} />
@@ -20,23 +20,27 @@ export function ChatMetricsResult({ part }: ToolResultProps) {
 }
 
 function ChatMetricsInner({ output }: { output: unknown }) {
-  if (!isMetricsLike(output)) return null;
+  if (!isMetricsLike(output)) {
+    return null;
+  }
 
   const entries = Object.entries(output).filter(
     (entry): entry is [string, number | string] =>
       typeof entry[1] === 'number' || typeof entry[1] === 'string'
   );
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
 
   return (
     <ResultCard>
-      <div className="grid grid-cols-2 sm:grid-cols-3 divide-x divide-y">
+      <div className="grid grid-cols-2 divide-x divide-y sm:grid-cols-3">
         {entries.slice(0, 6).map(([key, value]) => (
-          <div key={key} className="p-3">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <div className="p-3" key={key}>
+            <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
               {humanize(key)}
             </div>
-            <div className="text-sm font-semibold font-mono tabular-nums mt-0.5">
+            <div className="mt-0.5 font-mono font-semibold text-sm tabular-nums">
               {formatValue(value)}
             </div>
           </div>
@@ -55,7 +59,9 @@ function humanize(key: string): string {
 
 function formatValue(v: number | string): string {
   if (typeof v === 'number') {
-    if (Number.isInteger(v)) return v.toLocaleString();
+    if (Number.isInteger(v)) {
+      return v.toLocaleString();
+    }
     return v.toFixed(2);
   }
   return v;

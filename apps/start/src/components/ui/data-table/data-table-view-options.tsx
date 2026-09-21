@@ -1,24 +1,9 @@
-import { Button } from '@/components/ui/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -38,6 +23,21 @@ import {
   Settings2Icon,
 } from 'lucide-react';
 import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
@@ -68,19 +68,19 @@ function SortableColumnItem({
 
   return (
     <CommandItem
-      ref={setNodeRef}
-      style={style}
       className={cn('flex items-center gap-2', isDragging && 'opacity-50')}
       onSelect={onToggleVisibility}
+      ref={setNodeRef}
+      style={style}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        className="cursor-grab rounded p-1 hover:bg-muted active:cursor-grabbing"
       >
         <GripVertical className="size-3 text-muted-foreground" />
       </div>
-      <span className="truncate flex-1">
+      <span className="flex-1 truncate">
         {typeof column.columnDef.header === 'string'
           ? column.columnDef.header
           : (column.columnDef.meta?.label ?? column.id)}
@@ -174,14 +174,14 @@ export function DataTableViewOptions<TData>({
       <PopoverTrigger asChild>
         <Button
           aria-label="Toggle columns"
-          role="combobox"
-          variant="outline"
-          size="sm"
           className="ml-auto hidden h-8 lg:flex"
+          role="combobox"
+          size="sm"
+          variant="outline"
         >
-          <Settings2Icon className="size-4 mr-2" />
+          <Settings2Icon className="mr-2 size-4" />
           View
-          <ChevronsUpDown className="opacity-50 ml-2 size-4" />
+          <ChevronsUpDown className="ml-2 size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-0">
@@ -191,9 +191,9 @@ export function DataTableViewOptions<TData>({
             <CommandEmpty>No columns found.</CommandEmpty>
             <CommandGroup>
               <DndContext
-                sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
+                sensors={sensors}
               >
                 <SortableContext
                   items={columns.map((col) => col.id)}
@@ -201,8 +201,8 @@ export function DataTableViewOptions<TData>({
                 >
                   {columns.map((column) => (
                     <SortableColumnItem
-                      key={column.id}
                       column={column}
+                      key={column.id}
                       onToggleVisibility={() =>
                         column.toggleVisibility(!column.getIsVisible())
                       }
@@ -213,10 +213,10 @@ export function DataTableViewOptions<TData>({
             </CommandGroup>
             <CommandGroup>
               <CommandItem
-                onSelect={handleReset}
                 className="text-muted-foreground"
+                onSelect={handleReset}
               >
-                <RotateCcw className="size-4 mr-2" />
+                <RotateCcw className="mr-2 size-4" />
                 Reset to default
               </CommandItem>
             </CommandGroup>

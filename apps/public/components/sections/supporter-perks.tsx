@@ -1,15 +1,15 @@
-import { cn } from '@/lib/utils';
 import {
   CheckIcon,
   HeartHandshakeIcon,
   MessageSquareIcon,
+  PackageIcon,
   RocketIcon,
   SparklesIcon,
   StarIcon,
   ZapIcon,
-  PackageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 const perks = [
   {
@@ -52,17 +52,17 @@ export function SupporterPerks({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'col gap-4 p-6 rounded-xl border bg-card',
+        'col gap-4 rounded-xl border bg-card p-6',
         'sticky top-24',
         className
       )}
     >
-      <div className="col gap-2 mb-2">
-        <div className="row gap-2 items-center">
+      <div className="col mb-2 gap-2">
+        <div className="row items-center gap-2">
           <HeartHandshakeIcon className="size-5 text-primary" />
           <h3 className="font-semibold text-lg">Supporter Perks</h3>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Everything you get when you support OpenPanel
         </p>
       </div>
@@ -72,23 +72,23 @@ export function SupporterPerks({ className }: { className?: string }) {
           const Icon = perk.icon;
           return (
             <div
-              key={index}
               className={cn(
-                'col gap-1.5 p-3 rounded-lg border transition-colors',
+                'col gap-1.5 rounded-lg border p-3 transition-colors',
                 perk.highlight
-                  ? 'bg-primary/5 border-primary/20'
-                  : 'bg-background border-border'
+                  ? 'border-primary/20 bg-primary/5'
+                  : 'border-border bg-background'
               )}
+              key={index}
             >
-              <div className="row gap-2 items-start">
+              <div className="row items-start gap-2">
                 <Icon
                   className={cn(
-                    'size-4 mt-0.5 shrink-0',
+                    'mt-0.5 size-4 shrink-0',
                     perk.highlight ? 'text-primary' : 'text-muted-foreground'
                   )}
                 />
-                <div className="col gap-0.5 flex-1 min-w-0">
-                  <div className="row gap-2 items-center">
+                <div className="col min-w-0 flex-1 gap-0.5">
+                  <div className="row items-center gap-2">
                     <h4
                       className={cn(
                         'font-medium text-sm',
@@ -98,16 +98,16 @@ export function SupporterPerks({ className }: { className?: string }) {
                       {perk.title}
                     </h4>
                     {perk.highlight && (
-                      <CheckIcon className="size-3.5 text-primary shrink-0" />
+                      <CheckIcon className="size-3.5 shrink-0 text-primary" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {perk.description}
                   </p>
                   {perk.href && (
                     <Link
+                      className="mt-1 text-primary text-xs hover:underline"
                       href={perk.href}
-                      className="text-xs text-primary hover:underline mt-1"
                     >
                       Learn more →
                     </Link>
@@ -119,8 +119,8 @@ export function SupporterPerks({ className }: { className?: string }) {
         })}
       </div>
 
-      <div className="mt-4 pt-4 border-t">
-        <p className="text-xs text-muted-foreground text-center">
+      <div className="mt-4 border-t pt-4">
+        <p className="text-center text-muted-foreground text-xs">
           Starting at <strong className="text-foreground">$20/month</strong>
         </p>
       </div>

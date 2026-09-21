@@ -11,7 +11,7 @@ const STATS = [
   { label: 'Visitors', value: 4128, formatted: null, change: 12, up: true },
   {
     label: 'Page views',
-    value: 12438,
+    value: 12_438,
     formatted: '12.4k',
     change: 8,
     up: true,
@@ -101,7 +101,7 @@ export function WebAnalyticsIllustration() {
   }, []);
 
   return (
-    <div className="aspect-video col gap-2.5 p-5">
+    <div className="col aspect-video gap-2.5 p-5">
       {/* Header */}
       <div className="row items-center justify-between">
         <div className="row items-center gap-1.5">
@@ -109,7 +109,7 @@ export function WebAnalyticsIllustration() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </span>
-          <span className="text-[10px] font-medium text-muted-foreground">
+          <span className="font-medium text-[10px] text-muted-foreground">
             <NumberFlow value={liveVisitors} /> online now
           </span>
         </div>
@@ -144,7 +144,7 @@ export function WebAnalyticsIllustration() {
       </div>
 
       {/* Area chart */}
-      <div className="flex-1 col gap-1 overflow-hidden rounded-xl border bg-card px-3 pt-2 pb-1">
+      <div className="col flex-1 gap-1 overflow-hidden rounded-xl border bg-card px-3 pt-2 pb-1">
         <span className="text-[8px] text-muted-foreground">
           Unique visitors
         </span>

@@ -1,6 +1,5 @@
 import { LineChartIcon, TableIcon } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-
 import { Button } from '../ui/button';
 
 type ViewType = 'table' | 'chart';
@@ -24,14 +23,14 @@ export function OverviewViewToggle({
   return (
     <div className={className}>
       <Button
-        size="icon"
-        variant="ghost"
         onClick={() => {
           setView(view === 'table' ? 'chart' : 'table');
         }}
+        size="icon"
         title={
           view === 'table' ? 'Switch to chart view' : 'Switch to table view'
         }
+        variant="ghost"
       >
         {view === 'table' ? (
           <LineChartIcon size={16} />

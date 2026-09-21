@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { FeatureCardContainer } from './feature-card';
+import { cn } from '@/lib/utils';
 
 interface WindowImageProps {
   src?: string;
@@ -24,7 +24,7 @@ export function WindowImage({
   const darkSrc = srcDark || src;
   const lightSrc = srcLight || src;
 
-  if (!darkSrc || !lightSrc) {
+  if (!(darkSrc && lightSrc)) {
     throw new Error(
       'WindowImage requires either src or both srcDark and srcLight'
     );
@@ -33,11 +33,11 @@ export function WindowImage({
   return (
     <FeatureCardContainer
       className={cn([
-        'overflow-hidden rounded-lg border border-border bg-foreground/10 shadow-lg/5 relative z-10 [@media(min-width:1100px)]:-mx-16 p-4 md:p-16',
+        'relative z-10 overflow-hidden rounded-lg border border-border bg-foreground/10 p-4 shadow-lg/5 md:p-16 [@media(min-width:1100px)]:-mx-16',
         className,
       ])}
     >
-      <div className="rounded-lg overflow-hidden p-2 bg-card/80 border col gap-2 relative">
+      <div className="col relative gap-2 overflow-hidden rounded-lg border bg-card/80 p-2">
         {/* Window controls */}
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
@@ -46,25 +46,25 @@ export function WindowImage({
             <div className="size-2 rounded-full bg-green-500" />
           </div>
         </div>
-        <div className="relative w-full border rounded-md overflow-hidden">
+        <div className="relative w-full overflow-hidden rounded-md border">
           <Image
-            src={darkSrc}
             alt={alt}
-            width={1200}
+            className="hidden h-auto w-full dark:block"
             height={800}
-            className="hidden dark:block w-full h-auto"
+            src={darkSrc}
+            width={1200}
           />
           <Image
-            src={lightSrc}
             alt={alt}
-            width={1200}
+            className="h-auto w-full dark:hidden"
             height={800}
-            className="dark:hidden w-full h-auto"
+            src={lightSrc}
+            width={1200}
           />
         </div>
       </div>
       {caption && (
-        <figcaption className="text-center text-sm text-muted-foreground max-w-lg mx-auto">
+        <figcaption className="mx-auto max-w-lg text-center text-muted-foreground text-sm">
           {caption}
         </figcaption>
       )}

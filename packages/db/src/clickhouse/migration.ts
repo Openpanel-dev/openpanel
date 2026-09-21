@@ -41,7 +41,9 @@ const replicated = (tableName: string) => `${tableName}_replicated`;
  */
 export function migrationDatabase(): string {
   const raw = (process.env.CLICKHOUSE_URL ?? '').split(',')[0]?.trim();
-  if (!raw) return 'openpanel';
+  if (!raw) {
+    return 'openpanel';
+  }
   try {
     const name = new URL(raw).pathname.replace(/^\/+|\/+$/g, '');
     return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : 'openpanel';
@@ -190,7 +192,8 @@ export function dropColumns(
 export async function getExistingTables() {
   try {
     const existingTablesQuery = await chMigrationClient.query({
-      query: `SELECT name FROM system.tables WHERE database = {database:String}`,
+      query:
+        'SELECT name FROM system.tables WHERE database = {database:String}',
       query_params: { database: migrationDatabase() },
       format: 'JSONEachRow',
     });

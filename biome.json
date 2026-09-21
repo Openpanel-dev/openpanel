@@ -7,11 +7,10 @@
   },
   "files": {
     "includes": [
-      "**",
-      "!apps/public/public/**",
+      "!apps/public/public",
       "!apps/start/src/routeTree.gen.ts",
       "!apps/api/scripts/mock-big.json",
-      "!packages/db/src/generated/**",
+      "!packages/db/src/generated",
       "!packages/core/src/modules/import/src/providers/__fixtures__/*.json"
     ]
   },

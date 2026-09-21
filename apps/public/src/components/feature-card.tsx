@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { FeatureCardHoverTrack } from '@/components/feature-card-hover-track';
+import { cn } from '@/lib/utils';
 
 interface FeatureCardProps {
   link?: {

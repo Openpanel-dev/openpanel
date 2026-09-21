@@ -1,19 +1,19 @@
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import FullPageLoadingState from '@/components/full-page-loading-state';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
-import DeleteOrganization from '@/components/settings/delete-organization';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { PageHeader } from '@/components/page-header';
+import DeleteOrganization from '@/components/settings/delete-organization';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { createOrganizationTitle, PAGE_TITLES } from '@/utils/title';
 
 const validator = zEditOrganization;
 
@@ -80,9 +80,9 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Workspace settings"
-        description="Manage your workspace settings here"
         className="mb-8"
+        description="Manage your workspace settings here"
+        title="Workspace settings"
       />
 
       <form
@@ -94,7 +94,7 @@ function Component() {
           <WidgetHead className="flex items-center justify-between">
             <span className="title">Details</span>
           </WidgetHead>
-          <WidgetBody className="gap-4 col">
+          <WidgetBody className="col gap-4">
             <InputWithLabel
               className="flex-1"
               label="Name"
@@ -102,28 +102,28 @@ function Component() {
               defaultValue={organization?.name}
             />
             <Controller
-              name="timezone"
               control={control}
+              name="timezone"
               render={({ field }) => (
                 <WithLabel label="Timezone">
                   <Combobox
-                    placeholder="Select timezone"
+                    className="w-full"
                     items={Intl.supportedValuesOf('timeZone').map((item) => ({
                       value: item,
                       label: item,
                     }))}
-                    value={field.value}
                     onChange={field.onChange}
-                    className="w-full"
+                    placeholder="Select timezone"
+                    value={field.value}
                   />
                 </WithLabel>
               )}
             />
             <Button
+              className="self-end"
+              disabled={!formState.isDirty}
               size="sm"
               type="submit"
-              disabled={!formState.isDirty}
-              className="self-end"
             >
               Save
             </Button>

@@ -1,6 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterInputs } from '@/trpc/client';
-import { useQuery } from '@tanstack/react-query';
 
 export function useEventProperties(
   params: RouterInputs['chart']['properties'],

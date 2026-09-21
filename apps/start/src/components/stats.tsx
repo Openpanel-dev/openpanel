@@ -50,7 +50,7 @@ export function StatsCard({
         <div
           className={cn(
             'font-mono leading-snug',
-            size === 'sm' ? 'text-sm font-medium' : 'text-lg font-bold'
+            size === 'sm' ? 'font-medium text-sm' : 'font-bold text-lg'
           )}
         >
           {value}

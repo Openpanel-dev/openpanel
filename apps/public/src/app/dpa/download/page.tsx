@@ -96,7 +96,7 @@ export default function DpaDownloadPage() {
             require it for their own compliance documentation and records of
             processing activities.
           </p>
-          <p className="mb-1 text-gray-700 text-sm font-semibold">
+          <p className="mb-1 font-semibold text-gray-700 text-sm">
             Session replay (optional feature)
           </p>
           <p className="mb-3 text-gray-700 text-sm">
@@ -108,7 +108,7 @@ export default function DpaDownloadPage() {
             use of session replay complies with applicable privacy law,
             including providing appropriate notice to end users.
           </p>
-          <p className="mb-1 text-gray-700 text-sm font-semibold">
+          <p className="mb-1 font-semibold text-gray-700 text-sm">
             AI features (optional, opt-in)
           </p>
           <p className="text-gray-700 text-sm">
@@ -511,7 +511,7 @@ export default function DpaDownloadPage() {
 
             {/* Controller - blank */}
             <div>
-              <div className="flex flex-col h-32 gap-2">
+              <div className="flex h-32 flex-col gap-2">
                 <p className="font-semibold text-gray-500 text-xs uppercase tracking-widest">
                   Controller
                 </p>

@@ -1,3 +1,8 @@
+import { PopoverPortal } from '@radix-ui/react-popover';
+import type { LucideIcon } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import VirtualList from 'rc-virtual-list';
+import * as React from 'react';
 import type { ButtonProps } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,11 +17,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/utils/cn';
-import { PopoverPortal } from '@radix-ui/react-popover';
-import type { LucideIcon } from 'lucide-react';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import VirtualList from 'rc-virtual-list';
-import * as React from 'react';
 
 export interface ComboboxProps<T> {
   placeholder: string;
@@ -72,23 +72,23 @@ export function Combobox<T extends string>({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         {children ?? (
           <Button
-            disabled={disabled}
-            size={size}
-            variant="outline"
-            role="combobox"
             aria-expanded={open}
             className={cn(
               'justify-between',
               !!error && 'border-destructive',
               className
             )}
+            disabled={disabled}
+            role="combobox"
+            size={size}
+            variant="outline"
           >
             <div className="flex min-w-0 items-center">
-              {Icon ? <Icon size={16} className="mr-2 shrink-0" /> : null}
+              {Icon ? <Icon className="mr-2 shrink-0" size={16} /> : null}
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                 {value ? (find(value)?.label ?? 'No match') : placeholder}
               </span>
@@ -99,16 +99,16 @@ export function Combobox<T extends string>({
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent
-          className="w-full max-w-md p-0"
           align={align}
+          className="w-full max-w-md p-0"
           portal={portal}
         >
           <Command shouldFilter={false}>
             {searchable === true && (
               <CommandInput
+                onValueChange={setSearch}
                 placeholder="Search item..."
                 value={search}
-                onValueChange={setSearch}
               />
             )}
             {typeof onCreate === 'function' && search ? (
@@ -127,24 +127,26 @@ export function Combobox<T extends string>({
               <CommandEmpty>Nothing selected</CommandEmpty>
             )}
             <VirtualList
-              height={Math.min(items.length * 32, 300)}
+              className="min-w-60"
               data={items.filter((item) => {
-                if (search === '') return true;
+                if (search === '') {
+                  return true;
+                }
                 return item.label.toLowerCase().includes(search.toLowerCase());
               })}
+              height={Math.min(items.length * 32, 300)}
               itemHeight={32}
               itemKey="value"
-              className="min-w-60"
             >
               {(item) => (
                 <CommandItem
                   key={item.value}
-                  value={item.value}
                   onSelect={(currentValue) => {
                     const value = find(currentValue)?.value ?? currentValue;
                     onChange(value as T);
                     setOpen(false);
                   }}
+                  value={item.value}
                   {...(item.disabled && { disabled: true })}
                 >
                   <Check

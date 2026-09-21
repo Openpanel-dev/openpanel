@@ -9,7 +9,7 @@ import { GithubButton } from './github-button';
 import { Logo } from './logo';
 import { SignUpButton } from './sign-up-button';
 import { Button } from './ui/button';
-import { baseOptions, siteName } from '@/lib/layout.shared';
+import { siteName } from '@/lib/layout.shared';
 import { cn } from '@/lib/utils';
 
 const LINKS = [

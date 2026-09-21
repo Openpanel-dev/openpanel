@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 export function Figure({
   src,
@@ -15,13 +15,13 @@ export function Figure({
   return (
     <figure className={cn('-mx-4', className)}>
       <Image
-        src={src}
         alt={alt || caption}
-        width={1200}
-        height={800}
         className="rounded-lg"
+        height={800}
+        src={src}
+        width={1200}
       />
-      <figcaption className="text-center text-sm text-muted-foreground mt-2">
+      <figcaption className="mt-2 text-center text-muted-foreground text-sm">
         {caption}
       </figcaption>
     </figure>

@@ -1,8 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { useQuery } from '@tanstack/react-query';
 
 export function OriginFilter() {
   const { projectId } = useAppParams();
@@ -24,15 +24,15 @@ export function OriginFilter() {
         const active = originFilter?.value.includes(item.origin);
         return (
           <button
-            key={item.origin}
-            type="button"
-            onClick={() => setFilter('origin', [item.origin], 'is')}
             className={cn(
-              'rounded-md border px-2.5 py-1 text-sm transition-colors cursor-pointer truncate max-w-56',
+              'max-w-56 cursor-pointer truncate rounded-md border px-2.5 py-1 text-sm transition-colors',
               active
-                ? 'bg-foreground text-background border-foreground font-medium'
-                : 'text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                ? 'border-foreground bg-foreground font-medium text-background'
+                : 'text-muted-foreground hover:border-foreground/30 hover:text-foreground'
             )}
+            key={item.origin}
+            onClick={() => setFilter('origin', [item.origin], 'is')}
+            type="button"
           >
             {item.origin}
           </button>

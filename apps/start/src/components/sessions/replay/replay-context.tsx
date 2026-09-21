@@ -1,6 +1,6 @@
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -166,7 +166,9 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setSpeed = useCallback((s: number) => {
-    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) return;
+    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) {
+      return;
+    }
     playerRef.current?.setSpeed(s);
   }, []);
 
@@ -179,7 +181,9 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
 
   const refreshDuration = useCallback(() => {
     const total = playerRef.current?.getMetaData().totalTime ?? 0;
-    if (total > 0) setDuration(total);
+    if (total > 0) {
+      setDuration(total);
+    }
   }, []);
 
   const value: ReplayContextValue = {

@@ -1,11 +1,3 @@
-import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
-import { getChartColor } from '@/utils/theme';
 import { useState } from 'react';
 import {
   Bar,
@@ -17,6 +9,14 @@ import {
   YAxis,
 } from 'recharts';
 import { useYAxisProps } from '../report-chart/common/axis';
+import {
+  ChartTooltipHeader,
+  ChartTooltipItem,
+  createChartTooltip,
+} from '@/components/charts/chart-tooltip';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
 
 type ChartDataItem = {
   value: number;
@@ -47,8 +47,12 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     }
 
     const getColorValue = () => {
-      if (color === 'green') return '#16a34a';
-      if (color === 'red') return '#dc2626';
+      if (color === 'green') {
+        return '#16a34a';
+      }
+      if (color === 'red') {
+        return '#dc2626';
+      }
       return getChartColor(0);
     };
 
@@ -70,12 +74,12 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
           innerClassName="row justify-between"
         >
           <div className="flex items-center gap-1">Sessions</div>
-          <div className="font-mono font-bold">{number.format(data.value)}</div>
+          <div className="font-bold font-mono">{number.format(data.value)}</div>
         </ChartTooltipItem>
         {data.revenue > 0 && (
           <ChartTooltipItem color="#3ba974">
             <div className="flex items-center gap-1">Revenue</div>
-            <div className="font-mono font-medium">
+            <div className="font-medium font-mono">
               {number.currency(data.revenue / 100)}
             </div>
           </ChartTooltipItem>
@@ -113,8 +117,12 @@ export function ProjectChart({
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 0);
 
   const getColorValue = () => {
-    if (color === 'green') return '#16a34a';
-    if (color === 'red') return '#dc2626';
+    if (color === 'green') {
+      return '#16a34a';
+    }
+    if (color === 'red') {
+      return '#dc2626';
+    }
     return getChartColor(0);
   };
 
@@ -128,8 +136,8 @@ export function ProjectChart({
               28, 42, 35, 50, 40, 56, 45, 60, 49, 32, 98, 29, 49, 69, 49, 20,
             ].map((height, index) => (
               <div
-                key={index}
                 className="flex-1 rounded-full bg-foreground/20"
+                key={index}
                 style={{ height: `${height}%` }}
               />
             ))}
@@ -137,10 +145,10 @@ export function ProjectChart({
         </div>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-          <p className="text-sm font-medium text-foreground/85">
+          <p className="font-medium text-foreground/85 text-sm">
             No activity yet
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Sessions will show up here once tracking starts.
           </p>
         </div>
@@ -151,7 +159,7 @@ export function ProjectChart({
   return (
     <div className="relative h-full w-full pl-3">
       <TooltipProvider color={color}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer height="100%" width="100%">
           <ComposedChart
             data={chartData}
             margin={{ top: 10, right: 10, bottom: 10, left: 0 }}
@@ -161,37 +169,37 @@ export function ProjectChart({
           >
             <XAxis
               dataKey="timestamp"
-              type="number"
-              scale="time"
               domain={['dataMin', 'dataMax']}
               hide
+              scale="time"
+              type="number"
             />
             <YAxis
               {...yAxisProps}
-              domain={[0, maxValue || 'dataMax']}
               allowDecimals={false}
+              domain={[0, maxValue || 'dataMax']}
             />
             <YAxis
-              yAxisId="right"
-              orientation="right"
               domain={[0, maxRevenue * 2 || 'dataMax']}
               hide
+              orientation="right"
               width={0}
+              yAxisId="right"
             />
 
             <Tooltip />
 
             <defs>
               <filter
+                height="140%"
                 id="rainbow-line-glow"
+                width="140%"
                 x="-20%"
                 y="-20%"
-                width="140%"
-                height="140%"
               >
-                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feGaussianBlur result="blur" stdDeviation="5" />
                 <feComponentTransfer in="blur" result="dimmedBlur">
-                  <feFuncA type="linear" slope="0.5" />
+                  <feFuncA slope="0.5" type="linear" />
                 </feComponentTransfer>
                 <feComposite
                   in="SourceGraphic"
@@ -202,11 +210,13 @@ export function ProjectChart({
             </defs>
 
             <Line
-              type="monotone"
+              activeDot={{
+                stroke: getColorValue(),
+                fill: 'var(--def-100)',
+                strokeWidth: 2,
+                r: 4,
+              }}
               dataKey="value"
-              stroke={getColorValue()}
-              strokeWidth={2}
-              isAnimationActive={false}
               dot={
                 dots && data.length <= 90
                   ? {
@@ -217,31 +227,29 @@ export function ProjectChart({
                     }
                   : false
               }
-              activeDot={{
-                stroke: getColorValue(),
-                fill: 'var(--def-100)',
-                strokeWidth: 2,
-                r: 4,
-              }}
               filter="url(#rainbow-line-glow)"
+              isAnimationActive={false}
+              stroke={getColorValue()}
+              strokeWidth={2}
+              type="monotone"
             />
 
             <Bar
               dataKey="revenue"
-              yAxisId="right"
-              stackId="revenue"
               isAnimationActive={false}
-              radius={5}
               maxBarSize={20}
+              radius={5}
+              stackId="revenue"
+              yAxisId="right"
             >
               {chartData.map((item, index) => (
                 <Cell
-                  key={item.timestamp}
                   className={cn(
                     index === activeBar
                       ? 'fill-emerald-700/100'
                       : 'fill-emerald-700/80'
                   )}
+                  key={item.timestamp}
                 />
               ))}
             </Bar>

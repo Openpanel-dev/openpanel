@@ -1,7 +1,6 @@
-import { cn } from '@/utils/cn';
 import type { LucideIcon } from 'lucide-react';
-
 import { ProjectLink } from '@/components/links';
+import { cn } from '@/utils/cn';
 
 export function SidebarLink({
   href,
@@ -19,11 +18,11 @@ export function SidebarLink({
   return (
     <ProjectLink
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+        'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200',
         className
       )}
-      href={href}
       exact={exact}
+      href={href}
     >
       <Icon size={20} />
       <div className="flex-1">{label}</div>

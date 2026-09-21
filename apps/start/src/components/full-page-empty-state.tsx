@@ -1,7 +1,7 @@
-import { cn } from '@/utils/cn';
-import { BoxSelectIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { BoxSelectIcon } from 'lucide-react';
 import { PageHeader } from './page-header';
+import { cn } from '@/utils/cn';
 
 interface FullPageEmptyStateProps {
   icon?: LucideIcon;
@@ -30,7 +30,7 @@ export function FullPageEmptyState({
           <Icon size={60} strokeWidth={1} />
         </div>
 
-        <PageHeader title={title} description={description} className="mb-4" />
+        <PageHeader className="mb-4" description={description} title={title} />
 
         {children}
       </div>

@@ -78,7 +78,9 @@ function Component() {
   );
 
   async function handleDownload() {
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     try {
       const result = await queryClient.fetchQuery(
         trpc.cohort.exportProfiles.queryOptions({ cohortId })
@@ -177,7 +179,7 @@ function Component() {
             <TargetIcon className="size-6 shrink-0" />
             <span className="truncate">{c.name}</span>
             {c.isStatic && (
-              <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+              <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
                 Static
               </span>
             )}

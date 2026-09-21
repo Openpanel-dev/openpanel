@@ -1,17 +1,13 @@
-import { FeatureCard } from '@/components/feature-card';
-import { GetStartedButton } from '@/components/get-started-button';
-import { Section, SectionHeader } from '@/components/section';
-import { Button } from '@/components/ui/button';
 import {
   ChartBarIcon,
   ChevronRightIcon,
-  DollarSignIcon,
   LayoutDashboardIcon,
-  RocketIcon,
   WorkflowIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CollaborationChart } from './collaboration-chart';
+import { GetStartedButton } from '@/components/get-started-button';
+import { Section, SectionHeader } from '@/components/section';
 
 const features = [
   {
@@ -40,33 +36,33 @@ const features = [
 export function Collaboration() {
   return (
     <Section className="container">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+      <div className="grid grid-cols-1 gap-16 md:grid-cols-2">
         <CollaborationChart />
         <div>
           <SectionHeader
-            title="Turn data into actionable insights"
             description="Build interactive dashboards, share insights with your team, and make data-driven decisions faster. OpenPanel helps you understand not just what's happening, but why."
+            title="Turn data into actionable insights"
           />
 
           <GetStartedButton className="mt-6" />
 
-          <div className="col gap-6 mt-16">
+          <div className="col mt-16 gap-6">
             {features.map((feature) => (
               <Link
+                className="group col relative gap-2 overflow-hidden pr-10"
                 href={`/features/${feature.slug}`}
-                className="group relative col gap-2 pr-10 overflow-hidden"
                 key={feature.title}
               >
                 <h3 className="font-semibold">
-                  <feature.icon className="size-6 inline-block mr-2 relative -top-0.5" />
+                  <feature.icon className="relative -top-0.5 mr-2 inline-block size-6" />
                   {feature.title}
                 </h3>
                 <p className="text-muted-foreground text-sm">
                   {feature.description}
                 </p>
                 <ChevronRightIcon
-                  className="absolute right-0 top-1/2 size-5 -translate-y-1/2 text-muted-foreground transition-transform duration-200 translate-x-full group-hover:translate-x-0"
                   aria-hidden
+                  className="absolute top-1/2 right-0 size-5 translate-x-full -translate-y-1/2 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0"
                 />
               </Link>
             ))}

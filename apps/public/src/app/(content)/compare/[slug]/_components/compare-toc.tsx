@@ -1,10 +1,10 @@
 'use client';
 
-import { FeatureCardContainer } from '@/components/feature-card';
-import { cn } from '@/lib/utils';
 import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FeatureCardContainer } from '@/components/feature-card';
+import { cn } from '@/lib/utils';
 
 interface TocItem {
   id: string;
@@ -22,17 +22,17 @@ export function CompareToc({ items, className }: CompareTocProps) {
   return (
     <FeatureCardContainer
       className={cn(
-        'hidden md:block sticky top-24 h-fit w-64 shrink-0',
-        'col gap-3 p-4 rounded-xl border bg-background/50 backdrop-blur-sm',
+        'sticky top-24 hidden h-fit w-64 shrink-0 md:block',
+        'col gap-3 rounded-xl border bg-background/50 p-4 backdrop-blur-sm',
         className
       )}
     >
       <nav className="col gap-1">
         {items.map((item) => (
           <Link
-            key={item.id}
+            className="group/toc relative flex min-h-6 items-center py-1 text-muted-foreground text-sm transition-colors duration-200 hover:text-foreground"
             href={`${pathname}#${item.id}`}
-            className="group/toc relative flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 py-1 min-h-6"
+            key={item.id}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -45,8 +45,8 @@ export function CompareToc({ items, className }: CompareTocProps) {
               }
             }}
           >
-            <div className="absolute left-0 flex items-center w-0 overflow-hidden transition-all duration-300 ease-out group-hover/toc:w-5">
-              <ArrowRightIcon className="size-3 shrink-0 -translate-x-full group-hover/toc:translate-x-0 transition-transform duration-300 ease-out delay-75" />
+            <div className="absolute left-0 flex w-0 items-center overflow-hidden transition-all duration-300 ease-out group-hover/toc:w-5">
+              <ArrowRightIcon className="size-3 shrink-0 -translate-x-full transition-transform delay-75 duration-300 ease-out group-hover/toc:translate-x-0" />
             </div>
             <span className="transition-transform duration-300 ease-out group-hover/toc:translate-x-5">
               {item.label}

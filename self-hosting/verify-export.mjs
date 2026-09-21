@@ -11,9 +11,9 @@
  * ./op-export && node import-to-cloud.mjs --dir ./op-export ...`
  */
 import { createReadStream, existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { createGunzip } from 'node:zlib';
-import path from 'node:path';
 
 const dir = process.argv[2] ?? './op-export';
 const manifestPath = path.join(dir, 'manifest.jsonl');
@@ -35,7 +35,9 @@ async function countRows(file) {
   });
   let rows = 0;
   for await (const line of lines) {
-    if (line.trim()) rows++;
+    if (line.trim()) {
+      rows++;
+    }
   }
   return rows;
 }
@@ -95,12 +97,16 @@ for (const [table, rows] of Object.entries(totals)) {
 
 if (notes.length > 0) {
   console.log(`\nℹ️  ${notes.length} file(s) grew during the export:`);
-  for (const note of notes) console.log(`   ${note}`);
+  for (const note of notes) {
+    console.log(`   ${note}`);
+  }
 }
 
 if (problems.length > 0) {
   console.error(`\n❌ ${problems.length} problem(s):`);
-  for (const problem of problems) console.error(`   ${problem}`);
+  for (const problem of problems) {
+    console.error(`   ${problem}`);
+  }
   console.error('\n   Re-run your rsync — it will fetch just the bad files.');
   process.exit(1);
 }

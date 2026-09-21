@@ -1,12 +1,11 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { ExternalLinkIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
 import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewTopPagesProps {
   projectId: string;
@@ -31,41 +30,41 @@ export default function OverviewTopPagesModal({
 
   return (
     <OverviewListModal
-      title="Top Pages"
-      searchPlaceholder="Search pages..."
+      columnName="Path"
       data={query.data ?? []}
       keyExtractor={(item) => item.path + item.origin}
-      searchFilter={(item, query) =>
-        item.path.toLowerCase().includes(query) ||
-        item.origin.toLowerCase().includes(query)
-      }
-      columnName="Path"
       renderItem={(item) => (
         <Tooltiper asChild content={item.origin + item.path} side="left">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <SerieIcon name={item.origin} />
             <button
-              type="button"
               className="truncate hover:underline"
               onClick={() => {
                 setFilter('path', item.path);
                 setFilter('origin', item.origin);
               }}
+              type="button"
             >
               {item.path || <span className="opacity-40">Not set</span>}
             </button>
             <a
-              href={item.origin + item.path}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
               className="flex-shrink-0"
+              href={item.origin + item.path}
+              onClick={(e) => e.stopPropagation()}
+              rel="noreferrer"
+              target="_blank"
             >
-              <ExternalLinkIcon className="size-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
+              <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/row:opacity-100" />
             </a>
           </div>
         </Tooltiper>
       )}
+      searchFilter={(item, query) =>
+        item.path.toLowerCase().includes(query) ||
+        item.origin.toLowerCase().includes(query)
+      }
+      searchPlaceholder="Search pages..."
+      title="Top Pages"
     />
   );
 }

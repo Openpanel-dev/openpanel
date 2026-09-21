@@ -14,7 +14,7 @@ const CLIENT_ID = process.env.CLIENT_ID!;
 const CLIENT_SECRET = process.env.CLIENT_SECRET!;
 const API_BASE_URL = process.env.API_URL || 'http://localhost:3333';
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
+if (!(CLIENT_ID && CLIENT_SECRET)) {
   console.error('CLIENT_ID and CLIENT_SECRET must be set');
   process.exit(1);
 }
@@ -92,7 +92,9 @@ async function testProjects() {
   console.log(
     `✓ POST /manage/projects: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const projectId = createResult.data?.data?.id;
   const clientId = createResult.data?.data?.client?.id;
@@ -100,8 +102,12 @@ async function testProjects() {
 
   if (projectId) {
     console.log(`  Created project: ${projectId}`);
-    if (clientId) console.log(`  Created client: ${clientId}`);
-    if (clientSecret) console.log(`  Client secret: ${clientSecret}`);
+    if (clientId) {
+      console.log(`  Created client: ${clientId}`);
+    }
+    if (clientSecret) {
+      console.log(`  Client secret: ${clientSecret}`);
+    }
   }
 
   // List projects
@@ -163,14 +169,18 @@ async function testClients(projectId?: string) {
   console.log(
     `✓ POST /manage/clients: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const clientId = createResult.data?.data?.id;
   const clientSecret = createResult.data?.data?.secret;
 
   if (clientId) {
     console.log(`  Created client: ${clientId}`);
-    if (clientSecret) console.log(`  Client secret: ${clientSecret}`);
+    if (clientSecret) {
+      console.log(`  Client secret: ${clientSecret}`);
+    }
   }
 
   // List clients
@@ -238,7 +248,9 @@ async function testReferences(projectId?: string) {
   console.log(
     `✓ POST /manage/references: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const referenceId = createResult.data?.data?.id;
 
@@ -328,7 +340,9 @@ async function main() {
         .filter((r) => !r.success)
         .forEach((r) => {
           console.log(`  ❌ ${r.name} (${r.status})`);
-          if (r.error) console.log(`     Error: ${r.error}`);
+          if (r.error) {
+            console.log(`     Error: ${r.error}`);
+          }
         });
     }
   } catch (error) {

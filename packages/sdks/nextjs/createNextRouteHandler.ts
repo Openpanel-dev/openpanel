@@ -87,8 +87,8 @@ async function handleScriptProxyRoute(req: Request): Promise<NextResponse> {
 
   try {
     const res = await fetch(scriptUrl, {
-      // @ts-ignore
-      next: { revalidate: 86400 },
+      // @ts-expect-error
+      next: { revalidate: 86_400 },
     });
     const text = await res.text();
     const etag = `"${createHash('md5')

@@ -1,4 +1,5 @@
 import { useMediaQuery } from 'react-responsive';
+
 // import type { ScreensConfig } from 'tailwindcss/types/config';
 
 // TODO: Ensure we have same breakpoints as tailwind

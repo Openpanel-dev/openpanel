@@ -24,7 +24,6 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-
 import {
   ACCESS_CHECK_FUNCTION_NAMES,
   ASSET_LOADER_ALLOWLIST,
@@ -47,8 +46,8 @@ import {
   isAtModuleScope,
   isExported,
   lineOf,
-  namedFunctions,
   type NamedFunction,
+  namedFunctions,
   type Offender,
   type ParsedSource,
   ts,
@@ -728,7 +727,8 @@ export function checkModuleLayout(
         offenders.push({
           file,
           line: 1,
-          detail: `root file is not <name>.{rpc,service,routes,jobs,constants}.ts`,
+          detail:
+            'root file is not <name>.{rpc,service,routes,jobs,constants}.ts',
         });
         continue;
       }

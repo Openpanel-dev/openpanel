@@ -1,8 +1,3 @@
-import { getChatClient } from '@/agents/client';
-import { usePageContextValue } from '@/contexts/page-context';
-import { useAppContext } from '@/hooks/use-app-context';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useAgent } from '@better-agent/client/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,8 +10,13 @@ import {
   useState,
 } from 'react';
 import { useChatState } from './chat-context';
-import { chatToolHandlers } from './tool-handlers';
 import { streamTitle } from './title-stream';
+import { chatToolHandlers } from './tool-handlers';
+import { getChatClient } from '@/agents/client';
+import { usePageContextValue } from '@/contexts/page-context';
+import { useAppContext } from '@/hooks/use-app-context';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
 
 /**
  * Drawer-scoped runtime that owns the `useAgent()` instance and exposes
@@ -102,7 +102,9 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       ...agent,
       send: (text: string) => {
         const trimmed = text.trim();
-        if (!trimmed) return;
+        if (!trimmed) {
+          return;
+        }
         if (agent.status === 'submitted' || agent.status === 'streaming') {
           return;
         }
@@ -141,12 +143,16 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
               client,
               trimmed,
               (partial) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                  return;
+                }
                 setStreamingTitle(partial);
               },
               controller.signal
             );
-            if (controller.signal.aborted || !finalTitle) return;
+            if (controller.signal.aborted || !finalTitle) {
+              return;
+            }
             try {
               await renameConversation.mutateAsync({
                 id: idAtSend,
@@ -197,8 +203,12 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setHydrationPhase((prev) => {
-      if (agent.status !== 'ready') return 'hydrating';
-      if (prev === 'hydrating') return 'settled';
+      if (agent.status !== 'ready') {
+        return 'hydrating';
+      }
+      if (prev === 'hydrating') {
+        return 'settled';
+      }
       return prev;
     });
   }, [agent.status]);
@@ -211,9 +221,15 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hydrationPhase !== 'settled') return;
-    if (agent.status !== 'ready') return;
-    if (!pendingMessage) return;
+    if (hydrationPhase !== 'settled') {
+      return;
+    }
+    if (agent.status !== 'ready') {
+      return;
+    }
+    if (!pendingMessage) {
+      return;
+    }
     const text = pendingMessage;
     // Clear first to prevent re-entry: the effect re-runs when `value`
     // rebuilds (it depends on agent state), and without the early null

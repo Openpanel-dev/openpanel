@@ -9,9 +9,9 @@ type Props = {
 const AnimateHeight = ({ children, className, open }: Props) => {
   return (
     <ReactAnimateHeight
+      className={className}
       duration={300}
       height={open ? 'auto' : 0}
-      className={className}
     >
       {children}
     </ReactAnimateHeight>

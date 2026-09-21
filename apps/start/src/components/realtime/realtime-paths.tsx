@@ -1,11 +1,11 @@
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { ExternalLinkIcon } from 'lucide-react';
 import { prop, uniqBy } from 'ramda';
 import { OverviewWidgetTable } from '../overview/overview-widget-table';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface RealtimePathsProps {
   projectId: string;
@@ -29,21 +29,18 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
     .slice(0, 5);
 
   return (
-    <div className="col h-full card">
-      <div className="row justify-between items-center p-4 pb-0">
+    <div className="col card h-full">
+      <div className="row items-center justify-between p-4 pb-0">
         <div className="font-medium text-muted-foreground">Paths</div>
         <div className="row gap-1">
           {unique.map((item) => (
-            <Tooltiper key={item.origin} content={item.origin}>
+            <Tooltiper content={item.origin} key={item.origin}>
               <SerieIcon key={item.origin} name={item.origin} />
             </Tooltiper>
           ))}
         </div>
       </div>
       <OverviewWidgetTable
-        data={data ?? []}
-        keyExtractor={(item) => item.path + item.origin}
-        getColumnPercentage={(item) => item.count / maxCount}
         columns={[
           {
             name: 'Path',
@@ -54,19 +51,19 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
                 <Tooltiper
                   asChild
                   content={item.origin + item.path}
-                  side="left"
                   disabled={item.origin === ''}
+                  side="left"
                 >
-                  <div className="row items-center gap-2 min-w-0 relative">
+                  <div className="row relative min-w-0 items-center gap-2">
                     <SerieIcon name={item.origin} />
                     <span className="truncate">{item.path || '(Not set)'}</span>
                     {item.origin && (
                       <a
                         href={item.origin + item.path}
-                        target="_blank"
                         rel="noreferrer"
+                        target="_blank"
                       >
-                        <ExternalLinkIcon className="size-3 group-hover/row:opacity-100 opacity-0 transition-opacity" />
+                        <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/row:opacity-100" />
                       </a>
                     )}
                   </div>
@@ -88,7 +85,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             responsive: { priority: 4 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.count)}
                   </span>
@@ -102,7 +99,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             responsive: { priority: 2 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.unique_sessions)}
                   </span>
@@ -111,6 +108,9 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             },
           },
         ]}
+        data={data ?? []}
+        getColumnPercentage={(item) => item.count / maxCount}
+        keyExtractor={(item) => item.path + item.origin}
       />
     </div>
   );

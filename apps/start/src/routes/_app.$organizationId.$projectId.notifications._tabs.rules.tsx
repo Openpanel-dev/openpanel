@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { AnimatePresence, motion } from 'framer-motion';
+import { PencilRulerIcon, PlusIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { IntegrationCardSkeleton } from '@/components/integrations/integration-card';
@@ -5,11 +10,6 @@ import { RuleCard } from '@/components/notifications/rule-card';
 import { Button } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { AnimatePresence, motion } from 'framer-motion';
-import { PencilRulerIcon, PlusIcon } from 'lucide-react';
-import { useMemo } from 'react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/notifications/_tabs/rules'
@@ -41,19 +41,19 @@ function Component() {
 
   if (!isLoading && data.length === 0) {
     return (
-      <FullPageEmptyState title="No rules yet" icon={PencilRulerIcon}>
+      <FullPageEmptyState icon={PencilRulerIcon} title="No rules yet">
         <p>
           You have not created any rules yet. Create a rule to start getting
           notifications.
         </p>
         <Button
           className="mt-8"
-          variant="outline"
           onClick={() =>
             pushModal('AddNotificationRule', {
               rule: undefined,
             })
           }
+          variant="outline"
         >
           Add Rule
         </Button>
@@ -66,17 +66,17 @@ function Component() {
       <div className="mb-2">
         <Button
           icon={PlusIcon}
-          variant="outline"
           onClick={() =>
             pushModal('AddNotificationRule', {
               rule: undefined,
             })
           }
+          variant="outline"
         >
           Add Rule
         </Button>
       </div>
-      <div className="col gap-4 w-full grid md:grid-cols-2">
+      <div className="col grid w-full gap-4 md:grid-cols-2">
         {isLoading && (
           <>
             <IntegrationCardSkeleton />

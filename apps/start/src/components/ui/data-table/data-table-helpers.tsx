@@ -33,7 +33,7 @@ export function createActionColumn<TData>(
           <DropdownMenuTrigger asChild>
             <Button icon={MoreHorizontalIcon} size="icon" variant={'ghost'} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="end">
+          <DropdownMenuContent align="end" side="bottom">
             <Component row={row} />
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,11 +1,6 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { eventQueryFiltersParser } from '@/hooks/use-event-query-filters';
-import { useMemo, useState } from 'react';
-
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
 import { Widget, WidgetBody } from '../widget';
 import { WidgetFooter, WidgetHeadSearchable } from './overview-widget';
 import {
@@ -15,6 +10,12 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
+import { useAppParams } from '@/hooks/use-app-params';
+import {
+  eventQueryFiltersParser,
+  useEventQueryFilters,
+} from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export interface OverviewTopEventsProps {
   projectId: string;
@@ -90,7 +91,9 @@ export default function OverviewTopEvents({
   const tableData: EventTableItem[] = useMemo(() => {
     // For link out, use href as name
     if (widget.meta?.type === 'linkOut') {
-      if (!linkOutQuery.data) return [];
+      if (!linkOutQuery.data) {
+        return [];
+      }
       return linkOutQuery.data.map((item) => ({
         id: item.href,
         name: item.href,
@@ -99,7 +102,9 @@ export default function OverviewTopEvents({
     }
 
     // For events and conversions
-    if (!eventsQuery.data) return [];
+    if (!eventsQuery.data) {
+      return [];
+    }
 
     // For conversions, filter events by conversion names (client-side filtering)
     if (widget.meta?.type === 'conversions' && conversions) {
@@ -152,13 +157,13 @@ export default function OverviewTopEvents({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {isLoading ? (

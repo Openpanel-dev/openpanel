@@ -6,7 +6,7 @@ interface OrganizationProps {
 }
 export default function Organization({ organization }: OrganizationProps) {
   return (
-    <section className="max-w-screen-sm col gap-8">
+    <section className="col max-w-screen-sm gap-8">
       <EditOrganization organization={organization} />
     </section>
   );

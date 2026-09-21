@@ -4,7 +4,7 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table';
 import { parseAsInteger, useQueryState } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocalStorage, useReadLocalStorage } from 'usehooks-ts';
 
 export const useDataTablePagination = (pageSize = 10) => {
@@ -17,7 +17,7 @@ export const useDataTablePagination = (pageSize = 10) => {
   );
   const state: PaginationState = {
     pageIndex: page - 1,
-    pageSize: pageSize,
+    pageSize,
   };
   return { page, setPage, state };
 };

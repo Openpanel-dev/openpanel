@@ -1,10 +1,9 @@
-import { cn } from '@/utils/cn';
+import type { EventMeta } from '@openpanel/db';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import * as Icons from 'lucide-react';
-
-import type { EventMeta } from '@openpanel/db';
+import { cn } from '@/utils/cn';
 
 const variants = cva('flex shrink-0 items-center justify-center rounded-full', {
   variants: {
@@ -237,8 +236,8 @@ export function EventIcon({ className, name, size, meta }: EventIconProps) {
   return (
     <div className={cn(`bg-${color}-200`, variants({ size }), className)}>
       <Icon
-        size={size === 'xs' ? 12 : size === 'sm' ? 14 : 20}
         className={`text-${color}-700`}
+        size={size === 'xs' ? 12 : size === 'sm' ? 14 : 20}
       />
     </div>
   );

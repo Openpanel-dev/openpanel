@@ -1,11 +1,11 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import ReportEditor from '@/components/report-chart/report-editor';
 import { useReportEditorContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { z } from 'zod';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/reports_/$reportId'

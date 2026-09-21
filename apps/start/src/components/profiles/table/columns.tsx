@@ -16,9 +16,9 @@ export function useColumns(type: 'profiles' | 'power-users') {
         return (
           <ProjectLink
             className="flex items-center gap-2 font-medium"
-            to="/profiles/$profileId"
             params={{ profileId: profile.id }}
             title={getProfileName(profile, false)}
+            to="/profiles/$profileId"
           >
             <ProfileAvatar size="sm" {...profile} />
             {getProfileName(profile)}
@@ -129,9 +129,9 @@ export function useColumns(type: 'profiles' | 'power-users') {
             {groups.map((g) => (
               <ProjectLink
                 className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:underline"
-                to="/groups/$groupId"
-                params={{ groupId: g }}
                 key={g}
+                params={{ groupId: g }}
+                to="/groups/$groupId"
               >
                 {g}
               </ProjectLink>

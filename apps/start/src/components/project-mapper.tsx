@@ -1,3 +1,13 @@
+import type { IServiceProject } from '@openpanel/core';
+import { PlusIcon, XIcon } from 'lucide-react';
+import type {
+  FieldArrayWithId,
+  UseFieldArrayAppend,
+  UseFieldArrayRemove,
+  UseFormRegister,
+  UseFormSetValue,
+  UseFormWatch,
+} from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,17 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IServiceProject } from '@openpanel/core';
-import { PlusIcon, XIcon } from 'lucide-react';
-import type {
-  Control,
-  FieldArrayWithId,
-  UseFieldArrayAppend,
-  UseFieldArrayRemove,
-  UseFormRegister,
-  UseFormSetValue,
-  UseFormWatch,
-} from 'react-hook-form';
 
 interface ProjectMapperProps {
   fields: FieldArrayWithId<any, 'projectMapper', 'id'>[];
@@ -44,17 +43,17 @@ export function ProjectMapper({
       <div className="flex items-center justify-between">
         <Label className="mb-0">Project Mapper (Optional)</Label>
         <Button
+          onClick={() => append({ from: '', to: '' })}
+          size="sm"
           type="button"
           variant="outline"
-          size="sm"
-          onClick={() => append({ from: '', to: '' })}
         >
           <PlusIcon className="mr-1 h-4 w-4" />
           Add Mapping
         </Button>
       </div>
       {fields.length === 0 && (
-        <p className="text-sm text-muted-foreground leading-normal">
+        <p className="text-muted-foreground text-sm leading-normal">
           Map source project IDs to your OpenPanel projects. If you skip mapping
           all data will be imported to your current project.
         </p>
@@ -63,10 +62,10 @@ export function ProjectMapper({
       {fields.length > 0 && (
         <div className="space-y-2">
           {fields.map((field, index) => (
-            <div key={field.id} className="gap-2 rounded-md border p-3 row">
+            <div className="row gap-2 rounded-md border p-3" key={field.id}>
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">
+                  <Label className="text-muted-foreground text-xs">
                     From (Source Project ID)
                   </Label>
                   <Input
@@ -76,14 +75,14 @@ export function ProjectMapper({
                   />
                 </div>
                 <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">
+                  <Label className="text-muted-foreground text-xs">
                     To (OpenPanel Project)
                   </Label>
                   <Select
-                    value={watch(`projectMapper.${index}.to`)}
                     onValueChange={(value) =>
                       setValue(`projectMapper.${index}.to`, value)
                     }
+                    value={watch(`projectMapper.${index}.to`)}
                   >
                     <SelectTrigger className="mt-1 w-full" size="sm">
                       <SelectValue placeholder="Select project" />
@@ -99,11 +98,11 @@ export function ProjectMapper({
                 </div>
               </div>
               <Button
+                className="mt-5"
+                onClick={() => remove(index)}
+                size="icon"
                 type="button"
                 variant="ghost"
-                size="icon"
-                onClick={() => remove(index)}
-                className="mt-5"
               >
                 <XIcon className="h-4 w-4" />
               </Button>

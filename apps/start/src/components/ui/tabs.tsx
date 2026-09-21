@@ -1,6 +1,6 @@
-import { cn } from '@/utils/cn';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import * as React from 'react';
+import { cn } from '@/utils/cn';
 
 const Tabs = TabsPrimitive.Root;
 
@@ -9,11 +9,11 @@ const TabsList = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
-    ref={ref}
     className={cn(
-      'inline-flex w-full h-auto items-center justify-start overflow-x-auto border-b border-border text-muted-foreground hide-scrollbar',
+      'hide-scrollbar inline-flex h-auto w-full items-center justify-start overflow-x-auto border-border border-b text-muted-foreground',
       className
     )}
+    ref={ref}
     {...props}
   />
 ));
@@ -24,14 +24,14 @@ const TabsTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
-    ref={ref}
     className={cn(
-      'group inline-flex items-center justify-center whitespace-nowrap px-3 py-1 font-medium text-muted-foreground transition-all border-b-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground data-[state=active]:border-foreground',
+      'group inline-flex items-center justify-center whitespace-nowrap border-transparent border-b-2 px-3 py-1 font-medium text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-foreground data-[state=active]:text-foreground',
       className
     )}
+    ref={ref}
     {...props}
   >
-    <span className="group-hover:bg-def-300 group-hover:text-foreground p-0.5 px-1.5 rounded-sm">
+    <span className="rounded-sm p-0.5 px-1.5 group-hover:bg-def-300 group-hover:text-foreground">
       {props.children}
     </span>
   </TabsPrimitive.Trigger>
@@ -43,11 +43,11 @@ const TabsContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
-    ref={ref}
     className={cn(
       'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       className
     )}
+    ref={ref}
     {...props}
   />
 ));

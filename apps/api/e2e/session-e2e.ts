@@ -13,8 +13,10 @@
  */
 
 import {
-  chQuery,
+  API_URL,
   check,
+  chQuery,
+  claimKey,
   countByName,
   ensureFixtures,
   getBlob,
@@ -22,22 +24,20 @@ import {
   PROJECT_ID,
   pollUntil,
   preflight,
+  profileKey,
   redis,
   runId,
+  SESSION_TIMEOUT_MS,
   scenario,
   screenView,
-  SESSION_TIMEOUT_MS,
+  sessionKey,
   shutdown,
   sleep,
   summarize,
   track,
   triggerReaper,
-  wallclockKey,
-  claimKey,
-  sessionKey,
-  profileKey,
   WORKER_URL,
-  API_URL,
+  wallclockKey,
 } from './lib';
 
 async function scenarioSingleSession() {

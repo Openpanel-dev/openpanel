@@ -1,5 +1,5 @@
 import { Section, SectionHeader } from '@/components/section';
-import { CompareUseCases } from '@/lib/compare';
+import type { CompareUseCases } from '@/lib/compare';
 
 interface UseCasesProps {
   useCases: CompareUseCases;
@@ -9,15 +9,15 @@ export function UseCases({ useCases }: UseCasesProps) {
   return (
     <Section className="container">
       <SectionHeader
-        title={useCases.title}
         description={useCases.intro}
+        title={useCases.title}
         variant="sm"
       />
-      <div className="grid md:grid-cols-2 gap-6 mt-12">
+      <div className="mt-12 grid gap-6 md:grid-cols-2">
         {useCases.items.map((useCase) => (
-          <div key={useCase.title} className="col gap-2 p-6 border rounded-2xl">
+          <div className="col gap-2 rounded-2xl border p-6" key={useCase.title}>
             <h3 className="font-semibold">{useCase.title}</h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {useCase.description}
             </p>
           </div>

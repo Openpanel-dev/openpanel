@@ -1,12 +1,5 @@
 'use client';
 
-import { FaqItem, Faqs } from '@/components/faq';
-import { FeatureCardContainer } from '@/components/feature-card';
-import { SectionHeader } from '@/components/section';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { API_URL } from '@/lib/api-url';
-import { cn } from '@/lib/utils';
 import {
   AlertCircle,
   CheckCircle2,
@@ -21,6 +14,13 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { SocialPreview } from './social-preview';
+import { FaqItem, Faqs } from '@/components/faq';
+import { FeatureCardContainer } from '@/components/feature-card';
+import { SectionHeader } from '@/components/section';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { API_URL } from '@/lib/api-url';
+import { cn } from '@/lib/utils';
 
 interface SiteCheckResult {
   url: string;
@@ -106,7 +106,9 @@ export default function SiteCheckerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (!url.trim()) {
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -171,15 +173,15 @@ export default function SiteCheckerPage() {
     status?: 'pass' | 'fail' | 'warning' | 'info';
     helpText?: string;
   }) => (
-    <div className="flex items-start gap-3 py-3 border-b last:border-b-0">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium">{label}</span>
+    <div className="flex items-start gap-3 border-b py-3 last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex items-center gap-2">
+          <span className="font-medium text-sm">{label}</span>
           {status && <StatusIcon status={status} />}
         </div>
-        <div className="text-sm text-muted-foreground break-words">{value}</div>
+        <div className="break-words text-muted-foreground text-sm">{value}</div>
         {helpText && (
-          <div className="text-xs text-muted-foreground mt-1">{helpText}</div>
+          <div className="mt-1 text-muted-foreground text-xs">{helpText}</div>
         )}
       </div>
     </div>
@@ -195,23 +197,23 @@ export default function SiteCheckerPage() {
   return (
     <div className="max-w-4xl">
       <SectionHeader
-        title="URL Checker"
-        description="Analyze any website for SEO, social media, technical, and security information. Get comprehensive insights about any URL."
-        variant="default"
         as="h1"
+        description="Analyze any website for SEO, social media, technical, and security information. Get comprehensive insights about any URL."
+        title="URL Checker"
+        variant="default"
       />
 
-      <form onSubmit={handleSubmit} className="mt-8">
+      <form className="mt-8" onSubmit={handleSubmit}>
         <div className="flex gap-2">
           <Input
-            type="url"
-            placeholder="https://example.com"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
             className="flex-1"
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
             size="lg"
+            type="url"
+            value={url}
           />
-          <Button type="submit" disabled={loading} size="lg">
+          <Button disabled={loading} size="lg" type="submit">
             {loading ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
@@ -230,18 +232,18 @@ export default function SiteCheckerPage() {
       {error && (
         <div
           className={cn(
-            'mt-4 p-4 rounded-lg border',
+            'mt-4 rounded-lg border p-4',
             isRateLimited
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-              : 'bg-destructive/10 border-destructive/20 text-destructive'
+              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              : 'border-destructive/20 bg-destructive/10 text-destructive'
           )}
         >
           <div className="flex items-start gap-2">
-            <AlertCircle className="size-5 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 size-5 flex-shrink-0" />
             <div className="flex-1">
               <div className="font-medium">{error}</div>
               {isRateLimited && (
-                <div className="text-sm mt-1 opacity-90">
+                <div className="mt-1 text-sm opacity-90">
                   You can make up to 10 requests per minute. Please try again
                   shortly.
                 </div>
@@ -258,43 +260,43 @@ export default function SiteCheckerPage() {
             <div className="flex items-center gap-2">
               <span className="font-medium">Final URL</span>
             </div>
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <img
-                src={`https://api.openpanel.dev/misc/favicon?url=${encodeURIComponent(result.finalUrl)}`}
                 alt="Favicon"
                 className="size-4 rounded-xs"
+                src={`https://api.openpanel.dev/misc/favicon?url=${encodeURIComponent(result.finalUrl)}`}
               />
               <a
+                className="flex items-center gap-1 break-all text-muted-foreground text-sm hover:text-foreground"
                 href={result.finalUrl}
-                target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 break-all"
+                target="_blank"
               >
                 {result.finalUrl}
                 <ExternalLink className="size-3" />
               </a>
             </div>
             {result.url !== result.finalUrl && (
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="mt-1 text-muted-foreground text-xs">
                 Redirected from: {result.url}
               </div>
             )}
           </FeatureCardContainer>
 
           {/* Tabs */}
-          <div className="border-b mb-6">
+          <div className="mb-6 border-b">
             <div className="flex gap-2 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
-                  type="button"
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                    'flex items-center gap-2 border-b-2 px-4 py-2 font-medium text-sm transition-colors',
                     activeTab === tab.id
                       ? 'border-foreground text-foreground'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   )}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  type="button"
                 >
                   {tab.icon}
                   {tab.label}
@@ -307,8 +309,8 @@ export default function SiteCheckerPage() {
           {activeTab === 'seo' && (
             <div className="space-y-4">
               <InfoRow
+                helpText={`${result.seo.title.length} characters (recommended: 30-60)`}
                 label="Title"
-                value={result.seo.title.value || 'Not set'}
                 status={
                   result.seo.title.length > 0
                     ? result.seo.title.length >= 30 &&
@@ -317,11 +319,11 @@ export default function SiteCheckerPage() {
                       : 'warning'
                     : 'fail'
                 }
-                helpText={`${result.seo.title.length} characters (recommended: 30-60)`}
+                value={result.seo.title.value || 'Not set'}
               />
               <InfoRow
+                helpText={`${result.seo.description.length} characters (recommended: 120-160)`}
                 label="Meta Description"
-                value={result.seo.description.value || 'Not set'}
                 status={
                   result.seo.description.length > 0
                     ? result.seo.description.length >= 120 &&
@@ -330,18 +332,32 @@ export default function SiteCheckerPage() {
                       : 'warning'
                     : 'fail'
                 }
-                helpText={`${result.seo.description.length} characters (recommended: 120-160)`}
+                value={result.seo.description.value || 'Not set'}
               />
               <InfoRow
                 label="Canonical URL"
-                value={result.seo.canonical || 'Not set'}
                 status={result.seo.canonical ? 'pass' : 'warning'}
+                value={result.seo.canonical || 'Not set'}
               />
               <InfoRow
+                helpText={
+                  result.seo.h1.length === 0
+                    ? 'No H1 tag found'
+                    : result.seo.h1.length > 1
+                      ? 'Multiple H1 tags found (recommended: 1)'
+                      : 'One H1 tag found'
+                }
                 label="H1 Tags"
+                status={
+                  result.seo.h1.length === 1
+                    ? 'pass'
+                    : result.seo.h1.length === 0
+                      ? 'fail'
+                      : 'warning'
+                }
                 value={
                   result.seo.h1.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-1">
+                    <ul className="list-inside list-disc space-y-1">
                       {result.seo.h1.map((h1) => (
                         <li key={h1}>{h1}</li>
                       ))}
@@ -350,28 +366,21 @@ export default function SiteCheckerPage() {
                     'Not found'
                   )
                 }
-                status={
-                  result.seo.h1.length === 1
-                    ? 'pass'
-                    : result.seo.h1.length === 0
-                      ? 'fail'
-                      : 'warning'
-                }
-                helpText={
-                  result.seo.h1.length === 0
-                    ? 'No H1 tag found'
-                    : result.seo.h1.length > 1
-                      ? 'Multiple H1 tags found (recommended: 1)'
-                      : 'One H1 tag found'
-                }
               />
               <InfoRow
                 label="Robots Meta"
-                value={result.seo.robotsMeta || 'Not set'}
                 status={result.seo.robotsMeta ? 'info' : 'pass'}
+                value={result.seo.robotsMeta || 'Not set'}
               />
               <InfoRow
                 label="Robots.txt"
+                status={
+                  result.seo.robotsTxtStatus === 'allowed'
+                    ? 'pass'
+                    : result.seo.robotsTxtStatus === 'blocked'
+                      ? 'fail'
+                      : 'warning'
+                }
                 value={
                   result.seo.robotsTxtStatus === 'allowed'
                     ? 'Allowed'
@@ -379,23 +388,16 @@ export default function SiteCheckerPage() {
                       ? 'Blocked'
                       : 'Error checking'
                 }
-                status={
-                  result.seo.robotsTxtStatus === 'allowed'
-                    ? 'pass'
-                    : result.seo.robotsTxtStatus === 'blocked'
-                      ? 'fail'
-                      : 'warning'
-                }
               />
               <InfoRow
-                label="Sitemap"
-                value={result.seo.hasSitemap ? 'Found' : 'Not found'}
-                status={result.seo.hasSitemap ? 'pass' : 'warning'}
                 helpText={
                   result.seo.hasSitemap
                     ? '/sitemap.xml exists'
                     : '/sitemap.xml not found'
                 }
+                label="Sitemap"
+                status={result.seo.hasSitemap ? 'pass' : 'warning'}
+                value={result.seo.hasSitemap ? 'Found' : 'Not found'}
               />
             </div>
           )}
@@ -406,59 +408,60 @@ export default function SiteCheckerPage() {
               {/* Preview Card */}
               <div>
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">
+                  <h3 className="mb-2 font-semibold text-lg">
                     Social Media Preview
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     See how your link will appear when shared on social media
                     platforms
                   </p>
                 </div>
                 <div className="max-w-md">
                   <SocialPreview
-                    title={
-                      result.social.og.title ||
-                      result.social.twitter.title ||
-                      result.seo.title.value
-                    }
                     description={
                       result.social.og.description ||
                       result.social.twitter.description ||
                       result.seo.description.value
                     }
+                    domain={new URL(result.finalUrl).hostname}
                     image={
                       result.social.og.image || result.social.twitter.image
                     }
+                    title={
+                      result.social.og.title ||
+                      result.social.twitter.title ||
+                      result.seo.title.value
+                    }
                     url={result.finalUrl}
-                    domain={new URL(result.finalUrl).hostname}
                   />
                 </div>
               </div>
 
               <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-3">
+                <h3 className="mb-3 font-semibold text-lg">
                   Open Graph Details
                 </h3>
                 <div className="space-y-2">
                   <InfoRow
                     label="OG Title"
-                    value={result.social.og.title || 'Not set'}
                     status={result.social.og.title ? 'pass' : 'warning'}
+                    value={result.social.og.title || 'Not set'}
                   />
                   <InfoRow
                     label="OG Description"
-                    value={result.social.og.description || 'Not set'}
                     status={result.social.og.description ? 'pass' : 'warning'}
+                    value={result.social.og.description || 'Not set'}
                   />
                   <InfoRow
                     label="OG Image"
+                    status={result.social.og.image ? 'pass' : 'warning'}
                     value={
                       result.social.og.image ? (
                         <a
+                          className="flex items-center gap-1 text-primary hover:underline"
                           href={result.social.og.image}
-                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
+                          target="_blank"
                         >
                           {result.social.og.image}
                           <ExternalLink className="size-3" />
@@ -467,52 +470,52 @@ export default function SiteCheckerPage() {
                         'Not set'
                       )
                     }
-                    status={result.social.og.image ? 'pass' : 'warning'}
                   />
                   <InfoRow
                     label="OG URL"
-                    value={result.social.og.url || 'Not set'}
                     status={result.social.og.url ? 'pass' : 'warning'}
+                    value={result.social.og.url || 'Not set'}
                   />
                   <InfoRow
                     label="OG Type"
-                    value={result.social.og.type || 'Not set'}
                     status={result.social.og.type ? 'pass' : 'warning'}
+                    value={result.social.og.type || 'Not set'}
                   />
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3">
+                <h3 className="mb-3 font-semibold text-lg">
                   Twitter Card Details
                 </h3>
                 <div className="space-y-2">
                   <InfoRow
                     label="Card Type"
-                    value={result.social.twitter.card || 'Not set'}
                     status={result.social.twitter.card ? 'pass' : 'warning'}
+                    value={result.social.twitter.card || 'Not set'}
                   />
                   <InfoRow
                     label="Twitter Title"
-                    value={result.social.twitter.title || 'Not set'}
                     status={result.social.twitter.title ? 'pass' : 'warning'}
+                    value={result.social.twitter.title || 'Not set'}
                   />
                   <InfoRow
                     label="Twitter Description"
-                    value={result.social.twitter.description || 'Not set'}
                     status={
                       result.social.twitter.description ? 'pass' : 'warning'
                     }
+                    value={result.social.twitter.description || 'Not set'}
                   />
                   <InfoRow
                     label="Twitter Image"
+                    status={result.social.twitter.image ? 'pass' : 'warning'}
                     value={
                       result.social.twitter.image ? (
                         <a
+                          className="flex items-center gap-1 text-primary hover:underline"
                           href={result.social.twitter.image}
-                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
+                          target="_blank"
                         >
                           {result.social.twitter.image}
                           <ExternalLink className="size-3" />
@@ -521,7 +524,6 @@ export default function SiteCheckerPage() {
                         'Not set'
                       )
                     }
-                    status={result.social.twitter.image ? 'pass' : 'warning'}
                   />
                 </div>
               </div>
@@ -533,6 +535,15 @@ export default function SiteCheckerPage() {
             <div className="space-y-4">
               <InfoRow
                 label="HTTP Status"
+                status={
+                  result.technical.statusCode >= 200 &&
+                  result.technical.statusCode < 300
+                    ? 'pass'
+                    : result.technical.statusCode >= 300 &&
+                        result.technical.statusCode < 400
+                      ? 'warning'
+                      : 'fail'
+                }
                 value={
                   <span
                     className={cn(
@@ -549,24 +560,15 @@ export default function SiteCheckerPage() {
                     {result.technical.statusCode}
                   </span>
                 }
-                status={
-                  result.technical.statusCode >= 200 &&
-                  result.technical.statusCode < 300
-                    ? 'pass'
-                    : result.technical.statusCode >= 300 &&
-                        result.technical.statusCode < 400
-                      ? 'warning'
-                      : 'fail'
-                }
               />
               {result.technical.redirectChain.length > 0 && (
                 <div>
-                  <div className="font-medium mb-2">Redirect Chain</div>
+                  <div className="mb-2 font-medium">Redirect Chain</div>
                   <div className="space-y-2">
                     {result.technical.redirectChain.map((hop, i) => (
                       <div
+                        className="flex items-center gap-2 rounded bg-accent p-2 text-sm"
                         key={hop.url}
-                        className="flex items-center gap-2 text-sm p-2 bg-accent rounded"
                       >
                         <span className="font-mono text-xs">{hop.status}</span>
                         <span className="flex-1 truncate">{hop.url}</span>
@@ -580,11 +582,11 @@ export default function SiteCheckerPage() {
               )}
               {/* Detailed Response Time Breakdown */}
               <FeatureCardContainer className="space-y-3">
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3 flex items-center justify-between">
                   <h4 className="font-semibold">Response Time Breakdown</h4>
                   <span
                     className={cn(
-                      'text-lg font-bold',
+                      'font-bold text-lg',
                       result.technical.responseTime.total < 1000
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : result.technical.responseTime.total < 3000
@@ -626,7 +628,7 @@ export default function SiteCheckerPage() {
                       {result.technical.responseTime.ttfb}ms
                     </span>
                   </div>
-                  <div className="pt-2 border-t">
+                  <div className="border-t pt-2">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Total</span>
                       <span className="font-mono font-semibold">
@@ -638,26 +640,27 @@ export default function SiteCheckerPage() {
               </FeatureCardContainer>
               <InfoRow
                 label="Content Type"
-                value={result.technical.contentType}
                 status="info"
+                value={result.technical.contentType}
               />
               <InfoRow
                 label="Page Size"
-                value={`${(result.technical.pageSize / 1024).toFixed(2)} KB`}
                 status="info"
+                value={`${(result.technical.pageSize / 1024).toFixed(2)} KB`}
               />
               <InfoRow
                 label="Server"
-                value={result.technical.server || 'Not detected'}
                 status="info"
+                value={result.technical.server || 'Not detected'}
               />
               {result.technical.ssl && (
                 <InfoRow
                   label="SSL Certificate"
+                  status={result.technical.ssl.valid ? 'pass' : 'fail'}
                   value={
                     <div>
                       <div>Issuer: {result.technical.ssl.issuer}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="mt-1 text-muted-foreground text-xs">
                         Expires:{' '}
                         {new Date(
                           result.technical.ssl.expires
@@ -665,26 +668,26 @@ export default function SiteCheckerPage() {
                       </div>
                     </div>
                   }
-                  status={result.technical.ssl.valid ? 'pass' : 'fail'}
                 />
               )}
               {/* Server IP & Hosting Info */}
               {result.hosting.ip && (
                 <FeatureCardContainer className="space-y-3">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="mb-3 flex items-center gap-2">
                     <Globe className="size-5" />
                     <h4 className="font-semibold">Server IP & Hosting</h4>
                   </div>
 
                   <InfoRow
                     label="IP Address"
-                    value={result.hosting.ip}
                     status="info"
+                    value={result.hosting.ip}
                   />
 
                   {result.hosting.location && (
                     <InfoRow
                       label="Location"
+                      status="info"
                       value={
                         <div>
                           {result.hosting.location.city &&
@@ -696,7 +699,7 @@ export default function SiteCheckerPage() {
                               {`, ${result.hosting.location.country}`}
                               {result.hosting.location.latitude &&
                                 result.hosting.location.longitude && (
-                                  <div className="text-xs text-muted-foreground mt-1">
+                                  <div className="mt-1 text-muted-foreground text-xs">
                                     {result.hosting.location.latitude.toFixed(
                                       4
                                     )}
@@ -712,50 +715,49 @@ export default function SiteCheckerPage() {
                           )}
                         </div>
                       }
-                      status="info"
                     />
                   )}
 
                   {result.hosting.isp && (
                     <InfoRow
                       label="ISP"
-                      value={result.hosting.isp}
                       status="info"
+                      value={result.hosting.isp}
                     />
                   )}
 
                   {result.hosting.asn && (
                     <InfoRow
                       label="ASN"
-                      value={result.hosting.asn}
                       status="info"
+                      value={result.hosting.asn}
                     />
                   )}
 
                   {result.hosting.organization && (
                     <InfoRow
                       label="Organization"
-                      value={result.hosting.organization}
                       status="info"
+                      value={result.hosting.organization}
                     />
                   )}
 
                   {result.hosting.cdn && (
                     <InfoRow
                       label="CDN"
-                      value={result.hosting.cdn}
                       status="pass"
+                      value={result.hosting.cdn}
                     />
                   )}
 
-                  <div className="pt-2 border-t text-xs text-muted-foreground space-y-2">
+                  <div className="space-y-2 border-t pt-2 text-muted-foreground text-xs">
                     <div>
                       <strong>Location data:</strong> Powered by{' '}
                       <a
-                        href="https://www.maxmind.com/en/geoip2-services-and-databases"
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="text-primary hover:underline"
+                        href="https://www.maxmind.com/en/geoip2-services-and-databases"
+                        rel="noopener noreferrer"
+                        target="_blank"
                       >
                         MaxMind GeoLite2
                       </a>{' '}
@@ -765,10 +767,10 @@ export default function SiteCheckerPage() {
                       <div>
                         <strong>Network data:</strong> ISP/ASN information from{' '}
                         <a
-                          href="https://ip-api.com"
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="text-primary hover:underline"
+                          href="https://ip-api.com"
+                          rel="noopener noreferrer"
+                          target="_blank"
                         >
                           ip-api.com
                         </a>
@@ -781,8 +783,8 @@ export default function SiteCheckerPage() {
               {!result.hosting.ip && (
                 <InfoRow
                   label="Server IP"
-                  value="Not resolved"
                   status="warning"
+                  value="Not resolved"
                 />
               )}
             </div>
@@ -792,14 +794,14 @@ export default function SiteCheckerPage() {
           {activeTab === 'security' && (
             <div className="space-y-4">
               <FeatureCardContainer className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   <Shield className="size-5" />
                   <span className="font-semibold">Security Score</span>
                 </div>
-                <div className="text-3xl font-bold">
+                <div className="font-bold text-3xl">
                   {result.security.score}/100
                 </div>
-                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                <div className="mt-2 h-2 w-full rounded-full bg-muted">
                   <div
                     className={cn(
                       'h-2 rounded-full transition-all',
@@ -815,18 +817,22 @@ export default function SiteCheckerPage() {
               </FeatureCardContainer>
 
               <InfoRow
-                label="Content-Security-Policy"
-                value={result.security.csp || 'Not set'}
-                status={result.security.csp ? 'pass' : 'fail'}
                 helpText={
                   result.security.csp
                     ? 'CSP header is present'
                     : 'CSP header is missing'
                 }
+                label="Content-Security-Policy"
+                status={result.security.csp ? 'pass' : 'fail'}
+                value={result.security.csp || 'Not set'}
               />
               <InfoRow
+                helpText={
+                  result.security.xFrameOptions
+                    ? 'Protects against clickjacking'
+                    : 'Missing X-Frame-Options header'
+                }
                 label="X-Frame-Options"
-                value={result.security.xFrameOptions || 'Not set'}
                 status={
                   result.security.xFrameOptions
                     ? result.security.xFrameOptions.toLowerCase() === 'deny' ||
@@ -836,15 +842,16 @@ export default function SiteCheckerPage() {
                       : 'warning'
                     : 'fail'
                 }
-                helpText={
-                  result.security.xFrameOptions
-                    ? 'Protects against clickjacking'
-                    : 'Missing X-Frame-Options header'
-                }
+                value={result.security.xFrameOptions || 'Not set'}
               />
               <InfoRow
+                helpText={
+                  result.security.xContentTypeOptions?.toLowerCase() ===
+                  'nosniff'
+                    ? 'Prevents MIME type sniffing'
+                    : 'Missing or incorrect X-Content-Type-Options header'
+                }
                 label="X-Content-Type-Options"
-                value={result.security.xContentTypeOptions || 'Not set'}
                 status={
                   result.security.xContentTypeOptions?.toLowerCase() ===
                   'nosniff'
@@ -853,22 +860,17 @@ export default function SiteCheckerPage() {
                       ? 'warning'
                       : 'fail'
                 }
-                helpText={
-                  result.security.xContentTypeOptions?.toLowerCase() ===
-                  'nosniff'
-                    ? 'Prevents MIME type sniffing'
-                    : 'Missing or incorrect X-Content-Type-Options header'
-                }
+                value={result.security.xContentTypeOptions || 'Not set'}
               />
               <InfoRow
-                label="Strict-Transport-Security (HSTS)"
-                value={result.security.hsts || 'Not set'}
-                status={result.security.hsts ? 'pass' : 'warning'}
                 helpText={
                   result.security.hsts
                     ? 'Forces HTTPS connections'
                     : 'HSTS header is missing (only applies to HTTPS sites)'
                 }
+                label="Strict-Transport-Security (HSTS)"
+                status={result.security.hsts ? 'pass' : 'warning'}
+                value={result.security.hsts || 'Not set'}
               />
             </div>
           )}
@@ -876,13 +878,13 @@ export default function SiteCheckerPage() {
       )}
 
       {/* SEO Content Section */}
-      <div className="mt-16 prose prose-neutral dark:prose-invert max-w-none">
+      <div className="prose prose-neutral dark:prose-invert mt-16 max-w-none">
         <article className="space-y-8">
           <div>
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="mb-4 font-bold text-3xl">
               Free URL Checker & Website Analysis Tool
             </h2>
-            <p className="text-lg text-muted-foreground mb-6">
+            <p className="mb-6 text-lg text-muted-foreground">
               Check any URL for SEO issues, security problems, and performance
               bottlenecks. Our free site checker analyzes meta tags, social
               previews, security headers, and server configuration in seconds.
@@ -890,14 +892,14 @@ export default function SiteCheckerPage() {
           </div>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               What This URL Checker Analyzes
             </h3>
             <p className="mb-4">
               Paste any URL and get a complete breakdown of how the page
               performs across four critical areas:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>SEO Health:</strong> Title tags, meta descriptions, H1
                 tags, canonical URLs, and indexability status
@@ -918,21 +920,21 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">SEO Analysis</h3>
+            <h3 className="mb-4 font-semibold text-2xl">SEO Analysis</h3>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Title Tags</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Title Tags</h4>
             <p className="mb-4">
               Title tags appear in search results and browser tabs. They're one
               of the strongest on-page ranking signals. Our URL checker verifies
               your title is:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>Between 30-60 characters (optimal for search display)</li>
               <li>Present and not empty</li>
               <li>Unique and descriptive</li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Meta Descriptions
             </h4>
             <p className="mb-4">
@@ -942,14 +944,14 @@ export default function SiteCheckerPage() {
               clicks.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">H1 Tags</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">H1 Tags</h4>
             <p className="mb-4">
               Each page should have exactly one H1 tag that clearly describes
               the page content. Our checker flags missing H1s and helps ensure
               proper heading structure.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Canonical URLs</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Canonical URLs</h4>
             <p className="mb-4">
               Canonical tags prevent duplicate content issues by telling search
               engines which URL version is authoritative. This matters for pages
@@ -957,7 +959,7 @@ export default function SiteCheckerPage() {
               and www/non-www variants.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Indexability</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Indexability</h4>
             <p className="mb-4">
               The checker analyzes robots.txt rules and meta robots tags to
               determine if search engines can crawl and index your page. You'll
@@ -966,7 +968,7 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Social Media Previews
             </h3>
             <p className="mb-4">
@@ -975,12 +977,12 @@ export default function SiteCheckerPage() {
               guess—often poorly.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Open Graph Tags</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Open Graph Tags</h4>
             <p className="mb-4">
               Open Graph controls how links display on Facebook, LinkedIn, and
               most other platforms. Essential tags include:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <code>og:title</code> — Title shown in the share card
               </li>
@@ -995,11 +997,11 @@ export default function SiteCheckerPage() {
               </li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Twitter Cards</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Twitter Cards</h4>
             <p className="mb-4">
               Twitter uses its own card format. Our site checker verifies:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <code>twitter:card</code> — Card type (summary or
                 summary_large_image)
@@ -1014,12 +1016,12 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">Performance Metrics</h3>
+            <h3 className="mb-4 font-semibold text-2xl">Performance Metrics</h3>
             <p className="mb-4">
               Page speed affects both user experience and search rankings. Our
               URL checker breaks down exactly where time is spent:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>DNS Lookup:</strong> Time to resolve domain to IP
                 address. Slow DNS? Consider a faster provider or DNS caching.
@@ -1043,7 +1045,7 @@ export default function SiteCheckerPage() {
               </li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Server Information
             </h4>
             <p className="mb-4">
@@ -1054,13 +1056,13 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">Security Analysis</h3>
+            <h3 className="mb-4 font-semibold text-2xl">Security Analysis</h3>
             <p className="mb-4">
               Security headers protect your site and visitors from common
               attacks. Our checker evaluates four critical headers:
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Content Security Policy (CSP)
             </h4>
             <p className="mb-4">
@@ -1069,13 +1071,13 @@ export default function SiteCheckerPage() {
               blocks inline execution.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">X-Frame-Options</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">X-Frame-Options</h4>
             <p className="mb-4">
               Prevents clickjacking by controlling whether your page can be
               embedded in iframes. Set to DENY or SAMEORIGIN for protection.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               X-Content-Type-Options
             </h4>
             <p className="mb-4">
@@ -1083,7 +1085,7 @@ export default function SiteCheckerPage() {
               sniffing, which can lead to security vulnerabilities.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Strict-Transport-Security (HSTS)
             </h4>
             <p className="mb-4">
@@ -1091,7 +1093,7 @@ export default function SiteCheckerPage() {
               Essential for sites handling any sensitive data.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">SSL Certificate</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">SSL Certificate</h4>
             <p className="mb-4">
               The checker verifies your SSL certificate is valid, trusted, and
               not expiring soon. Expired certificates trigger browser warnings
@@ -1100,10 +1102,10 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               How to Use This Website Checker
             </h3>
-            <ol className="list-decimal list-inside space-y-3 mb-6 ml-4">
+            <ol className="mb-6 ml-4 list-inside list-decimal space-y-3">
               <li>
                 <strong>Enter a URL:</strong> Paste any web address (with or
                 without https://)
@@ -1128,12 +1130,12 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Quick Optimization Checklist
             </h3>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">SEO Essentials</h4>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">SEO Essentials</h4>
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>Unique title tag (30-60 characters) on every page</li>
               <li>Compelling meta description (120-160 characters)</li>
               <li>Single, descriptive H1 tag</li>
@@ -1141,16 +1143,16 @@ export default function SiteCheckerPage() {
               <li>Page is indexable (no accidental noindex)</li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Performance</h4>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Performance</h4>
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>TTFB under 200ms</li>
               <li>Use a CDN for global reach</li>
               <li>Enable compression (gzip/brotli)</li>
               <li>Optimize images and enable caching</li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Security</h4>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Security</h4>
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>Valid SSL certificate (not expiring soon)</li>
               <li>All four security headers configured</li>
               <li>HSTS enabled for HTTPS enforcement</li>
@@ -1158,7 +1160,7 @@ export default function SiteCheckerPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Frequently Asked Questions
             </h3>
 
@@ -1205,8 +1207,8 @@ export default function SiteCheckerPage() {
             </Faqs>
           </section>
 
-          <section className="border-t pt-8 mt-8">
-            <h3 className="text-2xl font-semibold mb-4">
+          <section className="mt-8 border-t pt-8">
+            <h3 className="mb-4 font-semibold text-2xl">
               Start Checking URLs Now
             </h3>
             <p className="mb-6">

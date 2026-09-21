@@ -1,5 +1,5 @@
-import { cn } from '@/utils/cn';
 import React from 'react';
+import { cn } from '@/utils/cn';
 
 export type ColumnPriority = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -55,7 +55,7 @@ export const WidgetTableHead = ({
   return (
     <thead
       className={cn(
-        'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th:first-child]:text-left [&_th]:font-medium',
+        'sticky top-0 z-10 border-border border-b bg-def-100 text-def-1000 [&_th:first-child]:text-left [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th]:font-medium',
         className
       )}
     >
@@ -166,7 +166,7 @@ export function WidgetTable<T>({
         {containerQueryStyles}
         {/* Header */}
         <div
-          className={cn('grid border-b border-border head', columnClassName)}
+          className={cn('head grid border-border border-b', columnClassName)}
           style={{ gridTemplateColumns }}
         >
           {columns.map((column, colIndex) => {
@@ -194,14 +194,14 @@ export function WidgetTable<T>({
 
             return (
               <div
-                key={columnKey}
                 className={cn(
-                  'p-2 font-medium font-sans text-sm whitespace-nowrap cell',
+                  'cell whitespace-nowrap p-2 font-medium font-sans text-sm',
                   columns.length > 1 && column !== columns[0]
                     ? 'text-right'
                     : 'text-left',
                   responsiveClass
                 )}
+                key={columnKey}
                 style={{ width: column.width }}
                 {...dataAttrs}
               >
@@ -212,14 +212,14 @@ export function WidgetTable<T>({
         </div>
 
         {/* Body */}
-        <div className="flex flex-col body">
+        <div className="body flex flex-col">
           {data.map((item, index) => (
             <div
-              key={keyExtractor(item)}
               className={cn(
-                'group/row relative border-b border-border last:border-0 h-8 overflow-hidden',
+                'group/row relative h-8 overflow-hidden border-border border-b last:border-0',
                 columnClassName
               )}
+              key={keyExtractor(item)}
             >
               {eachRow?.(item, index)}
               <div
@@ -255,9 +255,8 @@ export function WidgetTable<T>({
 
                   return (
                     <div
-                      key={columnKey}
                       className={cn(
-                        'px-2 relative cell',
+                        'cell relative px-2',
                         columns.length > 1 && column !== columns[0]
                           ? 'text-right'
                           : 'text-left',
@@ -265,6 +264,7 @@ export function WidgetTable<T>({
                         column.width === 'w-full' && 'w-full min-w-0',
                         responsiveClass
                       )}
+                      key={columnKey}
                       style={
                         column.width !== 'w-full' ? { width: column.width } : {}
                       }

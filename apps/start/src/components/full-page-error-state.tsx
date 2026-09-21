@@ -1,5 +1,4 @@
 import { ServerCrashIcon } from 'lucide-react';
-
 import { FullPageEmptyState } from './full-page-empty-state';
 
 export const FullPageErrorState = ({
@@ -14,8 +13,8 @@ export const FullPageErrorState = ({
   return (
     <FullPageEmptyState
       className="min-h-[calc(100vh-theme(spacing.16))]"
-      title={title}
       icon={ServerCrashIcon}
+      title={title}
     >
       {description}
       {children && <div className="mt-4">{children}</div>}

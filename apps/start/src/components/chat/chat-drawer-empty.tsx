@@ -1,7 +1,7 @@
-import CopyInput from '@/components/forms/copy-input';
-import { usePageContextValue } from '@/contexts/page-context';
 import { ExternalLinkIcon, KeyRoundIcon, SparklesIcon } from 'lucide-react';
 import { useChatRuntime } from './chat-runtime';
+import CopyInput from '@/components/forms/copy-input';
+import { usePageContextValue } from '@/contexts/page-context';
 
 /**
  * Empty-state panel shown inside the drawer body when a chat has no
@@ -21,18 +21,18 @@ export function ChatDrawerEmpty() {
         <SparklesIcon className="size-5" />
       </div>
       <div className="max-w-xs">
-        <h3 className="font-semibold text-xl mb-2">{suggestions.headline}</h3>
+        <h3 className="mb-2 font-semibold text-xl">{suggestions.headline}</h3>
         <p className="mt-1.5 text-muted-foreground leading-[1.5]">
           {suggestions.description}
         </p>
       </div>
-      <div className="flex w-full max-w-xs flex-col gap-2 items-center">
+      <div className="flex w-full max-w-xs flex-col items-center gap-2">
         {suggestions.prompts.map((prompt) => (
           <button
+            className="rounded-md border bg-muted/30 px-3 py-2 text-left text-foreground/80 text-sm transition-colors hover:bg-muted/60 hover:text-foreground"
             key={prompt}
-            type="button"
             onClick={() => send(prompt)}
-            className="rounded-md border bg-muted/30 px-3 py-2 text-left text-sm text-foreground/80 transition-colors hover:bg-muted/60 hover:text-foreground"
+            type="button"
           >
             {prompt}
           </button>
@@ -49,7 +49,7 @@ export function ChatDrawerNotConfigured() {
         <KeyRoundIcon className="size-5" />
       </div>
       <div className="max-w-xs">
-        <h3 className="font-semibold text-xl mb-2">AI chat isn't configured</h3>
+        <h3 className="mb-2 font-semibold text-xl">AI chat isn't configured</h3>
         <p className="mt-1.5 text-muted-foreground leading-[1.5]">
           Set <code className="font-mono text-sm">OPENAI_API_KEY</code> and/or{' '}
           <code className="font-mono text-sm">ANTHROPIC_API_KEY</code> on the
@@ -62,10 +62,10 @@ export function ChatDrawerNotConfigured() {
         <CopyInput label="Anthropic" value="ANTHROPIC_API_KEY=sk-ant-..." />
       </div>
       <a
+        className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
         href="https://openpanel.dev/docs/self-hosting/environment-variables#ai-features"
-        target="_blank"
         rel="noopener"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        target="_blank"
       >
         View setup docs
         <ExternalLinkIcon className="size-3.5" />

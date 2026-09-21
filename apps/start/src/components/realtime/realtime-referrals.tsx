@@ -1,10 +1,10 @@
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { prop, uniqBy } from 'ramda';
 import { OverviewWidgetTable } from '../overview/overview-widget-table';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface RealtimeReferralsProps {
   projectId: string;
@@ -26,21 +26,18 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
     .slice(0, 8);
 
   return (
-    <div className="col h-full card">
-      <div className="row justify-between items-center p-4 pb-0">
+    <div className="col card h-full">
+      <div className="row items-center justify-between p-4 pb-0">
         <div className="font-medium text-muted-foreground">Referrals</div>
         <div className="row gap-1">
           {unique.map((item) => (
-            <Tooltiper key={item.referrer_name} content={item.referrer_name}>
+            <Tooltiper content={item.referrer_name} key={item.referrer_name}>
               <SerieIcon key={item.referrer_name} name={item.referrer_name} />
             </Tooltiper>
           ))}
         </div>
       </div>
       <OverviewWidgetTable
-        data={data ?? []}
-        keyExtractor={(item) => item.referrer_name}
-        getColumnPercentage={(item) => item.count / maxCount}
         columns={[
           {
             name: 'Referrer',
@@ -49,7 +46,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
             render(item) {
               return (
                 <Tooltiper asChild content={item.referrer_name} side="left">
-                  <div className="row items-center gap-2 min-w-0 relative">
+                  <div className="row relative min-w-0 items-center gap-2">
                     <SerieIcon name={item.referrer_name} />
                     {item.referrer_name || '(Not set)'}
                   </div>
@@ -71,7 +68,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
             responsive: { priority: 4 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.count)}
                   </span>
@@ -85,7 +82,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
             responsive: { priority: 2 },
             render(item) {
               return (
-                <div className="row gap-2 justify-end">
+                <div className="row justify-end gap-2">
                   <span className="font-semibold">
                     {number.short(item.unique_sessions)}
                   </span>
@@ -94,6 +91,9 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
             },
           },
         ]}
+        data={data ?? []}
+        getColumnPercentage={(item) => item.count / maxCount}
+        keyExtractor={(item) => item.referrer_name}
       />
     </div>
   );

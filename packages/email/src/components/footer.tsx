@@ -7,7 +7,6 @@ import {
   Section,
   Text,
 } from '@react-email/components';
-import React from 'react';
 
 const baseUrl = 'https://openpanel.dev';
 
@@ -16,7 +15,7 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
     <>
       <Hr />
       <Section className="w-full p-6">
-        <Text className="text-[21px] font-regular" style={{ margin: 0 }}>
+        <Text className="font-regular text-[21px]" style={{ margin: 0 }}>
           An open-source alternative to Mixpanel
         </Text>
 
@@ -26,40 +25,40 @@ export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
           <Column className="w-8">
             <Link href="https://git.new/openpanel">
               <Img
+                alt="OpenPanel on Github"
+                height="22"
                 src={`${baseUrl}/icons/github.png`}
                 width="22"
-                height="22"
-                alt="OpenPanel on Github"
               />
             </Link>
           </Column>
           <Column className="w-8">
             <Link href="https://x.com/openpaneldev">
               <Img
+                alt="OpenPanel on X"
+                height="22"
                 src={`${baseUrl}/icons/x.png`}
                 width="22"
-                height="22"
-                alt="OpenPanel on X"
               />
             </Link>
           </Column>
           <Column className="w-8">
             <Link href="https://go.openpanel.dev/discord">
               <Img
+                alt="OpenPanel on Discord"
+                height="22"
                 src={`${baseUrl}/icons/discord.png`}
                 width="22"
-                height="22"
-                alt="OpenPanel on Discord"
               />
             </Link>
           </Column>
           <Column className="w-auto">
             <Link href="mailto:hello@openpanel.dev">
               <Img
+                alt="Contact OpenPanel with email"
+                height="22"
                 src={`${baseUrl}/icons/email.png`}
                 width="22"
-                height="22"
-                alt="Contact OpenPanel with email"
               />
             </Link>
           </Column>

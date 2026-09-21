@@ -1,13 +1,13 @@
-import type { RouterOutputs } from '@/trpc/client';
-
+import type { UseQueryResult } from '@tanstack/react-query';
+import { PlusIcon } from 'lucide-react';
+import { useColumns } from './columns';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar';
 import { useTable } from '@/components/ui/data-table/use-table';
 import { pushModal } from '@/modals';
-import type { UseQueryResult } from '@tanstack/react-query';
-import { PlusIcon } from 'lucide-react';
-import { useColumns } from './columns';
+import type { RouterOutputs } from '@/trpc/client';
+
 type CommonProps = {
   query: UseQueryResult<RouterOutputs['organization']['invitations'], unknown>;
 };
@@ -36,7 +36,7 @@ export const InvitesTable = ({ query }: Props) => {
           Invite user
         </Button>
       </DataTableToolbar>
-      <DataTable table={table} loading={isLoading} />
+      <DataTable loading={isLoading} table={table} />
     </>
   );
 };

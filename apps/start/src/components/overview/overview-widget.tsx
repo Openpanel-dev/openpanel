@@ -1,9 +1,6 @@
-import { useThrottle } from '@/hooks/use-throttle';
-import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon, type LucideIcon, SearchIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { Children, useCallback, useEffect, useRef, useState } from 'react';
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +11,8 @@ import {
 import { Input } from '../ui/input';
 import type { WidgetHeadProps, WidgetTitleProps } from '../widget';
 import { WidgetHead as WidgetHeadBase } from '../widget';
+import { useThrottle } from '@/hooks/use-throttle';
+import { cn } from '@/utils/cn';
 
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
@@ -37,11 +36,11 @@ export function WidgetTitle({
 }) {
   return (
     <div
-      className={cn('title text-left row justify-start', className)}
+      className={cn('title row justify-start text-left', className)}
       {...props}
     >
       {Icon && (
-        <div className="rounded-lg bg-def-200 p-1 mr-2">
+        <div className="mr-2 rounded-lg bg-def-200 p-1">
           <Icon size={16} />
         </div>
       )}
@@ -58,7 +57,7 @@ export function WidgetAbsoluteButtons({
   return (
     <div
       className={cn(
-        'row gap-1 absolute right-4 top-1/2 -translate-y-1/2',
+        'row absolute top-1/2 right-4 -translate-y-1/2 gap-1',
         className
       )}
       {...props}
@@ -123,11 +122,11 @@ export function WidgetButtons({
 
   return (
     <div
-      ref={container}
       className={cn(
-        '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
+        '-mt-2 -mb-px flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-black [&_button.active]:border-b-2 [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
         className
       )}
+      ref={container}
       style={{ gap }}
       {...props}
     >
@@ -146,11 +145,11 @@ export function WidgetButtons({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            type="button"
             className={cn(
               'flex select-none items-center gap-1',
               sizes.current.length - 1 === slice ? hidden : 'opacity-50'
             )}
+            type="button"
           >
             More <ChevronsUpDownIcon size={12} />
           </button>
@@ -200,7 +199,9 @@ export function WidgetHeadSearchable<T extends string>({
 
   const updateGradients = useCallback(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const { scrollLeft, scrollWidth, clientWidth } = el;
     const hasOverflow = scrollWidth > clientWidth;
@@ -213,7 +214,9 @@ export function WidgetHeadSearchable<T extends string>({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     updateGradients();
 
@@ -233,33 +236,33 @@ export function WidgetHeadSearchable<T extends string>({
   }, [tabs, updateGradients]);
 
   return (
-    <div className={cn('border-b border-border', className)}>
+    <div className={cn('border-border border-b', className)}>
       {/* Scrollable tabs container */}
       <div className="relative">
         {/* Left gradient */}
         <div
           className={cn(
-            'pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
+            'pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
             showLeftGradient ? 'opacity-100' : 'opacity-0'
           )}
         />
 
         {/* Scrollable tabs */}
         <div
+          className="hide-scrollbar flex gap-1 overflow-x-auto px-2 py-3"
           ref={scrollRef}
-          className="flex gap-1 overflow-x-auto px-2 py-3 hide-scrollbar"
         >
           {tabs.map((tab) => (
             <button
-              key={tab.key}
-              type="button"
-              onClick={() => onTabChange(tab.key)}
               className={cn(
-                'shrink-0 rounded-md py-1.5 text-sm font-medium transition-colors px-2',
+                'shrink-0 rounded-md px-2 py-1.5 font-medium text-sm transition-colors',
                 activeTab === tab.key
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:bg-def-100 hover:text-foreground'
               )}
+              key={tab.key}
+              onClick={() => onTabChange(tab.key)}
+              type="button"
             >
               {tab.label}
             </button>
@@ -269,7 +272,7 @@ export function WidgetHeadSearchable<T extends string>({
         {/* Right gradient */}
         <div
           className={cn(
-            'pointer-events-none absolute right-0 top-0 z-10 bottom-px w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
+            'pointer-events-none absolute top-0 right-0 bottom-px z-10 w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
             showRightGradient ? 'opacity-100' : 'opacity-0'
           )}
         />
@@ -278,13 +281,13 @@ export function WidgetHeadSearchable<T extends string>({
       {/* Search input */}
       {onSearchChange && (
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            type="search"
-            placeholder={searchPlaceholder}
-            value={searchValue ?? ''}
+            className="rounded-none border-0 border-y bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 bg-transparent border-0 text-sm rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0 border-y"
+            placeholder={searchPlaceholder}
+            type="search"
+            value={searchValue ?? ''}
           />
         </div>
       )}
@@ -300,7 +303,7 @@ export function WidgetFooter({
   return (
     <div
       className={cn(
-        'flex rounded-b-md border-t bg-def-100 p-2  py-1',
+        'flex rounded-b-md border-t bg-def-100 p-2 py-1',
         className
       )}
       {...props}

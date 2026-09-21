@@ -1,5 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { useMutation } from '@tanstack/react-query';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function useLogout() {
   const trpc = useTRPC();

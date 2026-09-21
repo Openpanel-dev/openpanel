@@ -1,9 +1,8 @@
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { useReportChartContext } from '../context';
+import { DeltaChip } from '@/components/delta-chip';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
-
-import { DeltaChip } from '@/components/delta-chip';
-import { useReportChartContext } from '../context';
 
 export function getDiffIndicator<A, B, C>(
   inverted: boolean | undefined,
@@ -59,10 +58,10 @@ export function PreviousDiffIndicator({
 
   const renderIcon = () => {
     if (state === 'positive') {
-      return <ArrowUpIcon strokeWidth={3} size={10} color="#000" />;
+      return <ArrowUpIcon color="#000" size={10} strokeWidth={3} />;
     }
     if (state === 'negative') {
-      return <ArrowDownIcon strokeWidth={3} size={10} color="#000" />;
+      return <ArrowDownIcon color="#000" size={10} strokeWidth={3} />;
     }
     return null;
   };
@@ -71,7 +70,7 @@ export function PreviousDiffIndicator({
     <>
       <div
         className={cn(
-          'flex items-center gap-1 font-mono font-medium',
+          'flex items-center gap-1 font-medium font-mono',
           size === 'lg' && 'gap-2',
           className
         )}
@@ -124,19 +123,19 @@ export function PreviousDiffIndicatorPure({
 
   const renderIcon = () => {
     if (state === 'positive') {
-      return <ArrowUpIcon strokeWidth={3} size={10} color="#000" />;
+      return <ArrowUpIcon color="#000" size={10} strokeWidth={3} />;
     }
     if (state === 'negative') {
-      return <ArrowDownIcon strokeWidth={3} size={10} color="#000" />;
+      return <ArrowDownIcon color="#000" size={10} strokeWidth={3} />;
     }
     return null;
   };
 
   return (
     <DeltaChip
-      variant={state === 'positive' ? 'inc' : 'dec'}
-      size={size}
       inverted={inverted}
+      size={size}
+      variant={state === 'positive' ? 'inc' : 'dec'}
     >
       {diff.toFixed(1)}%
     </DeltaChip>

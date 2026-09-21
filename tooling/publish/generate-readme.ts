@@ -1,6 +1,5 @@
 import fs from 'node:fs';
-import { join, resolve } from 'node:path';
-import { dirname } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,7 +12,9 @@ const workspacePath = (relativePath: string) =>
 
 const dedentContent = (text: string): string => {
   const lines = text.split('\n');
-  if (lines.length === 0) return text;
+  if (lines.length === 0) {
+    return text;
+  }
 
   // Find the minimum indentation (excluding empty lines)
   // We'll dedent code blocks too, so include them in the calculation
@@ -21,19 +22,27 @@ const dedentContent = (text: string): string => {
   for (const line of lines) {
     const trimmed = line.trim();
     // Skip empty lines
-    if (trimmed.length === 0) continue;
+    if (trimmed.length === 0) {
+      continue;
+    }
     const indent = line.match(/^(\s*)/)?.[1]?.length ?? 0;
-    if (indent < minIndent) minIndent = indent;
+    if (indent < minIndent) {
+      minIndent = indent;
+    }
   }
 
   // If no indentation found, return as-is
-  if (minIndent === Number.POSITIVE_INFINITY || minIndent === 0) return text;
+  if (minIndent === Number.POSITIVE_INFINITY || minIndent === 0) {
+    return text;
+  }
 
   // Remove the common indentation from all lines
   return lines
     .map((line) => {
       // For lines shorter than minIndent, just return them as-is (preserves empty lines)
-      if (line.length < minIndent) return line;
+      if (line.length < minIndent) {
+        return line;
+      }
       // Remove the common indentation
       const dedented = line.slice(minIndent);
       // If the line was all whitespace, return empty string to preserve the line
@@ -84,8 +93,12 @@ const transformMdxToReadme = (
     const frontmatter = frontmatterMatch[1];
     const titleMatch = frontmatter.match(/^title:\s*(.+)$/m);
     const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
-    if (titleMatch?.[1]) title = titleMatch[1].trim();
-    if (descMatch?.[1]) description = descMatch[1].trim();
+    if (titleMatch?.[1]) {
+      title = titleMatch[1].trim();
+    }
+    if (descMatch?.[1]) {
+      description = descMatch[1].trim();
+    }
 
     // Remove frontmatter
     content = content.replace(/^---\n[\s\S]*?\n---\n/, '');
@@ -125,7 +138,7 @@ const transformMdxToReadme = (
 
   // Handle Tabs component specially - convert to markdown sections
   // Extract tabs items from items prop
-  const tabsItemsMatch = content.match(/<Tabs\s+items=\{([^\}]+)\}>/);
+  const tabsItemsMatch = content.match(/<Tabs\s+items=\{([^}]+)\}>/);
   const tabsItems = tabsItemsMatch?.[1]
     ? tabsItemsMatch[1]
         .replace(/['"]/g, '')
@@ -185,7 +198,7 @@ const transformMdxToReadme = (
 
   // Convert internal links (starting with /) to absolute URLs
   content = content.replace(
-    /\[([^\]]+)\]\((\/[^\)]+)\)/g,
+    /\[([^\]]+)\]\((\/[^)]+)\)/g,
     '[$1](https://openpanel.dev$2)'
   );
 

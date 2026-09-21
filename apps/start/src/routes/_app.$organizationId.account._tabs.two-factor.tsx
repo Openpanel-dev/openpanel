@@ -1,11 +1,11 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/account/_tabs/two-factor'
@@ -19,12 +19,12 @@ function Component() {
   const status = useSuspenseQuery(trpc.auth.totpStatus.queryOptions());
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Two-factor authentication</span>
       </WidgetHead>
       <WidgetBody className="col gap-4">
-        <p className="text-sm text-muted-foreground leading-normal">
+        <p className="text-muted-foreground text-sm leading-normal">
           Protect your account with an authenticator app (Google Authenticator,
           1Password, Authy, etc.). You'll be asked for a 6-digit code each time
           you sign in with email and password.
@@ -66,7 +66,7 @@ function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
         <ShieldOffIcon className="size-4 text-muted-foreground" />
         <span>Two-factor authentication is disabled.</span>
       </div>
-      <Button size="sm" onClick={() => pushModal('SetupTwoFactor')}>
+      <Button onClick={() => pushModal('SetupTwoFactor')} size="sm">
         Enable
       </Button>
     </div>
@@ -84,12 +84,12 @@ function EnabledView({
     <>
       <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
         <div className="row items-center gap-2">
-          <div className="size-10 bg-emerald-500/10 rounded-full center-center">
+          <div className="center-center size-10 rounded-full bg-emerald-500/10">
             <ShieldCheckIcon className="size-4 text-emerald-500" />
           </div>
           <div className="col gap-1">
             <span>Two-factor authentication is enabled.</span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               Enabled {new Date(enabledAt).toLocaleString()} ·{' '}
               {remainingRecoveryCodes} recovery code
               {remainingRecoveryCodes === 1 ? '' : 's'} remaining
@@ -100,16 +100,16 @@ function EnabledView({
 
       <div className="row gap-2">
         <Button
+          onClick={() => pushModal('RegenerateRecoveryCodes')}
           size="sm"
           variant="outline"
-          onClick={() => pushModal('RegenerateRecoveryCodes')}
         >
           Regenerate recovery codes
         </Button>
         <Button
+          onClick={() => pushModal('DisableTwoFactor')}
           size="sm"
           variant="destructive"
-          onClick={() => pushModal('DisableTwoFactor')}
         >
           Disable
         </Button>

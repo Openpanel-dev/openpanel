@@ -8,8 +8,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
-
+import { dirname, join } from 'node:path';
 import {
   API_SOURCE_ROOT,
   CORE_SOURCE_ROOT,

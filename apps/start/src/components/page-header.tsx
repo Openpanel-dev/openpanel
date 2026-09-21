@@ -17,10 +17,10 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn('col md:row gap-2', className)}>
-      <div className={'space-y-1 flex-1'}>
-        <h1 className="text-2xl font-semibold">{title}</h1>
+      <div className={'flex-1 space-y-1'}>
+        <h1 className="font-semibold text-2xl">{title}</h1>
         {description && (
-          <p className="text-muted-foreground font-medium">{description}</p>
+          <p className="font-medium text-muted-foreground">{description}</p>
         )}
         {children}
       </div>

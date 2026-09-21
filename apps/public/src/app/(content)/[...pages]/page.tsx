@@ -1,12 +1,12 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Script from 'next/script';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
 import { SectionHeader } from '@/components/section';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { pageSource } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import Script from 'next/script';
 
 export async function generateMetadata({
   params,
@@ -46,7 +46,7 @@ export default async function Page({
   const page = await pageSource.getPage(pages);
   const Body = page?.data.body;
 
-  if (!page || !Body) {
+  if (!(page && Body)) {
     return notFound();
   }
 
@@ -70,16 +70,16 @@ export default async function Page({
   return (
     <div>
       <Script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="page-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HeroContainer>
         <SectionHeader
           as="h1"
-          title={page.data.title}
           description={page.data.description}
+          title={page.data.title}
         />
       </HeroContainer>
       <main className="container">

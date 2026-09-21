@@ -1,4 +1,4 @@
-import { differenceInDays, differenceInHours, isSameDay } from 'date-fns';
+import { differenceInHours, isSameDay } from 'date-fns';
 import type { FormatStyleName } from 'javascript-time-ago';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';

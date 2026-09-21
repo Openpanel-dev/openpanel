@@ -8,7 +8,6 @@ import {
   SetEventNamesFilterResult,
   SetPropertyFiltersResult,
 } from './chat-ui-apply-result';
-import { DefaultToolResult } from './default-tool-result';
 import type { ToolResultProps } from './types';
 
 /**

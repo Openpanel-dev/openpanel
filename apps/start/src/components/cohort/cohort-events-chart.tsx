@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 import {
   useXAxisProps,
   useYAxisProps,
@@ -16,7 +17,6 @@ import { Widget, WidgetBody } from '@/components/widget';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
-import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 
 type Props = {
   data: { date: string; count: number }[];
@@ -27,7 +27,9 @@ function Tooltip(props: any) {
   const formatDate = useFormatDateInterval({ interval: 'day', short: false });
   const payload = props.payload?.[0]?.payload;
 
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
 
   return (
     <div className="flex min-w-[160px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">

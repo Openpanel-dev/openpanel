@@ -2,10 +2,10 @@ import { PlayIcon } from 'lucide-react';
 
 export function SessionReplayIllustration() {
   return (
-    <div className="session-replay-illustration h-full px-6 pb-3 pt-4">
+    <div className="session-replay-illustration h-full px-6 pt-4 pb-3">
       <div className="col h-full overflow-hidden rounded-xl border border-border bg-background shadow-lg transition-transform duration-300 group-hover:-translate-y-0.5">
         {/* Browser chrome */}
-        <div className="row shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2">
+        <div className="row shrink-0 items-center gap-1.5 border-border border-b bg-muted/30 px-3 py-2">
           <div className="h-2 w-2 rounded-full bg-red-400" />
           <div className="h-2 w-2 rounded-full bg-yellow-400" />
           <div className="h-2 w-2 rounded-full bg-green-400" />
@@ -49,7 +49,7 @@ export function SessionReplayIllustration() {
 
           {/* Cursor */}
           <div
-            className="cursor-animated absolute"
+            className="absolute cursor-animated"
             style={{
               left: 'calc(18% + 8px)',
               top: 'calc(22% + 6px)',
@@ -81,11 +81,11 @@ export function SessionReplayIllustration() {
         </div>
 
         {/* Playback bar */}
-        <div className="row shrink-0 items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
+        <div className="row shrink-0 items-center gap-2 border-border border-t bg-muted/20 px-3 py-2">
           <PlayIcon className="size-3 shrink-0 text-muted-foreground" />
-          <div className="relative flex-1 h-1 overflow-hidden rounded-full bg-muted">
+          <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted">
             <div
-              className="absolute left-0 top-0 h-1 rounded-full bg-blue-500"
+              className="absolute top-0 left-0 h-1 rounded-full bg-blue-500"
               style={{ width: '42%' }}
             />
           </div>

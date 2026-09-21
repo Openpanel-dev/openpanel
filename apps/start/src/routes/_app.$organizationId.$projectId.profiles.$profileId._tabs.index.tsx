@@ -1,3 +1,5 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LatestEvents } from '@/components/profiles/latest-events';
 import { MostEvents } from '@/components/profiles/most-events';
@@ -8,9 +10,7 @@ import { ProfileGroups } from '@/components/profiles/profile-groups';
 import { ProfileMetrics } from '@/components/profiles/profile-metrics';
 import { ProfileProperties } from '@/components/profiles/profile-properties';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
@@ -108,9 +108,9 @@ function Component() {
           <ProfileProperties profile={profile.data!} />
           {profile.data?.groups?.length ? (
             <ProfileGroups
+              groups={profile.data.groups}
               profileId={profileId}
               projectId={projectId}
-              groups={profile.data.groups}
             />
           ) : null}
         </div>
@@ -123,9 +123,9 @@ function Component() {
         {/* Latest events */}
         <div className="col-span-1">
           <LatestEvents
+            organizationId={organizationId}
             profileId={profileId}
             projectId={projectId}
-            organizationId={organizationId}
           />
         </div>
 

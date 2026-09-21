@@ -1,3 +1,9 @@
+import { ArrowLeftIcon } from 'lucide-react';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import Script from 'next/script';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
 import { Testimonials } from '@/app/(home)/_sections/testimonials';
@@ -7,16 +13,10 @@ import { GetStartedButton } from '@/components/get-started-button';
 import { Logo } from '@/components/logo';
 import { SectionHeader } from '@/components/section';
 import { Toc } from '@/components/toc';
-import { url, getAuthor } from '@/lib/layout.shared';
+import { getAuthor, url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { articleSource } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
-import { ArrowLeftIcon } from 'lucide-react';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import Script from 'next/script';
 
 export async function generateStaticParams() {
   const articles = await articleSource.getPages();
@@ -106,29 +106,29 @@ export default async function Page({
       <HeroContainer>
         <div className="col">
           <Link
+            className="mb-4 flex items-center gap-2 text-muted-foreground"
             href={goBackUrl}
-            className="flex items-center gap-2 mb-4 text-muted-foreground"
           >
-            <ArrowLeftIcon className="w-4 h-4" />
+            <ArrowLeftIcon className="h-4 w-4" />
             <span>Back to all articles</span>
           </Link>
           <SectionHeader
             as="h1"
-            title={article?.data.title}
             description={article?.data.description}
+            title={article?.data.title}
           />
-          <div className="row gap-4 items-center mt-8">
-            <div className="size-10 center-center bg-black rounded-full">
+          <div className="row mt-8 items-center gap-4">
+            <div className="center-center size-10 rounded-full bg-black">
               {author.image ? (
                 <Image
-                  className="size-10 object-cover rounded-full"
-                  src={author.image}
                   alt={author.name}
-                  width={48}
+                  className="size-10 rounded-full object-cover"
                   height={48}
+                  src={author.image}
+                  width={48}
                 />
               ) : (
-                <Logo className="w-6 h-6 fill-white" />
+                <Logo className="h-6 w-6 fill-white" />
               )}
             </div>
             <div className="col">
@@ -148,23 +148,23 @@ export default async function Page({
         </div>
       </HeroContainer>
       <Script
-        strategy="beforeInteractive"
-        id="article-schema"
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        id="article-schema"
+        strategy="beforeInteractive"
+        type="application/ld+json"
       />
-      <article className="container max-w-5xl col">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-0">
+      <article className="col container max-w-5xl">
+        <div className="grid grid-cols-1 gap-0 md:grid-cols-[1fr_300px]">
           <div className="min-w-0">
-            <div className="prose [&_table]:w-auto [&_img]:max-w-full [&_img]:h-auto">
+            <div className="prose [&_img]:h-auto [&_img]:max-w-full [&_table]:w-auto">
               <Body components={getMDXComponents()} />
             </div>
           </div>
-          <aside className="pl-12 pb-12 gap-8 col">
+          <aside className="col gap-8 pb-12 pl-12">
             <Toc toc={article?.data.toc} />
             <FeatureCardContainer className="gap-2">
-              <span className="text-lg font-semibold">Try OpenPanel</span>
-              <p className="text-muted-foreground text-sm mb-4">
+              <span className="font-semibold text-lg">Try OpenPanel</span>
+              <p className="mb-4 text-muted-foreground text-sm">
                 Give it a spin for free. No credit card required.
               </p>
               <GetStartedButton />
@@ -174,17 +174,17 @@ export default async function Page({
 
         {relatedArticles.length > 0 && (
           <div className="my-16">
-            <h3 className="text-2xl font-bold mb-8">Related articles</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h3 className="mb-8 font-bold text-2xl">Related articles</h3>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {relatedArticles.map((item) => (
                 <ArticleCard
-                  key={item.url}
-                  url={item.url}
-                  title={item.data.title}
-                  tag={item.data.tag}
                   cover={item.data.cover}
-                  team={item.data.team}
                   date={item.data.date}
+                  key={item.url}
+                  tag={item.data.tag}
+                  team={item.data.team}
+                  title={item.data.title}
+                  url={item.url}
                 />
               ))}
             </div>

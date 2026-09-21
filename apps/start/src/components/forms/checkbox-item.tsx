@@ -1,10 +1,9 @@
-import { cn } from '@/utils/cn';
 import { slug } from '@openpanel/shared';
 import type { LucideIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ControllerRenderProps } from 'react-hook-form';
-
 import { Switch } from '../ui/switch';
+import { cn } from '@/utils/cn';
 
 type Props = {
   label: string;
@@ -32,16 +31,16 @@ export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
           {Icon && <div className="w-6 shrink-0">{<Icon />}</div>}
           <div className="flex-1">
             <div className="font-medium">{label}</div>
-            <div className=" text-muted-foreground">{description}</div>
-            {error && <div className="text-sm text-red-600">{error}</div>}
+            <div className="text-muted-foreground">{description}</div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
           </div>
           <div>
             <Switch
-              ref={ref}
-              disabled={disabled}
               checked={!!value}
-              onCheckedChange={onChange}
+              disabled={disabled}
               id={id}
+              onCheckedChange={onChange}
+              ref={ref}
             />
           </div>
         </label>

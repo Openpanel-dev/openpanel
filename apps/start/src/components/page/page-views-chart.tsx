@@ -13,12 +13,12 @@ import {
   createChartTooltip,
 } from '@/components/charts/chart-tooltip';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import {
   useYAxisProps,
   X_AXIS_STYLE_PROPS,
 } from '@/components/report-chart/common/axis';
 import { Skeleton } from '@/components/skeleton';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 

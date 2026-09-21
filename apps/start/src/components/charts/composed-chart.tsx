@@ -10,12 +10,12 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { Area, type AreaProps } from './area';
 import type { LineConfig, Margin } from './chart-context';
 import { Line, type LineProps } from './line';
 import { SeriesBar, type SeriesBarProps } from './series-bar';
 import { TimeSeriesChartInner } from './time-series-chart-shell';
+import { cn } from '@/lib/utils';
 
 export interface ComposedChartProps {
   /** Data array — each row typically has a date and multiple numeric series */

@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertCircle, Globe, Loader2, MapPin, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { FaqItem, Faqs } from '@/components/faq';
 import { FeatureCardContainer } from '@/components/feature-card';
 import { SectionHeader } from '@/components/section';
@@ -7,17 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { API_URL } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
-import {
-  AlertCircle,
-  Building2,
-  Globe,
-  Loader2,
-  MapPin,
-  Network,
-  Search,
-  Server,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 interface IPInfo {
   ip: string;
@@ -78,7 +69,9 @@ export default function IPLookupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ip.trim()) return;
+    if (!ip.trim()) {
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -123,14 +116,14 @@ export default function IPLookupPage() {
     className?: string;
   }) => (
     <FeatureCardContainer
-      className={cn('p-4 flex items-start gap-3', className)}
+      className={cn('flex items-start gap-3 p-4', className)}
     >
-      <div className="text-muted-foreground mt-0.5">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-muted-foreground mb-1">
+      <div className="mt-0.5 text-muted-foreground">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 font-medium text-muted-foreground text-sm">
           {label}
         </div>
-        <div className="text-base font-semibold break-words">
+        <div className="break-words font-semibold text-base">
           {value || '—'}
         </div>
       </div>
@@ -138,35 +131,37 @@ export default function IPLookupPage() {
   );
 
   const getCountryFlag = (countryCode?: string): string => {
-    if (!countryCode || countryCode.length !== 2) return '🌐';
+    if (!countryCode || countryCode.length !== 2) {
+      return '🌐';
+    }
     // Convert country code to flag emoji
     const codePoints = countryCode
       .toUpperCase()
       .split('')
-      .map((char) => 127397 + char.charCodeAt(0));
+      .map((char) => 127_397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
   };
 
   return (
     <div className="max-w-4xl">
       <SectionHeader
-        title="IP Lookup Tool"
-        description="Find detailed information about any IP address including geolocation, ISP, and network details."
-        variant="default"
         as="h1"
+        description="Find detailed information about any IP address including geolocation, ISP, and network details."
+        title="IP Lookup Tool"
+        variant="default"
       />
 
-      <form onSubmit={handleSubmit} className="mt-8">
+      <form className="mt-8" onSubmit={handleSubmit}>
         <div className="flex gap-2">
           <Input
-            type="text"
-            placeholder="Enter IP address or leave empty to detect yours"
-            value={ip}
-            onChange={(e) => setIp(e.target.value)}
             className="flex-1"
+            onChange={(e) => setIp(e.target.value)}
+            placeholder="Enter IP address or leave empty to detect yours"
             size="lg"
+            type="text"
+            value={ip}
           />
-          <Button type="submit" disabled={loading || autoDetecting} size="lg">
+          <Button disabled={loading || autoDetecting} size="lg" type="submit">
             {loading || autoDetecting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
@@ -185,18 +180,18 @@ export default function IPLookupPage() {
       {error && (
         <div
           className={cn(
-            'mt-4 p-4 rounded-lg border',
+            'mt-4 rounded-lg border p-4',
             isRateLimited
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-              : 'bg-destructive/10 border-destructive/20 text-destructive'
+              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              : 'border-destructive/20 bg-destructive/10 text-destructive'
           )}
         >
           <div className="flex items-start gap-2">
-            <AlertCircle className="size-5 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 size-5 flex-shrink-0" />
             <div className="flex-1">
               <div className="font-medium">{error}</div>
               {isRateLimited && (
-                <div className="text-sm mt-1 opacity-90">
+                <div className="mt-1 text-sm opacity-90">
                   You can make up to 20 requests per minute. Please try again
                   shortly.
                 </div>
@@ -210,17 +205,17 @@ export default function IPLookupPage() {
         <div className="mt-8 space-y-6">
           {/* IP Address Display */}
           <FeatureCardContainer>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="mb-2 flex items-center gap-3">
               <Globe className="size-6" />
               <div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   {autoDetecting ? 'Detected IP Address' : 'IP Address'}
                 </div>
-                <div className="text-2xl font-bold font-mono">{result.ip}</div>
+                <div className="font-bold font-mono text-2xl">{result.ip}</div>
               </div>
             </div>
             {(result.isLocalhost || result.isPrivate) && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="mt-3 flex items-center gap-2 text-muted-foreground text-sm">
                 <AlertCircle className="size-4" />
                 <span>
                   {result.isLocalhost
@@ -234,11 +229,11 @@ export default function IPLookupPage() {
           {/* Location Information */}
           {result.location.country && (
             <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <h3 className="mb-4 flex items-center gap-2 font-semibold text-lg">
                 <MapPin className="size-5" />
                 Location Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InfoCard
                   icon={<Globe className="size-5" />}
                   label="Country"
@@ -279,40 +274,40 @@ export default function IPLookupPage() {
           {/* Map Preview */}
           {result.location.latitude && result.location.longitude && (
             <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <h3 className="mb-4 flex items-center gap-2 font-semibold text-lg">
                 <MapPin className="size-5" />
                 Map Location
               </h3>
-              <div className="border border-border rounded-lg overflow-hidden bg-card">
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
                 <iframe
-                  width="100%"
-                  height="400"
+                  className="aspect-video w-full"
                   frameBorder="0"
-                  scrolling="no"
+                  height="400"
                   marginHeight={0}
                   marginWidth={0}
+                  scrolling="no"
                   src={`https://www.openstreetmap.org/export/embed.html?bbox=${result.location.longitude - 0.1},${result.location.latitude - 0.1},${result.location.longitude + 0.1},${result.location.latitude + 0.1}&layer=mapnik&marker=${result.location.latitude},${result.location.longitude}`}
-                  className="w-full aspect-video"
                   title="Map location"
+                  width="100%"
                 />
-                <div className="p-2 bg-muted border-t border-border text-xs text-center text-muted-foreground flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 border-border border-t bg-muted p-2 text-center text-muted-foreground text-xs">
                   <div>
                     ©{' '}
                     <a
-                      href="https://www.openstreetmap.org/copyright"
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="text-primary hover:underline"
+                      href="https://www.openstreetmap.org/copyright"
+                      rel="noopener noreferrer"
+                      target="_blank"
                     >
                       OpenStreetMap
                     </a>{' '}
                     contributors
                   </div>
                   <a
-                    href={`https://www.openstreetmap.org/?mlat=${result.location.latitude}&mlon=${result.location.longitude}#map=12/${result.location.latitude}/${result.location.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="text-primary hover:underline"
+                    href={`https://www.openstreetmap.org/?mlat=${result.location.latitude}&mlon=${result.location.longitude}#map=12/${result.location.latitude}/${result.location.longitude}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
                     View Larger Map
                   </a>
@@ -322,14 +317,14 @@ export default function IPLookupPage() {
           )}
 
           {/* Attribution */}
-          <div className="pt-4 border-t text-xs text-muted-foreground space-y-2">
+          <div className="space-y-2 border-t pt-4 text-muted-foreground text-xs">
             <div>
               <strong>Location data:</strong> Powered by{' '}
               <a
-                href="https://www.maxmind.com/en/geoip2-services-and-databases"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-primary hover:underline"
+                href="https://www.maxmind.com/en/geoip2-services-and-databases"
+                rel="noopener noreferrer"
+                target="_blank"
               >
                 MaxMind GeoLite2
               </a>{' '}
@@ -339,10 +334,10 @@ export default function IPLookupPage() {
               <div>
                 <strong>Network data:</strong> ISP/ASN information from{' '}
                 <a
-                  href="https://ip-api.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-primary hover:underline"
+                  href="https://ip-api.com"
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
                   ip-api.com
                 </a>
@@ -353,13 +348,13 @@ export default function IPLookupPage() {
       )}
 
       {/* SEO Content Section */}
-      <div className="mt-16 prose prose-neutral dark:prose-invert max-w-none">
+      <div className="prose prose-neutral dark:prose-invert mt-16 max-w-none">
         <article className="space-y-8">
           <div>
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="mb-4 font-bold text-3xl">
               Free IP Lookup Tool - Find Your IP Address and Geolocation
             </h2>
-            <p className="text-lg text-muted-foreground mb-6">
+            <p className="mb-6 text-lg text-muted-foreground">
               Discover your IP address instantly and get detailed geolocation
               information including country, city, ISP, ASN, and network
               details. Our free IP lookup tool provides accurate location data
@@ -368,7 +363,7 @@ export default function IPLookupPage() {
           </div>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               What is an IP Address?
             </h3>
             <p className="mb-4">
@@ -377,7 +372,7 @@ export default function IPLookupPage() {
               it as a mailing address for your device on the internet. There are
               two main types:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>IPv4:</strong> The most common format, consisting of
                 four numbers separated by dots (e.g., 192.168.1.1)
@@ -391,7 +386,7 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               How IP Geolocation Works
             </h3>
             <p className="mb-4">
@@ -399,7 +394,7 @@ export default function IPLookupPage() {
               IP address by analyzing routing information and regional IP
               address allocations. Our tool uses:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>MaxMind GeoLite2 Database:</strong> Industry-standard
                 geolocation database providing accurate city and country-level
@@ -427,15 +422,15 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Understanding IP Lookup Results
             </h3>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">Location Data</h4>
+            <h4 className="mt-6 mb-3 font-semibold text-xl">Location Data</h4>
             <p className="mb-4">
               Our IP lookup provides detailed geographic information:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>Country:</strong> The country where the IP address is
                 registered or routed through
@@ -452,11 +447,11 @@ export default function IPLookupPage() {
               </li>
             </ul>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Network Information
             </h4>
             <p className="mb-4">Technical details about the network:</p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>ISP (Internet Service Provider):</strong> The company
                 providing internet service for this IP address
@@ -477,10 +472,10 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Common Use Cases for IP Lookup
             </h3>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 <strong>Security:</strong> Identify suspicious login attempts or
                 track potential security threats
@@ -509,7 +504,7 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Public vs Private IP Addresses
             </h3>
             <p className="mb-4">
@@ -517,7 +512,7 @@ export default function IPLookupPage() {
               addresses:
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Public IP Address
             </h4>
             <p className="mb-4">
@@ -526,7 +521,7 @@ export default function IPLookupPage() {
               detects your public IP address automatically.
             </p>
 
-            <h4 className="text-xl font-semibold mt-6 mb-3">
+            <h4 className="mt-6 mb-3 font-semibold text-xl">
               Private IP Address
             </h4>
             <p className="mb-4">
@@ -534,7 +529,7 @@ export default function IPLookupPage() {
               etc.) and are not routable on the public internet. Common private
               IP ranges include:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>10.0.0.0 to 10.255.255.255</li>
               <li>172.16.0.0 to 172.31.255.255</li>
               <li>192.168.0.0 to 192.168.255.255</li>
@@ -546,7 +541,7 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Privacy and IP Addresses
             </h3>
             <p className="mb-4">
@@ -554,7 +549,7 @@ export default function IPLookupPage() {
               network, but it doesn't expose your exact physical address or
               personal identity. Here's what you should know:
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-6 ml-4">
+            <ul className="mb-6 ml-4 list-inside list-disc space-y-2">
               <li>
                 IP addresses show general location (city/region level), not
                 exact addresses
@@ -572,10 +567,10 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               How to Use Our IP Lookup Tool
             </h3>
-            <ol className="list-decimal list-inside space-y-3 mb-6 ml-4">
+            <ol className="mb-6 ml-4 list-inside list-decimal space-y-3">
               <li>
                 <strong>Auto-Detection:</strong> When you visit the page, your
                 IP address is automatically detected and displayed
@@ -596,7 +591,7 @@ export default function IPLookupPage() {
           </section>
 
           <section>
-            <h3 className="text-2xl font-semibold mb-4">
+            <h3 className="mb-4 font-semibold text-2xl">
               Frequently Asked Questions
             </h3>
 
@@ -634,8 +629,8 @@ export default function IPLookupPage() {
             </Faqs>
           </section>
 
-          <section className="border-t pt-8 mt-8">
-            <h3 className="text-2xl font-semibold mb-4">
+          <section className="mt-8 border-t pt-8">
+            <h3 className="mb-4 font-semibold text-2xl">
               Start Using Our Free IP Lookup Tool
             </h3>
             <p className="mb-6">

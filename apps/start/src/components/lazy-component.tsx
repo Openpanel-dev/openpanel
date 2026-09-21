@@ -72,7 +72,7 @@ export const LazyComponent = ({
   const shouldRender = lazy ? once.current || inViewport : true;
 
   return (
-    <div ref={ref} className={className}>
+    <div className={className} ref={ref}>
       {shouldRender ? children : (fallback ?? <div />)}
     </div>
   );

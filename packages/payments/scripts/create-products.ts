@@ -38,7 +38,9 @@ async function promptForInput() {
       name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
-        if (!input) return 'API key is required';
+        if (!input) {
+          return 'API key is required';
+        }
         return true;
       },
     },

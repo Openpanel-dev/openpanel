@@ -1,3 +1,15 @@
+import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import {
+  createFileRoute,
+  notFound,
+  Outlet,
+  useLocation,
+  useMatches,
+} from '@tanstack/react-router';
+import { format } from 'date-fns';
+import { Building2Icon } from 'lucide-react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
@@ -6,18 +18,6 @@ import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
-import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import {
-  Outlet,
-  createFileRoute,
-  notFound,
-  useLocation,
-  useMatches,
-} from '@tanstack/react-router';
-import { format } from 'date-fns';
-import { Building2Icon } from 'lucide-react';
 
 const IGNORE_ORGANIZATION_IDS = ['.well-known', 'onboarding', 'assets'];
 
@@ -74,10 +74,10 @@ export const Route = createFileRoute('/_app/$organizationId')({
   pendingComponent: FullPageLoadingState,
   notFoundComponent: () => (
     <FullPageEmptyState
-      title="Workspace not found"
+      className="min-h-[calc(100vh-4rem)]"
       description="This workspace doesn't exist or you don't have access to it."
       icon={Building2Icon}
-      className="min-h-[calc(100vh-4rem)]"
+      title="Workspace not found"
     >
       <LinkButton href="/">Go to home</LinkButton>
     </FullPageEmptyState>
@@ -103,8 +103,8 @@ function Alert({
   }
 
   return (
-    <div className={cn('p-4 lg:p-8 bg-card border-b col gap-1', className)}>
-      <div className="text-lg font-medium">{title}</div>
+    <div className={cn('col gap-1 border-b bg-card p-4 lg:p-8', className)}>
+      <div className="font-medium text-lg">{title}</div>
       <div className="mb-1">{description}</div>
       <div className="row gap-2">{children}</div>
     </div>
@@ -144,19 +144,19 @@ function Component() {
 
   return (
     <>
-      {!stateMeta.banner && !isBillingPage && (
+      {!(stateMeta.banner || isBillingPage) && (
         <YearlySwitchPrompt organization={organization} />
       )}
       {stateMeta.banner && !hideBannerForPrompt && (
         <Alert
-          title={stateMeta.banner.title}
           description={stateMeta.banner.description}
+          title={stateMeta.banner.title}
         >
           <LinkButton
-            to="/$organizationId/billing"
             params={{
-              organizationId: organizationId,
+              organizationId,
             }}
+            to="/$organizationId/billing"
           >
             {stateMeta.banner.cta}
           </LinkButton>
@@ -168,14 +168,14 @@ function Component() {
         organization.subscriptionPeriodEventsCount >=
           organization.subscriptionPeriodEventsLimit * 0.8 && (
           <Alert
-            title="Approaching your events limit"
             description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but charts pause until you upgrade.`}
+            title="Approaching your events limit"
           >
             <LinkButton
-              to="/$organizationId/billing"
               params={{
-                organizationId: organizationId,
+                organizationId,
               }}
+              to="/$organizationId/billing"
             >
               See plans
             </LinkButton>
@@ -185,14 +185,14 @@ function Component() {
         organization.isActive &&
         organization.isExceeded && (
           <Alert
-            title="Events limit exceeded"
             description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but charts won't show new data until you upgrade or your next cycle starts.`}
+            title="Events limit exceeded"
           >
             <LinkButton
-              to="/$organizationId/billing"
               params={{
-                organizationId: organizationId,
+                organizationId,
               }}
+              to="/$organizationId/billing"
             >
               Upgrade now
             </LinkButton>

@@ -1,6 +1,6 @@
+import type { LucideIcon } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
 
 type PerkIcon = LucideIcon | React.ComponentType<{ className?: string }>;
 
@@ -14,8 +14,8 @@ export function Perks({
   return (
     <ul className={cn('grid grid-cols-2 gap-2', className)}>
       {perks.map((perk) => (
-        <li key={perk.text} className="text-sm text-muted-foreground">
-          <perk.icon className="size-4 inline-block mr-2 relative -top-px" />
+        <li className="text-muted-foreground text-sm" key={perk.text}>
+          <perk.icon className="relative -top-px mr-2 inline-block size-4" />
           {perk.text}
         </li>
       ))}

@@ -1,13 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { LazyComponent } from '@/components/lazy-component';
 import ActivationBanner from '@/components/onboarding/activation-banner';
-import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
 } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewAICommand } from '@/components/overview/overview-ai-command';
 import { LiveCounter } from '@/components/overview/live-counter';
+import { OverviewAICommand } from '@/components/overview/overview-ai-command';
 import OverviewInsights from '@/components/overview/overview-insights';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -20,6 +19,7 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/')({

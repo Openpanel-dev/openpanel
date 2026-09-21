@@ -34,8 +34,8 @@ function ThinkingDots() {
     <div className="flex items-center gap-1 px-1 py-0.5">
       {[0, 1, 2].map((i) => (
         <span
+          className="inline-block size-1.5 animate-bounce rounded-full bg-white/30"
           key={i}
-          className="inline-block size-1.5 rounded-full bg-white/30 animate-bounce"
           style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}
         />
       ))}
@@ -63,7 +63,7 @@ function ToolCard({
     >
       <div className="rounded-xl border border-[#d97757]/25 bg-[#d97757]/8 px-3 py-2.5">
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="inline-block size-1.5 rounded-full bg-[#d97757] animate-pulse" />
+          <span className="inline-block size-1.5 animate-pulse rounded-full bg-[#d97757]" />
           <span className="font-mono font-semibold text-[#d97757] text-[9px]">
             {tool.name}
           </span>
@@ -103,15 +103,17 @@ function StreamingText({ text, done }: { text: string; done: boolean }) {
   const rendered: ReactNode[] = [];
 
   for (const seg of segments) {
-    if (remaining <= 0) break;
+    if (remaining <= 0) {
+      break;
+    }
     const visible = seg.content.slice(0, remaining);
     remaining -= seg.content.length;
 
     if (seg.highlight === 'white') {
       rendered.push(
         <span
-          key={seg.content}
           className={done ? 'font-semibold text-white/90' : 'text-white/70'}
+          key={seg.content}
         >
           {visible}
         </span>
@@ -119,8 +121,8 @@ function StreamingText({ text, done }: { text: string; done: boolean }) {
     } else if (seg.highlight === 'emerald') {
       rendered.push(
         <span
-          key={seg.content}
           className={done ? 'font-semibold text-emerald-400' : 'text-white/70'}
+          key={seg.content}
         >
           {visible}
         </span>
@@ -134,7 +136,7 @@ function StreamingText({ text, done }: { text: string; done: boolean }) {
     <p className="text-[10px] text-white/70 leading-relaxed">
       {rendered}
       {!done && (
-        <span className="ml-0.5 inline-block h-3 w-px bg-white/60 animate-pulse align-middle" />
+        <span className="ml-0.5 inline-block h-3 w-px animate-pulse bg-white/60 align-middle" />
       )}
     </p>
   );
@@ -162,19 +164,27 @@ export function McpIllustration() {
         setCharCount(0);
 
         await sleep(1000);
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
         setPhase('thinking');
 
         await sleep(900);
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
         setPhase('tool1');
 
         await sleep(800);
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
         setPhase('tool2');
 
         await sleep(700);
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
         setPhase('streaming');
 
         // Stream chars two at a time
@@ -182,7 +192,9 @@ export function McpIllustration() {
           setCharCount(Math.min(i, RESPONSE.length));
           await sleep(22);
         }
-        if (cancelledRef.current) return;
+        if (cancelledRef.current) {
+          return;
+        }
         setCharCount(RESPONSE.length);
 
         setPhase('done');
@@ -194,7 +206,9 @@ export function McpIllustration() {
 
     return () => {
       cancelledRef.current = true;
-      if (currentTimer) clearTimeout(currentTimer);
+      if (currentTimer) {
+        clearTimeout(currentTimer);
+      }
     };
   }, []);
 
@@ -261,8 +275,8 @@ export function McpIllustration() {
 
         {/* Tool calls */}
         <div className="col gap-2">
-          <ToolCard tool={toolCalls[0]!} visible={showTool1} dim={false} />
-          <ToolCard tool={toolCalls[1]!} visible={showTool2} dim={false} />
+          <ToolCard dim={false} tool={toolCalls[0]!} visible={showTool1} />
+          <ToolCard dim={false} tool={toolCalls[1]!} visible={showTool2} />
         </div>
 
         {/* Streaming response */}
@@ -275,8 +289,8 @@ export function McpIllustration() {
           }}
         >
           <StreamingText
-            text={RESPONSE.slice(0, charCount)}
             done={phase === 'done'}
+            text={RESPONSE.slice(0, charCount)}
           />
         </div>
       </div>

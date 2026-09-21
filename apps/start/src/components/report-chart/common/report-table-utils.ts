@@ -57,7 +57,9 @@ export function groupByNames<T extends { names: string[] }>(
 
   for (const item of items) {
     const names = item.names;
-    if (names.length === 0) continue;
+    if (names.length === 0) {
+      continue;
+    }
 
     // Start with the first level (serie name, level -1)
     const firstLevel = names[0]!;
@@ -156,7 +158,9 @@ export function findGroup<T>(
     for (const item of group.items) {
       if (item && typeof item === 'object' && 'items' in item) {
         const found = findGroup([item], groupKey);
-        if (found) return found;
+        if (found) {
+          return found;
+        }
       }
     }
   }
@@ -401,7 +405,9 @@ function getBreakdownPropertyNames(
 
   // Otherwise, infer from series names
   // All series should have the same number of breakdown values
-  if (series.length === 0) return [];
+  if (series.length === 0) {
+    return [];
+  }
   const firstSerie = series[0];
   const breakdownCount = firstSerie.names.length - 1;
   return Array.from({ length: breakdownCount }, (_, i) => `Breakdown ${i + 1}`);

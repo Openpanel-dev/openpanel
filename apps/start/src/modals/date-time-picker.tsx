@@ -1,13 +1,12 @@
+import { format } from 'date-fns';
+import { CalendarIcon, ClockIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { CalendarIcon, ClockIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
-import { popModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
 
 // Utility function to round date to nearest 5-minute interval
 function roundToNearestFiveMinutes(date: Date): Date {
@@ -131,34 +130,34 @@ export default function DateTimePicker({
         </div>
 
         {/* Calendar Section */}
-        <div className="row gap-2 h-[333px]">
+        <div className="row h-[333px] gap-2">
           <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDateSelect}
+            className="rounded-lg border [&_table]:mx-auto [&_table]:w-auto"
             initialFocus
-            className="[&_table]:mx-auto [&_table]:w-auto border rounded-lg"
+            mode="single"
+            onSelect={handleDateSelect}
+            selected={selectedDate}
           />
           <ScrollArea
-            className="h-full w-full border rounded-lg bg-background/50"
+            className="h-full w-full rounded-lg border bg-background/50"
             ref={scrollRef}
           >
             <div className="flex flex-col p-1">
               {timeOptions.map((time) => (
                 <Button
-                  key={time.value}
-                  size="sm"
-                  data-value={time.value}
-                  variant={
-                    currentTimeValue === time.value ? 'default' : 'ghost'
-                  }
                   className={cn(
-                    'w-full mb-0.5 h-8 text-xs font-mono transition-all duration-200 justify-start',
+                    'mb-0.5 h-8 w-full justify-start font-mono text-xs transition-all duration-200',
                     currentTimeValue === time.value
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'hover:bg-muted'
                   )}
+                  data-value={time.value}
+                  key={time.value}
                   onClick={() => handleTimeSelect(time.value)}
+                  size="sm"
+                  variant={
+                    currentTimeValue === time.value ? 'default' : 'ghost'
+                  }
                 >
                   {time.label}
                 </Button>
@@ -171,9 +170,9 @@ export default function DateTimePicker({
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
           <Button
-            variant="outline"
             className="flex-1"
             onClick={() => popModal()}
+            variant="outline"
           >
             Cancel
           </Button>

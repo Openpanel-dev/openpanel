@@ -263,7 +263,9 @@ export function getToolPhrase(
   phase: ToolPhrasePhase
 ): string {
   const explicit = PHRASES[toolName];
-  if (explicit) return explicit[phase];
+  if (explicit) {
+    return explicit[phase];
+  }
 
   const matchedPrefix = VERB_PREFIXES.find(([p]) => toolName.startsWith(p));
   const verb = matchedPrefix?.[0] ?? '';

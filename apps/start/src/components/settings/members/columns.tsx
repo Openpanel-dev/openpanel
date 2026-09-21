@@ -1,15 +1,13 @@
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { useTRPC } from '@/integrations/trpc/react';
+import type { IServiceMember } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import type { IServiceMember } from '@openpanel/core';
 
 export function useColumns() {
   const columns: ColumnDef<IServiceMember>[] = [
@@ -18,7 +16,9 @@ export function useColumns() {
       header: 'Name',
       cell: ({ row }) => {
         const user = row.original.user;
-        if (!user) return null;
+        if (!user) {
+          return null;
+        }
         return [user.firstName, user.lastName].filter(Boolean).join(' ');
       },
       meta: {
@@ -30,7 +30,9 @@ export function useColumns() {
       header: 'Email',
       cell: ({ row }) => {
         const user = row.original.user;
-        if (!user) return null;
+        if (!user) {
+          return null;
+        }
         return <div className="font-medium">{user.email}</div>;
       },
       meta: {
@@ -73,7 +75,7 @@ export function useColumns() {
         return (
           <div className="row flex-wrap gap-2">
             {row.original.access?.map((item) => (
-              <Badge variant={'outline'} key={item.projectId}>
+              <Badge key={item.projectId} variant={'outline'}>
                 {item.projectId}
               </Badge>
             ))}

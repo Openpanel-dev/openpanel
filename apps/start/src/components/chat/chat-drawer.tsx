@@ -1,5 +1,3 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 import { useEffect } from 'react';
 import { useChatState } from './chat-context';
 import { ChatDrawerBody } from './chat-drawer-body';
@@ -7,6 +5,8 @@ import { ChatDrawerNotConfigured } from './chat-drawer-empty';
 import { ChatDrawerFooter } from './chat-drawer-footer';
 import { ChatDrawerHeader } from './chat-drawer-header';
 import { ChatRuntimeProvider } from './chat-runtime';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 
 const WIDTH_STORAGE_KEY = 'op-chat-drawer-width';
 const DEFAULT_WIDTH = 440;
@@ -45,7 +45,9 @@ export function ChatDrawer() {
   // the last conversation for the current context (same page +
   // same entity); closing just clears `?chat`.
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      return;
+    }
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
@@ -60,7 +62,9 @@ export function ChatDrawer() {
     return () => window.removeEventListener('keydown', handler);
   }, [projectId, isOpen, closeChat, openChatForContext]);
 
-  if (!projectId || !isOpen) return null;
+  if (!(projectId && isOpen)) {
+    return null;
+  }
 
   return (
     <>
@@ -71,17 +75,17 @@ export function ChatDrawer() {
         Hidden on mobile where the drawer overlays as a modal-style
         panel (standard behavior for narrow viewports).
       */}
-      <div className="hidden lg:block shrink-0" style={{ width }} aria-hidden />
+      <div aria-hidden className="hidden shrink-0 lg:block" style={{ width }} />
       <aside
-        className="fixed top-0 right-0 z-40 h-screen flex flex-col bg-background border-l shadow-2xl"
+        className="fixed top-0 right-0 z-40 flex h-screen flex-col border-l bg-background shadow-2xl"
         style={{ width }}
       >
         <div
-          className="absolute top-0 left-0 z-10 w-1 h-full cursor-ew-resize hover:bg-border transition-colors"
           aria-label="Resize chat drawer"
+          className="absolute top-0 left-0 z-10 h-full w-1 cursor-ew-resize transition-colors hover:bg-border"
           {...dragHandleProps}
         />
-        <ChatDrawerHeader projectId={projectId} onClose={closeChat} />
+        <ChatDrawerHeader onClose={closeChat} projectId={projectId} />
         {/*
           Three states, all derived from the `chat.models` tRPC query
           (see `ChatStateProvider`). The frontend no longer reads any

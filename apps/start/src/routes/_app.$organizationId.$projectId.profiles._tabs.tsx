@@ -1,8 +1,8 @@
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/_tabs'
@@ -39,14 +39,14 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Profiles"
         description="If you haven't called identify your profiles will be anonymous"
+        title="Profiles"
       />
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
         className="mt-2 mb-8"
+        onValueChange={handleTabChange}
+        value={activeTab}
       >
         <TabsList>
           {tabs.map((tab) => (

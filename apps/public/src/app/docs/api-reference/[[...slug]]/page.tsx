@@ -1,6 +1,3 @@
-import React from 'react';
-import { getMDXComponents } from '@/mdx-components';
-import { getApiReferenceSource, openapi } from '@/lib/openapi';
 import { createAPIPage } from 'fumadocs-openapi/ui';
 import {
   DocsBody,
@@ -9,6 +6,9 @@ import {
   DocsTitle,
 } from 'fumadocs-ui/page';
 import { notFound, redirect } from 'next/navigation';
+import type React from 'react';
+import { getApiReferenceSource, openapi } from '@/lib/openapi';
+import { getMDXComponents } from '@/mdx-components';
 
 const APIPage = createAPIPage(openapi);
 
@@ -22,12 +22,16 @@ export default async function Page(props: PageProps) {
 
   if (!params.slug) {
     const first = source.getPages()[0];
-    if (first) redirect(first.url);
+    if (first) {
+      redirect(first.url);
+    }
     notFound();
   }
 
   const page = source.getPage(params.slug);
-  if (!page) notFound();
+  if (!page) {
+    notFound();
+  }
 
   const data = page.data as Record<string, unknown>;
 

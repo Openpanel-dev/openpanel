@@ -1,14 +1,5 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { Button, LinkButton } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { createProjectTitle } from '@/utils/title';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   LayoutPanelTopIcon,
   MoreHorizontal,
@@ -18,8 +9,9 @@ import {
   ShareIcon,
   TrashIcon,
 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import {
   GrafanaGrid,
@@ -28,19 +20,26 @@ import {
 } from '@/components/grafana-grid';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import {
   ReportItem,
   ReportItemSkeleton,
 } from '@/components/report/report-item';
+import { Button, LinkButton } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createProjectTitle } from '@/utils/title';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
@@ -130,7 +129,9 @@ function Component() {
 
   const filteredReports = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return reports;
+    if (!q) {
+      return reports;
+    }
     return reports.filter((r) => r.name?.toLowerCase().includes(q));
   }, [reports, search]);
 
@@ -284,20 +285,17 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title={dashboard.name}
-        description="View and manage your reports"
-        className="mb-4"
         actions={
           <>
             {reports.length > 0 && (
               <div className="relative">
-                <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  type="search"
-                  placeholder="Search reports..."
-                  value={search}
+                  className="w-[180px] pl-8 sm:w-[220px]"
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 w-[180px] sm:w-[220px]"
+                  placeholder="Search reports..."
+                  type="search"
+                  value={search}
                 />
               </div>
             )}
@@ -305,8 +303,8 @@ function Component() {
             <OverviewInterval />
             <LinkButton
               from={Route.fullPath}
-              to={'/$organizationId/$projectId/reports'}
               icon={PlusIcon}
+              to={'/$organizationId/$projectId/reports'}
             >
               <span className="max-sm:hidden">Create report</span>
               <span className="sm:hidden">Report</span>
@@ -341,7 +339,6 @@ function Component() {
                     Reset layout
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    variant="destructive"
                     onClick={() =>
                       showConfirm({
                         title: 'Delete dashboard',
@@ -350,6 +347,7 @@ function Component() {
                           dashboardDeletion.mutate({ id: dashboardId }),
                       })
                     }
+                    variant="destructive"
                   >
                     <TrashIcon className="mr-2 size-4" />
                     Delete dashboard
@@ -359,22 +357,25 @@ function Component() {
             </DropdownMenu>
           </>
         }
+        className="mb-4"
+        description="View and manage your reports"
+        title={dashboard.name}
       />
 
       {reports.length === 0 ? (
-        <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
+        <FullPageEmptyState icon={LayoutPanelTopIcon} title="No reports">
           <p>You can visualize your data with a report</p>
           <LinkButton
-            from={Route.fullPath}
-            to={'/$organizationId/$projectId/reports'}
             className="mt-14"
+            from={Route.fullPath}
             icon={PlusIcon}
+            to={'/$organizationId/$projectId/reports'}
           >
             Create report
           </LinkButton>
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ReportItemSkeleton />
           <ReportItemSkeleton />
           <ReportItemSkeleton />
@@ -383,27 +384,22 @@ function Component() {
           <ReportItemSkeleton />
         </div>
       ) : filteredReports.length === 0 ? (
-        <FullPageEmptyState title="No matching reports" icon={SearchIcon}>
+        <FullPageEmptyState icon={SearchIcon} title="No matching reports">
           <p>No reports match "{search}". Try a different search.</p>
         </FullPageEmptyState>
       ) : (
         <GrafanaGrid
-          transitions={enableTransitions}
-          layouts={layouts}
-          onLayoutChange={handleLayoutChange}
-          onDragStop={handleDragStop}
-          onResizeStop={handleResizeStop}
           isDraggable={!search}
           isResizable={!search}
+          layouts={layouts}
+          onDragStop={handleDragStop}
+          onLayoutChange={handleLayoutChange}
+          onResizeStop={handleResizeStop}
+          transitions={enableTransitions}
         >
           {filteredReports.map((report) => (
             <div key={report.id}>
               <ReportItem
-                report={report}
-                organizationId={organizationId}
-                projectId={projectId}
-                range={range}
-                startDate={startDate}
                 endDate={endDate}
                 interval={interval}
                 onDelete={(reportId) => {
@@ -415,6 +411,11 @@ function Component() {
                 onMove={(reportId) => {
                   pushModal('MoveReport', { reportId, dashboardId });
                 }}
+                organizationId={organizationId}
+                projectId={projectId}
+                range={range}
+                report={report}
+                startDate={startDate}
               />
             </div>
           ))}

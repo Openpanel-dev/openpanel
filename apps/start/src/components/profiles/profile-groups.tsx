@@ -1,7 +1,7 @@
-import { ProjectLink } from '@/components/links';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { UsersIcon } from 'lucide-react';
+import { ProjectLink } from '@/components/links';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface Props {
   profileId: string;
@@ -30,10 +30,10 @@ export const ProfileGroups = ({ projectId, groups }: Props) => {
       </span>
       {query.data.map((group) => (
         <ProjectLink
-          key={group.id}
-          to="/groups/$groupId"
-          params={{ groupId: group.id }}
           className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs transition-colors hover:bg-muted"
+          key={group.id}
+          params={{ groupId: group.id }}
+          to="/groups/$groupId"
         >
           <span className="font-medium">{group.name}</span>
           <span className="text-muted-foreground">{group.type}</span>

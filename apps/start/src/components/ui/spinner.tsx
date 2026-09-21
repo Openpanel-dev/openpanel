@@ -1,6 +1,6 @@
-import { cn } from '@/utils/cn';
-import { type VariantProps, cva } from 'class-variance-authority';
+import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
+import { cn } from '@/utils/cn';
 
 const spinnerVariants = cva('', {
   variants: {
@@ -54,11 +54,11 @@ const Spinner = ({
     case 'circle':
       return (
         <svg
-          ref={ref}
           className={spinnerClasses}
-          xmlns="http://www.w3.org/2000/svg"
           fill="none"
+          ref={ref}
           viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
           {...props}
         >
           <circle
@@ -71,8 +71,8 @@ const Spinner = ({
           />
           <path
             className="opacity-75"
-            fill="currentColor"
             d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            fill="currentColor"
           />
         </svg>
       );
@@ -80,38 +80,38 @@ const Spinner = ({
     case 'dots':
       return (
         <svg
-          ref={ref}
           className={baseClasses}
-          xmlns="http://www.w3.org/2000/svg"
           fill="currentColor"
+          ref={ref}
           viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
           {...props}
         >
           <circle cx="4" cy="12" r="3">
             <animate
               attributeName="opacity"
+              begin="0s"
               dur="1s"
               repeatCount="indefinite"
               values="0;1;0"
-              begin="0s"
             />
           </circle>
           <circle cx="12" cy="12" r="3">
             <animate
               attributeName="opacity"
+              begin="0.2s"
               dur="1s"
               repeatCount="indefinite"
               values="0;1;0"
-              begin="0.2s"
             />
           </circle>
           <circle cx="20" cy="12" r="3">
             <animate
               attributeName="opacity"
+              begin="0.4s"
               dur="1s"
               repeatCount="indefinite"
               values="0;1;0"
-              begin="0.4s"
             />
           </circle>
         </svg>
@@ -120,11 +120,11 @@ const Spinner = ({
     case 'pulse':
       return (
         <div
-          ref={ref as unknown as React.RefObject<HTMLDivElement>}
           className={cn(
-            'rounded-full bg-current animate-pulse',
+            'animate-pulse rounded-full bg-current',
             spinnerClasses
           )}
+          ref={ref as unknown as React.RefObject<HTMLDivElement>}
           style={{
             animationDuration:
               speed === 'slow' ? '2s' : speed === 'fast' ? '0.5s' : '1s',
@@ -136,91 +136,91 @@ const Spinner = ({
     case 'bars':
       return (
         <svg
-          ref={ref}
           className={spinnerClasses}
-          xmlns="http://www.w3.org/2000/svg"
           fill="currentColor"
+          ref={ref}
           viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
           {...props}
         >
-          <rect x="1" y="6" width="2.8" height="12">
+          <rect height="12" width="2.8" x="1" y="6">
             <animate
               attributeName="height"
-              dur="1s"
-              repeatCount="indefinite"
-              values="12;4;12"
               begin="0s"
+              dur="1s"
+              repeatCount="indefinite"
+              values="12;4;12"
             />
             <animate
               attributeName="y"
-              dur="1s"
-              repeatCount="indefinite"
-              values="6;10;6"
               begin="0s"
-            />
-          </rect>
-          <rect x="5.8" y="6" width="2.8" height="12">
-            <animate
-              attributeName="height"
               dur="1s"
               repeatCount="indefinite"
-              values="12;4;12"
+              values="6;10;6"
+            />
+          </rect>
+          <rect height="12" width="2.8" x="5.8" y="6">
+            <animate
+              attributeName="height"
               begin="0.2s"
+              dur="1s"
+              repeatCount="indefinite"
+              values="12;4;12"
             />
             <animate
               attributeName="y"
-              dur="1s"
-              repeatCount="indefinite"
-              values="6;10;6"
               begin="0.2s"
-            />
-          </rect>
-          <rect x="10.6" y="6" width="2.8" height="12">
-            <animate
-              attributeName="height"
               dur="1s"
               repeatCount="indefinite"
-              values="12;4;12"
+              values="6;10;6"
+            />
+          </rect>
+          <rect height="12" width="2.8" x="10.6" y="6">
+            <animate
+              attributeName="height"
               begin="0.4s"
+              dur="1s"
+              repeatCount="indefinite"
+              values="12;4;12"
             />
             <animate
               attributeName="y"
-              dur="1s"
-              repeatCount="indefinite"
-              values="6;10;6"
               begin="0.4s"
-            />
-          </rect>
-          <rect x="15.4" y="6" width="2.8" height="12">
-            <animate
-              attributeName="height"
-              dur="1s"
-              repeatCount="indefinite"
-              values="12;4;12"
-              begin="0.6s"
-            />
-            <animate
-              attributeName="y"
               dur="1s"
               repeatCount="indefinite"
               values="6;10;6"
-              begin="0.6s"
             />
           </rect>
-          <rect x="20.2" y="6" width="2.8" height="12">
+          <rect height="12" width="2.8" x="15.4" y="6">
             <animate
               attributeName="height"
+              begin="0.6s"
               dur="1s"
               repeatCount="indefinite"
               values="12;4;12"
-              begin="0.8s"
             />
             <animate
               attributeName="y"
+              begin="0.6s"
               dur="1s"
               repeatCount="indefinite"
               values="6;10;6"
+            />
+          </rect>
+          <rect height="12" width="2.8" x="20.2" y="6">
+            <animate
+              attributeName="height"
               begin="0.8s"
+              dur="1s"
+              repeatCount="indefinite"
+              values="12;4;12"
+            />
+            <animate
+              attributeName="y"
+              begin="0.8s"
+              dur="1s"
+              repeatCount="indefinite"
+              values="6;10;6"
             />
           </rect>
         </svg>
@@ -229,11 +229,11 @@ const Spinner = ({
     case 'ring':
       return (
         <svg
-          ref={ref}
           className={spinnerClasses}
-          xmlns="http://www.w3.org/2000/svg"
           fill="none"
+          ref={ref}
           viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
           {...props}
         >
           <circle
@@ -250,9 +250,9 @@ const Spinner = ({
             cy="12"
             r="10"
             stroke="currentColor"
-            strokeWidth="4"
             strokeDasharray="32"
             strokeDashoffset="32"
+            strokeWidth="4"
           >
             <animate
               attributeName="stroke-dasharray"
@@ -273,11 +273,11 @@ const Spinner = ({
     default:
       return (
         <svg
-          ref={ref}
           className={spinnerClasses}
-          xmlns="http://www.w3.org/2000/svg"
           fill="none"
+          ref={ref}
           viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
           {...props}
         >
           <circle
@@ -290,8 +290,8 @@ const Spinner = ({
           />
           <path
             className="opacity-75"
-            fill="currentColor"
             d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            fill="currentColor"
           />
         </svg>
       );

@@ -1,12 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { BoxSelectIcon } from 'lucide-react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import Billing from '@/components/organization/billing';
 import { PageHeader } from '@/components/page-header';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { BoxSelectIcon } from 'lucide-react';
+import { createOrganizationTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/billing')({
   component: OrganizationPage,
@@ -61,16 +61,16 @@ function OrganizationPage() {
 
   if (!organization) {
     return (
-      <FullPageEmptyState title="Organization not found" icon={BoxSelectIcon} />
+      <FullPageEmptyState icon={BoxSelectIcon} title="Organization not found" />
     );
   }
 
   return (
     <div className="container p-8">
       <PageHeader
-        title="Billing"
-        description="Manage your billing here"
         className="mb-8"
+        description="Manage your billing here"
+        title="Billing"
       />
 
       <Billing organization={organization} />

@@ -1,12 +1,3 @@
-import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import {
@@ -18,6 +9,15 @@ import {
 import { Widget, WidgetBody } from '../widget';
 import { WidgetHeadSearchable } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
+import {
+  ChartTooltipContainer,
+  ChartTooltipHeader,
+  ChartTooltipItem,
+} from '@/components/charts/chart-tooltip';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 
 interface OverviewWeeklyTrendsProps {
   projectId: string;
@@ -58,16 +58,36 @@ function formatHourRange(hour: number) {
 }
 
 function getColorClass(ratio: number) {
-  if (ratio === 0) return 'bg-transparent';
-  if (ratio < 0.1) return 'bg-chart-0/5';
-  if (ratio < 0.2) return 'bg-chart-0/10';
-  if (ratio < 0.3) return 'bg-chart-0/20';
-  if (ratio < 0.4) return 'bg-chart-0/30';
-  if (ratio < 0.5) return 'bg-chart-0/40';
-  if (ratio < 0.6) return 'bg-chart-0/50';
-  if (ratio < 0.7) return 'bg-chart-0/60';
-  if (ratio < 0.8) return 'bg-chart-0/70';
-  if (ratio < 0.9) return 'bg-chart-0/90';
+  if (ratio === 0) {
+    return 'bg-transparent';
+  }
+  if (ratio < 0.1) {
+    return 'bg-chart-0/5';
+  }
+  if (ratio < 0.2) {
+    return 'bg-chart-0/10';
+  }
+  if (ratio < 0.3) {
+    return 'bg-chart-0/20';
+  }
+  if (ratio < 0.4) {
+    return 'bg-chart-0/30';
+  }
+  if (ratio < 0.5) {
+    return 'bg-chart-0/40';
+  }
+  if (ratio < 0.6) {
+    return 'bg-chart-0/50';
+  }
+  if (ratio < 0.7) {
+    return 'bg-chart-0/60';
+  }
+  if (ratio < 0.8) {
+    return 'bg-chart-0/70';
+  }
+  if (ratio < 0.9) {
+    return 'bg-chart-0/90';
+  }
   return 'bg-chart-0';
 }
 
@@ -96,7 +116,9 @@ export default function OverviewWeeklyTrends({
   // Build a 7×24 heatmap: aggregated[dayOfWeek][hour] averaged over all weeks
   const heatmap = useMemo(() => {
     const series = query.data?.series;
-    if (!series?.length) return null;
+    if (!series?.length) {
+      return null;
+    }
 
     // aggregated[day 0=Mon..6=Sun][hour]
     const sums: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
@@ -106,7 +128,9 @@ export default function OverviewWeeklyTrends({
 
     for (const item of series) {
       const value = item[metric];
-      if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        continue;
+      }
 
       const d = new Date(item.date);
       // JS getDay(): 0=Sun,1=Mon,...,6=Sat → remap to 0=Mon..6=Sun
@@ -128,7 +152,9 @@ export default function OverviewWeeklyTrends({
     let max = 0;
     for (const row of averages) {
       for (const v of row) {
-        if (v > max) max = v;
+        if (v > max) {
+          max = v;
+        }
       }
     }
 
@@ -140,20 +166,16 @@ export default function OverviewWeeklyTrends({
   return (
     <Widget className="col-span-6">
       <WidgetHeadSearchable
-        tabs={METRICS.map((m) => ({ key: m.key, label: m.label }))}
         activeTab={metric}
         onTabChange={setMetric}
+        tabs={METRICS.map((m) => ({ key: m.key, label: m.label }))}
       />
       <WidgetBody>
         {query.isLoading ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
             Loading...
           </div>
-        ) : !heatmap ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            No data available
-          </div>
-        ) : (
+        ) : heatmap ? (
           <div className="flex">
             {/* Hour labels */}
             <div className="w-14 shrink-0 pr-2">
@@ -161,8 +183,8 @@ export default function OverviewWeeklyTrends({
               <div className="h-6" />
               {Array.from({ length: 24 }, (_, hour) => (
                 <div
-                  key={hour}
                   className="flex h-4 items-center justify-end text-[10px] text-muted-foreground"
+                  key={hour}
                 >
                   {hour % 3 === 0 ? `${String(hour).padStart(2, '0')}:00` : ''}
                 </div>
@@ -170,23 +192,23 @@ export default function OverviewWeeklyTrends({
             </div>
 
             {/* Grid */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               {/* Day labels */}
               <div className="flex h-6">
                 {SHORT_DAY_NAMES.map((day) => (
                   <div
-                    key={day}
                     className="flex-1 text-center text-[11px] text-muted-foreground"
+                    key={day}
                   >
                     {day}
                   </div>
                 ))}
               </div>
 
-              <TooltipProvider disableHoverableContent delayDuration={0}>
+              <TooltipProvider delayDuration={0} disableHoverableContent>
                 {/* Rows = hours, columns = days */}
                 {Array.from({ length: 24 }, (_, hour) => (
-                  <div key={hour} className="flex h-4">
+                  <div className="flex h-4" key={hour}>
                     {Array.from({ length: 7 }, (_, day) => {
                       const value = heatmap.averages[day]![hour]!;
                       const ratio =
@@ -196,7 +218,7 @@ export default function OverviewWeeklyTrends({
                       return (
                         <Tooltip key={day}>
                           <TooltipTrigger asChild>
-                            <div className={cn('flex-1 p-0.5 group')}>
+                            <div className={cn('group flex-1 p-0.5')}>
                               <div
                                 className={cn(
                                   'size-full rounded-sm transition-all group-hover:ring-1 group-hover:ring-emerald-400',
@@ -206,17 +228,17 @@ export default function OverviewWeeklyTrends({
                             </div>
                           </TooltipTrigger>
                           <TooltipContent
-                            side="top"
                             className="border-0 bg-transparent p-0 shadow-none"
+                            side="top"
                           >
                             <ChartTooltipContainer>
                               <ChartTooltipHeader>
-                                <div className="text-sm font-medium">
+                                <div className="font-medium text-sm">
                                   {LONG_DAY_NAMES[day]}, {formatHourRange(hour)}
                                 </div>
                               </ChartTooltipHeader>
                               <ChartTooltipItem color="#10b981">
-                                <div className="flex items-center justify-between gap-6 font-mono font-medium text-sm">
+                                <div className="flex items-center justify-between gap-6 font-medium font-mono text-sm">
                                   <div className="text-muted-foreground">
                                     {activeMetric.label}
                                   </div>
@@ -239,6 +261,10 @@ export default function OverviewWeeklyTrends({
                 ))}
               </TooltipProvider>
             </div>
+          </div>
+        ) : (
+          <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
+            No data available
           </div>
         )}
       </WidgetBody>

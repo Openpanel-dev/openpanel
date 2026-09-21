@@ -1,6 +1,6 @@
+import type { IServiceEvent } from '@openpanel/core';
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/lib/utils';
-import type { IServiceEvent } from '@openpanel/core';
 
 function formatTime(date: Date | string): string {
   const d = date instanceof Date ? date : new Date(date);
@@ -26,23 +26,23 @@ export function ReplayEventItem({
 
   return (
     <button
-      type="button"
-      onClick={onClick}
       className={cn(
         'col w-full gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-accent',
         isCurrent ? 'bg-accent/10' : 'bg-card'
       )}
+      onClick={onClick}
+      type="button"
     >
       <div className="row items-center gap-2">
         <div className="flex-shrink-0">
-          <EventIcon name={event.name} meta={event.meta} size="sm" />
+          <EventIcon meta={event.meta} name={event.name} size="sm" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium text-foreground">
             {displayName}
           </div>
         </div>
-        <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
+        <span className="flex-shrink-0 text-muted-foreground text-xs tabular-nums">
           {formatTime(event.createdAt)}
         </span>
       </div>

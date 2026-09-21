@@ -1,14 +1,14 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { showConfirm } from '@/modals';
 import type { IServiceProjectWithClients } from '@openpanel/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { showConfirm } from '@/modals';
 
 type Props = { project: IServiceProjectWithClients };
 
@@ -54,7 +54,7 @@ export default function DeleteProject({ project }: Props) {
   );
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Delete Project</span>
       </WidgetHead>
@@ -89,22 +89,21 @@ export default function DeleteProject({ project }: Props) {
             </AlertDescription>
           </Alert>
         )}
-        <div className="flex gap-4 justify-start">
+        <div className="flex justify-start gap-4">
           {project?.deleteAt && (
             <Button
-              variant="outline"
               disabled={isOrgScheduledForDeletion}
+              loading={cancelDeletionMutation.isPending}
               onClick={() => {
                 cancelDeletionMutation.mutate({ projectId: project.id });
               }}
-              loading={cancelDeletionMutation.isPending}
+              variant="outline"
             >
               Cancel deletion
             </Button>
           )}
           <Button
             disabled={!!project?.deleteAt}
-            variant="destructive"
             icon={TrashIcon}
             loading={mutation.isPending}
             onClick={() => {
@@ -116,6 +115,7 @@ export default function DeleteProject({ project }: Props) {
                 },
               });
             }}
+            variant="destructive"
           >
             Delete Project
           </Button>

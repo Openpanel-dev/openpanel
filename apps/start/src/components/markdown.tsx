@@ -12,8 +12,8 @@ export const Markdown = memo<Options>(
   (props) => (
     <ReactMarkdown
       {...props}
-      remarkPlugins={[remarkParse, remarkHighlight, remarkMath, remarkGfm]}
       rehypePlugins={[rehypeKatex, remarkRehype]}
+      remarkPlugins={[remarkParse, remarkHighlight, remarkMath, remarkGfm]}
     />
   ),
   (prevProps, nextProps) =>

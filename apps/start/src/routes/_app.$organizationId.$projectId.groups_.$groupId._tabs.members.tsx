@@ -1,10 +1,10 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import { ProfilesTable } from '@/components/profiles/table';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/groups_/$groupId/_tabs/members'

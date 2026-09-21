@@ -732,24 +732,25 @@
     </div>
 
     <script>
+    'use strict';
     window.op =
       window.op ||
-      (function () {
+      (() => {
         var n = [];
         return new Proxy(
           function () {
             arguments.length && n.push([].slice.call(arguments));
           },
           {
-            get: function (t, r) {
-              return 'q' === r
+            get(t, r) {
+              return r === 'q'
                 ? n
                 : function () {
                     n.push([r].concat([].slice.call(arguments)));
                   };
             },
-            has: function (t, r) {
-              return 'q' === r;
+            has(t, r) {
+              return r === 'q';
             },
           }
         );

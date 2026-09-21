@@ -1,12 +1,11 @@
+import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
+import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { FullPageEmptyState } from '../full-page-empty-state';
+import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
-
-import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
-import { FullPageEmptyState } from '../full-page-empty-state';
-import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 
 type Props = {
   profile: IServiceProfile;
@@ -34,10 +33,10 @@ export const ProfileProperties = ({ profile }: Props) => {
             },
           ].map((w) => (
             <button
-              type="button"
+              className={cn(w.key === tab && 'active')}
               key={w.key}
               onClick={() => setTab(w.key as 'profile' | 'properties')}
-              className={cn(w.key === tab && 'active')}
+              type="button"
             >
               {w.btn}
             </button>
@@ -47,9 +46,9 @@ export const ProfileProperties = ({ profile }: Props) => {
 
       {tab === 'profile' && profile && (
         <KeyValueGrid
-          copyable
           className="border-0"
           columns={3}
+          copyable
           data={[
             { name: 'id', value: profile.id },
             { name: 'firstName', value: profile.firstName },
@@ -99,14 +98,14 @@ export const ProfileProperties = ({ profile }: Props) => {
 
       {tab === 'properties' && profile && (
         <KeyValueGrid
-          copyable
           className="border-0"
           columns={3}
+          copyable
           data={Object.entries(profile.properties)
             .filter(([, value]) => value !== undefined && value !== '')
             .map(([key, value]) => ({
               name: key,
-              value: value,
+              value,
               event: {
                 ...profile,
                 ...profile.properties,
@@ -114,7 +113,7 @@ export const ProfileProperties = ({ profile }: Props) => {
             }))}
         />
       )}
-      {(!profile || !profile.properties) && (
+      {!(profile && profile.properties) && (
         <FullPageEmptyState title="No properties found" />
       )}
     </Widget>

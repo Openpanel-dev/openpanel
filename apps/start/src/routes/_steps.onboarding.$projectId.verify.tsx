@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import VerifyListener from '@/components/onboarding/onboarding-verify-listener';
 import { VerifyFaq } from '@/components/onboarding/verify-faq';
 import { LinkButton } from '@/components/ui/button';
-import { useEffect } from 'react';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';

@@ -1,3 +1,6 @@
+import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { useChatState } from './chat-context';
+import { type ChatModelOption, getModelLabel } from '@/agents/models';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,9 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { type ChatModelOption, getModelLabel } from '@/agents/models';
-import { CheckIcon, ChevronDownIcon } from 'lucide-react';
-import { useChatState } from './chat-context';
 
 /**
  * Model (= agent) picker for the chat header. Each entry corresponds
@@ -28,13 +28,13 @@ export function ModelPicker() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs gap-1 text-muted-foreground"
           aria-label="Select model"
+          className="h-7 gap-1 px-2 text-muted-foreground text-xs"
+          size="sm"
           title="Select model"
+          variant="ghost"
         >
-          <span className="truncate max-w-[140px]">
+          <span className="max-w-[140px] truncate">
             {getModelLabel(agentName)}
           </span>
           <ChevronDownIcon className="size-3" />
@@ -44,14 +44,14 @@ export function ModelPicker() {
         {Object.entries(grouped).map(([group, items], idx) => (
           <div key={group}>
             {idx > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground uppercase tracking-wide">
               {group}
             </DropdownMenuLabel>
             {items.map((m) => (
               <DropdownMenuItem
+                className="flex items-center justify-between gap-2"
                 key={m.id}
                 onSelect={() => setAgent(m.id)}
-                className="flex items-center justify-between gap-2"
               >
                 <span className="truncate">{m.label}</span>
                 {agentName === m.id && (

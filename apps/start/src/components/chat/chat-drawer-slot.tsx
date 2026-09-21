@@ -29,7 +29,9 @@ export function ChatDrawerSlot() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return null;
+  }
   return (
     <Suspense fallback={null}>
       <ChatDrawer />

@@ -1,3 +1,9 @@
+import type { IServiceEvent } from '@openpanel/core';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReplayPlayPauseButton } from './replay-controls';
+import { formatDuration, getEventOffsetMs } from './replay-utils';
+import { EventIcon } from '@/components/events/event-icon';
 import {
   useCurrentTime,
   useReplayContext,
@@ -8,14 +14,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { IServiceEvent } from '@openpanel/core';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-import { EventIcon } from '@/components/events/event-icon';
-import { cn } from '@/lib/utils';
-import { ReplayPlayPauseButton } from './replay-controls';
-import { formatDuration, getEventOffsetMs } from './replay-utils';
 
 export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
   const {
@@ -49,7 +47,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
 
   // Update progress bar and thumb directly via DOM on every tick — no React re-render.
   useEffect(() => {
-    if (duration <= 0) return;
+    if (duration <= 0) {
+      return;
+    }
     return subscribeToCurrentTime((t) => {
       const pct = Math.max(0, Math.min(100, (t / duration) * 100));
       if (progressBarRef.current) {
@@ -63,7 +63,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
 
   const getTimeFromClientX = useCallback(
     (clientX: number) => {
-      if (!trackRef.current || duration <= 0) return null;
+      if (!trackRef.current || duration <= 0) {
+        return null;
+      }
       const rect = trackRef.current.getBoundingClientRect();
       if (rect.width <= 0 || !Number.isFinite(rect.width)) {
         return null;
@@ -82,13 +84,17 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
         return;
       }
       const info = getTimeFromClientX(e.clientX);
-      if (info) setHoverInfo(info);
+      if (info) {
+        setHoverInfo(info);
+      }
     },
     [getTimeFromClientX]
   );
 
   const handleTrackMouseLeave = useCallback(() => {
-    if (!isDragging) setHoverInfo(null);
+    if (!isDragging) {
+      setHoverInfo(null);
+    }
   }, [isDragging]);
 
   const handleTrackMouseDown = useCallback(
@@ -97,10 +103,13 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
       if (
         e.target !== trackRef.current &&
         !(e.target as HTMLElement).closest('.replay-track-bg')
-      )
+      ) {
         return;
+      }
       const info = getTimeFromClientX(e.clientX);
-      if (info) seek(info.timeMs);
+      if (info) {
+        seek(info.timeMs);
+      }
     },
     [getTimeFromClientX, seek]
   );
@@ -119,7 +128,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
   // Group events that are within 24px of each other on the track.
   // We need the track width for pixel math — use a stable ref-based calculation.
   const groupedEvents = useMemo(() => {
-    if (!eventsWithOffset.length || duration <= 0) return [];
+    if (!eventsWithOffset.length || duration <= 0) {
+      return [];
+    }
 
     // Sort by offsetMs so we sweep left-to-right
     const sorted = [...eventsWithOffset].sort(
@@ -135,7 +146,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
       const last = groups[groups.length - 1];
       const lastPct = last
         ? (last.items[last.items.length - 1]!.offsetMs / duration) * 100
-        : -Infinity;
+        : Number.NEGATIVE_INFINITY;
       const thisPct = (item.offsetMs / duration) * 100;
 
       if (
@@ -155,7 +166,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     return groups;
   }, [eventsWithOffset, duration]);
 
-  if (!isReady || duration <= 0) return null;
+  if (!isReady || duration <= 0) {
+    return null;
+  }
 
   const progressPct = Math.max(
     0,
@@ -166,18 +179,12 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     <TooltipProvider delayDuration={300}>
       <div className="row items-center gap-4 p-4">
         <ReplayPlayPauseButton />
-        <div className="col gap-4 flex-1 px-2">
+        <div className="col flex-1 gap-4 px-2">
           <div
-            ref={trackRef}
-            role="slider"
-            aria-valuemin={0}
             aria-valuemax={duration}
+            aria-valuemin={0}
             aria-valuenow={currentTime}
-            tabIndex={0}
             className="relative flex h-8 cursor-pointer items-center outline-0"
-            onMouseDown={handleTrackMouseDown}
-            onMouseMove={handleTrackMouseMove}
-            onMouseLeave={handleTrackMouseLeave}
             onKeyDown={(e) => {
               const step = 5000;
               if (e.key === 'ArrowLeft') {
@@ -188,43 +195,49 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                 seek(Math.min(duration, currentTime + step));
               }
             }}
+            onMouseDown={handleTrackMouseDown}
+            onMouseLeave={handleTrackMouseLeave}
+            onMouseMove={handleTrackMouseMove}
+            ref={trackRef}
+            role="slider"
+            tabIndex={0}
           >
-            <div className="replay-track-bg bg-muted h-1.5 w-full overflow-hidden rounded-full">
+            <div className="replay-track-bg h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
+                className="h-full rounded-full bg-primary"
                 ref={progressBarRef}
-                className="bg-primary h-full rounded-full"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
             <div
-              ref={thumbRef}
-              className="absolute left-0 top-1/2 z-10 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow-sm"
-              style={{ left: `calc(${progressPct}% - 8px)` }}
               aria-hidden
+              className="absolute top-1/2 left-0 z-10 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow-sm"
+              ref={thumbRef}
+              style={{ left: `calc(${progressPct}% - 8px)` }}
             />
             {/* Hover timestamp tooltip */}
             <AnimatePresence>
               {hoverInfo && (
                 <motion.div
+                  animate={{ opacity: 1 }}
                   className="pointer-events-none absolute z-20"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
                   style={{
                     left: `${hoverInfo.pct * 100}%`,
                     top: 0,
                     bottom: 0,
                   }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
                   {/* Vertical line */}
-                  <div className="absolute left-0 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground/30" />
+                  <div className="absolute top-1/2 left-0 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground/30" />
                   {/* Timestamp badge */}
                   <motion.div
-                    className="absolute bottom-6 left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] tabular-nums text-background shadow"
-                    initial={{ opacity: 0, y: 16, scale: 0.5 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="absolute bottom-6 left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] text-background tabular-nums shadow"
                     exit={{ opacity: 0, y: 16, scale: 0.5 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.5 }}
                     transition={{ duration: 0.2 }}
                   >
                     {formatDuration(hoverInfo.timeMs)}
@@ -239,36 +252,36 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                 <Tooltip key={first.event.id}>
                   <TooltipTrigger asChild>
                     <button
-                      type="button"
-                      data-timeline-event
-                      className="absolute top-1/2 z-[5] flex h-6 w-6 -translate-y-1/2 items-center justify-center transition-transform hover:scale-105"
-                      style={{ left: `${group.pct}%`, marginLeft: -12 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        seek(first.offsetMs);
-                      }}
                       aria-label={
                         isGroup
                           ? `${group.items.length} events at ${formatDuration(first.offsetMs)}`
                           : `${first.event.name} at ${formatDuration(first.offsetMs)}`
                       }
+                      className="absolute top-1/2 z-[5] flex h-6 w-6 -translate-y-1/2 items-center justify-center transition-transform hover:scale-105"
+                      data-timeline-event
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        seek(first.offsetMs);
+                      }}
+                      style={{ left: `${group.pct}%`, marginLeft: -12 }}
+                      type="button"
                     >
                       <EventIcon
-                        name={first.event.name}
                         meta={first.event.meta}
+                        name={first.event.name}
                         size="sm"
                       />
                       {isGroup && (
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] font-bold leading-none text-background">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground font-bold text-[9px] text-background leading-none">
                           {group.items.length}
                         </span>
                       )}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="col gap-1.5">
+                  <TooltipContent className="col gap-1.5" side="top">
                     {group.items.map(({ event: ev, offsetMs }) => (
-                      <div key={ev.id} className="row items-center gap-2">
-                        <EventIcon name={ev.name} meta={ev.meta} size="sm" />
+                      <div className="row items-center gap-2" key={ev.id}>
+                        <EventIcon meta={ev.meta} name={ev.name} size="sm" />
                         <span className="font-medium">
                           {ev.name === 'screen_view' ? ev.path : ev.name}
                         </span>

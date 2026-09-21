@@ -1,13 +1,10 @@
-import { formatDateTime, formatTime } from '@/utils/date';
+import type { INotificationPayload } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
-import { isToday } from 'date-fns';
-
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
-import type { INotificationPayload } from '@openpanel/core';
 
 function getEventFromPayload(payload: INotificationPayload | null) {
   if (payload?.type === 'event') {
@@ -27,7 +24,7 @@ export function useColumns() {
       cell({ row }) {
         const { title } = row.original;
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             {/* {isReadAt === null && <PingBadge>Unread</PingBadge>} */}
             <span className="max-w-md truncate font-medium">{title}</span>
           </div>
@@ -149,9 +146,9 @@ export function useColumns() {
         }
         return (
           <ProjectLink
-            to="/profiles/$profileId"
-            params={{ profileId: event.profileId }}
             className="inline-flex min-w-full flex-none items-center gap-2"
+            params={{ profileId: event.profileId }}
+            to="/profiles/$profileId"
           >
             {event.profileId}
           </ProjectLink>

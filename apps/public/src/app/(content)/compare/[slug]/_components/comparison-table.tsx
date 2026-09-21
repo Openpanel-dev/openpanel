@@ -1,6 +1,9 @@
-import { Section, SectionHeader } from '@/components/section';
-import { CompareHighlights, CompareFeatureComparison } from '@/lib/compare';
 import { CheckIcon, XIcon } from 'lucide-react';
+import { Section, SectionHeader } from '@/components/section';
+import type {
+  CompareFeatureComparison,
+  CompareHighlights,
+} from '@/lib/compare';
 import { cn } from '@/lib/utils';
 
 interface ComparisonTableProps {
@@ -56,18 +59,18 @@ export function ComparisonTable({
   return (
     <Section className="container">
       <SectionHeader
-        title={highlights.title}
         description={highlights.intro}
+        title={highlights.title}
         variant="sm"
       />
-      <div className="mt-12 border rounded-2xl overflow-hidden">
+      <div className="mt-12 overflow-hidden rounded-2xl border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/30">
-                <th className="text-left p-4 font-semibold">Feature</th>
-                <th className="text-left p-4 font-semibold">OpenPanel</th>
-                <th className="text-left p-4 font-semibold">
+                <th className="p-4 text-left font-semibold">Feature</th>
+                <th className="p-4 text-left font-semibold">OpenPanel</th>
+                <th className="p-4 text-left font-semibold">
                   {competitorName}
                 </th>
               </tr>
@@ -75,25 +78,25 @@ export function ComparisonTable({
             <tbody>
               {allRows.map((row, index) => (
                 <tr
-                  key={row.feature}
                   className={cn(
                     'border-b last:border-b-0',
                     index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
                   )}
+                  key={row.feature}
                 >
                   <td className="p-4 font-medium">{row.feature}</td>
                   <td className="p-4">
-                    <div className="row gap-2 items-center">
+                    <div className="row items-center gap-2">
                       {renderValue(row.openpanel)}
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="col gap-1">
-                      <div className="row gap-2 items-center text-muted-foreground">
+                      <div className="row items-center gap-2 text-muted-foreground">
                         {renderValue(row.competitor)}
                       </div>
                       {row.notes && (
-                        <span className="text-xs text-muted-foreground/70 mt-1">
+                        <span className="mt-1 text-muted-foreground/70 text-xs">
                           {row.notes}
                         </span>
                       )}

@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { withUtm } from '../utm';
@@ -78,5 +77,5 @@ export function OnboardingWhatToTrack({
 OnboardingWhatToTrack.PreviewProps = {
   firstName: 'Alex',
   hasData: true,
-  eventsCount: 12544,
+  eventsCount: 12_544,
 };

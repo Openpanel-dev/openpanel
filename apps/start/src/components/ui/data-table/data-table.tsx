@@ -1,7 +1,3 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { FloatingPagination } from '@/components/pagination-floating';
-import { Skeleton } from '@/components/skeleton';
-import { cn } from '@/utils/cn';
 import type { Table as ITable } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
 import {
@@ -13,6 +9,10 @@ import {
   TableRow,
 } from '../table';
 import { getCommonPinningStyles } from './data-table-helpers';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { FloatingPagination } from '@/components/pagination-floating';
+import { Skeleton } from '@/components/skeleton';
+import { cn } from '@/utils/cn';
 
 export interface DataTableProps<TData> {
   table: ITable<TData>;
@@ -55,8 +55,8 @@ export function DataTable<TData>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    key={header.id}
                     colSpan={header.colSpan}
+                    key={header.id}
                     style={{
                       ...getCommonPinningStyles({
                         column: header.column,
@@ -78,22 +78,22 @@ export function DataTable<TData>({
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={onRowClick ? 'cursor-pointer' : undefined}
+                  data-state={row.getIsSelected() && 'selected'}
+                  key={row.id}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
+                      className={cn(
+                        cell.column.columnDef.meta?.bold && 'font-medium'
+                      )}
                       key={cell.id}
                       style={{
                         ...getCommonPinningStyles({
                           column: cell.column,
                         }),
                       }}
-                      className={cn(
-                        cell.column.columnDef.meta?.bold && 'font-medium'
-                      )}
                     >
                       {loading ? (
                         <Skeleton className="h-4 w-3/5" />
@@ -110,12 +110,12 @@ export function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={table.getAllColumns().length}
                   className="h-24 text-center"
+                  colSpan={table.getAllColumns().length}
                 >
                   <FullPageEmptyState
-                    title={empty.title}
                     description={empty.description}
+                    title={empty.title}
                   />
                 </TableCell>
               </TableRow>
@@ -128,11 +128,11 @@ export function DataTable<TData>({
           <FloatingPagination
             canNextPage={table.getCanNextPage()}
             canPreviousPage={table.getCanPreviousPage()}
-            pageIndex={table.getState().pagination.pageIndex}
-            nextPage={table.nextPage}
-            previousPage={table.previousPage}
             firstPage={table.firstPage}
             lastPage={table.lastPage}
+            nextPage={table.nextPage}
+            pageIndex={table.getState().pagination.pageIndex}
+            previousPage={table.previousPage}
           />
           <div className="h-20" />
         </>

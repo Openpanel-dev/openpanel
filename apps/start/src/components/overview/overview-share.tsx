@@ -1,3 +1,6 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,9 +12,6 @@ import {
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
 
 interface OverviewShareProps {
   projectId: string;
@@ -44,8 +44,8 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
       <DropdownMenuTrigger asChild>
         <Button
           icon={data?.public ? Globe2Icon : LockIcon}
-          responsive
           loading={query.isLoading}
+          responsive
         >
           {data?.public ? 'Public' : 'Private'}
         </Button>
@@ -54,17 +54,17 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
         <DropdownMenuGroup>
           {(!data || data.public === false) && (
             <DropdownMenuItem onClick={() => pushModal('ShareOverviewModal')}>
-              <Globe2Icon size={16} className="mr-2" />
+              <Globe2Icon className="mr-2" size={16} />
               Make public
             </DropdownMenuItem>
           )}
           {data?.public && (
             <DropdownMenuItem asChild>
               <Link
-                to={'/share/overview/$shareId'}
                 params={{ shareId: data.id }}
+                to={'/share/overview/$shareId'}
               >
-                <EyeIcon size={16} className="mr-2" />
+                <EyeIcon className="mr-2" size={16} />
                 View
               </Link>
             </DropdownMenuItem>
@@ -80,7 +80,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
                 });
               }}
             >
-              <LockIcon size={16} className="mr-2" />
+              <LockIcon className="mr-2" size={16} />
               Make private
             </DropdownMenuItem>
           )}

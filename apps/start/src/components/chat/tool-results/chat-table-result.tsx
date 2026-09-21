@@ -26,8 +26,8 @@ export function ChatTableResult(props: ToolResultProps) {
 
   return (
     <ToolStateGuard
-      state={part.state}
       errorText={part.errorText}
+      state={part.state}
       toolName={part.type.replace(/^tool-/, '')}
     >
       <ChatTableInner output={part.output} />
@@ -39,7 +39,9 @@ function ChatTableInner({ output }: { output: unknown }) {
   const { rows, total, truncated } = normalizeTableOutput(output);
   // Empty case is handled at the wrapper level (falls through to
   // DefaultToolResult) — this function only runs with rows present.
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return null;
+  }
   const { labelKey, valueKeys } = inferColumns(rows[0]!);
 
   return (
@@ -47,13 +49,13 @@ function ChatTableInner({ output }: { output: unknown }) {
       <table className="w-full text-sm">
         <thead className="bg-muted/30">
           <tr>
-            <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">
+            <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">
               {humanize(labelKey)}
             </th>
             {valueKeys.map((k) => (
               <th
+                className="px-3 py-1.5 text-right font-medium text-muted-foreground"
                 key={k}
-                className="text-right px-3 py-1.5 font-medium text-muted-foreground"
               >
                 {humanize(k)}
               </th>
@@ -63,19 +65,19 @@ function ChatTableInner({ output }: { output: unknown }) {
         <tbody>
           {rows.slice(0, 15).map((row, idx) => (
             <tr
-              key={typeof row.id === 'string' ? row.id : idx}
               className="border-t"
+              key={typeof row.id === 'string' ? row.id : idx}
             >
               <td
-                className="px-3 py-1.5 truncate max-w-[200px]"
+                className="max-w-[200px] truncate px-3 py-1.5"
                 title={String(row[labelKey] ?? '')}
               >
                 {String(row[labelKey] ?? '')}
               </td>
               {valueKeys.map((k) => (
                 <td
+                  className="px-3 py-1.5 text-right font-mono tabular-nums"
                   key={k}
-                  className="text-right px-3 py-1.5 font-mono tabular-nums"
                 >
                   {formatValue(row[k])}
                 </td>
@@ -172,7 +174,9 @@ function humanize(key: string): string {
 
 function formatValue(v: unknown): string {
   if (typeof v === 'number') {
-    if (Number.isInteger(v)) return v.toLocaleString();
+    if (Number.isInteger(v)) {
+      return v.toLocaleString();
+    }
     return v.toFixed(2);
   }
   return v != null ? String(v) : '—';

@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { usePageContextValue } from '@/contexts/page-context';
-import { cn } from '@/utils/cn';
 import { AlertCircleIcon, ArrowDownIcon } from 'lucide-react';
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
 import { ChatContextWidget } from './chat-context-widget';
 import { ChatDrawerEmpty } from './chat-drawer-empty';
 import { ChatMessage } from './chat-message';
 import { useChatRuntime } from './chat-runtime';
+import { Button } from '@/components/ui/button';
+import { usePageContextValue } from '@/contexts/page-context';
+import { cn } from '@/utils/cn';
 
 /**
  * Message list. Reads `messages`, `status`, `isLoading`, `isStreaming`
@@ -31,7 +31,7 @@ export function ChatDrawerBody() {
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         <ChatContextWidget />
         <ChatDrawerEmpty />
       </div>
@@ -39,12 +39,12 @@ export function ChatDrawerBody() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 relative">
-      <div className="absolute top-0 left-0 right-0 z-20 backdrop-blur-sm">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="absolute top-0 right-0 left-0 z-20 backdrop-blur-sm">
         <ChatContextWidget />
       </div>
       <StickToBottom
-        className="flex-1 relative overflow-hidden"
+        className="relative flex-1 overflow-hidden"
         initial="instant"
         resize="smooth"
       >
@@ -64,8 +64,8 @@ export function ChatDrawerBody() {
             </div>
           )}
           {status === 'error' && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              <AlertCircleIcon className="size-4 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-sm">
+              <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
               <span className="leading-[1.5]">
                 {error?.message ?? 'Something went wrong. Try again.'}
               </span>
@@ -80,15 +80,17 @@ export function ChatDrawerBody() {
 
 function ScrollToBottomButton() {
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
-  if (isAtBottom) return null;
+  if (isAtBottom) {
+    return null;
+  }
   return (
     <Button
-      type="button"
-      size="sm"
-      variant="secondary"
-      className="absolute bottom-3 left-1/2 -translate-x-1/2 h-7 px-2 shadow-md gap-1"
-      onClick={() => scrollToBottom()}
       aria-label="Scroll to bottom"
+      className="absolute bottom-3 left-1/2 h-7 -translate-x-1/2 gap-1 px-2 shadow-md"
+      onClick={() => scrollToBottom()}
+      size="sm"
+      type="button"
+      variant="secondary"
     >
       <ArrowDownIcon className="size-3" />
       <span className="text-sm">Latest</span>

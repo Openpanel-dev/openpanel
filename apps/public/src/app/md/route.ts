@@ -1,6 +1,6 @@
+import { NextResponse } from 'next/server';
 import { OPENPANEL_BASE_URL } from '@/lib/openpanel-brand';
 import { articleSource, guideSource, pageSource, source } from '@/lib/source';
-import { NextResponse } from 'next/server';
 
 const ALLOWED_PAGE_PATHS = new Set([
   'privacy',
@@ -68,8 +68,9 @@ export async function GET(request: Request) {
       .replace(/^\/articles\/?/, '')
       .split('/')
       .filter(Boolean);
-    if (slug.length === 0)
+    if (slug.length === 0) {
       return new NextResponse('Not found', { status: 404 });
+    }
     const page = articleSource.getPage(slug);
     if (!page) {
       return new NextResponse('Not found', { status: 404 });
@@ -89,8 +90,9 @@ export async function GET(request: Request) {
       .replace(/^\/guides\/?/, '')
       .split('/')
       .filter(Boolean);
-    if (slug.length === 0)
+    if (slug.length === 0) {
       return new NextResponse('Not found', { status: 404 });
+    }
     const page = guideSource.getPage(slug);
     if (!page) {
       return new NextResponse('Not found', { status: 404 });

@@ -28,7 +28,9 @@ const { TooltipProvider, Tooltip } = createChartTooltip<
   Record<string, unknown>
 >(({ data }) => {
   const item = data[0];
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
   return (
     <>
       <ChartTooltipHeader>

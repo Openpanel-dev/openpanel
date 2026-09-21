@@ -12,6 +12,7 @@ import {
 } from '@/components/overview/overview-widget';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { ReportChartShortcut } from '@/components/report-chart/shortcut';
+import Syntax from '@/components/syntax';
 import { Button } from '@/components/ui/button';
 import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget, WidgetBody } from '@/components/widget';
@@ -23,7 +24,6 @@ import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
-import Syntax from '@/components/syntax';
 
 interface Props {
   id: string;
@@ -235,9 +235,9 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         {profile && (
           <ProjectLink
             className="card col gap-2 p-4 py-2 hover:bg-def-100"
-            to="/profiles/$profileId"
-            params={{ profileId: profile.id }}
             onClick={() => popModal()}
+            params={{ profileId: profile.id }}
+            to="/profiles/$profileId"
           >
             <div className="row items-center justify-between gap-2">
               <div className="row min-w-0 items-center gap-2">
@@ -277,11 +277,11 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
             <div className="mb-2 flex justify-between font-medium">
               <div>Properties</div>
               <button
-                type="button"
+                className="text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() =>
                   setPropertiesMode((p) => (p === 'table' ? 'json' : 'table'))
                 }
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
               >
                 {propertiesMode === 'table' ? 'View JSON' : 'View Table'}
               </button>

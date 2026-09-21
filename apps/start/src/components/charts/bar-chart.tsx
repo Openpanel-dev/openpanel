@@ -16,7 +16,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { DEFAULT_ANIMATION_EASING } from './animation';
 import type { BarProps } from './bar';
 import {
@@ -28,6 +27,7 @@ import {
 import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
 import { shortDateFmt } from './chart-formatters';
 import { useScheduledTooltip } from './use-scheduled-tooltip';
+import { cn } from '@/lib/utils';
 
 export type BarOrientation = 'vertical' | 'horizontal';
 

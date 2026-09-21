@@ -16,7 +16,6 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join, posix } from 'node:path';
 import * as ts from 'typescript';
-
 import { lineOf, type ParsedSource, visit } from './sources';
 
 const CRUISER_BINARY = 'node_modules/.bin/depcruise';

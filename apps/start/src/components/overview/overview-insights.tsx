@@ -1,5 +1,3 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { InsightCard } from '../insights/insight-card';
 import { Skeleton } from '../skeleton';
@@ -10,6 +8,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '../ui/carousel';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewInsightsProps {
   projectId: string;
@@ -29,12 +29,12 @@ export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
     const keys = Array.from({ length: 4 }, (_, i) => `insight-skeleton-${i}`);
     return (
       <div className="col-span-6">
-        <Carousel opts={{ align: 'start' }} className="w-full">
+        <Carousel className="w-full" opts={{ align: 'start' }}>
           <CarouselContent className="-ml-4">
             {keys.map((key) => (
               <CarouselItem
+                className="basis-full pl-4 sm:basis-1/2 lg:basis-1/4"
                 key={key}
-                className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4"
               >
                 <Skeleton className="h-36 w-full" />
               </CarouselItem>
@@ -45,16 +45,18 @@ export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
     );
   }
 
-  if (!insights || insights.length === 0) return null;
+  if (!insights || insights.length === 0) {
+    return null;
+  }
 
   return (
     <div className="col-span-6 -mx-4">
-      <Carousel opts={{ align: 'start' }} className="w-full group">
+      <Carousel className="group w-full" opts={{ align: 'start' }}>
         <CarouselContent className="mr-4">
           {insights.map((insight) => (
             <CarouselItem
+              className="basis-full pl-4 sm:basis-1/2 lg:basis-1/4"
               key={insight.id}
-              className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4"
             >
               <InsightCard
                 insight={insight}
@@ -67,8 +69,8 @@ export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="!opacity-0 pointer-events-none transition-opacity group-hover:!opacity-100 group-hover:pointer-events-auto group-focus:opacity-100 group-focus:pointer-events-auto" />
-        <CarouselNext className="!opacity-0 pointer-events-none transition-opacity group-hover:!opacity-100 group-hover:pointer-events-auto group-focus:opacity-100 group-focus:pointer-events-auto" />
+        <CarouselPrevious className="!opacity-0 group-hover:!opacity-100 pointer-events-none transition-opacity group-hover:pointer-events-auto group-focus:pointer-events-auto group-focus:opacity-100" />
+        <CarouselNext className="!opacity-0 group-hover:!opacity-100 pointer-events-none transition-opacity group-hover:pointer-events-auto group-focus:pointer-events-auto group-focus:opacity-100" />
       </Carousel>
     </div>
   );

@@ -1,8 +1,8 @@
+import { DollarSignIcon } from 'lucide-react';
 import { FeatureCard } from '@/components/feature-card';
 import { Section, SectionHeader } from '@/components/section';
 import type { ComparePricing } from '@/lib/compare';
 import { cn } from '@/lib/utils';
-import { DollarSignIcon } from 'lucide-react';
 
 interface PricingComparisonRow {
   feature: string;
@@ -24,34 +24,34 @@ export function PricingComparison({
   return (
     <Section className="container">
       <SectionHeader
-        title={pricing.title}
-        description={pricing.intro}
         align="center"
+        description={pricing.intro}
+        title={pricing.title}
       />
-      <div className="grid md:grid-cols-2 gap-6 mt-12">
+      <div className="mt-12 grid gap-6 md:grid-cols-2">
         <FeatureCard
-          title="OpenPanel"
+          className="border-green-500/20 bg-green-500/5"
           description={pricing.openpanel.model}
           icon={DollarSignIcon}
-          className="border-green-500/20 bg-green-500/5"
+          title="OpenPanel"
         >
-          <div className="col gap-3 mt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="col mt-4 gap-3">
+            <p className="text-muted-foreground text-sm">
               {pricing.openpanel.description}
             </p>
           </div>
         </FeatureCard>
         <FeatureCard
-          title={competitorName}
           description={pricing.competitor.model}
           icon={DollarSignIcon}
+          title={competitorName}
         >
-          <div className="col gap-3 mt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="col mt-4 gap-3">
+            <p className="text-muted-foreground text-sm">
               {pricing.competitor.description}
             </p>
             {pricing.competitor.free_tier && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Free tier: {pricing.competitor.free_tier}
               </p>
             )}
@@ -59,21 +59,21 @@ export function PricingComparison({
         </FeatureCard>
       </div>
       {pricingTable.length > 0 && (
-        <div className="mt-12 border rounded-3xl overflow-hidden">
+        <div className="mt-12 overflow-hidden rounded-3xl border">
           <div className="divide-y divide-border">
             {pricingTable.map((row, index) => (
               <div
-                key={row.feature}
                 className={cn(
-                  'grid md:grid-cols-3 gap-4 p-6',
+                  'grid gap-4 p-6 md:grid-cols-3',
                   index % 2 === 0 ? 'bg-muted/30' : 'bg-background'
                 )}
+                key={row.feature}
               >
                 <div className="font-semibold text-sm md:text-base">
                   {row.feature}
                 </div>
                 <div className="text-sm">{row.openpanel}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   {row.competitor}
                 </div>
               </div>

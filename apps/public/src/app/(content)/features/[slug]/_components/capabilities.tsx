@@ -1,7 +1,7 @@
+import { ZapIcon } from 'lucide-react';
 import { FeatureCard } from '@/components/feature-card';
 import { Section, SectionHeader } from '@/components/section';
 import type { FeatureCapability } from '@/lib/features';
-import { ZapIcon } from 'lucide-react';
 
 interface CapabilitiesProps {
   title: string;
@@ -17,18 +17,18 @@ export function Capabilities({
   return (
     <Section className="container">
       <SectionHeader
-        title={title}
-        description={intro}
-        variant="sm"
         className="mb-12"
+        description={intro}
+        title={title}
+        variant="sm"
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {capabilities.map((cap) => (
           <FeatureCard
-            key={cap.title}
-            title={cap.title}
             description={cap.description}
             icon={ZapIcon}
+            key={cap.title}
+            title={cap.title}
           />
         ))}
       </div>

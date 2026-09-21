@@ -1,5 +1,5 @@
-import type { RouterOutputs } from '@/trpc/client';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { RouterOutputs } from '@/trpc/client';
 
 export type IVisibleFunnelBreakdowns = ReturnType<
   typeof useVisibleFunnelBreakdowns
@@ -28,7 +28,9 @@ export function useVisibleFunnelBreakdowns(
       const valid = savedVisibleSeries.filter((id) =>
         items.some((s) => s.id === id)
       );
-      if (valid.length > 0) return valid;
+      if (valid.length > 0) {
+        return valid;
+      }
     }
     return items.slice(0, max).map((s) => s.id);
   };

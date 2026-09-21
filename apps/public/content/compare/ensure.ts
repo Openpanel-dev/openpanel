@@ -1,4 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 interface FileStructure {
@@ -117,7 +117,7 @@ async function analyzeJsonFiles(): Promise<void> {
   console.log(separator);
 
   const validFiles = structures.filter((s) => s.hasContent && !s.error);
-  const emptyFiles = structures.filter((s) => !s.hasContent && !s.error);
+  const emptyFiles = structures.filter((s) => !(s.hasContent || s.error));
   const errorFiles = structures.filter((s) => s.error);
 
   console.log(`  Total files: ${structures.length}`);
@@ -148,7 +148,9 @@ async function analyzeJsonFiles(): Promise<void> {
     console.log(separator);
 
     sortedGroups.forEach(([structureKey, files], index) => {
-      if (structureKey === 'empty' || structureKey === 'error') return;
+      if (structureKey === 'empty' || structureKey === 'error') {
+        return;
+      }
 
       const groupNum = index + 1;
       console.log(`\nGroup ${groupNum} structure:`);

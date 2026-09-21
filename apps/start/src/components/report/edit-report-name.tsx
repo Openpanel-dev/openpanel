@@ -1,8 +1,8 @@
-import { useDispatch, useSelector } from '@/redux';
 import { PencilIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '../ui/input';
 import { setName } from './reportSlice';
+import { useDispatch, useSelector } from '@/redux';
 
 type Props = {
   name?: string;
@@ -42,9 +42,8 @@ const EditReportName = ({ name }: Props) => {
     return (
       <div className="flex h-8">
         <Input
-          ref={inputRef}
-          type="text"
-          value={newName}
+          onBlur={() => onSubmit()}
+          onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -52,8 +51,9 @@ const EditReportName = ({ name }: Props) => {
               onSubmit();
             }
           }}
-          onChange={(e) => setNewName(e.target.value)}
-          onBlur={() => onSubmit()}
+          ref={inputRef}
+          type="text"
+          value={newName}
         />
       </div>
     );
@@ -61,14 +61,14 @@ const EditReportName = ({ name }: Props) => {
 
   return (
     <button
-      type="button"
-      className="flex cursor-pointer select-none items-center gap-2 text-xl font-medium h-8 group"
+      className="group flex h-8 cursor-pointer select-none items-center gap-2 font-medium text-xl"
       onClick={() => setIsEditing(true)}
+      type="button"
     >
       {newName || 'Unnamed Report'}
       <PencilIcon
+        className="opacity-0 transition-opacity group-hover:opacity-100"
         size={16}
-        className="opacity-0 group-hover:opacity-100 transition-opacity"
       />
     </button>
   );

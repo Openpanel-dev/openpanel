@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface FeatureSeo {
@@ -136,7 +136,9 @@ export async function loadFeatureSource(): Promise<FeatureData[]> {
   const results: FeatureData[] = [];
   for (const slug of slugs) {
     const data = await getFeatureData(slug);
-    if (data) results.push(data);
+    if (data) {
+      results.push(data);
+    }
   }
   return results;
 }
@@ -155,7 +157,9 @@ export function loadFeatureSourceSync(): FeatureData[] {
         return { ...data, url: `/features/${slug}` };
       });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
     console.error('Error loading feature source:', error);
     return [];
   }

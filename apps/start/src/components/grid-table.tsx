@@ -66,7 +66,7 @@ export const GridCell: React.FC<
     )}
     {...props}
   >
-    <div className="truncate w-full">{children}</div>
+    <div className="w-full truncate">{children}</div>
   </Component>
 );
 

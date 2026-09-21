@@ -1,12 +1,12 @@
 import { AnalyticsInsights } from './_sections/analytics-insights';
 import { Collaboration } from './_sections/collaboration';
-import { FeatureSpotlight } from './_sections/feature-spotlight';
 import { CtaBanner } from './_sections/cta-banner';
 import { DataPrivacy } from './_sections/data-privacy';
 import { Faq } from './_sections/faq';
+import { FeatureSpotlight } from './_sections/feature-spotlight';
+import { Hero } from './_sections/hero';
 import { Mcp } from './_sections/mcp';
 import { MixpanelAlternative } from './_sections/mixpanel-alternative';
-import { Hero } from './_sections/hero';
 import { Pricing } from './_sections/pricing';
 import { Sdks } from './_sections/sdks';
 import { Testimonials } from './_sections/testimonials';

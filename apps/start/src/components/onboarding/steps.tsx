@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
 import { useLocation } from '@tanstack/react-router';
 import { CheckCheckIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type Step = {
   name: string;
@@ -36,7 +36,7 @@ function useSteps(path: string) {
     },
   ];
 
-  // @ts-ignore
+  // @ts-expect-error
   const matchIndex = steps.findLastIndex((step) =>
     path.match(new RegExp(step.match))
   );
@@ -59,9 +59,9 @@ export const OnboardingSteps = ({ className }: Props) => {
   const currentIndex = steps.findIndex((i) => i.status === 'current');
   return (
     <div className="relative">
-      <div className="absolute bottom-4 left-4 top-4 w-px bg-def-200" />
+      <div className="absolute top-4 bottom-4 left-4 w-px bg-def-200" />
       <div
-        className="absolute left-4 top-4 w-px bg-highlight"
+        className="absolute top-4 left-4 w-px bg-highlight"
         style={{
           height: `calc(${((currentIndex + 1) / steps.length) * 100}% - 3.5rem)`,
         }}
@@ -86,7 +86,7 @@ export const OnboardingSteps = ({ className }: Props) => {
           >
             <div
               className={cn(
-                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white'
+                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white'
               )}
             >
               <div

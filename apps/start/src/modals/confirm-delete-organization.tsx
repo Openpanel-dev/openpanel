@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type Props = {
   organizationId: string;
@@ -39,11 +39,11 @@ export default function ConfirmDeleteOrganization({
   return (
     <ModalContent>
       <ModalHeader
-        title="Delete organization"
         text={`${organizationName} and all of its projects and events will be permanently deleted after 24 hours. You can cancel before then.`}
+        title="Delete organization"
       />
       <div className="col gap-2">
-        <label className="text-sm font-medium" htmlFor="confirm-org-name">
+        <label className="font-medium text-sm" htmlFor="confirm-org-name">
           Type <span className="font-bold">{organizationName}</span> to confirm
         </label>
         <Input

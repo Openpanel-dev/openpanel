@@ -1,3 +1,6 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { type PageRow, useColumns } from './columns';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -11,9 +14,6 @@ import { useTable } from '@/components/ui/data-table/use-table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { type PageRow, useColumns } from './columns';
 
 interface PagesTableProps {
   projectId: string;
@@ -107,9 +107,9 @@ export function PagesTable({ projectId }: PagesTableProps) {
     <>
       <DataTableToolbarContainer>
         <AnimatedSearchInput
+          onChange={setSearch}
           placeholder="Search pages"
           value={search ?? ''}
-          onChange={setSearch}
         />
         <div className="flex items-center gap-2">
           <OverviewRange />
@@ -118,14 +118,13 @@ export function PagesTable({ projectId }: PagesTableProps) {
         </div>
       </DataTableToolbarContainer>
       <DataTable
-        table={table}
-        loading={pagesQuery.isLoading}
         empty={{
           title: 'No pages',
           description: debouncedSearch
             ? `No pages found matching "${debouncedSearch}"`
             : 'Integrate our web SDK to your site to get pages here.',
         }}
+        loading={pagesQuery.isLoading}
         onRowClick={(row) => {
           if (!isGscConnected) {
             return;
@@ -137,6 +136,7 @@ export function PagesTable({ projectId }: PagesTableProps) {
             value: page.origin + page.path,
           });
         }}
+        table={table}
       />
     </>
   );

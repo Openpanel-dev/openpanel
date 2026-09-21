@@ -1,5 +1,4 @@
 import { Heading, Hr, Link, Section, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { List } from '../components/list';
@@ -30,8 +29,12 @@ export type Props = z.infer<typeof zWeeklyDigest>;
 export default WeeklyDigest;
 
 function deltaColor(direction?: 'up' | 'down' | 'flat'): string {
-  if (direction === 'up') return '#16a34a';
-  if (direction === 'down') return '#dc2626';
+  if (direction === 'up') {
+    return '#16a34a';
+  }
+  if (direction === 'down') {
+    return '#dc2626';
+  }
   return '#6b7280';
 }
 
@@ -46,17 +49,17 @@ export function WeeklyDigest({
 }: Props & { unsubscribeUrl?: string }) {
   return (
     <Layout unsubscribeUrl={unsubscribeUrl}>
-      <Heading as="h2" className="text-xl font-semibold">
+      <Heading as="h2" className="font-semibold text-xl">
         Your week on {projectName}
       </Heading>
-      <Text className="text-sm text-gray-500">{dateRange}</Text>
+      <Text className="text-gray-500 text-sm">{dateRange}</Text>
 
       {narrative && <Text>{narrative}</Text>}
 
       {stats.length > 0 && (
         <Section className="my-4">
           {stats.map((s) => (
-            <Text key={s.label} className="my-1">
+            <Text className="my-1" key={s.label}>
               <strong>{s.value}</strong> {s.label}
               {s.delta && (
                 <span style={{ color: deltaColor(s.direction) }}>
@@ -72,7 +75,7 @@ export function WeeklyDigest({
       {insights.length > 0 && (
         <>
           <Hr />
-          <Heading as="h3" className="text-base font-semibold">
+          <Heading as="h3" className="font-semibold text-base">
             What stood out
           </Heading>
           <List

@@ -1,5 +1,6 @@
 // src/polar.ts
 import { Polar } from '@polar-sh/sdk';
+
 export {
   validateEvent as validatePolarEvent,
   WebhookVerificationError as PolarWebhookVerificationError,

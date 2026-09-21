@@ -1,19 +1,15 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { IServiceClient } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { IServiceClient } from '@openpanel/core';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { ButtonContainer } from '@/components/button-container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type EditClientProps = IServiceClient;
 
@@ -56,10 +52,10 @@ export default function EditClient({ id, name }: EditClientProps) {
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
         <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Save
           </Button>
         </ButtonContainer>

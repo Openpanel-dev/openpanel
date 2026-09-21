@@ -1,10 +1,10 @@
+import Autoplay from 'embla-carousel-autoplay';
+import { QuoteIcon } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
-import Autoplay from 'embla-carousel-autoplay';
-import { QuoteIcon } from 'lucide-react';
 
 const testimonials = [
   {
@@ -53,19 +53,19 @@ function TestimonialSlide({
   site?: string;
 }) {
   return (
-    <div className="relative flex flex-col justify-end h-full p-10 select-none">
+    <div className="relative flex h-full select-none flex-col justify-end p-10">
       <img
-        src={bgImage}
-        className="absolute inset-0 w-full h-full object-cover"
         alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        src={bgImage}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
       <div className="relative z-10 flex flex-col gap-4">
-        <QuoteIcon className="size-10 text-white/40 stroke-1" />
-        <blockquote className="text-3xl font-medium text-white leading-relaxed">
+        <QuoteIcon className="size-10 stroke-1 text-white/40" />
+        <blockquote className="font-medium text-3xl text-white leading-relaxed">
           {quote}
         </blockquote>
-        <figcaption className="text-white/60 text-sm">
+        <figcaption className="text-sm text-white/60">
           — {author}
           {site && <span className="ml-1 text-white/40">· {site}</span>}
         </figcaption>
@@ -77,20 +77,20 @@ function TestimonialSlide({
 export function OnboardingLeftPanel() {
   return (
     <div className="sticky top-0 h-screen overflow-hidden">
-      <div className="flex items-center justify-center h-full mt-24">
+      <div className="mt-24 flex h-full items-center justify-center">
         <Carousel
-          className="w-full h-full [&>div]:h-full [&>div]:min-h-full"
+          className="h-full w-full [&>div]:h-full [&>div]:min-h-full"
           opts={{ loop: true, align: 'center' }}
           plugins={[Autoplay({ delay: 6000, stopOnInteraction: false })]}
         >
           <CarouselContent className="h-full">
             {testimonials.map((t) => (
-              <CarouselItem key={t.key} className="p-8 pb-32 pt-0">
-                <div className="rounded-xl min-h-full h-full overflow-hidden bg-card border border-border shadow-lg">
+              <CarouselItem className="p-8 pt-0 pb-32" key={t.key}>
+                <div className="h-full min-h-full overflow-hidden rounded-xl border border-border bg-card shadow-lg">
                   <TestimonialSlide
+                    author={t.author}
                     bgImage={t.bgImage}
                     quote={t.quote}
-                    author={t.author}
                     site={t.site}
                   />
                 </div>

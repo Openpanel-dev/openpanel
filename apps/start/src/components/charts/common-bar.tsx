@@ -1,5 +1,4 @@
 import { getChartColor, getChartTranslucentColor } from '@/utils/theme';
-import { Bar } from 'recharts';
 
 type Options = {
   borderHeight: number;
@@ -35,23 +34,23 @@ export const BarWithBorder = (options: Options) => {
     return (
       <g>
         <rect
+          fill={withActive(fill)}
+          height={height}
+          rx={3}
+          stroke="none"
+          width={width}
           x={x}
           y={y}
-          width={width}
-          height={height}
-          stroke="none"
-          fill={withActive(fill)}
-          rx={3}
         />
         {value > 0 && (
           <rect
+            fill={withActive(border)}
+            height={options.borderHeight}
+            rx={2}
+            stroke="none"
+            width={width}
             x={x}
             y={y - options.borderHeight - 1}
-            width={width}
-            height={options.borderHeight}
-            stroke="none"
-            fill={withActive(border)}
-            rx={2}
           />
         )}
       </g>

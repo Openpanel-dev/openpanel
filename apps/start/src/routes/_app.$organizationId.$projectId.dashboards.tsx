@@ -1,10 +1,5 @@
-import { Card, CardActions, CardActionsItem } from '@/components/card';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { pushModal, showConfirm } from '@/modals';
-import { cn } from '@/utils/cn';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import {
   AreaChartIcon,
@@ -24,13 +19,16 @@ import {
   TrendingUpIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { Card, CardActions, CardActionsItem } from '@/components/card';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { Button } from '@/components/ui/button';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { pushModal, showConfirm } from '@/modals';
+import { cn } from '@/utils/cn';
+import { createProjectTitle } from '@/utils/title';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards'
@@ -92,12 +90,12 @@ function Component() {
 
   if (dashboards.length === 0) {
     return (
-      <FullPageEmptyState title="No dashboards" icon={LayoutPanelTopIcon}>
+      <FullPageEmptyState icon={LayoutPanelTopIcon} title="No dashboards">
         <p>You have not created any dashboards for this project yet</p>
         <Button
-          onClick={() => pushModal('AddDashboard')}
           className="mt-14"
           icon={PlusIcon}
+          onClick={() => pushModal('AddDashboard')}
         >
           Create dashboard
         </Button>
@@ -108,15 +106,15 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Dashboards"
-        description="Access all your dashboards here"
-        className="mb-8"
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
             <span className="max-sm:hidden">Create dashboard</span>
             <span className="sm:hidden">Dashboard</span>
           </Button>
         }
+        className="mb-8"
+        description="Access all your dashboards here"
+        title="Dashboards"
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {dashboards.map((item) => {
@@ -125,23 +123,23 @@ function Component() {
             item.reports.length > 6 ? 5 : 6
           );
           return (
-            <Card key={item.id} hover>
+            <Card hover key={item.id}>
               <div>
                 <Link
+                  className="@container flex flex-col p-4"
                   from={Route.fullPath}
                   to={`${item.id}`}
-                  className="flex flex-col p-4 @container"
                 >
                   <div className="col gap-2">
                     <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       {format(item.updatedAt, 'HH:mm · MMM d')}
                     </div>
                   </div>
                   <div
                     className={cn(
                       'mt-4 grid gap-2',
-                      'grid-cols-1 @sm:grid-cols-2'
+                      '@sm:grid-cols-2 grid-cols-1'
                     )}
                   >
                     {visibleReports.map((report) => {
@@ -190,20 +188,19 @@ function Component() {
               </div>
 
               <CardActions>
-                <CardActionsItem className="w-full" asChild>
+                <CardActionsItem asChild className="w-full">
                   <button
-                    type="button"
                     onClick={() => {
                       pushModal('EditDashboard', item);
                     }}
+                    type="button"
                   >
                     <Pencil size={16} />
                     Edit
                   </button>
                 </CardActionsItem>
-                <CardActionsItem className="w-full text-destructive" asChild>
+                <CardActionsItem asChild className="w-full text-destructive">
                   <button
-                    type="button"
                     onClick={() => {
                       showConfirm({
                         title: 'Delete dashboard',
@@ -211,6 +208,7 @@ function Component() {
                         onConfirm: () => deletion.mutate({ id: item.id }),
                       });
                     }}
+                    type="button"
                   >
                     <Trash size={16} />
                     Delete

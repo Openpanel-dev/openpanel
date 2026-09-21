@@ -1,7 +1,7 @@
-import { ScrollArea, VirtualScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/utils/cn';
 import { createContext, useContext, useRef } from 'react';
 import { ModalContent } from './Container';
+import { VirtualScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/utils/cn';
 
 const ScrollableModalContext = createContext<{
   scrollAreaRef: React.RefObject<HTMLDivElement | null>;
@@ -25,15 +25,15 @@ export function ScrollableModal({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   return (
     <ScrollableModalContext.Provider value={{ scrollAreaRef }}>
-      <ModalContent className="flex !max-h-[90vh] flex-col p-0 gap-0">
+      <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0">
         <div className="flex-shrink-0 p-6">{header}</div>
         <VirtualScrollArea
-          ref={scrollAreaRef}
           className={cn(
-            'flex-1 min-h-0 w-full',
+            'min-h-0 w-full flex-1',
             footer && 'border-b',
             header && 'border-t'
           )}
+          ref={scrollAreaRef}
         >
           {children}
         </VirtualScrollArea>

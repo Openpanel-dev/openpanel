@@ -1,8 +1,6 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-
-import { mapKeys } from '@/utils/object-to-zod-enums';
-
 import type { ReportChartProps } from '../report-chart/context';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 export function useOverviewWidget<T extends string>(
   key: string,

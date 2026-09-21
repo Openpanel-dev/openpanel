@@ -1,12 +1,12 @@
+import type { Metadata } from 'next';
+import { CompareCard } from './_components/compare-card';
+import { CompareHero } from './[slug]/_components/compare-hero';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Section, SectionHeader } from '@/components/section';
 import { WindowImage } from '@/components/window-image';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { compareSource } from '@/lib/source';
-import type { Metadata } from 'next';
-import { CompareHero } from './[slug]/_components/compare-hero';
-import { CompareCard } from './_components/compare-card';
 
 const title = 'Compare OpenPanel with alternatives';
 const description =
@@ -37,36 +37,36 @@ export default async function CompareIndexPage() {
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/overview-dark.png"
-          srcLight="/screenshots/overview-light.png"
           alt="OpenPanel Dashboard Overview"
           caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
+          srcDark="/screenshots/overview-dark.png"
+          srcLight="/screenshots/overview-light.png"
         />
       </div>
 
       <Section className="container">
         <SectionHeader
-          title="All product comparisons"
           description="Browse our complete list of detailed comparisons. See how OpenPanel stacks up against each competitor on features, pricing, and value."
+          title="All product comparisons"
           variant="sm"
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {comparisons.map((comparison) => (
             <CompareCard
-              key={comparison.slug}
-              url={comparison.url}
-              name={comparison.competitor.name}
               description={comparison.competitor.short_description}
+              key={comparison.slug}
+              name={comparison.competitor.name}
+              url={comparison.url}
             />
           ))}
         </div>
       </Section>
 
       <CtaBanner
-        title="Ready to get started?"
-        description="Join thousands of teams using OpenPanel for their analytics needs."
-        ctaText="Get Started Free"
         ctaLink="https://dashboard.openpanel.dev/onboarding"
+        ctaText="Get Started Free"
+        description="Join thousands of teams using OpenPanel for their analytics needs."
+        title="Ready to get started?"
       />
     </div>
   );

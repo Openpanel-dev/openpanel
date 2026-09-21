@@ -1,19 +1,16 @@
-import { Button } from '@/components/ui/button';
-import { handleError } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
-import { useDispatch, useSelector } from '@/redux';
-import { SaveIcon } from 'lucide-react';
-import { toast } from 'sonner';
-
-import { useTRPC } from '@/integrations/trpc/react';
 import {
   useIsFetching,
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-
 import { useParams } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { resetDirty } from './reportSlice';
+import { Button } from '@/components/ui/button';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
+import { useDispatch, useSelector } from '@/redux';
 
 interface ReportSaveButtonProps {
   className?: string;
@@ -52,14 +49,14 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
       <Button
         className={className}
         disabled={!report.dirty}
+        icon={SaveIcon}
         loading={update.isPending || isLoading}
         onClick={() => {
           update.mutate({
-            reportId: reportId,
+            reportId,
             report,
           });
         }}
-        icon={SaveIcon}
       >
         Update
       </Button>
@@ -69,13 +66,13 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
     <Button
       className={className}
       disabled={!report.dirty}
+      icon={SaveIcon}
+      loading={isLoading}
       onClick={() => {
         pushModal('SaveReport', {
           report,
         });
       }}
-      icon={SaveIcon}
-      loading={isLoading}
     >
       Save
     </Button>

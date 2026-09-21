@@ -1,3 +1,8 @@
+import { PRICING } from '@openpanel/payments/prices';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import Script from 'next/script';
+import { CompareCard } from '../compare/_components/compare-card';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Faq } from '@/app/(home)/_sections/faq';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
@@ -9,11 +14,6 @@ import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { compareSource } from '@/lib/source';
 import { formatEventsCount } from '@/lib/utils';
-import { PRICING } from '@openpanel/payments/prices';
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import Script from 'next/script';
-import { CompareCard } from '../compare/_components/compare-card';
 
 const title = 'OpenPanel Cloud Pricing';
 const description =
@@ -30,7 +30,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
   name: title,
-  description: description,
+  description,
   url: url('/pricing'),
   publisher: {
     '@type': 'Organization',
@@ -46,18 +46,18 @@ export default function SupporterPage() {
   return (
     <div>
       <Script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="pricing-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HeroContainer className="-mb-32">
         <SectionHeader
-          as="h1"
           align="center"
+          as="h1"
           className="flex-1"
-          title={title}
           description={description}
+          title={title}
         />
       </HeroContainer>
       <Pricing />
@@ -74,8 +74,8 @@ function PricingTable() {
   return (
     <Section className="container">
       <SectionHeader
-        title="Full pricing table"
         description="Here's the full pricing table for all plans. You can use the discount code to get a discount on your subscription."
+        title="Full pricing table"
       />
       <div className="prose mt-8">
         <table className="bg-card">
@@ -125,32 +125,32 @@ function ComparisonSection() {
   return (
     <Section className="container">
       <SectionHeader
-        title="How do we compare?"
         description={
           <>
             See how OpenPanel stacks up against other analytics tools in our{' '}
             <Link
+              className="underline transition-colors hover:text-primary"
               href="/articles/self-hosted-web-analytics"
-              className="underline hover:text-primary transition-colors"
             >
               comprehensive comparison of open source web analytics tools
             </Link>
             .
           </>
         }
+        title="How do we compare?"
       />
 
       <Button asChild className="mt-8 self-start">
         <Link href="/compare">View all comparisons</Link>
       </Button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {comparisons.map((comparison) => (
           <CompareCard
-            key={comparison.slug}
-            url={comparison.url}
-            name={`OpenPanel vs ${comparison.competitor.name}`}
             description={comparison.competitor.short_description}
+            key={comparison.slug}
+            name={`OpenPanel vs ${comparison.competitor.name}`}
+            url={comparison.url}
           />
         ))}
       </div>

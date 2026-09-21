@@ -10,14 +10,14 @@ export type FaceProps = {
  */
 export const RoundFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
-    viewBox="0 0 100 100"
+    aria-hidden="true"
     className={className}
     style={style}
-    aria-hidden="true"
+    viewBox="0 0 100 100"
   >
     <title>Round Eyes</title>
-    <circle cx="35" cy="45" r="8" fill="currentColor" />
-    <circle cx="65" cy="45" r="8" fill="currentColor" />
+    <circle cx="35" cy="45" fill="currentColor" r="8" />
+    <circle cx="65" cy="45" fill="currentColor" r="8" />
   </svg>
 );
 
@@ -26,23 +26,23 @@ export const RoundFace: React.FC<FaceProps> = ({ className, style }) => (
  */
 export const CrossFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
-    viewBox="0 0 100 100"
+    aria-hidden="true"
     className={className}
     style={style}
-    aria-hidden="true"
+    viewBox="0 0 100 100"
   >
     <title>Cross Eyes</title>
     <path
       d="M27 37 L43 53 M43 37 L27 53"
       stroke="currentColor"
-      strokeWidth="4"
       strokeLinecap="round"
+      strokeWidth="4"
     />
     <path
       d="M57 37 L73 53 M73 37 L57 53"
       stroke="currentColor"
-      strokeWidth="4"
       strokeLinecap="round"
+      strokeWidth="4"
     />
   </svg>
 );
@@ -52,29 +52,29 @@ export const CrossFace: React.FC<FaceProps> = ({ className, style }) => (
  */
 export const LineFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
-    viewBox="0 0 100 100"
+    aria-hidden="true"
     className={className}
     style={style}
-    aria-hidden="true"
+    viewBox="0 0 100 100"
   >
     <title>Line Eyes</title>
     <line
-      x1="27"
-      y1="45"
-      x2="43"
-      y2="45"
       stroke="currentColor"
-      strokeWidth="4"
       strokeLinecap="round"
+      strokeWidth="4"
+      x1="27"
+      x2="43"
+      y1="45"
+      y2="45"
     />
     <line
-      x1="57"
-      y1="45"
-      x2="73"
-      y2="45"
       stroke="currentColor"
-      strokeWidth="4"
       strokeLinecap="round"
+      strokeWidth="4"
+      x1="57"
+      x2="73"
+      y1="45"
+      y2="45"
     />
   </svg>
 );
@@ -84,25 +84,25 @@ export const LineFace: React.FC<FaceProps> = ({ className, style }) => (
  */
 export const CurvedFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
-    viewBox="0 0 100 100"
+    aria-hidden="true"
     className={className}
     style={style}
-    aria-hidden="true"
+    viewBox="0 0 100 100"
   >
     <title>Curved Eyes</title>
     <path
       d="M27 50 Q35 38 43 50"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
       fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="4"
     />
     <path
       d="M57 50 Q65 38 73 50"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
       fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="4"
     />
   </svg>
 );

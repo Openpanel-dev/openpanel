@@ -74,17 +74,17 @@ export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
 
     return (
       <img
-        ref={imageRef}
-        src={src || undefined}
         alt={alt}
         className={className}
+        data-avatar-image=""
+        ref={imageRef}
+        src={src || undefined}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
           ...style,
         }}
-        data-avatar-image=""
         {...props}
       />
     );

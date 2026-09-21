@@ -1,9 +1,8 @@
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { ChevronDown } from 'lucide-react';
 import type * as React from 'react';
-
-import { cn } from '@/lib/utils';
 import { FeatureCardBackground } from '../feature-card';
+import { cn } from '@/lib/utils';
 
 const Accordion = AccordionPrimitive.Root;
 
@@ -15,8 +14,8 @@ const AccordionItem = ({
   ref?: React.RefObject<React.ElementRef<typeof AccordionPrimitive.Item>>;
 }) => (
   <AccordionPrimitive.Item
-    ref={ref}
     className={cn('border-b last:border-b-0', className)}
+    ref={ref}
     {...props}
   />
 );
@@ -30,13 +29,13 @@ const AccordionTrigger = ({
 }: React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
   ref?: React.RefObject<React.ElementRef<typeof AccordionPrimitive.Trigger>>;
 }) => (
-  <AccordionPrimitive.Header className="flex not-prose">
+  <AccordionPrimitive.Header className="not-prose flex">
     <AccordionPrimitive.Trigger
-      ref={ref}
       className={cn(
-        'group relative overflow-hidden flex flex-1 items-center justify-between py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180 cursor-pointer',
+        'group relative flex flex-1 cursor-pointer items-center justify-between overflow-hidden py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180',
         className
       )}
+      ref={ref}
       {...props}
     >
       <FeatureCardBackground />
@@ -56,13 +55,13 @@ const AccordionContent = ({
   ref?: React.RefObject<React.ElementRef<typeof AccordionPrimitive.Content>>;
 }) => (
   <AccordionPrimitive.Content
+    className="overflow-hidden text-muted-foreground transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     ref={ref}
-    className="overflow-hidden transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down text-muted-foreground"
     {...props}
   >
     <div
       className={cn(
-        'pb-4 pt-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+        'pt-0 pb-4 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
         className
       )}
     >

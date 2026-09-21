@@ -1,7 +1,6 @@
-import { cn } from '@/utils/cn';
 import { createContext, useContext as useBaseContext } from 'react';
-
 import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
+import { cn } from '@/utils/cn';
 
 export const ChartTooltipContainer = ({
   children,
@@ -13,7 +12,7 @@ export const ChartTooltipContainer = ({
   return (
     <div
       className={cn(
-        'min-w-[180px] col gap-2 rounded-xl border bg-background/80 p-3  shadow-xl backdrop-blur-sm',
+        'col min-w-[180px] gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm',
         className
       )}
     >
@@ -73,13 +72,13 @@ export function createChartTooltip<
     const context = useContext();
     const data = tooltip.payload?.map((p) => p.payload) ?? [];
 
-    if (!data || !tooltip.active) {
+    if (!(data && tooltip.active)) {
       return null;
     }
 
     return (
       <ChartTooltipContainer>
-        <Tooltip data={data} context={context} {...tooltip} />
+        <Tooltip context={context} data={data} {...tooltip} />
       </ChartTooltipContainer>
     );
   };

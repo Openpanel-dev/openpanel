@@ -362,14 +362,14 @@ function Component() {
               <WidgetBody className="p-0">
                 {sessionGroups.map((group) => (
                   <Link
-                    key={group.id}
                     className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
+                    key={group.id}
                     params={{ organizationId, projectId, groupId: group.id }}
                     to="/$organizationId/$projectId/groups/$groupId"
                   >
                     <div className="col min-w-0 flex-1 gap-0.5">
                       <span className="truncate font-medium">{group.name}</span>
-                      <span className="truncate text-muted-foreground text-sm font-mono">
+                      <span className="truncate font-mono text-muted-foreground text-sm">
                         {group.id}
                       </span>
                     </div>

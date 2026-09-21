@@ -1,13 +1,13 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
 import type { IServiceOrganization } from '@openpanel/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 type Props = { organization: IServiceOrganization };
 
@@ -44,7 +44,7 @@ export default function DeleteOrganization({ organization }: Props) {
     organization.hasSubscription && !organization.isWillBeCanceled;
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Delete Organization</span>
       </WidgetHead>
@@ -77,7 +77,7 @@ export default function DeleteOrganization({ organization }: Props) {
             </AlertDescription>
           </Alert>
         )}
-        <div className="flex gap-4 justify-start">
+        <div className="flex justify-start gap-4">
           {organization.deleteAt && (
             <Button
               loading={cancelDeletionMutation.isPending}

@@ -1,10 +1,10 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { useOverviewOptions } from './useOverviewOptions';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewMapProps {
   projectId: string;
@@ -28,7 +28,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   );
 
   const mapData = useMemo(() => {
-    if (!query.data) return [];
+    if (!query.data) {
+      return [];
+    }
 
     // Aggregate by country (sum counts for same country)
     const countryMap = new Map<string, number>();
@@ -46,7 +48,7 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
 
   if (query.isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center">
         <div className="text-muted-foreground">Loading map...</div>
       </div>
     );
@@ -54,7 +56,7 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
 
   if (query.isError) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center">
         <div className="text-muted-foreground">Error loading map</div>
       </div>
     );
@@ -62,7 +64,7 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
 
   if (!query.data || mapData.length === 0) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center">
         <div className="text-muted-foreground">No data available</div>
       </div>
     );
@@ -73,15 +75,15 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
       <AutoSizer disableHeight>
         {({ width }) => (
           <WorldMap
+            borderColor={'var(--foreground)'}
+            color={'var(--chart-0)'}
+            data={mapData}
             onClickFunction={(event) => {
               if (event.countryCode) {
                 setFilter('country', event.countryCode);
               }
             }}
             size={width}
-            data={mapData}
-            color={'var(--chart-0)'}
-            borderColor={'var(--foreground)'}
           />
         )}
       </AutoSizer>

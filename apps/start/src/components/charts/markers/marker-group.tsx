@@ -4,8 +4,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import type * as React from 'react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { chartCssVars } from '../chart-context';
+import { cn } from '@/lib/utils';
 
 // Fan configuration
 const FAN_RADIUS = 50;

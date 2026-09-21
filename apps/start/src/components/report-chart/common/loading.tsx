@@ -1,4 +1,3 @@
-import { cn } from '@/utils/cn';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ActivityIcon,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useReportChartContext } from '../context';
+import { cn } from '@/utils/cn';
 
 const icons = [
   { Icon: ActivityIcon, color: 'text-chart-6' },
@@ -53,30 +53,30 @@ export function ReportChartLoading({ things }: { things?: boolean }) {
     <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
       <div
         className={
-          'relative h-full w-full rounded bg-def-100 overflow-hidden center-center flex'
+          'center-center relative flex h-full w-full overflow-hidden rounded bg-def-100'
         }
       >
         <AnimatePresence initial={false} mode="wait">
           <motion.div
-            key={currentIconIndex}
-            initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
+            className={cn('absolute size-1/3', color)}
             exit={{ x: '-100%', opacity: 0 }}
+            initial={{ x: '100%', opacity: 0 }}
+            key={currentIconIndex}
             transition={{
               type: 'spring',
               stiffness: 500,
               damping: 30,
               duration: 0.5,
             }}
-            className={cn('absolute size-1/3', color)}
           >
-            <Icon className="w-full h-full" />
+            <Icon className="h-full w-full" />
           </motion.div>
         </AnimatePresence>
 
         <div
           className={cn(
-            'absolute top-3/4 opacity-0 transition-opacity text-muted-foreground',
+            'absolute top-3/4 text-muted-foreground opacity-0 transition-opacity',
             isSlow && 'opacity-100'
           )}
         >

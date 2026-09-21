@@ -1,12 +1,3 @@
-import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { WindowImage } from '@/components/window-image';
-import {
-  type FeatureData,
-  getAllFeatureSlugs,
-  getFeatureData,
-} from '@/lib/features';
-import { url } from '@/lib/layout.shared';
-import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
@@ -17,6 +8,11 @@ import { FeatureUseCasesSection } from './_components/feature-use-cases';
 import { HowItWorks } from './_components/how-it-works';
 import { RelatedFeatures } from './_components/related-features';
 import { WhatItIs } from './_components/what-it-is';
+import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
+import { WindowImage } from '@/components/window-image';
+import { getAllFeatureSlugs, getFeatureData } from '@/lib/features';
+import { url } from '@/lib/layout.shared';
+import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 
 export async function generateStaticParams() {
   const slugs = await getAllFeatureSlugs();
@@ -82,10 +78,10 @@ export default async function FeaturePage({
   return (
     <div>
       <Script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="feature-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <FeatureHero hero={data.hero} />
 
@@ -98,9 +94,9 @@ export default async function FeaturePage({
       <WhatItIs definition={data.definition} />
 
       <Capabilities
-        title={capabilitiesSection.title}
-        intro={capabilitiesSection.intro}
         capabilities={data.capabilities}
+        intro={capabilitiesSection.intro}
+        title={capabilitiesSection.title}
       />
 
       {data.screenshots[1] && (
@@ -132,10 +128,10 @@ export default async function FeaturePage({
       </div>
 
       <CtaBanner
-        title="Ready to get started?"
-        description="Track events in minutes. Free 30-day trial, no credit card required."
-        ctaText={data.cta.label}
         ctaLink={data.cta.href}
+        ctaText={data.cta.label}
+        description="Track events in minutes. Free 30-day trial, no credit card required."
+        title="Ready to get started?"
       />
     </div>
   );

@@ -1,3 +1,12 @@
+import type {
+  IRealtimeWidgetOptions,
+  IWidgetType,
+} from '@openpanel/core/modules/report/report.constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { ExternalLinkIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import CopyInput from '@/components/forms/copy-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import Syntax from '@/components/syntax';
@@ -8,15 +17,6 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import type {
-  IRealtimeWidgetOptions,
-  IWidgetType,
-} from '@openpanel/core/modules/report/report.constants';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { ExternalLinkIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/widgets'
@@ -87,7 +87,6 @@ function Component() {
   return (
     <div className="space-y-6">
       <RealtimeWidgetSection
-        widget={realtimeWidget as any}
         dashboardUrl={dashboardUrl}
         isToggling={toggleMutation.isPending}
         isUpdatingOptions={updateOptionsMutation.isPending}
@@ -99,18 +98,19 @@ function Component() {
             options,
           })
         }
+        widget={realtimeWidget as any}
       />
 
       <CounterWidgetSection
-        widget={counterWidget as any}
         dashboardUrl={dashboardUrl}
         isToggling={toggleMutation.isPending}
         onToggle={(enabled) => handleToggle('counter', enabled)}
+        widget={counterWidget as any}
       />
 
       <BadgeWidgetSection
-        widget={counterWidget as any}
         dashboardUrl={dashboardUrl}
+        widget={counterWidget as any}
       />
     </div>
   );
@@ -175,7 +175,7 @@ function RealtimeWidgetSection({
   };
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
           <span className="title">Realtime Widget</span>
@@ -187,94 +187,94 @@ function RealtimeWidgetSection({
         </div>
         <Switch
           checked={isEnabled}
-          onCheckedChange={onToggle}
           disabled={isToggling}
+          onCheckedChange={onToggle}
         />
       </WidgetHead>
       {isEnabled && (
         <WidgetBody className="space-y-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Widget Options</h3>
+            <h3 className="font-medium text-sm">Widget Options</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="referrers" className="text-sm">
+                <Label className="text-sm" htmlFor="referrers">
                   Show Referrers
                 </Label>
                 <Switch
-                  id="referrers"
                   checked={options.referrers}
+                  disabled={isUpdatingOptions}
+                  id="referrers"
                   onCheckedChange={(checked) =>
                     handleUpdateOptions({ ...options, referrers: checked })
                   }
-                  disabled={isUpdatingOptions}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="countries" className="text-sm">
+                <Label className="text-sm" htmlFor="countries">
                   Show Countries
                 </Label>
                 <Switch
-                  id="countries"
                   checked={options.countries}
+                  disabled={isUpdatingOptions}
+                  id="countries"
                   onCheckedChange={(checked) =>
                     handleUpdateOptions({ ...options, countries: checked })
                   }
-                  disabled={isUpdatingOptions}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="paths" className="text-sm">
+                <Label className="text-sm" htmlFor="paths">
                   Show Paths
                 </Label>
                 <Switch
-                  id="paths"
                   checked={options.paths}
+                  disabled={isUpdatingOptions}
+                  id="paths"
                   onCheckedChange={(checked) =>
                     handleUpdateOptions({ ...options, paths: checked })
                   }
-                  disabled={isUpdatingOptions}
                 />
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Widget URL</h3>
-            <CopyInput label="" value={widgetUrl!} className="w-full" />
-            <p className="text-xs text-muted-foreground">
+            <h3 className="font-medium text-sm">Widget URL</h3>
+            <CopyInput className="w-full" label="" value={widgetUrl!} />
+            <p className="text-muted-foreground text-xs">
               Direct link to the widget. You can open this in a new tab or embed
               it.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Embed Code</h3>
+            <h3 className="font-medium text-sm">Embed Code</h3>
             <Syntax code={embedCode!} language="bash" />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Copy this code and paste it into your website HTML where you want
               the widget to appear.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Preview</h3>
-            <div className="border rounded-lg overflow-hidden">
+            <h3 className="font-medium text-sm">Preview</h3>
+            <div className="overflow-hidden rounded-lg border">
               <iframe
+                className="border-0"
+                height="600"
                 key={widgetChecksum}
                 src={`${widgetUrl}&checksum=${widgetChecksum}`}
-                width="100%"
-                height="600"
-                className="border-0"
                 title="Realtime Widget Preview"
+                width="100%"
               />
             </div>
             <div className="flex gap-2">
               <Button
-                variant="outline"
-                size="sm"
                 icon={ExternalLinkIcon}
                 onClick={() =>
                   window.open(widgetUrl!, '_blank', 'noopener,noreferrer')
                 }
+                size="sm"
+                variant="outline"
               >
                 Open in new tab
               </Button>
@@ -312,7 +312,7 @@ function CounterWidgetSection({
     : null;
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
           <span className="title">Counter Widget</span>
@@ -323,47 +323,47 @@ function CounterWidgetSection({
         </div>
         <Switch
           checked={isEnabled}
-          onCheckedChange={onToggle}
           disabled={isToggling}
+          onCheckedChange={onToggle}
         />
       </WidgetHead>
       {isEnabled && counterUrl && (
         <WidgetBody className="space-y-6">
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Widget URL</h3>
-            <CopyInput label="" value={counterUrl} className="w-full" />
-            <p className="text-xs text-muted-foreground">
+            <h3 className="font-medium text-sm">Widget URL</h3>
+            <CopyInput className="w-full" label="" value={counterUrl} />
+            <p className="text-muted-foreground text-xs">
               Direct link to the counter widget.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Embed Code</h3>
+            <h3 className="font-medium text-sm">Embed Code</h3>
             <Syntax code={counterEmbedCode!} language="bash" />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Copy this code and paste it into your website HTML where you want
               the counter to appear.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Preview</h3>
-            <div className="border rounded-lg p-4 bg-muted/30">
+            <h3 className="font-medium text-sm">Preview</h3>
+            <div className="rounded-lg border bg-muted/30 p-4">
               <iframe
-                src={counterUrl}
-                height="32"
                 className="border-0"
+                height="32"
+                src={counterUrl}
                 title="Counter Widget Preview"
               />
             </div>
             <div className="flex gap-2">
               <Button
-                variant="outline"
-                size="sm"
                 icon={ExternalLinkIcon}
                 onClick={() =>
                   window.open(counterUrl, '_blank', 'noopener,noreferrer')
                 }
+                size="sm"
+                variant="outline"
               >
                 Open in new tab
               </Button>
@@ -395,12 +395,12 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
 </a>`
     : null;
 
-  if (!isEnabled || !badgeUrl) {
+  if (!(isEnabled && badgeUrl)) {
     return null;
   }
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
           <span className="title">Analytics Badge</span>
@@ -412,52 +412,52 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
       </WidgetHead>
       <WidgetBody className="space-y-6">
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Widget URL</h3>
-          <CopyInput label="" value={badgeUrl} className="w-full" />
-          <p className="text-xs text-muted-foreground">
+          <h3 className="font-medium text-sm">Widget URL</h3>
+          <CopyInput className="w-full" label="" value={badgeUrl} />
+          <p className="text-muted-foreground text-xs">
             Direct link to the analytics badge widget.
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Embed Code</h3>
+          <h3 className="font-medium text-sm">Embed Code</h3>
           <Syntax code={badgeEmbedCode!} language="bash" />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Copy this code and paste it into your website HTML where you want
             the badge to appear.
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Preview</h3>
-          <div className="border rounded-lg p-4 bg-muted/30">
+          <h3 className="font-medium text-sm">Preview</h3>
+          <div className="rounded-lg border bg-muted/30 p-4">
             <a
               href="https://openpanel.dev"
-              target="_blank"
               rel="noopener noreferrer"
               style={{
                 overflow: 'hidden',
                 borderRadius: '8px',
                 display: 'inline-block',
               }}
+              target="_blank"
             >
               <iframe
-                src={badgeUrl}
+                className="pointer-events-none border-0"
                 height="48"
-                width="250"
-                className="border-0 pointer-events-none"
+                src={badgeUrl}
                 title="Analytics Badge Preview"
+                width="250"
               />
             </a>
           </div>
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
               icon={ExternalLinkIcon}
               onClick={() =>
                 window.open(badgeUrl, '_blank', 'noopener,noreferrer')
               }
+              size="sm"
+              variant="outline"
             >
               Open in new tab
             </Button>

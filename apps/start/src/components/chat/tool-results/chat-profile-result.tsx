@@ -20,8 +20,8 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 export function ChatProfileFullResult({ part }: ToolResultProps) {
   return (
     <ToolStateGuard
-      state={part.state}
       errorText={part.errorText}
+      state={part.state}
       toolName={part.type.replace(/^tool-/, '')}
     >
       <Inner output={part.output} />
@@ -34,7 +34,7 @@ function Inner({ output }: { output: unknown }) {
   if (!value) {
     return (
       <ResultCard>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+        <div className="px-3 py-2 text-muted-foreground text-sm">
           No profile
         </div>
       </ResultCard>
@@ -44,7 +44,7 @@ function Inner({ output }: { output: unknown }) {
   if (isProfileFullError(value)) {
     return (
       <ResultCard>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+        <div className="px-3 py-2 text-muted-foreground text-sm">
           {value.error}
         </div>
       </ResultCard>
@@ -107,10 +107,10 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
       )}
       {dashboard_url && (
         <a
+          className="block px-3 py-1.5 text-muted-foreground text-sm hover:underline"
           href={dashboard_url}
-          target="_blank"
           rel="noopener noreferrer"
-          className="block px-3 py-1.5 text-sm text-muted-foreground hover:underline"
+          target="_blank"
         >
           Open profile →
         </a>

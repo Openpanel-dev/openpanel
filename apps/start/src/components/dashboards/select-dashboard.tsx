@@ -1,10 +1,10 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeftIcon, PlusIcon, SaveIcon } from 'lucide-react';
+import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeftIcon, PlusIcon, SaveIcon } from 'lucide-react';
-import { useId, useState } from 'react';
 
 export function SelectDashboard({
   value,
@@ -65,50 +65,22 @@ export function SelectDashboard({
         Dashboard
       </Label>
 
-      {!isCreatingNew ? (
-        <div className="row gap-2 flex-wrap">
-          {dashboards.map((dashboard) => (
-            <Button
-              type="button"
-              key={dashboard.id}
-              variant={value === dashboard.id ? 'default' : 'outline'}
-              aria-pressed={value === dashboard.id}
-              onClick={() => onChange(dashboard.id)}
-            >
-              {dashboard.name}
-            </Button>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setPreviousValue(value);
-              setIsCreatingNew(true);
-              onChange('');
-            }}
-            icon={PlusIcon}
-          >
-            Create new dashboard
-          </Button>
-        </div>
-      ) : (
+      {isCreatingNew ? (
         <div className="flex gap-2">
           <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            icon={ArrowLeftIcon}
             aria-label="Back to dashboard selection"
+            icon={ArrowLeftIcon}
             onClick={() => {
               setIsCreatingNew(false);
               setNewDashboardName('');
               onChange(previousValue);
             }}
+            size="icon"
+            type="button"
+            variant="outline"
           />
           <Input
             id={newDashboardNameId}
-            placeholder="Enter dashboard name"
-            value={newDashboardName}
             onChange={(e) => setNewDashboardName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') {
@@ -121,15 +93,43 @@ export function SelectDashboard({
               e.preventDefault();
               handleCreateDashboard();
             }}
+            placeholder="Enter dashboard name"
+            value={newDashboardName}
           />
           <Button
-            type="button"
-            onClick={handleCreateDashboard}
             disabled={!newDashboardName.trim() || dashboardMutation.isPending}
-            variant="outline"
             icon={SaveIcon}
+            onClick={handleCreateDashboard}
+            type="button"
+            variant="outline"
           >
             {dashboardMutation.isPending ? 'Creating...' : 'Create'}
+          </Button>
+        </div>
+      ) : (
+        <div className="row flex-wrap gap-2">
+          {dashboards.map((dashboard) => (
+            <Button
+              aria-pressed={value === dashboard.id}
+              key={dashboard.id}
+              onClick={() => onChange(dashboard.id)}
+              type="button"
+              variant={value === dashboard.id ? 'default' : 'outline'}
+            >
+              {dashboard.name}
+            </Button>
+          ))}
+          <Button
+            icon={PlusIcon}
+            onClick={() => {
+              setPreviousValue(value);
+              setIsCreatingNew(true);
+              onChange('');
+            }}
+            type="button"
+            variant="outline"
+          >
+            Create new dashboard
           </Button>
         </div>
       )}

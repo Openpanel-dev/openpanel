@@ -1,12 +1,11 @@
-import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
 import { ChevronLeftIcon, FullscreenIcon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'usehooks-ts';
-
 import { Button } from './ui/button';
 import { Tooltiper } from './ui/tooltip';
+import { cn } from '@/utils/cn';
 
 type Props = {
   children: React.ReactNode;
@@ -28,7 +27,7 @@ export const Fullscreen = (props: Props) => {
       className={cn(
         isFullscreen
           ? 'fixed inset-0 z-50 overflow-auto bg-def-200'
-          : 'w-full min-h-full col'
+          : 'col min-h-full w-full'
       )}
     >
       {props.children}
@@ -42,13 +41,13 @@ export const FullscreenOpen = () => {
     return null;
   }
   return (
-    <Tooltiper content="Toggle fullscreen" asChild>
+    <Tooltiper asChild content="Toggle fullscreen">
       <Button
-        variant="outline"
-        size="icon"
         onClick={() => {
           setIsFullscreen((p) => !p);
         }}
+        size="icon"
+        variant="outline"
       >
         <FullscreenIcon className="size-4" />
       </Button>
@@ -88,11 +87,9 @@ export const FullscreenClose = () => {
   }
 
   return (
-    <div className="fixed bottom-0 top-0 z-50 flex items-center">
-      <Tooltiper content="Exit full screen" asChild>
+    <div className="fixed top-0 bottom-0 z-50 flex items-center">
+      <Tooltiper asChild content="Exit full screen">
         <button
-          type="button"
-          ref={ref}
           className={cn(
             'flex h-20 w-20 -translate-x-20 items-center justify-center rounded-full bg-foreground transition-transform',
             visible && isFullscreenDebounced && '-translate-x-10'
@@ -100,6 +97,8 @@ export const FullscreenClose = () => {
           onClick={() => {
             setIsFullscreen(false);
           }}
+          ref={ref}
+          type="button"
         >
           <ChevronLeftIcon className="ml-6 text-background" />
         </button>

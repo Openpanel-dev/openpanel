@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { List } from '../components/list';
@@ -87,8 +86,8 @@ export function OnboardingDashboards({
       <Text>Carl</Text>
       <span style={{ margin: '0 -20px', display: 'block' }}>
         <img
-          src="https://openpanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
           alt="Dashboard"
+          src="https://openpanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
           style={{
             width: '100%',
             height: 'auto',
@@ -104,5 +103,5 @@ OnboardingDashboards.PreviewProps = {
   firstName: 'Alex',
   dashboardUrl: 'https://dashboard.openpanel.dev/org-id',
   hasData: true,
-  eventsCount: 48211,
+  eventsCount: 48_211,
 };

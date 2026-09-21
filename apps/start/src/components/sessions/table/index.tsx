@@ -48,7 +48,6 @@ import { useInViewport } from 'react-in-viewport';
 import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Skeleton } from '@/components/skeleton';
-import { Button } from '@/components/ui/button';
 import {
   AnimatedSearchInput,
   DataTableToolbarContainer,
@@ -368,9 +367,9 @@ function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
           value={search}
         />
         <TableFilterPills
-          urlKey="f"
           categories={['profile', 'group', 'cohort', 'session']}
           title="Session filters"
+          urlKey="f"
         />
       </div>
       <DataTableViewOptions table={table} />

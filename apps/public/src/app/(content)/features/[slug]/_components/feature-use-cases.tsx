@@ -9,19 +9,19 @@ export function FeatureUseCasesSection({ useCases }: FeatureUseCasesProps) {
   return (
     <Section className="container">
       <SectionHeader
-        title={useCases.title}
-        description={useCases.intro}
-        variant="sm"
         className="mb-12"
+        description={useCases.intro}
+        title={useCases.title}
+        variant="sm"
       />
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-6 md:grid-cols-2">
         {useCases.items.map((useCase) => (
           <div
+            className="col gap-2 rounded-2xl border bg-card/50 p-6"
             key={useCase.title}
-            className="col gap-2 p-6 border rounded-2xl bg-card/50"
           >
             <h3 className="font-semibold">{useCase.title}</h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {useCase.description}
             </p>
           </div>

@@ -3,8 +3,12 @@ import { useEffect, useRef } from 'react';
 const BASE_SUFFIX = ' | OpenPanel.dev';
 
 function inject(title: string, projectName: string): string {
-  if (!title.endsWith(BASE_SUFFIX)) return title;
-  if (title.includes(` | ${projectName}${BASE_SUFFIX}`)) return title;
+  if (!title.endsWith(BASE_SUFFIX)) {
+    return title;
+  }
+  if (title.includes(` | ${projectName}${BASE_SUFFIX}`)) {
+    return title;
+  }
   return title.replace(BASE_SUFFIX, ` | ${projectName}${BASE_SUFFIX}`);
 }
 
@@ -17,11 +21,15 @@ export function useProjectDocumentTitle(projectName: string | undefined) {
   const lastApplied = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!projectName) return;
+    if (!projectName) {
+      return;
+    }
 
     const apply = () => {
       const current = document.title;
-      if (current === lastApplied.current) return;
+      if (current === lastApplied.current) {
+        return;
+      }
       const next = inject(current, projectName);
       if (next !== current) {
         document.title = next;

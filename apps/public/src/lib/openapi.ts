@@ -1,12 +1,12 @@
+import path from 'node:path';
+import { apiRefCollection } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
+import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
 import {
   createOpenAPI,
   openapiPlugin,
   openapiSource,
 } from 'fumadocs-openapi/server';
-import { apiRefCollection } from 'collections/server';
-import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
-import path from 'node:path';
 import { cache } from 'react';
 
 const API_URL =

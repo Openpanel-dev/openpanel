@@ -10,10 +10,10 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { cn } from '@/lib/utils';
 import type { LineConfig, Margin } from './chart-context';
 import { Line, type LineProps } from './line';
 import { TimeSeriesChartInner } from './time-series-chart-shell';
+import { cn } from '@/lib/utils';
 
 export interface LineChartProps {
   /** Data array - each item should have a date field and numeric values */

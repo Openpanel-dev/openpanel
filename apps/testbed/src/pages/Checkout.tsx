@@ -17,7 +17,7 @@ export function CheckoutPage({ cart, onPay }: Props) {
           <label className="form-label" htmlFor="card">
             Card number
           </label>
-          <input id="card" defaultValue="4242 4242 4242 4242" readOnly />
+          <input defaultValue="4242 4242 4242 4242" id="card" readOnly />
         </div>
         <div
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}
@@ -26,13 +26,13 @@ export function CheckoutPage({ cart, onPay }: Props) {
             <label className="form-label" htmlFor="expiry">
               Expiry
             </label>
-            <input id="expiry" defaultValue="12/28" readOnly />
+            <input defaultValue="12/28" id="expiry" readOnly />
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="cvc">
               CVC
             </label>
-            <input id="cvc" defaultValue="123" readOnly />
+            <input defaultValue="123" id="cvc" readOnly />
           </div>
         </div>
         <div className="checkout-total">Total: ${total}</div>
@@ -40,10 +40,10 @@ export function CheckoutPage({ cart, onPay }: Props) {
           <Link to="/cart">
             <button type="button">← Back</button>
           </Link>
-          <button type="button" className="primary" onClick={() => onPay(true)}>
+          <button className="primary" onClick={() => onPay(true)} type="button">
             Pay ${total} (success)
           </button>
-          <button type="button" className="danger" onClick={() => onPay(false)}>
+          <button className="danger" onClick={() => onPay(false)} type="button">
             Pay ${total} (fail)
           </button>
         </div>

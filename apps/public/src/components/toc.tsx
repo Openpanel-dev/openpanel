@@ -10,20 +10,20 @@ interface Props {
 export const Toc: React.FC<Props> = ({ toc }) => {
   return (
     <FeatureCardContainer className="gap-2">
-      <span className="text-lg font-semibold">Table of contents</span>
+      <span className="font-semibold text-lg">Table of contents</span>
       <ul>
         {toc.map((item) => (
           <li
-            key={item.url}
             className="py-1"
+            key={item.url}
             style={{ marginLeft: `${(item.depth - 2) * (4 * 4)}px` }}
           >
             <Link
+              className="row group/toc-item items-center gap-2 hover:underline"
               href={item.url}
-              className="hover:underline row gap-2 items-center group/toc-item"
               title={item.title?.toString() ?? ''}
             >
-              <ArrowRightIcon className="shrink-0 w-4 h-4 opacity-30 group-hover/toc-item:opacity-100 transition-opacity" />
+              <ArrowRightIcon className="h-4 w-4 shrink-0 opacity-30 transition-opacity group-hover/toc-item:opacity-100" />
               <span className="truncate text-sm">{item.title}</span>
             </Link>
           </li>

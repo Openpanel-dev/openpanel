@@ -1,3 +1,5 @@
+import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -8,10 +10,6 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
-
-import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
-
-import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/events/_tabs/stats'
@@ -47,9 +45,9 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              chartType="histogram"
               projectId={projectId}
               range="30d"
-              chartType="histogram"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -71,20 +69,20 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              options={{
-                renderSerieName(names) {
-                  return names[1];
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
                 },
-              }}
-              projectId={projectId}
-              range="30d"
+              ]}
               chartType="pie"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
+              options={{
+                renderSerieName(names) {
+                  return names[1];
                 },
-              ]}
+              }}
+              projectId={projectId}
+              range="30d"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -115,20 +113,20 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              options={{
-                renderSerieName(names) {
-                  return names[1];
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
                 },
-              }}
-              projectId={projectId}
-              range="30d"
+              ]}
               chartType="bar"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
+              options={{
+                renderSerieName(names) {
+                  return names[1];
                 },
-              ]}
+              }}
+              projectId={projectId}
+              range="30d"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -159,6 +157,13 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
+                },
+              ]}
+              chartType="linear"
               options={{
                 renderSerieName(names) {
                   return names[1];
@@ -166,13 +171,6 @@ function Component() {
               }}
               projectId={projectId}
               range="30d"
-              chartType="linear"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
-                },
-              ]}
               series={
                 events && events.length > 0
                   ? events.map((name) => ({

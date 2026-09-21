@@ -3,16 +3,16 @@
 // ============================================================================
 
 export type {
+  ColorScheme,
   FacehashProps,
   Intensity3D,
   Variant,
-  ColorScheme,
 } from './facehash';
 export {
-  Facehash,
   DEFAULT_COLORS,
-  DEFAULT_COLORS_LIGHT,
   DEFAULT_COLORS_DARK,
+  DEFAULT_COLORS_LIGHT,
+  Facehash,
 } from './facehash';
 
 // ============================================================================

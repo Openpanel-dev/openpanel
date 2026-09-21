@@ -1,8 +1,4 @@
-import {
-  OPENPANEL_BASE_URL,
-  OPENPANEL_DESCRIPTION,
-  OPENPANEL_NAME,
-} from '@/lib/openpanel-brand';
+import { OPENPANEL_DESCRIPTION, OPENPANEL_NAME } from '@/lib/openpanel-brand';
 import { getLLMText, source } from '@/lib/source';
 
 export const dynamic = 'force-static';

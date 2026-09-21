@@ -108,10 +108,10 @@ export const AvatarFallback = React.forwardRef<
     if (children) {
       return (
         <span
-          ref={ref}
           className={className}
-          style={style}
           data-avatar-fallback=""
+          ref={ref}
+          style={style}
           {...props}
         >
           {children}
@@ -123,10 +123,10 @@ export const AvatarFallback = React.forwardRef<
     if (facehash) {
       return (
         <Facehash
-          ref={ref as React.Ref<HTMLDivElement>}
-          name={name || '?'}
-          size="100%"
           groupHover={groupHover}
+          name={name || '?'}
+          ref={ref as React.Ref<HTMLDivElement>}
+          size="100%"
           {...facehashProps}
           style={{
             ...style,
@@ -139,8 +139,9 @@ export const AvatarFallback = React.forwardRef<
     // Initials mode
     return (
       <span
-        ref={ref}
         className={className}
+        data-avatar-fallback=""
+        ref={ref}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -149,7 +150,6 @@ export const AvatarFallback = React.forwardRef<
           height: '100%',
           ...style,
         }}
-        data-avatar-fallback=""
         {...props}
       >
         {initials}

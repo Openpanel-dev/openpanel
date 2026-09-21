@@ -12,7 +12,6 @@ import { join, relative, sep } from 'node:path';
 // A namespace import rather than ~30 named ones: `ts.isCallExpression` is the
 // compiler API's own idiom and reads far better at 30 call sites.
 import * as ts from 'typescript';
-
 import { IGNORED_DIRECTORY_NAMES } from './conformance.constants';
 
 export interface ParsedSource {

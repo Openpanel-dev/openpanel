@@ -1,13 +1,13 @@
+import type { IServiceEvent } from '@openpanel/core';
+import { isToday } from 'date-fns';
+import { CopyIcon } from 'lucide-react';
+import { SerieIcon } from '../report-chart/common/serie-icon';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { countries } from '@/translations/countries';
 import { camelCaseToWords } from '@/utils/casing';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 import { formatDateTime, formatTime } from '@/utils/date';
-import type { IServiceEvent } from '@openpanel/core';
-import { isToday } from 'date-fns';
-import { CopyIcon } from 'lucide-react';
-import { SerieIcon } from '../report-chart/common/serie-icon';
 
 export interface KeyValueItem {
   name: string;
@@ -75,12 +75,12 @@ export function KeyValueGrid({
       <div className="flex items-center gap-1">
         {splitKey.map((name, index) => (
           <span
-            key={name}
             className={
               index === splitKey.length - 1
                 ? 'text-foreground'
                 : 'text-muted-foreground'
             }
+            key={name}
           >
             {camelCaseToWords(name)}
             {index < splitKey.length - 1 && (
@@ -94,7 +94,7 @@ export function KeyValueGrid({
 
   const defaultRenderValue = (item: KeyValueItem) => {
     return (
-      <FieldValue name={item.name} value={item.value} event={item.event} />
+      <FieldValue event={item.event} name={item.name} value={item.value} />
     );
   };
 
@@ -107,19 +107,19 @@ export function KeyValueGrid({
 
   return (
     <div
-      className={cn('grid card overflow-hidden', gridCols[columns], className)}
+      className={cn('card grid overflow-hidden', gridCols[columns], className)}
     >
       {data.map((item, index) => {
         const stringValue = toStringValue(item.value);
 
         return (
           <div
-            key={`${item.name}-${index}`}
             className={cn(
-              'relative flex items-center justify-between gap-4 p-4 py-3 shadow-[0_0_0_0.5px] shadow-border group',
+              'group relative flex items-center justify-between gap-4 p-4 py-3 shadow-[0_0_0_0.5px] shadow-border',
               onItemClick && 'cursor-pointer hover:bg-muted/50',
               rowClassName
             )}
+            key={`${item.name}-${index}`}
             onClick={() => onItemClick?.(item)}
             onKeyDown={(e) => {
               if (onItemClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -127,27 +127,27 @@ export function KeyValueGrid({
                 onItemClick(item);
               }
             }}
-            tabIndex={onItemClick ? 0 : undefined}
             role={onItemClick ? 'button' : undefined}
+            tabIndex={onItemClick ? 0 : undefined}
           >
             {copyable && stringValue !== undefined && (
               <button
+                className="absolute top-1/2 left-2 z-10 -translate-x-full -translate-y-1/2 rounded border border-border bg-background p-1 opacity-0 shadow-sm transition-all duration-200 ease-out group-hover:translate-x-0 group-hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation();
                   clipboard(stringValue);
                 }}
                 type="button"
-                className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out bg-background border border-border rounded p-1 shadow-sm z-10"
               >
                 <CopyIcon className="size-3 shrink-0" />
               </button>
             )}
-            <div className={cn('flex-1 min-w-0 text-sm', keyClassName)}>
+            <div className={cn('min-w-0 flex-1 text-sm', keyClassName)}>
               {renderKey ? renderKey(item) : defaultRenderKey(item)}
             </div>
             <div
               className={cn(
-                'text-right text-sm font-mono truncate min-w-0 max-w-[60%]',
+                'min-w-0 max-w-[60%] truncate text-right font-mono text-sm',
                 valueClassName
               )}
               title={stringValue}
@@ -159,7 +159,7 @@ export function KeyValueGrid({
       })}
 
       {data.length === 0 && (
-        <div className="text-center text-muted-foreground py-8 col-span-full">
+        <div className="col-span-full py-8 text-center text-muted-foreground">
           No data available
         </div>
       )}
@@ -188,28 +188,28 @@ export function FieldValue({
     switch (name) {
       case 'osVersion':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={event.os} />
             <span>{value}</span>
           </div>
         );
       case 'browserVersion':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={event.browser} />
             <span>{value}</span>
           </div>
         );
       case 'city':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={event.country} />
             <span>{value}</span>
           </div>
         );
       case 'region':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={event.country} />
             <span>{value}</span>
           </div>
@@ -218,7 +218,7 @@ export function FieldValue({
         return JSON.stringify(value);
       case 'country':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={value} />
             <span>{countries[value as keyof typeof countries] ?? value}</span>
           </div>
@@ -229,7 +229,7 @@ export function FieldValue({
       case 'model':
       case 'device':
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <SerieIcon name={value} />
             <span>{value}</span>
           </div>

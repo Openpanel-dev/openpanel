@@ -45,15 +45,15 @@ export function FlowStep({
   const Icon = iconMap[icon];
 
   return (
-    <div className="relative flex gap-4 mb-4 min-w-0">
+    <div className="relative mb-4 flex min-w-0 gap-4">
       {/* Step number and icon */}
-      <div className="flex flex-col items-center shrink-0">
+      <div className="flex shrink-0 flex-col items-center">
         <div className="relative z-10 bg-background">
-          <div className="flex items-center justify-center size-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-sm">
+          <div className="flex size-10 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground text-sm shadow-sm">
             {step}
           </div>
           <div
-            className={`absolute -bottom-2 -right-2 flex items-center justify-center w-6 h-6 rounded-full bg-background border shadow-sm ${iconBorderColorMap[icon] || 'border-primary'}`}
+            className={`absolute -right-2 -bottom-2 flex h-6 w-6 items-center justify-center rounded-full border bg-background shadow-sm ${iconBorderColorMap[icon] || 'border-primary'}`}
           >
             <Icon
               className={`size-3.5 ${iconColorMap[icon] || 'text-primary'}`}
@@ -62,14 +62,14 @@ export function FlowStep({
         </div>
         {/* Connector line - extends from badge through content to next step */}
         {!isLast && (
-          <div className="w-0.5 bg-border mt-2 flex-1 min-h-[2rem]" />
+          <div className="mt-2 min-h-[2rem] w-0.5 flex-1 bg-border" />
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 pt-1 min-w-0">
+      <div className="min-w-0 flex-1 pt-1">
         <div className="mb-2">
-          <span className="font-semibold text-foreground mr-2">{actor}:</span>{' '}
+          <span className="mr-2 font-semibold text-foreground">{actor}:</span>{' '}
           <span className="text-muted-foreground">{description}</span>
         </div>
         {children && <div className="mt-3 min-w-0">{children}</div>}

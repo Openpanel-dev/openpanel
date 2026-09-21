@@ -13,14 +13,14 @@ const referrers = [
 
 export function RevenueIllustration() {
   return (
-    <div className="h-full col gap-3 px-4 pb-3 pt-5">
+    <div className="col h-full gap-3 px-4 pt-5 pb-3">
       {/* MRR stat + chart */}
       <div className="row gap-3">
         <div className="col gap-1 rounded-xl border bg-card p-3 transition-all duration-300 group-hover:-translate-y-0.5">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+          <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
             MRR
           </span>
-          <span className="font-bold font-mono text-xl text-emerald-500">
+          <span className="font-bold font-mono text-emerald-500 text-xl">
             $8,420
           </span>
           <span className="text-[9px] text-emerald-500">↑ 12% this month</span>
@@ -41,29 +41,29 @@ export function RevenueIllustration() {
 
       {/* Revenue by referrer */}
       <div className="flex-1 overflow-hidden rounded-xl border bg-card">
-        <div className="row border-b border-border px-3 py-1.5">
-          <span className="flex-1 text-[8px] uppercase tracking-wider text-muted-foreground">
+        <div className="row border-border border-b px-3 py-1.5">
+          <span className="flex-1 text-[8px] text-muted-foreground uppercase tracking-wider">
             Referrer
           </span>
-          <span className="text-[8px] uppercase tracking-wider text-muted-foreground">
+          <span className="text-[8px] text-muted-foreground uppercase tracking-wider">
             Revenue
           </span>
         </div>
         {referrers.map((r) => (
           <div
-            className="row items-center gap-2 border-b border-border/50 px-3 py-1.5 last:border-0"
+            className="row items-center gap-2 border-border/50 border-b px-3 py-1.5 last:border-0"
             key={r.name}
           >
-            <span className="text-[9px] text-muted-foreground flex-none w-20 truncate">
+            <span className="w-20 flex-none truncate text-[9px] text-muted-foreground">
               {r.name}
             </span>
-            <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-1 rounded-full bg-emerald-500/70"
                 style={{ width: `${r.pct}%` }}
               />
             </div>
-            <span className="font-mono text-[9px] text-emerald-500 flex-none">
+            <span className="flex-none font-mono text-[9px] text-emerald-500">
               {r.amount}
             </span>
           </div>

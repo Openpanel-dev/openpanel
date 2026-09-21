@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import Script from 'next/script';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
 import { Testimonials } from '@/app/(home)/_sections/testimonials';
@@ -6,8 +8,6 @@ import { Section, SectionHeader } from '@/components/section';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { guideSource } from '@/lib/source';
-import type { Metadata } from 'next';
-import Script from 'next/script';
 
 export const metadata: Metadata = getPageMetadata({
   title: 'Implementation Guides',
@@ -43,32 +43,32 @@ export default async function Page() {
     <div>
       <HeroContainer className="-mb-32">
         <SectionHeader
-          as="h1"
           align="center"
+          as="h1"
           className="flex-1"
-          title="Implementation Guides"
           description="Step-by-step tutorials for adding privacy-first analytics to your app with OpenPanel."
+          title="Implementation Guides"
         />
       </HeroContainer>
 
       <Script
-        strategy="beforeInteractive"
-        id="guides-itemlist-schema"
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        id="guides-itemlist-schema"
+        strategy="beforeInteractive"
+        type="application/ld+json"
       />
 
-      <Section className="container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+      <Section className="container grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
         {guides.map((item) => (
           <GuideCard
-            key={item.url}
-            url={item.url}
-            title={item.data.title}
-            difficulty={item.data.difficulty}
-            timeToComplete={item.data.timeToComplete}
             cover={item.data.cover}
-            team={item.data.team}
             date={item.data.date}
+            difficulty={item.data.difficulty}
+            key={item.url}
+            team={item.data.team}
+            timeToComplete={item.data.timeToComplete}
+            title={item.data.title}
+            url={item.url}
           />
         ))}
       </Section>

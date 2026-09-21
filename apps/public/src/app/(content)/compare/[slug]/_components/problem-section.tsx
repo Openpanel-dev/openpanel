@@ -1,11 +1,11 @@
-import { Section, SectionHeader } from '@/components/section';
-import { CompareSummary } from '@/lib/compare';
 import {
-  UsersIcon,
-  TrendingUpIcon,
   PuzzleIcon,
   ShieldIcon,
+  TrendingUpIcon,
+  UsersIcon,
 } from 'lucide-react';
+import { Section, SectionHeader } from '@/components/section';
+import type { CompareSummary } from '@/lib/compare';
 
 interface ProblemSectionProps {
   summary: CompareSummary;
@@ -23,19 +23,19 @@ export function ProblemSection({
   return (
     <Section className="container">
       <SectionHeader
-        title={summary.title}
         description={summary.intro}
+        title={summary.title}
         variant="sm"
       />
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+      <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {problems.map((problem, index) => {
           const Icon = problemIcons[index] || UsersIcon;
           return (
-            <div key={problem} className="col gap-3 text-center">
-              <div className="size-12 rounded-full bg-muted center-center mx-auto">
+            <div className="col gap-3 text-center" key={problem}>
+              <div className="center-center mx-auto size-12 rounded-full bg-muted">
                 <Icon className="size-6 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">{problem}</p>
+              <p className="text-muted-foreground text-sm">{problem}</p>
             </div>
           );
         })}

@@ -16,7 +16,6 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-
 import { ASSET_LOADER_ALLOWLIST } from './conformance.constants';
 import {
   checkCreateServicesCallSites,

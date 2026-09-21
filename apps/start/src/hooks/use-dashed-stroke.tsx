@@ -1,5 +1,4 @@
-import { forwardRef, useCallback, useRef, useState } from 'react';
-import { Customized, Line } from 'recharts';
+import { useCallback, useRef, useState } from 'react';
 export type GraphicalItemPoint = {
   /**
    * x point coordinate.
@@ -116,7 +115,9 @@ export function useStrokeDasharray({
 
       const getLineWidth = (points: GraphicalItemPoint[]) => {
         const width = points?.reduce((acc, point, index) => {
-          if (!index) return acc;
+          if (!index) {
+            return acc;
+          }
 
           const prevPoint = points?.[index - 1];
 
@@ -146,7 +147,9 @@ export function useStrokeDasharray({
         const dashedPoints = linePoints?.slice(targetIndex);
         const dashedWidth = getLineWidth(dashedPoints || []);
 
-        if (!lineWidth || !dashedWidth) return;
+        if (!(lineWidth && dashedWidth)) {
+          return;
+        }
 
         const firstWidth = lineWidth - dashedWidth;
         const targetCurve = targetLine?.curveCorrection ?? curveCorrection;

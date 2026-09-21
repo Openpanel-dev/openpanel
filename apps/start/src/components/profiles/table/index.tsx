@@ -121,9 +121,9 @@ function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
           value={search}
         />
         <TableFilterPills
-          urlKey="f"
           categories={['profile', 'group', 'cohort']}
           title="Profile filters"
+          urlKey="f"
         />
       </div>
       <DataTableViewOptions table={table} />

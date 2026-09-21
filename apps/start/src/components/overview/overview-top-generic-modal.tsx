@@ -1,6 +1,3 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-
-import { useTRPC } from '@/integrations/trpc/react';
 import type { IGetTopGenericInput } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
@@ -11,6 +8,8 @@ import {
 } from './overview-constants';
 import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewTopGenericModalProps {
   projectId: string;
@@ -40,25 +39,18 @@ export default function OverviewTopGenericModal({
 
   return (
     <OverviewListModal
-      title={`Top ${columnNamePlural}`}
-      searchPlaceholder={`Search ${columnNamePlural.toLowerCase()}...`}
+      columnName={columnName}
       data={query.data ?? []}
       keyExtractor={(item) => (item.prefix ?? '') + item.name}
-      searchFilter={(item, query) =>
-        item.name?.toLowerCase().includes(query) ||
-        item.prefix?.toLowerCase().includes(query) ||
-        false
-      }
-      columnName={columnName}
       renderItem={(item) => (
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <SerieIcon name={item.prefix || item.name} />
           <button
-            type="button"
             className="truncate hover:underline"
             onClick={() => {
               setFilter(column, item.name);
             }}
+            type="button"
           >
             {item.prefix && (
               <span className="mr-1 inline-flex items-center gap-1">
@@ -70,6 +62,14 @@ export default function OverviewTopGenericModal({
           </button>
         </div>
       )}
+      searchFilter={(item, query) =>
+        Boolean(
+          item.name?.toLowerCase().includes(query) ||
+            item.prefix?.toLowerCase().includes(query)
+        )
+      }
+      searchPlaceholder={`Search ${columnNamePlural.toLowerCase()}...`}
+      title={`Top ${columnNamePlural}`}
     />
   );
 }

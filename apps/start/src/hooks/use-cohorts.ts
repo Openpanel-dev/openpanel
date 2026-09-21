@@ -1,5 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function useCohorts(
   params: { projectId: string; includeCount?: boolean },

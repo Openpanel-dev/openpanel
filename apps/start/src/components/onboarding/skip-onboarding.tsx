@@ -1,11 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
+import { ChevronLastIcon, LogInIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import { useLogout } from '@/hooks/use-logout';
 import { useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { useLocation, useNavigate } from '@tanstack/react-router';
-import { ChevronLastIcon, LogInIcon } from 'lucide-react';
-import { useEffect } from 'react';
 
 const PUBLIC_SEGMENTS = [['onboarding']];
 
@@ -33,8 +32,8 @@ export const SkipOnboarding = () => {
   if (isPublic) {
     return (
       <Link
+        className="flex items-center gap-2 text-muted-foreground"
         to="/login"
-        className="flex items-center gap-2  text-muted-foreground"
       >
         Login
         <LogInIcon size={16} />
@@ -48,7 +47,7 @@ export const SkipOnboarding = () => {
 
   return (
     <button
-      type="button"
+      className="flex items-center gap-2 text-muted-foreground"
       onClick={() => {
         if (res.data?.canSkip) {
           navigate({ to: '/' });
@@ -62,7 +61,7 @@ export const SkipOnboarding = () => {
           });
         }
       }}
-      className="flex items-center gap-2  text-muted-foreground"
+      type="button"
     >
       Skip onboarding
       <ChevronLastIcon size={16} />

@@ -1,13 +1,13 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import type { RouterOutputs } from '@/trpc/client';
-import { cn } from '@/utils/cn';
 import { ChevronDown, ChevronUp, ExternalLinkIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
 import { WidgetTable, type Props as WidgetTableProps } from '../widget-table';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 
 function RevenuePieChart({ percentage }: { percentage: number }) {
   const size = 16;
@@ -17,30 +17,30 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
   const offset = circumference - percentage * circumference;
 
   return (
-    <svg width={size} height={size} className="flex-shrink-0">
+    <svg className="flex-shrink-0" height={size} width={size}>
       {/* Background circle */}
       <circle
+        className="text-def-200"
         cx={size / 2}
         cy={size / 2}
-        r={radius}
         fill="none"
+        r={radius}
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        className="text-def-200"
       />
       {/* Revenue arc */}
       <circle
+        className="transition-all"
         cx={size / 2}
         cy={size / 2}
-        r={radius}
         fill="none"
+        r={radius}
         stroke="#3ba974"
-        strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
+        strokeWidth={strokeWidth}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        className="transition-all"
       />
     </svg>
   );
@@ -61,12 +61,12 @@ function SortableHeader({
 }) {
   return (
     <button
-      type="button"
-      onClick={onClick}
       className={cn(
-        'row items-center gap-1 hover:opacity-80 transition-opacity',
-        isRightAligned && 'justify-end ml-auto'
+        'row items-center gap-1 transition-opacity hover:opacity-80',
+        isRightAligned && 'ml-auto justify-end'
       )}
+      onClick={onClick}
+      type="button"
     >
       <span>{name}</span>
       {isSorted ? (
@@ -120,7 +120,7 @@ export const OverviewWidgetTable = <T,>({
   const sortedData = useMemo(() => {
     const allData = data ?? [];
 
-    if (!sortColumn || !sortDirection) {
+    if (!(sortColumn && sortDirection)) {
       // When not sorting, return top 15 (maintain original behavior)
       return allData;
     }
@@ -142,9 +142,15 @@ export const OverviewWidgetTable = <T,>({
       const bValue = column.getSortValue!(b);
 
       // Handle null values
-      if (aValue === null && bValue === null) return 0;
-      if (aValue === null) return 1;
-      if (bValue === null) return -1;
+      if (aValue === null && bValue === null) {
+        return 0;
+      }
+      if (aValue === null) {
+        return 1;
+      }
+      if (bValue === null) {
+        return -1;
+      }
 
       // Compare values
       let comparison = 0;
@@ -176,18 +182,18 @@ export const OverviewWidgetTable = <T,>({
         key: columnName,
         name: isSortable ? (
           <SortableHeader
-            name={columnName}
-            isSorted={isSorted}
-            sortDirection={currentSortDirection}
-            onClick={() => handleSort(columnName)}
             isRightAligned={isRightAligned}
+            isSorted={isSorted}
+            name={columnName}
+            onClick={() => handleSort(columnName)}
+            sortDirection={currentSortDirection}
           />
         ) : (
           column.name
         ),
         className: cn(
           index === 0
-            ? 'text-left w-full font-medium min-w-0'
+            ? 'w-full min-w-0 text-left font-medium'
             : 'text-right font-mono',
           // Remove old responsive logic - now handled by responsive prop
           column.className
@@ -199,15 +205,15 @@ export const OverviewWidgetTable = <T,>({
   return (
     <div className={cn(className)}>
       <WidgetTable
-        data={sortedData}
-        keyExtractor={keyExtractor}
-        className={'text-sm min-h-[358px] @container'}
+        className={'@container min-h-[358px] text-sm'}
         columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
+        columns={columnsWithSortableHeaders}
+        data={sortedData}
         eachRow={(item) => {
           return (
-            <div className="absolute top-0 left-0 !p-0 w-full h-full">
+            <div className="!p-0 absolute top-0 left-0 h-full w-full">
               <div
-                className="h-full bg-def-200 group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900 transition-colors relative"
+                className="relative h-full bg-def-200 transition-colors group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900"
                 style={{
                   width: `${getColumnPercentage(item) * 100}%`,
                 }}
@@ -215,7 +221,7 @@ export const OverviewWidgetTable = <T,>({
             </div>
           );
         }}
-        columns={columnsWithSortableHeaders}
+        keyExtractor={keyExtractor}
       />
     </div>
   );
@@ -229,9 +235,6 @@ export function OverviewWidgetTableLoading({
   return (
     <OverviewWidgetTable
       className={className}
-      data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-      keyExtractor={(item) => item.toString()}
-      getColumnPercentage={() => 0}
       columns={[
         {
           name: 'Path',
@@ -244,6 +247,9 @@ export function OverviewWidgetTableLoading({
           width: '84px',
         },
       ]}
+      data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+      getColumnPercentage={() => 0}
+      keyExtractor={(item) => item.toString()}
     />
   );
 }
@@ -283,9 +289,6 @@ export function OverviewWidgetTablePages({
   return (
     <OverviewWidgetTable
       className={className}
-      data={data ?? []}
-      keyExtractor={(item) => item.path + item.origin}
-      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           name: 'Path',
@@ -294,15 +297,15 @@ export function OverviewWidgetTablePages({
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
-                <div className="row items-center gap-2 min-w-0 relative">
+                <div className="row relative min-w-0 items-center gap-2">
                   <SerieIcon name={item.origin} />
                   <button
-                    type="button"
                     className="truncate"
                     onClick={() => {
                       setFilter('path', item.path);
                       setFilter('origin', item.origin);
                     }}
+                    type="button"
                   >
                     {item.path ? (
                       <>
@@ -321,10 +324,10 @@ export function OverviewWidgetTablePages({
                   </button>
                   <a
                     href={item.origin + item.path}
-                    target="_blank"
                     rel="noreferrer"
+                    target="_blank"
                   >
-                    <ExternalLinkIcon className="size-3 group-hover/row:opacity-100 opacity-0 transition-opacity" />
+                    <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/row:opacity-100" />
                   </a>
                 </div>
               </Tooltiper>
@@ -344,7 +347,7 @@ export function OverviewWidgetTablePages({
                   const revenuePercentage =
                     totalRevenue > 0 ? revenue / totalRevenue : 0;
                   return (
-                    <div className="row gap-2 items-center justify-end">
+                    <div className="row items-center justify-end gap-2">
                       <span
                         className="font-semibold"
                         style={{ color: '#3ba974' }}
@@ -365,7 +368,7 @@ export function OverviewWidgetTablePages({
           getSortValue: (item: (typeof data)[number]) => item.pageviews,
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">
                   {number.short(item.pageviews)}
                 </span>
@@ -380,7 +383,7 @@ export function OverviewWidgetTablePages({
           getSortValue: (item: (typeof data)[number]) => item.sessions,
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">
                   {number.short(item.sessions)}
                 </span>
@@ -389,6 +392,9 @@ export function OverviewWidgetTablePages({
           },
         },
       ]}
+      data={data ?? []}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
+      keyExtractor={(item) => item.path + item.origin}
     />
   );
 }
@@ -418,9 +424,6 @@ export function OverviewWidgetTableEntries({
   return (
     <OverviewWidgetTable
       className={className}
-      data={data ?? []}
-      keyExtractor={(item) => item.path + item.origin}
-      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           name: 'Path',
@@ -429,15 +432,15 @@ export function OverviewWidgetTableEntries({
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
-                <div className="row items-center gap-2 min-w-0 relative">
+                <div className="row relative min-w-0 items-center gap-2">
                   <SerieIcon name={item.origin} />
                   <button
-                    type="button"
                     className="truncate"
                     onClick={() => {
                       setFilter('path', item.path);
                       setFilter('origin', item.origin);
                     }}
+                    type="button"
                   >
                     {item.path ? (
                       <>
@@ -456,10 +459,10 @@ export function OverviewWidgetTableEntries({
                   </button>
                   <a
                     href={item.origin + item.path}
-                    target="_blank"
                     rel="noreferrer"
+                    target="_blank"
                   >
-                    <ExternalLinkIcon className="size-3 group-hover/row:opacity-100 opacity-0 transition-opacity" />
+                    <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/row:opacity-100" />
                   </a>
                 </div>
               </Tooltiper>
@@ -479,7 +482,7 @@ export function OverviewWidgetTableEntries({
                   const revenuePercentage =
                     totalRevenue > 0 ? revenue / totalRevenue : 0;
                   return (
-                    <div className="row gap-2 items-center justify-end">
+                    <div className="row items-center justify-end gap-2">
                       <span
                         className="font-semibold"
                         style={{ color: '#3ba974' }}
@@ -500,7 +503,7 @@ export function OverviewWidgetTableEntries({
           getSortValue: (item: (typeof data)[number]) => item.sessions,
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">
                   {number.short(item.sessions)}
                 </span>
@@ -509,6 +512,9 @@ export function OverviewWidgetTableEntries({
           },
         },
       ]}
+      data={data ?? []}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
+      keyExtractor={(item) => item.path + item.origin}
     />
   );
 }
@@ -533,9 +539,6 @@ export function OverviewWidgetTableBots({
   return (
     <OverviewWidgetTable
       className={className}
-      data={data ?? []}
-      keyExtractor={(item) => item.path + item.origin}
-      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           name: 'Path',
@@ -543,23 +546,23 @@ export function OverviewWidgetTableBots({
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
-                <div className="row items-center gap-2 min-w-0 relative">
+                <div className="row relative min-w-0 items-center gap-2">
                   <SerieIcon name={item.origin} />
                   <button
-                    type="button"
                     className="truncate"
                     onClick={() => {
                       setFilter('path', item.path);
                     }}
+                    type="button"
                   >
                     {getPath(item.path)}
                   </button>
                   <a
                     href={item.origin + item.path}
-                    target="_blank"
                     rel="noreferrer"
+                    target="_blank"
                   >
-                    <ExternalLinkIcon className="size-3 group-hover/row:opacity-100 opacity-0 transition-opacity" />
+                    <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover/row:opacity-100" />
                   </a>
                 </div>
               </Tooltiper>
@@ -571,7 +574,7 @@ export function OverviewWidgetTableBots({
           width: '60px',
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">Google bot</span>
               </div>
             );
@@ -582,13 +585,16 @@ export function OverviewWidgetTableBots({
           width: '60px',
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">Google bot</span>
               </div>
             );
           },
         },
       ]}
+      data={data ?? []}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
+      keyExtractor={(item) => item.path + item.origin}
     />
   );
 }
@@ -615,9 +621,6 @@ export function OverviewWidgetTableGeneric({
   return (
     <OverviewWidgetTable
       className={className}
-      data={data ?? []}
-      keyExtractor={(item) => item.prefix + item.name}
-      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           ...column,
@@ -638,7 +641,7 @@ export function OverviewWidgetTableGeneric({
                   const revenuePercentage =
                     totalRevenue > 0 ? revenue / totalRevenue : 0;
                   return (
-                    <div className="row gap-2 items-center justify-end">
+                    <div className="row items-center justify-end gap-2">
                       <span
                         className="font-semibold"
                         style={{ color: '#3ba974' }}
@@ -665,7 +668,7 @@ export function OverviewWidgetTableGeneric({
                 ) => item.pageviews,
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   return (
-                    <div className="row gap-2 justify-end">
+                    <div className="row justify-end gap-2">
                       <span className="font-semibold">
                         {number.short(item.pageviews)}
                       </span>
@@ -684,7 +687,7 @@ export function OverviewWidgetTableGeneric({
           ) => item.sessions,
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">
                   {number.short(item.sessions)}
                 </span>
@@ -693,6 +696,9 @@ export function OverviewWidgetTableGeneric({
           },
         },
       ]}
+      data={data ?? []}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
+      keyExtractor={(item) => item.prefix + item.name}
     />
   );
 }
@@ -717,9 +723,6 @@ export function OverviewWidgetTableEvents({
   return (
     <OverviewWidgetTable
       className={className}
-      data={data ?? []}
-      keyExtractor={(item) => item.id}
-      getColumnPercentage={(item) => item.count / maxCount}
       columns={[
         {
           name: 'Event',
@@ -727,12 +730,12 @@ export function OverviewWidgetTableEvents({
           responsive: { priority: 1 },
           render(item) {
             return (
-              <div className="row items-center gap-2 min-w-0 relative">
+              <div className="row relative min-w-0 items-center gap-2">
                 <SerieIcon name={item.name} />
                 <button
-                  type="button"
                   className="truncate"
                   onClick={() => onItemClick?.(item.name)}
+                  type="button"
                 >
                   {item.name || 'Not set'}
                 </button>
@@ -747,7 +750,7 @@ export function OverviewWidgetTableEvents({
           getSortValue: (item: EventTableItem) => item.count,
           render(item) {
             return (
-              <div className="row gap-2 justify-end">
+              <div className="row justify-end gap-2">
                 <span className="font-semibold">
                   {number.short(item.count)}
                 </span>
@@ -756,6 +759,9 @@ export function OverviewWidgetTableEvents({
           },
         },
       ]}
+      data={data ?? []}
+      getColumnPercentage={(item) => item.count / maxCount}
+      keyExtractor={(item) => item.id}
     />
   );
 }

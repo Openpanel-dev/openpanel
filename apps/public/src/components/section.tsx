@@ -11,7 +11,7 @@ export function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={cn('my-32 col', className)} {...props}>
+    <section className={cn('col my-32', className)} id={id} {...props}>
       {children}
     </section>
   );
@@ -55,7 +55,7 @@ export function SectionHeader({
         {title}
       </Heading>
       {description && (
-        <p className={cn('text-muted-foreground max-w-3xl')}>{description}</p>
+        <p className={cn('max-w-3xl text-muted-foreground')}>{description}</p>
       )}
     </div>
   );
@@ -71,7 +71,7 @@ export function SectionLabel({
   return (
     <span
       className={cn(
-        'text-xs uppercase tracking-wider text-muted-foreground font-medium',
+        'font-medium text-muted-foreground text-xs uppercase tracking-wider',
         className
       )}
     >

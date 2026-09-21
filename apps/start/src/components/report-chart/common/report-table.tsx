@@ -1,3 +1,32 @@
+import type { ColumnDef, Header, Row } from '@tanstack/react-table';
+import {
+  type ExpandedState,
+  flexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import {
+  useVirtualizer,
+  useWindowVirtualizer,
+  type VirtualItem,
+} from '@tanstack/react-virtual';
+import throttle from 'lodash.throttle';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import type * as React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReportTableToolbar } from './report-table-toolbar';
+import {
+  type ExpandableTableRow,
+  type GroupedTableRow,
+  groupsToExpandableRows,
+  type TableRow,
+  transformToHierarchicalGroups,
+  transformToTableData,
+} from './report-table-utils';
+import { SerieName } from './serie-name';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -5,36 +34,6 @@ import { useSelector } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import type { ColumnDef, Header, Row } from '@tanstack/react-table';
-import {
-  type ExpandedState,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import {
-  type VirtualItem,
-  useVirtualizer,
-  useWindowVirtualizer,
-} from '@tanstack/react-virtual';
-import throttle from 'lodash.throttle';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import type * as React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-import { ReportTableToolbar } from './report-table-toolbar';
-import {
-  type ExpandableTableRow,
-  type GroupedTableRow,
-  type TableRow,
-  groupsToExpandableRows,
-  transformToHierarchicalGroups,
-  transformToTableData,
-} from './report-table-utils';
-import { SerieName } from './serie-name';
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
@@ -94,7 +93,9 @@ const VirtualRow = function VirtualRow({
     header: Header<TableRow | GroupedTableRow, unknown> | undefined
   ) => {
     const cell = cells.find((c) => c.column.id === column.id);
-    if (!cell || !header) return null;
+    if (!(cell && header)) {
+      return null;
+    }
 
     const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
     const pinningStyles = pinningStylesMap.get(column.id) ?? {};
@@ -104,6 +105,7 @@ const VirtualRow = function VirtualRow({
 
     return (
       <div
+        className={cn('relative overflow-hidden border-r')}
         key={cell.id}
         style={{
           width: `${header.getSize()}px`,
@@ -111,11 +113,14 @@ const VirtualRow = function VirtualRow({
           maxWidth: column.columnDef.maxSize,
           ...pinningStyles,
         }}
-        className={cn('relative overflow-hidden border-r')}
       >
         {flexRender(cell.column.columnDef.cell, cell.getContext())}
         {canResize && isPinned && (
           <div
+            className={cn(
+              'absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent transition-colors hover:bg-primary/50',
+              isResizing && 'bg-primary'
+            )}
             data-resize-handle
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -129,22 +134,18 @@ const VirtualRow = function VirtualRow({
                 setResizingColumnId(null);
               }, 0);
             }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              isResizingRef.current = true;
-              setResizingColumnId(column.id);
-              header.getResizeHandler()(e);
-            }}
             onTouchEnd={() => {
               setTimeout(() => {
                 isResizingRef.current = false;
                 setResizingColumnId(null);
               }, 0);
             }}
-            className={cn(
-              'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-              isResizing && 'bg-primary'
-            )}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              isResizingRef.current = true;
+              setResizingColumnId(column.id);
+              header.getResizeHandler()(e);
+            }}
           />
         )}
       </div>
@@ -153,6 +154,7 @@ const VirtualRow = function VirtualRow({
 
   return (
     <div
+      className="border-b transition-colors hover:bg-muted/30"
       key={virtualRow.key}
       style={{
         position: 'absolute',
@@ -164,7 +166,6 @@ const VirtualRow = function VirtualRow({
         display: 'flex',
         minWidth: 'fit-content',
       }}
-      className="border-b hover:bg-muted/30 transition-colors"
     >
       {/* Left Pinned Columns */}
       {leftPinnedColumns.map((column) => {
@@ -182,13 +183,18 @@ const VirtualRow = function VirtualRow({
       >
         {virtualColumns.map((virtualCol) => {
           const column = scrollableColumns[virtualCol.index];
-          if (!column) return null;
+          if (!column) {
+            return null;
+          }
           const header = headers.find((h) => h.column.id === column.id);
           const cell = cells.find((c) => c.column.id === column.id);
-          if (!cell || !header) return null;
+          if (!(cell && header)) {
+            return null;
+          }
 
           return (
             <div
+              className={cn('relative overflow-hidden')}
               key={cell.id}
               style={{
                 position: 'absolute',
@@ -196,7 +202,6 @@ const VirtualRow = function VirtualRow({
                 width: `${virtualCol.size}px`,
                 height: `${virtualRow.size}px`,
               }}
-              className={cn('relative overflow-hidden')}
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </div>
@@ -263,7 +268,7 @@ export function ReportTable({
 
   // Convert hierarchical groups to expandable rows (for TanStack Table's expanding feature)
   const expandableRows = useMemo(() => {
-    if (!grouped || !hierarchicalGroups || hierarchicalGroups.length === 0) {
+    if (!(grouped && hierarchicalGroups) || hierarchicalGroups.length === 0) {
       return null;
     }
 
@@ -285,7 +290,9 @@ export function ReportTable({
       const searchLower = globalFilter.toLowerCase();
       result = rows.filter((row) => {
         // Search in serie name
-        if (row.serieName.toLowerCase().includes(searchLower)) return true;
+        if (row.serieName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
 
         // Search in breakdown values
         if (
@@ -329,7 +336,9 @@ export function ReportTable({
         b: ExpandableTableRow | GroupedTableRow | TableRow
       ) => {
         // If no sorting is selected, return 0 (no change)
-        if (sorting.length === 0) return 0;
+        if (sorting.length === 0) {
+          return 0;
+        }
 
         for (const sort of sorting) {
           const { id, desc } = sort;
@@ -364,17 +373,29 @@ export function ReportTable({
           }
 
           // Handle null/undefined values
-          if (aValue == null && bValue == null) continue;
-          if (aValue == null) return 1;
-          if (bValue == null) return -1;
+          if (aValue == null && bValue == null) {
+            continue;
+          }
+          if (aValue == null) {
+            return 1;
+          }
+          if (bValue == null) {
+            return -1;
+          }
 
           // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
-            if (comparison !== 0) return desc ? -comparison : comparison;
+            if (comparison !== 0) {
+              return desc ? -comparison : comparison;
+            }
           } else {
-            if (aValue < bValue) return desc ? 1 : -1;
-            if (aValue > bValue) return desc ? -1 : 1;
+            if (aValue < bValue) {
+              return desc ? 1 : -1;
+            }
+            if (aValue > bValue) {
+              return desc ? -1 : 1;
+            }
           }
         }
         return 0;
@@ -455,17 +476,29 @@ export function ReportTable({
           }
 
           // Handle null/undefined values
-          if (aValue == null && bValue == null) continue;
-          if (aValue == null) return 1;
-          if (bValue == null) return -1;
+          if (aValue == null && bValue == null) {
+            continue;
+          }
+          if (aValue == null) {
+            return 1;
+          }
+          if (bValue == null) {
+            return -1;
+          }
 
           // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
-            if (comparison !== 0) return desc ? -comparison : comparison;
+            if (comparison !== 0) {
+              return desc ? -comparison : comparison;
+            }
           } else {
-            if (aValue < bValue) return desc ? 1 : -1;
-            if (aValue > bValue) return desc ? -1 : 1;
+            if (aValue < bValue) {
+              return desc ? 1 : -1;
+            }
+            if (aValue > bValue) {
+              return desc ? -1 : 1;
+            }
           }
         }
         return 0;
@@ -509,7 +542,7 @@ export function ReportTable({
           'isGroupHeader' in row && row.isGroupHeader === true;
         const isSummary = 'isSummaryRow' in row && row.isSummaryRow === true;
 
-        if (!isGroupHeader && !isSummary) {
+        if (!(isGroupHeader || isSummary)) {
           // It's an individual row - add it
           individualRows.push(row as TableRow);
         }
@@ -621,7 +654,9 @@ export function ReportTable({
 
   // Normalize visibleSeries to string array
   const visibleSeriesIds = useMemo(() => {
-    if (visibleSeries.length === 0) return [];
+    if (visibleSeries.length === 0) {
+      return [];
+    }
     if (typeof visibleSeries[0] === 'string') {
       return visibleSeries as string[];
     }
@@ -722,27 +757,27 @@ export function ReportTable({
         const isExpandable = grouped && isSerieGroupHeader && hasSubRows;
 
         return (
-          <div className="flex items-center gap-2 px-4 h-12">
+          <div className="flex h-12 items-center gap-2 px-4">
             <Checkbox
               checked={isVisible}
+              className="h-4 w-4 shrink-0"
               onCheckedChange={() => toggleSerieVisibility(serieId)}
               style={{
                 borderColor: color,
                 backgroundColor: isVisible ? color : 'transparent',
               }}
-              className="h-4 w-4 shrink-0"
             />
             <SerieName
-              name={serieName}
               className={cn(
                 'truncate',
                 !isExpandable && grouped && 'text-muted-foreground/40',
                 isExpandable && 'font-semibold'
               )}
+              name={serieName}
             />
             {isExpandable && (
               <button
-                type="button"
+                className="cursor-pointer hover:opacity-70"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -755,7 +790,7 @@ export function ReportTable({
                     return newExpanded;
                   });
                 }}
-                className="cursor-pointer hover:opacity-70"
+                type="button"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4" />
@@ -830,9 +865,11 @@ export function ReportTable({
 
           return (
             <div
-              className="flex items-center gap-2 cursor-pointer hover:opacity-70"
+              className="flex cursor-pointer items-center gap-2 hover:opacity-70"
               onClick={() => {
-                if (!grouped) return;
+                if (!grouped) {
+                  return;
+                }
                 // Toggle all groups at this breakdown level
                 setExpanded((prev) => {
                   const newExpanded: ExpandedState =
@@ -847,7 +884,9 @@ export function ReportTable({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  if (!grouped) return;
+                  if (!grouped) {
+                    return;
+                  }
                   setExpanded((prev) => {
                     const newExpanded: ExpandedState =
                       typeof prev === 'object' ? { ...prev } : {};
@@ -880,21 +919,22 @@ export function ReportTable({
           const value: string | number | null =
             original.breakdownValues[index] ?? null;
           const isLastBreakdown = index === breakdownPropertyNames.length - 1;
-          const isMuted = (!isLastBreakdown && !canExpand && grouped) || !value;
+          const isMuted =
+            (!(isLastBreakdown || canExpand) && grouped) || !value;
 
           // For group headers, only show value at the group level, hide deeper breakdowns
           if (isGroupHeader && 'groupLevel' in original) {
             const groupLevel = original.groupLevel ?? 0;
             if (index !== groupLevel) {
-              return <div className="flex items-center gap-2 px-4 h-12" />;
+              return <div className="flex h-12 items-center gap-2 px-4" />;
             }
           }
 
           return (
-            <div className="flex items-center gap-2 px-4 h-12">
+            <div className="flex h-12 items-center gap-2 px-4">
               <span
                 className={cn(
-                  'truncate block leading-[48px]',
+                  'block truncate leading-[48px]',
                   isMuted && 'text-muted-foreground/50',
                   isGroupHeader && 'font-semibold'
                 )}
@@ -906,13 +946,15 @@ export function ReportTable({
                   ('groupLevel' in original ? (original.groupLevel ?? 0) : 0) &&
                 index < breakdownPropertyNames.length - 1 && (
                   <button
-                    type="button"
+                    className="cursor-pointer hover:opacity-70"
                     onClick={(e) => {
                       e.stopPropagation();
                       const handler = row.getToggleExpandedHandler();
-                      if (handler) handler();
+                      if (handler) {
+                        handler();
+                      }
                     }}
-                    className="cursor-pointer hover:opacity-70"
+                    type="button"
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4" />
@@ -951,7 +993,7 @@ export function ReportTable({
           const isSummary = hasIsSummaryRow && original.isSummaryRow === true;
           const isGroupHeader =
             hasIsGroupHeader && original.isGroupHeader === true;
-          const isIndividualRow = !isSummary && !isGroupHeader;
+          const isIndividualRow = !(isSummary || isGroupHeader);
           const range = metricRanges[metric.key];
 
           // Only apply colors to individual rows, not summary or group header rows
@@ -969,8 +1011,8 @@ export function ReportTable({
           return (
             <div
               className={cn(
-                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
-                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
+                'flex h-12 w-full items-center justify-end px-4 text-right font-mono text-sm',
+                'shadow-[inset_-1px_-1px_0_var(--border)] [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
                 (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
@@ -996,7 +1038,7 @@ export function ReportTable({
           const isGroupHeader =
             'isGroupHeader' in row.original &&
             row.original.isGroupHeader === true;
-          const isIndividualRow = !isSummary && !isGroupHeader;
+          const isIndividualRow = !(isSummary || isGroupHeader);
           const range = dateRanges[date];
           // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
@@ -1014,8 +1056,8 @@ export function ReportTable({
           return (
             <div
               className={cn(
-                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
-                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
+                'flex h-12 w-full items-center justify-end px-4 text-right font-mono text-sm',
+                'shadow-[inset_-1px_-1px_0_var(--border)] [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
                 (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
@@ -1070,7 +1112,9 @@ export function ReportTable({
       getRowCanExpand: grouped
         ? (row: any) => {
             const r = row.original as ExpandableTableRow;
-            if (!('isGroupHeader' in r) || !r.isGroupHeader) return false;
+            if (!('isGroupHeader' in r && r.isGroupHeader)) {
+              return false;
+            }
             // Don't allow expansion for the last breakdown level
             const groupLevel = r.groupLevel ?? -1;
             const isLastBreakdown =
@@ -1279,7 +1323,9 @@ export function ReportTable({
   const getPinningStyles = (
     column: ReturnType<typeof table.getColumn> | undefined
   ) => {
-    if (!column) return {};
+    if (!column) {
+      return {};
+    }
     return pinningStylesMap.get(column.id) ?? {};
   };
 
@@ -1288,21 +1334,21 @@ export function ReportTable({
   }
 
   return (
-    <div className="flex flex-col border rounded-lg overflow-hidden bg-card mt-8">
+    <div className="mt-8 flex flex-col overflow-hidden rounded-lg border bg-card">
       <ReportTableToolbar
         grouped={grouped}
+        onSearchChange={setGlobalFilter}
         onToggleGrouped={
           !breakdowns || breakdowns.length === 0
             ? undefined
             : () => setGrouped(!grouped)
         }
-        search={globalFilter}
-        onSearchChange={setGlobalFilter}
         onUnselectAll={() => setVisibleSeries([])}
+        search={globalFilter}
       />
       <div
-        ref={parentRef}
         className="overflow-x-auto"
+        ref={parentRef}
         style={{
           width: '100%',
         }}
@@ -1317,7 +1363,7 @@ export function ReportTable({
         >
           {/* Header */}
           <div
-            className="sticky top-0 z-20 bg-card border-b"
+            className="sticky top-0 z-20 border-b bg-card"
             style={{
               display: 'flex',
               width:
@@ -1330,7 +1376,9 @@ export function ReportTable({
             {/* Left Pinned Columns */}
             {leftPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
-              if (!header) return null;
+              if (!header) {
+                return null;
+              }
               const headerContent = column.columnDef.header;
               const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
               const pinningStyles = getPinningStyles(column);
@@ -1345,18 +1393,12 @@ export function ReportTable({
 
               return (
                 <div
-                  key={header.id}
-                  style={{
-                    width: `${header.getSize()}px`,
-                    minWidth: column.columnDef.minSize,
-                    maxWidth: column.columnDef.maxSize,
-                    ...pinningStyles,
-                  }}
                   className={cn(
-                    'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
+                    'relative flex h-10 items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none'
+                    canSort && 'cursor-pointer select-none hover:bg-muted/50'
                   )}
+                  key={header.id}
                   onClick={
                     canSort
                       ? (e) => {
@@ -1385,9 +1427,15 @@ export function ReportTable({
                       : undefined
                   }
                   role={canSort ? 'button' : undefined}
+                  style={{
+                    width: `${header.getSize()}px`,
+                    minWidth: column.columnDef.minSize,
+                    maxWidth: column.columnDef.maxSize,
+                    ...pinningStyles,
+                  }}
                   tabIndex={canSort ? 0 : undefined}
                 >
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex flex-1 items-center gap-1.5">
                     {header.isPlaceholder
                       ? null
                       : typeof headerContent === 'function'
@@ -1405,6 +1453,10 @@ export function ReportTable({
                   </div>
                   {canResize && isPinned && (
                     <div
+                      className={cn(
+                        'absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent transition-colors hover:bg-primary/50',
+                        header.column.getIsResizing() && 'bg-primary'
+                      )}
                       data-resize-handle
                       onMouseDown={(e) => {
                         e.stopPropagation();
@@ -1419,22 +1471,18 @@ export function ReportTable({
                           setResizingColumnId(null);
                         }, 0);
                       }}
-                      onTouchStart={(e) => {
-                        e.stopPropagation();
-                        isResizingRef.current = true;
-                        setResizingColumnId(column.id);
-                        header.getResizeHandler()(e);
-                      }}
                       onTouchEnd={() => {
                         setTimeout(() => {
                           isResizingRef.current = false;
                           setResizingColumnId(null);
                         }, 0);
                       }}
-                      className={cn(
-                        'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-                        header.column.getIsResizing() && 'bg-primary'
-                      )}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        isResizingRef.current = true;
+                        setResizingColumnId(column.id);
+                        header.getResizeHandler()(e);
+                      }}
                     />
                   )}
                 </div>
@@ -1451,9 +1499,13 @@ export function ReportTable({
             >
               {virtualColumns.map((virtualCol) => {
                 const column = scrollableColumns[virtualCol.index];
-                if (!column) return null;
+                if (!column) {
+                  return null;
+                }
                 const header = headers.find((h) => h.column.id === column.id);
-                if (!header) return null;
+                if (!header) {
+                  return null;
+                }
 
                 const headerContent = header.column.columnDef.header;
                 const isBreakdown =
@@ -1466,18 +1518,12 @@ export function ReportTable({
 
                 return (
                   <div
-                    key={header.id}
-                    style={{
-                      position: 'absolute',
-                      left: `${virtualCol.start}px`,
-                      width: `${virtualCol.size}px`,
-                      height: '40px',
-                    }}
                     className={cn(
-                      'px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap',
+                      'flex items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                       isMetricOrDate && 'text-right',
-                      canSort && 'cursor-pointer hover:bg-muted/50 select-none'
+                      canSort && 'cursor-pointer select-none hover:bg-muted/50'
                     )}
+                    key={header.id}
                     onClick={
                       canSort
                         ? (e) => {
@@ -1505,9 +1551,15 @@ export function ReportTable({
                         : undefined
                     }
                     role={canSort ? 'button' : undefined}
+                    style={{
+                      position: 'absolute',
+                      left: `${virtualCol.start}px`,
+                      width: `${virtualCol.size}px`,
+                      height: '40px',
+                    }}
                     tabIndex={canSort ? 0 : undefined}
                   >
-                    <div className="flex items-center gap-1.5 flex-1">
+                    <div className="flex flex-1 items-center gap-1.5">
                       {header.isPlaceholder
                         ? null
                         : typeof headerContent === 'function'
@@ -1531,7 +1583,9 @@ export function ReportTable({
             {/* Right Pinned Columns */}
             {rightPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
-              if (!header) return null;
+              if (!header) {
+                return null;
+              }
 
               const headerContent = header.column.columnDef.header;
               const isBreakdown =
@@ -1546,18 +1600,12 @@ export function ReportTable({
 
               return (
                 <div
-                  key={header.id}
-                  style={{
-                    width: `${header.getSize()}px`,
-                    minWidth: header.column.columnDef.minSize,
-                    maxWidth: header.column.columnDef.maxSize,
-                    ...pinningStyles,
-                  }}
                   className={cn(
-                    'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
+                    'relative flex h-10 items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none'
+                    canSort && 'cursor-pointer select-none hover:bg-muted/50'
                   )}
+                  key={header.id}
                   onClick={
                     canSort
                       ? (e) => {
@@ -1585,9 +1633,15 @@ export function ReportTable({
                       : undefined
                   }
                   role={canSort ? 'button' : undefined}
+                  style={{
+                    width: `${header.getSize()}px`,
+                    minWidth: header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
+                    ...pinningStyles,
+                  }}
                   tabIndex={canSort ? 0 : undefined}
                 >
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex flex-1 items-center gap-1.5">
                     {header.isPlaceholder
                       ? null
                       : typeof headerContent === 'function'
@@ -1617,7 +1671,9 @@ export function ReportTable({
           >
             {virtualRows.map((virtualRow) => {
               const tableRow = rowModelToUse.rows[virtualRow.index];
-              if (!tableRow) return null;
+              if (!tableRow) {
+                return null;
+              }
 
               // Include serie name in key to force re-render when name changes
               const serieId = tableRow.original.serieId;
@@ -1627,24 +1683,24 @@ export function ReportTable({
 
               return (
                 <VirtualRow
+                  headers={headers}
+                  isResizingRef={isResizingRef}
                   key={`${virtualRow.key}-${serieName}-${gridTemplateColumns}`}
+                  leftPinnedColumns={leftPinnedColumns}
+                  leftPinnedWidth={leftPinnedWidth}
+                  pinningStylesMap={pinningStylesMap}
+                  resizingColumnId={resizingColumnId}
+                  rightPinnedColumns={rightPinnedColumns}
+                  rightPinnedWidth={rightPinnedWidth}
                   row={tableRow}
+                  scrollableColumns={scrollableColumns}
+                  scrollableColumnsTotalWidth={scrollableColumnsTotalWidth}
+                  setResizingColumnId={setResizingColumnId}
+                  virtualColumns={virtualColumns}
                   virtualRow={{
                     ...virtualRow,
                     start: virtualRow.start - virtualizer.options.scrollMargin,
                   }}
-                  pinningStylesMap={pinningStylesMap}
-                  headers={headers}
-                  isResizingRef={isResizingRef}
-                  resizingColumnId={resizingColumnId}
-                  setResizingColumnId={setResizingColumnId}
-                  leftPinnedColumns={leftPinnedColumns}
-                  scrollableColumns={scrollableColumns}
-                  rightPinnedColumns={rightPinnedColumns}
-                  virtualColumns={virtualColumns}
-                  leftPinnedWidth={leftPinnedWidth}
-                  scrollableColumnsTotalWidth={scrollableColumnsTotalWidth}
-                  rightPinnedWidth={rightPinnedWidth}
                 />
               );
             })}

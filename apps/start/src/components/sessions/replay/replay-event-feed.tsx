@@ -1,13 +1,13 @@
+import type { IServiceEvent } from '@openpanel/core';
+import { useEffect, useMemo, useRef } from 'react';
+import { BrowserChrome } from './browser-chrome';
+import { getEventOffsetMs } from './replay-utils';
 import {
   useCurrentTime,
   useReplayContext,
 } from '@/components/sessions/replay/replay-context';
 import { ReplayEventItem } from '@/components/sessions/replay/replay-event-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { IServiceEvent } from '@openpanel/core';
-import { useEffect, useMemo, useRef } from 'react';
-import { BrowserChrome } from './browser-chrome';
-import { getEventOffsetMs } from './replay-utils';
 
 type EventWithOffset = { event: IServiceEvent; offsetMs: number };
 
@@ -26,7 +26,9 @@ export function ReplayEventFeed({
   // Pre-sort events by offset once when events/startTime changes.
   // This is the expensive part — done once, not on every tick.
   const sortedEvents = useMemo<EventWithOffset[]>(() => {
-    if (startTime == null || !isReady) return [];
+    if (startTime == null || !isReady) {
+      return [];
+    }
     return events
       .map((ev) => ({ event: ev, offsetMs: getEventOffsetMs(ev, startTime) }))
       .filter(({ offsetMs }) => offsetMs >= -10_000)
@@ -54,7 +56,9 @@ export function ReplayEventFeed({
 
   useEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport || visibleEvents.length === 0) return;
+    if (!viewport || visibleEvents.length === 0) {
+      return;
+    }
 
     const isNewItem = visibleEvents.length > prevCountRef.current;
     prevCountRef.current = visibleEvents.length;
@@ -69,16 +73,16 @@ export function ReplayEventFeed({
 
   return (
     <BrowserChrome
-      url={false}
-      controls={<span className="text-lg font-medium">Timeline</span>}
       className="h-full"
+      controls={<span className="font-medium text-lg">Timeline</span>}
+      url={false}
     >
-      <ScrollArea className="flex-1 min-h-0" ref={viewportRef}>
+      <ScrollArea className="min-h-0 flex-1" ref={viewportRef}>
         <div className="flex w-full flex-col">
           {visibleEvents.map(({ event, offsetMs }) => (
             <div
+              className="fade-in-0 slide-in-from-bottom-3 min-w-0 animate-in fill-mode-both duration-300"
               key={event.id}
-              className="animate-in fade-in-0 slide-in-from-bottom-3 min-w-0 duration-300 fill-mode-both"
             >
               <ReplayEventItem
                 event={event}
@@ -88,15 +92,15 @@ export function ReplayEventFeed({
             </div>
           ))}
           {!replayLoading && visibleEvents.length === 0 && (
-            <div className="py-8 text-center text-sm text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground text-sm">
               Events will appear as the replay plays.
             </div>
           )}
           {replayLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <div
-                key={i}
                 className="flex items-center gap-2 border-b px-3 py-2"
+                key={i}
               >
                 <div className="h-6 w-6 shrink-0 animate-pulse rounded-full bg-muted" />
                 <div className="flex-1 space-y-1.5">

@@ -1,3 +1,4 @@
+import { SellingPoint } from './selling-points';
 import {
   Carousel,
   CarouselContent,
@@ -5,7 +6,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { SellingPoint } from './selling-points';
 
 const sellingPoints = [
   {
@@ -13,8 +13,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-1.webp"
-        title="Best open-source alternative"
         description="Mixpanel too expensive, Google Analytics has no privacy, Amplitude old and boring"
+        title="Best open-source alternative"
       />
     ),
   },
@@ -23,8 +23,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-2.webp"
-        title="Fast and reliable"
         description="Never miss a beat with our real-time analytics"
+        title="Fast and reliable"
       />
     ),
   },
@@ -33,8 +33,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-3.webp"
-        title="Easy to use"
         description="Compared to other tools we have kept it simple"
+        title="Easy to use"
       />
     ),
   },
@@ -43,8 +43,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-4.webp"
-        title="Privacy by default"
         description="We have built our platform with privacy at its heart"
+        title="Privacy by default"
       />
     ),
   },
@@ -53,8 +53,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-5.webp"
-        title="Open source"
         description="You can inspect the code and self-host if you choose"
+        title="Open source"
       />
     ),
   },
@@ -64,9 +64,9 @@ export function LoginLeftPanel() {
   return (
     <div className="relative h-screen overflow-hidden">
       {/* Carousel */}
-      <div className="flex items-center justify-center h-full mt-24">
+      <div className="mt-24 flex h-full items-center justify-center">
         <Carousel
-          className="w-full h-full [&>div]:h-full [&>div]:min-h-full"
+          className="h-full w-full [&>div]:h-full [&>div]:min-h-full"
           opts={{
             loop: true,
             align: 'center',
@@ -75,17 +75,17 @@ export function LoginLeftPanel() {
           <CarouselContent className="h-full">
             {sellingPoints.map((point, index) => (
               <CarouselItem
+                className="p-8 pt-0 pb-32"
                 key={`selling-point-${point.key}`}
-                className="p-8 pb-32 pt-0"
               >
-                <div className="rounded-xl min-h-full h-full overflow-hidden bg-card border border-border shadow-lg">
+                <div className="h-full min-h-full overflow-hidden rounded-xl border border-border bg-card shadow-lg">
                   {point.render()}
                 </div>
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-12 bottom-30 top-auto" />
-          <CarouselNext className="right-12 bottom-30 top-auto" />
+          <CarouselPrevious className="top-auto bottom-30 left-12" />
+          <CarouselNext className="top-auto right-12 bottom-30" />
         </Carousel>
       </div>
     </div>

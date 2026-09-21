@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  type SubscriptionState,
   getSubscriptionState,
+  type SubscriptionState,
   subscriptionBlocksDashboard,
 } from './subscription-state.js';
 

@@ -1,5 +1,5 @@
-import { cn } from '@/utils/cn';
 import type { ReactNode } from 'react';
+import { cn } from '@/utils/cn';
 
 export function BrowserChrome({
   url,
@@ -7,9 +7,9 @@ export function BrowserChrome({
   right,
   controls = (
     <div className="flex gap-1.5">
-      <div className="w-3 h-3 rounded-full bg-red-500" />
-      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-      <div className="w-3 h-3 rounded-full bg-green-500" />
+      <div className="h-3 w-3 rounded-full bg-red-500" />
+      <div className="h-3 w-3 rounded-full bg-yellow-500" />
+      <div className="h-3 w-3 rounded-full bg-green-500" />
     </div>
   ),
   className,
@@ -27,10 +27,10 @@ export function BrowserChrome({
         className
       )}
     >
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-background h-10">
+      <div className="flex h-10 items-center gap-2 border-border border-b bg-background px-4 py-2">
         {controls}
         {url !== false && (
-          <div className="flex-1 mx-4 px-3 h-8 py-1 text-sm bg-def-100 rounded-md border border-border flex items-center truncate">
+          <div className="mx-4 flex h-8 flex-1 items-center truncate rounded-md border border-border bg-def-100 px-3 py-1 text-sm">
             {url}
           </div>
         )}

@@ -32,7 +32,7 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
             <th>Price</th>
             <th>Qty</th>
             <th>Subtotal</th>
-            <th></th>
+            <th />
           </tr>
         </thead>
         <tbody>
@@ -44,9 +44,9 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
               <td>${item.price * item.qty}</td>
               <td>
                 <button
-                  type="button"
                   className="danger"
                   onClick={() => onRemove(item.id)}
+                  type="button"
                 >
                   Remove
                 </button>
@@ -61,7 +61,7 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
           <Link to="/">
             <button type="button">← Shop</button>
           </Link>
-          <button type="button" className="primary" onClick={onCheckout}>
+          <button className="primary" onClick={onCheckout} type="button">
             Checkout →
           </button>
         </div>

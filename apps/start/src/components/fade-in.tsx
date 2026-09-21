@@ -1,5 +1,5 @@
-import { cn } from '@/utils/cn';
 import { useEffect, useRef } from 'react';
+import { cn } from '@/utils/cn';
 
 type Props = {
   className?: string;

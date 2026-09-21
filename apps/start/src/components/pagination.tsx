@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn';
+import { useIsFetching } from '@tanstack/react-query';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -6,9 +6,8 @@ import {
   ChevronsRightIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-
-import { useIsFetching } from '@tanstack/react-query';
 import { Button } from './ui/button';
+import { cn } from '@/utils/cn';
 
 export function usePagination(take: number) {
   const [page, setPage] = useState(0);
@@ -55,50 +54,50 @@ export function Pagination({
     >
       {typeof firstPage === 'function' && (
         <Button
-          variant="outline"
-          size="icon"
-          onClick={() => firstPage?.()}
-          disabled={!canPreviousPage}
           className="max-sm:hidden"
+          disabled={!canPreviousPage}
           icon={ChevronsLeftIcon}
+          onClick={() => firstPage?.()}
+          size="icon"
+          variant="outline"
         />
       )}
       <Button
-        variant="outline"
-        size="icon"
-        onClick={() => previousPage()}
         disabled={!canPreviousPage}
         icon={ChevronLeftIcon}
+        onClick={() => previousPage()}
+        size="icon"
+        variant="outline"
       />
 
       <Button
+        className={cn(typeof pageIndex === 'string' && 'w-auto min-w-8 px-2')}
+        disabled
         loading={isLoading}
         loadingAbsolute
         loadingType="ring"
-        disabled
-        variant="outline"
         size="icon"
-        className={cn(typeof pageIndex === 'string' && 'min-w-8 w-auto px-2')}
+        variant="outline"
       >
         {typeof pageIndex === 'number' ? pageIndex + 1 : pageIndex}
       </Button>
 
       <Button
-        variant="outline"
-        size="icon"
-        onClick={() => nextPage()}
         disabled={!canNextPage}
         icon={ChevronRightIcon}
+        onClick={() => nextPage()}
+        size="icon"
+        variant="outline"
       />
 
       {typeof lastPage === 'function' && (
         <Button
-          variant="outline"
-          size="icon"
-          onClick={() => lastPage?.()}
-          disabled={!canNextPage}
           className="max-sm:hidden"
+          disabled={!canNextPage}
           icon={ChevronsRightIcon}
+          onClick={() => lastPage?.()}
+          size="icon"
+          variant="outline"
         />
       )}
     </div>

@@ -8,7 +8,7 @@ export function IntegrationCardFooter({
   className?: string;
 }) {
   return (
-    <div className={cn('row p-4 border-t rounded-b', className)}>
+    <div className={cn('row rounded-b border-t p-4', className)}>
       {children}
     </div>
   );
@@ -22,7 +22,7 @@ export function IntegrationCardHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('relative row p-4 border-b rounded-t', className)}>
+    <div className={cn('row relative rounded-t border-b p-4', className)}>
       {children}
     </div>
   );
@@ -38,7 +38,7 @@ export function IntegrationCardHeaderButtons({
   return (
     <div
       className={cn(
-        'absolute right-4 top-0 bottom-0 row items-center gap-2',
+        'row absolute top-0 right-4 bottom-0 items-center gap-2',
         className
       )}
     >
@@ -63,7 +63,7 @@ export function IntegrationCardLogoImage({
         backgroundColor,
       }}
     >
-      <img src={src} alt="Integration Logo" />
+      <img alt="Integration Logo" src={src} />
     </IntegrationCardLogo>
   );
 }
@@ -78,7 +78,7 @@ export function IntegrationCardLogo({
   return (
     <div
       className={cn(
-        'size-14 rounded overflow-hidden shrink-0 center-center',
+        'center-center size-14 shrink-0 overflow-hidden rounded',
         className
       )}
       {...props}
@@ -102,9 +102,9 @@ export function IntegrationCard({
   return (
     <div className="card self-start">
       <IntegrationCardContent
+        description={description}
         icon={icon}
         name={name}
-        description={description}
       />
       {children}
     </div>
@@ -135,9 +135,9 @@ export function IntegrationCardSkeleton() {
   return (
     <div className="card self-start">
       <div className="row gap-4 p-4">
-        <Skeleton className="size-14 rounded shrink-0" />
-        <div className="col gap-1 flex-grow">
-          <Skeleton className="h-5 w-1/2 mb-2" />
+        <Skeleton className="size-14 shrink-0 rounded" />
+        <div className="col flex-grow gap-1">
+          <Skeleton className="mb-2 h-5 w-1/2" />
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-3/4" />
         </div>

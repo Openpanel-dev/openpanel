@@ -1,10 +1,8 @@
-import React from 'react';
+import { db } from '@openpanel/db';
 import { render } from '@react-email/render';
 import { createTransport } from 'nodemailer';
 import { Resend } from 'resend';
 import type { z } from 'zod';
-
-import { db } from '@openpanel/db';
 import { type TemplateKey, type Templates, templates } from './emails';
 import { getUnsubscribeUrl } from './unsubscribe';
 

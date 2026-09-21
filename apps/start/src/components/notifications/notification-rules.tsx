@@ -1,6 +1,3 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PencilRulerIcon, PlusIcon } from 'lucide-react';
@@ -9,6 +6,9 @@ import { FullPageEmptyState } from '../full-page-empty-state';
 import { IntegrationCardSkeleton } from '../integrations/integration-card';
 import { Button } from '../ui/button';
 import { RuleCard } from './rule-card';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 export function NotificationRules() {
   const { projectId } = useAppParams();
@@ -26,19 +26,19 @@ export function NotificationRules() {
 
   if (!isLoading && data.length === 0) {
     return (
-      <FullPageEmptyState title="No rules yet" icon={PencilRulerIcon}>
+      <FullPageEmptyState icon={PencilRulerIcon} title="No rules yet">
         <p>
           You have not created any rules yet. Create a rule to start getting
           notifications.
         </p>
         <Button
           className="mt-8"
-          variant="outline"
           onClick={() =>
             pushModal('AddNotificationRule', {
               rule: undefined,
             })
           }
+          variant="outline"
         >
           Add Rule
         </Button>
@@ -51,17 +51,17 @@ export function NotificationRules() {
       <div className="mb-2">
         <Button
           icon={PlusIcon}
-          variant="outline"
           onClick={() =>
             pushModal('AddNotificationRule', {
               rule: undefined,
             })
           }
+          variant="outline"
         >
           Add Rule
         </Button>
       </div>
-      <div className="col gap-4 w-full grid md:grid-cols-2">
+      <div className="col grid w-full gap-4 md:grid-cols-2">
         {isLoading && (
           <>
             <IntegrationCardSkeleton />

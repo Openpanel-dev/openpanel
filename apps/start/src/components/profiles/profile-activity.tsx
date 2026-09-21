@@ -1,5 +1,3 @@
-import { Widget, WidgetBody } from '@/components/widget';
-import { cn } from '@/utils/cn';
 import {
   addMonths,
   eachDayOfInterval,
@@ -20,17 +18,27 @@ import {
 } from '../overview/overview-widget';
 import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
+import { Widget, WidgetBody } from '@/components/widget';
+import { cn } from '@/utils/cn';
 
 type Props = {
   data: { count: number; date: string }[];
 };
 
 function getOpacityLevel(count: number, maxCount: number): number {
-  if (count === 0 || maxCount === 0) return 0;
+  if (count === 0 || maxCount === 0) {
+    return 0;
+  }
   const ratio = count / maxCount;
-  if (ratio <= 0.25) return 0.25;
-  if (ratio <= 0.5) return 0.5;
-  if (ratio <= 0.75) return 0.75;
+  if (ratio <= 0.25) {
+    return 0.25;
+  }
+  if (ratio <= 0.5) {
+    return 0.5;
+  }
+  if (ratio <= 0.75) {
+    return 0.75;
+  }
   return 1;
 }
 
@@ -56,10 +64,9 @@ const MonthCalendar = ({
         const opacity = hit ? getOpacityLevel(hit.count, maxCount) : 0;
         return (
           <Tooltiper
-            key={date.toISOString()}
             asChild
             content={
-              <div className="text-sm col gap-1">
+              <div className="col gap-1 text-sm">
                 <div className="font-medium">{format(date, 'EEEE, MMM d')}</div>
                 {hit ? (
                   <div className="text-muted-foreground">
@@ -70,15 +77,16 @@ const MonthCalendar = ({
                 )}
               </div>
             }
+            key={date.toISOString()}
           >
             <div
               className={cn(
-                'aspect-square w-full rounded cursor-default group hover:ring-1 hover:ring-foreground overflow-hidden'
+                'group aspect-square w-full cursor-default overflow-hidden rounded hover:ring-1 hover:ring-foreground'
               )}
             >
               <div
                 className={cn(
-                  'size-full group-hover:shadow-[inset_0_0_0_2px_var(--background)] rounded',
+                  'size-full rounded group-hover:shadow-[inset_0_0_0_2px_var(--background)]',
                   isToday(date)
                     ? 'bg-highlight'
                     : hit
@@ -101,21 +109,21 @@ export const ProfileActivity = ({ data }: Props) => {
 
   return (
     <Widget className="w-full">
-      <WidgetHead className="row justify-between relative">
+      <WidgetHead className="row relative justify-between">
         <WidgetTitle icon={ActivityIcon}>Activity</WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button
-            variant="outline"
-            size="icon"
             onClick={() => setStartDate(subMonths(startDate, 1))}
+            size="icon"
+            variant="outline"
           >
             <ChevronLeftIcon size={14} />
           </Button>
           <Button
-            variant="outline"
-            size="icon"
             disabled={isSameMonth(startDate, new Date())}
             onClick={() => setStartDate(addMonths(startDate, 1))}
+            size="icon"
+            variant="outline"
           >
             <ChevronRightIcon size={14} />
           </Button>
@@ -125,10 +133,10 @@ export const ProfileActivity = ({ data }: Props) => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {[3, 2, 1, 0].map((offset) => (
             <MonthCalendar
-              key={offset}
-              month={subMonths(startDate, offset)}
               data={data}
+              key={offset}
               maxCount={maxCount}
+              month={subMonths(startDate, offset)}
             />
           ))}
         </div>

@@ -3,12 +3,12 @@ import type { IconProps } from './types';
 export function KotlinIcon({ className }: IconProps) {
   return (
     <svg
-      width="512"
+      className={className}
+      fill="none"
       height="512"
       viewBox="0 0 512 512"
-      fill="none"
+      width="512"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
     >
       <g clipPath="url(#clip0_367_180)">
         <path
@@ -18,7 +18,7 @@ export function KotlinIcon({ className }: IconProps) {
       </g>
       <defs>
         <clipPath id="clip0_367_180">
-          <rect width="512" height="512" fill="white" />
+          <rect fill="white" height="512" width="512" />
         </clipPath>
       </defs>
     </svg>
