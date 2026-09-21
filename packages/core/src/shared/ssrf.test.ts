@@ -4,7 +4,12 @@
 // package.json was outside M15-010's scope — so moving this file would take
 // it out of every gate. Move it when that line can gain the filter.
 import { describe, expect, it, mock } from 'bun:test';
-import { assertSafeUrl, createPinnedLookup } from '@openpanel/shared/server';
+import {
+  assertSafeUrl,
+  BlockedUrlError,
+  createPinnedAgent,
+  createPinnedLookup,
+} from '@openpanel/shared/server';
 
 // SELF_HOSTED arrives as `config.selfHosted`; the loader is what decides that
 // only `true`/`1` mean self-hosted (`apps/api/src/config/env.test.ts`).
@@ -68,5 +73,42 @@ describe('createPinnedLookup', () => {
       '2606:2800:220:1:248:1893:25c8:1946',
       6
     );
+  });
+
+  it('hands every validated address to an `all` lookup so happy-eyeballs can pick', () => {
+    const lookup = createPinnedLookup([
+      '2606:2800:220:1:248:1893:25c8:1946',
+      '93.184.216.34',
+    ]);
+
+    const all = mock();
+    lookup('anything.example', { all: true }, all);
+    expect(all).toHaveBeenCalledWith(null, [
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+      { address: '93.184.216.34', family: 4 },
+    ]);
+
+    const single = mock();
+    lookup('anything.example', {}, single);
+    expect(single).toHaveBeenCalledWith(
+      null,
+      '2606:2800:220:1:248:1893:25c8:1946',
+      6
+    );
+  });
+
+  it('refuses to build a lookup with nothing to pin to', () => {
+    expect(() => createPinnedLookup([])).toThrow(BlockedUrlError);
+  });
+});
+
+describe('createPinnedAgent', () => {
+  // Under Bun the bare `undici` specifier resolves to a built-in shim whose
+  // Agent has no `close()` and ignores `dispatcher`; that broke every
+  // safeFetch call (favicons, OG images) and silently dropped the pinning.
+  it('returns a real undici Agent, not the runtime shim', () => {
+    const agent = createPinnedAgent('93.184.216.34');
+    expect(typeof agent.close).toBe('function');
+    expect(typeof agent.destroy).toBe('function');
   });
 });
