@@ -21,10 +21,15 @@ export const zRelativeTimeframe = z.object({
   value: z.enum(['7d', '30d', '90d', '180d', '365d']),
 });
 
+// toDate() in the cohort query builder only understands plain calendar dates.
+const zDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a date in YYYY-MM-DD format');
+
 export const zAbsoluteTimeframe = z.object({
   type: z.literal('absolute'),
-  start: z.string(),
-  end: z.string().optional(),
+  start: zDate,
+  end: zDate.optional(),
 });
 
 export const zTimeframe = z.discriminatedUnion('type', [
@@ -34,10 +39,20 @@ export const zTimeframe = z.discriminatedUnion('type', [
 
 export type Timeframe = z.infer<typeof zTimeframe>;
 
-export const zFrequency = z.object({
-  operator: z.enum(['gte', 'eq', 'lte']),
-  count: z.number().int().min(1),
-});
+// A count of 0 is how a criterion says "never did this event", so it has to
+// be accepted — but only with the two operators that read that way. `gte 0`
+// matches every profile, which is not a criterion at all, and letting it
+// through would leave the query builder with a third case to guess at.
+export const zFrequency = z
+  .object({
+    operator: z.enum(['gte', 'eq', 'lte']),
+    count: z.number().int().min(0),
+  })
+  .refine((frequency) => frequency.count > 0 || frequency.operator !== 'gte', {
+    message:
+      'A count of 0 means "never", which only "exactly" and "at most" express',
+    path: ['count'],
+  });
 
 export type Frequency = z.infer<typeof zFrequency>;
 

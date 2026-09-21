@@ -279,15 +279,19 @@ function EventCriteriaItem({
               { value: 'lte', label: 'At most' },
             ]}
             label="Operator"
-            onChange={(operator) =>
+            onChange={(operator) => {
+              const count = criteria.frequency?.count ?? 1;
               onChange({
                 ...criteria,
                 frequency: {
-                  ...(criteria.frequency ?? { count: 1 }),
                   operator,
+                  // "At least 0" matches everyone and the server rejects it,
+                  // so a count of 0 only survives the operators that mean
+                  // "never".
+                  count: operator === 'gte' && count === 0 ? 1 : count,
                 },
-              })
-            }
+              });
+            }}
           >
             <Button size="sm" variant="outline">
               {criteria.frequency?.operator === 'gte' && 'At least'}
@@ -297,16 +301,26 @@ function EventCriteriaItem({
           </DropdownMenuComposed>
           <input
             className="w-20 rounded border px-2 py-1 text-sm"
-            min="1"
-            onChange={(e) =>
+            min="0"
+            onChange={(e) => {
+              // Explicit NaN check, not `|| 1`: 0 is falsy, so the fallback
+              // rewrote a typed 0 back to 1 and "never did this event" could
+              // not be entered.
+              const parsed = Number.parseInt(e.target.value, 10);
+              const operator = criteria.frequency?.operator ?? 'gte';
               onChange({
                 ...criteria,
                 frequency: {
-                  operator: criteria.frequency?.operator ?? 'gte',
-                  count: Number.parseInt(e.target.value) || 1,
+                  operator,
+                  // Same "At least 0 matches everyone" clamp as the
+                  // operator-change handler above.
+                  count:
+                    Number.isNaN(parsed) || (operator === 'gte' && parsed === 0)
+                      ? 1
+                      : parsed,
                 },
-              })
-            }
+              });
+            }}
             type="number"
             value={criteria.frequency?.count ?? 1}
           />
