@@ -15,7 +15,7 @@ export const ProfileGroups = ({ projectId, groups }: Props) => {
     trpc.group.listByIds.queryOptions({
       projectId,
       ids: groups,
-    }),
+    })
   );
 
   if (groups.length === 0 || !query.data?.length) {

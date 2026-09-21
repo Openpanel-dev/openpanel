@@ -65,7 +65,7 @@ function SortableHeader({
       onClick={onClick}
       className={cn(
         'row items-center gap-1 hover:opacity-80 transition-opacity',
-        isRightAligned && 'justify-end ml-auto',
+        isRightAligned && 'justify-end ml-auto'
       )}
     >
       <span>{name}</span>
@@ -95,7 +95,7 @@ export const OverviewWidgetTable = <T,>({
 }: Props<T>) => {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null,
+    null
   );
 
   // Handle column header click for sorting
@@ -190,7 +190,7 @@ export const OverviewWidgetTable = <T,>({
             ? 'text-left w-full font-medium min-w-0'
             : 'text-right font-mono',
           // Remove old responsive logic - now handled by responsive prop
-          column.className,
+          column.className
         ),
       };
     });
@@ -603,7 +603,7 @@ export function OverviewWidgetTableGeneric({
   column: {
     name: string;
     render: (
-      item: RouterOutputs['overview']['topGeneric'][number],
+      item: RouterOutputs['overview']['topGeneric'][number]
     ) => React.ReactNode;
   };
 }) {
@@ -631,7 +631,7 @@ export function OverviewWidgetTableGeneric({
                 width: '100px',
                 responsive: { priority: 3 },
                 getSortValue: (
-                  item: RouterOutputs['overview']['topGeneric'][number],
+                  item: RouterOutputs['overview']['topGeneric'][number]
                 ) => item.revenue ?? 0,
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   const revenue = item.revenue ?? 0;
@@ -661,7 +661,7 @@ export function OverviewWidgetTableGeneric({
                 width: '84px',
                 responsive: { priority: 2 },
                 getSortValue: (
-                  item: RouterOutputs['overview']['topGeneric'][number],
+                  item: RouterOutputs['overview']['topGeneric'][number]
                 ) => item.pageviews,
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   return (
@@ -680,7 +680,7 @@ export function OverviewWidgetTableGeneric({
           width: '84px',
           responsive: { priority: 2 },
           getSortValue: (
-            item: RouterOutputs['overview']['topGeneric'][number],
+            item: RouterOutputs['overview']['topGeneric'][number]
           ) => item.sessions,
           render(item) {
             return (

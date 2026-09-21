@@ -26,16 +26,10 @@ export function SessionReplayIllustration() {
           <div className="h-2 w-24 rounded-full bg-muted/20" />
 
           {/* Click heatspot */}
-          <div
-            className="absolute"
-            style={{ left: '62%', top: '48%' }}
-          >
+          <div className="absolute" style={{ left: '62%', top: '48%' }}>
             <div className="h-4 w-4 animate-pulse rounded-full border-2 border-blue-500/70 bg-blue-500/20" />
           </div>
-          <div
-            className="absolute"
-            style={{ left: '25%', top: '32%' }}
-          >
+          <div className="absolute" style={{ left: '25%', top: '32%' }}>
             <div className="h-2.5 w-2.5 rounded-full border border-blue-500/40 bg-blue-500/25" />
           </div>
 
@@ -59,7 +53,8 @@ export function SessionReplayIllustration() {
             style={{
               left: 'calc(18% + 8px)',
               top: 'calc(22% + 6px)',
-              animation: 'cursor-trail 4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+              animation:
+                'cursor-trail 4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
             }}
           >
             <svg fill="none" height="12" viewBox="0 0 10 12" width="10">

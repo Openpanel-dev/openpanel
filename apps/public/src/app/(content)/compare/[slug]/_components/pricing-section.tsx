@@ -109,9 +109,7 @@ export function PricingSection({
                 <span className="text-xs font-medium text-muted-foreground">
                   Free trial:
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  30 days
-                </span>
+                <span className="text-xs text-muted-foreground">30 days</span>
               </div>
             </motion.div>
           </div>
@@ -187,4 +185,3 @@ export function PricingSection({
     </Section>
   );
 }
-

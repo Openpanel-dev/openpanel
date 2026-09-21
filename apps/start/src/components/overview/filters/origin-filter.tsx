@@ -11,10 +11,7 @@ export function OriginFilter() {
   const trpc = useTRPC();
 
   const { data } = useQuery(
-    trpc.event.origin.queryOptions(
-      { projectId },
-      { staleTime: 1000 * 60 * 60 },
-    ),
+    trpc.event.origin.queryOptions({ projectId }, { staleTime: 1000 * 60 * 60 })
   );
 
   if (!data || data.length === 0) {
@@ -34,7 +31,7 @@ export function OriginFilter() {
               'rounded-md border px-2.5 py-1 text-sm transition-colors cursor-pointer truncate max-w-56',
               active
                 ? 'bg-foreground text-background border-foreground font-medium'
-                : 'text-muted-foreground hover:text-foreground hover:border-foreground/30',
+                : 'text-muted-foreground hover:text-foreground hover:border-foreground/30'
             )}
           >
             {item.origin}

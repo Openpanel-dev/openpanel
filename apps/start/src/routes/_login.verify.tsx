@@ -37,7 +37,7 @@ function VerifyPage() {
         toast.error(error.message);
         setCode('');
       },
-    }),
+    })
   );
 
   const canSubmit =

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
-import { useChart, useChartStable } from "./chart-context";
-import { shortDateFmt } from "./chart-formatters";
+import { memo, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
+import { useChart, useChartStable } from './chart-context';
+import { shortDateFmt } from './chart-formatters';
 
 export interface XAxisProps {
   /** Number of ticks to show (including first and last). Default: 5. Used when `tickMode` is `"domain"`. */
@@ -15,7 +15,7 @@ export interface XAxisProps {
    * `"domain"` — evenly spaced ticks across the time domain (default).
    * `"data"` — one label per data row at its x value (better with sparse or monthly bars).
    */
-  tickMode?: "domain" | "data";
+  tickMode?: 'domain' | 'data';
 }
 
 interface XAxisLabelProps {
@@ -56,15 +56,15 @@ function XAxisLabel({
         left: x,
         bottom: 12,
         width: 0,
-        display: "flex",
-        justifyContent: "center",
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
       <span
-        className={cn("whitespace-nowrap text-chart-label text-xs")}
+        className={cn('whitespace-nowrap text-chart-label text-xs')}
         style={{
           opacity,
-          transition: "opacity 0.4s ease-in-out",
+          transition: 'opacity 0.4s ease-in-out',
         }}
       >
         {label}
@@ -92,7 +92,7 @@ export function XAxis(props: XAxisProps) {
 const XAxisInner = memo(function XAxisInner({
   numTicks = 5,
   tickerHalfWidth = 50,
-  tickMode = "domain",
+  tickMode = 'domain',
   container,
 }: XAxisProps & { container: HTMLDivElement }) {
   const { xScale, margin, tooltipData, data, xAccessor, dateLabels } =
@@ -100,7 +100,7 @@ const XAxisInner = memo(function XAxisInner({
 
   // Generate tick labels: evenly spaced along the domain, or one per data row
   const labelsToShow = useMemo(() => {
-    if (tickMode === "data") {
+    if (tickMode === 'data') {
       return data.map((d, i) => ({
         date: xAccessor(d),
         x: (xScale(xAccessor(d)) ?? 0) + margin.left,
@@ -157,6 +157,6 @@ const XAxisInner = memo(function XAxisInner({
   );
 });
 
-XAxis.displayName = "XAxis";
+XAxis.displayName = 'XAxis';
 
 export default XAxis;

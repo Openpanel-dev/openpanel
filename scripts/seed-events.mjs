@@ -71,19 +71,70 @@ function randFloat(min, max, rng = eventRng) {
 // ---------------------------------------------------------------------------
 
 const FIRST_NAMES = [
-  'Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Hank',
-  'Iris', 'Jack', 'Karen', 'Leo', 'Mia', 'Noah', 'Olivia', 'Pete',
-  'Quinn', 'Rachel', 'Sam', 'Tina', 'Uma', 'Victor', 'Wendy', 'Xavier',
-  'Yara', 'Zoe', 'Aaron', 'Bella', 'Carlos', 'Dani', 'Ethan', 'Fiona',
+  'Alice',
+  'Bob',
+  'Charlie',
+  'Diana',
+  'Eve',
+  'Frank',
+  'Grace',
+  'Hank',
+  'Iris',
+  'Jack',
+  'Karen',
+  'Leo',
+  'Mia',
+  'Noah',
+  'Olivia',
+  'Pete',
+  'Quinn',
+  'Rachel',
+  'Sam',
+  'Tina',
+  'Uma',
+  'Victor',
+  'Wendy',
+  'Xavier',
+  'Yara',
+  'Zoe',
+  'Aaron',
+  'Bella',
+  'Carlos',
+  'Dani',
+  'Ethan',
+  'Fiona',
 ];
 
 const LAST_NAMES = [
-  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
-  'Davis', 'Wilson', 'Taylor', 'Anderson', 'Thomas', 'Jackson', 'White',
-  'Harris', 'Martin', 'Thompson', 'Moore', 'Young', 'Allen',
+  'Smith',
+  'Johnson',
+  'Williams',
+  'Brown',
+  'Jones',
+  'Garcia',
+  'Miller',
+  'Davis',
+  'Wilson',
+  'Taylor',
+  'Anderson',
+  'Thomas',
+  'Jackson',
+  'White',
+  'Harris',
+  'Martin',
+  'Thompson',
+  'Moore',
+  'Young',
+  'Allen',
 ];
 
-const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'proton.me'];
+const EMAIL_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'outlook.com',
+  'icloud.com',
+  'proton.me',
+];
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -119,7 +170,7 @@ function makeIP(index) {
   const a = base[0];
   const b = Math.floor(index / 65025) % 256;
   const c = Math.floor(index / 255) % 256;
-  const d = index % 255 + 1;
+  const d = (index % 255) + 1;
   return `${a}.${b}.${c}.${d}`;
 }
 
@@ -128,28 +179,71 @@ function makeIP(index) {
 // ---------------------------------------------------------------------------
 
 const PRODUCTS = [
-  { id: 'prod_001', name: 'Wireless Headphones', category: 'Electronics', price: 8999 },
+  {
+    id: 'prod_001',
+    name: 'Wireless Headphones',
+    category: 'Electronics',
+    price: 8999,
+  },
   { id: 'prod_002', name: 'Running Shoes', category: 'Sports', price: 12999 },
   { id: 'prod_003', name: 'Coffee Maker', category: 'Kitchen', price: 5499 },
   { id: 'prod_004', name: 'Yoga Mat', category: 'Sports', price: 2999 },
-  { id: 'prod_005', name: 'Smart Watch', category: 'Electronics', price: 29999 },
+  {
+    id: 'prod_005',
+    name: 'Smart Watch',
+    category: 'Electronics',
+    price: 29999,
+  },
   { id: 'prod_006', name: 'Blender', category: 'Kitchen', price: 7999 },
   { id: 'prod_007', name: 'Backpack', category: 'Travel', price: 4999 },
   { id: 'prod_008', name: 'Sunglasses', category: 'Accessories', price: 3499 },
-  { id: 'prod_009', name: 'Novel: The Last Algorithm', category: 'Books', price: 1499 },
-  { id: 'prod_010', name: 'Standing Desk', category: 'Furniture', price: 45999 },
+  {
+    id: 'prod_009',
+    name: 'Novel: The Last Algorithm',
+    category: 'Books',
+    price: 1499,
+  },
+  {
+    id: 'prod_010',
+    name: 'Standing Desk',
+    category: 'Furniture',
+    price: 45999,
+  },
 ];
 
-const CATEGORIES = ['Electronics', 'Sports', 'Kitchen', 'Travel', 'Accessories', 'Books', 'Furniture'];
+const CATEGORIES = [
+  'Electronics',
+  'Sports',
+  'Kitchen',
+  'Travel',
+  'Accessories',
+  'Books',
+  'Furniture',
+];
 
 // ---------------------------------------------------------------------------
 // Groups (3 pre-defined companies)
 // ---------------------------------------------------------------------------
 
 const GROUPS = [
-  { id: 'org_acme', type: 'company', name: 'Acme Corp', properties: { plan: 'enterprise', industry: 'Technology', employees: 500 } },
-  { id: 'org_globex', type: 'company', name: 'Globex Inc', properties: { plan: 'pro', industry: 'Finance', employees: 120 } },
-  { id: 'org_initech', type: 'company', name: 'Initech LLC', properties: { plan: 'starter', industry: 'Consulting', employees: 45 } },
+  {
+    id: 'org_acme',
+    type: 'company',
+    name: 'Acme Corp',
+    properties: { plan: 'enterprise', industry: 'Technology', employees: 500 },
+  },
+  {
+    id: 'org_globex',
+    type: 'company',
+    name: 'Globex Inc',
+    properties: { plan: 'pro', industry: 'Finance', employees: 120 },
+  },
+  {
+    id: 'org_initech',
+    type: 'company',
+    name: 'Initech LLC',
+    properties: { plan: 'starter', industry: 'Consulting', employees: 45 },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -164,83 +258,312 @@ const GROUPS = [
 const SCENARIOS = [
   // 1. Full e-commerce checkout success
   (product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://google.com' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://google.com',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
     { name: 'screen_view', props: { path: `${ORIGIN}/cart`, title: 'Cart' } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'standard', estimated_days: 5 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/review`, title: 'Order Review' } },
-    { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: product.price, product_id: product.id, product_name: product.name, quantity: 1 }, revenue: true },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/success`, title: 'Order Confirmed' } },
-    { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: product.price } },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'standard', estimated_days: 5 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/review`, title: 'Order Review' },
+    },
+    {
+      name: 'purchase',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: product.price,
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+      },
+      revenue: true,
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/success`, title: 'Order Confirmed' },
+    },
+    {
+      name: 'checkout_success',
+      props: { order_id: `ord_${Date.now()}`, revenue: product.price },
+    },
   ],
 
   // 2. Checkout failed (payment declined)
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'express', estimated_days: 2 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'checkout_failed', props: { reason: 'payment_declined', error_code: 'insufficient_funds' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'express', estimated_days: 2 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'checkout_failed',
+      props: { reason: 'payment_declined', error_code: 'insufficient_funds' },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/payment`, title: 'Payment' },
+    },
   ],
 
   // 3. Browse only — no purchase
   (product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://facebook.com' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/categories/${product.category.toLowerCase()}`, title: product.category } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://facebook.com',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/categories/${product.category.toLowerCase()}`,
+        title: product.category,
+      },
+    },
     { name: 'category_viewed', props: { category: product.category } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${PRODUCTS[1].id}`, title: PRODUCTS[1].name } },
-    { name: 'product_viewed', props: { product_id: PRODUCTS[1].id, product_name: PRODUCTS[1].name, price: PRODUCTS[1].price, category: PRODUCTS[1].category } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/products/${PRODUCTS[1].id}`,
+        title: PRODUCTS[1].name,
+      },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: PRODUCTS[1].id,
+        product_name: PRODUCTS[1].name,
+        price: PRODUCTS[1].price,
+        category: PRODUCTS[1].category,
+      },
+    },
   ],
 
   // 4. Add to cart then abandon
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
     { name: 'screen_view', props: { path: `${ORIGIN}/cart`, title: 'Cart' } },
-    { name: 'cart_abandoned', props: { cart_total: product.price, item_count: 1 } },
+    {
+      name: 'cart_abandoned',
+      props: { cart_total: product.price, item_count: 1 },
+    },
   ],
 
   // 5. Search → product → purchase
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'search', props: { query: product.name.split(' ')[0], result_count: randInt(3, 20) } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/search?q=${encodeURIComponent(product.name)}`, title: 'Search Results' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'standard', estimated_days: 5 } },
+    {
+      name: 'search',
+      props: {
+        query: product.name.split(' ')[0],
+        result_count: randInt(3, 20),
+      },
+    },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/search?q=${encodeURIComponent(product.name)}`,
+        title: 'Search Results',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'standard', estimated_days: 5 },
+    },
     { name: 'payment_info_submitted', props: { payment_method: 'paypal' } },
-    { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: product.price, product_id: product.id, product_name: product.name, quantity: 1 }, revenue: true },
-    { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: product.price } },
+    {
+      name: 'purchase',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: product.price,
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+      },
+      revenue: true,
+    },
+    {
+      name: 'checkout_success',
+      props: { order_id: `ord_${Date.now()}`, revenue: product.price },
+    },
   ],
 
   // 6. Sign up flow
   (_product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://twitter.com' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/signup`, title: 'Sign Up' } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://twitter.com',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/signup`, title: 'Sign Up' },
+    },
     { name: 'signup_started', props: {} },
     { name: 'signup_step_completed', props: { step: 'email', step_number: 1 } },
-    { name: 'signup_step_completed', props: { step: 'password', step_number: 2 } },
-    { name: 'signup_step_completed', props: { step: 'profile', step_number: 3 } },
+    {
+      name: 'signup_step_completed',
+      props: { step: 'password', step_number: 2 },
+    },
+    {
+      name: 'signup_step_completed',
+      props: { step: 'profile', step_number: 3 },
+    },
     { name: 'signup_completed', props: { method: 'email' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/dashboard`, title: 'Dashboard' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/dashboard`, title: 'Dashboard' },
+    },
   ],
 
   // 7. Login → browse → wishlist
@@ -248,24 +571,104 @@ const SCENARIOS = [
     { name: 'screen_view', props: { path: `${ORIGIN}/login`, title: 'Login' } },
     { name: 'login', props: { method: 'email' } },
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_wishlist', props: { product_id: product.id, product_name: product.name, price: product.price } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/wishlist`, title: 'Wishlist' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_wishlist',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/wishlist`, title: 'Wishlist' },
+    },
   ],
 
   // 8. Promo code → purchase
   (product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://newsletter.example.com' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'promo_code_applied', props: { code: 'SAVE20', discount_percent: 20, discount_amount: Math.round(product.price * 0.2) } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'standard', estimated_days: 5 } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: Math.round(product.price * 0.8), product_id: product.id, product_name: product.name, quantity: 1, promo_code: 'SAVE20' }, revenue: true },
-    { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: Math.round(product.price * 0.8) } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://newsletter.example.com',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'promo_code_applied',
+      props: {
+        code: 'SAVE20',
+        discount_percent: 20,
+        discount_amount: Math.round(product.price * 0.2),
+      },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'standard', estimated_days: 5 },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'purchase',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: Math.round(product.price * 0.8),
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+        promo_code: 'SAVE20',
+      },
+      revenue: true,
+    },
+    {
+      name: 'checkout_success',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: Math.round(product.price * 0.8),
+      },
+    },
   ],
 
   // 9. Multi-item purchase
@@ -275,133 +678,447 @@ const SCENARIOS = [
     const total = p1.price + p2.price;
     return [
       { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-      { name: 'screen_view', props: { path: `${ORIGIN}/products/${p1.id}`, title: p1.name } },
-      { name: 'product_viewed', props: { product_id: p1.id, product_name: p1.name, price: p1.price, category: p1.category } },
-      { name: 'add_to_cart', props: { product_id: p1.id, product_name: p1.name, price: p1.price, quantity: 1 } },
-      { name: 'screen_view', props: { path: `${ORIGIN}/products/${p2.id}`, title: p2.name } },
-      { name: 'product_viewed', props: { product_id: p2.id, product_name: p2.name, price: p2.price, category: p2.category } },
-      { name: 'add_to_cart', props: { product_id: p2.id, product_name: p2.name, price: p2.price, quantity: 1 } },
+      {
+        name: 'screen_view',
+        props: { path: `${ORIGIN}/products/${p1.id}`, title: p1.name },
+      },
+      {
+        name: 'product_viewed',
+        props: {
+          product_id: p1.id,
+          product_name: p1.name,
+          price: p1.price,
+          category: p1.category,
+        },
+      },
+      {
+        name: 'add_to_cart',
+        props: {
+          product_id: p1.id,
+          product_name: p1.name,
+          price: p1.price,
+          quantity: 1,
+        },
+      },
+      {
+        name: 'screen_view',
+        props: { path: `${ORIGIN}/products/${p2.id}`, title: p2.name },
+      },
+      {
+        name: 'product_viewed',
+        props: {
+          product_id: p2.id,
+          product_name: p2.name,
+          price: p2.price,
+          category: p2.category,
+        },
+      },
+      {
+        name: 'add_to_cart',
+        props: {
+          product_id: p2.id,
+          product_name: p2.name,
+          price: p2.price,
+          quantity: 1,
+        },
+      },
       { name: 'checkout_started', props: { cart_total: total, item_count: 2 } },
-      { name: 'shipping_info_submitted', props: { shipping_method: 'express', estimated_days: 2 } },
-      { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-      { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: total, item_count: 2 }, revenue: true },
-      { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: total } },
+      {
+        name: 'shipping_info_submitted',
+        props: { shipping_method: 'express', estimated_days: 2 },
+      },
+      {
+        name: 'payment_info_submitted',
+        props: { payment_method: 'credit_card' },
+      },
+      {
+        name: 'purchase',
+        props: { order_id: `ord_${Date.now()}`, revenue: total, item_count: 2 },
+        revenue: true,
+      },
+      {
+        name: 'checkout_success',
+        props: { order_id: `ord_${Date.now()}`, revenue: total },
+      },
     ];
   },
 
   // 10. Help center visit
   (_product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/help`, title: 'Help Center' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/help`, title: 'Help Center' },
+    },
     { name: 'help_search', props: { query: 'return policy', result_count: 4 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/help/returns`, title: 'Return Policy' } },
-    { name: 'help_article_read', props: { article: 'return_policy', time_on_page: randInt(60, 180) } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/help/shipping`, title: 'Shipping Info' } },
-    { name: 'help_article_read', props: { article: 'shipping_times', time_on_page: randInt(30, 120) } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/help/returns`, title: 'Return Policy' },
+    },
+    {
+      name: 'help_article_read',
+      props: { article: 'return_policy', time_on_page: randInt(60, 180) },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/help/shipping`, title: 'Shipping Info' },
+    },
+    {
+      name: 'help_article_read',
+      props: { article: 'shipping_times', time_on_page: randInt(30, 120) },
+    },
   ],
 
   // 11. Product review submitted
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
     { name: 'review_started', props: { product_id: product.id } },
-    { name: 'review_submitted', props: { product_id: product.id, rating: randInt(3, 5), has_text: true } },
+    {
+      name: 'review_submitted',
+      props: { product_id: product.id, rating: randInt(3, 5), has_text: true },
+    },
   ],
 
   // 12. Newsletter signup only
   (_product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://instagram.com' } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://instagram.com',
+      },
+    },
     { name: 'screen_view', props: { path: `${ORIGIN}/blog`, title: 'Blog' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/blog/top-10-gadgets-2024`, title: 'Top 10 Gadgets 2024' } },
-    { name: 'newsletter_signup', props: { source: 'blog_article', campaign: 'gadgets_2024' } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/blog/top-10-gadgets-2024`,
+        title: 'Top 10 Gadgets 2024',
+      },
+    },
+    {
+      name: 'newsletter_signup',
+      props: { source: 'blog_article', campaign: 'gadgets_2024' },
+    },
   ],
 
   // 13. Account settings update
   (_product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/login`, title: 'Login' } },
     { name: 'login', props: { method: 'google' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/account`, title: 'Account' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/account/settings`, title: 'Settings' } },
-    { name: 'settings_updated', props: { field: 'notification_preferences', value: 'email_only' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/account/address`, title: 'Addresses' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/account`, title: 'Account' },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/account/settings`, title: 'Settings' },
+    },
+    {
+      name: 'settings_updated',
+      props: { field: 'notification_preferences', value: 'email_only' },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/account/address`, title: 'Addresses' },
+    },
     { name: 'address_added', props: { is_default: true } },
   ],
 
   // 14. Referral program engagement
   (product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home', referrer: 'https://referral.example.com/?ref=abc123' } },
-    { name: 'referral_link_clicked', props: { referrer_id: 'usr_ref123', campaign: 'summer_referral' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'standard', estimated_days: 5 } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: product.price, referral_code: 'abc123' }, revenue: true },
-    { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: product.price } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/`,
+        title: 'Home',
+        referrer: 'https://referral.example.com/?ref=abc123',
+      },
+    },
+    {
+      name: 'referral_link_clicked',
+      props: { referrer_id: 'usr_ref123', campaign: 'summer_referral' },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'standard', estimated_days: 5 },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'purchase',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: product.price,
+        referral_code: 'abc123',
+      },
+      revenue: true,
+    },
+    {
+      name: 'checkout_success',
+      props: { order_id: `ord_${Date.now()}`, revenue: product.price },
+    },
   ],
 
   // 15. Mobile quick browse — short session
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/categories/${product.category.toLowerCase()}`, title: product.category } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/categories/${product.category.toLowerCase()}`,
+        title: product.category,
+      },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
   ],
 
   // 16. Compare products
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
     { name: 'compare_added', props: { product_id: product.id } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${PRODUCTS[4].id}`, title: PRODUCTS[4].name } },
-    { name: 'product_viewed', props: { product_id: PRODUCTS[4].id, product_name: PRODUCTS[4].name, price: PRODUCTS[4].price, category: PRODUCTS[4].category } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/products/${PRODUCTS[4].id}`,
+        title: PRODUCTS[4].name,
+      },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: PRODUCTS[4].id,
+        product_name: PRODUCTS[4].name,
+        price: PRODUCTS[4].price,
+        category: PRODUCTS[4].category,
+      },
+    },
     { name: 'compare_added', props: { product_id: PRODUCTS[4].id } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/compare?ids=${product.id},${PRODUCTS[4].id}`, title: 'Compare Products' } },
-    { name: 'compare_viewed', props: { product_ids: [product.id, PRODUCTS[4].id] } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/compare?ids=${product.id},${PRODUCTS[4].id}`,
+        title: 'Compare Products',
+      },
+    },
+    {
+      name: 'compare_viewed',
+      props: { product_ids: [product.id, PRODUCTS[4].id] },
+    },
   ],
 
   // 17. Shipping failure retry → success
   (product) => [
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/${product.id}`, title: product.name } },
-    { name: 'product_viewed', props: { product_id: product.id, product_name: product.name, price: product.price, category: product.category } },
-    { name: 'add_to_cart', props: { product_id: product.id, product_name: product.name, price: product.price, quantity: 1 } },
-    { name: 'checkout_started', props: { cart_total: product.price, item_count: 1 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' } },
-    { name: 'shipping_info_error', props: { error: 'invalid_address', attempt: 1 } },
-    { name: 'shipping_info_submitted', props: { shipping_method: 'standard', estimated_days: 5, attempt: 2 } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'purchase', props: { order_id: `ord_${Date.now()}`, revenue: product.price, product_id: product.id }, revenue: true },
-    { name: 'checkout_success', props: { order_id: `ord_${Date.now()}`, revenue: product.price } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/products/${product.id}`, title: product.name },
+    },
+    {
+      name: 'product_viewed',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        category: product.category,
+      },
+    },
+    {
+      name: 'add_to_cart',
+      props: {
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1,
+      },
+    },
+    {
+      name: 'checkout_started',
+      props: { cart_total: product.price, item_count: 1 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/shipping`, title: 'Shipping Info' },
+    },
+    {
+      name: 'shipping_info_error',
+      props: { error: 'invalid_address', attempt: 1 },
+    },
+    {
+      name: 'shipping_info_submitted',
+      props: { shipping_method: 'standard', estimated_days: 5, attempt: 2 },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'purchase',
+      props: {
+        order_id: `ord_${Date.now()}`,
+        revenue: product.price,
+        product_id: product.id,
+      },
+      revenue: true,
+    },
+    {
+      name: 'checkout_success',
+      props: { order_id: `ord_${Date.now()}`, revenue: product.price },
+    },
   ],
 
   // 18. Subscription / SaaS upgrade
   (_product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/pricing`, title: 'Pricing' } },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/pricing`, title: 'Pricing' },
+    },
     { name: 'pricing_viewed', props: {} },
-    { name: 'plan_selected', props: { plan: 'pro', billing: 'annual', price: 9900 } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/checkout/subscription`, title: 'Subscribe' } },
-    { name: 'payment_info_submitted', props: { payment_method: 'credit_card' } },
-    { name: 'subscription_started', props: { plan: 'pro', billing: 'annual', revenue: 9900 }, revenue: true },
-    { name: 'screen_view', props: { path: `${ORIGIN}/dashboard`, title: 'Dashboard' } },
+    {
+      name: 'plan_selected',
+      props: { plan: 'pro', billing: 'annual', price: 9900 },
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/checkout/subscription`, title: 'Subscribe' },
+    },
+    {
+      name: 'payment_info_submitted',
+      props: { payment_method: 'credit_card' },
+    },
+    {
+      name: 'subscription_started',
+      props: { plan: 'pro', billing: 'annual', revenue: 9900 },
+      revenue: true,
+    },
+    {
+      name: 'screen_view',
+      props: { path: `${ORIGIN}/dashboard`, title: 'Dashboard' },
+    },
   ],
 
   // 19. Deep content engagement (blog)
   (_product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/blog`, title: 'Blog', referrer: 'https://google.com' } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/blog/buying-guide-headphones`, title: 'Headphones Buying Guide' } },
-    { name: 'content_read', props: { article: 'headphones_buying_guide', reading_time: randInt(120, 480), scroll_depth: randFloat(0.6, 1.0) } },
-    { name: 'screen_view', props: { path: `${ORIGIN}/blog/best-running-shoes-2024`, title: 'Best Running Shoes 2024' } },
-    { name: 'content_read', props: { article: 'best_running_shoes_2024', reading_time: randInt(90, 300), scroll_depth: randFloat(0.5, 1.0) } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/blog`,
+        title: 'Blog',
+        referrer: 'https://google.com',
+      },
+    },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/blog/buying-guide-headphones`,
+        title: 'Headphones Buying Guide',
+      },
+    },
+    {
+      name: 'content_read',
+      props: {
+        article: 'headphones_buying_guide',
+        reading_time: randInt(120, 480),
+        scroll_depth: randFloat(0.6, 1.0),
+      },
+    },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/blog/best-running-shoes-2024`,
+        title: 'Best Running Shoes 2024',
+      },
+    },
+    {
+      name: 'content_read',
+      props: {
+        article: 'best_running_shoes_2024',
+        reading_time: randInt(90, 300),
+        scroll_depth: randFloat(0.5, 1.0),
+      },
+    },
   ],
 
   // 20. Error / 404 bounce
   (_product) => [
-    { name: 'screen_view', props: { path: `${ORIGIN}/products/old-discontinued-product`, title: 'Product Not Found' } },
-    { name: 'page_error', props: { error_code: 404, path: '/products/old-discontinued-product' } },
+    {
+      name: 'screen_view',
+      props: {
+        path: `${ORIGIN}/products/old-discontinued-product`,
+        title: 'Product Not Found',
+      },
+    },
+    {
+      name: 'page_error',
+      props: { error_code: 404, path: '/products/old-discontinued-product' },
+    },
     { name: 'screen_view', props: { path: `${ORIGIN}/`, title: 'Home' } },
   ],
 ];
@@ -452,7 +1169,9 @@ async function sendEvent(payload, ua, ip) {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.warn(`  [WARN] ${res.status} ${payload.type}/${payload.payload?.name ?? ''}: ${text.slice(0, 120)}`);
+    console.warn(
+      `  [WARN] ${res.status} ${payload.type}/${payload.payload?.name ?? ''}: ${text.slice(0, 120)}`
+    );
   }
   return res;
 }
@@ -492,7 +1211,8 @@ function scheduleSession(session, sessionIndex, totalSessions) {
   const eventCount = session.events.length;
 
   return session.events.map((event, i) => {
-    const eventOffset = eventCount > 1 ? (i / (eventCount - 1)) * sessionDurationMs : 0;
+    const eventOffset =
+      eventCount > 1 ? (i / (eventCount - 1)) * sessionDurationMs : 0;
     return {
       ...event,
       timestamp: Math.round(sessionStart + eventOffset),
@@ -524,66 +1244,78 @@ async function withConcurrency(tasks, limit) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  console.log(`\nSeeding ${SESSION_COUNT} sessions over ${TIMELINE_MINUTES} minutes`);
+  console.log(
+    `\nSeeding ${SESSION_COUNT} sessions over ${TIMELINE_MINUTES} minutes`
+  );
   console.log(`API: ${TRACK_URL}`);
   console.log(`Client ID: ${CLIENT_ID}\n`);
 
   let totalEvents = 0;
   let errors = 0;
 
-  const sessionTasks = Array.from({ length: SESSION_COUNT }, (_, i) => async () => {
-    const session = buildSession(i);
-    const scheduledEvents = scheduleSession(session, i, SESSION_COUNT);
-    const { identity, group, ua, ip } = session;
+  const sessionTasks = Array.from(
+    { length: SESSION_COUNT },
+    (_, i) => async () => {
+      const session = buildSession(i);
+      const scheduledEvents = scheduleSession(session, i, SESSION_COUNT);
+      const { identity, group, ua, ip } = session;
 
-    // 1. Identify
-    try {
-      await sendEvent({ type: 'identify', payload: identity }, ua, ip);
-    } catch (e) {
-      errors++;
-      console.error(`  [ERROR] identify session ${i}:`, e.message);
-    }
-
-    // 2. Group (if applicable)
-    if (group) {
+      // 1. Identify
       try {
-        await sendEvent({ type: 'group', payload: { ...group, profileId: identity.profileId } }, ua, ip);
+        await sendEvent({ type: 'identify', payload: identity }, ua, ip);
       } catch (e) {
         errors++;
-        console.error(`  [ERROR] group session ${i}:`, e.message);
-      }
-    }
-
-    // 3. Track events in order
-    for (const ev of scheduledEvents) {
-      const trackPayload = {
-        name: ev.name,
-        profileId: identity.profileId,
-        properties: {
-          ...ev.props,
-          __timestamp: new Date(ev.timestamp).toISOString(),
-          ...(group ? { __group: group.id } : {}),
-        },
-        groups: group ? [group.id] : [],
-      };
-
-      if (ev.revenue) {
-        trackPayload.properties.__revenue = ev.props.revenue;
+        console.error(`  [ERROR] identify session ${i}:`, e.message);
       }
 
-      try {
-        await sendEvent({ type: 'track', payload: trackPayload }, ua, ip);
-        totalEvents++;
-      } catch (e) {
-        errors++;
-        console.error(`  [ERROR] track ${ev.name} session ${i}:`, e.message);
+      // 2. Group (if applicable)
+      if (group) {
+        try {
+          await sendEvent(
+            {
+              type: 'group',
+              payload: { ...group, profileId: identity.profileId },
+            },
+            ua,
+            ip
+          );
+        } catch (e) {
+          errors++;
+          console.error(`  [ERROR] group session ${i}:`, e.message);
+        }
+      }
+
+      // 3. Track events in order
+      for (const ev of scheduledEvents) {
+        const trackPayload = {
+          name: ev.name,
+          profileId: identity.profileId,
+          properties: {
+            ...ev.props,
+            __timestamp: new Date(ev.timestamp).toISOString(),
+            ...(group ? { __group: group.id } : {}),
+          },
+          groups: group ? [group.id] : [],
+        };
+
+        if (ev.revenue) {
+          trackPayload.properties.__revenue = ev.props.revenue;
+        }
+
+        try {
+          await sendEvent({ type: 'track', payload: trackPayload }, ua, ip);
+          totalEvents++;
+        } catch (e) {
+          errors++;
+          console.error(`  [ERROR] track ${ev.name} session ${i}:`, e.message);
+        }
+      }
+
+      if ((i + 1) % 50 === 0 || i + 1 === SESSION_COUNT) {
+        console.log(`  Progress: ${i + 1}/${SESSION_COUNT} sessions`);
       }
     }
-
-    if ((i + 1) % 50 === 0 || i + 1 === SESSION_COUNT) {
-      console.log(`  Progress: ${i + 1}/${SESSION_COUNT} sessions`);
-    }
-  });
+  );
 
   await withConcurrency(sessionTasks, CONCURRENCY);
 

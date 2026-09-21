@@ -16,7 +16,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
   const query = useQuery(
     trpc.realtime.geo.queryOptions({
       projectId,
-    }),
+    })
   );
 
   const data = query.data ?? [];

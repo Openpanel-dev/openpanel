@@ -18,7 +18,7 @@ export function OverviewViewToggle({
     'view',
     parseAsStringEnum(['table', 'chart'])
       .withDefault(defaultView)
-      .withOptions({ history: 'push' }),
+      .withOptions({ history: 'push' })
   );
 
   return (
@@ -29,7 +29,9 @@ export function OverviewViewToggle({
         onClick={() => {
           setView(view === 'table' ? 'chart' : 'table');
         }}
-        title={view === 'table' ? 'Switch to chart view' : 'Switch to table view'}
+        title={
+          view === 'table' ? 'Switch to chart view' : 'Switch to table view'
+        }
       >
         {view === 'table' ? (
           <LineChartIcon size={16} />
@@ -46,9 +48,8 @@ export function useOverviewView() {
     'view',
     parseAsStringEnum(['table', 'chart'])
       .withDefault('table')
-      .withOptions({ history: 'push' }),
+      .withOptions({ history: 'push' })
   );
 
   return [view, setView] as const;
 }
-

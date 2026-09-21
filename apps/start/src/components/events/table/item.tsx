@@ -61,7 +61,7 @@ export const EventItem = memo<EventItemProps>(
             'cursor-pointer',
             event.meta?.color
               ? `hover:bg-${event.meta.color}-50 dark:hover:bg-${event.meta.color}-900`
-              : 'hover:bg-def-200',
+              : 'hover:bg-def-200'
           )}
         >
           <div className="min-w-0 flex-1 row items-center gap-2">
@@ -141,7 +141,7 @@ export const EventItem = memo<EventItemProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 export const EventItemSkeleton = () => {
@@ -163,13 +163,17 @@ function Pill({
   children,
   icon,
   className,
-}: { children: React.ReactNode; icon?: React.ReactNode; className?: string }) {
+}: {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  className?: string;
+}) {
   return (
     <Tooltiper
       content={children}
       className={cn(
         'shrink-0 whitespace-nowrap inline-flex gap-2 items-center rounded-full @3xl:text-muted-foreground h-6 text-xs font-mono',
-        className,
+        className
       )}
     >
       {icon && <div className="size-4 center-center">{icon}</div>}

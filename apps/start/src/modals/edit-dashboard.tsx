@@ -45,7 +45,7 @@ export default function EditDashboard({ id, name }: EditDashboardProps) {
         popModal();
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
       },
-    }),
+    })
   );
 
   return (

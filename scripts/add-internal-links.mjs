@@ -58,20 +58,39 @@ const FEATURES = [
     slug: 'funnels',
     url: '/features/funnels',
     // "conversion funnel(s)" links to funnels, not conversion
-    patterns: ['conversion funnels', 'conversion funnel', 'funnel analysis', 'funnels', 'funnel'],
+    patterns: [
+      'conversion funnels',
+      'conversion funnel',
+      'funnel analysis',
+      'funnels',
+      'funnel',
+    ],
   },
   {
     slug: 'retention',
     url: '/features/retention',
     // "retention" alone is included but guarded by excludeBefore
-    patterns: ['retention analysis', 'user retention', 'retention rates', 'retention rate', 'retention'],
-    excludeBefore: ['data', 'unlimited'],  // skip "data retention", "unlimited retention"
+    patterns: [
+      'retention analysis',
+      'user retention',
+      'retention rates',
+      'retention rate',
+      'retention',
+    ],
+    excludeBefore: ['data', 'unlimited'], // skip "data retention", "unlimited retention"
     excludeAfter: ['period', 'policy', 'limit', 'of data'],
   },
   {
     slug: 'conversion',
     url: '/features/conversion',
-    patterns: ['conversion tracking', 'conversion rates', 'conversion rate', 'conversion paths', 'conversions', 'conversion'],
+    patterns: [
+      'conversion tracking',
+      'conversion rates',
+      'conversion rate',
+      'conversion paths',
+      'conversions',
+      'conversion',
+    ],
     excludeBefore: ['data'],
   },
 ];
@@ -90,39 +109,48 @@ function getSkipZones(text) {
 
   // Fenced code blocks  ```…```
   const codeBlock = /```[\s\S]*?```/g;
-  while ((m = codeBlock.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = codeBlock.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // Inline code `…`
   const inlineCode = /`[^`\n]+`/g;
-  while ((m = inlineCode.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = inlineCode.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // Existing markdown links [text](url)
   const mdLink = /\[[^\]]*\]\([^)]*\)/g;
-  while ((m = mdLink.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = mdLink.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // Headings  # … (entire line)
   const heading = /^#{1,6}\s+.+$/gm;
-  while ((m = heading.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = heading.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // JSX / HTML tags (attributes may contain feature words)
   const jsxTag = /<[^>]+>/g;
-  while ((m = jsxTag.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = jsxTag.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // import statements
   const imp = /^import\s+.+$/gm;
-  while ((m = imp.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = imp.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // Frontmatter block
   const fm = /^---[\s\S]*?---/;
-  if ((m = fm.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  if ((m = fm.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // Markdown table rows (| … |)
   const tableRow = /^\|.+\|$/gm;
-  while ((m = tableRow.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = tableRow.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   // > blockquote lines that contain links
   const bqLink = /^>\s.*\[.*\]\(.*\).*$/gm;
-  while ((m = bqLink.exec(text))) zones.push({ start: m.index, end: m.index + m[0].length });
+  while ((m = bqLink.exec(text)))
+    zones.push({ start: m.index, end: m.index + m[0].length });
 
   return zones;
 }
@@ -162,12 +190,18 @@ function processFile(filePath, dir) {
 
         // Check excludeBefore / excludeAfter
         if (feature.excludeBefore) {
-          const before = content.slice(Math.max(0, m.index - 20), m.index).toLowerCase();
-          if (feature.excludeBefore.some((w) => before.endsWith(w + ' '))) continue;
+          const before = content
+            .slice(Math.max(0, m.index - 20), m.index)
+            .toLowerCase();
+          if (feature.excludeBefore.some((w) => before.endsWith(w + ' ')))
+            continue;
         }
         if (feature.excludeAfter) {
-          const after = content.slice(m.index + m[0].length, m.index + m[0].length + 20).toLowerCase();
-          if (feature.excludeAfter.some((w) => after.startsWith(' ' + w))) continue;
+          const after = content
+            .slice(m.index + m[0].length, m.index + m[0].length + 20)
+            .toLowerCase();
+          if (feature.excludeAfter.some((w) => after.startsWith(' ' + w)))
+            continue;
         }
 
         // Build replacement
@@ -247,7 +281,9 @@ for (const dir of DIRS) {
 
 console.log('=== Internal Linking Report ===\n');
 console.log(`Total files modified: ${results.length}`);
-console.log(`Total links added: ${results.reduce((s, r) => s + r.changes.length, 0)}\n`);
+console.log(
+  `Total links added: ${results.reduce((s, r) => s + r.changes.length, 0)}\n`
+);
 
 for (const r of results) {
   console.log(`  ${r.file}`);

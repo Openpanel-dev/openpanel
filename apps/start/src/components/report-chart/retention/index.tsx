@@ -20,13 +20,14 @@ export function ReportRetentionChart() {
   const filters = [
     ...(report.globalFilters ?? []),
     ...eventSeries.flatMap((item) =>
-      (item.filters ?? []).filter((filter) => filter.name !== 'name'),
+      (item.filters ?? []).filter((filter) => filter.name !== 'name')
     ),
   ];
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
 
-  const retentionOptions = report.options?.type === 'retention' ? report.options : undefined;
+  const retentionOptions =
+    report.options?.type === 'retention' ? report.options : undefined;
   const criteria = retentionOptions?.criteria ?? 'on_or_after';
 
   const trpc = useTRPC();
@@ -48,8 +49,8 @@ export function ReportRetentionChart() {
       {
         placeholderData: keepPreviousData,
         enabled: isEnabled,
-      },
-    ),
+      }
+    )
   );
 
   if (!isEnabled) {

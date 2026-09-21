@@ -16,7 +16,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
   const query = useQuery(
     trpc.realtime.paths.queryOptions({
       projectId,
-    }),
+    })
   );
 
   const data = query.data ?? [];

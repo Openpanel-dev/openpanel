@@ -31,7 +31,7 @@ export default function EditEvent({ id }: Props) {
   const client = useQueryClient();
 
   const { data: event } = useQuery(
-    trpc.event.byId.queryOptions({ id, projectId }),
+    trpc.event.byId.queryOptions({ id, projectId })
   );
 
   const [selectedIcon, setIcon] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export default function EditEvent({ id }: Props) {
         client.invalidateQueries(trpc.event.pathFilter());
         popModal();
       },
-    }),
+    })
   );
   const getBg = (color: string) => `bg-${color}-200`;
   const getText = (color: string) => `text-${color}-700`;
@@ -116,7 +116,7 @@ export default function EditEvent({ id }: Props) {
               <div className={iconGrid}>
                 {Object.entries(EventIconMapper)
                   .filter(([name]) =>
-                    name.toLowerCase().includes(search.toLowerCase()),
+                    name.toLowerCase().includes(search.toLowerCase())
                   )
                   .map(([name, Icon]) => (
                     <button
@@ -130,7 +130,7 @@ export default function EditEvent({ id }: Props) {
                         'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
                         name === selectedIcon
                           ? 'scale-110 ring-1 ring-black'
-                          : '[&_svg]:opacity-50',
+                          : '[&_svg]:opacity-50'
                       )}
                     >
                       <Icon size={16} />
@@ -167,7 +167,7 @@ export default function EditEvent({ id }: Props) {
                     className={cn(
                       'flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all',
                       color === selectedColor ? 'ring-1 ring-black' : '',
-                      getBg(color),
+                      getBg(color)
                     )}
                   >
                     {SelectedIcon ? (

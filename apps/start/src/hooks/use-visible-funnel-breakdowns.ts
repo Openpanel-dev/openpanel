@@ -11,7 +11,7 @@ export function useVisibleFunnelBreakdowns(
     limit?: number;
     savedVisibleSeries?: string[] | null;
     onVisibleSeriesChange?: (ids: string[]) => void;
-  },
+  }
 ) {
   const max = options?.limit ?? 10;
   const savedVisibleSeries = options?.savedVisibleSeries;
@@ -22,11 +22,11 @@ export function useVisibleFunnelBreakdowns(
   const seriesKey = data?.map((s) => s.id).join(',') ?? '';
 
   const resolveIds = (
-    items: RouterOutputs['chart']['funnel']['current'],
+    items: RouterOutputs['chart']['funnel']['current']
   ): string[] => {
     if (savedVisibleSeries && savedVisibleSeries.length > 0) {
       const valid = savedVisibleSeries.filter((id) =>
-        items.some((s) => s.id === id),
+        items.some((s) => s.id === id)
       );
       if (valid.length > 0) return valid;
     }
@@ -34,7 +34,7 @@ export function useVisibleFunnelBreakdowns(
   };
 
   const [visibleSeries, setVisibleSeries] = useState<string[]>(() =>
-    resolveIds(data ?? []),
+    resolveIds(data ?? [])
   );
 
   const prevKeyRef = useRef(seriesKey);
@@ -51,7 +51,7 @@ export function useVisibleFunnelBreakdowns(
         return next;
       });
     },
-    [],
+    []
   );
 
   return useMemo(
@@ -61,6 +61,6 @@ export function useVisibleFunnelBreakdowns(
         .filter((item) => visibleSeries.includes(item.id)),
       setVisibleSeries: handleSet,
     }),
-    [visibleSeries, data, handleSet],
+    [visibleSeries, data, handleSet]
   );
 }

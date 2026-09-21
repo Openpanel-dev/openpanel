@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_app/$organizationId/billing')({
     const access = await context.queryClient.fetchQuery(
       context.trpc.organization.myAccess.queryOptions({
         organizationId: params.organizationId,
-      }),
+      })
     );
     if (access?.role !== 'org:admin') {
       throw redirect({
@@ -35,12 +35,12 @@ export const Route = createFileRoute('/_app/$organizationId/billing')({
       context.queryClient.prefetchQuery(
         context.trpc.subscription.products.queryOptions({
           organizationId: params.organizationId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.subscription.getCurrent.queryOptions({
           organizationId: params.organizationId,
-        }),
+        })
       ),
     ]);
   },
@@ -52,7 +52,7 @@ function OrganizationPage() {
   const { data: organization, isLoading } = useQuery(
     trpc.organization.get.queryOptions({
       organizationId,
-    }),
+    })
   );
 
   if (isLoading) {

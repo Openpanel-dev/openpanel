@@ -27,8 +27,8 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
       },
       {
         retry: 0,
-      },
-    ),
+      }
+    )
   );
   const data = query.data;
   const mutation = useMutation(
@@ -36,7 +36,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
       onSuccess() {
         query.refetch();
       },
-    }),
+    })
   );
 
   return (

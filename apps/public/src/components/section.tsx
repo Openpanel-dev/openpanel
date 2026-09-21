@@ -47,7 +47,7 @@ export function SectionHeader({
         align === 'center'
           ? 'center-center text-center'
           : 'items-start text-left',
-        className,
+        className
       )}
     >
       {label && <SectionLabel>{label}</SectionLabel>}
@@ -72,7 +72,7 @@ export function SectionLabel({
     <span
       className={cn(
         'text-xs uppercase tracking-wider text-muted-foreground font-medium',
-        className,
+        className
       )}
     >
       {children}

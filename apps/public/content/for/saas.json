@@ -143,13 +143,28 @@
       { "title": "React analytics setup", "url": "/guides/react-analytics" }
     ],
     "articles": [
-      { "title": "How to create a funnel", "url": "/articles/how-to-create-a-funnel" },
-      { "title": "Self-hosted web analytics", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "How to create a funnel",
+        "url": "/articles/how-to-create-a-funnel"
+      },
+      {
+        "title": "Self-hosted web analytics",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
-      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" },
-      { "title": "OpenPanel vs Amplitude", "url": "/compare/amplitude-alternative" }
+      {
+        "title": "OpenPanel vs Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      },
+      {
+        "title": "OpenPanel vs PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "title": "OpenPanel vs Amplitude",
+        "url": "/compare/amplitude-alternative"
+      }
     ]
   },
   "ctas": {

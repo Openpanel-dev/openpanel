@@ -19,13 +19,10 @@ import { useChatState } from './chat-context';
 export function ModelPicker() {
   const { agentName, setAgent, models } = useChatState();
 
-  const grouped = models.reduce<Record<string, ChatModelOption[]>>(
-    (acc, m) => {
-      (acc[m.group] ??= []).push(m);
-      return acc;
-    },
-    {},
-  );
+  const grouped = models.reduce<Record<string, ChatModelOption[]>>((acc, m) => {
+    (acc[m.group] ??= []).push(m);
+    return acc;
+  }, {});
 
   return (
     <DropdownMenu>

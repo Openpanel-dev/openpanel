@@ -42,7 +42,7 @@ function Component() {
   } = useQuery(
     trpc.organization.get.queryOptions({
       organizationId,
-    }),
+    })
   );
 
   if (isLoading) {
@@ -74,7 +74,7 @@ function Component() {
         refetch();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (

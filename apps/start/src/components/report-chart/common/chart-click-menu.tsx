@@ -114,7 +114,7 @@ export const ChartClickMenu = forwardRef<
         onClose();
       }
     },
-    [onClose],
+    [onClose]
   );
 
   const handleOpenChange = useCallback(
@@ -128,7 +128,7 @@ export const ChartClickMenu = forwardRef<
         }
       }
     },
-    [onClose],
+    [onClose]
   );
 
   // Expose methods via ref (for advanced use cases)
@@ -140,7 +140,7 @@ export const ChartClickMenu = forwardRef<
       },
       getContainerElement: () => containerRef.current,
     }),
-    [],
+    []
   );
 
   // Clone children and add onClick handler to chart components

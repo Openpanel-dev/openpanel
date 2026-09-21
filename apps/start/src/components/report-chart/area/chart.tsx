@@ -67,7 +67,7 @@ export function Chart({ data }: Props) {
       startDate,
       endDate,
       range,
-    }),
+    })
   );
   const { series, setVisibleSeries } = useVisibleSeries(data, {
     savedVisibleSeries,
@@ -195,7 +195,7 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       previous,
-    ],
+    ]
   );
 
   const { getStrokeDasharray, calcStrokeDasharray, handleAnimationEnd } =

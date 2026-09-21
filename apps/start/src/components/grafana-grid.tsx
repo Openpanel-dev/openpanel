@@ -7,7 +7,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 export type Layout = ReactGridLayout.Layout;
 
 export const useReportLayouts = (
-  reports: NonNullable<IServiceReport>[],
+  reports: NonNullable<IServiceReport>[]
 ): ReactGridLayout.Layouts => {
   return useMemo(() => {
     const baseLayout = reports.map((report, index) => ({

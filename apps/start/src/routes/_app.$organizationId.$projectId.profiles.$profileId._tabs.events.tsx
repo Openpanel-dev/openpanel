@@ -11,7 +11,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events',
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events'
 )({
   component: Component,
   head: () => {
@@ -47,8 +47,8 @@ function Component() {
       {
         enabled: columnVisibility !== null,
         getNextPageParam: (lastPage) => lastPage.meta.next,
-      },
-    ),
+      }
+    )
   );
 
   return <EventsTable query={query} />;

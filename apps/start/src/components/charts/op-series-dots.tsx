@@ -64,7 +64,7 @@ export function OPSeriesDots({ dots }: OPSeriesDotsProps) {
         })}
       </g>
     </svg>,
-    containerRef.current,
+    containerRef.current
   );
 }
 

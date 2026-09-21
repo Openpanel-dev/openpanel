@@ -90,7 +90,7 @@ export function ComboboxEvents<
 
   function find(value: string) {
     return items.find(
-      (item) => item.name.toLowerCase() === value.toLowerCase(),
+      (item) => item.name.toLowerCase() === value.toLowerCase()
     );
   }
 
@@ -140,7 +140,7 @@ export function ComboboxEvents<
           className={cn(
             'justify-between',
             !!error && 'border-destructive',
-            className,
+            className
           )}
         >
           <div className="flex min-w-0 items-center">
@@ -192,7 +192,7 @@ export function ComboboxEvents<
                   <CommandItem
                     className={cn(
                       'p-4 py-2.5 gap-4',
-                      selectedValues.includes(item.name as T) && 'bg-accent',
+                      selectedValues.includes(item.name as T) && 'bg-accent'
                     )}
                     key={item.name}
                     value={item.name}

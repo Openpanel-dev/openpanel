@@ -60,7 +60,7 @@ export const LazyComponent = ({
     viewportOptions,
     {
       disconnectOnLeave,
-    },
+    }
   );
 
   useEffect(() => {

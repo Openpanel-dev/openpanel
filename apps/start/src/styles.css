@@ -1,6 +1,6 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@import 'tw-animate-css';
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant light (&:is(.light *));
@@ -8,14 +8,21 @@
 
 body {
   @apply m-0;
-  font-family: ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    sans-serif,
+    Apple Color Emoji,
+    Segoe UI Emoji,
+    Segoe UI Symbol,
+    Noto Color Emoji;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
   font-family:
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 :root {
@@ -34,19 +41,31 @@ code {
   --background: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
   --foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
   --card: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
-  --card-foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
+  --card-foreground: oklch(
+    13.7% 0.04 259
+  ); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
   --popover: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
-  --popover-foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
+  --popover-foreground: oklch(
+    13.7% 0.04 259
+  ); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
   --primary: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
   --primary-foreground: oklch(98.4% 0 248); /* hsl(210, 40%, 98%) -> #F0F4F9 */
   --secondary: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
-  --secondary-foreground: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
+  --secondary-foreground: oklch(
+    20.8% 0.04 266
+  ); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
   --muted: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
-  --muted-foreground: oklch(55.5% 0.04 257); /* hsl(215.4, 16.3%, 46.9%) -> #798290 */
+  --muted-foreground: oklch(
+    55.5% 0.04 257
+  ); /* hsl(215.4, 16.3%, 46.9%) -> #798290 */
   --accent: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
-  --accent-foreground: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
+  --accent-foreground: oklch(
+    20.8% 0.04 266
+  ); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
   --destructive: oklch(63.7% 0.21 25.3); /* hsl(0, 84.2%, 60.2%) -> #F2677D */
-  --destructive-foreground: oklch(96.9% 0.02 17.4); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
+  --destructive-foreground: oklch(
+    96.9% 0.02 17.4
+  ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
   --border: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
   --input: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
   --ring: oklch(86.9% 0.02 253); /* hsl(212.73, 26.83%, 83.92%) -> #CDD6E2 */
@@ -123,7 +142,9 @@ code {
   --accent: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --accent-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
   --destructive: oklch(63.7% 0.21 25.3); /* hsl(0, 84.2%, 60.2%) -> #F2677D */
-  --destructive-foreground: oklch(96.9% 0.02 17.4); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
+  --destructive-foreground: oklch(
+    96.9% 0.02 17.4
+  ); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
   --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --ring: oklch(87.6% 0 0); /* hsl(0, 0%, 83.9%) -> #d6d6d6 */
@@ -385,7 +406,8 @@ button {
 
 /* Custom slow pulse animation */
 @keyframes slow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
   }
   50% {
@@ -399,7 +421,8 @@ button {
 
 /* Floating element animations */
 @keyframes float-1 {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.3;
   }
@@ -410,7 +433,8 @@ button {
 }
 
 @keyframes float-2 {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1.2);
     opacity: 0.4;
   }
@@ -431,7 +455,8 @@ button {
 
 /* Slow ping animation for success modal */
 @keyframes ping-slow {
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(1.2);
     opacity: 0;
   }
@@ -452,27 +477,27 @@ button {
   height: 100%;
   width: 100%;
   overflow-y: scroll;
-  padding-right: 16px;         /* preserve space for custom scrollbar */
-  scrollbar-width: none;       /* hide Firefox scrollbar */
+  padding-right: 16px; /* preserve space for custom scrollbar */
+  scrollbar-width: none; /* hide Firefox scrollbar */
 }
 
 .scrollarea-content::-webkit-scrollbar {
-  width: 8px;                  /* size of custom scrollbar */
+  width: 8px; /* size of custom scrollbar */
 }
 
 .scrollarea-content::-webkit-scrollbar-track {
-  background: transparent;     /* no visible track, like shadcn */
+  background: transparent; /* no visible track, like shadcn */
 }
 
 .scrollarea-content::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 9999px;       /* fully rounded */
+  border-radius: 9999px; /* fully rounded */
   transition: background 0.2s;
 }
 
 .scrollarea-content:hover::-webkit-scrollbar-thumb,
 .scrollarea-content:active::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.4);  /* darken on hover/scroll */
+  background: rgba(0, 0, 0, 0.4); /* darken on hover/scroll */
 }
 
 /* Scroll-driven animation for sticky header */

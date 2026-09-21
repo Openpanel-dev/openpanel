@@ -526,9 +526,8 @@ export function createGroupService(
       id: string,
       projectId: string
     ): ReturnType<typeof getGroupById> => getGroupById(deps, id, projectId),
-    upsertGroup: (
-      input: IServiceUpsertGroup
-    ): ReturnType<typeof upsertGroup> => upsertGroup(deps, input),
+    upsertGroup: (input: IServiceUpsertGroup): ReturnType<typeof upsertGroup> =>
+      upsertGroup(deps, input),
     getGroupList: (
       options: GetGroupListOptions
     ): ReturnType<typeof getGroupList> => getGroupList(deps, options),
@@ -540,15 +539,17 @@ export function createGroupService(
       getGroupListCount(deps, options),
     getGroupTypes: (projectId: string): ReturnType<typeof getGroupTypes> =>
       getGroupTypes(deps, projectId),
-    createGroup: (
-      input: IServiceUpsertGroup
-    ): ReturnType<typeof createGroup> => createGroup(deps, input),
+    createGroup: (input: IServiceUpsertGroup): ReturnType<typeof createGroup> =>
+      createGroup(deps, input),
     updateGroup: (
       id: string,
       projectId: string,
-      data: { type?: string; name?: string; properties?: Record<string, unknown> }
-    ): ReturnType<typeof updateGroup> =>
-      updateGroup(deps, id, projectId, data),
+      data: {
+        type?: string;
+        name?: string;
+        properties?: Record<string, unknown>;
+      }
+    ): ReturnType<typeof updateGroup> => updateGroup(deps, id, projectId, data),
     deleteGroup: (
       id: string,
       projectId: string

@@ -66,7 +66,7 @@ export function PricingComparison({
                 key={row.feature}
                 className={cn(
                   'grid md:grid-cols-3 gap-4 p-6',
-                  index % 2 === 0 ? 'bg-muted/30' : 'bg-background',
+                  index % 2 === 0 ? 'bg-muted/30' : 'bg-background'
                 )}
               >
                 <div className="font-semibold text-sm md:text-base">

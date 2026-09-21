@@ -123,7 +123,7 @@ const Spinner = ({
           ref={ref as unknown as React.RefObject<HTMLDivElement>}
           className={cn(
             'rounded-full bg-current animate-pulse',
-            spinnerClasses,
+            spinnerClasses
           )}
           style={{
             animationDuration:

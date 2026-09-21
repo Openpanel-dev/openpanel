@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
-import { clipRevealTransition } from "./animation";
+import type { Transition } from 'motion/react';
+import { motion } from 'motion/react';
+import { clipRevealTransition } from './animation';
 
 export interface ChartRevealClipProps {
   clipPathId: string;

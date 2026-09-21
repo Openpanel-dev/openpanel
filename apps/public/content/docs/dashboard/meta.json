@@ -1,7 +1,4 @@
 {
   "title": "Dashboard",
-  "pages": [
-    "understand-the-overview",
-    "..."
-  ]
+  "pages": ["understand-the-overview", "..."]
 }

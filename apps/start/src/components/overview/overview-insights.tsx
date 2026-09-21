@@ -22,7 +22,7 @@ export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
     trpc.insight.list.queryOptions({
       projectId,
       limit: 20,
-    }),
+    })
   );
 
   if (isLoading) {

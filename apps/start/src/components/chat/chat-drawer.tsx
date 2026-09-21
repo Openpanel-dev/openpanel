@@ -71,11 +71,7 @@ export function ChatDrawer() {
         Hidden on mobile where the drawer overlays as a modal-style
         panel (standard behavior for narrow viewports).
       */}
-      <div
-        className="hidden lg:block shrink-0"
-        style={{ width }}
-        aria-hidden
-      />
+      <div className="hidden lg:block shrink-0" style={{ width }} aria-hidden />
       <aside
         className="fixed top-0 right-0 z-40 h-screen flex flex-col bg-background border-l shadow-2xl"
         style={{ width }}

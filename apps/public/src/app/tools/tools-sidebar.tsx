@@ -23,7 +23,7 @@ export default function ToolsSidebar(): React.ReactElement {
                   'flex items-start gap-3 p-3 rounded-lg transition-colors',
                   isActive
                     ? 'bg-accent text-accent-foreground'
-                    : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground',
+                    : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Icon className="size-5 shrink-0 mt-0.5" />

@@ -52,7 +52,7 @@ function parseSchemaForJsonTypes(schemaPath: string): JsonFieldMapping[] {
 
 function processGeneratedFiles(
   generatedDir: string,
-  mappings: JsonFieldMapping[],
+  mappings: JsonFieldMapping[]
 ): void {
   // Process the main files in the generated directory
   const mainFiles = [
@@ -100,7 +100,7 @@ function processGeneratedFiles(
 
 function replaceJsonValueInFileForModel(
   filePath: string,
-  mappings: JsonFieldMapping[],
+  mappings: JsonFieldMapping[]
 ): void {
   let content = readFileSync(filePath, 'utf-8');
   let modified = false;
@@ -109,12 +109,12 @@ function replaceJsonValueInFileForModel(
     // Pattern 1: Simple runtime.JsonValue replacement (for select/return types)
     const simpleJsonValueRegex = new RegExp(
       `\\b${mapping.field}:\\s*runtime\\.JsonValue\\b`,
-      'g',
+      'g'
     );
     if (simpleJsonValueRegex.test(content)) {
       content = content.replace(
         simpleJsonValueRegex,
-        `${mapping.field}: PrismaJson.${mapping.type}`,
+        `${mapping.field}: PrismaJson.${mapping.type}`
       );
       modified = true;
     }
@@ -122,12 +122,12 @@ function replaceJsonValueInFileForModel(
     // Pattern 2: runtime.InputJsonValue with optional JsonNullValueInput (for create/update inputs)
     const inputJsonValueRegex = new RegExp(
       `\\b${mapping.field}:\\s*(?:Prisma\\.JsonNullValueInput\\s*\\|\\s*)?runtime\\.InputJsonValue\\b`,
-      'g',
+      'g'
     );
     if (inputJsonValueRegex.test(content)) {
       content = content.replace(
         inputJsonValueRegex,
-        `${mapping.field}: PrismaJson.${mapping.type}`,
+        `${mapping.field}: PrismaJson.${mapping.type}`
       );
       modified = true;
     }
@@ -135,12 +135,12 @@ function replaceJsonValueInFileForModel(
     // Pattern 3: Optional runtime.InputJsonValue with optional JsonNullValueInput
     const optionalInputJsonValueRegex = new RegExp(
       `\\b${mapping.field}\\?:\\s*(?:Prisma\\.JsonNullValueInput\\s*\\|\\s*)?runtime\\.InputJsonValue\\b`,
-      'g',
+      'g'
     );
     if (optionalInputJsonValueRegex.test(content)) {
       content = content.replace(
         optionalInputJsonValueRegex,
-        `${mapping.field}?: PrismaJson.${mapping.type}`,
+        `${mapping.field}?: PrismaJson.${mapping.type}`
       );
       modified = true;
     }
@@ -151,7 +151,7 @@ function replaceJsonValueInFileForModel(
     if (unionJsonValueRegex.test(content)) {
       content = content.replace(
         unionJsonValueRegex,
-        `$1PrismaJson.${mapping.type}`,
+        `$1PrismaJson.${mapping.type}`
       );
       modified = true;
     }
@@ -161,7 +161,7 @@ function replaceJsonValueInFileForModel(
     if (simpleInputJsonValueRegex.test(content)) {
       content = content.replace(
         simpleInputJsonValueRegex,
-        `| PrismaJson.${mapping.type}`,
+        `| PrismaJson.${mapping.type}`
       );
       modified = true;
     }
@@ -169,12 +169,12 @@ function replaceJsonValueInFileForModel(
     // Pattern 6: Optional union types with JsonNullValueInput | runtime.InputJsonValue
     const optionalUnionJsonValueRegex = new RegExp(
       `\\b${mapping.field}\\?:\\s*(?:Prisma\\.JsonNullValueInput\\s*\\|\\s*)?runtime\\.InputJsonValue\\b`,
-      'g',
+      'g'
     );
     if (optionalUnionJsonValueRegex.test(content)) {
       content = content.replace(
         optionalUnionJsonValueRegex,
-        `${mapping.field}?: PrismaJson.${mapping.type}`,
+        `${mapping.field}?: PrismaJson.${mapping.type}`
       );
       modified = true;
     }

@@ -9,7 +9,11 @@ interface CapabilitiesProps {
   capabilities: FeatureCapability[];
 }
 
-export function Capabilities({ title, intro, capabilities }: CapabilitiesProps) {
+export function Capabilities({
+  title,
+  intro,
+  capabilities,
+}: CapabilitiesProps) {
   return (
     <Section className="container">
       <SectionHeader

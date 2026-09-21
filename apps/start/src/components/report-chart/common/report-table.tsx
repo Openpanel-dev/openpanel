@@ -91,7 +91,7 @@ const VirtualRow = function VirtualRow({
 
   const renderCell = (
     column: Header<TableRow | GroupedTableRow, unknown>['column'],
-    header: Header<TableRow | GroupedTableRow, unknown> | undefined,
+    header: Header<TableRow | GroupedTableRow, unknown> | undefined
   ) => {
     const cell = cells.find((c) => c.column.id === column.id);
     if (!cell || !header) return null;
@@ -143,7 +143,7 @@ const VirtualRow = function VirtualRow({
             }}
             className={cn(
               'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-              isResizing && 'bg-primary',
+              isResizing && 'bg-primary'
             )}
           />
         )}
@@ -269,7 +269,7 @@ export function ReportTable({
 
     return groupsToExpandableRows(
       hierarchicalGroups,
-      breakdownPropertyNames.length,
+      breakdownPropertyNames.length
     );
   }, [grouped, hierarchicalGroups, breakdownPropertyNames.length]);
 
@@ -290,7 +290,7 @@ export function ReportTable({
         // Search in breakdown values
         if (
           row.breakdownValues.some((val) =>
-            val?.toLowerCase().includes(searchLower),
+            val?.toLowerCase().includes(searchLower)
           )
         ) {
           return true;
@@ -300,7 +300,7 @@ export function ReportTable({
         const metrics = ['count', 'sum', 'average', 'min', 'max'] as const;
         if (
           metrics.some((metric) =>
-            String(row[metric]).toLowerCase().includes(searchLower),
+            String(row[metric]).toLowerCase().includes(searchLower)
           )
         ) {
           return true;
@@ -309,7 +309,7 @@ export function ReportTable({
         // Search in date values
         if (
           Object.values(row.dateValues).some((val) =>
-            String(val).toLowerCase().includes(searchLower),
+            String(val).toLowerCase().includes(searchLower)
           )
         ) {
           return true;
@@ -326,7 +326,7 @@ export function ReportTable({
       // Sort function based on current sort state
       const sortFn = (
         a: ExpandableTableRow | GroupedTableRow | TableRow,
-        b: ExpandableTableRow | GroupedTableRow | TableRow,
+        b: ExpandableTableRow | GroupedTableRow | TableRow
       ) => {
         // If no sorting is selected, return 0 (no change)
         if (sorting.length === 0) return 0;
@@ -383,7 +383,7 @@ export function ReportTable({
       // For expandable rows, we need to sort recursively
       function sortExpandableRows(
         rows: ExpandableTableRow[],
-        isTopLevel = true,
+        isTopLevel = true
       ): ExpandableTableRow[] {
         // Sort rows: groups by count first (only at top level), then apply user sort
         const sorted = [...rows].sort((a, b) => {
@@ -501,7 +501,7 @@ export function ReportTable({
 
     // Helper function to flatten expandable rows and get only individual rows
     function getIndividualRows(
-      rows: (ExpandableTableRow | TableRow)[],
+      rows: (ExpandableTableRow | TableRow)[]
     ): TableRow[] {
       const individualRows: TableRow[] = [];
       for (const row of rows) {
@@ -530,7 +530,7 @@ export function ReportTable({
       // For single series, calculate ranges from date values
       const singleRow = individualRows[0]!;
       const allDateValues = dates.map(
-        (date) => singleRow.dateValues[date] ?? 0,
+        (date) => singleRow.dateValues[date] ?? 0
       );
       const dateMin = Math.min(...allDateValues);
       const dateMax = Math.max(...allDateValues);
@@ -592,7 +592,7 @@ export function ReportTable({
     value: number,
     min: number,
     max: number,
-    colorClass: 'purple' | 'emerald' = 'emerald',
+    colorClass: 'purple' | 'emerald' = 'emerald'
   ): { style: React.CSSProperties; opacity: number } => {
     if (value === 0) {
       return { style: {}, opacity: 0 };
@@ -694,7 +694,7 @@ export function ReportTable({
             (r): r is GroupedTableRow =>
               'groupKey' in r &&
               r.groupKey === original.groupKey &&
-              !r.isSummaryRow,
+              !r.isSummaryRow
           );
 
           if (groupRows.length > 0) {
@@ -737,7 +737,7 @@ export function ReportTable({
               className={cn(
                 'truncate',
                 !isExpandable && grouped && 'text-muted-foreground/40',
-                isExpandable && 'font-semibold',
+                isExpandable && 'font-semibold'
               )}
             />
             {isExpandable && (
@@ -798,7 +798,7 @@ export function ReportTable({
             function collectRowIdsAtLevel(
               rows: ExpandableTableRow[],
               targetLevel: number,
-              currentLevel = 0,
+              currentLevel = 0
             ): void {
               for (const row of rows) {
                 if (
@@ -813,7 +813,7 @@ export function ReportTable({
                   collectRowIdsAtLevel(
                     row.subRows,
                     targetLevel,
-                    currentLevel + 1,
+                    currentLevel + 1
                   );
                 }
               }
@@ -825,7 +825,7 @@ export function ReportTable({
           const allExpanded =
             rowsAtLevel.length > 0 &&
             rowsAtLevel.every(
-              (id) => typeof expanded === 'object' && expanded[id] === true,
+              (id) => typeof expanded === 'object' && expanded[id] === true
             );
 
           return (
@@ -896,7 +896,7 @@ export function ReportTable({
                 className={cn(
                   'truncate block leading-[48px]',
                   isMuted && 'text-muted-foreground/50',
-                  isGroupHeader && 'font-semibold',
+                  isGroupHeader && 'font-semibold'
                 )}
               >
                 {value || '(Not set)'}
@@ -971,7 +971,7 @@ export function ReportTable({
               className={cn(
                 'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
                 '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
-                (isSummary || isGroupHeader) && 'font-semibold',
+                (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
             >
@@ -1016,7 +1016,7 @@ export function ReportTable({
               className={cn(
                 'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
                 '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
-                (isSummary || isGroupHeader) && 'font-semibold',
+                (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
             >
@@ -1102,7 +1102,7 @@ export function ReportTable({
       setSorting,
       setColumnSizing,
       setExpanded,
-    ],
+    ]
   );
 
   const table = useReactTable(tableOptions);
@@ -1112,7 +1112,7 @@ export function ReportTable({
     const updateScrollMargin = throttle(() => {
       if (parentRef.current) {
         setScrollMargin(
-          parentRef.current.getBoundingClientRect().top + window.scrollY,
+          parentRef.current.getBoundingClientRect().top + window.scrollY
         );
       }
     }, 500);
@@ -1168,27 +1168,27 @@ export function ReportTable({
 
   // Separate columns into pinned and scrollable
   const leftPinnedColumns = headerColumns.filter(
-    (col) => col.columnDef.meta?.pinned === 'left',
+    (col) => col.columnDef.meta?.pinned === 'left'
   );
   const rightPinnedColumns = headerColumns.filter(
-    (col) => col.columnDef.meta?.pinned === 'right',
+    (col) => col.columnDef.meta?.pinned === 'right'
   );
   const scrollableColumns = headerColumns.filter(
-    (col) => !col.columnDef.meta?.pinned,
+    (col) => !col.columnDef.meta?.pinned
   );
 
   // Calculate widths for virtualization
   const leftPinnedWidth = useMemo(
     () => leftPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [leftPinnedColumns, columnSizing],
+    [leftPinnedColumns, columnSizing]
   );
   const rightPinnedWidth = useMemo(
     () => rightPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [rightPinnedColumns, columnSizing],
+    [rightPinnedColumns, columnSizing]
   );
   const scrollableColumnsTotalWidth = useMemo(
     () => scrollableColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [scrollableColumns, columnSizing],
+    [scrollableColumns, columnSizing]
   );
 
   // Horizontal virtualization for scrollable columns
@@ -1277,7 +1277,7 @@ export function ReportTable({
 
   // Helper to get pinning styles (for backward compatibility with header)
   const getPinningStyles = (
-    column: ReturnType<typeof table.getColumn> | undefined,
+    column: ReturnType<typeof table.getColumn> | undefined
   ) => {
     if (!column) return {};
     return pinningStylesMap.get(column.id) ?? {};
@@ -1355,7 +1355,7 @@ export function ReportTable({
                   className={cn(
                     'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                    canSort && 'cursor-pointer hover:bg-muted/50 select-none'
                   )}
                   onClick={
                     canSort
@@ -1365,7 +1365,7 @@ export function ReportTable({
                             isResizingRef.current ||
                             column.getIsResizing() ||
                             (e.target as HTMLElement).closest(
-                              '[data-resize-handle]',
+                              '[data-resize-handle]'
                             )
                           ) {
                             return;
@@ -1433,7 +1433,7 @@ export function ReportTable({
                       }}
                       className={cn(
                         'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-                        header.column.getIsResizing() && 'bg-primary',
+                        header.column.getIsResizing() && 'bg-primary'
                       )}
                     />
                   )}
@@ -1476,7 +1476,7 @@ export function ReportTable({
                     className={cn(
                       'px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap',
                       isMetricOrDate && 'text-right',
-                      canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                      canSort && 'cursor-pointer hover:bg-muted/50 select-none'
                     )}
                     onClick={
                       canSort
@@ -1485,7 +1485,7 @@ export function ReportTable({
                               isResizingRef.current ||
                               header.column.getIsResizing() ||
                               (e.target as HTMLElement).closest(
-                                '[data-resize-handle]',
+                                '[data-resize-handle]'
                               )
                             ) {
                               return;
@@ -1556,7 +1556,7 @@ export function ReportTable({
                   className={cn(
                     'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                    canSort && 'cursor-pointer hover:bg-muted/50 select-none'
                   )}
                   onClick={
                     canSort
@@ -1565,7 +1565,7 @@ export function ReportTable({
                             isResizingRef.current ||
                             header.column.getIsResizing() ||
                             (e.target as HTMLElement).closest(
-                              '[data-resize-handle]',
+                              '[data-resize-handle]'
                             )
                           ) {
                             return;

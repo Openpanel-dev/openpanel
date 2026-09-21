@@ -16,7 +16,10 @@ This file contains the full text of all documentation pages. Each section is sep
 `;
 
 export async function GET() {
-  const pages = source.getPages().slice().sort((a, b) => a.url.localeCompare(b.url));
+  const pages = source
+    .getPages()
+    .slice()
+    .sort((a, b) => a.url.localeCompare(b.url));
   const scanned = await Promise.all(pages.map(getLLMText));
 
   return new Response(header + scanned.join('\n\n'), {

@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useState } from "react";
+import { type RefObject, useEffect, useState } from 'react';
 
 export function findPathLengthAtX(
   path: SVGPathElement | null,
@@ -38,7 +38,7 @@ export function usePathStrokeMetrics(
       return;
     }
     const len = path.getTotalLength();
-    const d = path.getAttribute("d");
+    const d = path.getAttribute('d');
     if (len > 0) {
       setPathLength(len);
     }

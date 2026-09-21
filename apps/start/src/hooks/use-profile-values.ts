@@ -7,7 +7,7 @@ export function useProfileValues(projectId: string, property: string) {
     trpc.profile.values.queryOptions({
       projectId: projectId,
       property,
-    }),
+    })
   );
   return query.data?.values ?? [];
 }

@@ -39,7 +39,7 @@ export function IntegrationCardHeaderButtons({
     <div
       className={cn(
         'absolute right-4 top-0 bottom-0 row items-center gap-2',
-        className,
+        className
       )}
     >
       {children}
@@ -79,7 +79,7 @@ export function IntegrationCardLogo({
     <div
       className={cn(
         'size-14 rounded overflow-hidden shrink-0 center-center',
-        className,
+        className
       )}
       {...props}
     >

@@ -71,7 +71,8 @@ const SERVICE_DEPS_TYPE = 'ServiceDeps';
 const SERVICES_TYPE = 'Services';
 const SERVICES_INTERFACE_NAME = 'Services';
 const CREATE_SERVICES_CALLEE = 'createServices';
-const MODULE_ROOT_FILE = /^([a-z0-9-]+)\.(rpc|service|routes|jobs|constants)\.tsx?$/;
+const MODULE_ROOT_FILE =
+  /^([a-z0-9-]+)\.(rpc|service|routes|jobs|constants)\.tsx?$/;
 
 const byFileThenLine = (a: Offender, b: Offender): number =>
   a.file === b.file ? a.line - b.line : a.file < b.file ? -1 : 1;
@@ -88,9 +89,7 @@ const typeText = (node: ts.TypeNode | undefined): string =>
   node ? node.getText().replace(/\s+/g, ' ') : '<untyped>';
 
 /** `services: () => Services`, in any of the ways that can be written. */
-const isServicesThunk = (
-  parameter: ts.ParameterDeclaration
-): boolean => {
+const isServicesThunk = (parameter: ts.ParameterDeclaration): boolean => {
   const type = parameter.type;
   if (!(type && ts.isFunctionTypeNode(type))) {
     return false;
@@ -102,9 +101,7 @@ const isServicesThunk = (
   );
 };
 
-const isServiceDeps = (
-  parameter: ts.ParameterDeclaration
-): boolean =>
+const isServiceDeps = (parameter: ts.ParameterDeclaration): boolean =>
   Boolean(
     parameter.type &&
       ts.isTypeReferenceNode(parameter.type) &&
@@ -140,7 +137,10 @@ export function checkFactorySignatures(sources: ParsedSource[]): Metric {
     }
 
     const signature = parameters
-      .map((parameter) => `${parameter.name.getText()}: ${typeText(parameter.type)}`)
+      .map(
+        (parameter) =>
+          `${parameter.name.getText()}: ${typeText(parameter.type)}`
+      )
       .join(', ');
     const missing = hasThunk
       ? 'first parameter is not ServiceDeps'
@@ -193,9 +193,7 @@ export function checkServiceInterfaces(sources: ParsedSource[]): Metric {
   };
 }
 
-const isReturnTypeOfFactory = (
-  type: ts.TypeNode | undefined
-): boolean => {
+const isReturnTypeOfFactory = (type: ts.TypeNode | undefined): boolean => {
   if (!(type && ts.isTypeReferenceNode(type))) {
     return false;
   }
@@ -352,7 +350,9 @@ export function checkDependencyLoaders(sources: ParsedSource[]): Metric {
     target: 0,
     offenders: sorted(offenders),
     note: sorted(allowed)
-      .map((entry) => `allowlisted: ${entry.file}:${entry.line} ${entry.detail}`)
+      .map(
+        (entry) => `allowlisted: ${entry.file}:${entry.line} ${entry.detail}`
+      )
       .join('\n'),
   };
 }
@@ -377,7 +377,10 @@ export function collectEnvReads(sources: ParsedSource[]): EnvReadSplit {
 
   for (const source of sources) {
     visit(source.sourceFile, (node) => {
-      if (ts.isPropertyAccessExpression(node) && isProcessEnv(node.expression)) {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        isProcessEnv(node.expression)
+      ) {
         dotted.push({
           file: source.path,
           line: lineOf(source, node.getStart(source.sourceFile)),
@@ -798,7 +801,8 @@ export function checkJobPayloadDates(sources: ParsedSource[]): Metric {
         offenders.push({
           file: source.path,
           line: lineOf(source, node.getStart(source.sourceFile)),
-          detail: 'z.date() in a job file — a payload must survive a JSON round-trip',
+          detail:
+            'z.date() in a job file — a payload must survive a JSON round-trip',
         });
       }
     });
@@ -820,7 +824,11 @@ export function checkJobPayloadDates(sources: ParsedSource[]): Metric {
  * which is exactly why R2 is reported and not asserted.
  */
 export function checkRpcProceduresWithoutCallers(
-  routers: { routerKey: string; source: ParsedSource; procedures: { name: string; line: number }[] }[],
+  routers: {
+    routerKey: string;
+    source: ParsedSource;
+    procedures: { name: string; line: number }[];
+  }[],
   frontendText: string
 ): Metric {
   const offenders: Offender[] = [];
@@ -847,7 +855,9 @@ export function checkRpcProceduresWithoutCallers(
 }
 
 /** R17 — refines precede the transform, and loadConfig takes env as a parameter. */
-export function checkConfigLoaderShape(source: ParsedSource | undefined): Metric {
+export function checkConfigLoaderShape(
+  source: ParsedSource | undefined
+): Metric {
   if (!source) {
     return {
       label: 'config loader shape (apps/api/src/config/env.ts)',
@@ -865,7 +875,8 @@ export function checkConfigLoaderShape(source: ParsedSource | undefined): Metric
   visit(source.sourceFile, (node) => {
     if (
       !(
-        ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression)
       )
     ) {
       return;

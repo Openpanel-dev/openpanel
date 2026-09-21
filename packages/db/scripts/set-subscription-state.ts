@@ -135,10 +135,13 @@ async function main() {
   delete process.env.SELF_HOSTED;
   const resolved = getSubscriptionState(recipe);
 
-  console.log(`Set ${orgId} -> requested "${state}", resolves to "${resolved}"`);
+  console.log(
+    `Set ${orgId} -> requested "${state}", resolves to "${resolved}"`
+  );
   console.table({
     subscriptionStatus: recipe.subscriptionStatus,
-    subscriptionCanceledAt: recipe.subscriptionCanceledAt?.toISOString() ?? null,
+    subscriptionCanceledAt:
+      recipe.subscriptionCanceledAt?.toISOString() ?? null,
     subscriptionStartsAt: recipe.subscriptionStartsAt?.toISOString() ?? null,
     subscriptionEndsAt: recipe.subscriptionEndsAt?.toISOString() ?? null,
   });

@@ -19,7 +19,9 @@ const dir = process.argv[2] ?? './op-export';
 const manifestPath = path.join(dir, 'manifest.jsonl');
 
 if (!existsSync(manifestPath)) {
-  console.error(`❌ No manifest.jsonl in ${dir} — is that the export directory?`);
+  console.error(
+    `❌ No manifest.jsonl in ${dir} — is that the export directory?`
+  );
   process.exit(1);
 }
 
@@ -27,7 +29,10 @@ async function countRows(file) {
   const stream = file.endsWith('.gz')
     ? createReadStream(file).pipe(createGunzip())
     : createReadStream(file);
-  const lines = createInterface({ input: stream, crlfDelay: Number.POSITIVE_INFINITY });
+  const lines = createInterface({
+    input: stream,
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
   let rows = 0;
   for await (const line of lines) {
     if (line.trim()) rows++;
@@ -68,14 +73,14 @@ for (const entry of entries) {
   // first case is a problem.
   if (rows < entry.rows) {
     problems.push(
-      `TRUNCATED ${entry.table}/${entry.file} — manifest says ${entry.rows}, file has ${rows}`,
+      `TRUNCATED ${entry.table}/${entry.file} — manifest says ${entry.rows}, file has ${rows}`
     );
     continue;
   }
 
   if (rows > entry.rows) {
     notes.push(
-      `${entry.table}/${entry.file} — ${rows - entry.rows} row(s) beyond the manifest (written while the export ran)`,
+      `${entry.table}/${entry.file} — ${rows - entry.rows} row(s) beyond the manifest (written while the export ran)`
     );
   }
 
@@ -100,4 +105,6 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log('\n✅ Export is complete — no missing, truncated or corrupt files.');
+console.log(
+  '\n✅ Export is complete — no missing, truncated or corrupt files.'
+);

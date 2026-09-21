@@ -36,7 +36,7 @@ export function OverviewLiveHistogram({
   const number = useNumber();
 
   const { data: liveData, isLoading } = useQuery(
-    trpc.overview.liveData.queryOptions({ projectId, shareId }),
+    trpc.overview.liveData.queryOptions({ projectId, shareId })
   );
 
   const [hover, setHover] = useState<OPStatHoverState<MinutePoint>>({
@@ -83,13 +83,15 @@ export function OverviewLiveHistogram({
             <span
               className={cn(
                 'absolute inline-flex h-full w-full rounded-full opacity-75',
-                totalSessions > 0 ? 'bg-emerald-500 animate-ping' : 'bg-destructive',
+                totalSessions > 0
+                  ? 'bg-emerald-500 animate-ping'
+                  : 'bg-destructive'
               )}
             />
             <span
               className={cn(
                 'relative inline-flex h-2 w-2 rounded-full',
-                totalSessions > 0 ? 'bg-emerald-500' : 'bg-destructive',
+                totalSessions > 0 ? 'bg-emerald-500' : 'bg-destructive'
               )}
             />
           </span>

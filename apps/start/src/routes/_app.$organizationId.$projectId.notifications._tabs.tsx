@@ -5,7 +5,7 @@ import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/notifications/_tabs',
+  '/_app/$organizationId/$projectId/notifications/_tabs'
 )({
   component: Component,
   head: () => {

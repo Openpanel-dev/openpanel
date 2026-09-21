@@ -14,7 +14,7 @@ const tagVariants = cva(
     defaultVariants: {
       variant: 'light',
     },
-  },
+  }
 );
 
 interface TagProps

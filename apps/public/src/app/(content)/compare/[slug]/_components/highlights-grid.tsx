@@ -54,4 +54,3 @@ export function HighlightsGrid({ highlights }: HighlightsGridProps) {
     </Section>
   );
 }
-

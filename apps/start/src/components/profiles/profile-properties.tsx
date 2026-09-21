@@ -15,7 +15,7 @@ type Props = {
 export const ProfileProperties = ({ profile }: Props) => {
   const [tab, setTab] = useQueryState(
     'tab',
-    parseAsStringEnum(['profile', 'properties']).withDefault('profile'),
+    parseAsStringEnum(['profile', 'properties']).withDefault('profile')
   );
 
   return (

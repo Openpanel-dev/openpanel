@@ -53,7 +53,7 @@ export type ProfileFullError = {
 export type ProfileFullOutput = ProfileFullSuccess | ProfileFullError;
 
 export function isProfileFullError(
-  value: ProfileFullOutput,
+  value: ProfileFullOutput
 ): value is ProfileFullError {
   return 'error' in value && typeof value.error === 'string';
 }
@@ -130,7 +130,7 @@ export function normalizeTableOutput(value: unknown): TableNormalized {
     }
     if (Array.isArray(o.properties)) {
       const rows: TableRow[] = (o.properties as unknown[]).map((p) =>
-        typeof p === 'string' ? { property_key: p } : (p as TableRow),
+        typeof p === 'string' ? { property_key: p } : (p as TableRow)
       );
       return { rows, total, truncated };
     }

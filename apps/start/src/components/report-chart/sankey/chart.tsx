@@ -86,11 +86,11 @@ function SankeyPortalTooltip({
 
     left = Math.min(
       Math.max(padding, left),
-      Math.max(padding, vw - rect.width - padding),
+      Math.max(padding, vw - rect.width - padding)
     );
     top = Math.min(
       Math.max(padding, top),
-      Math.max(padding, vh - rect.height - padding),
+      Math.max(padding, vh - rect.height - padding)
     );
 
     setPos({ left, top, ready: true });
@@ -116,7 +116,7 @@ function SankeyPortalTooltip({
           >
             {children}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );

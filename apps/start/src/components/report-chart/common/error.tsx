@@ -8,7 +8,7 @@ export function ReportChartError() {
     <div
       className={cn(
         'center-center h-full w-full flex-col',
-        isEditMode && 'card p-4',
+        isEditMode && 'card p-4'
       )}
     >
       <ServerCrashIcon

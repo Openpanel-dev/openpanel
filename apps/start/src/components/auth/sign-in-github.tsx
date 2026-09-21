@@ -6,7 +6,11 @@ export function SignInGithub({
   type,
   inviteId,
   isLastUsed,
-}: { type: 'sign-in' | 'sign-up'; inviteId?: string; isLastUsed?: boolean }) {
+}: {
+  type: 'sign-in' | 'sign-up';
+  inviteId?: string;
+  isLastUsed?: boolean;
+}) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInOAuth.mutationOptions({
@@ -15,7 +19,7 @@ export function SignInGithub({
           window.location.href = res.url;
         }
       },
-    }),
+    })
   );
   const title = () => {
     if (type === 'sign-in') return 'Sign in with Github';

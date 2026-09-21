@@ -30,7 +30,7 @@ export const Route = createFileRoute('/share/dashboard/$shareId')({
     const share = await context.queryClient.ensureQueryData(
       context.trpc.share.dashboard.queryOptions({
         shareId: params.shareId,
-      }),
+      })
     );
 
     return { share };
@@ -86,13 +86,13 @@ function RouteComponent() {
   const shareQuery = useSuspenseQuery(
     trpc.share.dashboard.queryOptions({
       shareId,
-    }),
+    })
   );
 
   const reportsQuery = useQuery(
     trpc.share.dashboardReports.queryOptions({
       shareId,
-    }),
+    })
   );
 
   const share = shareQuery.data;

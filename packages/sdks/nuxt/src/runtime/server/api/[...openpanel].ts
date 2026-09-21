@@ -24,7 +24,7 @@ function getClientHeaders(event: H3Event<EventHandlerRequest>): Headers {
   headers.set('Content-Type', 'application/json');
   headers.set(
     'openpanel-client-id',
-    getHeader(event, 'openpanel-client-id') || '',
+    getHeader(event, 'openpanel-client-id') || ''
   );
 
   // Construct origin: browsers send Origin header for POST requests and cross-origin requests,
@@ -47,7 +47,7 @@ function getClientHeaders(event: H3Event<EventHandlerRequest>): Headers {
 
 async function handleApiRoute(
   event: H3Event<EventHandlerRequest>,
-  apiPath: string,
+  apiPath: string
 ) {
   try {
     const res = await fetch(`${API_URL}${apiPath}`, {

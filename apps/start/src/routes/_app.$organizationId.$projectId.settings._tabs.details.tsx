@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/settings/_tabs/details',
+  '/_app/$organizationId/$projectId/settings/_tabs/details'
 )({
   component: Component,
 });
@@ -16,7 +16,7 @@ function Component() {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
-    trpc.project.getProjectWithClients.queryOptions({ projectId }),
+    trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
 
   if (query.isLoading) {

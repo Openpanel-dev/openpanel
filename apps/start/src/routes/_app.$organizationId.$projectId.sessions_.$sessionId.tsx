@@ -157,7 +157,7 @@ function Component() {
       isBounce: session.isBounce,
       entryPath: session.entryPath,
       exitPath: session.exitPath,
-    },
+    }
   );
 
   const { data: eventsData } = useSuspenseQuery(

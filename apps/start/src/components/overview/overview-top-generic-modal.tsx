@@ -32,7 +32,7 @@ export default function OverviewTopGenericModal({
       endDate,
       range,
       column,
-    }),
+    })
   );
 
   const columnNamePlural = OVERVIEW_COLUMNS_NAME_PLURAL[column];

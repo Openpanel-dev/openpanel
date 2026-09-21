@@ -33,10 +33,14 @@ declare module 'rrweb-player' {
     setSpeed: (speed: number) => void;
     getMetaData: () => RrwebPlayerMetaData;
     getReplayer: () => RrwebReplayer;
-    addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
+    addEvent: (event: {
+      type: number;
+      data: unknown;
+      timestamp: number;
+    }) => void;
     addEventListener?: (
       event: string,
-      handler: (...args: unknown[]) => void,
+      handler: (...args: unknown[]) => void
     ) => void;
     $set?: (props: Partial<RrwebPlayerProps>) => void;
     $destroy?: () => void;

@@ -82,7 +82,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         )}
       </>
     );
-  },
+  }
 );
 
 export function ProjectChart({
@@ -95,7 +95,7 @@ export function ProjectChart({
   data: { value: number; date: Date; revenue: number }[];
 }) {
   const [activeBar, setActiveBar] = useState(-1);
-  
+
   const yAxisProps = useYAxisProps({
     width: 30,
   });
@@ -121,25 +121,29 @@ export function ProjectChart({
   if (maxValue === 0) {
     return (
       <div className="relative h-full w-full pl-3">
-
-          <div className="pointer-events-none absolute inset-x-3 bottom-2 h-12">
-            <div className="flex h-full items-end gap-1.5 opacity-35">
-              {[28, 42, 35, 50, 40, 56, 45, 60, 49, 32,98,29,49,69,49,20, 28, 42, 35, 50, 40, 56, 45, 60, 49, 32,98,29,49,69,49,20].map((height, index) => (
-                <div
-                  key={index}
-                  className="flex-1 rounded-full bg-foreground/20"
-                  style={{ height: `${height}%` }}
-                />
-              ))}
-            </div>
+        <div className="pointer-events-none absolute inset-x-3 bottom-2 h-12">
+          <div className="flex h-full items-end gap-1.5 opacity-35">
+            {[
+              28, 42, 35, 50, 40, 56, 45, 60, 49, 32, 98, 29, 49, 69, 49, 20,
+              28, 42, 35, 50, 40, 56, 45, 60, 49, 32, 98, 29, 49, 69, 49, 20,
+            ].map((height, index) => (
+              <div
+                key={index}
+                className="flex-1 rounded-full bg-foreground/20"
+                style={{ height: `${height}%` }}
+              />
+            ))}
           </div>
+        </div>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-            <p className="text-sm font-medium text-foreground/85">No activity yet</p>
-            <p className="text-xs text-muted-foreground">
-              Sessions will show up here once tracking starts.
-            </p>
-          </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
+          <p className="text-sm font-medium text-foreground/85">
+            No activity yet
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Sessions will show up here once tracking starts.
+          </p>
+        </div>
       </div>
     );
   }
@@ -236,7 +240,7 @@ export function ProjectChart({
                   className={cn(
                     index === activeBar
                       ? 'fill-emerald-700/100'
-                      : 'fill-emerald-700/80',
+                      : 'fill-emerald-700/80'
                   )}
                 />
               ))}

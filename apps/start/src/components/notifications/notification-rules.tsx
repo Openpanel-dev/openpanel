@@ -16,7 +16,7 @@ export function NotificationRules() {
   const query = useQuery(
     trpc.notification.rules.queryOptions({
       projectId,
-    }),
+    })
   );
   const data = useMemo(() => {
     return query.data || [];

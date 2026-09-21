@@ -44,7 +44,7 @@ export function OnboardingTrialEnding({
           <Link
             href={withUtm(
               'https://openpanel.dev/docs/get-started/install-openpanel',
-              'onboarding-trial-ending',
+              'onboarding-trial-ending'
             )}
           >
             install guide

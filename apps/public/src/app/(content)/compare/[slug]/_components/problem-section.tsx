@@ -1,6 +1,11 @@
 import { Section, SectionHeader } from '@/components/section';
 import { CompareSummary } from '@/lib/compare';
-import { UsersIcon, TrendingUpIcon, PuzzleIcon, ShieldIcon } from 'lucide-react';
+import {
+  UsersIcon,
+  TrendingUpIcon,
+  PuzzleIcon,
+  ShieldIcon,
+} from 'lucide-react';
 
 interface ProblemSectionProps {
   summary: CompareSummary;
@@ -9,7 +14,10 @@ interface ProblemSectionProps {
 
 const problemIcons = [UsersIcon, TrendingUpIcon, PuzzleIcon, ShieldIcon];
 
-export function ProblemSection({ summary, competitorName }: ProblemSectionProps) {
+export function ProblemSection({
+  summary,
+  competitorName,
+}: ProblemSectionProps) {
   const problems = summary.best_for_competitor.slice(0, 4);
 
   return (
@@ -35,4 +43,3 @@ export function ProblemSection({ summary, competitorName }: ProblemSectionProps)
     </Section>
   );
 }
-

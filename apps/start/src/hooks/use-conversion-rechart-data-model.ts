@@ -2,7 +2,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import { useMemo } from 'react';
 
 export function useConversionRechartDataModel(
-  series: RouterOutputs['chart']['conversion']['current'],
+  series: RouterOutputs['chart']['conversion']['current']
 ) {
   return useMemo(() => {
     if (!series.length || !series[0]?.data.length) {
@@ -41,4 +41,3 @@ export function useConversionRechartDataModel(
     });
   }, [series]);
 }
-

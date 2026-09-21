@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { ParentSize } from "@visx/responsive";
-import type { Transition } from "motion/react";
+import { ParentSize } from '@visx/responsive';
+import type { Transition } from 'motion/react';
 import {
   Children,
   isValidElement,
   type ReactNode,
   useMemo,
   useRef,
-} from "react";
-import { cn } from "@/lib/utils";
-import { Area, type AreaProps } from "./area";
-import type { LineConfig, Margin } from "./chart-context";
-import { PatternArea } from "./pattern-area";
-import { TimeSeriesChartInner } from "./time-series-chart-shell";
+} from 'react';
+import { cn } from '@/lib/utils';
+import { Area, type AreaProps } from './area';
+import type { LineConfig, Margin } from './chart-context';
+import { PatternArea } from './pattern-area';
+import { TimeSeriesChartInner } from './time-series-chart-shell';
 
 export interface AreaChartProps {
   /** Data array - each item should have a date field and numeric values */
@@ -53,25 +53,25 @@ function extractAreaConfigs(children: ReactNode): LineConfig[] {
       name?: string;
     };
     const componentName =
-      typeof child.type === "function"
-        ? childType.displayName || childType.name || ""
-        : "";
+      typeof child.type === 'function'
+        ? childType.displayName || childType.name || ''
+        : '';
 
     const props = child.props as AreaProps | undefined;
     const isPatternArea =
-      componentName === "PatternArea" || child.type === PatternArea;
+      componentName === 'PatternArea' || child.type === PatternArea;
     const isAreaComponent =
-      componentName === "Area" ||
+      componentName === 'Area' ||
       child.type === Area ||
       (props &&
-        typeof props.dataKey === "string" &&
+        typeof props.dataKey === 'string' &&
         props.dataKey.length > 0 &&
         !isPatternArea);
 
     if (isAreaComponent && props?.dataKey) {
       configs.push({
         dataKey: props.dataKey,
-        stroke: props.stroke || props.fill || "var(--chart-line-primary)",
+        stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
         strokeWidth: props.strokeWidth || 2,
       });
     }
@@ -131,14 +131,14 @@ function ChartInner({
 
 export function AreaChart({
   data,
-  xDataKey = "date",
+  xDataKey = 'date',
   margin: marginProp,
   animationDuration = 1100,
   animationEasing,
   enterTransition,
   revealSignature,
-  aspectRatio = "2 / 1",
-  className = "",
+  aspectRatio = '2 / 1',
+  className = '',
   children,
 }: AreaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,9 +146,9 @@ export function AreaChart({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: "none" }}
+      style={{ aspectRatio, touchAction: 'none' }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
@@ -172,6 +172,6 @@ export function AreaChart({
   );
 }
 
-export { Area, type AreaProps } from "./area";
+export { Area, type AreaProps } from './area';
 
 export default AreaChart;

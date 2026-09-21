@@ -14,22 +14,32 @@ export function CheckoutPage({ cart, onPay }: Props) {
       <div className="page-title">Checkout</div>
       <div className="checkout-form">
         <div className="form-group">
-          <label className="form-label" htmlFor="card">Card number</label>
+          <label className="form-label" htmlFor="card">
+            Card number
+          </label>
           <input id="card" defaultValue="4242 4242 4242 4242" readOnly />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}
+        >
           <div className="form-group">
-            <label className="form-label" htmlFor="expiry">Expiry</label>
+            <label className="form-label" htmlFor="expiry">
+              Expiry
+            </label>
             <input id="expiry" defaultValue="12/28" readOnly />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="cvc">CVC</label>
+            <label className="form-label" htmlFor="cvc">
+              CVC
+            </label>
             <input id="cvc" defaultValue="123" readOnly />
           </div>
         </div>
         <div className="checkout-total">Total: ${total}</div>
         <div className="checkout-pay-buttons">
-          <Link to="/cart"><button type="button">← Back</button></Link>
+          <Link to="/cart">
+            <button type="button">← Back</button>
+          </Link>
           <button type="button" className="primary" onClick={() => onPay(true)}>
             Pay ${total} (success)
           </button>

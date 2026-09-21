@@ -25,7 +25,7 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
     undefined,
     {
       disconnectOnLeave: true,
-    },
+    }
   );
 
   useEffect(() => {

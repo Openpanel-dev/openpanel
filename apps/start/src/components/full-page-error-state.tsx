@@ -6,7 +6,11 @@ export const FullPageErrorState = ({
   title = 'Error...',
   description = 'Something went wrong...',
   children,
-}: { title?: string; description?: string; children?: React.ReactNode }) => {
+}: {
+  title?: string;
+  description?: string;
+  children?: React.ReactNode;
+}) => {
   return (
     <FullPageEmptyState
       className="min-h-[calc(100vh-theme(spacing.16))]"

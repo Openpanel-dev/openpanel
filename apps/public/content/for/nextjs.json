@@ -135,10 +135,16 @@
       { "title": "Track custom events", "url": "/guides/track-custom-events" }
     ],
     "articles": [
-      { "title": "Self-hosted web analytics", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "Self-hosted web analytics",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      {
+        "title": "OpenPanel vs Google Analytics",
+        "url": "/compare/google-analytics-alternative"
+      },
       { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" }
     ]
   },

@@ -209,7 +209,12 @@ function collectRouters(tree: Tree) {
   // routerKey -> identifier, from `createTRPCRouter({ key: xRouter, ... })`.
   const mounted = new Map<string, string>();
   visit(registry.sourceFile, (node) => {
-    if (!(ts.isCallExpression(node) && node.expression.getText().endsWith('Router'))) {
+    if (
+      !(
+        ts.isCallExpression(node) &&
+        node.expression.getText().endsWith('Router')
+      )
+    ) {
       return;
     }
     const literal = objectLiteralOf(node);
@@ -333,8 +338,9 @@ function buildRules(tree: Tree): RuleBlock[] {
   );
   // Tests count: ADR-022's "69 importers" is what fix-wave step 2 has to move,
   // and a test importing v1-compat is as much a caller as a service is.
-  const v1CompatImporters = tree.allCoreText.filter(({ path, text }) =>
-    path !== CORE_V1_COMPAT_FILE && V1_COMPAT_IMPORT.test(text)
+  const v1CompatImporters = tree.allCoreText.filter(
+    ({ path, text }) =>
+      path !== CORE_V1_COMPAT_FILE && V1_COMPAT_IMPORT.test(text)
   ).length;
 
   return [
@@ -376,7 +382,8 @@ function buildRules(tree: Tree): RuleBlock[] {
     },
     {
       id: 'R6',
-      title: 'The graph is rebuilt per unit of work; there is no "no context" path',
+      title:
+        'The graph is rebuilt per unit of work; there is no "no context" path',
       asserted: true,
       metrics: [
         checkCreateServicesCallSites([...tree.core, ...tree.api]),
@@ -394,12 +401,13 @@ function buildRules(tree: Tree): RuleBlock[] {
     },
     {
       id: 'R9',
-      title: 'Clients are transports: config in, typed result or ProviderError out, no logger',
+      title:
+        'Clients are transports: config in, typed result or ProviderError out, no logger',
       asserted: false,
       metrics: [
         reviewOnly(
           'client shape',
-          'Review rule (ADR-022 check line: "review"). Read packages/core/src/clients/*: no logger, built once at boot, a missing thing is null.',
+          'Review rule (ADR-022 check line: "review"). Read packages/core/src/clients/*: no logger, built once at boot, a missing thing is null.'
         ),
       ],
     },
@@ -416,7 +424,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'job file shape',
-          'Review rule (ADR-022 check line: "review + ADR-021"). See R18 below for the one mechanical half.',
+          'Review rule (ADR-022 check line: "review + ADR-021"). See R18 below for the one mechanical half.'
         ),
       ],
     },
@@ -440,7 +448,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'index.ts and main.ts shape',
-          'Review rule (ADR-022 check line: "review of index.ts and main.ts").',
+          'Review rule (ADR-022 check line: "review of index.ts and main.ts").'
         ),
       ],
     },
@@ -463,7 +471,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'lifecycle',
-          'Review rule (ADR-022 check line: "main.ts shutdown order vs open order; core does not close handed-in connections").',
+          'Review rule (ADR-022 check line: "main.ts shutdown order vs open order; core does not close handed-in connections").'
         ),
       ],
     },
@@ -486,7 +494,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'provider error handling',
-          'Review rule (ADR-022 check line: "review of every job-handler catch around a client call").',
+          'Review rule (ADR-022 check line: "review of every job-handler catch around a client call").'
         ),
       ],
     },
@@ -536,7 +544,7 @@ function buildRules(tree: Tree): RuleBlock[] {
         ),
       ],
       note: cruiser.available
-        ? 'M14-002 landed these rules and verified cruiser resolves its typescript peer, so R22 is the cruiser rule, not ADR-022\'s grep fallback. A bare ../ depth grep is forbidden: a module importing defineJob at ../../jobs/define is importing DOWNWARD.'
+        ? "M14-002 landed these rules and verified cruiser resolves its typescript peer, so R22 is the cruiser rule, not ADR-022's grep fallback. A bare ../ depth grep is forbidden: a module importing defineJob at ../../jobs/define is importing DOWNWARD."
         : undefined,
     },
     // R20 (test shapes) is deferred by Carl, 2026-09-08, and is deliberately
@@ -600,21 +608,29 @@ function metricIsAboveTarget(metric: Metric): boolean {
  * the metric it comes from; the numbers themselves come from the same Metric
  * objects the blocks below print, never from a second measurement.
  */
-const BASELINE_METRICS: readonly { rule: string; metric: number; label: string }[] =
-  [
-    { rule: 'R3', metric: 0, label: 'factories not on (deps, services)' },
-    { rule: 'R5', metric: 0, label: 'hand-written XService interfaces' },
-    { rule: 'R5', metric: 1, label: 'Services members NOT typed by ReturnType (see the block for how many DO)' },
-    { rule: 'R6', metric: 0, label: 'unsanctioned createServices( call sites' },
-    { rule: 'R6', metric: 1, label: 'load* dependency loaders' },
-    { rule: 'R7', metric: 0, label: 'process.env.<name> reads in core' },
-    { rule: 'R10', metric: 0, label: 'require* defs outside the auth stack' },
-    { rule: 'R14', metric: 0, label: 'NEXT_PUBLIC_ in core' },
-    { rule: 'R15', metric: 0, label: 'module-scope construction in core' },
-    { rule: 'R21', metric: 1, label: 'duplicate util copies' },
-    { rule: 'R22', metric: 6, label: 'upward imports: shared/ -> above' },
-    { rule: 'R22', metric: 7, label: 'upward imports: transport -> module src' },
-  ];
+const BASELINE_METRICS: readonly {
+  rule: string;
+  metric: number;
+  label: string;
+}[] = [
+  { rule: 'R3', metric: 0, label: 'factories not on (deps, services)' },
+  { rule: 'R5', metric: 0, label: 'hand-written XService interfaces' },
+  {
+    rule: 'R5',
+    metric: 1,
+    label:
+      'Services members NOT typed by ReturnType (see the block for how many DO)',
+  },
+  { rule: 'R6', metric: 0, label: 'unsanctioned createServices( call sites' },
+  { rule: 'R6', metric: 1, label: 'load* dependency loaders' },
+  { rule: 'R7', metric: 0, label: 'process.env.<name> reads in core' },
+  { rule: 'R10', metric: 0, label: 'require* defs outside the auth stack' },
+  { rule: 'R14', metric: 0, label: 'NEXT_PUBLIC_ in core' },
+  { rule: 'R15', metric: 0, label: 'module-scope construction in core' },
+  { rule: 'R21', metric: 1, label: 'duplicate util copies' },
+  { rule: 'R22', metric: 6, label: 'upward imports: shared/ -> above' },
+  { rule: 'R22', metric: 7, label: 'upward imports: transport -> module src' },
+];
 
 function renderBaseline(rules: RuleBlock[], lines: string[]): void {
   lines.push('BASELINE REPRODUCTION (ADR-022 / CONFORMANCE_GATE_SPEC.md)');
@@ -627,7 +643,9 @@ function renderBaseline(rules: RuleBlock[], lines: string[]): void {
       continue;
     }
     const count = metric.count < 0 ? 'UNAVAILABLE' : String(metric.count);
-    lines.push(`  ${entry.rule.padEnd(RULE_ID_WIDTH)} ${count.padStart(4)}  ${entry.label}`);
+    lines.push(
+      `  ${entry.rule.padEnd(RULE_ID_WIDTH)} ${count.padStart(4)}  ${entry.label}`
+    );
   }
   lines.push('');
 }

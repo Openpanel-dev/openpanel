@@ -53,8 +53,8 @@ export function ChatDrawerNotConfigured() {
         <p className="mt-1.5 text-muted-foreground leading-[1.5]">
           Set <code className="font-mono text-sm">OPENAI_API_KEY</code> and/or{' '}
           <code className="font-mono text-sm">ANTHROPIC_API_KEY</code> on the
-          API service to enable AI chat, then restart it. The model picker
-          shows only providers with a configured key.
+          API service to enable AI chat, then restart it. The model picker shows
+          only providers with a configured key.
         </p>
       </div>
       <div className="flex w-full max-w-xs flex-col gap-2">
@@ -81,7 +81,7 @@ type Suggestions = {
 };
 
 function getSuggestionsForContext(
-  ctx: ReturnType<typeof usePageContextValue>,
+  ctx: ReturnType<typeof usePageContextValue>
 ): Suggestions {
   if (!ctx) {
     return {
@@ -230,7 +230,7 @@ function getSuggestionsForContext(
       return {
         headline: 'Ask about your data',
         description:
-          'I can answer questions about the page you\'re viewing, generate reports, and dig into specific users, sessions, or pages.',
+          "I can answer questions about the page you're viewing, generate reports, and dig into specific users, sessions, or pages.",
         prompts: [
           "What's our visitor count this week?",
           'Top traffic sources right now',

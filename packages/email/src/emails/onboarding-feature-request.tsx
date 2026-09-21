@@ -26,7 +26,12 @@ export function OnboardingFeatureRequest({
       <Text>
         Just reply to this email. If you'd rather post publicly, the feedback
         board is at{' '}
-        <Link href={withUtm('https://feedback.openpanel.dev', 'onboarding-feature-request')}>
+        <Link
+          href={withUtm(
+            'https://feedback.openpanel.dev',
+            'onboarding-feature-request'
+          )}
+        >
           feedback.openpanel.dev
         </Link>
         .

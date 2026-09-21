@@ -38,7 +38,7 @@ export function OnboardingDashboards({
           <Link
             href={withUtm(
               'https://openpanel.dev/docs/get-started/install-openpanel',
-              'onboarding-dashboards',
+              'onboarding-dashboards'
             )}
           >
             install guide
@@ -46,8 +46,8 @@ export function OnboardingDashboards({
           .
         </Text>
         <Text>
-          If something about the product put you off, I'd like to know what.
-          One line is enough.
+          If something about the product put you off, I'd like to know what. One
+          line is enough.
         </Text>
         <Text>Carl</Text>
       </Layout>

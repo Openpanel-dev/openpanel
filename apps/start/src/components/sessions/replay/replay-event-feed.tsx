@@ -1,4 +1,7 @@
-import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
+import {
+  useCurrentTime,
+  useReplayContext,
+} from '@/components/sessions/replay/replay-context';
 import { ReplayEventItem } from '@/components/sessions/replay/replay-event-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/core';
@@ -8,7 +11,13 @@ import { getEventOffsetMs } from './replay-utils';
 
 type EventWithOffset = { event: IServiceEvent; offsetMs: number };
 
-export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEvent[]; replayLoading: boolean }) {
+export function ReplayEventFeed({
+  events,
+  replayLoading,
+}: {
+  events: IServiceEvent[];
+  replayLoading: boolean;
+}) {
   const { startTime, isReady, seek } = useReplayContext();
   const currentTime = useCurrentTime(100);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -99,7 +108,6 @@ export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEve
                 <div className="h-3 w-10 shrink-0 animate-pulse rounded bg-muted" />
               </div>
             ))}
-
         </div>
       </ScrollArea>
     </BrowserChrome>

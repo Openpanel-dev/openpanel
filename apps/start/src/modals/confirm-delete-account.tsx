@@ -22,7 +22,7 @@ export default function ConfirmDeleteAccount() {
         // The session is now gone server-side; send the user back to the start.
         window.location.href = '/';
       },
-    }),
+    })
   );
 
   const canDelete = confirmation.trim() === CONFIRMATION;

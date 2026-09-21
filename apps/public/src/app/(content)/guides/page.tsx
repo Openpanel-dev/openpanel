@@ -19,7 +19,7 @@ export const metadata: Metadata = getPageMetadata({
 
 export default async function Page() {
   const guides = (await guideSource.getPages()).sort(
-    (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
   );
 
   // Create ItemList schema for SEO

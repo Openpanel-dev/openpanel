@@ -26,7 +26,12 @@ beforeAll(async () => {
 describe('pages.sql — parses against ClickHouse', () => {
   it('topPagesQuery — no search', async () => {
     await explain(
-      PG.topPagesQuery({ projectId: PROJECT_ID, startDate: START, endDate: END, limit: 20 })
+      PG.topPagesQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        limit: 20,
+      })
     );
   });
 
@@ -44,7 +49,11 @@ describe('pages.sql — parses against ClickHouse', () => {
 
   it('topPagesQuery — no limit', async () => {
     await explain(
-      PG.topPagesQuery({ projectId: PROJECT_ID, startDate: START, endDate: END })
+      PG.topPagesQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+      })
     );
   });
 

@@ -26,7 +26,7 @@ export function WindowImage({
 
   if (!darkSrc || !lightSrc) {
     throw new Error(
-      'WindowImage requires either src or both srcDark and srcLight',
+      'WindowImage requires either src or both srcDark and srcLight'
     );
   }
 

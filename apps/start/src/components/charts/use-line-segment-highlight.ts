@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import type { TooltipData } from "./chart-context";
-import type { ChartSelection } from "./use-chart-interaction";
+import { useMemo } from 'react';
+import type { TooltipData } from './chart-context';
+import type { ChartSelection } from './use-chart-interaction';
 
 interface UseLineSegmentHighlightOptions {
   pathLength: number;
@@ -47,7 +47,7 @@ export function useLineSegmentHighlight({
     let prevX = xScale(xAccessor(data[0]!)) ?? 0;
     const firstValue = data[0]![dataKey];
     let prevY =
-      typeof firstValue === "number"
+      typeof firstValue === 'number'
         ? (yScale(firstValue) ?? yScale(0) ?? 0)
         : (yScale(0) ?? 0);
 
@@ -56,7 +56,7 @@ export function useLineSegmentHighlight({
       const x = xScale(xAccessor(point)) ?? 0;
       const value = point[dataKey];
       const y =
-        typeof value === "number"
+        typeof value === 'number'
           ? (yScale(value) ?? yScale(0) ?? 0)
           : (yScale(0) ?? 0);
       const dx = x - prevX;

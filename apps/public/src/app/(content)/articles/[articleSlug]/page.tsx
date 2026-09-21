@@ -63,8 +63,7 @@ export default async function Page({
 
   const relatedArticles = (await articleSource.getPages())
     .filter(
-      (item) =>
-        item.data.tag === article?.data.tag && item.url !== article?.url,
+      (item) => item.data.tag === article?.data.tag && item.url !== article?.url
     )
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 

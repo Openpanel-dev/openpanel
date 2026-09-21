@@ -8,7 +8,7 @@ export const DumpCheckbox = ({ checked }: { checked: boolean }) => {
     <div
       className={cn(
         'block h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        checked && 'bg-primary text-primary-foreground',
+        checked && 'bg-primary text-primary-foreground'
       )}
     >
       <div className="flex items-center justify-center text-current">
@@ -26,7 +26,7 @@ const Checkbox = React.forwardRef<
     ref={ref}
     className={cn(
       'block h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
-      className,
+      className
     )}
     {...props}
   >
@@ -46,7 +46,7 @@ const CheckboxInput = React.forwardRef<
   <label
     className={cn(
       'flex min-h-10 cursor-pointer select-none gap-4 rounded-md border border-border px-3 py-[0.5rem]',
-      className,
+      className
     )}
   >
     <Checkbox ref={ref} {...props} className="relative top-0.5" />

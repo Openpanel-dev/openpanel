@@ -78,7 +78,9 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
     },
   };
   const [widget, setWidget] = useState(TABS.essentials);
-  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>('table');
+  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>(
+    'table'
+  );
   const trpc = useTRPC();
   const query = useSuspenseQuery(
     trpc.event.details.queryOptions({
@@ -285,24 +287,27 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               </button>
             </div>
             {propertiesMode === 'table' && (
-            <KeyValueGrid
-              columns={1}
-              copyable
-              data={properties}
-              onItemClick={(item) => {
-                popModal();
-                setFilter(`properties.${item.name}`, item.value as any);
-              }}
-              renderValue={(item) => (
-                <div className="flex items-center gap-2">
-                  <span className="font-mono">{String(item.value)}</span>
-                  <FilterIcon className="size-3 shrink-0" />
-                </div>
-              )}
-            />
+              <KeyValueGrid
+                columns={1}
+                copyable
+                data={properties}
+                onItemClick={(item) => {
+                  popModal();
+                  setFilter(`properties.${item.name}`, item.value as any);
+                }}
+                renderValue={(item) => (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{String(item.value)}</span>
+                    <FilterIcon className="size-3 shrink-0" />
+                  </div>
+                )}
+              />
             )}
             {propertiesMode === 'json' && (
-              <Syntax code={JSON.stringify(properties, null, 2)} language="json" />
+              <Syntax
+                code={JSON.stringify(properties, null, 2)}
+                language="json"
+              />
             )}
           </section>
         )}

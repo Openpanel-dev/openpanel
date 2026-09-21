@@ -6,7 +6,12 @@ export function Figure({
   alt,
   caption,
   className,
-}: { src: string; alt: string; caption: string; className?: string }) {
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  className?: string;
+}) {
   return (
     <figure className={cn('-mx-4', className)}>
       <Image

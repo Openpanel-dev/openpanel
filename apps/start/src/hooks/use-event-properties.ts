@@ -6,7 +6,7 @@ export function useEventProperties(
   params: RouterInputs['chart']['properties'],
   options?: {
     enabled: boolean;
-  },
+  }
 ) {
   const trpc = useTRPC();
   const query = useQuery(
@@ -15,7 +15,7 @@ export function useEventProperties(
         !!params.projectId && typeof options?.enabled !== 'undefined'
           ? options.enabled
           : true,
-    }),
+    })
   );
   return query.data ?? [];
 }

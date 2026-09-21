@@ -59,7 +59,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => getChatClient(apiUrl), [apiUrl]);
 
   const renameConversation = useMutation(
-    trpc.conversation.rename.mutationOptions(),
+    trpc.conversation.rename.mutationOptions()
   );
 
   // Title streams run fire-and-forget. If the user switches or closes
@@ -76,7 +76,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       titleAbortRef.current?.abort();
       titleAbortRef.current = null;
     },
-    [],
+    []
   );
 
   const agent = useAgent(client, {
@@ -144,7 +144,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
                 if (controller.signal.aborted) return;
                 setStreamingTitle(partial);
               },
-              controller.signal,
+              controller.signal
             );
             if (controller.signal.aborted || !finalTitle) return;
             try {
@@ -154,7 +154,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
                 projectId,
               });
               queryClient.invalidateQueries(
-                trpc.conversation.list.pathFilter(),
+                trpc.conversation.list.pathFilter()
               );
             } catch (err) {
               console.error('[chat] conversation rename failed', err);
@@ -172,7 +172,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       pageContext,
       renameConversation,
       setStreamingTitle,
-    ],
+    ]
   );
 
   // Drain the pending message left by the sidebar composer.

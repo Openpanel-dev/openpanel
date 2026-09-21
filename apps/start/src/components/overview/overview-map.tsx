@@ -24,7 +24,7 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
       filters,
       startDate,
       endDate,
-    }),
+    })
   );
 
   const mapData = useMemo(() => {

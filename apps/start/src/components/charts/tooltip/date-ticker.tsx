@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { memo, useMemo, useRef } from "react";
+import { motion, useSpring } from 'motion/react';
+import { memo, useMemo, useRef } from 'react';
 
 const TICKER_ITEM_HEIGHT = 24;
 /** Full scroll stacks are skipped above this count — single label + instant updates. */
@@ -16,8 +16,8 @@ export interface DateTickerProps {
 const DateTickerCompact = memo(function DateTickerCompact({
   currentIndex,
   labels,
-}: Omit<DateTickerProps, "visible">) {
-  const label = labels[currentIndex] ?? labels[0] ?? "";
+}: Omit<DateTickerProps, 'visible'>) {
+  const label = labels[currentIndex] ?? labels[0] ?? '';
 
   return (
     <div className="overflow-hidden rounded-full bg-zinc-900 px-4 py-1 text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900">
@@ -31,13 +31,13 @@ const DateTickerCompact = memo(function DateTickerCompact({
 const DateTickerInner = memo(function DateTickerInner({
   currentIndex,
   labels,
-}: Omit<DateTickerProps, "visible">) {
+}: Omit<DateTickerProps, 'visible'>) {
   // Parse labels into month and day parts
   const parsedLabels = useMemo(() => {
     return labels.map((label, index) => {
-      const parts = label.split(" ");
-      const month = parts[0] || "";
-      const day = parts[1] || "";
+      const parts = label.split(' ');
+      const month = parts[0] || '';
+      const day = parts[1] || '';
       return { month, day, full: label, key: `${label}::${index}` };
     });
   }, [labels]);
@@ -145,6 +145,6 @@ export function DateTicker({ currentIndex, labels, visible }: DateTickerProps) {
   return <DateTickerInner currentIndex={currentIndex} labels={labels} />;
 }
 
-DateTicker.displayName = "DateTicker";
+DateTicker.displayName = 'DateTicker';
 
 export default DateTicker;

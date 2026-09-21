@@ -157,7 +157,7 @@ export function useStrokeDasharray({
         const gapDashWidth = targetRestStroke?.[0] + targetRestStroke?.[1] || 1;
         const restDasharrayLength = dashedWidth / gapDashWidth;
         const restDasharray = new Array(Math.ceil(restDasharrayLength)).fill(
-          targetRestStroke.join(' '),
+          targetRestStroke.join(' ')
         );
 
         const strokeDasharray = `${firstDasharray} ${restDasharray.join(' ')}`;
@@ -177,7 +177,7 @@ export function useStrokeDasharray({
 
       return null;
     },
-    [dotIndex],
+    [dotIndex]
   );
 
   return [calculateStrokeDasharray, linesStrokeDasharray.current];

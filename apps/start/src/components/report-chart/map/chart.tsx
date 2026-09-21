@@ -23,7 +23,7 @@ export function Chart({ data }: Props) {
         country: s.names[1]?.toLowerCase() ?? '',
         value: s.metrics[metric] ?? 0,
       })),
-    [series, metric],
+    [series, metric]
   );
 
   return (

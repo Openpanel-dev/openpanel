@@ -88,7 +88,7 @@ function SortableColumnItem({
       <Check
         className={cn(
           'ml-auto size-4 shrink-0',
-          column.getIsVisible() ? 'opacity-100' : 'opacity-0',
+          column.getIsVisible() ? 'opacity-100' : 'opacity-0'
         )}
       />
     </CommandItem>
@@ -100,7 +100,7 @@ export function DataTableViewOptions<TData>({
 }: DataTableViewOptionsProps<TData>) {
   const allColumns = table.getAllColumns();
   const filterableColumns = allColumns.filter(
-    (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide(),
+    (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide()
   );
 
   // Use the column order from the table state (managed by useDataTableColumnVisibility)
@@ -130,7 +130,7 @@ export function DataTableViewOptions<TData>({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -159,7 +159,7 @@ export function DataTableViewOptions<TData>({
         column.toggleVisibility(
           typeof column.columnDef.meta?.hidden === 'boolean'
             ? !column.columnDef.meta?.hidden
-            : true,
+            : true
         );
       }
     });

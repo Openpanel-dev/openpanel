@@ -26,7 +26,17 @@ interface Props {
   toolbarLeft?: React.ReactNode;
 }
 
-const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceGroupWithStats[];
+const LOADING_DATA = [
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+] as IServiceGroupWithStats[];
 
 export const GroupsTable = memo(
   ({ query, pageSize = PAGE_SIZE, toolbarLeft }: Props) => {

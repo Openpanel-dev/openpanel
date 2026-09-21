@@ -28,7 +28,7 @@ const heroData = {
 
 export default async function CompareIndexPage() {
   const comparisons = compareSource.sort((a, b) =>
-    a.competitor.name.localeCompare(b.competitor.name),
+    a.competitor.name.localeCompare(b.competitor.name)
   );
 
   return (

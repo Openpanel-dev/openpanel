@@ -48,7 +48,7 @@ export default function DateTimePicker({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(
-    roundToNearestFiveMinutes(initialDate || new Date()),
+    roundToNearestFiveMinutes(initialDate || new Date())
   );
 
   // Generate all time options with 5-minute intervals
@@ -96,7 +96,7 @@ export default function DateTimePicker({
 
     const scrollContainer = scrollRef.current;
     const buttonIndex = timeOptions.findIndex(
-      (time) => time.value === currentTimeValue,
+      (time) => time.value === currentTimeValue
     );
     const calculatedScrollTo =
       Math.max(0, buttonIndex - 4) * (buttonSize + buttonMargin) +
@@ -156,7 +156,7 @@ export default function DateTimePicker({
                     'w-full mb-0.5 h-8 text-xs font-mono transition-all duration-200 justify-start',
                     currentTimeValue === time.value
                       ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'hover:bg-muted',
+                      : 'hover:bg-muted'
                   )}
                   onClick={() => handleTimeSelect(time.value)}
                 >

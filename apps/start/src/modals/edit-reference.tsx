@@ -53,15 +53,15 @@ export default function EditReference({
         toast('Success', { description: 'Reference updated.' });
         reset();
         queryClient.invalidateQueries(
-          trpc.reference.getReferences.pathFilter(),
+          trpc.reference.getReferences.pathFilter()
         );
         queryClient.invalidateQueries(
-          trpc.reference.getChartReferences.pathFilter(),
+          trpc.reference.getChartReferences.pathFilter()
         );
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (

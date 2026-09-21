@@ -33,7 +33,10 @@ export function ChatMessage({
   const isUser = message.role === 'user';
 
   // Index tool results by callId so we can attach them to their call.
-  const resultByCallId = new Map<string, { result?: unknown; status: string }>();
+  const resultByCallId = new Map<
+    string,
+    { result?: unknown; status: string }
+  >();
   for (const part of message.parts) {
     if (part.type === 'tool-result') {
       resultByCallId.set(part.callId, {
@@ -49,7 +52,7 @@ export function ChatMessage({
     <div
       className={cn(
         'flex flex-col gap-2',
-        isUser ? 'items-end' : 'items-start',
+        isUser ? 'items-end' : 'items-start'
       )}
     >
       {message.parts.map((part, idx) => {
@@ -92,9 +95,7 @@ export function ChatMessage({
               <ReasoningBlock
                 key={`${message.localId}-reasoning-${idx}`}
                 text={part.text}
-                complete={
-                  stateComplete || hasFollowingPart || !runStillActive
-                }
+                complete={stateComplete || hasFollowingPart || !runStillActive}
               />
             );
           }
@@ -118,8 +119,9 @@ export function ChatMessage({
               );
             }
             const Renderer =
-              chatToolRenderers[`tool-${toolName}` as keyof typeof chatToolRenderers] ??
-              DefaultToolResult;
+              chatToolRenderers[
+                `tool-${toolName}` as keyof typeof chatToolRenderers
+              ] ?? DefaultToolResult;
             const toolPart: ToolResultPart = {
               type: `tool-${toolName}`,
               toolCallId: part.callId,
@@ -211,7 +213,7 @@ function ReasoningBlock({
 
 function derivePartState(
   callState: string | undefined,
-  resultStatus: string | undefined,
+  resultStatus: string | undefined
 ): string {
   if (resultStatus === 'success') return 'output-available';
   if (resultStatus === 'error') return 'output-error';

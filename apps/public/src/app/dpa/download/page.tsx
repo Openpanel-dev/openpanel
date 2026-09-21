@@ -102,11 +102,11 @@ export default function DpaDownloadPage() {
           <p className="mb-3 text-gray-700 text-sm">
             OpenPanel optionally supports session replay, which must be
             explicitly enabled by the Controller. When enabled, session replay
-            records DOM snapshots and user interactions (mouse movements, clicks,
-            scrolls) using rrweb. All text content and form inputs are masked by
-            default. The Controller is responsible for ensuring their use of
-            session replay complies with applicable privacy law, including
-            providing appropriate notice to end users.
+            records DOM snapshots and user interactions (mouse movements,
+            clicks, scrolls) using rrweb. All text content and form inputs are
+            masked by default. The Controller is responsible for ensuring their
+            use of session replay complies with applicable privacy law,
+            including providing appropriate notice to end users.
           </p>
           <p className="mb-1 text-gray-700 text-sm font-semibold">
             AI features (optional, opt-in)
@@ -415,10 +415,11 @@ export default function DpaDownloadPage() {
               permanently deleted.
             </li>
             <li>
-              The Controller can delete individual projects, all associated data,
-              or their entire account at any time from within the dashboard. Upon
-              account termination, OpenPanel will delete the Controller's data
-              within 30 days unless required by law to retain it longer.
+              The Controller can delete individual projects, all associated
+              data, or their entire account at any time from within the
+              dashboard. Upon account termination, OpenPanel will delete the
+              Controller's data within 30 days unless required by law to retain
+              it longer.
             </li>
           </ul>
         </Section>

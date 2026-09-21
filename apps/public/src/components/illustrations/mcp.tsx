@@ -24,7 +24,8 @@ const toolCalls = [
 ];
 
 // Response split into segments so highlights apply as text streams in
-const RESPONSE = 'Last week saw 1,234 new signups — up 23% from the week before. Your signup funnel is converting at 72%, the highest rate in the past month.';
+const RESPONSE =
+  'Last week saw 1,234 new signups — up 23% from the week before. Your signup funnel is converting at 72%, the highest rate in the past month.';
 
 type Phase = 'user' | 'thinking' | 'tool1' | 'tool2' | 'streaming' | 'done';
 
@@ -89,7 +90,10 @@ function StreamingText({ text, done }: { text: string; done: boolean }) {
   const segments: { content: string; highlight?: 'white' | 'emerald' }[] = [
     { content: 'Last week saw ' },
     { content: '1,234 new signups', highlight: 'white' },
-    { content: ' — up 23% from the week before. Your signup funnel is converting at ' },
+    {
+      content:
+        ' — up 23% from the week before. Your signup funnel is converting at ',
+    },
     { content: '72%', highlight: 'emerald' },
     { content: ', the highest rate in the past month.' },
   ];
@@ -105,15 +109,21 @@ function StreamingText({ text, done }: { text: string; done: boolean }) {
 
     if (seg.highlight === 'white') {
       rendered.push(
-        <span key={seg.content} className={done ? 'font-semibold text-white/90' : 'text-white/70'}>
+        <span
+          key={seg.content}
+          className={done ? 'font-semibold text-white/90' : 'text-white/70'}
+        >
           {visible}
-        </span>,
+        </span>
       );
     } else if (seg.highlight === 'emerald') {
       rendered.push(
-        <span key={seg.content} className={done ? 'font-semibold text-emerald-400' : 'text-white/70'}>
+        <span
+          key={seg.content}
+          className={done ? 'font-semibold text-emerald-400' : 'text-white/70'}
+        >
           {visible}
-        </span>,
+        </span>
       );
     } else {
       rendered.push(<span key={seg.content}>{visible}</span>);
@@ -188,9 +198,15 @@ export function McpIllustration() {
     };
   }, []);
 
-  const showThinking = phase === 'thinking' || phase === 'tool1' || phase === 'tool2';
-  const showTool1 = phase === 'tool1' || phase === 'tool2' || phase === 'streaming' || phase === 'done';
-  const showTool2 = phase === 'tool2' || phase === 'streaming' || phase === 'done';
+  const showThinking =
+    phase === 'thinking' || phase === 'tool1' || phase === 'tool2';
+  const showTool1 =
+    phase === 'tool1' ||
+    phase === 'tool2' ||
+    phase === 'streaming' ||
+    phase === 'done';
+  const showTool2 =
+    phase === 'tool2' || phase === 'streaming' || phase === 'done';
   const showResponse = phase === 'streaming' || phase === 'done';
 
   return (

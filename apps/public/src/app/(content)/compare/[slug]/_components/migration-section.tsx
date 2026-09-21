@@ -15,7 +15,7 @@ export function MigrationSection({ migration }: MigrationSectionProps) {
         description={migration.intro}
         variant="sm"
       />
-      
+
       {/* Difficulty and time */}
       <div className="row gap-6 mt-8">
         <div className="col gap-2">
@@ -44,7 +44,9 @@ export function MigrationSection({ migration }: MigrationSectionProps) {
               </div>
               <div className="col gap-1 flex-1">
                 <h3 className="font-semibold">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {step.description}
+                </p>
               </div>
             </div>
           </div>
@@ -58,7 +60,9 @@ export function MigrationSection({ migration }: MigrationSectionProps) {
             <CheckIcon className="size-5 text-green-500" />
             <h3 className="font-semibold">SDK Compatibility</h3>
           </div>
-          <p className="text-sm text-muted-foreground">{migration.sdk_compatibility.notes}</p>
+          <p className="text-sm text-muted-foreground">
+            {migration.sdk_compatibility.notes}
+          </p>
         </div>
       </div>
 
@@ -73,10 +77,11 @@ export function MigrationSection({ migration }: MigrationSectionProps) {
             )}
             <h3 className="font-semibold">Historical Data Import</h3>
           </div>
-          <p className="text-sm text-muted-foreground">{migration.historical_data.notes}</p>
+          <p className="text-sm text-muted-foreground">
+            {migration.historical_data.notes}
+          </p>
         </div>
       </div>
     </Section>
   );
 }
-

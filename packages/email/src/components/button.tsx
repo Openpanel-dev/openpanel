@@ -6,7 +6,11 @@ export function Button({
   href,
   children,
   style,
-}: { href: string; children: React.ReactNode; style?: React.CSSProperties }) {
+}: {
+  href: string;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
   return (
     <EmailButton
       href={href}

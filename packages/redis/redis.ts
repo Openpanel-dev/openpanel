@@ -60,14 +60,14 @@ export interface ExtendedRedis extends Redis {
   setJson: <T = any>(
     key: string,
     expireInSec: number,
-    value: T,
+    value: T
   ) => Promise<void>;
 }
 
 const createRedisClient = (
   name: string,
   url: string,
-  overrides: RedisOptions = {},
+  overrides: RedisOptions = {}
 ): ExtendedRedis => {
   const client = new Redis(url, {
     ...options,
@@ -100,7 +100,7 @@ const createRedisClient = (
   client.setJson = async <T = any>(
     key: string,
     expireInSec: number,
-    value: T,
+    value: T
   ): Promise<void> => {
     await client.setex(key, expireInSec, setSuperJson(value));
   };

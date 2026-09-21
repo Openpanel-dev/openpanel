@@ -16,13 +16,13 @@ export const zWeeklyDigest = z.object({
       value: z.string(),
       delta: z.string().optional(),
       direction: z.enum(['up', 'down', 'flat']).optional(),
-    }),
+    })
   ),
   insights: z.array(
     z.object({
       title: z.string(),
       summary: z.string().optional(),
-    }),
+    })
   ),
 });
 

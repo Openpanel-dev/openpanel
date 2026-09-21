@@ -38,7 +38,11 @@ const MonthCalendar = ({
   month,
   data,
   maxCount,
-}: { month: Date; data: Props['data']; maxCount: number }) => (
+}: {
+  month: Date;
+  data: Props['data'];
+  maxCount: number;
+}) => (
   <div>
     <div className="mb-2 text-sm">{format(month, 'MMMM yyyy')}</div>
     <div className="-m-1 grid grid-cols-7 gap-1 p-1">
@@ -47,7 +51,7 @@ const MonthCalendar = ({
         end: endOfMonth(month),
       }).map((date) => {
         const hit = data.find((item) =>
-          item.date.includes(formatISO(date, { representation: 'date' })),
+          item.date.includes(formatISO(date, { representation: 'date' }))
         );
         const opacity = hit ? getOpacityLevel(hit.count, maxCount) : 0;
         return (
@@ -69,7 +73,7 @@ const MonthCalendar = ({
           >
             <div
               className={cn(
-                'aspect-square w-full rounded cursor-default group hover:ring-1 hover:ring-foreground overflow-hidden',
+                'aspect-square w-full rounded cursor-default group hover:ring-1 hover:ring-foreground overflow-hidden'
               )}
             >
               <div
@@ -79,7 +83,7 @@ const MonthCalendar = ({
                     ? 'bg-highlight'
                     : hit
                       ? 'bg-foreground'
-                      : 'bg-def-200',
+                      : 'bg-def-200'
                 )}
                 style={hit && !isToday(date) ? { opacity } : undefined}
               />

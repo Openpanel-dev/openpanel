@@ -133,7 +133,7 @@ export async function GET(request: Request) {
           stubMarkdown(`${OPENPANEL_BASE_URL}/${segment}`, path),
           {
             headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          },
+          }
         );
       }
     }
@@ -142,7 +142,7 @@ export async function GET(request: Request) {
         stubMarkdown(`${OPENPANEL_BASE_URL}/${segment}`, path),
         {
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-        },
+        }
       );
     }
   }

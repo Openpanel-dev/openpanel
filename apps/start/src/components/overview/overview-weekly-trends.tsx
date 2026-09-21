@@ -58,7 +58,7 @@ function formatHourRange(hour: number) {
 }
 
 function getColorClass(ratio: number) {
-  if(ratio === 0) return 'bg-transparent';
+  if (ratio === 0) return 'bg-transparent';
   if (ratio < 0.1) return 'bg-chart-0/5';
   if (ratio < 0.2) return 'bg-chart-0/10';
   if (ratio < 0.3) return 'bg-chart-0/20';
@@ -90,7 +90,7 @@ export default function OverviewWeeklyTrends({
       filters,
       startDate,
       endDate,
-    }),
+    })
   );
 
   // Build a 7×24 heatmap: aggregated[dayOfWeek][hour] averaged over all weeks
@@ -99,11 +99,9 @@ export default function OverviewWeeklyTrends({
     if (!series?.length) return null;
 
     // aggregated[day 0=Mon..6=Sun][hour]
-    const sums: number[][] = Array.from({ length: 7 }, () =>
-      Array(24).fill(0),
-    );
+    const sums: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
     const counts: number[][] = Array.from({ length: 7 }, () =>
-      Array(24).fill(0),
+      Array(24).fill(0)
     );
 
     for (const item of series) {
@@ -124,7 +122,7 @@ export default function OverviewWeeklyTrends({
       row.map((sum, hour) => {
         const count = counts[day]![hour]!;
         return count > 0 ? sum / count : 0;
-      }),
+      })
     );
 
     let max = 0;
@@ -166,9 +164,7 @@ export default function OverviewWeeklyTrends({
                   key={hour}
                   className="flex h-4 items-center justify-end text-[10px] text-muted-foreground"
                 >
-                  {hour % 3 === 0
-                    ? `${String(hour).padStart(2, '0')}:00`
-                    : ''}
+                  {hour % 3 === 0 ? `${String(hour).padStart(2, '0')}:00` : ''}
                 </div>
               ))}
             </div>
@@ -187,66 +183,61 @@ export default function OverviewWeeklyTrends({
                 ))}
               </div>
 
-          <TooltipProvider disableHoverableContent delayDuration={0}>
-              {/* Rows = hours, columns = days */}
-              {Array.from({ length: 24 }, (_, hour) => (
-                <div key={hour} className="flex h-4">
-                  {Array.from({ length: 7 }, (_, day) => {
-                    const value = heatmap.averages[day]![hour]!;
-                    const ratio =
-                      heatmap.max > 0 && value > 0
-                        ? value / heatmap.max
-                        : 0;
-                    const colorClass = getColorClass(ratio)
+              <TooltipProvider disableHoverableContent delayDuration={0}>
+                {/* Rows = hours, columns = days */}
+                {Array.from({ length: 24 }, (_, hour) => (
+                  <div key={hour} className="flex h-4">
+                    {Array.from({ length: 7 }, (_, day) => {
+                      const value = heatmap.averages[day]![hour]!;
+                      const ratio =
+                        heatmap.max > 0 && value > 0 ? value / heatmap.max : 0;
+                      const colorClass = getColorClass(ratio);
 
-                    return (
-                      <Tooltip key={day}>
-                        <TooltipTrigger asChild>
-                          <div className={cn(
-                            'flex-1 p-0.5 group',
-                          )}>
-                          <div  className={cn(
-                            'size-full rounded-sm transition-all group-hover:ring-1 group-hover:ring-emerald-400',
-                            colorClass,
-                          )}
-
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="top"
-                          className="border-0 bg-transparent p-0 shadow-none"
-
-                        >
-                          <ChartTooltipContainer>
-                            <ChartTooltipHeader>
-                              <div className="text-sm font-medium">
-                                {LONG_DAY_NAMES[day]}, {formatHourRange(hour)}
-                              </div>
-                            </ChartTooltipHeader>
-                            <ChartTooltipItem color="#10b981">
-                              <div className="flex items-center justify-between gap-6 font-mono font-medium text-sm">
-                                <div className="text-muted-foreground">
-                                  {activeMetric.label}
+                      return (
+                        <Tooltip key={day}>
+                          <TooltipTrigger asChild>
+                            <div className={cn('flex-1 p-0.5 group')}>
+                              <div
+                                className={cn(
+                                  'size-full rounded-sm transition-all group-hover:ring-1 group-hover:ring-emerald-400',
+                                  colorClass
+                                )}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            className="border-0 bg-transparent p-0 shadow-none"
+                          >
+                            <ChartTooltipContainer>
+                              <ChartTooltipHeader>
+                                <div className="text-sm font-medium">
+                                  {LONG_DAY_NAMES[day]}, {formatHourRange(hour)}
                                 </div>
-                                <div>
-                                  {activeMetric.unit === 'pct'
-                                    ? `${number.format(value)} %`
-                                    : number.formatWithUnit(
-                                        value,
-                                        activeMetric.unit || null,
-                                      )}
+                              </ChartTooltipHeader>
+                              <ChartTooltipItem color="#10b981">
+                                <div className="flex items-center justify-between gap-6 font-mono font-medium text-sm">
+                                  <div className="text-muted-foreground">
+                                    {activeMetric.label}
+                                  </div>
+                                  <div>
+                                    {activeMetric.unit === 'pct'
+                                      ? `${number.format(value)} %`
+                                      : number.formatWithUnit(
+                                          value,
+                                          activeMetric.unit || null
+                                        )}
+                                  </div>
                                 </div>
-                              </div>
-                            </ChartTooltipItem>
-                          </ChartTooltipContainer>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              ))}
-          </TooltipProvider>
+                              </ChartTooltipItem>
+                            </ChartTooltipContainer>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                ))}
+              </TooltipProvider>
             </div>
           </div>
         )}

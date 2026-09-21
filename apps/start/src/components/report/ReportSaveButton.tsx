@@ -38,11 +38,11 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
           trpc.report.list.queryFilter({
             dashboardId: res.dashboardId,
             projectId: res.projectId,
-          }),
+          })
         );
       },
       onError: handleError,
-    }),
+    })
   );
   const report = useSelector((state) => state.report);
   const isLoading = update.isPending || fetching.some((f) => f !== 0);

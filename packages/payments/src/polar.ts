@@ -33,11 +33,7 @@ export async function getProduct(id: string) {
   return polar.products.get({ id });
 }
 
-export async function createPortal({
-  customerId,
-}: {
-  customerId: string;
-}) {
+export async function createPortal({ customerId }: { customerId: string }) {
   return polar.customerSessions.create({
     customerId,
   });
@@ -64,7 +60,7 @@ export async function createCheckout({
     products: [productId],
     successUrl: getSuccessUrl(
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,
-      organizationId,
+      organizationId
     ),
     customerEmail: user.email,
     customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),

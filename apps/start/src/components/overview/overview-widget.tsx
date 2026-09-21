@@ -20,7 +20,7 @@ export function WidgetHead({ className, ...props }: WidgetHeadProps) {
     <WidgetHeadBase
       className={cn(
         'relative flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:p-4 [&_.title]:font-semibold',
-        className,
+        className
       )}
       {...props}
     />
@@ -59,7 +59,7 @@ export function WidgetAbsoluteButtons({
     <div
       className={cn(
         'row gap-1 absolute right-4 top-1/2 -translate-y-1/2',
-        className,
+        className
       )}
       {...props}
     >
@@ -83,11 +83,11 @@ export function WidgetButtons({
       if (sizes.current.length === 0) {
         // Get buttons
         const buttons: HTMLButtonElement[] = Array.from(
-          container.current.querySelectorAll('button'),
+          container.current.querySelectorAll('button')
         );
         // Get sizes and cache them
         sizes.current = buttons.map(
-          (button) => Math.ceil(button.offsetWidth) + gap,
+          (button) => Math.ceil(button.offsetWidth) + gap
         );
       }
       const containerWidth = container.current.offsetWidth;
@@ -102,7 +102,7 @@ export function WidgetButtons({
             }
             return { index, size: acc.size + size };
           },
-          { index: 0, size: 0 },
+          { index: 0, size: 0 }
         );
 
         setSlice(res.index);
@@ -126,7 +126,7 @@ export function WidgetButtons({
       ref={container}
       className={cn(
         '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
-        className,
+        className
       )}
       style={{ gap }}
       {...props}
@@ -136,7 +136,7 @@ export function WidgetButtons({
           <div
             className={cn(
               'flex [&_button]:leading-normal',
-              slice < index ? hidden : 'opacity-100',
+              slice < index ? hidden : 'opacity-100'
             )}
           >
             {child}
@@ -149,7 +149,7 @@ export function WidgetButtons({
             type="button"
             className={cn(
               'flex select-none items-center gap-1',
-              sizes.current.length - 1 === slice ? hidden : 'opacity-50',
+              sizes.current.length - 1 === slice ? hidden : 'opacity-50'
             )}
           >
             More <ChevronsUpDownIcon size={12} />
@@ -207,7 +207,7 @@ export function WidgetHeadSearchable<T extends string>({
 
     setShowLeftGradient(hasOverflow && scrollLeft > 0);
     setShowRightGradient(
-      hasOverflow && scrollLeft < scrollWidth - clientWidth - 1,
+      hasOverflow && scrollLeft < scrollWidth - clientWidth - 1
     );
   }, []);
 
@@ -240,7 +240,7 @@ export function WidgetHeadSearchable<T extends string>({
         <div
           className={cn(
             'pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
-            showLeftGradient ? 'opacity-100' : 'opacity-0',
+            showLeftGradient ? 'opacity-100' : 'opacity-0'
           )}
         />
 
@@ -258,7 +258,7 @@ export function WidgetHeadSearchable<T extends string>({
                 'shrink-0 rounded-md py-1.5 text-sm font-medium transition-colors px-2',
                 activeTab === tab.key
                   ? 'text-foreground'
-                  : 'text-muted-foreground hover:bg-def-100 hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-def-100 hover:text-foreground'
               )}
             >
               {tab.label}
@@ -270,7 +270,7 @@ export function WidgetHeadSearchable<T extends string>({
         <div
           className={cn(
             'pointer-events-none absolute right-0 top-0 z-10 bottom-px w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
-            showRightGradient ? 'opacity-100' : 'opacity-0',
+            showRightGradient ? 'opacity-100' : 'opacity-0'
           )}
         />
       </div>
@@ -301,7 +301,7 @@ export function WidgetFooter({
     <div
       className={cn(
         'flex rounded-b-md border-t bg-def-100 p-2  py-1',
-        className,
+        className
       )}
       {...props}
     >

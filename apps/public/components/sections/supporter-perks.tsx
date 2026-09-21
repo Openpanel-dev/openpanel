@@ -54,7 +54,7 @@ export function SupporterPerks({ className }: { className?: string }) {
       className={cn(
         'col gap-4 p-6 rounded-xl border bg-card',
         'sticky top-24',
-        className,
+        className
       )}
     >
       <div className="col gap-2 mb-2">
@@ -77,14 +77,14 @@ export function SupporterPerks({ className }: { className?: string }) {
                 'col gap-1.5 p-3 rounded-lg border transition-colors',
                 perk.highlight
                   ? 'bg-primary/5 border-primary/20'
-                  : 'bg-background border-border',
+                  : 'bg-background border-border'
               )}
             >
               <div className="row gap-2 items-start">
                 <Icon
                   className={cn(
                     'size-4 mt-0.5 shrink-0',
-                    perk.highlight ? 'text-primary' : 'text-muted-foreground',
+                    perk.highlight ? 'text-primary' : 'text-muted-foreground'
                   )}
                 />
                 <div className="col gap-0.5 flex-1 min-w-0">
@@ -92,7 +92,7 @@ export function SupporterPerks({ className }: { className?: string }) {
                     <h4
                       className={cn(
                         'font-medium text-sm',
-                        perk.highlight && 'text-primary',
+                        perk.highlight && 'text-primary'
                       )}
                     >
                       {perk.title}
@@ -127,4 +127,3 @@ export function SupporterPerks({ className }: { className?: string }) {
     </div>
   );
 }
-

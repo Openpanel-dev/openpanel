@@ -427,8 +427,6 @@ export async function teardownPostgresFixtures(
   }
 }
 
-
-
 export async function setupFixtures(projectId: string): Promise<void> {
   const client = getClient();
   await deleteFixtures(client, projectId);

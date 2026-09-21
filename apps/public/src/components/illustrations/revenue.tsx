@@ -26,7 +26,9 @@ export function RevenueIllustration() {
           <span className="text-[9px] text-emerald-500">↑ 12% this month</span>
         </div>
         <div className="col flex-1 gap-1 rounded-xl border bg-card px-3 py-2">
-          <span className="text-[9px] text-muted-foreground">MRR over time</span>
+          <span className="text-[9px] text-muted-foreground">
+            MRR over time
+          </span>
           <SimpleChart
             className="mt-1 flex-1"
             height={36}

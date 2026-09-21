@@ -124,11 +124,7 @@ function Component() {
       <PageHeader
         actions={
           <div className="row gap-2">
-            <Button
-              onClick={handleDownload}
-              size="sm"
-              variant="outline"
-            >
+            <Button onClick={handleDownload} size="sm" variant="outline">
               <DownloadIcon className="mr-2 size-4" />
               Download
             </Button>

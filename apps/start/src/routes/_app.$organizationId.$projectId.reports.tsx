@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/reports',
+  '/_app/$organizationId/$projectId/reports'
 )({
   component: Component,
   head: () => {

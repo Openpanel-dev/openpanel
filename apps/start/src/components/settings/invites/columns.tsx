@@ -69,13 +69,13 @@ export function useColumns(): ColumnDef<
             queryClient.invalidateQueries(
               trpc.organization.invitations.queryFilter({
                 organizationId: row.original.organizationId,
-              }),
+              })
             );
           },
           onError() {
             toast.error(`Failed to revoke invite for ${row.original.email}`);
           },
-        }),
+        })
       );
 
       return (
@@ -83,7 +83,7 @@ export function useColumns(): ColumnDef<
           <DropdownMenuItem
             onClick={() => {
               clipboard(
-                `${window.location.origin}/onboarding?inviteId=${row.original.id}`,
+                `${window.location.origin}/onboarding?inviteId=${row.original.id}`
               );
             }}
           >
@@ -112,7 +112,7 @@ function AccessCell({
   const projectsQuery = useQuery(
     trpc.project.list.queryOptions({
       organizationId: row.original.organizationId,
-    }),
+    })
   );
   const projects = projectsQuery.data ?? [];
   const access = row.original.projectAccess ?? [];

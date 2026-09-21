@@ -1,5 +1,5 @@
-import type { Transition } from "motion/react";
-import { DEFAULT_CHART_ENTER_TRANSITION } from "./animation";
+import type { Transition } from 'motion/react';
+import { DEFAULT_CHART_ENTER_TRANSITION } from './animation';
 
 export function transitionWithDelay(
   transition: Transition | undefined,
@@ -23,15 +23,15 @@ export function springOptionsFromTransition(
   if (!transition) {
     return fallback;
   }
-  if (transition.type === "spring") {
+  if (transition.type === 'spring') {
     const bounce =
-      typeof transition.bounce === "number" ? transition.bounce : undefined;
+      typeof transition.bounce === 'number' ? transition.bounce : undefined;
     const baseStiffness =
-      typeof transition.stiffness === "number"
+      typeof transition.stiffness === 'number'
         ? transition.stiffness
         : fallback.stiffness;
     const baseDamping =
-      typeof transition.damping === "number"
+      typeof transition.damping === 'number'
         ? transition.damping
         : fallback.damping;
     return {
@@ -44,11 +44,11 @@ export function springOptionsFromTransition(
           ? baseDamping
           : Math.max(8, baseDamping * (1 - bounce * 0.25)),
       mass:
-        typeof transition.mass === "number" ? transition.mass : fallback.mass,
+        typeof transition.mass === 'number' ? transition.mass : fallback.mass,
     };
   }
   const duration =
-    "duration" in transition && typeof transition.duration === "number"
+    'duration' in transition && typeof transition.duration === 'number'
       ? transition.duration
       : 0.8;
   return {

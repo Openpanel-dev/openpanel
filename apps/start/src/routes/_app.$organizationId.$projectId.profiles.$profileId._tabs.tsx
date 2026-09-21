@@ -12,7 +12,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs',
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs'
 )({
   component: Component,
   loader: async ({ context, params }) => {
@@ -20,7 +20,7 @@ export const Route = createFileRoute(
       context.trpc.profile.byId.queryOptions({
         profileId: params.profileId,
         projectId: params.projectId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -35,7 +35,7 @@ function Component() {
     trpc.profile.byId.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   useEntityPageContext(
@@ -47,7 +47,7 @@ function Component() {
       browser: profile.data?.properties.browser,
       os: profile.data?.properties.os,
       email: profile.data?.email,
-    },
+    }
   );
 
   const { activeTab, tabs } = usePageTabs([

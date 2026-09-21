@@ -8,7 +8,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/reports_/$reportId',
+  '/_app/$organizationId/$projectId/reports_/$reportId'
 )({
   component: Component,
   head: () => {
@@ -24,7 +24,7 @@ export const Route = createFileRoute(
     await context.queryClient.prefetchQuery(
       context.trpc.report.get.queryOptions({
         reportId: params.reportId,
-      }),
+      })
     );
   },
   validateSearch: z.object({

@@ -188,7 +188,7 @@ function useColorScheme(colorScheme: ColorScheme): 'light' | 'dark' {
       return window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
-    },
+    }
   );
 
   React.useEffect(() => {
@@ -231,7 +231,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
       onMouseLeave,
       ...props
     },
-    ref,
+    ref
   ) => {
     const [isHovered, setIsHovered] = React.useState(false);
     const resolvedScheme = useColorScheme(colorScheme);
@@ -313,7 +313,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         }
         onMouseEnter?.(e);
       },
-      [interactive, usesCssHover, onMouseEnter],
+      [interactive, usesCssHover, onMouseEnter]
     );
 
     const handleMouseLeave = React.useCallback(
@@ -323,7 +323,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         }
         onMouseLeave?.(e);
       },
-      [interactive, usesCssHover, onMouseLeave],
+      [interactive, usesCssHover, onMouseLeave]
     );
 
     return (
@@ -371,17 +371,19 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
               ? 'group-hover:[transform:var(--facehash-hover-transform)]'
               : undefined
           }
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transform,
-            transition: interactive ? 'transform 0.2s ease-out' : undefined,
-            transformStyle: 'preserve-3d',
-            '--facehash-hover-transform': hoverTransform,
-          } as React.CSSProperties}
+          style={
+            {
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform,
+              transition: interactive ? 'transform 0.2s ease-out' : undefined,
+              transformStyle: 'preserve-3d',
+              '--facehash-hover-transform': hoverTransform,
+            } as React.CSSProperties
+          }
         >
           {/* Face SVG */}
           <FaceComponent
@@ -411,7 +413,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 Facehash.displayName = 'Facehash';

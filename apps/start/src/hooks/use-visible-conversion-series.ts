@@ -11,7 +11,7 @@ export function useVisibleConversionSeries(
     limit?: number;
     savedVisibleSeries?: string[] | null;
     onVisibleSeriesChange?: (ids: string[]) => void;
-  },
+  }
 ) {
   const max = options?.limit ?? 5;
   const savedVisibleSeries = options?.savedVisibleSeries;
@@ -22,11 +22,11 @@ export function useVisibleConversionSeries(
   const seriesKey = data?.current?.map((s) => s.id).join(',') ?? '';
 
   const resolveIds = (
-    series: RouterOutputs['chart']['conversion']['current'],
+    series: RouterOutputs['chart']['conversion']['current']
   ): string[] => {
     if (savedVisibleSeries && savedVisibleSeries.length > 0) {
       const valid = savedVisibleSeries.filter((id) =>
-        series.some((s) => s.id === id),
+        series.some((s) => s.id === id)
       );
       if (valid.length > 0) return valid;
     }
@@ -34,7 +34,7 @@ export function useVisibleConversionSeries(
   };
 
   const [visibleSeries, setVisibleSeries] = useState<string[]>(() =>
-    resolveIds(data?.current ?? []),
+    resolveIds(data?.current ?? [])
   );
 
   const prevKeyRef = useRef(seriesKey);
@@ -51,7 +51,7 @@ export function useVisibleConversionSeries(
         return next;
       });
     },
-    [],
+    []
   );
 
   return useMemo(
@@ -61,6 +61,6 @@ export function useVisibleConversionSeries(
         .filter((serie) => visibleSeries.includes(serie.id)),
       setVisibleSeries: handleSet,
     }),
-    [visibleSeries, data.current, handleSet],
+    [visibleSeries, data.current, handleSet]
   );
 }

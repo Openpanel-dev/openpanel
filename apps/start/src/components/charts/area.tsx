@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { curveMonotoneX } from "@visx/curve";
-import { AreaClosed, LinePath } from "@visx/shape";
+import { curveMonotoneX } from '@visx/curve';
+import { AreaClosed, LinePath } from '@visx/shape';
 
 // CurveFactory type - simplified version compatible with visx
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { useCallback, useId, useRef } from "react";
-import { AreaGradientDefs } from "./area-gradient-defs";
-import { chartCssVars, useChartStable } from "./chart-context";
-import { type FadeEdges, resolveFadeSides } from "./fade-edges";
+import { useCallback, useId, useRef } from 'react';
+import { AreaGradientDefs } from './area-gradient-defs';
+import { chartCssVars, useChartStable } from './chart-context';
+import { type FadeEdges, resolveFadeSides } from './fade-edges';
 import {
   resolveDashTailBounds,
   usePathStrokeMetrics,
-} from "./path-stroke-utils";
-import { SeriesDashTailOverlay } from "./series-dash-tail-overlay";
-import { SeriesHighlightLayer } from "./series-highlight-layer";
-import { SeriesHoverDim } from "./series-hover-dim";
-import { SeriesMarkers } from "./series-markers";
-import type { SeriesPointMarkerStyle } from "./series-point-marker";
+} from './path-stroke-utils';
+import { SeriesDashTailOverlay } from './series-dash-tail-overlay';
+import { SeriesHighlightLayer } from './series-highlight-layer';
+import { SeriesHoverDim } from './series-hover-dim';
+import { SeriesMarkers } from './series-markers';
+import type { SeriesPointMarkerStyle } from './series-point-marker';
 
 export interface AreaProps {
   /** Key in data to use for y values */
@@ -78,7 +78,7 @@ export function Area({
   showMarkers = false,
   markers,
   dashFromIndex,
-  dashArray = "6,4",
+  dashArray = '6,4',
 }: AreaProps) {
   // Stable slice only: hover state lives inside `<SeriesHoverDim>` and
   // `<SeriesHighlightLayer>` so this component (and its expensive
@@ -107,7 +107,7 @@ export function Area({
   const edgeMaskId = `area-edge-mask-${dataKey}-${uniqueId}`;
   const edgeGradientId = `${edgeMaskId}-gradient`;
 
-  const isPatternFill = fill.startsWith("url(");
+  const isPatternFill = fill.startsWith('url(');
   const showAreaFill = isPatternFill || fillOpacity > 0;
   const areaFill = isPatternFill ? fill : `url(#${gradientId})`;
 
@@ -118,7 +118,7 @@ export function Area({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : 0;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : 0;
     },
     [dataKey, yScale]
   );
@@ -177,7 +177,7 @@ export function Area({
               curve={curve}
               data={renderData}
               innerRef={pathRef}
-              stroke={hasDashTail ? "transparent" : strokePaint}
+              stroke={hasDashTail ? 'transparent' : strokePaint}
               strokeLinecap="round"
               strokeWidth={strokeWidth}
               x={(d) => xScale(xAccessor(d)) ?? 0}
@@ -222,6 +222,6 @@ export function Area({
   );
 }
 
-Area.displayName = "Area";
+Area.displayName = 'Area';
 
 export default Area;

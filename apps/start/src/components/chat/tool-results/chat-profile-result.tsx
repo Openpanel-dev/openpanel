@@ -98,7 +98,9 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
           {typeof metrics.revenue === 'number' && metrics.revenue > 0 && (
             <ResultRow>
               <ResultLabel>Revenue</ResultLabel>
-              <ResultValue>{number.currency(metrics.revenue / 100)}</ResultValue>
+              <ResultValue>
+                {number.currency(metrics.revenue / 100)}
+              </ResultValue>
             </ResultRow>
           )}
         </div>

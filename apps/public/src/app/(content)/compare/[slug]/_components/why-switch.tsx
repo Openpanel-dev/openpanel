@@ -52,4 +52,3 @@ export function WhySwitch({ summary }: WhySwitchProps) {
     </Section>
   );
 }
-

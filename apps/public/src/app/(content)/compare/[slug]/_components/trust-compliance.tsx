@@ -107,4 +107,3 @@ export function TrustCompliance({ trust }: TrustComplianceProps) {
     </Section>
   );
 }
-

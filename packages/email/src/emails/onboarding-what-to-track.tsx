@@ -57,7 +57,7 @@ export function OnboardingWhatToTrack({
             <Link
               href={withUtm(
                 'https://openpanel.dev/docs/get-started/install-openpanel',
-                'onboarding-what-to-track',
+                'onboarding-what-to-track'
               )}
             >
               install guide

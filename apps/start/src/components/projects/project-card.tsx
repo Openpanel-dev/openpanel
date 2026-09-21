@@ -16,12 +16,15 @@ import { ProjectChart } from './project-chart';
 export function ProjectCardRoot({
   children,
   className,
-}: { children: React.ReactNode; className?: string }) {
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={cn(
         'relative card hover:-translate-y-px hover:shadow-sm',
-        className,
+        className
       )}
     >
       {children}
@@ -82,7 +85,7 @@ function ProjectChartOuter({ id }: { id: string }) {
   const { data } = useQuery(
     trpc.chart.projectCard.queryOptions({
       projectId: id,
-    }),
+    })
   );
 
   return (
@@ -92,9 +95,22 @@ function ProjectChartOuter({ id }: { id: string }) {
   );
 }
 
-function Metric({ value, label, className }: { value: React.ReactNode; label: string; className?: string }) {
+function Metric({
+  value,
+  label,
+  className,
+}: {
+  value: React.ReactNode;
+  label: string;
+  className?: string;
+}) {
   return (
-    <div className={cn("flex flex-col gap-1 md:flex-row items-center text-sm", className)}>
+    <div
+      className={cn(
+        'flex flex-col gap-1 md:flex-row items-center text-sm',
+        className
+      )}
+    >
       <div className="text-muted-foreground">{label}</div>
       <span className="font-medium whitespace-nowrap">{value}</span>
     </div>
@@ -107,48 +123,52 @@ function ProjectMetrics({ id }: { id: string }) {
   const { data } = useQuery(
     trpc.chart.projectCard.queryOptions({
       projectId: id,
-    }),
+    })
   );
 
   return (
     <FadeIn className="row flex-wrap gap-3 flex-1">
-        {typeof data?.trend?.percentage === 'number' && (
-          <Metric
-            label="3M DIFF"
-            value={
-              <span
-                className={cn(
-                  'font-semibold',
-                  'row gap-1 items-center',
-                  data?.trend?.direction === 'up'
-                    ? 'text-emerald-300'
-                    : data?.trend?.direction === 'down'
-                      ? 'text-orange-300'
-                      : 'text-muted-foreground',
-                )}
-              >
-                {data.trend.direction === 'up' && (
-                  <TrendingUpIcon className="size-4" />
-                )}
-                {data.trend.direction === 'down' && (
-                  <TrendingDownIcon className="size-4" />
-                )}
-                {Math.abs(data.trend.percentage)}%
-              </span>
-            }
-          />
-        )}
-        {!!data?.metrics?.revenue && (
-          <Metric
-            label="Revenue"
-            value={number.currency(data?.metrics?.revenue / 100, {
-              short: true,
-            })}
-          />
-        )}
-      <Metric label="3M" value={number.short(data?.metrics?.months_3 ?? 0)} className="ml-auto" />
-        <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
-        <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
+      {typeof data?.trend?.percentage === 'number' && (
+        <Metric
+          label="3M DIFF"
+          value={
+            <span
+              className={cn(
+                'font-semibold',
+                'row gap-1 items-center',
+                data?.trend?.direction === 'up'
+                  ? 'text-emerald-300'
+                  : data?.trend?.direction === 'down'
+                    ? 'text-orange-300'
+                    : 'text-muted-foreground'
+              )}
+            >
+              {data.trend.direction === 'up' && (
+                <TrendingUpIcon className="size-4" />
+              )}
+              {data.trend.direction === 'down' && (
+                <TrendingDownIcon className="size-4" />
+              )}
+              {Math.abs(data.trend.percentage)}%
+            </span>
+          }
+        />
+      )}
+      {!!data?.metrics?.revenue && (
+        <Metric
+          label="Revenue"
+          value={number.currency(data?.metrics?.revenue / 100, {
+            short: true,
+          })}
+        />
+      )}
+      <Metric
+        label="3M"
+        value={number.short(data?.metrics?.months_3 ?? 0)}
+        className="ml-auto"
+      />
+      <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
+      <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

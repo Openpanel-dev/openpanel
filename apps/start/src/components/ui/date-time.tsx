@@ -15,7 +15,10 @@ import { CalendarIcon } from 'lucide-react';
 export function DateTimePicker({
   value,
   onChange,
-}: { value: Date; onChange: (date: Date) => void }) {
+}: {
+  value: Date;
+  onChange: (date: Date) => void;
+}) {
   function handleDateSelect(date: Date | undefined) {
     if (date) {
       onChange(date);
@@ -43,7 +46,7 @@ export function DateTimePicker({
           variant={'outline'}
           className={cn(
             'w-full pl-3 text-left font-normal',
-            !value && 'text-muted-foreground',
+            !value && 'text-muted-foreground'
           )}
         >
           {value ? (

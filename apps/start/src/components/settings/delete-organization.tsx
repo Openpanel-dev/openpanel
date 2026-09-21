@@ -17,7 +17,7 @@ export default function DeleteOrganization({ organization }: Props) {
   const { data: myAccess } = useQuery(
     trpc.organization.myAccess.queryOptions({
       organizationId: organization.id,
-    }),
+    })
   );
 
   const cancelDeletionMutation = useMutation(
@@ -28,10 +28,10 @@ export default function DeleteOrganization({ organization }: Props) {
         queryClient.invalidateQueries(
           trpc.organization.get.queryFilter({
             organizationId: organization.id,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   // Only admins can delete the organization. The server enforces this too.
@@ -61,7 +61,7 @@ export default function DeleteOrganization({ organization }: Props) {
               <span className="font-medium">
                 {format(
                   startOfHour(addHours(organization.deleteAt, 1)),
-                  'yyyy-MM-dd HH:mm:ss',
+                  'yyyy-MM-dd HH:mm:ss'
                 )}
               </span>
               . All of its projects and their events will be deleted.

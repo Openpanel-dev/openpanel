@@ -30,7 +30,7 @@ import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/insights',
+  '/_app/$organizationId/$projectId/insights'
 )({
   component: Component,
   head: () => {
@@ -73,17 +73,17 @@ function Component() {
     trpc.insight.listAll.queryOptions({
       projectId,
       limit: INSIGHT_LIST_ALL_MAX_LIMIT,
-    }),
+    })
   );
   const navigate = useNavigate();
 
   const [search, setSearch] = useQueryState(
     'search',
-    parseAsString.withDefault(''),
+    parseAsString.withDefault('')
   );
   const [moduleFilter, setModuleFilter] = useQueryState(
     'module',
-    parseAsString.withDefault('all'),
+    parseAsString.withDefault('all')
   );
   const [windowKindFilter, setWindowKindFilter] = useQueryState(
     'window',
@@ -92,17 +92,17 @@ function Component() {
       'yesterday',
       'rolling_7d',
       'rolling_30d',
-    ]).withDefault('all'),
+    ]).withDefault('all')
   );
   const [severityFilter, setSeverityFilter] = useQueryState(
     'severity',
     parseAsStringEnum(['all', 'severe', 'moderate', 'low', 'none']).withDefault(
-      'all',
-    ),
+      'all'
+    )
   );
   const [directionFilter, setDirectionFilter] = useQueryState(
     'direction',
-    parseAsStringEnum(['all', 'up', 'down', 'flat']).withDefault('all'),
+    parseAsStringEnum(['all', 'up', 'down', 'flat']).withDefault('all')
   );
   const [sortBy, setSortBy] = useQueryState(
     'sort',
@@ -113,7 +113,7 @@ function Component() {
       'severity-desc',
       'severity-asc',
       'recent',
-    ]).withDefault('relevance'),
+    ]).withDefault('relevance')
   );
 
   const filteredAndSorted = useMemo(() => {
@@ -255,7 +255,7 @@ function Component() {
 
         // Sort by average impact (high to low)
         return avgImpactB - avgImpactA;
-      },
+      }
     );
   }, [filteredAndSorted]);
 
@@ -277,7 +277,7 @@ function Component() {
                       >
                         <Skeleton className="h-48 w-full" />
                       </CarouselItem>
-                    ),
+                    )
                   )}
                 </CarouselContent>
               </Carousel>
@@ -403,7 +403,7 @@ function Component() {
                       <CarouselItem
                         key={insight.id}
                         className={cn(
-                          'pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4',
+                          'pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4'
                         )}
                       >
                         <InsightCard
@@ -412,7 +412,7 @@ function Component() {
                             const filterString = insight.payload?.dimensions
                               .map(
                                 (dim) =>
-                                  `${dim.key},is,${encodeURIComponent(dim.value)}`,
+                                  `${dim.key},is,${encodeURIComponent(dim.value)}`
                               )
                               .join(';');
                             if (filterString) {

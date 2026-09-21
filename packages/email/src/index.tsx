@@ -35,7 +35,7 @@ export async function sendEmail<T extends TemplateKey>(
   options: {
     to: string;
     data: z.infer<Templates[T]['schema']>;
-  },
+  }
 ) {
   const { to, data } = options;
   const template = templates[templateKey];
@@ -58,7 +58,7 @@ export async function sendEmail<T extends TemplateKey>(
 
     if (unsubscribed) {
       console.log(
-        `Skipping email to ${to} - unsubscribed from ${template.category}`,
+        `Skipping email to ${to} - unsubscribed from ${template.category}`
       );
       return null;
     }
@@ -77,7 +77,7 @@ export async function sendEmail<T extends TemplateKey>(
   if (process.env.SMTP_HOST) {
     try {
       const html = await render(
-        <template.Component {...(props.data as any)} />,
+        <template.Component {...(props.data as any)} />
       );
       const transport = createSmtpTransport();
       const res = await transport.sendMail({

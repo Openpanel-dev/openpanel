@@ -53,7 +53,7 @@ export function ComboboxAdvanced({
         (typeof item.label === 'string' &&
           item.label.toLowerCase().includes(inputValue.toLowerCase())) ||
         (typeof item.value === 'string' &&
-          item.value.toLowerCase().includes(inputValue.toLowerCase())),
+          item.value.toLowerCase().includes(inputValue.toLowerCase()))
     );
 
   const renderItem = (item: IItem) => {
@@ -69,7 +69,7 @@ export function ComboboxAdvanced({
           onChange(
             value.includes(desanitize(item.value))
               ? value.filter((s) => s !== desanitize(item.value))
-              : [...value, desanitize(item.value)],
+              : [...value, desanitize(item.value)]
           );
         }}
         className={'flex cursor-pointer items-center gap-2'}

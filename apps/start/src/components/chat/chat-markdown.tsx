@@ -46,7 +46,7 @@ function ChatMarkdownInner({
         '[&_th]:text-left [&_th]:font-medium [&_th]:px-2 [&_th]:py-1 [&_th]:border-b',
         '[&_td]:px-2 [&_td]:py-1 [&_td]:border-b [&_td]:border-border/40',
         '[&_hr]:my-3 [&_hr]:border-border',
-        className,
+        className
       )}
     >
       <ReactMarkdown
@@ -58,9 +58,7 @@ function ChatMarkdownInner({
               {...rest}
               href={href}
               target={href?.startsWith('http') ? '_blank' : undefined}
-              rel={
-                href?.startsWith('http') ? 'noopener noreferrer' : undefined
-              }
+              rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
             >
               {children}
             </a>

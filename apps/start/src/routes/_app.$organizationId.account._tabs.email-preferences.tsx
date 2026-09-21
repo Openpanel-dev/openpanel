@@ -115,7 +115,7 @@ function Component() {
                     </div>
                   )}
                 />
-              ),
+              )
             )}
           </div>
 

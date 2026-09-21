@@ -106,7 +106,7 @@ export function Testimonials() {
   // Duplicate items to create the illusion of infinite scrolling
   const duplicatedTestimonials = useMemo(
     () => [...testimonials, ...testimonials],
-    [],
+    []
   );
 
   useEffect(() => {

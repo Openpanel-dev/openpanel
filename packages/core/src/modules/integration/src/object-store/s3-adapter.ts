@@ -9,7 +9,11 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import { assertSafeUrl, createPinnedLookup, decryptCredential } from '@openpanel/shared/server';
+import {
+  assertSafeUrl,
+  createPinnedLookup,
+  decryptCredential,
+} from '@openpanel/shared/server';
 import {
   callProvider,
   ProviderError,

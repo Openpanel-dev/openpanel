@@ -8,7 +8,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/account/_tabs/two-factor',
+  '/_app/$organizationId/account/_tabs/two-factor'
 )({
   component: Component,
   pendingComponent: FullPageLoadingState,
@@ -85,7 +85,7 @@ function EnabledView({
       <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
         <div className="row items-center gap-2">
           <div className="size-10 bg-emerald-500/10 rounded-full center-center">
-          <ShieldCheckIcon className="size-4 text-emerald-500" />
+            <ShieldCheckIcon className="size-4 text-emerald-500" />
           </div>
           <div className="col gap-1">
             <span>Two-factor authentication is enabled.</span>

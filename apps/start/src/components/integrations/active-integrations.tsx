@@ -22,7 +22,7 @@ export function ActiveIntegrations() {
   const query = useQuery(
     trpc.integration.list.queryOptions({
       projectId: projectId!,
-    }),
+    })
   );
   const client = useQueryClient();
   const deletion = useMutation(
@@ -31,17 +31,17 @@ export function ActiveIntegrations() {
         client.refetchQueries(
           trpc.integration.list.queryFilter({
             projectId,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   const data = useMemo(() => {
     return (query.data || [])
       .map((item) => {
         const integration = INTEGRATIONS.find(
-          (integration) => integration.type === item.config.type,
+          (integration) => integration.type === item.config.type
         )!;
         return {
           ...item,

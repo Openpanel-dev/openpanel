@@ -63,7 +63,7 @@ async function promptForInput() {
           .filter(
             (org) =>
               org.name.toLowerCase().includes(input.toLowerCase()) ||
-              org.id.toLowerCase().includes(input.toLowerCase()),
+              org.id.toLowerCase().includes(input.toLowerCase())
           )
           .map((org) => ({
             name: `${org.name} (${org.id})`,
@@ -99,7 +99,7 @@ async function promptForInput() {
                     .includes(input.toLowerCase()) ||
                   member.user?.firstName
                     ?.toLowerCase()
-                    .includes(input.toLowerCase()),
+                    .includes(input.toLowerCase())
               )
               .map((member) => ({
                 name: `${
@@ -108,7 +108,7 @@ async function promptForInput() {
                     .join(' ') || 'No name'
                 } (${member.user?.email}) [${member.role}]`,
                 value: member.user?.id,
-              })),
+              }))
           );
       },
     },
@@ -232,7 +232,7 @@ async function main() {
         ? 'https://dashboard.openpanel.dev'
         : 'http://localhost:3000',
       organization.id,
-      organization.projects[0]?.id,
+      organization.projects[0]?.id
     ),
   });
 

@@ -40,7 +40,7 @@ export function ChatDrawerFooter() {
       <div
         className={cn(
           'rounded-xl border bg-card transition-shadow',
-          'focus-within:ring-1 focus-within:ring-ring focus-within:border-ring',
+          'focus-within:ring-1 focus-within:ring-ring focus-within:border-ring'
         )}
       >
         {/*
@@ -68,7 +68,7 @@ export function ChatDrawerFooter() {
             'placeholder:text-muted-foreground/70',
             'resize-none border-0 outline-none ring-0 shadow-none',
             'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
-            'min-h-[48px] max-h-[200px] px-3 pt-3 pb-1',
+            'min-h-[48px] max-h-[200px] px-3 pt-3 pb-1'
           )}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

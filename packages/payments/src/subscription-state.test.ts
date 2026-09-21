@@ -35,42 +35,179 @@ describe('getSubscriptionState', () => {
 
   const cases: Case[] = [
     // No paid subscription (trial is our own concept, Polar status null)
-    { name: 'null status, ends in future', status: null, canceledAt: null, endsAt: future, expected: 'trialing' },
-    { name: 'null status, ended', status: null, canceledAt: null, endsAt: past, expected: 'trial_expired' },
-    { name: 'null status, no end date', status: null, canceledAt: null, endsAt: null, expected: 'trial_expired' },
-    { name: 'trialing status, ends in future', status: 'trialing', canceledAt: null, endsAt: future, expected: 'trialing' },
-    { name: 'trialing status, ended', status: 'trialing', canceledAt: null, endsAt: past, expected: 'trial_expired' },
+    {
+      name: 'null status, ends in future',
+      status: null,
+      canceledAt: null,
+      endsAt: future,
+      expected: 'trialing',
+    },
+    {
+      name: 'null status, ended',
+      status: null,
+      canceledAt: null,
+      endsAt: past,
+      expected: 'trial_expired',
+    },
+    {
+      name: 'null status, no end date',
+      status: null,
+      canceledAt: null,
+      endsAt: null,
+      expected: 'trial_expired',
+    },
+    {
+      name: 'trialing status, ends in future',
+      status: 'trialing',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'trialing',
+    },
+    {
+      name: 'trialing status, ended',
+      status: 'trialing',
+      canceledAt: null,
+      endsAt: past,
+      expected: 'trial_expired',
+    },
 
     // Active paid subscription
-    { name: 'active, renewing', status: 'active', canceledAt: null, endsAt: future, expected: 'active' },
-    { name: 'active, no end date', status: 'active', canceledAt: null, endsAt: null, expected: 'active' },
-    { name: 'active but period already passed', status: 'active', canceledAt: null, endsAt: past, expected: 'expired' },
+    {
+      name: 'active, renewing',
+      status: 'active',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'active',
+    },
+    {
+      name: 'active, no end date',
+      status: 'active',
+      canceledAt: null,
+      endsAt: null,
+      expected: 'active',
+    },
+    {
+      name: 'active but period already passed',
+      status: 'active',
+      canceledAt: null,
+      endsAt: past,
+      expected: 'expired',
+    },
 
     // Cancel-at-period-end keeps status active while canceledAt is set
-    { name: 'active + canceledAt (canceling)', status: 'active', canceledAt: past, endsAt: future, expected: 'canceling' },
-    { name: 'canceledAt wins even if period passed', status: 'active', canceledAt: past, endsAt: past, expected: 'canceling' },
+    {
+      name: 'active + canceledAt (canceling)',
+      status: 'active',
+      canceledAt: past,
+      endsAt: future,
+      expected: 'canceling',
+    },
+    {
+      name: 'canceledAt wins even if period passed',
+      status: 'active',
+      canceledAt: past,
+      endsAt: past,
+      expected: 'canceling',
+    },
 
     // Payment-problem states
-    { name: 'past_due', status: 'past_due', canceledAt: null, endsAt: future, expected: 'past_due' },
-    { name: 'unpaid', status: 'unpaid', canceledAt: null, endsAt: future, expected: 'unpaid' },
-    { name: 'incomplete', status: 'incomplete', canceledAt: null, endsAt: future, expected: 'incomplete' },
-    { name: 'incomplete_expired', status: 'incomplete_expired', canceledAt: null, endsAt: past, expected: 'expired' },
+    {
+      name: 'past_due',
+      status: 'past_due',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'past_due',
+    },
+    {
+      name: 'unpaid',
+      status: 'unpaid',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'unpaid',
+    },
+    {
+      name: 'incomplete',
+      status: 'incomplete',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'incomplete',
+    },
+    {
+      name: 'incomplete_expired',
+      status: 'incomplete_expired',
+      canceledAt: null,
+      endsAt: past,
+      expected: 'expired',
+    },
 
     // Pause-at-period-end keeps status active while the flag is set
-    { name: 'active + pause scheduled (pausing)', status: 'active', canceledAt: null, endsAt: future, pauseAtPeriodEnd: true, expected: 'pausing' },
-    { name: 'cancel wins over scheduled pause', status: 'active', canceledAt: past, endsAt: future, pauseAtPeriodEnd: true, expected: 'canceling' },
+    {
+      name: 'active + pause scheduled (pausing)',
+      status: 'active',
+      canceledAt: null,
+      endsAt: future,
+      pauseAtPeriodEnd: true,
+      expected: 'pausing',
+    },
+    {
+      name: 'cancel wins over scheduled pause',
+      status: 'active',
+      canceledAt: past,
+      endsAt: future,
+      pauseAtPeriodEnd: true,
+      expected: 'canceling',
+    },
     // Stale data: period ended but status wasn't flipped (missed webhook).
     // Must resolve to paused (blocks dashboard), never a lingering pausing.
-    { name: 'pause scheduled, period already ended', status: 'active', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
-    { name: 'pause scheduled, no end date', status: 'active', canceledAt: null, endsAt: null, pauseAtPeriodEnd: true, expected: 'paused' },
-    { name: 'paused', status: 'paused', canceledAt: null, endsAt: past, expected: 'paused' },
-    { name: 'paused ignores stale pause flag', status: 'paused', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
+    {
+      name: 'pause scheduled, period already ended',
+      status: 'active',
+      canceledAt: null,
+      endsAt: past,
+      pauseAtPeriodEnd: true,
+      expected: 'paused',
+    },
+    {
+      name: 'pause scheduled, no end date',
+      status: 'active',
+      canceledAt: null,
+      endsAt: null,
+      pauseAtPeriodEnd: true,
+      expected: 'paused',
+    },
+    {
+      name: 'paused',
+      status: 'paused',
+      canceledAt: null,
+      endsAt: past,
+      expected: 'paused',
+    },
+    {
+      name: 'paused ignores stale pause flag',
+      status: 'paused',
+      canceledAt: null,
+      endsAt: past,
+      pauseAtPeriodEnd: true,
+      expected: 'paused',
+    },
 
     // Fully canceled / revoked
-    { name: 'canceled', status: 'canceled', canceledAt: past, endsAt: past, expected: 'canceled' },
+    {
+      name: 'canceled',
+      status: 'canceled',
+      canceledAt: past,
+      endsAt: past,
+      expected: 'canceled',
+    },
 
     // Unknown status falls back to expired (fail safe, never silently active)
-    { name: 'unknown status', status: 'something_new', canceledAt: null, endsAt: future, expected: 'expired' },
+    {
+      name: 'unknown status',
+      status: 'something_new',
+      canceledAt: null,
+      endsAt: future,
+      expected: 'expired',
+    },
   ];
 
   for (const c of cases) {

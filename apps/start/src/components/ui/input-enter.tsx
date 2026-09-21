@@ -53,10 +53,7 @@ export function InputEnter({
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={() => onChangeValue(internalValue)}
             >
-              <Badge
-                variant="secondary"
-                className="gap-1 px-1.5 py-0 text-xs"
-              >
+              <Badge variant="secondary" className="gap-1 px-1.5 py-0 text-xs">
                 Press
                 <CornerDownLeftIcon className="h-3 w-3" />
               </Badge>

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ParentSize } from "@visx/responsive";
-import type { Transition } from "motion/react";
+import { ParentSize } from '@visx/responsive';
+import type { Transition } from 'motion/react';
 import {
   Children,
   isValidElement,
@@ -9,11 +9,11 @@ import {
   type ReactNode,
   useMemo,
   useRef,
-} from "react";
-import { cn } from "@/lib/utils";
-import type { LineConfig, Margin } from "./chart-context";
-import { Line, type LineProps } from "./line";
-import { TimeSeriesChartInner } from "./time-series-chart-shell";
+} from 'react';
+import { cn } from '@/lib/utils';
+import type { LineConfig, Margin } from './chart-context';
+import { Line, type LineProps } from './line';
+import { TimeSeriesChartInner } from './time-series-chart-shell';
 
 export interface LineChartProps {
   /** Data array - each item should have a date field and numeric values */
@@ -40,20 +40,20 @@ const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
 /** Series renderers that carry a dataKey but must not drive the shared y-domain. */
 const LINE_DOMAIN_EXCLUDED_NAMES = new Set([
-  "ProfitLossLine",
-  "Area",
-  "SeriesBar",
-  "Scatter",
-  "Candlestick",
-  "Bar",
-  "PatternArea",
+  'ProfitLossLine',
+  'Area',
+  'SeriesBar',
+  'Scatter',
+  'Candlestick',
+  'Bar',
+  'PatternArea',
 ]);
 
 function getChildComponentName(child: ReactElement) {
   const childType = child.type as { displayName?: string; name?: string };
-  return typeof child.type === "function"
-    ? childType.displayName || childType.name || ""
-    : "";
+  return typeof child.type === 'function'
+    ? childType.displayName || childType.name || ''
+    : '';
 }
 
 function registersLineDomain(
@@ -65,14 +65,14 @@ function registersLineDomain(
   }
 
   const componentName = getChildComponentName(child);
-  if (componentName === "Line" || child.type === Line) {
+  if (componentName === 'Line' || child.type === Line) {
     return true;
   }
   if (LINE_DOMAIN_EXCLUDED_NAMES.has(componentName)) {
     return false;
   }
   // MDX / duplicate bundle instances may not share the same `Line` reference.
-  return typeof props.dataKey === "string" && props.dataKey.length > 0;
+  return typeof props.dataKey === 'string' && props.dataKey.length > 0;
 }
 
 function extractLineConfigs(children: ReactNode): LineConfig[] {
@@ -89,7 +89,7 @@ function extractLineConfigs(children: ReactNode): LineConfig[] {
       if (registersLineDomain(child, props) && props?.dataKey) {
         configs.push({
           dataKey: props.dataKey,
-          stroke: props.stroke || "var(--chart-line-primary)",
+          stroke: props.stroke || 'var(--chart-line-primary)',
           strokeWidth: props.strokeWidth || 2.5,
         });
         return;
@@ -157,14 +157,14 @@ function ChartInner({
 
 export function LineChart({
   data,
-  xDataKey = "date",
+  xDataKey = 'date',
   margin: marginProp,
   animationDuration = 1100,
   animationEasing,
   enterTransition,
   revealSignature,
-  aspectRatio = "2 / 1",
-  className = "",
+  aspectRatio = '2 / 1',
+  className = '',
   children,
 }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -172,9 +172,9 @@ export function LineChart({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: "none" }}
+      style={{ aspectRatio, touchAction: 'none' }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
@@ -198,6 +198,6 @@ export function LineChart({
   );
 }
 
-export { Line, type LineProps } from "./line";
+export { Line, type LineProps } from './line';
 
 export default LineChart;

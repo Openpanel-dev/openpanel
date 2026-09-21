@@ -118,27 +118,27 @@ function outsideExclusion(query: string): string {
 }
 
 describe('buildEventCriteriaQuery zero frequency', () => {
-  test.each(['eq', 'lte'] as const)(
-    'excludes anyone who did the event when the count is 0 (%s)',
-    (operator) => {
-      const { query, query_params } = render(
-        buildEventCriteriaQuery(
-          PROJECT_ID,
-          frequencyCriteria({ operator, count: 0 })
-        )
-      );
+  test.each([
+    'eq',
+    'lte',
+  ] as const)('excludes anyone who did the event when the count is 0 (%s)', (operator) => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator, count: 0 })
+      )
+    );
 
-      // The summary MV has no row for zero occurrences, so a HAVING can never
-      // match here — the query has to be inverted.
-      expect(query).not.toContain('HAVING');
-      expect(query).toContain('SELECT DISTINCT id AS profile_id');
-      expect(query).toContain('FROM profiles');
-      expect(query).toContain('NOT IN (');
-      expect(query).toContain('FROM event_profile_summary_mv');
-      expect(query).toContain('name = {p3:String}');
-      expect(query_params.p3).toBe('subscription_started');
-    }
-  );
+    // The summary MV has no row for zero occurrences, so a HAVING can never
+    // match here — the query has to be inverted.
+    expect(query).not.toContain('HAVING');
+    expect(query).toContain('SELECT DISTINCT id AS profile_id');
+    expect(query).toContain('FROM profiles');
+    expect(query).toContain('NOT IN (');
+    expect(query).toContain('FROM event_profile_summary_mv');
+    expect(query).toContain('name = {p3:String}');
+    expect(query_params.p3).toBe('subscription_started');
+  });
 
   test('gives eq 0 and lte 0 the same query', () => {
     expect(
@@ -218,24 +218,21 @@ describe('buildEventCriteriaQuery zero frequency', () => {
     ['gte', 1, '>='],
     ['eq', 2, '='],
     ['lte', 3, '<='],
-  ] as const)(
-    'still groups and filters for positive counts (%s %i)',
-    (operator, count, comparison) => {
-      const { query, query_params } = render(
-        buildEventCriteriaQuery(
-          PROJECT_ID,
-          frequencyCriteria({ operator, count })
-        )
-      );
+  ] as const)('still groups and filters for positive counts (%s %i)', (operator, count, comparison) => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator, count })
+      )
+    );
 
-      expect(query).toContain('GROUP BY profile_id');
-      expect(query).toContain(
-        `HAVING countMerge(event_count) ${comparison} {p4:UInt64}`
-      );
-      expect(query_params.p4).toBe(count);
-      expect(query).not.toContain('FROM profiles');
-    }
-  );
+    expect(query).toContain('GROUP BY profile_id');
+    expect(query).toContain(
+      `HAVING countMerge(event_count) ${comparison} {p4:UInt64}`
+    );
+    expect(query_params.p4).toBe(count);
+    expect(query).not.toContain('FROM profiles');
+  });
 });
 
 describe('buildEventBasedCohortQuery with a zero-count criterion', () => {

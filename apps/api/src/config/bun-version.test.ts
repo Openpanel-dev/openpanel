@@ -31,7 +31,10 @@ describe('the Bun pin (ADR-016 rule 5)', () => {
   it('scripts/doctor.sh passes and reports the pinned version', () => {
     // Runs the real script rather than grepping its source — the behaviour
     // is what has to agree, not the implementation.
-    const result = Bun.spawnSync(['bash', join(REPO_ROOT, 'scripts/doctor.sh')]);
+    const result = Bun.spawnSync([
+      'bash',
+      join(REPO_ROOT, 'scripts/doctor.sh'),
+    ]);
     const pinned = readBunVersionFile().trim();
     expect(result.exitCode).toBe(0);
     expect(result.stdout.toString()).toContain(pinned);

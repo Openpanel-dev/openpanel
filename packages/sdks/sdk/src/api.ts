@@ -44,7 +44,7 @@ export class Api {
     url: string,
     data: ReqBody,
     options: FetchOptions,
-    attempt: number,
+    attempt: number
   ): Promise<ResBody | null> {
     try {
       const response = await fetch(url, {
@@ -77,7 +77,7 @@ export class Api {
   async fetch<ReqBody, ResBody>(
     path: string,
     data: ReqBody,
-    options: FetchOptions = {},
+    options: FetchOptions = {}
   ): Promise<ResBody | null> {
     const url = `${this.baseUrl}${path}`;
     return this.post<ReqBody, ResBody>(url, data, options, 0);

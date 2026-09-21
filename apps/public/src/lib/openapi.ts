@@ -37,7 +37,10 @@ export const getApiReferenceSource = cache(async () => {
   // Inject static page slugs at the top of the root meta.json that
   // openapiSource generates for the tag separator groups.
   const patchedOpenapiFiles = openapiFiles.files.map((f) => {
-    if (f.type === 'meta' && (f.path === 'meta.json' || f.path === '/meta.json')) {
+    if (
+      f.type === 'meta' &&
+      (f.path === 'meta.json' || f.path === '/meta.json')
+    ) {
       const data = f.data as { pages?: string[] };
       return {
         ...f,

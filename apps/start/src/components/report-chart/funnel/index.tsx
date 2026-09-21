@@ -27,8 +27,8 @@ export function ReportFunnelChart() {
       },
       {
         enabled: !isLazyLoading && chartInput.series.length > 0,
-      },
-    ),
+      }
+    )
   );
 
   // Hook for limiting which breakdowns are shown in the chart only

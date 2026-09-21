@@ -16,7 +16,7 @@ const inputVariant = cva(
     defaultVariants: {
       size: 'sm',
     },
-  },
+  }
 );
 
 export type InputProps = VariantProps<typeof inputVariant> &
@@ -33,13 +33,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(
           inputVariant({ size, className }),
-          !!error && 'border-destructive',
+          !!error && 'border-destructive'
         )}
         ref={ref}
         {...props}
       />
     );
-  },
+  }
 );
 Input.displayName = 'Input';
 

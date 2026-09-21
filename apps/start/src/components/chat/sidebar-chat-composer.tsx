@@ -35,7 +35,7 @@ export function SidebarChatComposer() {
       onSubmit={submit}
       className={cn(
         'mb-4 flex items-center gap-2 rounded-md border border-border bg-def-100 pl-3 pr-2',
-        'transition-all focus-within:border-def-400 focus-within:ring-1 focus-within:ring-ring',
+        'transition-all focus-within:border-def-400 focus-within:ring-1 focus-within:ring-ring'
       )}
     >
       <SparklesIcon className="size-5 shrink-0 text-muted-foreground" />
@@ -48,7 +48,7 @@ export function SidebarChatComposer() {
           'min-w-0 flex-1 bg-transparent py-2 text-[13px] font-medium text-foreground',
           'placeholder:font-normal placeholder:text-muted-foreground',
           'border-0 shadow-none outline-none ring-0',
-          'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
+          'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0'
         )}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -71,7 +71,7 @@ export function SidebarChatComposer() {
         <kbd
           className={cn(
             'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-[11px]',
-            'text-muted-foreground cursor-pointer',
+            'text-muted-foreground cursor-pointer'
           )}
           aria-label="Keyboard shortcut: Cmd+J"
           onClick={() => openNewChat()}

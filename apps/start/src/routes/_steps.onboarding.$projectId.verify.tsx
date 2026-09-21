@@ -51,9 +51,7 @@ function Component() {
   // Refetch the event list the moment an event arrives instead of waiting for
   // the next poll — same channel the in-app live event feed uses.
   useWS(`/live/events/${projectId}`, () => {
-    queryClient.invalidateQueries(
-      trpc.event.events.queryFilter({ projectId })
-    );
+    queryClient.invalidateQueries(trpc.event.events.queryFilter({ projectId }));
   });
   const isVerified = events?.data && events.data.length > 0;
 

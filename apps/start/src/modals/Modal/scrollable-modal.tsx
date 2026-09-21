@@ -32,7 +32,7 @@ export function ScrollableModal({
           className={cn(
             'flex-1 min-h-0 w-full',
             footer && 'border-b',
-            header && 'border-t',
+            header && 'border-t'
           )}
         >
           {children}

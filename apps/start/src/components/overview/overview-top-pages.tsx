@@ -66,7 +66,7 @@ export default function OverviewTopPages({
       endDate,
       mode: widget.key,
       range,
-    }),
+    })
   );
 
   const filteredData = useMemo(() => {
@@ -78,7 +78,7 @@ export default function OverviewTopPages({
     return data.filter(
       (item) =>
         item.path.toLowerCase().includes(queryLower) ||
-        item.origin.toLowerCase().includes(queryLower),
+        item.origin.toLowerCase().includes(queryLower)
     );
   }, [query.data, searchQuery]);
 

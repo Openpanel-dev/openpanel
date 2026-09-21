@@ -114,7 +114,11 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
         direction: metrics.direction ?? null,
         impactScore: metrics.impactScore,
         severityBand: metrics.severityBand ?? null,
-        version: prev ? (decision.material ? prev.version + 1 : prev.version) : 1,
+        version: prev
+          ? decision.material
+            ? prev.version + 1
+            : prev.version
+          : 1,
         windowStart: window.start,
         windowEnd: window.end,
         lastSeenAt: now,
@@ -208,9 +212,7 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
           changeFrom: changeFrom
             ? (changeFrom as Prisma.InputJsonValue)
             : DbNull,
-          changeTo: changeTo
-            ? (changeTo as Prisma.InputJsonValue)
-            : DbNull,
+          changeTo: changeTo ? (changeTo as Prisma.InputJsonValue) : DbNull,
           createdAt: now,
         },
       });

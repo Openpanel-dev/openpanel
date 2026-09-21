@@ -49,7 +49,9 @@ export default async function Page(props: PageProps) {
   }
 
   // OpenAPI generated page
-  const { getAPIPageProps } = data as { getAPIPageProps: () => React.ComponentProps<typeof APIPage> };
+  const { getAPIPageProps } = data as {
+    getAPIPageProps: () => React.ComponentProps<typeof APIPage>;
+  };
   return (
     <DocsPage>
       <DocsTitle>{page.data.title}</DocsTitle>

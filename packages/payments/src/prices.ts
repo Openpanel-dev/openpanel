@@ -52,8 +52,8 @@ export function getRecommendedPlan<T>(
     options: {
       formattedEvents: string;
       formattedPrice: string;
-    } & IPrice,
-  ) => T,
+    } & IPrice
+  ) => T
 ): T | undefined {
   if (!monthlyEvents) {
     return undefined;

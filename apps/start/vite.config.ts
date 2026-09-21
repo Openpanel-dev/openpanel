@@ -21,7 +21,7 @@ if (process.env.NITRO) {
     nitroV2Plugin({
       preset: 'node-server',
       compatibilityDate: '2025-10-21',
-    }),
+    })
   );
 } else {
   plugins.unshift(cloudflare({ viteEnvironment: { name: 'ssr' } }));

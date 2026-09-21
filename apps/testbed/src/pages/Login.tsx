@@ -64,8 +64,30 @@ export const PRESET_GROUPS: Group[] = [
   },
 ];
 
-const FIRST_NAMES = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve', 'Frank', 'Grace', 'Hank', 'Iris', 'Jack'];
-const LAST_NAMES = ['Smith', 'Jones', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Clark', 'Hall', 'Lewis', 'Young'];
+const FIRST_NAMES = [
+  'Alice',
+  'Bob',
+  'Carol',
+  'Dave',
+  'Eve',
+  'Frank',
+  'Grace',
+  'Hank',
+  'Iris',
+  'Jack',
+];
+const LAST_NAMES = [
+  'Smith',
+  'Jones',
+  'Brown',
+  'Taylor',
+  'Wilson',
+  'Davis',
+  'Clark',
+  'Hall',
+  'Lewis',
+  'Young',
+];
 
 function randomMock(): User {
   const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];

@@ -13,7 +13,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/',
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
 )({
   component: Component,
   loader: async ({ context, params }) => {
@@ -23,25 +23,25 @@ export const Route = createFileRoute(
         context.trpc.profile.metrics.queryOptions({
           profileId: params.profileId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.profile.activity.queryOptions({
           profileId: params.profileId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.profile.mostEvents.queryOptions({
           profileId: params.profileId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.profile.popularRoutes.queryOptions({
           profileId: params.profileId,
           projectId: params.projectId,
-        }),
+        })
       ),
     ]);
   },
@@ -65,35 +65,35 @@ function Component() {
     trpc.profile.byId.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   const metrics = useSuspenseQuery(
     trpc.profile.metrics.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   const activity = useSuspenseQuery(
     trpc.profile.activity.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   const mostEvents = useSuspenseQuery(
     trpc.profile.mostEvents.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   const popularRoutes = useSuspenseQuery(
     trpc.profile.popularRoutes.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   return (

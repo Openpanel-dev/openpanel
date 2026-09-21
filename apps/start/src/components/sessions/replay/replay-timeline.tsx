@@ -1,4 +1,7 @@
-import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
+import {
+  useCurrentTime,
+  useReplayContext,
+} from '@/components/sessions/replay/replay-context';
 import {
   Tooltip,
   TooltipContent,
@@ -15,8 +18,14 @@ import { ReplayPlayPauseButton } from './replay-controls';
 import { formatDuration, getEventOffsetMs } from './replay-utils';
 
 export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
-  const { currentTimeRef, duration, startTime, isReady, seek, subscribeToCurrentTime } =
-    useReplayContext();
+  const {
+    currentTimeRef,
+    duration,
+    startTime,
+    isReady,
+    seek,
+    subscribeToCurrentTime,
+  } = useReplayContext();
   // currentTime as React state is only needed for keyboard seeks (low frequency).
   // The progress bar and thumb are updated directly via DOM refs to avoid re-renders.
   const currentTime = useCurrentTime(250);
@@ -63,7 +72,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
       const pct = Math.max(0, Math.min(1, x / rect.width));
       return { pct, timeMs: pct * duration };
     },
-    [duration],
+    [duration]
   );
 
   const handleTrackMouseMove = useCallback(
@@ -75,7 +84,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
       const info = getTimeFromClientX(e.clientX);
       if (info) setHoverInfo(info);
     },
-    [getTimeFromClientX],
+    [getTimeFromClientX]
   );
 
   const handleTrackMouseLeave = useCallback(() => {
@@ -93,7 +102,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
       const info = getTimeFromClientX(e.clientX);
       if (info) seek(info.timeMs);
     },
-    [getTimeFromClientX, seek],
+    [getTimeFromClientX, seek]
   );
 
   const eventsWithOffset = useMemo(
@@ -104,7 +113,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
           offsetMs: startTime != null ? getEventOffsetMs(ev, startTime) : 0,
         }))
         .filter(({ offsetMs }) => offsetMs >= 0 && offsetMs <= duration),
-    [events, startTime, duration],
+    [events, startTime, duration]
   );
 
   // Group events that are within 24px of each other on the track.
@@ -113,7 +122,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     if (!eventsWithOffset.length || duration <= 0) return [];
 
     // Sort by offsetMs so we sweep left-to-right
-    const sorted = [...eventsWithOffset].sort((a, b) => a.offsetMs - b.offsetMs);
+    const sorted = [...eventsWithOffset].sort(
+      (a, b) => a.offsetMs - b.offsetMs
+    );
 
     // 24px in ms — recalculated from container width; fall back to 2% of duration
     const trackWidth = trackRef.current?.offsetWidth ?? 600;
@@ -122,10 +133,16 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     const groups: { items: typeof sorted; pct: number }[] = [];
     for (const item of sorted) {
       const last = groups[groups.length - 1];
-      const lastPct = last ? (last.items[last.items.length - 1]!.offsetMs / duration) * 100 : -Infinity;
+      const lastPct = last
+        ? (last.items[last.items.length - 1]!.offsetMs / duration) * 100
+        : -Infinity;
       const thisPct = (item.offsetMs / duration) * 100;
 
-      if (last && item.offsetMs - last.items[last.items.length - 1]!.offsetMs <= thresholdMs) {
+      if (
+        last &&
+        item.offsetMs - last.items[last.items.length - 1]!.offsetMs <=
+          thresholdMs
+      ) {
         last.items.push(item);
         // Anchor the group at its first item's position
       } else {
@@ -140,7 +157,10 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
 
   if (!isReady || duration <= 0) return null;
 
-  const progressPct = Math.max(0, Math.min(100, (currentTimeRef.current / duration) * 100));
+  const progressPct = Math.max(
+    0,
+    Math.min(100, (currentTimeRef.current / duration) * 100)
+  );
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -227,9 +247,17 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                         e.stopPropagation();
                         seek(first.offsetMs);
                       }}
-                      aria-label={isGroup ? `${group.items.length} events at ${formatDuration(first.offsetMs)}` : `${first.event.name} at ${formatDuration(first.offsetMs)}`}
+                      aria-label={
+                        isGroup
+                          ? `${group.items.length} events at ${formatDuration(first.offsetMs)}`
+                          : `${first.event.name} at ${formatDuration(first.offsetMs)}`
+                      }
                     >
-                      <EventIcon name={first.event.name} meta={first.event.meta} size="sm" />
+                      <EventIcon
+                        name={first.event.name}
+                        meta={first.event.meta}
+                        size="sm"
+                      />
                       {isGroup && (
                         <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] font-bold leading-none text-background">
                           {group.items.length}

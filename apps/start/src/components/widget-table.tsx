@@ -56,7 +56,7 @@ export const WidgetTableHead = ({
     <thead
       className={cn(
         'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th:first-child]:text-left [&_th]:font-medium',
-        className,
+        className
       )}
     >
       {children}
@@ -82,7 +82,7 @@ function getResponsiveClass(priority: ColumnPriority): string {
 }
 
 function getResponsiveStyle(
-  priority: ColumnPriority,
+  priority: ColumnPriority
 ): React.CSSProperties | undefined {
   if (priority === 1) {
     return undefined;
@@ -120,7 +120,7 @@ export function WidgetTable<T>({
 
   const containerId = React.useMemo(
     () => `widget-table-${Math.random().toString(36).substring(7)}`,
-    [],
+    []
   );
 
   // Generate CSS for container queries
@@ -139,19 +139,19 @@ export function WidgetTable<T>({
         // Keep in grid flow but take up minimal space
         styles.push(
           `.${containerId} .cell[data-priority="${column.responsive.priority}"] { min-width: 0; max-width: 0; padding-left: 0; padding-right: 0; overflow: hidden; visibility: hidden; }`,
-          `@container (min-width: ${minWidth}px) { .${containerId} .cell[data-priority="${column.responsive.priority}"] { min-width: revert; max-width: revert; padding-left: revert; padding-right: 0.5rem; overflow: revert; visibility: visible !important; } }`,
+          `@container (min-width: ${minWidth}px) { .${containerId} .cell[data-priority="${column.responsive.priority}"] { min-width: revert; max-width: revert; padding-left: revert; padding-right: 0.5rem; overflow: revert; visibility: visible !important; } }`
         );
       } else if (column.responsive?.minWidth !== undefined) {
         styles.push(
           `.${containerId} .cell[data-min-width="${column.responsive.minWidth}"] { min-width: 0; max-width: 0; padding-left: 0; padding-right: 0; overflow: hidden; visibility: hidden; }`,
-          `@container (min-width: ${column.responsive.minWidth}px) { .${containerId} .cell[data-min-width="${column.responsive.minWidth}"] { min-width: revert; max-width: revert; padding-left: revert; padding-right: 0.5rem; overflow: revert; visibility: visible !important; } }`,
+          `@container (min-width: ${column.responsive.minWidth}px) { .${containerId} .cell[data-min-width="${column.responsive.minWidth}"] { min-width: revert; max-width: revert; padding-left: revert; padding-right: 0.5rem; overflow: revert; visibility: visible !important; } }`
         );
       }
     });
 
     // Ensure last visible cell always has padding-right
     styles.push(
-      `.${containerId} .cell:last-child { padding-right: 1rem !important; }`,
+      `.${containerId} .cell:last-child { padding-right: 1rem !important; }`
     );
 
     return styles.length > 0 ? <style>{styles.join('\n')}</style> : null;
@@ -200,7 +200,7 @@ export function WidgetTable<T>({
                   columns.length > 1 && column !== columns[0]
                     ? 'text-right'
                     : 'text-left',
-                  responsiveClass,
+                  responsiveClass
                 )}
                 style={{ width: column.width }}
                 {...dataAttrs}
@@ -218,7 +218,7 @@ export function WidgetTable<T>({
               key={keyExtractor(item)}
               className={cn(
                 'group/row relative border-b border-border last:border-0 h-8 overflow-hidden',
-                columnClassName,
+                columnClassName
               )}
             >
               {eachRow?.(item, index)}
@@ -237,12 +237,12 @@ export function WidgetTable<T>({
                   const dataAttrs: Record<string, string> = {};
                   if (column.responsive?.priority !== undefined) {
                     dataAttrs['data-priority'] = String(
-                      column.responsive.priority,
+                      column.responsive.priority
                     );
                   }
                   if (column.responsive?.minWidth !== undefined) {
                     dataAttrs['data-min-width'] = String(
-                      column.responsive.minWidth,
+                      column.responsive.minWidth
                     );
                   }
 
@@ -263,7 +263,7 @@ export function WidgetTable<T>({
                           : 'text-left',
                         column.className,
                         column.width === 'w-full' && 'w-full min-w-0',
-                        responsiveClass,
+                        responsiveClass
                       )}
                       style={
                         column.width !== 'w-full' ? { width: column.width } : {}

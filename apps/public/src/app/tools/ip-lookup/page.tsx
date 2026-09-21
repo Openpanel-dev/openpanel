@@ -56,7 +56,7 @@ export default function IPLookupPage() {
           if (response.status === 429) {
             setIsRateLimited(true);
             throw new Error(
-              'Rate limit exceeded. Please wait a minute before trying again.',
+              'Rate limit exceeded. Please wait a minute before trying again.'
             );
           }
           setIsRateLimited(false);
@@ -86,7 +86,7 @@ export default function IPLookupPage() {
 
     try {
       const response = await fetch(
-        `${API_URL}/tools/ip-lookup?ip=${encodeURIComponent(ip.trim())}`,
+        `${API_URL}/tools/ip-lookup?ip=${encodeURIComponent(ip.trim())}`
       );
       const data = await response.json();
 
@@ -94,7 +94,7 @@ export default function IPLookupPage() {
         if (response.status === 429) {
           setIsRateLimited(true);
           throw new Error(
-            'Rate limit exceeded. Please wait a minute before trying again.',
+            'Rate limit exceeded. Please wait a minute before trying again.'
           );
         }
         setIsRateLimited(false);
@@ -188,7 +188,7 @@ export default function IPLookupPage() {
             'mt-4 p-4 rounded-lg border',
             isRateLimited
               ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-              : 'bg-destructive/10 border-destructive/20 text-destructive',
+              : 'bg-destructive/10 border-destructive/20 text-destructive'
           )}
         >
           <div className="flex items-start gap-2">

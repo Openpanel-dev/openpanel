@@ -51,7 +51,7 @@ export type GroupedItem<T> = {
  * This creates a tree structure that makes it easier to toggle specific groups
  */
 export function groupByNames<T extends { names: string[] }>(
-  items: T[],
+  items: T[]
 ): Array<GroupedItem<T>> {
   const rootGroups = new Map<string, GroupedItem<T>>();
 
@@ -90,7 +90,7 @@ export function groupByNames<T extends { names: string[] }>(
           'group' in child &&
           child.group === levelName &&
           'level' in child &&
-          child.level === level,
+          child.level === level
       );
 
       if (existingGroup) {
@@ -123,7 +123,7 @@ export function groupByNames<T extends { names: string[] }>(
  * Useful for getting all items in a group or its children
  */
 export function flattenGroupedItems<T>(
-  groupedItems: Array<GroupedItem<T> | T>,
+  groupedItems: Array<GroupedItem<T> | T>
 ): T[] {
   const result: T[] = [];
 
@@ -145,7 +145,7 @@ export function flattenGroupedItems<T>(
  */
 export function findGroup<T>(
   groups: Array<GroupedItem<T>>,
-  groupKey: string,
+  groupKey: string
 ): GroupedItem<T> | null {
   for (const group of groups) {
     if (group.groupKey === groupKey) {
@@ -177,13 +177,13 @@ export function findGroup<T>(
  */
 export function groupsToExpandableRows(
   groups: Array<GroupedItem<TableRow>>,
-  breakdownCount: number,
+  breakdownCount: number
 ): ExpandableTableRow[] {
   const result: ExpandableTableRow[] = [];
 
   function processGroup(
     group: GroupedItem<TableRow>,
-    parentPath: string[] = [],
+    parentPath: string[] = []
   ): ExpandableTableRow[] {
     const currentPath = [...parentPath, group.group];
     const subRows: ExpandableTableRow[] = [];
@@ -253,7 +253,7 @@ export function groupsToExpandableRows(
       const summaryRow = createSummaryRow(
         groupItems,
         group.groupKey,
-        breakdownCount,
+        breakdownCount
       );
 
       return [
@@ -285,14 +285,14 @@ export function groupsToExpandableRows(
 export function groupsToTableRows<T extends TableRow>(
   groups: Array<GroupedItem<T>>,
   collapsedGroups: Set<string>,
-  breakdownCount: number,
+  breakdownCount: number
 ): GroupedTableRow[] {
   const rows: GroupedTableRow[] = [];
 
   function processGroup(
     group: GroupedItem<T>,
     parentPath: string[] = [],
-    parentGroupKey?: string,
+    parentGroupKey?: string
   ): void {
     const isGroupCollapsed = collapsedGroups.has(group.groupKey);
     const currentPath = [...parentPath, group.group];
@@ -304,7 +304,7 @@ export function groupsToTableRows<T extends TableRow>(
         const summaryRow = createSummaryRow(
           groupItems,
           group.groupKey,
-          breakdownCount,
+          breakdownCount
         );
         rows.push(summaryRow);
       }
@@ -392,7 +392,7 @@ function getUniqueDates(series: IChartData['series']): string[] {
  */
 function getBreakdownPropertyNames(
   series: IChartData['series'],
-  breakdowns: Array<{ name: string }>,
+  breakdowns: Array<{ name: string }>
 ): string[] {
   // If we have breakdowns from state, use those
   if (breakdowns.length > 0) {
@@ -412,7 +412,7 @@ function getBreakdownPropertyNames(
  */
 export function createFlatRows(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): TableRow[] {
   return series.map((serie) => {
     const dateValues: Record<string, number> = {};
@@ -443,7 +443,7 @@ export function createFlatRows(
  */
 export function createGroupedRowsHierarchical(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): Array<GroupedItem<TableRow>> {
   const flatRows = createFlatRows(series, dates);
 
@@ -475,7 +475,7 @@ export function createGroupedRowsHierarchical(
  */
 export function createGroupedRows(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): GroupedTableRow[] {
   const flatRows = createFlatRows(series, dates);
 
@@ -514,7 +514,7 @@ export function createGroupedRows(
       const aMax = Math.max(...a[1].map((r) => r.sum));
       const bMax = Math.max(...b[1].map((r) => r.sum));
       return bMax - aMax;
-    },
+    }
   );
 
   // Process each group hierarchically
@@ -558,7 +558,7 @@ export function createGroupedRows(
 export function createSummaryRow(
   groupRows: TableRow[],
   groupKey: string,
-  breakdownCount: number,
+  breakdownCount: number
 ): GroupedTableRow {
   const firstRow = groupRows[0]!;
 
@@ -606,7 +606,7 @@ export function createSummaryRow(
  */
 function reorderBreakdownsByUniqueCount(
   series: IChartData['series'],
-  breakdownPropertyNames: string[],
+  breakdownPropertyNames: string[]
 ): {
   reorderedNames: string[];
   reorderMap: number[]; // Maps new index -> old index
@@ -637,7 +637,7 @@ function reorderBreakdownsByUniqueCount(
 
   // Create reordered names and mapping
   const reorderedNames = uniqueCounts.map(
-    (item) => breakdownPropertyNames[item.index]!,
+    (item) => breakdownPropertyNames[item.index]!
   );
   const reorderMap = uniqueCounts.map((item) => item.index); // new index -> old index
   const reverseMap = new Array(breakdownPropertyNames.length);
@@ -654,7 +654,7 @@ function reorderBreakdownsByUniqueCount(
 export function transformToTableData(
   data: IChartData,
   breakdowns: Array<{ name: string }>,
-  grouped: boolean,
+  grouped: boolean
 ): {
   rows: TableRow[] | GroupedTableRow[];
   dates: string[];
@@ -663,7 +663,7 @@ export function transformToTableData(
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
     data.series,
-    breakdowns,
+    breakdowns
   );
 
   // Reorder breakdowns by unique count (fewest first)
@@ -704,7 +704,7 @@ export function transformToTableData(
  */
 export function transformToHierarchicalGroups(
   data: IChartData,
-  breakdowns: Array<{ name: string }>,
+  breakdowns: Array<{ name: string }>
 ): {
   groups: Array<GroupedItem<TableRow>>;
   dates: string[];
@@ -713,7 +713,7 @@ export function transformToHierarchicalGroups(
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
     data.series,
-    breakdowns,
+    breakdowns
   );
 
   // Reorder breakdowns by unique count (fewest first)

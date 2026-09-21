@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  OPENPANEL_DESCRIPTION,
-  OPENPANEL_SITE_NAME,
-} from './openpanel-brand';
+import { OPENPANEL_DESCRIPTION, OPENPANEL_SITE_NAME } from './openpanel-brand';
 import { url as baseUrl } from './layout.shared';
 
 const siteName = OPENPANEL_SITE_NAME;
@@ -48,7 +45,7 @@ export function getRawMetadata(
     description,
     image,
   }: { url: string; title: string; description: string; image: string },
-  meta: Metadata = {},
+  meta: Metadata = {}
 ): Metadata {
   return {
     title,

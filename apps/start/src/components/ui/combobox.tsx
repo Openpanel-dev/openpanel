@@ -67,7 +67,7 @@ export function Combobox<T extends string>({
   const [search, setSearch] = React.useState('');
   function find(value: string) {
     return items.find(
-      (item) => item.value.toLowerCase() === value.toLowerCase(),
+      (item) => item.value.toLowerCase() === value.toLowerCase()
     );
   }
 
@@ -84,7 +84,7 @@ export function Combobox<T extends string>({
             className={cn(
               'justify-between',
               !!error && 'border-destructive',
-              className,
+              className
             )}
           >
             <div className="flex min-w-0 items-center">
@@ -150,7 +150,7 @@ export function Combobox<T extends string>({
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4 flex-shrink-0',
-                      value === item.value ? 'opacity-100' : 'opacity-0',
+                      value === item.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {item.label}

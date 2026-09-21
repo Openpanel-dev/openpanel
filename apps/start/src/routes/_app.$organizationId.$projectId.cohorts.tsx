@@ -24,7 +24,7 @@ import {
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/cohorts',
+  '/_app/$organizationId/$projectId/cohorts'
 )({
   component: Component,
   head: () => ({
@@ -35,7 +35,7 @@ export const Route = createFileRoute(
       context.trpc.cohort.list.queryOptions({
         projectId: params.projectId,
         includeCount: true,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -48,7 +48,7 @@ function Component() {
     trpc.cohort.list.queryOptions({
       projectId,
       includeCount: true,
-    }),
+    })
   );
   const cohorts = query.data ?? [];
 
@@ -59,7 +59,7 @@ function Component() {
         query.refetch();
         toast('Success', { description: 'Cohort deleted.' });
       },
-    }),
+    })
   );
 
   const refresh = useMutation(
@@ -69,7 +69,7 @@ function Component() {
         query.refetch();
         toast('Success', { description: 'Cohort refresh queued.' });
       },
-    }),
+    })
   );
 
   const queryClient = useQueryClient();
@@ -77,7 +77,7 @@ function Component() {
   async function handleDownload(cohortId: string, cohortName: string) {
     try {
       const result = await queryClient.fetchQuery(
-        trpc.cohort.exportProfiles.queryOptions({ cohortId }),
+        trpc.cohort.exportProfiles.queryOptions({ cohortId })
       );
       const csv = cohortMembersToCSV(result.profileIds);
       downloadCSV(csv, `${cohortName}-members.csv`);
@@ -117,7 +117,9 @@ function Component() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {cohorts.map((cohort) => {
           const count =
-            'currentCount' in cohort ? cohort.currentCount : cohort.profileCount;
+            'currentCount' in cohort
+              ? cohort.currentCount
+              : cohort.profileCount;
           const displayCount = count ?? 0;
           return (
             <Card key={cohort.id} hover>
@@ -143,8 +145,7 @@ function Component() {
                     </div>
                     {cohort.lastComputedAt && (
                       <div className={cn('text-xs')}>
-                        Updated{' '}
-                        {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
+                        Updated {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
                       </div>
                     )}
                   </div>

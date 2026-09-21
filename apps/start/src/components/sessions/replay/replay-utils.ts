@@ -2,7 +2,7 @@ import type { IServiceEvent } from '@openpanel/core';
 
 export function getEventOffsetMs(
   event: IServiceEvent,
-  startTime: number,
+  startTime: number
 ): number {
   const t =
     typeof event.createdAt === 'object' && event.createdAt instanceof Date

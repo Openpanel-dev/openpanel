@@ -33,7 +33,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/dashboards',
+  '/_app/$organizationId/$projectId/dashboards'
 )({
   component: Component,
   head: () => {
@@ -49,7 +49,7 @@ export const Route = createFileRoute(
     await context.queryClient.prefetchQuery(
       context.trpc.dashboard.list.queryOptions({
         projectId: params.projectId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -62,7 +62,7 @@ function Component() {
   const query = useQuery(
     trpc.dashboard.list.queryOptions({
       projectId,
-    }),
+    })
   );
   const dashboards = query.data ?? [];
   const deletion = useMutation(
@@ -87,7 +87,7 @@ function Component() {
           description: 'Dashboard deleted.',
         });
       },
-    }),
+    })
   );
 
   if (dashboards.length === 0) {
@@ -122,7 +122,7 @@ function Component() {
         {dashboards.map((item) => {
           const visibleReports = item.reports.slice(
             0,
-            item.reports.length > 6 ? 5 : 6,
+            item.reports.length > 6 ? 5 : 6
           );
           return (
             <Card key={item.id} hover>
@@ -141,7 +141,7 @@ function Component() {
                   <div
                     className={cn(
                       'mt-4 grid gap-2',
-                      'grid-cols-1 @sm:grid-cols-2',
+                      'grid-cols-1 @sm:grid-cols-2'
                     )}
                   >
                     {visibleReports.map((report) => {

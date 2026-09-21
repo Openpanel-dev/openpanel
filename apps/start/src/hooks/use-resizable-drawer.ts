@@ -72,7 +72,7 @@ export function useResizableDrawer({
             : ev.clientX - dragRef.current.startX;
         const next = Math.min(
           maxWidth,
-          Math.max(minWidth, dragRef.current.startWidth + dx),
+          Math.max(minWidth, dragRef.current.startWidth + dx)
         );
         setWidth(next);
       };
@@ -90,7 +90,7 @@ export function useResizableDrawer({
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
     },
-    [width, minWidth, maxWidth, edge],
+    [width, minWidth, maxWidth, edge]
   );
 
   return {

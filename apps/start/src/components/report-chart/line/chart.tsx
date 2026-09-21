@@ -67,7 +67,7 @@ export function Chart({ data }: Props) {
       startDate,
       endDate,
       range,
-    }),
+    })
   );
   const { series, setVisibleSeries } = useVisibleSeries(data, {
     savedVisibleSeries,
@@ -154,7 +154,7 @@ export function Chart({ data }: Props) {
           p.dataKey &&
           p.dataKey !== 'calcStrokeDasharray' &&
           typeof p.dataKey === 'string' &&
-          p.dataKey.includes(':count'),
+          p.dataKey.includes(':count')
       );
       const serieId = validPayload?.dataKey?.toString().replace(':count', '');
 
@@ -208,7 +208,7 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       previous,
-    ],
+    ]
   );
 
   return (

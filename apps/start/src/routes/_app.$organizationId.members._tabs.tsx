@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
     const access = await context.queryClient.fetchQuery(
       context.trpc.organization.myAccess.queryOptions({
         organizationId: params.organizationId,
-      }),
+      })
     );
     if (access?.role !== 'org:admin') {
       throw redirect({

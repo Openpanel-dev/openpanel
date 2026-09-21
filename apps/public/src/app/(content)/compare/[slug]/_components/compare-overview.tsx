@@ -9,9 +9,7 @@ export function CompareOverview({ overview }: CompareOverviewProps) {
   return (
     <Section className="container">
       <article className="col gap-6 max-w-3xl">
-        <h2 className="text-3xl md:text-4xl font-semibold">
-          {overview.title}
-        </h2>
+        <h2 className="text-3xl md:text-4xl font-semibold">{overview.title}</h2>
         <div className="col gap-4">
           {overview.paragraphs.map((paragraph) => (
             <p

@@ -57,7 +57,7 @@ export const Route = createFileRoute('/_app/$organizationId')({
     const access = await context.queryClient.fetchQuery(
       context.trpc.organization.myAccess.queryOptions({
         organizationId: params.organizationId,
-      }),
+      })
     );
     if (access === null) {
       throw notFound();
@@ -68,7 +68,7 @@ export const Route = createFileRoute('/_app/$organizationId')({
     await context.queryClient.prefetchQuery(
       context.trpc.organization.get.queryOptions({
         organizationId: params.organizationId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -117,7 +117,7 @@ function Component() {
   const { data: organization } = useSuspenseQuery(
     trpc.organization.get.queryOptions({
       organizationId,
-    }),
+    })
   );
 
   const stateMeta = getSubscriptionStateMeta(organization.subscriptionState, {
@@ -132,7 +132,7 @@ function Component() {
   const isProjectRoute = useMatches({
     select: (matches) =>
       matches.some(
-        (match) => match.routeId === '/_app/$organizationId/$projectId',
+        (match) => match.routeId === '/_app/$organizationId/$projectId'
       ),
   });
   const hideBannerForPrompt =

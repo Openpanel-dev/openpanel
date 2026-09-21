@@ -76,7 +76,7 @@ async function main() {
       const exists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
-          p.recurringInterval === 'month',
+          p.recurringInterval === 'month'
       );
       if (exists) {
         console.log('Free product already exists:');
@@ -129,13 +129,13 @@ async function main() {
         (p) =>
           p.metadata?.eventsLimit === price.events &&
           p.recurringInterval === 'month' &&
-          p.name === productCreate.name,
+          p.name === productCreate.name
       );
       const yearlyProductExists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
           p.recurringInterval === 'year' &&
-          p.name === `${productCreate.name} (yearly)`,
+          p.name === `${productCreate.name} (yearly)`
       );
 
       if (monthlyProductExists) {

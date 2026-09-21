@@ -8,7 +8,7 @@ export function Ping({ className }: { className?: string }) {
       <div
         className={cn(
           'size-2 bg-emerald-500 rounded-full absolute inset-0 animate-ping',
-          className,
+          className
         )}
       />
     </div>
@@ -18,7 +18,10 @@ export function Ping({ className }: { className?: string }) {
 export function PingBadge({
   children,
   className,
-}: { children: React.ReactNode; className?: string }) {
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <Badge variant={'outline'} className={cn('flex gap-1', className)}>
       <Ping />

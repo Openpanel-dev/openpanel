@@ -27,11 +27,11 @@ export default function ConfirmDeleteOrganization({
       onSuccess: () => {
         toast.success('Organization scheduled for deletion');
         queryClient.invalidateQueries(
-          trpc.organization.get.queryFilter({ organizationId }),
+          trpc.organization.get.queryFilter({ organizationId })
         );
         popModal();
       },
-    }),
+    })
   );
 
   const canDelete = confirmation.trim() === organizationName.trim();

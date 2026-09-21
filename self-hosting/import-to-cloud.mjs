@@ -37,7 +37,12 @@
  * database and the mapping itself, so changing any of them starts a fresh
  * state rather than silently skipping files the previous mapping had filtered.
  */
-import { createReadStream, existsSync, appendFileSync, readFileSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  appendFileSync,
+  readFileSync,
+} from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createInterface } from 'node:readline';
@@ -93,7 +98,9 @@ function parseArgs(argv) {
   }
   if (!args.url) throw new Error('Missing --url (or CLICKHOUSE_URL)');
   if (!args.noMap && args.map.size === 0) {
-    throw new Error('Pass --map <old>=<new> to remap project_id, or --no-map to keep it');
+    throw new Error(
+      'Pass --map <old>=<new> to remap project_id, or --no-map to keep it'
+    );
   }
 
   // OpenPanel writes CLICKHOUSE_URL as http://host:8123/openpanel, so accept the
@@ -104,7 +111,7 @@ function parseArgs(argv) {
   const pathDb = parsed.pathname.replace(/^\/+|\/+$/g, '');
   if (args.db && pathDb && args.db !== pathDb) {
     console.warn(
-      `⚠️  --db "${args.db}" overrides the database "${pathDb}" in the URL path`,
+      `⚠️  --db "${args.db}" overrides the database "${pathDb}" in the URL path`
     );
   }
   args.db = args.db ?? (pathDb || 'openpanel');
@@ -124,7 +131,7 @@ async function insert(args, table, rows) {
   const headers = { 'Content-Type': 'application/json' };
   if (url.username || url.password) {
     headers.Authorization = `Basic ${Buffer.from(
-      `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`,
+      `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`
     ).toString('base64')}`;
     url.username = '';
     url.password = '';
@@ -144,7 +151,9 @@ async function insert(args, table, rows) {
     const text = await res.text();
     // 4xx means the payload is wrong — retrying will not help.
     if (res.status < 500 || attempt === 5) {
-      throw new Error(`INSERT INTO ${table} failed (${res.status}): ${text.slice(0, 800)}`);
+      throw new Error(
+        `INSERT INTO ${table} failed (${res.status}): ${text.slice(0, 800)}`
+      );
     }
     console.warn(`   ⚠️  ${res.status} on ${table}, retry ${attempt}/4`);
     await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
@@ -200,7 +209,10 @@ async function importFile(args, table, file, state) {
   const stream = file.endsWith('.gz')
     ? createReadStream(file).pipe(createGunzip())
     : createReadStream(file);
-  const lines = createInterface({ input: stream, crlfDelay: Number.POSITIVE_INFINITY });
+  const lines = createInterface({
+    input: stream,
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
 
   let batch = [];
   let total = 0;
@@ -253,7 +265,7 @@ async function main() {
   const state = new Set(
     existsSync(stateFile)
       ? readFileSync(stateFile, 'utf8').split('\n').filter(Boolean)
-      : [],
+      : []
   );
   state.file = stateFile;
 
@@ -269,7 +281,9 @@ async function main() {
     const dir = path.join(args.dir, table);
     if (!existsSync(dir)) continue;
 
-    const files = (await readdir(dir)).filter((f) => f.includes('.jsonl')).sort();
+    const files = (await readdir(dir))
+      .filter((f) => f.includes('.jsonl'))
+      .sort();
     if (files.length === 0) continue;
 
     console.log(`▶️  ${table} (${files.length} files)`);
@@ -288,36 +302,45 @@ async function main() {
 
   if (importedByProject.size > 0) {
     console.log('\n   Imported by project:');
-    for (const [source, rows] of [...importedByProject].sort((a, b) => b[1] - a[1])) {
+    for (const [source, rows] of [...importedByProject].sort(
+      (a, b) => b[1] - a[1]
+    )) {
       const dest = args.noMap ? source : args.map.get(source);
-      console.log(`     ${source} → ${dest}`.padEnd(58) + `${String(rows).padStart(10)} rows`);
+      console.log(
+        `     ${source} → ${dest}`.padEnd(58) +
+          `${String(rows).padStart(10)} rows`
+      );
     }
   }
 
   if (droppedByProject.size > 0) {
     console.log('\n   Ignored (no --map entry):');
-    for (const [source, rows] of [...droppedByProject].sort((a, b) => b[1] - a[1])) {
-      console.log(`     ${source}`.padEnd(58) + `${String(rows).padStart(10)} rows`);
+    for (const [source, rows] of [...droppedByProject].sort(
+      (a, b) => b[1] - a[1]
+    )) {
+      console.log(
+        `     ${source}`.padEnd(58) + `${String(rows).padStart(10)} rows`
+      );
     }
   }
 
   // Every row filtered out is almost always a typo in --map rather than intent.
   if (importedByProject.size === 0 && droppedByProject.size > 0) {
     console.error(
-      '\n❌ Every row was dropped — no project_id in the export matched a --map entry.',
+      '\n❌ Every row was dropped — no project_id in the export matched a --map entry.'
     );
     console.error('   Check _meta.json for the exact source project ids.');
     process.exit(1);
   }
   if (backfilled.last_seen_at > 0) {
     console.log(
-      `\nℹ️  Seeded last_seen_at from created_at for ${backfilled.last_seen_at} profiles`,
+      `\nℹ️  Seeded last_seen_at from created_at for ${backfilled.last_seen_at} profiles`
     );
     console.log(
-      '   (source install predates the 20260504 profiles restructure — see',
+      '   (source install predates the 20260504 profiles restructure — see'
     );
     console.log(
-      '   16-restructure-profiles.ts for the optional events-derived backfill)',
+      '   16-restructure-profiles.ts for the optional events-derived backfill)'
     );
   }
 }

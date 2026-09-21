@@ -30,7 +30,7 @@ export function ReplayEventItem({
       onClick={onClick}
       className={cn(
         'col w-full gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-accent',
-        isCurrent ? 'bg-accent/10' : 'bg-card',
+        isCurrent ? 'bg-accent/10' : 'bg-card'
       )}
     >
       <div className="row items-center gap-2">

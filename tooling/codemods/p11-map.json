@@ -1,377 +1,2644 @@
 [
-{"from":"@openpanel/validation","symbol":"DEFAULT_ASPECT_RATIO","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"DEFAULT_ASPECT_RATIO","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"NOT_SET_VALUE","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"NOT_SET_VALUE","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"timeWindows","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"timeWindows","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"operators","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"operators","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"operatorsShort","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"operatorsShort","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"filterValueTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"filterValueTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IFilterValueType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IFilterValueType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"getOperatorsForType","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"getOperatorsForType","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"chartTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"chartTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"chartSegments","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"chartSegments","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"lineTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"lineTypes","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"intervals","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"intervals","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"alphabetIds","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"alphabetIds","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"metrics","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"metrics","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"isMinuteIntervalEnabledByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"isMinuteIntervalEnabledByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"isHourIntervalEnabledByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"isHourIntervalEnabledByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getDefaultIntervalByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"getDefaultIntervalByRange","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getDefaultIntervalByDates","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"getDefaultIntervalByDates","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"countries","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"countries","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getCountry","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"getCountry","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"chartColors","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"chartColors","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartEventFilter","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartEventFilter","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getCohortIds","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"getCohortIds","kind":"value","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartEventSegment","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartEventSegment","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartEvent","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartEvent","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartFormula","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartFormula","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartEventWithType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartEventWithType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartEventItem","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartEventItem","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartBreakdown","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartBreakdown","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartSeries","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartSeries","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartBreakdowns","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartBreakdowns","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zLineType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zLineType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zTimeInterval","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zTimeInterval","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zMetric","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zMetric","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zRange","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zRange","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCriteria","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zCriteria","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zFunnelOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zFunnelOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zRetentionOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zRetentionOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zSankeyOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zSankeyOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zHistogramOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zHistogramOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zReportOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zReportOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IReportOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IReportOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ISankeyOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"ISankeyOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IHistogramOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IHistogramOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zWidgetType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zWidgetType","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IWidgetType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IWidgetType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zRealtimeWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zRealtimeWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCounterWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zCounterWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zWidgetOptions","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ICounterWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"ICounterWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IRealtimeWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"IRealtimeWidgetOptions","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zReportInput","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zReportInput","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zReport","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zReport","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zChartInput","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"zChartInput","kind":"schema","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zShareOverview","kind":"schema","to":"@openpanel/core/modules/share/share.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zShareDashboard","kind":"schema","to":"@openpanel/core/modules/share/share.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zShareReport","kind":"schema","to":"@openpanel/core/modules/share/share.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ENCRYPTED_SECRET_PREFIX","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"looksEncrypted","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IServiceAccountKey","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IServiceAccountKeyResult","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"parseServiceAccountKey","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zSlackConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ISlackConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zWebhookConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IWebhookConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zDiscordConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IDiscordConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zAppConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IAppConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zEmailConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IEmailConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zS3ExportConfigIamRole","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IS3ExportConfigIamRole","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zS3ExportConfigAccessKey","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IS3ExportConfigAccessKey","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zS3ExportConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IS3ExportConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zGCSExportConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IGCSExportConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIntegrationConfig","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIntegrationType","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIntegrationKind","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIntegrationDescriptor","kind":"type","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"slackDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"discordDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"webhookDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"appDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"emailDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"s3ExportDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"gcsExportDescriptor","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"INTEGRATION_DESCRIPTORS","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"isKind","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zIntegrationConfig","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateSlackIntegration","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateWebhookIntegration","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateDiscordIntegration","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateS3ExportIntegration","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateGCSExportIntegration","kind":"schema","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"DISCORD_TEST_NOTIFICATION_MESSAGE","kind":"value","to":"@openpanel/core/modules/integration/integration.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zNotificationRuleEventConfig","kind":"schema","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"INotificationRuleEventConfig","kind":"type","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zNotificationRuleFunnelConfig","kind":"schema","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"INotificationRuleFunnelConfig","kind":"type","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zNotificationRuleConfig","kind":"schema","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"INotificationRuleConfig","kind":"type","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCreateNotificationRule","kind":"schema","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICreateNotificationRule","kind":"type","to":"@openpanel/core/modules/notification/notification.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zOnboardingProject","kind":"schema","to":"@openpanel/core/modules/onboarding/onboarding.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IOnboardingProject","kind":"type","to":"@openpanel/core/modules/onboarding/onboarding.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProvider","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zPassword","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zSignInEmail","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ISignInEmail","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zSignUpEmail","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ISignUpEmail","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zResetPassword","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IResetPassword","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zRequestResetPassword","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IRequestResetPassword","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zTotpCode","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ITotpCode","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zTotpOrRecoveryCode","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ITotpOrRecoveryCode","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zSignInShare","kind":"schema","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ISignInShare","kind":"type","to":"@openpanel/core/modules/auth/auth.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zGroupId","kind":"schema","to":"@openpanel/core/modules/group/group.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateGroup","kind":"schema","to":"@openpanel/core/modules/group/group.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICreateGroup","kind":"type","to":"@openpanel/core/modules/group/group.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zUpdateGroup","kind":"schema","to":"@openpanel/core/modules/group/group.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IUpdateGroup","kind":"type","to":"@openpanel/core/modules/group/group.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCheckout","kind":"schema","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICheckout","kind":"type","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCancellationReason","kind":"schema","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICancellationReason","kind":"type","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCancelSubscription","kind":"schema","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICancelSubscription","kind":"type","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zPauseSubscription","kind":"schema","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IPauseSubscription","kind":"type","to":"@openpanel/core/modules/subscription/subscription.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"pageContextPageSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"pageContextSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"PageContext","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"PageContextPage","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"chatContextSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ChatAgentContext","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ChatProvider","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ChatModelEntry","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"CHAT_MODELS","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ChatModelId","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"MODEL_STORAGE_KEY","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"PREFERRED_DEFAULT_MODEL_ID","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"isValidModelId","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getModelLabel","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"getAvailableChatModels","kind":"value","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"applyFiltersSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ApplyFiltersInput","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"setPropertyFiltersSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"SetPropertyFiltersInput","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"setEventNamesFilterSchema","kind":"schema","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"SetEventNamesFilterInput","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ChatClientToolHandlers","kind":"type","to":"@openpanel/core/modules/assistant/assistant.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zRelativeTimeframe","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zAbsoluteTimeframe","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zTimeframe","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"Timeframe","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zFrequency","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"Frequency","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zEventCriteria","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"EventCriteria","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zEventBasedCohortDefinition","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"EventBasedCohortDefinition","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zPropertyBasedCohortDefinition","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"PropertyBasedCohortDefinition","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCohortDefinition","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"CohortDefinition","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCohortInput","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"CohortInput","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCohortUpdate","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"CohortUpdate","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCohortFilter","kind":"schema","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"CohortFilter","kind":"type","to":"@openpanel/core/modules/cohort/cohort.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ImportProviderId","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ImportProviderType","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ImportProviderMeta","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IMPORT_PROVIDERS","kind":"value","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zHttpUrl","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zUmamiImportConfig","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IUmamiImportConfig","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zPlausibleImportConfig","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IPlausibleImportConfig","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zAmplitudeDataResidency","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IAmplitudeDataResidency","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zAmplitudeImportConfig","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IAmplitudeImportConfig","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zMixpanelDataResidency","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IMixpanelDataResidency","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zMixpanelImportConfig","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IMixpanelImportConfig","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IImportConfig","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zCreateImport","kind":"schema","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"ICreateImport","kind":"type","to":"@openpanel/core/modules/import/import.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"RESERVED_EVENT_NAMES","kind":"value","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"isBlockedEventName","kind":"value","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProfileId","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IGroupPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IAssignGroupPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ITrackPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIdentifyPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IIncrementPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IDecrementPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IAliasPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IReplayPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ITrackHandlerPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProfileId","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zGroupPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zAssignGroupPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zTrackPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zIdentifyPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zIncrementPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zDecrementPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zAliasPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zReplayPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zTrackHandlerPayload","kind":"schema","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"DeprecatedOpenpanelEventOptions","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"DeprecatedPostEventPayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"DeprecatedUpdateProfilePayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"DeprecatedIncrementProfilePayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"DeprecatedDecrementProfilePayload","kind":"type","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProjectAccessGrant","kind":"schema","to":"@openpanel/core/modules/organization/organization.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectAccessGrant","kind":"type","to":"@openpanel/core/modules/organization/organization.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zInviteUser","kind":"schema","to":"@openpanel/core/modules/organization/organization.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zUpdateMemberAccess","kind":"schema","to":"@openpanel/core/modules/organization/organization.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zCreateReference","kind":"schema","to":"@openpanel/core/modules/reference/reference.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"zProjectFilterIp","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectFilterIp","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProjectFilterProfileId","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectFilterProfileId","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProjectFilterEvent","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectFilterEvent","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProjectFilters","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectFilters","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProject","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectEdit","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zProjectUpdate","kind":"schema","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"IProjectUpdate","kind":"type","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"zEditOrganization","kind":"schema","to":"@openpanel/core/modules/organization/organization.constants","keepTypeKeyword":false},
-{"from":"@openpanel/validation","symbol":"InsightMetricKey","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"InsightMetricUnit","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"InsightMetricEntry","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"InsightDimension","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"InsightExtra","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"InsightPayload","kind":"type","to":"@openpanel/core/modules/insight/insight.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"UnionOmit","kind":"type","to":"apps/start/src/utils/union-omit.ts","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IReport","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IReportInput","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IReportInputWithDates","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEvent","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartFormula","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEventItem","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartSeries","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEvents","kind":"type","to":"DELETE","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEventSegment","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEventFilter","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEventFilterValue","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartEventFilterOperator","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartFilterValueType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartBreakdown","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IInterval","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartMetric","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartLineType","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartRange","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IGetChartDataInput","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ICriteria","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"PreviousValue","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"Metrics","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"IChartSerie","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"FinalChart","kind":"type","to":"@openpanel/core/modules/report/report.constants","keepTypeKeyword":true},
-{"from":"@openpanel/validation","symbol":"ISetCookie","kind":"type","to":"DELETE","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"emailCategories","kind":"value","to":"@openpanel/core/modules/email/email.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"EmailCategory","kind":"type","to":"@openpanel/core/modules/email/email.constants","keepTypeKeyword":true},
-{"from":"@openpanel/constants","symbol":"RESERVED_EVENT_NAMES","kind":"value","to":"@openpanel/core/modules/ingest/ingest.constants","keepTypeKeyword":false},
-{"from":"@openpanel/constants","symbol":"ProjectTypeNames","kind":"value","to":"@openpanel/core/modules/project/project.constants","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"DateTime","kind":"value","to":"packages/core/src/shared/date.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"getTime","kind":"value","to":"packages/core/src/shared/date.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"DEFAULT_IP_HEADER_ORDER","kind":"value","to":"packages/core/src/shared/get-client-ip.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"getClientIpFromHeaders","kind":"value","to":"packages/core/src/shared/get-client-ip.ts","keepTypeKeyword":false,"toByConsumer":{"packages/sdks/express":"packages/sdks/express/get-client-ip.ts"}},
-{"from":"@openpanel/common","symbol":"getPreviousMetric","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"ISerieDataItem","kind":"type","to":"packages/core/src/shared/group-by-labels.ts","keepTypeKeyword":true},
-{"from":"@openpanel/common","symbol":"groupByLabels","kind":"value","to":"packages/core/src/shared/group-by-labels.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"shortId","kind":"value","to":"packages/core/src/shared/id.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"generateId","kind":"value","to":"packages/core/src/shared/id.ts","keepTypeKeyword":false,"toByConsumer":{"apps/api":"@openpanel/core"}},
-{"from":"@openpanel/common","symbol":"round","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"average","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"sum","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"min","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"max","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/math.ts"}},
-{"from":"@openpanel/common","symbol":"isFloat","kind":"value","to":"DELETE","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"ifNaN","kind":"value","to":"packages/core/src/shared/math.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"randomName","kind":"value","to":"DELETE","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"randomSplitName","kind":"value","to":"DELETE","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"toDots","kind":"value","to":"packages/core/src/shared/object.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"toObject","kind":"value","to":"packages/core/src/shared/object.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"strip","kind":"value","to":"packages/core/src/shared/object.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"deepMergeObjects","kind":"value","to":"packages/core/src/shared/object.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"slug","kind":"value","to":"packages/core/src/shared/slug.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/slug.ts"}},
-{"from":"@openpanel/common","symbol":"stripTrailingSlash","kind":"value","to":"packages/core/src/shared/string.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"stripLeadingAndTrailingSlashes","kind":"value","to":"packages/core/src/shared/string.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"TIMEZONES","kind":"value","to":"DELETE","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"TryCatchResult","kind":"type","to":"DELETE","keepTypeKeyword":true},
-{"from":"@openpanel/common","symbol":"tryCatch","kind":"value","to":"DELETE","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"parseSearchParams","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"parsePath","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
-{"from":"@openpanel/common","symbol":"isSameDomain","kind":"value","to":"packages/core/src/shared/url.ts","keepTypeKeyword":false},
-{"from":"@openpanel/json","symbol":"getSafeJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false},
-{"from":"@openpanel/json","symbol":"getSuperJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false,"toByConsumer":{"apps/start":"apps/start/src/utils/super-json.ts","packages/redis":"packages/redis/json.ts"}},
-{"from":"@openpanel/json","symbol":"setSuperJson","kind":"value","to":"packages/core/src/shared/json.ts","keepTypeKeyword":false,"toByConsumer":{"packages/redis":"packages/redis/json.ts"}}
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DEFAULT_ASPECT_RATIO",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "DEFAULT_ASPECT_RATIO",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "NOT_SET_VALUE",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "NOT_SET_VALUE",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "timeWindows",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "timeWindows",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "operators",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "operators",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "operatorsShort",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "operatorsShort",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "filterValueTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "filterValueTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IFilterValueType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IFilterValueType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getOperatorsForType",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "getOperatorsForType",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "chartTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "chartTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "chartSegments",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "chartSegments",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "lineTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "lineTypes",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "intervals",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "intervals",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "alphabetIds",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "alphabetIds",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "metrics",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "metrics",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "isMinuteIntervalEnabledByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "isMinuteIntervalEnabledByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "isHourIntervalEnabledByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "isHourIntervalEnabledByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getDefaultIntervalByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "getDefaultIntervalByRange",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getDefaultIntervalByDates",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "getDefaultIntervalByDates",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "countries",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "countries",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getCountry",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "getCountry",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "chartColors",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "chartColors",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartEventFilter",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartEventFilter",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getCohortIds",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "getCohortIds",
+    "kind": "value",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartEventSegment",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartEventSegment",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartEvent",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartEvent",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartFormula",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartFormula",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartEventWithType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartEventWithType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartEventItem",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartEventItem",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartBreakdown",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartBreakdown",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartSeries",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartSeries",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartBreakdowns",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartBreakdowns",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zLineType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zLineType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTimeInterval",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zTimeInterval",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zMetric",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zMetric",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zRange",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zRange",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCriteria",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zCriteria",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zFunnelOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zFunnelOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zRetentionOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zRetentionOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zSankeyOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zSankeyOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zHistogramOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zHistogramOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zReportOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zReportOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IReportOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IReportOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISankeyOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "ISankeyOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IHistogramOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IHistogramOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zWidgetType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zWidgetType",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IWidgetType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IWidgetType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zRealtimeWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zRealtimeWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCounterWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zCounterWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zWidgetOptions",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICounterWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "ICounterWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IRealtimeWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "IRealtimeWidgetOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zReportInput",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zReportInput",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zReport",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zReport",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zChartInput",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "zChartInput",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zShareOverview",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/share/share.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zShareDashboard",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/share/share.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zShareReport",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/share/share.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ENCRYPTED_SECRET_PREFIX",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "looksEncrypted",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IServiceAccountKey",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IServiceAccountKeyResult",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "parseServiceAccountKey",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zSlackConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISlackConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zWebhookConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IWebhookConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zDiscordConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IDiscordConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAppConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IAppConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zEmailConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IEmailConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zS3ExportConfigIamRole",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IS3ExportConfigIamRole",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zS3ExportConfigAccessKey",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IS3ExportConfigAccessKey",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zS3ExportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IS3ExportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zGCSExportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IGCSExportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIntegrationConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIntegrationType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIntegrationKind",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIntegrationDescriptor",
+    "kind": "type",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "slackDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "discordDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "webhookDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "appDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "emailDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "s3ExportDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "gcsExportDescriptor",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "INTEGRATION_DESCRIPTORS",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "isKind",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zIntegrationConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateSlackIntegration",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateWebhookIntegration",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateDiscordIntegration",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateS3ExportIntegration",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateGCSExportIntegration",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DISCORD_TEST_NOTIFICATION_MESSAGE",
+    "kind": "value",
+    "to": "@openpanel/core/modules/integration/integration.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zNotificationRuleEventConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "INotificationRuleEventConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zNotificationRuleFunnelConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "INotificationRuleFunnelConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zNotificationRuleConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "INotificationRuleConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateNotificationRule",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICreateNotificationRule",
+    "kind": "type",
+    "to": "@openpanel/core/modules/notification/notification.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zOnboardingProject",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/onboarding/onboarding.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IOnboardingProject",
+    "kind": "type",
+    "to": "@openpanel/core/modules/onboarding/onboarding.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProvider",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zPassword",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zSignInEmail",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISignInEmail",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zSignUpEmail",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISignUpEmail",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zResetPassword",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IResetPassword",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zRequestResetPassword",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IRequestResetPassword",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTotpCode",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ITotpCode",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTotpOrRecoveryCode",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ITotpOrRecoveryCode",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zSignInShare",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISignInShare",
+    "kind": "type",
+    "to": "@openpanel/core/modules/auth/auth.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zGroupId",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/group/group.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateGroup",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/group/group.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICreateGroup",
+    "kind": "type",
+    "to": "@openpanel/core/modules/group/group.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zUpdateGroup",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/group/group.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IUpdateGroup",
+    "kind": "type",
+    "to": "@openpanel/core/modules/group/group.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCheckout",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICheckout",
+    "kind": "type",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCancellationReason",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICancellationReason",
+    "kind": "type",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCancelSubscription",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICancelSubscription",
+    "kind": "type",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zPauseSubscription",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IPauseSubscription",
+    "kind": "type",
+    "to": "@openpanel/core/modules/subscription/subscription.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "pageContextPageSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "pageContextSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "PageContext",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "PageContextPage",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "chatContextSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ChatAgentContext",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ChatProvider",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ChatModelEntry",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "CHAT_MODELS",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ChatModelId",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "MODEL_STORAGE_KEY",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "PREFERRED_DEFAULT_MODEL_ID",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "isValidModelId",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getModelLabel",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "getAvailableChatModels",
+    "kind": "value",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "applyFiltersSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ApplyFiltersInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "setPropertyFiltersSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "SetPropertyFiltersInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "setEventNamesFilterSchema",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "SetEventNamesFilterInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ChatClientToolHandlers",
+    "kind": "type",
+    "to": "@openpanel/core/modules/assistant/assistant.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zRelativeTimeframe",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAbsoluteTimeframe",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTimeframe",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "Timeframe",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zFrequency",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "Frequency",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zEventCriteria",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "EventCriteria",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zEventBasedCohortDefinition",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "EventBasedCohortDefinition",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zPropertyBasedCohortDefinition",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "PropertyBasedCohortDefinition",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCohortDefinition",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "CohortDefinition",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCohortInput",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "CohortInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCohortUpdate",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "CohortUpdate",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCohortFilter",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "CohortFilter",
+    "kind": "type",
+    "to": "@openpanel/core/modules/cohort/cohort.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ImportProviderId",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ImportProviderType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ImportProviderMeta",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IMPORT_PROVIDERS",
+    "kind": "value",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zHttpUrl",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zUmamiImportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IUmamiImportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zPlausibleImportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IPlausibleImportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAmplitudeDataResidency",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IAmplitudeDataResidency",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAmplitudeImportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IAmplitudeImportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zMixpanelDataResidency",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IMixpanelDataResidency",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zMixpanelImportConfig",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IMixpanelImportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IImportConfig",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateImport",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICreateImport",
+    "kind": "type",
+    "to": "@openpanel/core/modules/import/import.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "RESERVED_EVENT_NAMES",
+    "kind": "value",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "isBlockedEventName",
+    "kind": "value",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProfileId",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IGroupPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IAssignGroupPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ITrackPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIdentifyPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IIncrementPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IDecrementPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IAliasPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IReplayPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ITrackHandlerPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProfileId",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zGroupPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAssignGroupPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTrackPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zIdentifyPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zIncrementPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zDecrementPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zAliasPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zReplayPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zTrackHandlerPayload",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DeprecatedOpenpanelEventOptions",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DeprecatedPostEventPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DeprecatedUpdateProfilePayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DeprecatedIncrementProfilePayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "DeprecatedDecrementProfilePayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectAccessGrant",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/organization/organization.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectAccessGrant",
+    "kind": "type",
+    "to": "@openpanel/core/modules/organization/organization.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zInviteUser",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/organization/organization.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zUpdateMemberAccess",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/organization/organization.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zCreateReference",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/reference/reference.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectFilterIp",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectFilterIp",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectFilterProfileId",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectFilterProfileId",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectFilterEvent",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectFilterEvent",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectFilters",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectFilters",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProject",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectEdit",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zProjectUpdate",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IProjectUpdate",
+    "kind": "type",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "zEditOrganization",
+    "kind": "schema",
+    "to": "@openpanel/core/modules/organization/organization.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightMetricKey",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightMetricUnit",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightMetricEntry",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightDimension",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightExtra",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "InsightPayload",
+    "kind": "type",
+    "to": "@openpanel/core/modules/insight/insight.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "UnionOmit",
+    "kind": "type",
+    "to": "apps/start/src/utils/union-omit.ts",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IReport",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IReportInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IReportInputWithDates",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEvent",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartFormula",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEventItem",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartSeries",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEvents",
+    "kind": "type",
+    "to": "DELETE",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEventSegment",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEventFilter",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEventFilterValue",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartEventFilterOperator",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartFilterValueType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartBreakdown",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IInterval",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartMetric",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartLineType",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartRange",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IGetChartDataInput",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ICriteria",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "PreviousValue",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "Metrics",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "IChartSerie",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "FinalChart",
+    "kind": "type",
+    "to": "@openpanel/core/modules/report/report.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/validation",
+    "symbol": "ISetCookie",
+    "kind": "type",
+    "to": "DELETE",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "emailCategories",
+    "kind": "value",
+    "to": "@openpanel/core/modules/email/email.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "EmailCategory",
+    "kind": "type",
+    "to": "@openpanel/core/modules/email/email.constants",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "RESERVED_EVENT_NAMES",
+    "kind": "value",
+    "to": "@openpanel/core/modules/ingest/ingest.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/constants",
+    "symbol": "ProjectTypeNames",
+    "kind": "value",
+    "to": "@openpanel/core/modules/project/project.constants",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "DateTime",
+    "kind": "value",
+    "to": "packages/core/src/shared/date.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "getTime",
+    "kind": "value",
+    "to": "packages/core/src/shared/date.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "DEFAULT_IP_HEADER_ORDER",
+    "kind": "value",
+    "to": "packages/core/src/shared/get-client-ip.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "getClientIpFromHeaders",
+    "kind": "value",
+    "to": "packages/core/src/shared/get-client-ip.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": {
+      "packages/sdks/express": "packages/sdks/express/get-client-ip.ts"
+    }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "getPreviousMetric",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "ISerieDataItem",
+    "kind": "type",
+    "to": "packages/core/src/shared/group-by-labels.ts",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "groupByLabels",
+    "kind": "value",
+    "to": "packages/core/src/shared/group-by-labels.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "shortId",
+    "kind": "value",
+    "to": "packages/core/src/shared/id.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "generateId",
+    "kind": "value",
+    "to": "packages/core/src/shared/id.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/api": "@openpanel/core" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "round",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "average",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "sum",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "min",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "max",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/math.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "isFloat",
+    "kind": "value",
+    "to": "DELETE",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "ifNaN",
+    "kind": "value",
+    "to": "packages/core/src/shared/math.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "randomName",
+    "kind": "value",
+    "to": "DELETE",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "randomSplitName",
+    "kind": "value",
+    "to": "DELETE",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "toDots",
+    "kind": "value",
+    "to": "packages/core/src/shared/object.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "toObject",
+    "kind": "value",
+    "to": "packages/core/src/shared/object.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "strip",
+    "kind": "value",
+    "to": "packages/core/src/shared/object.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "deepMergeObjects",
+    "kind": "value",
+    "to": "packages/core/src/shared/object.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "slug",
+    "kind": "value",
+    "to": "packages/core/src/shared/slug.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "apps/start": "apps/start/src/utils/slug.ts" }
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "stripTrailingSlash",
+    "kind": "value",
+    "to": "packages/core/src/shared/string.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "stripLeadingAndTrailingSlashes",
+    "kind": "value",
+    "to": "packages/core/src/shared/string.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "TIMEZONES",
+    "kind": "value",
+    "to": "DELETE",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "TryCatchResult",
+    "kind": "type",
+    "to": "DELETE",
+    "keepTypeKeyword": true
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "tryCatch",
+    "kind": "value",
+    "to": "DELETE",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "parseSearchParams",
+    "kind": "value",
+    "to": "packages/core/src/shared/url.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "parsePath",
+    "kind": "value",
+    "to": "packages/core/src/shared/url.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/common",
+    "symbol": "isSameDomain",
+    "kind": "value",
+    "to": "packages/core/src/shared/url.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/json",
+    "symbol": "getSafeJson",
+    "kind": "value",
+    "to": "packages/core/src/shared/json.ts",
+    "keepTypeKeyword": false
+  },
+  {
+    "from": "@openpanel/json",
+    "symbol": "getSuperJson",
+    "kind": "value",
+    "to": "packages/core/src/shared/json.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": {
+      "apps/start": "apps/start/src/utils/super-json.ts",
+      "packages/redis": "packages/redis/json.ts"
+    }
+  },
+  {
+    "from": "@openpanel/json",
+    "symbol": "setSuperJson",
+    "kind": "value",
+    "to": "packages/core/src/shared/json.ts",
+    "keepTypeKeyword": false,
+    "toByConsumer": { "packages/redis": "packages/redis/json.ts" }
+  }
 ]

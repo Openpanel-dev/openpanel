@@ -24,7 +24,7 @@ function ChatMetricsInner({ output }: { output: unknown }) {
 
   const entries = Object.entries(output).filter(
     (entry): entry is [string, number | string] =>
-      typeof entry[1] === 'number' || typeof entry[1] === 'string',
+      typeof entry[1] === 'number' || typeof entry[1] === 'string'
   );
   if (entries.length === 0) return null;
 

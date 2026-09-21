@@ -38,7 +38,7 @@ function useSteps(path: string) {
 
   // @ts-ignore
   const matchIndex = steps.findLastIndex((step) =>
-    path.match(new RegExp(step.match)),
+    path.match(new RegExp(step.match))
   );
 
   return steps.map((step, index) => {
@@ -69,7 +69,7 @@ export const OnboardingSteps = ({ className }: Props) => {
       <div
         className={cn(
           'relative flex gap-4 overflow-hidden md:-ml-3 md:flex-col md:gap-8',
-          className,
+          className
         )}
       >
         {steps.map((step, index) => (
@@ -80,19 +80,19 @@ export const OnboardingSteps = ({ className }: Props) => {
                 'rounded-xl border border-border bg-card',
               step.status === 'completed' &&
                 index !== currentIndex - 1 &&
-                'max-md:hidden',
+                'max-md:hidden'
             )}
             key={step.name}
           >
             <div
               className={cn(
-                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white',
+                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white'
               )}
             >
               <div
                 className={cn(
                   'absolute inset-0 z-0 rounded-full bg-highlight',
-                  step.status === 'pending' && 'bg-def-400',
+                  step.status === 'pending' && 'bg-def-400'
                 )}
               />
               {step.status === 'current' && (

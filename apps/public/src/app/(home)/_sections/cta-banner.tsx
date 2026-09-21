@@ -57,7 +57,7 @@ export function CtaBanner({
     <div className="container">
       <section
         className={cn(
-          'relative overflow-hidden border rounded-3xl py-16 px-4 md:px-16',
+          'relative overflow-hidden border rounded-3xl py-16 px-4 md:px-16'
         )}
       >
         <div className="size-px absolute left-12 bottom-12 rounded-full shadow-[0_0_250px_80px_var(--color-foreground)]" />

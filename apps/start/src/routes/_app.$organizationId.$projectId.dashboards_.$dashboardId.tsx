@@ -43,7 +43,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/dashboards_/$dashboardId',
+  '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
 )({
   component: Component,
   head: () => {
@@ -61,23 +61,23 @@ export const Route = createFileRoute(
         context.trpc.dashboard.byId.queryOptions({
           id: params.dashboardId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.report.list.queryOptions({
           dashboardId: params.dashboardId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.project.getProjectWithClients.queryOptions({
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.organization.get.queryOptions({
           organizationId: params.organizationId,
-        }),
+        })
       ),
     ]);
   },
@@ -95,14 +95,14 @@ function Component() {
     trpc.dashboard.byId.queryOptions({
       id: dashboardId,
       projectId,
-    }),
+    })
   );
 
   const reportsQuery = useQuery(
     trpc.report.list.queryOptions({
       dashboardId,
       projectId,
-    }),
+    })
   );
 
   const dashboardDeletion = useMutation(
@@ -119,7 +119,7 @@ function Component() {
           },
         });
       },
-    }),
+    })
   );
 
   const reports = reportsQuery.data ?? [];
@@ -155,7 +155,7 @@ function Component() {
         reportsQuery.refetch();
         toast('Report deleted');
       },
-    }),
+    })
   );
 
   const reportDuplicate = useMutation(
@@ -166,7 +166,7 @@ function Component() {
         reportsQuery.refetch();
         toast('Report duplicated');
       },
-    }),
+    })
   );
 
   const updateLayout = useMutation(
@@ -176,7 +176,7 @@ function Component() {
         // Silently refetch reports (which includes layouts)
         reportsQuery.refetch();
       },
-    }),
+    })
   );
 
   const resetLayout = useMutation(
@@ -186,7 +186,7 @@ function Component() {
         toast('Layout reset to default');
         reportsQuery.refetch();
       },
-    }),
+    })
   );
 
   // Convert reports to grid layout format for all breakpoints
@@ -202,7 +202,7 @@ function Component() {
         chartType: r.chartType,
       })),
     }),
-    [dashboard?.name, reports],
+    [dashboard?.name, reports]
   );
 
   useDashboardPageContext(dashboardId, dashboardPrimer);
@@ -241,7 +241,7 @@ function Component() {
         }
       });
     },
-    [reports, updateLayout],
+    [reports, updateLayout]
   );
 
   const handleResizeStop = useCallback(
@@ -274,7 +274,7 @@ function Component() {
         }
       });
     },
-    [reports, updateLayout],
+    [reports, updateLayout]
   );
 
   if (!dashboard) {

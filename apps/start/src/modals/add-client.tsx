@@ -42,14 +42,14 @@ export default function AddClient() {
       onSuccess() {
         toast.success('Client created successfully');
         queryClient.invalidateQueries(
-          trpc.project.getProjectWithClients.pathFilter(),
+          trpc.project.getProjectWithClients.pathFilter()
         );
         queryClient.invalidateQueries(
-          trpc.client.list.queryFilter({ projectId }),
+          trpc.client.list.queryFilter({ projectId })
         );
       },
       onError: handleError,
-    }),
+    })
   );
 
   const onSubmit: SubmitHandler<IForm> = (values) => {

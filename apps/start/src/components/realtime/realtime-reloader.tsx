@@ -17,7 +17,7 @@ const RealtimeReloader = ({ projectId }: Props) => {
         // pathFilter() covers all realtime.* queries for this project
         client.refetchQueries(trpc.realtime.pathFilter());
         client.refetchQueries(
-          trpc.overview.liveData.queryFilter({ projectId }),
+          trpc.overview.liveData.queryFilter({ projectId })
         );
       }
     },
@@ -26,7 +26,7 @@ const RealtimeReloader = ({ projectId }: Props) => {
         delay: 1000,
         maxWait: 60000,
       },
-    },
+    }
   );
 
   return null;

@@ -22,7 +22,7 @@ function RouteComponent() {
 
   // Fetch widget data
   const { data, isLoading } = useQuery(
-    trpc.widget.badge.queryOptions({ shareId }),
+    trpc.widget.badge.queryOptions({ shareId })
   );
 
   if (isLoading) {

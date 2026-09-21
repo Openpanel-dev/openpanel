@@ -38,7 +38,7 @@ export const formatCurrency =
     options?: {
       currency?: string;
       short?: boolean;
-    },
+    }
   ) => {
     const short = options?.short ?? false;
     const currency = options?.currency ?? 'USD';
@@ -91,7 +91,7 @@ export function useNumber() {
     },
     formatWithUnit: (
       value: number | null | undefined,
-      unit?: string | null,
+      unit?: string | null
     ) => {
       if (isNil(value)) {
         return 'N/A';

@@ -130,17 +130,38 @@
   },
   "related_links": {
     "guides": [
-      { "title": "Ecommerce tracking setup", "url": "/guides/ecommerce-tracking" },
-      { "title": "Website analytics setup", "url": "/guides/website-analytics-setup" },
-      { "title": "OpenPanel WordPress plugin", "url": "https://sv.wordpress.org/plugins/openpanel/" }
+      {
+        "title": "Ecommerce tracking setup",
+        "url": "/guides/ecommerce-tracking"
+      },
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "OpenPanel WordPress plugin",
+        "url": "https://sv.wordpress.org/plugins/openpanel/"
+      }
     ],
     "articles": [
-      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
-      { "title": "How to self-host OpenPanel", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "Cookieless analytics explained",
+        "url": "/articles/cookieless-analytics"
+      },
+      {
+        "title": "How to self-host OpenPanel",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
-      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" },
+      {
+        "title": "OpenPanel vs Google Analytics",
+        "url": "/compare/google-analytics-alternative"
+      },
+      {
+        "title": "OpenPanel vs Plausible",
+        "url": "/compare/plausible-alternative"
+      },
       { "title": "OpenPanel vs Matomo", "url": "/compare/matomo-alternative" }
     ]
   },

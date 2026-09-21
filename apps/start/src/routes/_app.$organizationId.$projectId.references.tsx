@@ -33,7 +33,7 @@ import { PlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/references',
+  '/_app/$organizationId/$projectId/references'
 )({
   component: Component,
   head: () => {
@@ -110,7 +110,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
           toast.success('Reference deleted');
           queryClient.invalidateQueries(trpc.reference.pathFilter());
         },
-      }),
+      })
     );
     const ref = row.original;
     return (
@@ -159,8 +159,8 @@ function Component() {
       },
       {
         placeholderData: keepPreviousData,
-      },
-    ),
+      }
+    )
   );
   const data = query.data ?? [];
 

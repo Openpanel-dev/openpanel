@@ -33,7 +33,7 @@ export function FeaturesShowcase({ featureComparison }: FeaturesShowcaseProps) {
     .filter(
       (f) =>
         f.openpanel === true ||
-        (typeof f.openpanel === 'string' && f.openpanel.toLowerCase() !== 'no'),
+        (typeof f.openpanel === 'string' && f.openpanel.toLowerCase() !== 'no')
     )
     .slice(0, 8);
 
@@ -60,4 +60,3 @@ export function FeaturesShowcase({ featureComparison }: FeaturesShowcaseProps) {
     </Section>
   );
 }
-

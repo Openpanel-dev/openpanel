@@ -18,7 +18,9 @@ import { Tooltiper } from '../ui/tooltip';
 
 function EventBadge({
   event,
-}: { event: NotificationRule['config']['events'][number] }) {
+}: {
+  event: NotificationRule['config']['events'][number];
+}) {
   return (
     <Tooltiper
       disabled={!event.filters.length}
@@ -44,7 +46,9 @@ function EventBadge({
 
 export function RuleCard({
   rule,
-}: { rule: RouterOutputs['notification']['rules'][number] }) {
+}: {
+  rule: RouterOutputs['notification']['rules'][number];
+}) {
   const trpc = useTRPC();
   const client = useQueryClient();
   const deletion = useMutation(
@@ -54,10 +58,10 @@ export function RuleCard({
         client.refetchQueries(
           trpc.notification.rules.queryOptions({
             projectId: rule.projectId,
-          }),
+          })
         );
       },
-    }),
+    })
   );
   const renderConfig = () => {
     switch (rule.config.type) {

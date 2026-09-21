@@ -20,7 +20,7 @@ export const metadata: Metadata = getPageMetadata({
 
 export default async function Page() {
   const articles = (await articleSource.getPages()).sort(
-    (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
   );
   return (
     <div>

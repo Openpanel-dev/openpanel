@@ -42,9 +42,7 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
     {
       accessorKey: 'type',
       header: 'Type',
-      cell: ({ row }) => (
-        <Badge variant="outline">{row.original.type}</Badge>
-      ),
+      cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
     },
     {
       accessorKey: 'memberCount',

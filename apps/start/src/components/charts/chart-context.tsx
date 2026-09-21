@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
+import type { scaleBand, scaleLinear, scaleTime } from '@visx/scale';
 
 type ScaleLinear<Output, _Input = number> = ReturnType<
   typeof scaleLinear<Output>
@@ -12,7 +12,7 @@ type ScaleBand<Domain extends { toString(): string }> = ReturnType<
   typeof scaleBand<Domain>
 >;
 
-import type { Transition } from "motion/react";
+import type { Transition } from 'motion/react';
 import {
   createContext,
   type Dispatch,
@@ -21,37 +21,37 @@ import {
   type SetStateAction,
   useContext,
   useMemo,
-} from "react";
-import type { ChartSelection } from "./use-chart-interaction";
+} from 'react';
+import type { ChartSelection } from './use-chart-interaction';
 
 // CSS variable references for theming
 export const chartCssVars = {
-  background: "var(--chart-background)",
-  foreground: "var(--chart-foreground)",
-  foregroundMuted: "var(--chart-foreground-muted)",
-  label: "var(--chart-label)",
-  linePrimary: "var(--chart-line-primary)",
-  lineSecondary: "var(--chart-line-secondary)",
-  crosshair: "var(--chart-crosshair)",
-  grid: "var(--chart-grid)",
-  indicatorColor: "var(--chart-indicator-color)",
-  indicatorSecondaryColor: "var(--chart-indicator-secondary-color)",
-  markerBackground: "var(--chart-marker-background)",
-  markerBorder: "var(--chart-marker-border)",
-  markerForeground: "var(--chart-marker-foreground)",
-  badgeBackground: "var(--chart-marker-badge-background)",
-  badgeForeground: "var(--chart-marker-badge-foreground)",
-  segmentBackground: "var(--chart-segment-background)",
-  segmentLine: "var(--chart-segment-line)",
+  background: 'var(--chart-background)',
+  foreground: 'var(--chart-foreground)',
+  foregroundMuted: 'var(--chart-foreground-muted)',
+  label: 'var(--chart-label)',
+  linePrimary: 'var(--chart-line-primary)',
+  lineSecondary: 'var(--chart-line-secondary)',
+  crosshair: 'var(--chart-crosshair)',
+  grid: 'var(--chart-grid)',
+  indicatorColor: 'var(--chart-indicator-color)',
+  indicatorSecondaryColor: 'var(--chart-indicator-secondary-color)',
+  markerBackground: 'var(--chart-marker-background)',
+  markerBorder: 'var(--chart-marker-border)',
+  markerForeground: 'var(--chart-marker-foreground)',
+  badgeBackground: 'var(--chart-marker-badge-background)',
+  badgeForeground: 'var(--chart-marker-badge-foreground)',
+  segmentBackground: 'var(--chart-segment-background)',
+  segmentLine: 'var(--chart-segment-line)',
 };
 
 /** Default scatter series colors from the chart palette (`--chart-1` … `--chart-5`). */
 export const defaultScatterColors = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
 ] as const;
 
 export interface Margin {
@@ -159,7 +159,7 @@ export interface ChartContextValue extends ChartHoverContextValue {
   /** X accessor for bar charts (returns string instead of Date) */
   barXAccessor?: (d: Record<string, unknown>) => string;
   /** Bar chart orientation */
-  orientation?: "vertical" | "horizontal";
+  orientation?: 'vertical' | 'horizontal';
   /** Whether bars are stacked */
   stacked?: boolean;
   /** Stack offsets: Map of data index -> Map of dataKey -> cumulative offset */
@@ -320,8 +320,8 @@ export function useChartStable(): ChartStableContextValue {
   const context = useContext(ChartStableContext);
   if (!context) {
     throw new Error(
-      "useChartStable must be used within a ChartProvider. " +
-        "Make sure your component is wrapped in <LineChart>, <AreaChart>, <BarChart>, or <ComposedChart>."
+      'useChartStable must be used within a ChartProvider. ' +
+        'Make sure your component is wrapped in <LineChart>, <AreaChart>, <BarChart>, or <ComposedChart>.'
     );
   }
   return context;
@@ -336,8 +336,8 @@ export function useChartHover(): ChartHoverContextValue {
   const context = useContext(ChartHoverContext);
   if (!context) {
     throw new Error(
-      "useChartHover must be used within a ChartProvider. " +
-        "Make sure your component is wrapped in <LineChart>, <AreaChart>, <BarChart>, or <ComposedChart>."
+      'useChartHover must be used within a ChartProvider. ' +
+        'Make sure your component is wrapped in <LineChart>, <AreaChart>, <BarChart>, or <ComposedChart>.'
     );
   }
   return context;

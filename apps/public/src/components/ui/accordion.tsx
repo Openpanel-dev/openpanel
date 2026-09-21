@@ -35,7 +35,7 @@ const AccordionTrigger = ({
       ref={ref}
       className={cn(
         'group relative overflow-hidden flex flex-1 items-center justify-between py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180 cursor-pointer',
-        className,
+        className
       )}
       {...props}
     >
@@ -63,7 +63,7 @@ const AccordionContent = ({
     <div
       className={cn(
         'pb-4 pt-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-        className,
+        className
       )}
     >
       {children}

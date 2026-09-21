@@ -31,14 +31,18 @@ export function ChatDrawerHeader({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { conversationId, switchConversation, newConversation, streamingTitle } =
-    useChatState();
+  const {
+    conversationId,
+    switchConversation,
+    newConversation,
+    streamingTitle,
+  } = useChatState();
 
   const { data: conversations } = useQuery(
     trpc.conversation.list.queryOptions({
       projectId,
       limit: CONVERSATION_LIST_LIMIT_DEFAULT,
-    }),
+    })
   );
 
   const deleteMutation = useMutation(
@@ -49,7 +53,7 @@ export function ChatDrawerHeader({
           newConversation();
         }
       },
-    }),
+    })
   );
 
   // Header title priority:
@@ -174,11 +178,7 @@ function InlineDeleteButton({ onConfirm }: { onConfirm: () => void }) {
       aria-label={armed ? 'Confirm delete' : 'Delete conversation'}
       title={armed ? 'Click again to confirm' : 'Delete'}
     >
-      {armed ? (
-        <Trash2Icon className="size-3" />
-      ) : (
-        <XIcon className="size-3" />
-      )}
+      {armed ? <Trash2Icon className="size-3" /> : <XIcon className="size-3" />}
     </button>
   );
 }

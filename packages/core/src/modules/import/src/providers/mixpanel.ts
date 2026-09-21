@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/shared';
-import {
-  parseUserAgent,
-  type UserAgentInfo,
-} from '@openpanel/shared/server';
+import { parseUserAgent, type UserAgentInfo } from '@openpanel/shared/server';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
 // core's own date helper, not @openpanel/db's — see umami.ts's header.

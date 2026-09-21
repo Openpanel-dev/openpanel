@@ -22,7 +22,8 @@
  * appended to LOG_FILE.
  */
 
-const UPSTREAM_URL = process.env.UPSTREAM_CLICKHOUSE_URL ?? 'http://127.0.0.1:8123';
+const UPSTREAM_URL =
+  process.env.UPSTREAM_CLICKHOUSE_URL ?? 'http://127.0.0.1:8123';
 const LISTEN_PORT = Number(process.env.PROXY_PORT ?? 8199);
 const SCRATCH_DATABASE = process.env.SCRATCH_DATABASE ?? '';
 const MODE = process.env.PROXY_MODE ?? 'rewrite';
@@ -79,7 +80,10 @@ const isRefused = (target: string, statement: string) => {
       ? 'still names openpanel'
       : null;
   }
-  if (PROTECTED_DATABASE_TOKEN.test(statement) && !READ_STATEMENT.test(statement)) {
+  if (
+    PROTECTED_DATABASE_TOKEN.test(statement) &&
+    !READ_STATEMENT.test(statement)
+  ) {
     return 'non-read statement naming openpanel';
   }
   if (PROTECTED_DATABASE_TOKEN.test(target)) {
@@ -102,7 +106,8 @@ const server = Bun.serve({
     );
     const outgoingBody = rewrite(body);
     const target = `${outgoing.pathname}?${outgoing.searchParams.get('database') ?? ''}`;
-    const statement = outgoingBody || (outgoing.searchParams.get('query') ?? '');
+    const statement =
+      outgoingBody || (outgoing.searchParams.get('query') ?? '');
     const inspected = `${outgoing.pathname}${outgoing.search}\n${outgoingBody}`;
 
     const refusal = isRefused(target, statement);
@@ -113,7 +118,9 @@ const server = Bun.serve({
       });
     }
 
-    append(`[${request.method}] ${outgoing.pathname}${outgoing.search}\n${outgoingBody}`);
+    append(
+      `[${request.method}] ${outgoing.pathname}${outgoing.search}\n${outgoingBody}`
+    );
 
     const headers = new Headers(request.headers);
     // The body is rewritten, so any length/encoding the client set is stale.

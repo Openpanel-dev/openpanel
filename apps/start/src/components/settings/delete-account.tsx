@@ -10,7 +10,7 @@ import { TrashIcon } from 'lucide-react';
 export default function DeleteAccount() {
   const trpc = useTRPC();
   const { data: blockers = [] } = useQuery(
-    trpc.user.deletionBlockers.queryOptions(),
+    trpc.user.deletionBlockers.queryOptions()
   );
 
   const blocked = blockers.length > 0;
@@ -30,8 +30,8 @@ export default function DeleteAccount() {
           <Alert variant="destructive">
             <AlertTitle>Cancel your subscriptions first</AlertTitle>
             <AlertDescription>
-              These organizations you created have an active subscription. Cancel
-              each one before deleting your account:
+              These organizations you created have an active subscription.
+              Cancel each one before deleting your account:
               <ul className="mt-2 list-disc pl-5">
                 {blockers.map((organization) => (
                   <li key={organization.id}>

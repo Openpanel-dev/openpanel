@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import type { ReactNode } from "react";
-import { useChartHover } from "./chart-context";
+import { motion } from 'motion/react';
+import type { ReactNode } from 'react';
+import { useChartHover } from './chart-context';
 
 interface SeriesHoverDimProps {
   /** Skip the dim entirely. */
@@ -38,13 +38,13 @@ export function SeriesHoverDim({
     <motion.g
       animate={{ opacity }}
       initial={{ opacity: 1 }}
-      transition={{ duration: durationSec, ease: "easeInOut" }}
+      transition={{ duration: durationSec, ease: 'easeInOut' }}
     >
       {children}
     </motion.g>
   );
 }
 
-SeriesHoverDim.displayName = "SeriesHoverDim";
+SeriesHoverDim.displayName = 'SeriesHoverDim';
 
 export default SeriesHoverDim;

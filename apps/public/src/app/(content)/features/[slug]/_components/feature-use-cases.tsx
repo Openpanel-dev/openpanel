@@ -21,7 +21,9 @@ export function FeatureUseCasesSection({ useCases }: FeatureUseCasesProps) {
             className="col gap-2 p-6 border rounded-2xl bg-card/50"
           >
             <h3 className="font-semibold">{useCase.title}</h3>
-            <p className="text-sm text-muted-foreground">{useCase.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {useCase.description}
+            </p>
           </div>
         ))}
       </div>

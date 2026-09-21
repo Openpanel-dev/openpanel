@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { localPoint } from "@visx/event";
-import { ParentSize } from "@visx/responsive";
-import { scaleBand, scaleLinear } from "@visx/scale";
-import type { Transition } from "motion/react";
+import { localPoint } from '@visx/event';
+import { ParentSize } from '@visx/responsive';
+import { scaleBand, scaleLinear } from '@visx/scale';
+import type { Transition } from 'motion/react';
 import {
   Children,
   isValidElement,
@@ -15,21 +15,21 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { cn } from "@/lib/utils";
-import { DEFAULT_ANIMATION_EASING } from "./animation";
-import type { BarProps } from "./bar";
+} from 'react';
+import { cn } from '@/lib/utils';
+import { DEFAULT_ANIMATION_EASING } from './animation';
+import type { BarProps } from './bar';
 import {
   ChartProvider,
   type LineConfig,
   type Margin,
   type TooltipData,
-} from "./chart-context";
-import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
-import { shortDateFmt } from "./chart-formatters";
-import { useScheduledTooltip } from "./use-scheduled-tooltip";
+} from './chart-context';
+import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
+import { shortDateFmt } from './chart-formatters';
+import { useScheduledTooltip } from './use-scheduled-tooltip';
 
-export type BarOrientation = "vertical" | "horizontal";
+export type BarOrientation = 'vertical' | 'horizontal';
 
 export interface BarChartProps {
   /** Data array - each item should have an x-axis key and numeric values */
@@ -80,20 +80,20 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
       name?: string;
     };
     const componentName =
-      typeof child.type === "function"
-        ? childType.displayName || childType.name || ""
-        : "";
+      typeof child.type === 'function'
+        ? childType.displayName || childType.name || ''
+        : '';
 
     const props = child.props as BarProps | undefined;
     const isBarComponent =
-      componentName === "Bar" ||
-      (props && typeof props.dataKey === "string" && props.dataKey.length > 0);
+      componentName === 'Bar' ||
+      (props && typeof props.dataKey === 'string' && props.dataKey.length > 0);
 
     if (isBarComponent && props?.dataKey) {
       // Use stroke for tooltip dot color if provided, otherwise fall back to fill
       // This allows gradient/pattern fills to have a solid dot color
       const dotColor =
-        props.stroke || props.fill || "var(--chart-line-primary)";
+        props.stroke || props.fill || 'var(--chart-line-primary)';
       configs.push({
         dataKey: props.dataKey,
         stroke: dotColor,
@@ -118,11 +118,11 @@ function isPostOverlayComponent(child: ReactElement): boolean {
   }
 
   const componentName =
-    typeof child.type === "function"
-      ? childType.displayName || childType.name || ""
-      : "";
+    typeof child.type === 'function'
+      ? childType.displayName || childType.name || ''
+      : '';
 
-  return componentName === "ChartMarkers" || componentName === "MarkerGroup";
+  return componentName === 'ChartMarkers' || componentName === 'MarkerGroup';
 }
 
 interface ChartInnerProps {
@@ -161,7 +161,7 @@ const ChartCore = memo(function ChartCore({
   animationDuration,
   animationEasing,
   enterTransition,
-  revealSignature = "",
+  revealSignature = '',
   barGap,
   barWidthProp,
   orientation,
@@ -176,7 +176,7 @@ const ChartCore = memo(function ChartCore({
   const [revealEpoch, setRevealEpoch] = useState(0);
   const hoveredBarIndex = tooltipData?.index ?? null;
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
 
   // Extract bar configs synchronously from children
   const lines = useMemo(() => extractBarConfigs(children), [children]);
@@ -191,7 +191,7 @@ const ChartCore = memo(function ChartCore({
       if (value instanceof Date) {
         return shortDateFmt.format(value);
       }
-      return String(value ?? "");
+      return String(value ?? '');
     },
     [xDataKey]
   );
@@ -233,7 +233,7 @@ const ChartCore = memo(function ChartCore({
         let sum = 0;
         for (const line of lines) {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             sum += value;
           }
         }
@@ -248,7 +248,7 @@ const ChartCore = memo(function ChartCore({
     for (const line of lines) {
       for (const d of data) {
         const value = d[line.dataKey];
-        if (typeof value === "number" && value > max) {
+        if (typeof value === 'number' && value > max) {
           max = value;
         }
       }
@@ -282,7 +282,7 @@ const ChartCore = memo(function ChartCore({
       for (const line of lines) {
         pointOffsets.set(line.dataKey, cumulative);
         const value = d[line.dataKey];
-        if (typeof value === "number") {
+        if (typeof value === 'number') {
           cumulative += value;
         }
       }
@@ -368,7 +368,7 @@ const ChartCore = memo(function ChartCore({
           let cumulative = 0;
           for (const line of lines) {
             const value = d[line.dataKey];
-            if (typeof value === "number") {
+            if (typeof value === 'number') {
               cumulative += value;
               xPositions[line.dataKey] = valueScale(cumulative) ?? 0;
               yPositions[line.dataKey] = barPos + bandWidth / 2;
@@ -378,7 +378,7 @@ const ChartCore = memo(function ChartCore({
           // Grouped horizontal: each bar at its own y position
           lines.forEach((line, idx) => {
             const value = d[line.dataKey];
-            if (typeof value === "number") {
+            if (typeof value === 'number') {
               xPositions[line.dataKey] = valueScale(value) ?? 0;
               yPositions[line.dataKey] =
                 barPos +
@@ -393,7 +393,7 @@ const ChartCore = memo(function ChartCore({
         let seriesIdx = 0;
         for (const line of lines) {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             cumulative += value;
             const gapOffset = seriesIdx * stackGap;
             yPositions[line.dataKey] =
@@ -412,7 +412,7 @@ const ChartCore = memo(function ChartCore({
 
         lines.forEach((line, idx) => {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             yPositions[line.dataKey] = valueScale(value) ?? 0;
             xPositions[line.dataKey] =
               barPos +
@@ -488,7 +488,7 @@ const ChartCore = memo(function ChartCore({
     data,
     renderData: data,
     xScale: fakeTimeScale as unknown as ReturnType<
-      typeof import("@visx/scale").scaleTime<number>
+      typeof import('@visx/scale').scaleTime<number>
     >,
     yScale: valueScale,
     width,
@@ -530,7 +530,7 @@ const ChartCore = memo(function ChartCore({
         <g
           onMouseLeave={canInteract ? handleMouseLeave : undefined}
           onMouseMove={canInteract ? handleMouseMove : undefined}
-          style={{ cursor: canInteract ? "crosshair" : "default" }}
+          style={{ cursor: canInteract ? 'crosshair' : 'default' }}
           transform={`translate(${margin.left},${margin.top})`}
         >
           {/* Background rect for mouse event detection */}
@@ -555,17 +555,17 @@ const ChartCore = memo(function ChartCore({
 
 export function BarChart({
   data,
-  xDataKey = "name",
+  xDataKey = 'name',
   margin: marginProp,
   animationDuration = 1100,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
   revealSignature,
-  aspectRatio = "2 / 1",
-  className = "",
+  aspectRatio = '2 / 1',
+  className = '',
   barGap = 0.2,
   barWidth,
-  orientation = "vertical",
+  orientation = 'vertical',
   stacked = false,
   stackGap = 0,
   children,
@@ -575,7 +575,7 @@ export function BarChart({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn('relative w-full', className)}
       ref={containerRef}
       style={{ aspectRatio }}
     >
@@ -606,6 +606,6 @@ export function BarChart({
   );
 }
 
-BarChart.displayName = "BarChart";
+BarChart.displayName = 'BarChart';
 
 export default BarChart;

@@ -9,12 +9,7 @@
   "hero": {
     "heading": "Best Amplitude Alternatives",
     "subheading": "OpenPanel is an open-source, privacy-first alternative to Amplitude. Get powerful product analytics with web analytics built in, cookie-free tracking, and the freedom to self-host or use our cloud.",
-    "badges": [
-      "Open-source",
-      "Cookie-free",
-      "EU-only hosting",
-      "Self-hostable"
-    ]
+    "badges": ["Open-source", "Cookie-free", "EU-only hosting", "Self-hostable"]
   },
   "competitor": {
     "name": "Amplitude",

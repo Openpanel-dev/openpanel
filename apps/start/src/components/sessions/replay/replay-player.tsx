@@ -6,7 +6,7 @@ import 'rrweb-player/dist/style.css';
 
 /** rrweb meta event (type 4) carries the recorded viewport size */
 function getRecordedDimensions(
-  events: Array<{ type: number; data: unknown }>,
+  events: Array<{ type: number; data: unknown }>
 ): { width: number; height: number } | null {
   const meta = events.find((e) => e.type === 4);
   if (
@@ -24,7 +24,7 @@ function getRecordedDimensions(
 
 function calcDimensions(
   containerWidth: number,
-  aspectRatio: number,
+  aspectRatio: number
 ): { width: number; height: number } {
   const maxHeight = window.innerHeight * 0.7;
   const height = Math.min(Math.round(containerWidth / aspectRatio), maxHeight);
@@ -50,7 +50,7 @@ export function ReplayPlayer({
 
   const recordedDimensions = useMemo(
     () => getRecordedDimensions(events),
-    [events],
+    [events]
   );
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export function ReplayPlayer({
 
     const { width, height } = calcDimensions(
       containerRef.current.offsetWidth,
-      aspectRatio,
+      aspectRatio
     );
 
     import('rrweb-player')
@@ -141,7 +141,7 @@ export function ReplayPlayer({
       if (!containerRef.current || !mounted || !playerRef.current?.$set) return;
       const { width: w, height: h } = calcDimensions(
         containerRef.current.offsetWidth,
-        aspectRatio,
+        aspectRatio
       );
       playerRef.current.$set({ width: w, height: h });
     };
@@ -151,7 +151,10 @@ export function ReplayPlayer({
       mounted = false;
       window.removeEventListener('resize', onWindowResize);
       if (handleVisibilityChange) {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener(
+          'visibilitychange',
+          handleVisibilityChange
+        );
       }
       if (player) {
         player.pause();
@@ -162,7 +165,15 @@ export function ReplayPlayer({
       playerRef.current = null;
       onPlayerDestroy();
     };
-  }, [events, recordedDimensions, onPlayerReady, onPlayerDestroy, setCurrentTime, setIsPlaying, setDuration]);
+  }, [
+    events,
+    recordedDimensions,
+    onPlayerReady,
+    onPlayerDestroy,
+    setCurrentTime,
+    setIsPlaying,
+    setDuration,
+  ]);
 
   if (importError) {
     return (

@@ -16,12 +16,12 @@ export const SkipOnboarding = () => {
   const pathname = location.pathname;
   const segments = location.pathname.split('/').filter(Boolean);
   const isPublic = PUBLIC_SEGMENTS.some((segment) =>
-    segments.every((s, index) => s === segment[index]),
+    segments.every((s, index) => s === segment[index])
   );
   const res = useQuery(
     trpc.onboarding.skipOnboardingCheck.queryOptions(undefined, {
       enabled: !isPublic,
-    }),
+    })
   );
 
   const logout = useLogout();

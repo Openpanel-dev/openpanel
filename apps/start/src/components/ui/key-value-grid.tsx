@@ -113,48 +113,48 @@ export function KeyValueGrid({
         const stringValue = toStringValue(item.value);
 
         return (
-        <div
-          key={`${item.name}-${index}`}
-          className={cn(
-            'relative flex items-center justify-between gap-4 p-4 py-3 shadow-[0_0_0_0.5px] shadow-border group',
-            onItemClick && 'cursor-pointer hover:bg-muted/50',
-            rowClassName,
-          )}
-          onClick={() => onItemClick?.(item)}
-          onKeyDown={(e) => {
-            if (onItemClick && (e.key === 'Enter' || e.key === ' ')) {
-              e.preventDefault();
-              onItemClick(item);
-            }
-          }}
-          tabIndex={onItemClick ? 0 : undefined}
-          role={onItemClick ? 'button' : undefined}
-        >
-          {copyable && stringValue !== undefined && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                clipboard(stringValue);
-              }}
-              type="button"
-              className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out bg-background border border-border rounded p-1 shadow-sm z-10"
-            >
-              <CopyIcon className="size-3 shrink-0" />
-            </button>
-          )}
-          <div className={cn('flex-1 min-w-0 text-sm', keyClassName)}>
-            {renderKey ? renderKey(item) : defaultRenderKey(item)}
-          </div>
           <div
+            key={`${item.name}-${index}`}
             className={cn(
-              'text-right text-sm font-mono truncate min-w-0 max-w-[60%]',
-              valueClassName,
+              'relative flex items-center justify-between gap-4 p-4 py-3 shadow-[0_0_0_0.5px] shadow-border group',
+              onItemClick && 'cursor-pointer hover:bg-muted/50',
+              rowClassName
             )}
-            title={stringValue}
+            onClick={() => onItemClick?.(item)}
+            onKeyDown={(e) => {
+              if (onItemClick && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                onItemClick(item);
+              }
+            }}
+            tabIndex={onItemClick ? 0 : undefined}
+            role={onItemClick ? 'button' : undefined}
           >
-            {renderValue ? renderValue(item) : defaultRenderValue(item)}
+            {copyable && stringValue !== undefined && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clipboard(stringValue);
+                }}
+                type="button"
+                className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out bg-background border border-border rounded p-1 shadow-sm z-10"
+              >
+                <CopyIcon className="size-3 shrink-0" />
+              </button>
+            )}
+            <div className={cn('flex-1 min-w-0 text-sm', keyClassName)}>
+              {renderKey ? renderKey(item) : defaultRenderKey(item)}
+            </div>
+            <div
+              className={cn(
+                'text-right text-sm font-mono truncate min-w-0 max-w-[60%]',
+                valueClassName
+              )}
+              title={stringValue}
+            >
+              {renderValue ? renderValue(item) : defaultRenderValue(item)}
+            </div>
           </div>
-        </div>
         );
       })}
 

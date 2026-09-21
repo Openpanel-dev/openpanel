@@ -47,7 +47,7 @@ export default function EditClient({ id, name }: EditClientProps) {
         popModal();
         queryClient.invalidateQueries(trpc.client.list.pathFilter());
       },
-    }),
+    })
   );
 
   return (

@@ -92,15 +92,10 @@ export function readSources(repoRoot: string, paths: string[]): ParsedSource[] {
 
 /** 1-indexed, the way every editor and every `file:line` offender reads. */
 export function lineOf(source: ParsedSource, position: number): number {
-  return (
-    source.sourceFile.getLineAndCharacterOfPosition(position).line + 1
-  );
+  return source.sourceFile.getLineAndCharacterOfPosition(position).line + 1;
 }
 
-export function visit(
-  node: ts.Node,
-  callback: (node: ts.Node) => void
-): void {
+export function visit(node: ts.Node, callback: (node: ts.Node) => void): void {
   callback(node);
   ts.forEachChild(node, (child) => visit(child, callback));
 }
@@ -150,7 +145,10 @@ export function isExported(node: ts.Node): boolean {
 export interface NamedFunction {
   name: string;
   /** Narrow enough that `.parameters` and `.body` are both reachable. */
-  declaration: ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction;
+  declaration:
+    | ts.FunctionDeclaration
+    | ts.FunctionExpression
+    | ts.ArrowFunction;
   /** The node whose position the offender line is reported at. */
   anchor: ts.Node;
 }

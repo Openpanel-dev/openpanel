@@ -44,16 +44,16 @@ const dedentContent = (text: string): string => {
 
 const transformMdxToReadme = (
   mdxContent: string,
-  packageName: string,
+  packageName: string
 ): string => {
   let content = mdxContent;
 
   // Load MDX component content files
   const commonSdkConfigPath = workspacePath(
-    'apps/public/src/components/common-sdk-config.mdx',
+    'apps/public/src/components/common-sdk-config.mdx'
   );
   const webSdkConfigPath = workspacePath(
-    'apps/public/src/components/web-sdk-config.mdx',
+    'apps/public/src/components/web-sdk-config.mdx'
   );
 
   let commonSdkConfigContent = '';
@@ -96,13 +96,13 @@ const transformMdxToReadme = (
   if (commonSdkConfigContent) {
     content = content.replace(
       /<CommonSdkConfig\s*\/>/g,
-      `\n${commonSdkConfigContent}\n`,
+      `\n${commonSdkConfigContent}\n`
     );
   }
   if (webSdkConfigContent) {
     content = content.replace(
       /<WebSdkConfig\s*\/>/g,
-      `\n${webSdkConfigContent}\n`,
+      `\n${webSdkConfigContent}\n`
     );
   }
 
@@ -141,7 +141,7 @@ const transformMdxToReadme = (
       (match, value, tabContent) => {
         const dedented = dedentContent(tabContent).trim();
         return `\n#### ${value}\n\n${dedented}\n\n`;
-      },
+      }
     );
     // Remove the Tabs wrapper
     content = content.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, '$1');
@@ -152,7 +152,7 @@ const transformMdxToReadme = (
       (match, value, tabContent) => {
         const dedented = dedentContent(tabContent).trim();
         return `\n#### ${value}\n\n${dedented}\n\n`;
-      },
+      }
     );
     content = content.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, '$1');
   }
@@ -171,7 +171,7 @@ const transformMdxToReadme = (
       /<([A-Z][a-zA-Z]*)[^>]*>([\s\S]*?)<\/\1>/g,
       (match, tagName, innerContent) => {
         return dedentContent(innerContent).trim();
-      },
+      }
     );
   }
 
@@ -186,7 +186,7 @@ const transformMdxToReadme = (
   // Convert internal links (starting with /) to absolute URLs
   content = content.replace(
     /\[([^\]]+)\]\((\/[^\)]+)\)/g,
-    '[$1](https://openpanel.dev$2)',
+    '[$1](https://openpanel.dev$2)'
   );
 
   // Clean up extra blank lines
@@ -209,7 +209,7 @@ const transformMdxToReadme = (
 
 export const generateReadme = (
   packages: Record<string, PackageInfo>,
-  dependents: string[],
+  dependents: string[]
 ): string[] => {
   const generatedReadmes: string[] = [];
   for (const dep of dependents) {
@@ -217,7 +217,7 @@ export const generateReadme = (
     const docPath = pkg?.config?.docPath;
     if (!docPath) {
       console.log(
-        `📝 Skipping README generation for ${dep} (no docPath configured)`,
+        `📝 Skipping README generation for ${dep} (no docPath configured)`
       );
       continue;
     }

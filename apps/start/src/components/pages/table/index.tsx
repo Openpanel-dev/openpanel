@@ -32,15 +32,15 @@ export function PagesTable({ projectId }: PagesTableProps) {
         range,
         interval,
       },
-      { placeholderData: keepPreviousData },
-    ),
+      { placeholderData: keepPreviousData }
+    )
   );
 
   const connectionQuery = useQuery(
-    trpc.gsc.getConnection.queryOptions({ projectId }),
+    trpc.gsc.getConnection.queryOptions({ projectId })
   );
 
-  const isGscConnected = !!(connectionQuery.data?.siteUrl);
+  const isGscConnected = !!connectionQuery.data?.siteUrl;
 
   const gscPagesQuery = useQuery(
     trpc.gsc.getPages.queryOptions(
@@ -51,15 +51,15 @@ export function PagesTable({ projectId }: PagesTableProps) {
         endDate: endDate ?? undefined,
         limit: 10_000,
       },
-      { enabled: isGscConnected },
-    ),
+      { enabled: isGscConnected }
+    )
   );
 
   const previousPagesQuery = useQuery(
     trpc.event.previousPages.queryOptions(
       { projectId, range, interval },
-      { placeholderData: keepPreviousData },
-    ),
+      { placeholderData: keepPreviousData }
+    )
   );
 
   const previousMap = useMemo(() => {

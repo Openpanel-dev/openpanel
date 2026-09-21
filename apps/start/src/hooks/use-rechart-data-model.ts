@@ -43,7 +43,7 @@ export function useRechartDataModel(series: IChartData['series']) {
                   }
                   return acc2;
                 },
-                {} as Record<string, any>,
+                {} as Record<string, any>
               ),
             };
           }, {}),

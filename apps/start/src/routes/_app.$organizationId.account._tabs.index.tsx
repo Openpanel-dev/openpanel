@@ -50,7 +50,7 @@ function Component() {
         });
       },
       onError: handleError,
-    }),
+    })
   );
 
   if (!user) {
@@ -65,38 +65,38 @@ function Component() {
         })}
       >
         <Widget className="max-w-screen-md w-full">
-        <WidgetHead>
-          <span className="title">Profile</span>
-        </WidgetHead>
-        <WidgetBody className="gap-4 col">
-          <InputWithLabel
-            label="Email"
-            value={user.email}
-            disabled
-            readOnly
-          />
-          <InputWithLabel
-            label="First name"
-            {...register('firstName')}
-            defaultValue={user.firstName ?? ''}
-          />
-          <InputWithLabel
-            label="Last name"
-            {...register('lastName')}
-            defaultValue={user.lastName ?? ''}
-          />
-          <Button
-            size="sm"
-            type="submit"
-            disabled={!formState.isDirty || mutation.isPending}
-            className="self-end"
-            icon={SaveIcon}
-            loading={mutation.isPending}
-          >
-            Save
-          </Button>
-        </WidgetBody>
-      </Widget>
+          <WidgetHead>
+            <span className="title">Profile</span>
+          </WidgetHead>
+          <WidgetBody className="gap-4 col">
+            <InputWithLabel
+              label="Email"
+              value={user.email}
+              disabled
+              readOnly
+            />
+            <InputWithLabel
+              label="First name"
+              {...register('firstName')}
+              defaultValue={user.firstName ?? ''}
+            />
+            <InputWithLabel
+              label="Last name"
+              {...register('lastName')}
+              defaultValue={user.lastName ?? ''}
+            />
+            <Button
+              size="sm"
+              type="submit"
+              disabled={!formState.isDirty || mutation.isPending}
+              className="self-end"
+              icon={SaveIcon}
+              loading={mutation.isPending}
+            >
+              Save
+            </Button>
+          </WidgetBody>
+        </Widget>
       </form>
       <DeleteAccount />
     </div>

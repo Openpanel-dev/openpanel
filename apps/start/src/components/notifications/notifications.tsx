@@ -9,7 +9,7 @@ export function Notifications() {
   const query = useQuery(
     trpc.notification.list.queryOptions({
       projectId,
-    }),
+    })
   );
 
   return <NotificationsTable query={query} />;

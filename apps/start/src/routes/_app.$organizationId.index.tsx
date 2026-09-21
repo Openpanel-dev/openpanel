@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_app/$organizationId/')({
     await context.queryClient.prefetchQuery(
       context.trpc.project.list.queryOptions({
         organizationId: params.organizationId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -44,7 +44,7 @@ function OrganizationPage() {
   const { data: projects } = useQuery(
     trpc.project.list.queryOptions({
       organizationId,
-    }),
+    })
   );
   const { isAdmin } = useOrganizationAccess(organizationId);
   const { setSearch, search } = useSearchQueryState();

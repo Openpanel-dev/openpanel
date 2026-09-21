@@ -108,11 +108,11 @@ export function OverviewListModal<T extends OverviewListItem>({
   const { maxSessions, totalRevenue, hasRevenue, hasPageviews } =
     useMemo(() => {
       const maxSessions = Math.max(
-        ...filteredData.map((item) => item.sessions),
+        ...filteredData.map((item) => item.sessions)
       );
       const totalRevenue = filteredData.reduce(
         (sum, item) => sum + (item.revenue ?? 0),
-        0,
+        0
       );
       const hasRevenue = filteredData.some((item) => (item.revenue ?? 0) > 0);
       const hasPageviews =

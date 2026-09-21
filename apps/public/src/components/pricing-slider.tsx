@@ -44,7 +44,7 @@ export function PricingSlider() {
           <span
             className={cn(
               'text-sm text-muted-foreground italic opacity-100',
-              match.price === 0 && 'opacity-0',
+              match.price === 0 && 'opacity-0'
             )}
           >
             + VAT if applicable

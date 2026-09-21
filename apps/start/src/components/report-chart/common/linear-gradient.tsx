@@ -28,7 +28,7 @@ export const SolidToDashedGradient: React.FC<GradientProps> = ({
 // Helper function moved to the same file
 const generateSolidToDashedLinearGradient = (
   percentage: number,
-  baseColor: string,
+  baseColor: string
 ) => {
   // Start with solid baseColor up to percentage
   const stops = [
@@ -61,7 +61,7 @@ const generateSolidToDashedLinearGradient = (
         offset: `${startOffset + 2 * dashWidth}%`,
         color: 'transparent',
         opacity: 0,
-      },
+      }
     );
   }
 

@@ -8,7 +8,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/_tabs/anonymous',
+  '/_app/$organizationId/$projectId/profiles/_tabs/anonymous'
 )({
   component: Component,
   head: () => {
@@ -40,8 +40,8 @@ function Component() {
       },
       {
         placeholderData: keepPreviousData,
-      },
-    ),
+      }
+    )
   );
 
   return <ProfilesTable query={query} type="profiles" />;

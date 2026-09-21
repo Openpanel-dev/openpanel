@@ -26,7 +26,7 @@ export default function OverviewTopPagesModal({
       endDate,
       mode: 'page',
       range,
-    }),
+    })
   );
 
   return (

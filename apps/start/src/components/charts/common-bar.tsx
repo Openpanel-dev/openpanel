@@ -105,5 +105,5 @@ const BarShapes = [...new Array(13)].map((_, index) =>
       border: getChartColor(index),
       fill: getChartTranslucentColor(index),
     },
-  }),
+  })
 );

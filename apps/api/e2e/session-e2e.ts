@@ -117,7 +117,9 @@ async function scenarioBoundary() {
   const ip = `10.${(runId >> 16) & 255}.2.${runId & 255 || 1}`;
 
   const a = await screenView(ip, '/x');
-  console.log(`   …waiting ${IDLE_WAIT_MS}ms so the next event crosses the boundary`);
+  console.log(
+    `   …waiting ${IDLE_WAIT_MS}ms so the next event crosses the boundary`
+  );
   await sleep(IDLE_WAIT_MS);
   const b = await screenView(ip, '/y');
 
@@ -150,12 +152,18 @@ async function scenarioNonScreenViewFirst() {
     { type: 'track', payload: { name: 'purchase', properties: { __ip: ip } } },
     ip
   );
-  check('track returned a sessionId for a non-screen_view first event', !!sessionId);
+  check(
+    'track returned a sessionId for a non-screen_view first event',
+    !!sessionId
+  );
 
   const starts = await pollUntil(async () =>
     (await countByName([sessionId], 'session_start')) > 0 ? true : null
   );
-  check('clickhouse: session_start emitted for a custom-event session', !!starts);
+  check(
+    'clickhouse: session_start emitted for a custom-event session',
+    !!starts
+  );
 
   console.log(`   …waiting ${IDLE_WAIT_MS}ms for idle window, then reaping`);
   await sleep(IDLE_WAIT_MS);
@@ -176,8 +184,16 @@ async function scenarioNonScreenViewFirst() {
     );
     return rows[0] ?? null;
   });
-  check('clickhouse: screen_view_count is 0', Number(row?.screen_view_count) === 0, `${row?.screen_view_count}`);
-  check('clickhouse: event_count is 1', Number(row?.event_count) === 1, `${row?.event_count}`);
+  check(
+    'clickhouse: screen_view_count is 0',
+    Number(row?.screen_view_count) === 0,
+    `${row?.screen_view_count}`
+  );
+  check(
+    'clickhouse: event_count is 1',
+    Number(row?.event_count) === 1,
+    `${row?.event_count}`
+  );
   check(
     'clickhouse: is_bounce is true (no pageviews)',
     row?.is_bounce === true || Number(row?.is_bounce) === 1,

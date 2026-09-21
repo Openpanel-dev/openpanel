@@ -8,7 +8,10 @@ interface SummaryComparisonProps {
   competitorName: string;
 }
 
-export function SummaryComparison({ summary, competitorName }: SummaryComparisonProps) {
+export function SummaryComparison({
+  summary,
+  competitorName,
+}: SummaryComparisonProps) {
   return (
     <Section className="container">
       <SectionHeader
@@ -49,4 +52,3 @@ export function SummaryComparison({ summary, competitorName }: SummaryComparison
     </Section>
   );
 }
-

@@ -14,7 +14,9 @@ export function NotificationProvider() {
 
 export function InnerNotificationProvider({
   projectId,
-}: { projectId: string }) {
+}: {
+  projectId: string;
+}) {
   useWS<Notification>(`/live/notifications/${projectId}`, (notification) => {
     toast(notification.title, {
       description: notification.message,

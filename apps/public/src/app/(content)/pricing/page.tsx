@@ -117,8 +117,8 @@ function ComparisonSection() {
   const comparisons = compareSource
     .filter((item) =>
       ['plausible', 'mixpanel', 'google', 'posthog', 'matomo', 'umami'].some(
-        (name) => item.competitor.name.toLowerCase().includes(name),
-      ),
+        (name) => item.competitor.name.toLowerCase().includes(name)
+      )
     )
     .sort((a, b) => a.competitor.name.localeCompare(b.competitor.name));
 

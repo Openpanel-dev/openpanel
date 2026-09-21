@@ -15,7 +15,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
   const query = useQuery(
     trpc.realtime.referrals.queryOptions({
       projectId,
-    }),
+    })
   );
 
   const data = query.data ?? [];

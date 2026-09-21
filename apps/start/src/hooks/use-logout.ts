@@ -8,7 +8,7 @@ export function useLogout() {
       onSuccess() {
         window.location.href = '/';
       },
-    }),
+    })
   );
   return signOut;
 }

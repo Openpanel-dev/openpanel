@@ -114,7 +114,7 @@ export default function SiteCheckerPage() {
 
     try {
       const response = await fetch(
-        `${API_URL}/tools/site-checker?url=${encodeURIComponent(url)}`,
+        `${API_URL}/tools/site-checker?url=${encodeURIComponent(url)}`
       );
       const data = await response.json();
 
@@ -122,7 +122,7 @@ export default function SiteCheckerPage() {
         if (response.status === 429) {
           setIsRateLimited(true);
           throw new Error(
-            'Rate limit exceeded. Please wait a minute before trying again.',
+            'Rate limit exceeded. Please wait a minute before trying again.'
           );
         }
         setIsRateLimited(false);
@@ -233,7 +233,7 @@ export default function SiteCheckerPage() {
             'mt-4 p-4 rounded-lg border',
             isRateLimited
               ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-              : 'bg-destructive/10 border-destructive/20 text-destructive',
+              : 'bg-destructive/10 border-destructive/20 text-destructive'
           )}
         >
           <div className="flex items-start gap-2">
@@ -293,7 +293,7 @@ export default function SiteCheckerPage() {
                     'flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors',
                     activeTab === tab.id
                       ? 'border-foreground text-foreground'
-                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {tab.icon}
@@ -543,7 +543,7 @@ export default function SiteCheckerPage() {
                         : result.technical.statusCode >= 300 &&
                             result.technical.statusCode < 400
                           ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-destructive',
+                          : 'text-destructive'
                     )}
                   >
                     {result.technical.statusCode}
@@ -589,7 +589,7 @@ export default function SiteCheckerPage() {
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : result.technical.responseTime.total < 3000
                           ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-destructive',
+                          : 'text-destructive'
                     )}
                   >
                     {result.technical.responseTime.total}ms total
@@ -660,7 +660,7 @@ export default function SiteCheckerPage() {
                       <div className="text-xs text-muted-foreground mt-1">
                         Expires:{' '}
                         {new Date(
-                          result.technical.ssl.expires,
+                          result.technical.ssl.expires
                         ).toLocaleDateString()}
                       </div>
                     </div>
@@ -698,11 +698,11 @@ export default function SiteCheckerPage() {
                                 result.hosting.location.longitude && (
                                   <div className="text-xs text-muted-foreground mt-1">
                                     {result.hosting.location.latitude.toFixed(
-                                      4,
+                                      4
                                     )}
                                     ,{' '}
                                     {result.hosting.location.longitude.toFixed(
-                                      4,
+                                      4
                                     )}
                                   </div>
                                 )}
@@ -807,7 +807,7 @@ export default function SiteCheckerPage() {
                         ? 'bg-emerald-600 dark:bg-emerald-400'
                         : result.security.score >= 40
                           ? 'bg-amber-600 dark:bg-amber-400'
-                          : 'bg-destructive',
+                          : 'bg-destructive'
                     )}
                     style={{ width: `${result.security.score}%` }}
                   />

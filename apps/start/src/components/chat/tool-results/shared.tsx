@@ -100,9 +100,20 @@ export function ResultCard({
   );
 }
 
-export function ResultRow({ children, className }: { children: ReactNode; className?: string }) {
+export function ResultRow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={cn('flex items-center justify-between gap-2 px-3 py-1.5 text-sm', className)}>
+    <div
+      className={cn(
+        'flex items-center justify-between gap-2 px-3 py-1.5 text-sm',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -112,9 +123,19 @@ export function ResultLabel({ children }: { children: ReactNode }) {
   return <span className="text-muted-foreground truncate">{children}</span>;
 }
 
-export function ResultValue({ children, mono = true }: { children: ReactNode; mono?: boolean }) {
+export function ResultValue({
+  children,
+  mono = true,
+}: {
+  children: ReactNode;
+  mono?: boolean;
+}) {
   return (
-    <span className={cn('font-medium tabular-nums shrink-0', mono && 'font-mono')}>{children}</span>
+    <span
+      className={cn('font-medium tabular-nums shrink-0', mono && 'font-mono')}
+    >
+      {children}
+    </span>
   );
 }
 

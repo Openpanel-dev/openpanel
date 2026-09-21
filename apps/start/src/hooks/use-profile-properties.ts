@@ -6,7 +6,7 @@ export function useProfileProperties(projectId: string) {
   const query = useQuery(
     trpc.profile.properties.queryOptions({
       projectId,
-    }),
+    })
   );
   return query.data ?? [];
 }

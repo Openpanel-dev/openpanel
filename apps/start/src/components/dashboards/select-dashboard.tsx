@@ -27,7 +27,7 @@ export function SelectDashboard({
   const dashboardQuery = useQuery(
     trpc.dashboard.list.queryOptions({
       projectId,
-    }),
+    })
   );
 
   const dashboardMutation = useMutation(
@@ -40,7 +40,7 @@ export function SelectDashboard({
         setIsCreatingNew(false);
         setNewDashboardName('');
       },
-    }),
+    })
   );
 
   const handleCreateDashboard = () => {
@@ -56,7 +56,7 @@ export function SelectDashboard({
   };
 
   const dashboards = (dashboardQuery.data ?? []).filter(
-    (dashboard) => dashboard.id !== excludeDashboardId,
+    (dashboard) => dashboard.id !== excludeDashboardId
   );
 
   return (

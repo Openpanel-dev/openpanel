@@ -109,7 +109,7 @@ type ThemeProviderProps = {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [userTheme, setUserTheme] = useCookieStore<UserTheme>(
     'ui-theme',
-    'system',
+    'system'
   );
 
   useEffect(() => {

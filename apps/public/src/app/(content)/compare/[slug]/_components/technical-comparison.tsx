@@ -41,7 +41,9 @@ export function TechnicalComparison({
               <tr className="border-b bg-muted/30">
                 <th className="text-left p-4 font-semibold">Feature</th>
                 <th className="text-left p-4 font-semibold">OpenPanel</th>
-                <th className="text-left p-4 font-semibold">{competitorName}</th>
+                <th className="text-left p-4 font-semibold">
+                  {competitorName}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -74,4 +76,3 @@ export function TechnicalComparison({
     </Section>
   );
 }
-

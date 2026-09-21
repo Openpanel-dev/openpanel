@@ -103,7 +103,7 @@ export interface FeatureData {
 const contentDir = join(process.cwd(), 'content', 'features');
 
 export async function getFeatureData(
-  slug: string,
+  slug: string
 ): Promise<FeatureData | null> {
   try {
     const filePath = join(contentDir, `${slug}.json`);

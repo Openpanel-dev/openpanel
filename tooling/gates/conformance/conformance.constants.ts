@@ -162,7 +162,11 @@ export const UTIL_DIRECTORY_PATTERNS: readonly RegExp[] = [
  * without this the basename check reports six `index.ts` "duplicates" and buries
  * the five real copies.
  */
-export const UTIL_BASENAME_EXCLUSIONS = new Set(['index', 'types', 'constants']);
+export const UTIL_BASENAME_EXCLUSIONS = new Set([
+  'index',
+  'types',
+  'constants',
+]);
 
 /** R21 — the package ADR-022's C7 chore will create. Absent today. */
 export const SHARED_PACKAGE_NAME = '@openpanel/shared';

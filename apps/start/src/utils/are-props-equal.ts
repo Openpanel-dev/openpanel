@@ -6,7 +6,7 @@ export function arePropsEqual(paths: string[]) {
     paths.every((path) =>
       shallowEqual(
         pathOr(undefined, path.split('.'), prevProps),
-        pathOr(undefined, path.split('.'), nextProps),
-      ),
+        pathOr(undefined, path.split('.'), nextProps)
+      )
     );
 }

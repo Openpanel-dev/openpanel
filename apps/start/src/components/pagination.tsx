@@ -50,7 +50,7 @@ export function Pagination({
     <div
       className={cn(
         'flex select-none items-center justify-end gap-1',
-        className,
+        className
       )}
     >
       {typeof firstPage === 'function' && (

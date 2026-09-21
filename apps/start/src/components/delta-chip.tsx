@@ -22,7 +22,7 @@ const deltaChipVariants = cva(
       variant: 'default',
       size: 'md',
     },
-  },
+  }
 );
 
 type DeltaChipProps = VariantProps<typeof deltaChipVariants> & {
@@ -53,7 +53,7 @@ export function DeltaChip({
   return (
     <div
       className={cn(
-        deltaChipVariants({ variant: getVariant(variant, inverted), size }),
+        deltaChipVariants({ variant: getVariant(variant, inverted), size })
       )}
     >
       {variant === 'inc' ? (

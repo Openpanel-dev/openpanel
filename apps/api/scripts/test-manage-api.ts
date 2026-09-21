@@ -34,7 +34,7 @@ const results: TestResult[] = [];
 async function makeRequest(
   method: string,
   path: string,
-  body?: any,
+  body?: any
 ): Promise<TestResult> {
   const url = `${API_BASE_URL}${path}`;
   const headers: Record<string, string> = {
@@ -90,7 +90,7 @@ async function testProjects() {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/projects: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/projects: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
   if (createResult.error) console.log(`  Error: ${createResult.error}`);
 
@@ -108,7 +108,7 @@ async function testProjects() {
   const listResult = await makeRequest('GET', '/manage/projects');
   results.push(listResult);
   console.log(
-    `✓ GET /manage/projects: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/projects: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} projects`);
@@ -119,7 +119,7 @@ async function testProjects() {
     const getResult = await makeRequest('GET', `/manage/projects/${projectId}`);
     results.push(getResult);
     console.log(
-      `✓ GET /manage/projects/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/projects/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
     // Update project
@@ -129,21 +129,21 @@ async function testProjects() {
       {
         name: 'Updated Test Project',
         crossDomain: true,
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/projects/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/projects/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
     // Delete project (soft delete)
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/projects/${projectId}`,
+      `/manage/projects/${projectId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/projects/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/projects/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 
@@ -161,7 +161,7 @@ async function testClients(projectId?: string) {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/clients: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/clients: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
   if (createResult.error) console.log(`  Error: ${createResult.error}`);
 
@@ -176,11 +176,11 @@ async function testClients(projectId?: string) {
   // List clients
   const listResult = await makeRequest(
     'GET',
-    projectId ? `/manage/clients?projectId=${projectId}` : '/manage/clients',
+    projectId ? `/manage/clients?projectId=${projectId}` : '/manage/clients'
   );
   results.push(listResult);
   console.log(
-    `✓ GET /manage/clients: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/clients: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} clients`);
@@ -191,7 +191,7 @@ async function testClients(projectId?: string) {
     const getResult = await makeRequest('GET', `/manage/clients/${clientId}`);
     results.push(getResult);
     console.log(
-      `✓ GET /manage/clients/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/clients/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
     // Update client
@@ -200,21 +200,21 @@ async function testClients(projectId?: string) {
       `/manage/clients/${clientId}`,
       {
         name: 'Updated Test Client',
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/clients/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/clients/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
     // Delete client
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/clients/${clientId}`,
+      `/manage/clients/${clientId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/clients/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/clients/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 }
@@ -236,7 +236,7 @@ async function testReferences(projectId?: string) {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/references: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/references: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
   if (createResult.error) console.log(`  Error: ${createResult.error}`);
 
@@ -249,11 +249,11 @@ async function testReferences(projectId?: string) {
   // List references
   const listResult = await makeRequest(
     'GET',
-    `/manage/references?projectId=${projectId}`,
+    `/manage/references?projectId=${projectId}`
   );
   results.push(listResult);
   console.log(
-    `✓ GET /manage/references: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/references: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} references`);
@@ -263,11 +263,11 @@ async function testReferences(projectId?: string) {
     // Get reference
     const getResult = await makeRequest(
       'GET',
-      `/manage/references/${referenceId}`,
+      `/manage/references/${referenceId}`
     );
     results.push(getResult);
     console.log(
-      `✓ GET /manage/references/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/references/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
     // Update reference
@@ -278,21 +278,21 @@ async function testReferences(projectId?: string) {
         title: 'Updated Test Reference',
         description: 'Updated description',
         datetime: new Date().toISOString(),
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/references/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/references/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
     // Delete reference
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/references/${referenceId}`,
+      `/manage/references/${referenceId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/references/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/references/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 }

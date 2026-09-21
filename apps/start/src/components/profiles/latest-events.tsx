@@ -30,7 +30,7 @@ export const LatestEvents = ({
     trpc.event.events.queryOptions({
       projectId,
       profileId,
-    }),
+    })
   );
 
   const handleShowMore = () => {

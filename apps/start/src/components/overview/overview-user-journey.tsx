@@ -120,11 +120,11 @@ function SankeyPortalTooltip({
     // Clamp inside viewport with a little padding.
     left = Math.min(
       Math.max(padding, left),
-      Math.max(padding, vw - rect.width - padding),
+      Math.max(padding, vw - rect.width - padding)
     );
     top = Math.min(
       Math.max(padding, top),
-      Math.max(padding, vh - rect.height - padding),
+      Math.max(padding, vh - rect.height - padding)
     );
 
     setPos({ left, top, ready: true });
@@ -152,7 +152,7 @@ function SankeyPortalTooltip({
           >
             {children}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );
@@ -166,7 +166,7 @@ export default function OverviewUserJourney({
   const [filters] = useEventQueryFilters();
   const [steps, setSteps] = useQueryState(
     'journeySteps',
-    parseAsInteger.withDefault(5).withOptions({ history: 'push' }),
+    parseAsInteger.withDefault(5).withOptions({ history: 'push' })
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const trpc = useTRPC();
@@ -180,7 +180,7 @@ export default function OverviewUserJourney({
       range,
       steps: steps ?? 5,
       shareId,
-    }),
+    })
   );
 
   const data = query.data;
@@ -391,7 +391,7 @@ export default function OverviewUserJourney({
               }}
               label={(node: any) => {
                 const label = showPath(
-                  node.data?.label || node.label || node.id,
+                  node.data?.label || node.label || node.id
                 );
                 return truncate(label, 30, 'middle');
               }}

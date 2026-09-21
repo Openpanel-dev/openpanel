@@ -22,7 +22,7 @@ export const Route = createFileRoute('/share/report/$shareId')({
     const share = await context.queryClient.ensureQueryData(
       context.trpc.share.report.queryOptions({
         shareId: params.shareId,
-      }),
+      })
     );
 
     if (!share) {
@@ -81,7 +81,7 @@ function RouteComponent() {
   const shareQuery = useSuspenseQuery(
     trpc.share.report.queryOptions({
       shareId,
-    }),
+    })
   );
 
   const share = shareQuery.data;

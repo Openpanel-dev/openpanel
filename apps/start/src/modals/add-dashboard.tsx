@@ -51,7 +51,7 @@ export default function AddDashboard() {
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (

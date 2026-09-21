@@ -21,7 +21,7 @@ function getClientHeaders(req: Request): Headers {
   headers.set('Content-Type', 'application/json');
   headers.set(
     'openpanel-client-id',
-    req.headers.get('openpanel-client-id') ?? '',
+    req.headers.get('openpanel-client-id') ?? ''
   );
 
   // Construct origin: browsers send Origin header for POST requests and cross-origin requests,
@@ -45,7 +45,7 @@ function getClientHeaders(req: Request): Headers {
 async function handleApiRoute(
   req: Request,
   apiUrl: string,
-  apiPath: string,
+  apiPath: string
 ): Promise<NextResponse> {
   const headers = getClientHeaders(req);
 
@@ -67,7 +67,7 @@ async function handleApiRoute(
         error: 'Failed to proxy request',
         message: e instanceof Error ? e.message : String(e),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -108,7 +108,7 @@ async function handleScriptProxyRoute(req: Request): Promise<NextResponse> {
         error: 'Failed to fetch script',
         message: e instanceof Error ? e.message : String(e),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

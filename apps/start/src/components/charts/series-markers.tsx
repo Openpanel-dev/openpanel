@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { type ReactNode, useCallback, useMemo } from "react";
-import { clipRevealTransition } from "./animation";
+import { type ReactNode, useCallback, useMemo } from 'react';
+import { clipRevealTransition } from './animation';
 import {
   defaultScatterColors,
   useChartHover,
   useChartStable,
-} from "./chart-context";
+} from './chart-context';
 import {
   getSeriesMarkerVisualExtent,
   SeriesPointMarker,
   type SeriesPointMarkerStyle,
   StaticSeriesPointMarker,
-} from "./series-point-marker";
+} from './series-point-marker';
 
 export interface SeriesMarkersProps extends SeriesPointMarkerStyle {
   dataKey: string;
@@ -104,7 +104,7 @@ export function SeriesMarkers({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : null;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : null;
     },
     [dataKey, yScale]
   );
@@ -212,7 +212,7 @@ export function SeriesMarkers({
   );
 }
 
-SeriesMarkers.displayName = "SeriesMarkers";
+SeriesMarkers.displayName = 'SeriesMarkers';
 
 interface SeriesMarkersDimWrapperProps {
   enabled: boolean;
@@ -238,9 +238,9 @@ function SeriesMarkersDimWrapper({
     <g
       opacity={dimBase ? inactiveOpacity : 1}
       style={{
-        transition: "opacity 0.15s ease-in-out, filter 0.15s ease-in-out",
+        transition: 'opacity 0.15s ease-in-out, filter 0.15s ease-in-out',
         filter:
-          dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : "none",
+          dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : 'none',
       }}
     >
       {children}

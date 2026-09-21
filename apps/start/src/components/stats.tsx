@@ -35,13 +35,13 @@ export function StatsCard({
       className={cn(
         'col ring-[0.5px] ring-border',
         size === 'sm' ? 'gap-1 p-3' : 'gap-2 p-4',
-        className,
+        className
       )}
     >
       <div
         className={cn(
           'text-muted-foreground',
-          size === 'sm' ? 'text-xs' : 'text-sm',
+          size === 'sm' ? 'text-xs' : 'text-sm'
         )}
       >
         {title}
@@ -50,7 +50,7 @@ export function StatsCard({
         <div
           className={cn(
             'font-mono leading-snug',
-            size === 'sm' ? 'text-sm font-medium' : 'text-lg font-bold',
+            size === 'sm' ? 'text-sm font-medium' : 'text-lg font-bold'
           )}
         >
           {value}

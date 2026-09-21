@@ -77,7 +77,7 @@ export default async function Page({
     .filter(
       (item) =>
         item.data.difficulty === guide?.data.difficulty &&
-        item.url !== guide?.url,
+        item.url !== guide?.url
     )
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
     .slice(0, 3);

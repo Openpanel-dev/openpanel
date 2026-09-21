@@ -1,4 +1,7 @@
-import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
+import {
+  useCurrentTime,
+  useReplayContext,
+} from '@/components/sessions/replay/replay-context';
 import { Button } from '@/components/ui/button';
 import { Pause, Play } from 'lucide-react';
 import { formatDuration } from './replay-utils';

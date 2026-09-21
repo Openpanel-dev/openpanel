@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import type { RefObject } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
-import { type SpringConfig, useChartConfig } from "../chart-config-context";
+import { motion, useSpring } from 'motion/react';
+import type { RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
+import { type SpringConfig, useChartConfig } from '../chart-config-context';
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */
@@ -61,14 +61,14 @@ function TooltipBoxInner({
   containerWidth,
   containerHeight,
   offset = 16,
-  className = "",
+  className = '',
   children,
   left: leftOverride,
   top: topOverride,
   flipped: flippedOverride,
   springConfig,
   container,
-}: Omit<TooltipBoxProps, "visible" | "containerRef"> & {
+}: Omit<TooltipBoxProps, 'visible' | 'containerRef'> & {
   container: HTMLElement;
 }) {
   const { tooltipBoxSpring } = useChartConfig();
@@ -149,12 +149,12 @@ function TooltipBoxInner({
   const finalLeft = leftOverride ?? animatedLeft;
   const finalTop = topOverride ?? animatedTop;
   const isFlipped = flippedOverride ?? shouldFlipX;
-  const transformOrigin = isFlipped ? "right top" : "left top";
+  const transformOrigin = isFlipped ? 'right top' : 'left top';
 
   return createPortal(
     <motion.div
       animate={{ opacity: 1 }}
-      className={cn("pointer-events-none absolute z-50", className)}
+      className={cn('pointer-events-none absolute z-50', className)}
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       ref={tooltipRef}
@@ -167,7 +167,7 @@ function TooltipBoxInner({
         initial={{ scale: 0.85, opacity: 0, x: isFlipped ? 20 : -20 }}
         key={flipKey}
         style={{ transformOrigin }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       >
         {children}
       </motion.div>
@@ -176,6 +176,6 @@ function TooltipBoxInner({
   );
 }
 
-TooltipBox.displayName = "TooltipBox";
+TooltipBox.displayName = 'TooltipBox';
 
 export default TooltipBox;

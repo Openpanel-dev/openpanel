@@ -20,7 +20,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
  * on the first paint — there's no UX cost to this wrapping.
  */
 const ChatDrawer = lazy(() =>
-  import('./chat-drawer').then((m) => ({ default: m.ChatDrawer })),
+  import('./chat-drawer').then((m) => ({ default: m.ChatDrawer }))
 );
 
 export function ChatDrawerSlot() {

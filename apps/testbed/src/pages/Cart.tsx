@@ -15,7 +15,9 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
       <div>
         <div className="page-title">Cart</div>
         <div className="cart-empty">Your cart is empty.</div>
-        <Link to="/"><button type="button">← Back to shop</button></Link>
+        <Link to="/">
+          <button type="button">← Back to shop</button>
+        </Link>
       </div>
     );
   }
@@ -41,7 +43,11 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
               <td>{item.qty}</td>
               <td>${item.price * item.qty}</td>
               <td>
-                <button type="button" className="danger" onClick={() => onRemove(item.id)}>
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => onRemove(item.id)}
+                >
                   Remove
                 </button>
               </td>
@@ -52,7 +58,9 @@ export function CartPage({ cart, onRemove, onCheckout }: Props) {
       <div className="cart-summary">
         <div className="cart-total">Total: ${total}</div>
         <div className="cart-actions">
-          <Link to="/"><button type="button">← Shop</button></Link>
+          <Link to="/">
+            <button type="button">← Shop</button>
+          </Link>
           <button type="button" className="primary" onClick={onCheckout}>
             Checkout →
           </button>

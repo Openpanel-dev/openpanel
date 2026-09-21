@@ -12,14 +12,14 @@ import { PencilRulerIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/notifications/_tabs/rules',
+  '/_app/$organizationId/$projectId/notifications/_tabs/rules'
 )({
   component: Component,
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(
       context.trpc.notification.rules.queryOptions({
         projectId: params.projectId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -31,7 +31,7 @@ function Component() {
   const query = useQuery(
     trpc.notification.rules.queryOptions({
       projectId,
-    }),
+    })
   );
   const data = useMemo(() => {
     return query.data || [];

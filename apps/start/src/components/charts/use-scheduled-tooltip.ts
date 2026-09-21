@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface ScheduledTooltipControls<T> {
   tooltipData: T | null;
@@ -12,10 +12,10 @@ export interface ScheduledTooltipControls<T> {
 
 function defaultDedupeKey<T>(tooltip: T): string {
   if (
-    typeof tooltip === "object" &&
+    typeof tooltip === 'object' &&
     tooltip !== null &&
-    "index" in tooltip &&
-    typeof (tooltip as { index: unknown }).index === "number"
+    'index' in tooltip &&
+    typeof (tooltip as { index: unknown }).index === 'number'
   ) {
     return String((tooltip as { index: number }).index);
   }

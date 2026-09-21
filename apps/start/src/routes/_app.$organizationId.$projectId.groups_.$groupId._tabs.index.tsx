@@ -161,7 +161,6 @@ function Component() {
       <div className="col-span-1">
         <PopularRoutes data={popularRoutes.data} />
       </div>
-
     </div>
   );
 }

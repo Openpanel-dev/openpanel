@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import type { scaleBand } from "@visx/scale";
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
-import { memo, useId, useMemo } from "react";
-import { chartCssVars, useChart, useChartStable } from "./chart-context";
-import { transitionWithDelay } from "./motion-utils";
+import type { scaleBand } from '@visx/scale';
+import type { Transition } from 'motion/react';
+import { motion } from 'motion/react';
+import { memo, useId, useMemo } from 'react';
+import { chartCssVars, useChart, useChartStable } from './chart-context';
+import { transitionWithDelay } from './motion-utils';
 
 type ScaleBand<Domain extends { toString(): string }> = ReturnType<
   typeof scaleBand<Domain>
 >;
 
-export type BarLineCap = "round" | "butt" | number;
-export type BarAnimationType = "grow" | "fade";
+export type BarLineCap = 'round' | 'butt' | number;
+export type BarAnimationType = 'grow' | 'fade';
 
 export interface BarProps {
   /** Key in data to use for y values */
@@ -82,16 +82,16 @@ function AnimatedBar({
 }: AnimatedBarProps) {
   const enterAnim = transitionWithDelay(enterTransition, index * staggerDelay);
 
-  if (animationType === "fade") {
+  if (animationType === 'fade') {
     return (
       <motion.rect
         animate={{
           opacity: isFaded ? fadedOpacity : 1,
-          filter: "blur(0px)",
+          filter: 'blur(0px)',
         }}
         fill={fill}
         height={height}
-        initial={{ opacity: 0, filter: "blur(2px)" }}
+        initial={{ opacity: 0, filter: 'blur(2px)' }}
         key={`fade-${index}-${revealEpoch}`}
         rx={rx}
         ry={ry}
@@ -113,7 +113,7 @@ function AnimatedBar({
   return (
     <g
       opacity={isFaded ? fadedOpacity : 1}
-      style={{ transition: "opacity 0.15s ease-in-out" }}
+      style={{ transition: 'opacity 0.15s ease-in-out' }}
     >
       <motion.rect
         animate={target}
@@ -131,9 +131,9 @@ function AnimatedBar({
 const BarInner = memo(function BarInner({
   dataKey,
   fill = chartCssVars.linePrimary,
-  lineCap = "round",
+  lineCap = 'round',
   animate = true,
-  animationType = "grow",
+  animationType = 'grow',
   fadedOpacity = 0.3,
   staggerDelay,
   stackGap = 0,
@@ -165,7 +165,7 @@ const BarInner = memo(function BarInner({
     staggerDelay ?? (data.length > 1 ? staggerSpread / 1000 / data.length : 0);
   const uniqueId = useId();
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
 
   // Find the index of this bar series among all bar series
   const seriesIndex = useMemo(() => {
@@ -192,10 +192,10 @@ const BarInner = memo(function BarInner({
 
   // Calculate corner radius based on lineCap
   const cornerRadius = useMemo(() => {
-    if (typeof lineCap === "number") {
+    if (typeof lineCap === 'number') {
       return lineCap;
     }
-    if (lineCap === "round" && barWidth) {
+    if (lineCap === 'round' && barWidth) {
       return Math.min(barWidth / 2, 8);
     }
     return 0;
@@ -205,7 +205,7 @@ const BarInner = memo(function BarInner({
     <g className={`bar-series-${uniqueId}`}>
       {data.map((d, i) => {
         const value = d[dataKey];
-        if (typeof value !== "number") {
+        if (typeof value !== 'number') {
           return null;
         }
 
@@ -318,8 +318,8 @@ const BarInner = memo(function BarInner({
             rx={effectiveRx}
             ry={effectiveRy}
             style={{
-              cursor: "default",
-              transition: "opacity 0.15s ease-in-out",
+              cursor: 'default',
+              transition: 'opacity 0.15s ease-in-out',
             }}
             width={barW}
             x={x}
@@ -335,7 +335,7 @@ export function Bar(props: BarProps) {
   const { barScale, bandWidth, barXAccessor } = useChartStable();
 
   if (!(barScale && bandWidth && barXAccessor)) {
-    console.warn("Bar component must be used within a BarChart");
+    console.warn('Bar component must be used within a BarChart');
     return null;
   }
 
@@ -349,6 +349,6 @@ export function Bar(props: BarProps) {
   );
 }
 
-Bar.displayName = "Bar";
+Bar.displayName = 'Bar';
 
 export default Bar;

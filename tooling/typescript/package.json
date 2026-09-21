@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "files": ["base.json", "sdk.json", "tsup.config.json"],
+  "files": [
+    "base.json",
+    "sdk.json",
+    "tsup.config.json"
+  ],
   "devDependencies": {
     "tsup": "7.3.0"
   }

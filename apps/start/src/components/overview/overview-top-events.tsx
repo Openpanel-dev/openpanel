@@ -31,7 +31,7 @@ export default function OverviewTopEvents({
   const navigate = useNavigate();
   const trpc = useTRPC();
   const { data: conversions } = useQuery(
-    trpc.overview.topConversions.queryOptions({ projectId, shareId }),
+    trpc.overview.topConversions.queryOptions({ projectId, shareId })
   );
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -73,7 +73,7 @@ export default function OverviewTopEvents({
         widget.meta?.type === 'events'
           ? ['session_start', 'session_end', 'screen_view']
           : undefined,
-    }),
+    })
   );
 
   const linkOutQuery = useQuery(
@@ -84,7 +84,7 @@ export default function OverviewTopEvents({
       startDate,
       endDate,
       filters,
-    }),
+    })
   );
 
   const tableData: EventTableItem[] = useMemo(() => {
@@ -133,7 +133,7 @@ export default function OverviewTopEvents({
     }
     const queryLower = searchQuery.toLowerCase();
     return tableData.filter((item) =>
-      item.name?.toLowerCase().includes(queryLower),
+      item.name?.toLowerCase().includes(queryLower)
     );
   }, [tableData, searchQuery]);
 
@@ -145,7 +145,7 @@ export default function OverviewTopEvents({
           key: w.key,
           label: w.btn,
         })),
-    [widgets],
+    [widgets]
   );
 
   return (
@@ -168,9 +168,7 @@ export default function OverviewTopEvents({
               data={filteredData}
               onItemClick={(name) => {
                 const filterName =
-                  widget.meta?.type === 'linkOut'
-                    ? 'properties.href'
-                    : 'name';
+                  widget.meta?.type === 'linkOut' ? 'properties.href' : 'name';
                 const f = eventQueryFiltersParser.serialize([
                   {
                     id: filterName,

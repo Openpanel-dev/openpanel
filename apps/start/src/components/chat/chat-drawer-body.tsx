@@ -2,10 +2,7 @@ import { Button } from '@/components/ui/button';
 import { usePageContextValue } from '@/contexts/page-context';
 import { cn } from '@/utils/cn';
 import { AlertCircleIcon, ArrowDownIcon } from 'lucide-react';
-import {
-  StickToBottom,
-  useStickToBottomContext,
-} from 'use-stick-to-bottom';
+import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
 import { ChatContextWidget } from './chat-context-widget';
 import { ChatDrawerEmpty } from './chat-drawer-empty';
 import { ChatMessage } from './chat-message';
@@ -52,10 +49,7 @@ export function ChatDrawerBody() {
         resize="smooth"
       >
         <StickToBottom.Content
-          className={cn(
-            'flex flex-col gap-4 px-3 py-4',
-            hasContext && 'pt-24',
-          )}
+          className={cn('flex flex-col gap-4 px-3 py-4', hasContext && 'pt-24')}
         >
           {messages.map((message, idx) => (
             <ChatMessage

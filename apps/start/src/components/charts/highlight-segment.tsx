@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { type MotionValue, motion } from "motion/react";
-import { type RefObject, useId } from "react";
+import { type MotionValue, motion } from 'motion/react';
+import { type RefObject, useId } from 'react';
 
 // Hover-highlight overlay: re-strokes the base path `d`, clipped to a vertical
 // band whose x/width spring to track the hovered point, so only the segment
@@ -47,19 +47,19 @@ export function HighlightSegment({
       <motion.path
         animate={{ opacity: 1 }}
         clipPath={`url(#${clipId})`}
-        d={pathRef.current.getAttribute("d") || ""}
+        d={pathRef.current.getAttribute('d') || ''}
         exit={{ opacity: 0 }}
         fill="none"
         initial={{ opacity: 0 }}
         stroke={stroke}
         strokeLinecap="round"
         strokeWidth={strokeWidth}
-        transition={{ duration: 0.4, ease: "easeInOut" }}
+        transition={{ duration: 0.4, ease: 'easeInOut' }}
       />
     </>
   );
 }
 
-HighlightSegment.displayName = "HighlightSegment";
+HighlightSegment.displayName = 'HighlightSegment';
 
 export default HighlightSegment;

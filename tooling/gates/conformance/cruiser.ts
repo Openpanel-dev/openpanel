@@ -61,7 +61,9 @@ export function runCruiser(repoRoot: string): CruiserResult {
   }
 
   let parsed: {
-    summary?: { violations?: { rule: { name: string }; from: string; to: string }[] };
+    summary?: {
+      violations?: { rule: { name: string }; from: string; to: string }[];
+    };
   };
   try {
     parsed = JSON.parse(run.stdout);
@@ -110,10 +112,7 @@ const RESOLVED_SUFFIXES = ['.ts', '.tsx', '/index.ts', '/index.tsx', ''];
  * `to`. Returns 0 when the specifier is not relative (an aliased or package
  * import), which the report renders as a bare path rather than inventing a line.
  */
-export function resolveImportLine(
-  source: ParsedSource,
-  to: string
-): number {
+export function resolveImportLine(source: ParsedSource, to: string): number {
   const directory = dirname(source.path);
   let line = 0;
 
@@ -135,10 +134,17 @@ export function resolveImportLine(
 }
 
 function importSpecifierOf(node: ts.Node): ts.StringLiteral | undefined {
-  if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+  if (
+    ts.isImportDeclaration(node) &&
+    ts.isStringLiteral(node.moduleSpecifier)
+  ) {
     return node.moduleSpecifier;
   }
-  if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+  if (
+    ts.isExportDeclaration(node) &&
+    node.moduleSpecifier &&
+    ts.isStringLiteral(node.moduleSpecifier)
+  ) {
     return node.moduleSpecifier;
   }
   if (

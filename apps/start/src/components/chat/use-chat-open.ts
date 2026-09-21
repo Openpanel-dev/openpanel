@@ -15,10 +15,7 @@ import { parseAsString, useQueryState } from 'nuqs';
  * and keeps chat state in the browser history.
  */
 export function useChatUrlState() {
-  return useQueryState(
-    'chat',
-    parseAsString.withOptions({ history: 'push' }),
-  );
+  return useQueryState('chat', parseAsString.withOptions({ history: 'push' }));
 }
 
 /**

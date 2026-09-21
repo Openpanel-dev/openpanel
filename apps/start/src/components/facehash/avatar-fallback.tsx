@@ -81,7 +81,7 @@ export const AvatarFallback = React.forwardRef<
       style,
       ...props
     },
-    ref,
+    ref
   ) => {
     const { imageLoadingStatus } = useAvatarContext();
     const [canRender, setCanRender] = React.useState(delayMs === 0);
@@ -155,7 +155,7 @@ export const AvatarFallback = React.forwardRef<
         {initials}
       </span>
     );
-  },
+  }
 );
 
 AvatarFallback.displayName = 'AvatarFallback';

@@ -20,7 +20,7 @@ export interface OPReferenceItem {
  * marker rendering, which goes through OPMarkerLayer).
  */
 export function toChartMarkers(
-  items: OPReferenceItem[] | null | undefined,
+  items: OPReferenceItem[] | null | undefined
 ): ChartMarker[] {
   if (!items || items.length === 0) return [];
   return items.map((item) => ({
@@ -64,5 +64,7 @@ export function OPReferences({
       return { anchorDate: date, items: [item] };
     });
   }, [items]);
-  return <OPMarkerLayer clusters={clusters} showLines={showLines} size={size} />;
+  return (
+    <OPMarkerLayer clusters={clusters} showLines={showLines} size={size} />
+  );
 }

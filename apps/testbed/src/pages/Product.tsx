@@ -27,7 +27,9 @@ export function ProductPage({ products, onAddToCart }: Props) {
     return (
       <div>
         <div className="page-title">Product not found</div>
-        <Link to="/"><button type="button">← Back to shop</button></Link>
+        <Link to="/">
+          <button type="button">← Back to shop</button>
+        </Link>
       </div>
     );
   }

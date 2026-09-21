@@ -20,8 +20,7 @@ export function ScrollTracker() {
       const scrollTop = window.scrollY;
       const docHeight =
         document.documentElement.scrollHeight - window.innerHeight;
-      const percent =
-        docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      const percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
 
       if (percent >= 50) {
         hasFired.current = true;

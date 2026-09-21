@@ -20,7 +20,7 @@ export type IPublishChannels = {
 
 export function getSubscribeChannel<Channel extends keyof IPublishChannels>(
   channel: Channel,
-  type: keyof IPublishChannels[Channel],
+  type: keyof IPublishChannels[Channel]
 ) {
   return `${channel}:${String(type)}`;
 }
@@ -29,7 +29,7 @@ export function publishEvent<Channel extends keyof IPublishChannels>(
   channel: Channel,
   type: keyof IPublishChannels[Channel],
   event: IPublishChannels[Channel][typeof type],
-  multi?: ReturnType<Redis['multi']>,
+  multi?: ReturnType<Redis['multi']>
 ) {
   const redis = multi ?? getRedisPub();
   return redis.publish(getSubscribeChannel(channel, type), setSuperJson(event));
@@ -38,7 +38,7 @@ export function publishEvent<Channel extends keyof IPublishChannels>(
 export function parsePublishedEvent<Channel extends keyof IPublishChannels>(
   _channel: Channel,
   _type: keyof IPublishChannels[Channel],
-  message: string,
+  message: string
 ): IPublishChannels[Channel][typeof _type] {
   return getSuperJson<IPublishChannels[Channel][typeof _type]>(message)!;
 }
@@ -108,7 +108,7 @@ function addChannelListener(channel: string, listener: ChannelMessageListener) {
 
 function removeChannelListener(
   channel: string,
-  listener: ChannelMessageListener,
+  listener: ChannelMessageListener
 ) {
   const listeners = listenersByChannel.get(channel);
   if (!listeners?.delete(listener)) {
@@ -127,7 +127,7 @@ export function subscribeToPublishedEvent<
 >(
   channel: Channel,
   type: keyof IPublishChannels[Channel],
-  callback: (event: IPublishChannels[Channel][typeof type]) => void,
+  callback: (event: IPublishChannels[Channel][typeof type]) => void
 ) {
   const subscribeChannel = getSubscribeChannel(channel, type);
 
@@ -152,7 +152,7 @@ export function subscribeToPublishedEvent<
 
 export function psubscribeToPublishedEvent(
   pattern: string,
-  callback: (key: string) => void,
+  callback: (key: string) => void
 ) {
   getRedisSub().psubscribe(pattern);
   const pmessage = (_: unknown, pattern: string, key: string) => callback(key);

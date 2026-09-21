@@ -164,7 +164,7 @@ export function ActionCTAButton() {
               'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
               'text-[13px] font-medium text-foreground',
               'transition-colors hover:bg-def-300',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
           >
             <PlusIcon className="size-5 shrink-0" />

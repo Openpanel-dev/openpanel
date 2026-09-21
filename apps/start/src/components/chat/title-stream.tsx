@@ -19,7 +19,7 @@ export async function streamTitle(
   client: AppClient,
   firstUserText: string,
   onDelta: (text: string) => void,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<string | null> {
   const trimmed = firstUserText.trim().slice(0, 400);
   if (!trimmed) return null;
@@ -36,7 +36,10 @@ export async function streamTitle(
       // Better Agent emits `TEXT_MESSAGE_CONTENT` with a `delta` field
       // for each streamed chunk of assistant text.
       const maybe = event as { type?: string; delta?: string };
-      if (maybe.type === 'TEXT_MESSAGE_CONTENT' && typeof maybe.delta === 'string') {
+      if (
+        maybe.type === 'TEXT_MESSAGE_CONTENT' &&
+        typeof maybe.delta === 'string'
+      ) {
         accumulated += maybe.delta;
         onDelta(accumulated.trim().slice(0, CONVERSATION_TITLE_MAX_LENGTH));
       }

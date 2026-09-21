@@ -24,7 +24,7 @@ export function CompareToc({ items, className }: CompareTocProps) {
       className={cn(
         'hidden md:block sticky top-24 h-fit w-64 shrink-0',
         'col gap-3 p-4 rounded-xl border bg-background/50 backdrop-blur-sm',
-        className,
+        className
       )}
     >
       <nav className="col gap-1">

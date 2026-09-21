@@ -47,7 +47,9 @@ export function FeatureComparison({ featureGroups }: FeatureComparisonProps) {
                         key={feature.name}
                         className="grid md:grid-cols-3 gap-4 py-3 border-b last:border-b-0"
                       >
-                        <div className="font-medium text-sm">{feature.name}</div>
+                        <div className="font-medium text-sm">
+                          {feature.name}
+                        </div>
                         <div className="row gap-2 items-center">
                           {renderFeatureValue(feature.openpanel)}
                         </div>
@@ -66,4 +68,3 @@ export function FeatureComparison({ featureGroups }: FeatureComparisonProps) {
     </Section>
   );
 }
-

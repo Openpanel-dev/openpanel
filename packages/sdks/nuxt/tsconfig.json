@@ -4,14 +4,9 @@
     "incremental": false,
     "outDir": "dist",
     "paths": {
-      "#app": [
-        "./node_modules/nuxt/dist/app/index"
-      ]
+      "#app": ["./node_modules/nuxt/dist/app/index"]
     },
-    "types": [
-      "@types/node",
-      "@nuxt/types"
-    ],
+    "types": ["@types/node", "@nuxt/types"],
     "strictNullChecks": true
   },
   "exclude": ["dist"]

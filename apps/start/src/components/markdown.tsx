@@ -20,7 +20,7 @@ export const Markdown = memo<Options>(
     prevProps.children === nextProps.children &&
     'className' in prevProps &&
     'className' in nextProps &&
-    prevProps.className === nextProps.className,
+    prevProps.className === nextProps.className
 );
 
 Markdown.displayName = 'Markdown';

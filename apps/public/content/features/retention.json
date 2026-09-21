@@ -4,10 +4,7 @@
   "seo": {
     "title": "Retention & Cohort Analysis",
     "description": "User retention analytics and cohort analysis that show who comes back. See product stickiness at a glance-no sampling, no guesswork. Built on your events.",
-    "keywords": [
-      "user retention analytics",
-      "cohort analysis"
-    ]
+    "keywords": ["user retention analytics", "cohort analysis"]
   },
   "hero": {
     "heading": "Retention: Who comes back?",

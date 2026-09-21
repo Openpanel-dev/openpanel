@@ -6,12 +6,15 @@ import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
 export const ChartTooltipContainer = ({
   children,
   className,
-}: { children: React.ReactNode; className?: string }) => {
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
   return (
     <div
       className={cn(
         'min-w-[180px] col gap-2 rounded-xl border bg-background/80 p-3  shadow-xl backdrop-blur-sm',
-        className,
+        className
       )}
     >
       {children}
@@ -21,7 +24,9 @@ export const ChartTooltipContainer = ({
 
 export const ChartTooltipHeader = ({
   children,
-}: { children: React.ReactNode }) => {
+}: {
+  children: React.ReactNode;
+}) => {
   return <div className="flex justify-between gap-8">{children}</div>;
 };
 
@@ -53,7 +58,7 @@ export function createChartTooltip<
       context: PropsFromContext;
       data: PropsFromTooltip[];
     } & TooltipProps<number, string>
-  >,
+  >
 ) {
   const context = createContext<PropsFromContext | null>(null);
   const useContext = () => {

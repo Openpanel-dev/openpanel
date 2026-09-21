@@ -24,7 +24,7 @@ export function BrowserChrome({
     <div
       className={cn(
         'flex flex-col overflow-hidden rounded-lg border border-border bg-background',
-        className,
+        className
       )}
     >
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-background h-10">

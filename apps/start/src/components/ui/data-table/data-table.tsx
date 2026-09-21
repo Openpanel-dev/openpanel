@@ -67,7 +67,7 @@ export function DataTable<TData>({
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext(),
+                          header.getContext()
                         )}
                   </TableHead>
                 ))}
@@ -92,7 +92,7 @@ export function DataTable<TData>({
                         }),
                       }}
                       className={cn(
-                        cell.column.columnDef.meta?.bold && 'font-medium',
+                        cell.column.columnDef.meta?.bold && 'font-medium'
                       )}
                     >
                       {loading ? (
@@ -100,7 +100,7 @@ export function DataTable<TData>({
                       ) : (
                         flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext(),
+                          cell.getContext()
                         )
                       )}
                     </TableCell>

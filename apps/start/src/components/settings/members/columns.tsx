@@ -91,18 +91,18 @@ export function useColumns() {
         trpc.organization.removeMember.mutationOptions({
           onSuccess() {
             toast.success(
-              `${row.original.user?.firstName} has been removed from the organization`,
+              `${row.original.user?.firstName} has been removed from the organization`
             );
             queryClient.invalidateQueries(
-              trpc.organization.members.pathFilter(),
+              trpc.organization.members.pathFilter()
             );
           },
           onError() {
             toast.error(
-              `Failed to remove ${row.original.user?.firstName} from the organization`,
+              `Failed to remove ${row.original.user?.firstName} from the organization`
             );
           },
-        }),
+        })
       );
 
       return (

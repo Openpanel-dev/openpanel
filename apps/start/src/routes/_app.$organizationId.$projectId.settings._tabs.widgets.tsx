@@ -8,7 +8,10 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import type { IRealtimeWidgetOptions, IWidgetType } from '@openpanel/core/modules/report/report.constants';
+import type {
+  IRealtimeWidgetOptions,
+  IWidgetType,
+} from '@openpanel/core/modules/report/report.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ExternalLinkIcon } from 'lucide-react';
@@ -16,7 +19,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/settings/_tabs/widgets',
+  '/_app/$organizationId/$projectId/settings/_tabs/widgets'
 )({
   component: Component,
 });
@@ -29,10 +32,10 @@ function Component() {
 
   // Fetch both widget types
   const realtimeWidgetQuery = useQuery(
-    trpc.widget.get.queryOptions({ projectId, type: 'realtime' }),
+    trpc.widget.get.queryOptions({ projectId, type: 'realtime' })
   );
   const counterWidgetQuery = useQuery(
-    trpc.widget.get.queryOptions({ projectId, type: 'counter' }),
+    trpc.widget.get.queryOptions({ projectId, type: 'counter' })
   );
 
   // Toggle mutation
@@ -40,14 +43,14 @@ function Component() {
     trpc.widget.toggle.mutationOptions({
       onSuccess: (_, variables) => {
         queryClient.invalidateQueries(
-          trpc.widget.get.queryFilter({ projectId, type: variables.type }),
+          trpc.widget.get.queryFilter({ projectId, type: variables.type })
         );
         toast.success(variables.enabled ? 'Widget enabled' : 'Widget disabled');
       },
       onError: (error) => {
         toast.error(error.message || 'Failed to update widget');
       },
-    }),
+    })
   );
 
   // Update options mutation
@@ -55,14 +58,14 @@ function Component() {
     trpc.widget.updateOptions.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries(
-          trpc.widget.get.queryFilter({ projectId, type: 'realtime' }),
+          trpc.widget.get.queryFilter({ projectId, type: 'realtime' })
         );
         toast.success('Widget options updated');
       },
       onError: (error) => {
         toast.error(error.message || 'Failed to update options');
       },
-    }),
+    })
   );
 
   const handleToggle = (type: IWidgetType, enabled: boolean) => {
@@ -151,7 +154,7 @@ function RealtimeWidgetSection({
     paths: false,
   };
   const [options, setOptions] = useState<IRealtimeWidgetOptions>(
-    (widget?.options as IRealtimeWidgetOptions) || defaultOptions,
+    (widget?.options as IRealtimeWidgetOptions) || defaultOptions
   );
 
   // Create a checksum based on URL and current options to force iframe reload

@@ -20,7 +20,7 @@ export default function DeleteProject({ project }: Props) {
   const { data: organization } = useQuery(
     trpc.organization.get.queryOptions({
       organizationId: project.organizationId,
-    }),
+    })
   );
   // When the whole organization is scheduled for deletion, this project's
   // deletion is part of it and can only be cancelled at the organization level.
@@ -33,10 +33,10 @@ export default function DeleteProject({ project }: Props) {
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.queryFilter({
             projectId: project.id,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   const cancelDeletionMutation = useMutation(
@@ -47,10 +47,10 @@ export default function DeleteProject({ project }: Props) {
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.queryFilter({
             projectId: project.id,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   return (
@@ -74,7 +74,7 @@ export default function DeleteProject({ project }: Props) {
                   // Since we run cron once an hour
                   format(
                     startOfHour(addHours(project.deleteAt, 1)),
-                    'yyyy-MM-dd HH:mm:ss',
+                    'yyyy-MM-dd HH:mm:ss'
                   )
                 }
               </span>

@@ -54,7 +54,7 @@ export function VirtualizedDataTable<TData>({
     const updateScrollMargin = throttle(() => {
       if (parentRef.current) {
         setScrollMargin(
-          parentRef.current.getBoundingClientRect().top + window.scrollY,
+          parentRef.current.getBoundingClientRect().top + window.scrollY
         );
       }
     }, 500);
@@ -140,7 +140,7 @@ export function VirtualizedDataTable<TData>({
                         .columnDef.header === 'function' ? (
                       flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )
                     ) : (
                       <DataTableColumnHeader

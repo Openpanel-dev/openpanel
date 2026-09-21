@@ -14,7 +14,7 @@ import type { IChartEventItem } from '@openpanel/core/modules/report/report.cons
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/events/_tabs/stats',
+  '/_app/$organizationId/$projectId/events/_tabs/stats'
 )({
   component: Component,
 });

@@ -20,7 +20,7 @@ export function SidebarLink({
     <ProjectLink
       className={cn(
         'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
-        className,
+        className
       )}
       href={href}
       exact={exact}

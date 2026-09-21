@@ -24,12 +24,12 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId')({
       context.queryClient.prefetchQuery(
         context.trpc.organization.get.queryOptions({
           organizationId: params.organizationId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.project.getProjectWithClients.queryOptions({
           projectId: params.projectId,
-        }),
+        })
       ),
     ]);
   },
@@ -41,10 +41,10 @@ function ProjectDashboard() {
   const { data: organization } = useSuspenseQuery(
     trpc.organization.get.queryOptions({
       organizationId,
-    }),
+    })
   );
   const { data: project } = useSuspenseQuery(
-    trpc.project.getProjectWithClients.queryOptions({ projectId }),
+    trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
   useProjectDocumentTitle(project?.name);
 
@@ -64,7 +64,10 @@ function ProjectDashboard() {
       }
     );
     return (
-      <BillingPrompt organization={organization} type={blockType ?? 'expired'} />
+      <BillingPrompt
+        organization={organization}
+        type={blockType ?? 'expired'}
+      />
     );
   }
 

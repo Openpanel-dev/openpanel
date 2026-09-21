@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { curveNatural } from "@visx/curve";
-import { LinePath } from "@visx/shape";
+import { curveNatural } from '@visx/curve';
+import { LinePath } from '@visx/shape';
 
 // CurveFactory type - simplified version compatible with visx
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { useCallback, useId, useRef } from "react";
-import { chartCssVars, useChartStable } from "./chart-context";
+import { useCallback, useId, useRef } from 'react';
+import { chartCssVars, useChartStable } from './chart-context';
 import {
   type FadeEdges,
   fadeGradientStops,
   resolveFadeSides,
-} from "./fade-edges";
+} from './fade-edges';
 import {
   resolveDashTailBounds,
   usePathStrokeMetrics,
-} from "./path-stroke-utils";
-import { SeriesDashTailOverlay } from "./series-dash-tail-overlay";
-import { SeriesHighlightLayer } from "./series-highlight-layer";
-import { SeriesHoverDim } from "./series-hover-dim";
-import { SeriesMarkers } from "./series-markers";
-import type { SeriesPointMarkerStyle } from "./series-point-marker";
+} from './path-stroke-utils';
+import { SeriesDashTailOverlay } from './series-dash-tail-overlay';
+import { SeriesHighlightLayer } from './series-highlight-layer';
+import { SeriesHoverDim } from './series-hover-dim';
+import { SeriesMarkers } from './series-markers';
+import type { SeriesPointMarkerStyle } from './series-point-marker';
 
 export interface LineProps {
   /** Key in data to use for y values */
@@ -68,7 +68,7 @@ export function Line({
   showMarkers = false,
   markers,
   dashFromIndex,
-  dashArray = "6,4",
+  dashArray = '6,4',
 }: LineProps) {
   // Stable slice only: hover state lives inside `<SeriesHoverDim>` and
   // `<SeriesHighlightLayer>` so this component (and its expensive
@@ -96,7 +96,7 @@ export function Line({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : 0;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : 0;
     },
     [dataKey, yScale]
   );
@@ -127,7 +127,7 @@ export function Line({
           curve={curve}
           data={renderData}
           innerRef={pathRef}
-          stroke={hasDashTail ? "transparent" : lineStroke}
+          stroke={hasDashTail ? 'transparent' : lineStroke}
           strokeLinecap="round"
           strokeWidth={strokeWidth}
           x={(d) => xScale(xAccessor(d)) ?? 0}
@@ -170,6 +170,6 @@ export function Line({
   );
 }
 
-Line.displayName = "Line";
+Line.displayName = 'Line';
 
 export default Line;

@@ -58,7 +58,9 @@ export function GscPositionChart({ data, isLoading }: GscPositionChartProps) {
   }));
 
   const positions = chartData.map((d) => d.position).filter((p) => p > 0);
-  const minPos = positions.length ? Math.max(1, Math.floor(Math.min(...positions)) - 2) : 1;
+  const minPos = positions.length
+    ? Math.max(1, Math.floor(Math.min(...positions)) - 2)
+    : 1;
   const maxPos = positions.length ? Math.ceil(Math.max(...positions)) + 2 : 20;
 
   return (

@@ -46,11 +46,11 @@ export function useTable<TData>({
 }) {
   const [page, setPage] = useQueryState(
     'page',
-    parseAsInteger.withDefault(1).withOptions(nuqsOptions),
+    parseAsInteger.withDefault(1).withOptions(nuqsOptions)
   );
   const [perPage, setPerPage] = useQueryState(
     'perPage',
-    parseAsInteger.withDefault(pageSize ?? 10).withOptions(nuqsOptions),
+    parseAsInteger.withDefault(pageSize ?? 10).withOptions(nuqsOptions)
   );
   const pagination: PaginationState = {
     pageIndex: page - 1,
@@ -118,7 +118,7 @@ export function useTable<TData>({
         }
         return filters;
       },
-      [],
+      []
     );
   }, [qsFilters]);
 
@@ -133,7 +133,7 @@ export function useTable<TData>({
   const isWithinRange = (
     row: Row<TData>,
     columnId: string,
-    value: [number, number],
+    value: [number, number]
   ) => {
     const cellDate = row.getValue<Date>(columnId);
     if (!cellDate) return false;
@@ -162,7 +162,7 @@ export function useTable<TData>({
     data: useMemo(
       () =>
         loading ? ([{}, {}, {}, {}, {}, {}, {}, {}, {}, {}] as TData[]) : data,
-      [loading, data],
+      [loading, data]
     ),
     debugTable: false,
     filterFns: {
@@ -211,7 +211,7 @@ export function useTable<TData>({
             const value = filter.value as any;
             if (Array.isArray(value)) {
               const cleaned = value.filter(
-                (v) => v !== undefined && v !== null,
+                (v) => v !== undefined && v !== null
               );
               updates[filter.id] = cleaned as any;
             } else {

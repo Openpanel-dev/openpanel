@@ -17,7 +17,10 @@ export interface ReplayPlayerInstance {
   getMetaData: () => { startTime: number; endTime: number; totalTime: number };
   getReplayer: () => { getCurrentTime: () => number };
   addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
-  addEventListener: (event: string, handler: (e: { payload: unknown }) => void) => void;
+  addEventListener: (
+    event: string,
+    handler: (e: { payload: unknown }) => void
+  ) => void;
   $set?: (props: Record<string, unknown>) => void;
   $destroy?: () => void;
 }
@@ -44,7 +47,10 @@ interface ReplayContextValue {
   addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
   refreshDuration: () => void;
   // Called by ReplayPlayer to register/unregister the rrweb instance
-  onPlayerReady: (player: ReplayPlayerInstance, playerStartTime: number) => void;
+  onPlayerReady: (
+    player: ReplayPlayerInstance,
+    playerStartTime: number
+  ) => void;
   onPlayerDestroy: () => void;
   // State setters exposed so ReplayPlayer can wire rrweb event listeners
   setCurrentTime: (t: number) => void;
@@ -131,7 +137,7 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
       setIsPlayingWithRef(false);
       setIsReady(true);
     },
-    [setIsPlayingWithRef],
+    [setIsPlayingWithRef]
   );
 
   const onPlayerDestroy = useCallback(() => {
@@ -168,7 +174,7 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     (event: { type: number; data: unknown; timestamp: number }) => {
       playerRef.current?.addEvent(event);
     },
-    [],
+    []
   );
 
   const refreshDuration = useCallback(() => {

@@ -51,7 +51,7 @@ export function OnboardingWelcome({
                 key="install"
                 href={withUtm(
                   'https://openpanel.dev/docs/get-started/install-openpanel',
-                  'onboarding-welcome',
+                  'onboarding-welcome'
                 )}
               >
                 Install the tracking script
@@ -60,7 +60,7 @@ export function OnboardingWelcome({
                 key="track"
                 href={withUtm(
                   'https://openpanel.dev/docs/get-started/track-events',
-                  'onboarding-welcome',
+                  'onboarding-welcome'
                 )}
               >
                 Track custom events

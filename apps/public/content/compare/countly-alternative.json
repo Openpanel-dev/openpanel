@@ -9,12 +9,7 @@
   "hero": {
     "heading": "Best Countly Alternative",
     "subheading": "Want Countly's product analytics without the complexity? OpenPanel offers a simpler, more affordable approach to user analytics with self-hosting, mobile SDKs, and modern product analytics - all with transparent pricing.",
-    "badges": [
-      "Open-source",
-      "Simple Pricing",
-      "Lightweight",
-      "AGPL-3.0"
-    ]
+    "badges": ["Open-source", "Simple Pricing", "Lightweight", "AGPL-3.0"]
   },
   "competitor": {
     "name": "Countly",

@@ -275,9 +275,7 @@
           "Android",
           "Node.js"
         ],
-        "competitor": [
-          "JavaScript (web only)"
-        ],
+        "competitor": ["JavaScript (web only)"],
         "notes": null
       },
       {

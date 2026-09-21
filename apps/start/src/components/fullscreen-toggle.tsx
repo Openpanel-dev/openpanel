@@ -18,7 +18,7 @@ export const useFullscreen = () =>
     'fullscreen',
     parseAsBoolean.withDefault(false).withOptions({
       history: 'push',
-    }),
+    })
   );
 
 export const Fullscreen = (props: Props) => {
@@ -28,7 +28,7 @@ export const Fullscreen = (props: Props) => {
       className={cn(
         isFullscreen
           ? 'fixed inset-0 z-50 overflow-auto bg-def-200'
-          : 'w-full min-h-full col',
+          : 'w-full min-h-full col'
       )}
     >
       {props.children}
@@ -95,7 +95,7 @@ export const FullscreenClose = () => {
           ref={ref}
           className={cn(
             'flex h-20 w-20 -translate-x-20 items-center justify-center rounded-full bg-foreground transition-transform',
-            visible && isFullscreenDebounced && '-translate-x-10',
+            visible && isFullscreenDebounced && '-translate-x-10'
           )}
           onClick={() => {
             setIsFullscreen(false);

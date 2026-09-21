@@ -23,10 +23,7 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function MoveReport({
-  reportId,
-  dashboardId,
-}: MoveReportProps) {
+export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
   const queryClient = useQueryClient();
   const { projectId } = useAppParams();
 
@@ -40,7 +37,7 @@ export default function MoveReport({
         toast('Report moved');
         popModal();
       },
-    }),
+    })
   );
 
   const { handleSubmit, formState, control } = useForm<IForm>({

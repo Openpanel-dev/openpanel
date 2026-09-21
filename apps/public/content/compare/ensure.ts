@@ -88,7 +88,7 @@ async function analyzeJsonFiles(): Promise<void> {
   console.log(separator);
 
   const sortedGroups = Array.from(groups.entries()).sort(
-    (a, b) => b[1].length - a[1].length,
+    (a, b) => b[1].length - a[1].length
   );
 
   sortedGroups.forEach(([structureKey, files], index) => {
