@@ -25,7 +25,7 @@ const CLIENT: AuthenticatedClient = {
   projectId: 'proj-1',
   organizationId: 'org-1',
   type: 'write',
-  secretPresented: true,
+  secretVerified: true,
 };
 const GEO = { country: 'SE', city: 'Stockholm' };
 

@@ -15,7 +15,7 @@ const CLIENT: AuthenticatedClient = {
   projectId: 'proj-1',
   organizationId: 'org-1',
   type: 'root',
-  secretPresented: true,
+  secretVerified: true,
 };
 
 const REFUSAL: ClientAuthResult = {
@@ -64,7 +64,7 @@ function buildApp() {
         '/manage/projects',
         ({ client: principal }) => {
           const typed: AuthenticatedClient = principal;
-          return { id: typed.id, secretPresented: typed.secretPresented };
+          return { id: typed.id, secretVerified: typed.secretVerified };
         },
         { clientAuth: { allow: ['root'], label: 'Manage' } }
       )
@@ -87,7 +87,7 @@ test('clientAuth resolves the principal onto the handler', async () => {
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
     id: 'client-1',
-    secretPresented: true,
+    secretVerified: true,
   });
   expect(authenticateClient).toHaveBeenCalledTimes(1);
 });

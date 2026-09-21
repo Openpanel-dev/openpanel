@@ -10,6 +10,11 @@
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
 import type { CoreConfig } from './config';
+import {
+  isSensitiveKey,
+  REDACTED,
+  sanitizeUrlQuery,
+} from './shared/sanitize-url';
 
 export type ILogger = PinoLogger;
 
@@ -19,34 +24,9 @@ export type ILogger = PinoLogger;
 export const rawStdoutWrite = process.stdout.write.bind(process.stdout);
 export const rawStderrWrite = process.stderr.write.bind(process.stderr);
 
-// Substring match (lowercased). Catches camelCase, snake_case, prefixed and
-// suffixed variants in one entry — e.g. 'token' covers accessToken,
-// refresh_token, jwtToken, etc.
-const SENSITIVE_KEY_PATTERNS = [
-  'password',
-  'passwd',
-  'pwd',
-  'token',
-  'secret',
-  'authorization',
-  'apikey',
-  'accesskey',
-  'privatekey',
-  'cookie',
-  'bearer',
-  'credential',
-  'salt',
-  'signature',
-  'ip',
-  'email',
-  'firstname',
-  'lastname',
-  'surname',
-];
-
 const MAX_REDACT_DEPTH = 5;
 
-function redactSensitive(value: unknown, depth = 0): unknown {
+export function redactSensitive(value: unknown, depth = 0): unknown {
   if (value instanceof Error) {
     return {
       ...value,
@@ -71,9 +51,12 @@ function redactSensitive(value: unknown, depth = 0): unknown {
 
   const result: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-    const lowered = key.toLowerCase();
-    if (SENSITIVE_KEY_PATTERNS.some((k) => lowered.includes(k))) {
-      result[key] = '[REDACTED]';
+    if (isSensitiveKey(key)) {
+      result[key] = REDACTED;
+    } else if (key.toLowerCase().includes('url') && typeof val === 'string') {
+      // Backstop for anything that logs a raw URL: the credentials sit in the
+      // query, not the key.
+      result[key] = sanitizeUrlQuery(val);
     } else {
       result[key] = redactSensitive(val, depth + 1);
     }

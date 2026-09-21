@@ -42,12 +42,13 @@ export interface AuthenticatedClient {
   organizationId: string;
   type: ClientType;
   /**
-   * Whether a client secret was PRESENTED, set before it is verified — V1 sets
-   * `req.clientSecretAuth` at parse time (utils/auth.ts:62-64) and `isBotHook`
-   * reads it afterwards as "this is a server-side SDK, never a bot". The
-   * side-channel survives as a field on the principal (ADR-011 A-i).
+   * Whether the supplied client secret VERIFIED against the stored hash.
+   * `isBotHook` reads it as "this is a server-side SDK, never a bot", so it
+   * follows the verification result, not the presence of a secret string
+   * (main #481). The side-channel survives as a field on the principal
+   * (ADR-011 A-i).
    */
-  secretPresented: boolean;
+  secretVerified: boolean;
 }
 
 /**
@@ -72,9 +73,9 @@ export type IngestTierOutcome =
         organizationId: string;
         type: ClientType;
       };
-      secretPresented: boolean;
+      secretVerified: boolean;
     }
-  | { ok: false; message: string; secretPresented: boolean };
+  | { ok: false; message: string; secretVerified: boolean };
 
 /** The ingest tier itself, passed in by the route that wants it. */
 export type ValidateIngestRequest = (args: {
@@ -148,7 +149,7 @@ export async function authenticateClient(
       projectId: client.projectId,
       organizationId: client.organizationId,
       type: client.type,
-      secretPresented: outcome.secretPresented,
+      secretVerified: outcome.secretVerified,
     },
   };
 }
@@ -171,7 +172,7 @@ const UNEXPECTED_MESSAGE = 'Unexpected error';
  * / `validateManageRequest`, which differ only by the accepted `ClientType`
  * set and by the label their messages carry.
  *
- * `secretPresented` is true on success by construction: this tier verifies the
+ * `secretVerified` is true on success by construction: this tier verifies the
  * secret, so reaching the return means one was presented and matched.
  */
 async function authenticateAllowedClient(
@@ -215,7 +216,7 @@ async function authenticateAllowedClient(
         projectId: client.projectId,
         organizationId: client.organizationId,
         type: client.type as ClientType,
-        secretPresented: true,
+        secretVerified: true,
       },
     };
   } catch (error) {

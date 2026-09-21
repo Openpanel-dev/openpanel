@@ -10,7 +10,7 @@
 // `derive -> transform -> macro resolve -> beforeHandle`. So the duplicate
 // check is a `transform` (V1's `preValidation`), `clientAuth` is the macro,
 // and the bot check is a `beforeHandle`, which is what lets it read
-// `client.secretPresented` the way V1's `isBotHook` reads the
+// `client.secretVerified` the way V1's `isBotHook` reads the
 // `req.clientSecretAuth` side channel `validateSdkRequest` sets.
 //
 // Both routes carry the whole chain because V1's `fastify.addHook` calls are
@@ -111,13 +111,13 @@ async function botGuard({
   status,
 }: {
   body: unknown;
-  client: { projectId: string | null; secretPresented: boolean };
+  client: { projectId: string | null; secretVerified: boolean };
   ctx: HttpCtx;
   status: StatusFn;
 }) {
   const bot = await checkIngestBot(ctx, {
     headers: toIngestHeaders(ctx.headers),
-    clientSecretAuth: client.secretPresented,
+    clientSecretAuth: client.secretVerified,
     projectId: client.projectId,
     body,
   });
@@ -183,7 +183,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
                 projectId: client.projectId,
                 clientIp: ctx.ip,
                 headers: toIngestHeaders(ctx.headers),
-                clientSecretAuth: client.secretPresented,
+                clientSecretAuth: client.secretVerified,
                 timestamp,
                 body,
               },
@@ -255,7 +255,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
                 projectId: client.projectId,
                 clientIp: ctx.ip,
                 headers: toIngestHeaders(ctx.headers),
-                clientSecretAuth: client.secretPresented,
+                clientSecretAuth: client.secretVerified,
                 timestamp,
                 body: body as DeprecatedPostEventPayload | null,
               },

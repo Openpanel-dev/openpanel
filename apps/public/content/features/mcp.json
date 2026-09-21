@@ -77,7 +77,7 @@
       },
       {
         "title": "Add the URL to your AI client",
-        "description": "Paste `https://api.openpanel.dev/mcp?token=YOUR_TOKEN` into your AI client's MCP server config. In Claude Desktop that's one JSON block in `claude_desktop_config.json`. In Cursor and Windsurf it's under MCP settings."
+        "description": "Paste `https://api.openpanel.dev/mcp` into your AI client's MCP server config and send the token as an `Authorization: Bearer YOUR_TOKEN` header. Clients that can't set headers take it in the URL instead, as `?token=YOUR_TOKEN`. In Claude Desktop that's one JSON block in `claude_desktop_config.json`. In Cursor and Windsurf it's under MCP settings."
       },
       {
         "title": "Start asking questions",
@@ -134,7 +134,7 @@
       },
       {
         "question": "How does authentication work?",
-        "answer": "Your token is `base64(clientId:clientSecret)`. Generate it with `echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64` and append it to the URL as `?token=YOUR_TOKEN`. You can also pass it as an `Authorization: Bearer` header if your client supports that."
+        "answer": "Your token is `base64(clientId:clientSecret)`. Generate it with `echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64` and send it as an `Authorization: Bearer YOUR_TOKEN` header. If your client can't set headers, append it to the URL as `?token=YOUR_TOKEN` instead—it works the same, but a token in a URL is easier to leak into history and logs."
       },
       {
         "question": "What's the difference between a read client and a root client?",

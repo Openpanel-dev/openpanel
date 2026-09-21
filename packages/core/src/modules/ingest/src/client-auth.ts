@@ -13,7 +13,7 @@
 // cache whose key holds base64(<plaintext secret>) — a recorded finding
 // ADR-011 leaves to Carl, not to a port.
 
-import { getCache } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 import { verifyPassword } from '@openpanel/shared/server';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
@@ -60,18 +60,19 @@ export type IngestAuthOutcome =
       ok: true;
       client: IServiceClientWithProject;
       /**
-       * Whether a client secret was PRESENTED, set before it is verified. V1
-       * sets `req.clientSecretAuth` at parse time and the bot hook reads it
-       * afterwards as "this is a server-side SDK, never a bot" — the side
-       * channel survives as a field on the outcome (ADR-011 A-i).
+       * Whether the supplied client secret VERIFIED against the stored hash
+       * (main #481). The bot hook reads it as "this is a server-side SDK,
+       * never a bot", so it must not be true for any string a browser
+       * happens to send — the side channel survives as a field on the
+       * outcome (ADR-011 A-i).
        */
-      secretPresented: boolean;
+      secretVerified: boolean;
     }
   | {
       ok: false;
       message: string;
       payload: IngestAuthErrorPayload;
-      secretPresented: boolean;
+      secretVerified: boolean;
     };
 
 const cleanDomain = (domain: string) =>
@@ -102,6 +103,40 @@ function isOriginAllowed(cors: string[], origin: string | undefined): boolean {
   return cors.includes('*') && !!origin;
 }
 
+/**
+ * Only successful verifications are cached: the key embeds the caller-supplied
+ * secret, so caching a negative would let anyone create entries with keys of
+ * their choosing. The read compares against "true" because entries written by
+ * earlier releases can hold "false".
+ */
+async function verifyClientSecret(
+  clientId: string,
+  clientSecret: string | undefined,
+  storedSecret: string | null | undefined
+): Promise<boolean> {
+  if (!(storedSecret && clientSecret)) {
+    return false;
+  }
+
+  const cacheKey = `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`;
+
+  if ((await getRedisCache().get(cacheKey)) === 'true') {
+    return true;
+  }
+
+  const isVerified = await verifyPassword(clientSecret, storedSecret);
+
+  if (isVerified) {
+    getRedisCache()
+      .setex(cacheKey, VERIFY_CACHE_SECONDS, 'true')
+      .catch(() => {
+        // a cache write failure only costs the next request a hash compare
+      });
+  }
+
+  return isVerified;
+}
+
 export async function validateIngestRequest({
   deps,
   headers,
@@ -125,9 +160,11 @@ export async function validateIngestRequest({
   const clientSecret =
     clientSecretNew || clientSecretOld || clientSecretFromBody;
   const origin = headerValue(headers, 'origin');
-  const secretPresented = !!clientSecret;
 
-  const refuse = (message: string): IngestAuthOutcome => ({
+  const refuse = (
+    message: string,
+    secretVerified = false
+  ): IngestAuthOutcome => ({
     ok: false,
     message,
     payload: {
@@ -138,7 +175,7 @@ export async function validateIngestRequest({
           : 'none',
       origin,
     },
-    secretPresented,
+    secretVerified,
   });
 
   if (!clientId) {
@@ -159,12 +196,23 @@ export async function validateIngestRequest({
     return refuse('Ingestion: Client has no project');
   }
 
+  // Everything downstream keys off whether the secret matched, not off its
+  // mere presence.
+  const secretVerified = await verifyClientSecret(
+    clientId,
+    clientSecret,
+    client.secret
+  );
+
   // Filter out blocked IPs
   const ipFilter = client.project.filters.filter(
     (filter): filter is IProjectFilterIp => filter.type === 'ip'
   );
   if (ipFilter.some((filter) => filter.ip === clientIp)) {
-    return refuse('Ingestion: IP address is blocked by project filter');
+    return refuse(
+      'Ingestion: IP address is blocked by project filter',
+      secretVerified
+    );
   }
 
   // Filter out blocked profile ids
@@ -176,44 +224,39 @@ export async function validateIngestRequest({
     path<string | undefined>(['profileId'], body); // Event handler
 
   if (profileFilter.some((filter) => filter.profileId === profileId)) {
-    return refuse('Ingestion: Profile id is blocked by project filter');
+    return refuse(
+      'Ingestion: Profile id is blocked by project filter',
+      secretVerified
+    );
   }
 
   const revenue =
     path(['payload', 'properties', '__revenue'], body) ??
     path(['properties', '__revenue'], body);
 
-  // Only allow revenue tracking if it was sent with a client secret
+  // Only allow revenue tracking if it was sent with a verified client secret
   // or if the project has allowUnsafeRevenueTracking enabled
   if (
-    !(client.project.allowUnsafeRevenueTracking || clientSecret) &&
+    !(client.project.allowUnsafeRevenueTracking || secretVerified) &&
     typeof revenue !== 'undefined'
   ) {
     return refuse(
-      'Ingestion: Revenue tracking is not allowed without a client secret'
+      'Ingestion: Revenue tracking is not allowed without a client secret',
+      secretVerified
     );
   }
 
   if (client.ignoreCorsAndSecret) {
-    return { ok: true, client, secretPresented };
+    return { ok: true, client, secretVerified };
   }
 
   if (client.project.cors && isOriginAllowed(client.project.cors, origin)) {
-    return { ok: true, client, secretPresented };
+    return { ok: true, client, secretVerified };
   }
 
-  const secret = client.secret;
-  if (secret && clientSecret) {
-    const isVerified = await getCache(
-      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
-      VERIFY_CACHE_SECONDS,
-      async () => await verifyPassword(clientSecret, secret),
-      true
-    );
-    if (isVerified) {
-      return { ok: true, client, secretPresented };
-    }
+  if (secretVerified) {
+    return { ok: true, client, secretVerified };
   }
 
-  return refuse('Ingestion: Invalid cors or secret');
+  return refuse('Ingestion: Invalid cors or secret', secretVerified);
 }
