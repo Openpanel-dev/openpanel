@@ -204,14 +204,20 @@ export class FunnelService {
     // Group by breakdown values (normalize empty/null to "Not set")
     const series = funnel.reduce(
       (acc, f) => {
-        if (limit && Object.keys(acc).length >= limit) {
-          return acc;
-        }
-
         const key = breakdowns
           .map((b, index) => normalizeBreakdownValue(f[`b_${index}`]))
           .join('|');
         if (!acc[key]) {
+          // The limit caps how many breakdown series we return, so it must only
+          // reject NEW keys. Bailing out of the whole reduce here would drop the
+          // remaining rows of series already accepted: the query is ordered by
+          // level DESC, so those rows are the lower funnel steps, and losing them
+          // leaves each series holding only its deepest level. fillFunnel then
+          // accumulates that single row into every step, so every step reports an
+          // identical count at 100%.
+          if (limit && Object.keys(acc).length >= limit) {
+            return acc;
+          }
           acc[key] = [];
         }
         acc[key]!.push({
