@@ -205,9 +205,14 @@ services:
     environment:
       # FQDN
       - SERVICE_FQDN_OPBULLBOARD
+      # Bull Board is only served with credentials (HTTP Basic auth)
+      - BULLBOARD_USERNAME=${SERVICE_USER_BULLBOARD}
+      - BULLBOARD_PASSWORD=${SERVICE_PASSWORD_BULLBOARD}
       # Common
       - NODE_ENV=production
       - SELF_HOSTED=true
+      # Must match the API's secret: unsubscribe links in worker emails are verified by the API
+      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
