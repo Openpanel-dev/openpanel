@@ -12,13 +12,28 @@ import {
 } from './ast-walker';
 
 /**
- * Property names that must never be written through. Assigning to any of
- * these reaches objects shared with the rest of the worker process.
+ * Property names that must never be read or written through. Reading
+ * 'constructor' off any value walks up to the Function constructor, and
+ * assigning through '__proto__' or 'prototype' reaches objects shared with
+ * the rest of the worker process. Neither is ever needed by a template.
  */
-const FORBIDDEN_WRITE_PROPERTIES = new Set([
+const FORBIDDEN_PROPERTIES = new Set([
   '__proto__',
   'constructor',
   'prototype',
+  'caller',
+  'callee',
+]);
+
+/**
+ * Callee shapes a call expression may have. Anything else (a sequence
+ * expression, the result of another call, ...) hides what is being invoked.
+ */
+const ALLOWED_CALLEE_TYPES = new Set([
+  'Identifier',
+  'MemberExpression',
+  'OptionalMemberExpression',
+  'ArrowFunctionExpression',
 ]);
 
 /**
@@ -41,6 +56,9 @@ function staticPropertyName(
     if (prop.type === 'StringLiteral') {
       return prop.value as string;
     }
+    if (prop.type === 'NumericLiteral') {
+      return String(prop.value);
+    }
     if (prop.type === 'TemplateLiteral') {
       const expressions = prop.expressions as unknown[];
       const quasis = prop.quasis as Record<string, unknown>[];
@@ -52,6 +70,32 @@ function staticPropertyName(
     return undefined;
   }
   return prop.type === 'Identifier' ? (prop.name as string) : undefined;
+}
+
+/**
+ * The static key of a property inside an object literal or destructuring
+ * pattern, or undefined when it is computed from an expression.
+ */
+function staticObjectPropertyKey(
+  prop: Record<string, unknown>
+): string | undefined {
+  const key = prop.key as Record<string, unknown> | undefined;
+  if (!key) {
+    return undefined;
+  }
+  if (prop.computed) {
+    if (key.type === 'StringLiteral' || key.type === 'NumericLiteral') {
+      return String(key.value);
+    }
+    return undefined;
+  }
+  if (key.type === 'Identifier') {
+    return key.name as string;
+  }
+  if (key.type === 'StringLiteral' || key.type === 'NumericLiteral') {
+    return String(key.value);
+  }
+  return undefined;
 }
 
 /**
@@ -70,7 +114,7 @@ function forbiddenPropertyInChain(
       current.type === 'OptionalMemberExpression')
   ) {
     const name = staticPropertyName(current);
-    if (name && FORBIDDEN_WRITE_PROPERTIES.has(name)) {
+    if (name && FORBIDDEN_PROPERTIES.has(name)) {
       return name;
     }
     current = current.object as Record<string, unknown> | undefined;
@@ -271,6 +315,54 @@ export function validate(code: string): {
         }
       }
 
+      // Every property read is checked, not only the ones that are called or
+      // assigned. A read of 'constructor' can be stored in a local and invoked
+      // later, so the read itself is what has to be refused. A key that is
+      // only known at run time (obj[expr]) could be any of these names, so it
+      // is refused as well; literal keys and numeric indexes still work.
+      if (
+        node.type === 'MemberExpression' ||
+        node.type === 'OptionalMemberExpression'
+      ) {
+        const name = staticPropertyName(node);
+        if (node.computed && name === undefined) {
+          validationError =
+            'Dynamic computed property access (obj[expr]) is not allowed. Use a literal key such as obj.key, obj["key"] or arr[0].';
+          return;
+        }
+        if (name !== undefined && FORBIDDEN_PROPERTIES.has(name)) {
+          validationError = `Accessing '${name}' is not allowed.`;
+          return;
+        }
+      }
+
+      // Destructuring is a read too: const { constructor: C } = payload.
+      if (node.type === 'ObjectPattern') {
+        const properties = node.properties as Record<string, unknown>[];
+        for (const prop of properties) {
+          if (prop.type !== 'ObjectProperty') {
+            continue;
+          }
+          const name = staticObjectPropertyKey(prop);
+          if (prop.computed && name === undefined) {
+            validationError =
+              'Computed keys in destructuring patterns are not allowed.';
+            return;
+          }
+          if (name !== undefined && FORBIDDEN_PROPERTIES.has(name)) {
+            validationError = `Destructuring '${name}' is not allowed.`;
+            return;
+          }
+        }
+      }
+
+      // A tagged template (tag`...`) is a call that the call checks below
+      // never see. Templates have no use for it.
+      if (node.type === 'TaggedTemplateExpression') {
+        validationError = 'Tagged template literals are not allowed.';
+        return;
+      }
+
       // Check method calls on global objects (like Math.random, JSON.parse)
       // Handles both regular calls and optional chaining (?.)
       if (
@@ -281,6 +373,22 @@ export function validate(code: string): {
         const isMemberExpr =
           callee.type === 'MemberExpression' ||
           callee.type === 'OptionalMemberExpression';
+
+        // @babel/parser emits an 'Import' callee for import(); keep the
+        // dedicated error for it.
+        if (callee.type === 'Import') {
+          validationError = 'Dynamic import() is not allowed';
+          return;
+        }
+
+        // The callee must name what is being invoked: a local or allowed
+        // global identifier, a member expression checked below, or an inline
+        // arrow function. (0, x)(...) and f()(...) are refused.
+        if (!ALLOWED_CALLEE_TYPES.has(callee.type as string)) {
+          validationError =
+            'Calling the result of an expression is not allowed. Call a named function or method directly.';
+          return;
+        }
 
         if (isMemberExpr) {
           const obj = callee.object as Record<string, unknown>;
@@ -351,8 +459,8 @@ export function validate(code: string): {
       }
 
       // Block writes that reach the prototype chain: payload.__proto__.x = 1,
-      // payload['constructor'].prototype.y = 2. Reading these is already
-      // handled by the call and 'new' checks above.
+      // payload['constructor'].prototype.y = 2. The member-read check above
+      // already refuses these; this keeps the clearer assignment message.
       if (
         node.type === 'AssignmentExpression' ||
         node.type === 'UpdateExpression'

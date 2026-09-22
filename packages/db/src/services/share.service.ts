@@ -1,3 +1,5 @@
+import { hasShareAccess } from '@openpanel/common/server/share-access';
+
 import { db } from '../prisma-client';
 import { getProjectAccess } from './access.service';
 
@@ -159,7 +161,11 @@ export async function validateShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-dashboard-${shareId}`];
+    const hasCookie = hasShareAccess(ctx.cookies, {
+      type: 'dashboard',
+      id: shareId,
+      passwordHash: dashboardShare.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({
@@ -197,7 +203,11 @@ export async function validateShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-report-${shareId}`];
+    const hasCookie = hasShareAccess(ctx.cookies, {
+      type: 'report',
+      id: shareId,
+      passwordHash: reportShare.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({
@@ -246,7 +256,11 @@ export async function validateOverviewShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-overview-${shareId}`];
+    const hasCookie = hasShareAccess(ctx.cookies, {
+      type: 'overview',
+      id: shareId,
+      passwordHash: share.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({

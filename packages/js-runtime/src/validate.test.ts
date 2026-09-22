@@ -145,7 +145,7 @@ describe('validate', () => {
         `(payload) => payload['constructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed call target reached by optional chaining', () => {
@@ -153,7 +153,7 @@ describe('validate', () => {
         `(payload) => payload?.['constructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed key written with escape sequences', () => {
@@ -161,7 +161,7 @@ describe('validate', () => {
         `(payload) => payload['\\u0063onstructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed call target on a nested value', () => {
@@ -190,6 +190,101 @@ describe('validate', () => {
       const result = validate(`(payload) => import('node:fs')`);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Dynamic import()');
+    });
+  });
+
+  describe('Reads that reach the Function constructor', () => {
+    // Every form here stores or forwards a reference instead of calling it
+    // as a member, which the call checks alone never see. See
+    // GHSA-mc99-9jf5-22cq / GHSA-fmf9-23m7-xg84.
+    it('should block reading .constructor into a local', () => {
+      const result = validate(
+        '(payload) => { const F = payload.constructor.constructor; return F; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor through optional chaining', () => {
+      const result = validate('(payload) => payload?.constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor off a literal', () => {
+      const result = validate('(payload) => [].constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading __proto__ and prototype', () => {
+      expect(validate('(payload) => payload.__proto__').valid).toBe(false);
+      expect(validate('(payload) => payload.name.prototype').valid).toBe(false);
+    });
+
+    it('should block destructuring a forbidden key', () => {
+      const result = validate(
+        '(payload) => { const { constructor: C } = payload; return C; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Destructuring 'constructor'");
+    });
+
+    it('should block destructuring with a computed key', () => {
+      const result = validate(
+        '(payload) => { const { [payload.k]: v } = payload; return v; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed keys in destructuring');
+    });
+
+    it('should block dynamic computed reads', () => {
+      const result = validate('(payload) => payload[payload.key]');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a template literal key with substitutions', () => {
+      const result = validate('(payload) => payload[`${payload.key}`]');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a sequence-expression callee', () => {
+      const result = validate('(payload) => (0, payload.name.toUpperCase)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling the result of a call', () => {
+      const result = validate('(payload) => JSON.parse(payload.raw)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block tagged template literals', () => {
+      const result = validate('(payload) => payload.name.trim`x`');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Tagged template literals');
+    });
+
+    it('should still allow literal keys and numeric indexes', () => {
+      const result = validate(
+        `(payload) => ({ a: payload['name'], b: payload.items[0], c: payload.items.at(-1) })`,
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should still allow calling a local arrow function', () => {
+      const result = validate(
+        '(payload) => { const fmt = (v) => v.trim(); return fmt(payload.name); }',
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should still allow an immediately invoked arrow function', () => {
+      const result = validate('(payload) => (() => payload.name)()');
+      expect(result.valid).toBe(true);
     });
   });
 
