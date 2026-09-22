@@ -703,13 +703,27 @@ Port for the worker service to listen on.
 WORKER_PORT=3000
 ```
 
+### BULLBOARD_USERNAME / BULLBOARD_PASSWORD
+
+**Type**: `string`
+**Required**: No
+**Default**: None
+
+Credentials for the Bull Board queue dashboard served on the worker port. The dashboard can add, retry and clean jobs, so it is only mounted when both variables are set. Without them the worker logs a warning at startup and serves only `/healthcheck` and `/metrics`. The browser prompts for these credentials (HTTP Basic auth).
+
+**Example**:
+```bash
+BULLBOARD_USERNAME=ops
+BULLBOARD_PASSWORD=$(openssl rand -hex 16)
+```
+
 ### DISABLE_BULLBOARD
 
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
 
-Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring dashboard.
+Disable the Bull Board queue dashboard entirely and silence the startup warning about missing credentials. Set to `true` or `1`.
 
 **Example**:
 ```bash

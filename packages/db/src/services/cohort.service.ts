@@ -303,9 +303,22 @@ export function buildEventCriteriaQuery(
   `;
 }
 
+/** Columns of the profiles table a cohort filter may reference directly. */
+const PROFILE_FILTER_COLUMNS = new Set([
+  'id',
+  'first_name',
+  'last_name',
+  'email',
+  'avatar',
+  'created_at',
+  'last_seen_at',
+]);
+
 // SQL for a profile filter's column: either a properties Map lookup or a
-// plain column, qualified with the table name.
-function profileColumnAccess(name: string): string {
+// plain column, qualified with the table name. The column name is an
+// identifier and cannot be escaped like a value, so it must come from the
+// allowlist (GHSA-gvwr-5684-wjqc).
+export function profileColumnAccess(name: string): string {
   const normalizedName = name.replace(/^profile\./, 'profiles.');
   if (normalizedName.startsWith('profiles.properties.')) {
     const propKey = normalizedName.replace('profiles.properties.', '');
@@ -313,7 +326,11 @@ function profileColumnAccess(name: string): string {
     // user-controlled — a quote in it must not terminate the literal.
     return `profiles.properties[${sqlstring.escape(propKey)}]`;
   }
-  return normalizedName;
+  const column = normalizedName.replace(/^profiles\./, '');
+  if (!PROFILE_FILTER_COLUMNS.has(column)) {
+    throw new Error(`Unknown profile filter column: ${name}`);
+  }
+  return `profiles.${column}`;
 }
 
 function buildProfileCohortHavingClause(

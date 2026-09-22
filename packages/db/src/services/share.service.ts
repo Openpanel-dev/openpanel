@@ -3,6 +3,57 @@ import { hasShareAccess } from '@openpanel/common/server/share-access';
 import { db } from '../prisma-client';
 import { getProjectAccess } from './access.service';
 
+export type ShareKind = 'overview' | 'dashboard' | 'report';
+
+/**
+ * Whether an anonymous viewer may read project-scoped side data (chart
+ * annotations, bot events) for a project.
+ *
+ * The viewer is allowed only if the project has at least one share of the
+ * given kinds that is public and, when password-protected, has been unlocked
+ * with a verified cookie. A share row merely existing is not enough: shares
+ * are toggled off by setting `public: false` (the row stays), and a password
+ * share must not leak through a side endpoint that the share page itself
+ * would refuse.
+ */
+export async function hasAnonymousShareAccessToProject(
+  projectId: string,
+  cookies: Record<string, string | undefined> | undefined,
+  kinds: ShareKind[] = ['overview', 'dashboard', 'report'],
+): Promise<boolean> {
+  const select = { id: true, password: true } as const;
+  const where = { projectId, public: true } as const;
+
+  const [overviews, dashboards, reports] = await Promise.all([
+    kinds.includes('overview')
+      ? db.shareOverview.findMany({ where, select })
+      : [],
+    kinds.includes('dashboard')
+      ? db.shareDashboard.findMany({ where, select })
+      : [],
+    kinds.includes('report')
+      ? db.shareReport.findMany({ where, select })
+      : [],
+  ]);
+
+  const candidates: { type: ShareKind; id: string; password: string | null }[] =
+    [
+      ...overviews.map((s) => ({ type: 'overview' as const, ...s })),
+      ...dashboards.map((s) => ({ type: 'dashboard' as const, ...s })),
+      ...reports.map((s) => ({ type: 'report' as const, ...s })),
+    ];
+
+  return candidates.some(
+    (share) =>
+      !share.password ||
+      hasShareAccess(cookies, {
+        type: share.type,
+        id: share.id,
+        passwordHash: share.password,
+      }),
+  );
+}
+
 export function getShareOverviewById(id: string) {
   return db.shareOverview.findFirst({
     where: {
