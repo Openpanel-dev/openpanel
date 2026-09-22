@@ -195,11 +195,17 @@ export const zHistogramOptions = z.object({
   stacked: z.boolean().default(false),
 });
 
+export const zBarOptions = z.object({
+  type: z.literal('bar'),
+  displayLimit: z.number().int().min(1).max(500).default(10),
+});
+
 export const zReportOptions = z.discriminatedUnion('type', [
   zFunnelOptions,
   zRetentionOptions,
   zSankeyOptions,
   zHistogramOptions,
+  zBarOptions,
 ]);
 
 export type IReportOptions = z.infer<typeof zReportOptions>;

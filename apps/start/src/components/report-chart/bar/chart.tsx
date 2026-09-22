@@ -48,7 +48,7 @@ export function Chart({ data }: Props) {
   const [sortBy, setSortBy] = useState<SortOption>('count-desc');
   const {
     isEditMode,
-    report: { metric, limit, previous },
+    report: { metric, limit, previous, options },
     options: { onClick, dropdownMenuContent },
   } = useReportChartContext();
   const number = useNumber();
@@ -106,7 +106,8 @@ export function Chart({ data }: Props) {
     });
 
     // Apply limit if not in edit mode
-    return isEditMode ? sorted : sorted.slice(0, limit || 10);
+    const displayLimit = options?.type === 'bar' ? options.displayLimit : limit || 10;
+    return isEditMode ? sorted : sorted.slice(0, displayLimit);
   }, [
     seriesWithOriginalRank,
     searchQuery,
@@ -114,6 +115,7 @@ export function Chart({ data }: Props) {
     totalSum,
     isEditMode,
     limit,
+    options,
   ]);
 
   return (

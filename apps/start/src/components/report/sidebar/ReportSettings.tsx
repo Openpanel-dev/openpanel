@@ -14,6 +14,7 @@ import {
   changeFunnelGroup,
   changeFunnelWindow,
   changeMetric,
+  changeOptions,
   changePrevious,
   changeSankeyExclude,
   changeSankeyInclude,
@@ -68,6 +69,10 @@ export function ReportSettings() {
       fields.push('sankeyInclude');
     }
 
+    if (chartType === 'bar') {
+      fields.push('displayLimit');
+    }
+
     if (chartType === 'histogram') {
       fields.push('stacked');
     }
@@ -98,6 +103,36 @@ export function ReportSettings() {
               onCheckedChange={(val) => dispatch(changePrevious(!!val))}
             />
           </Label>
+        )}
+        {fields.includes('displayLimit') && (
+          <div className="flex items-center justify-between gap-4">
+            <Label
+              className="mb-0 whitespace-nowrap"
+              htmlFor="bar-display-limit"
+            >
+              Rows to display
+            </Label>
+            <InputEnter
+              id="bar-display-limit"
+              max={500}
+              min={1}
+              onChangeValue={(value) => {
+                const displayLimit = Number(value);
+                if (
+                  Number.isInteger(displayLimit) &&
+                  displayLimit >= 1 &&
+                  displayLimit <= 500
+                ) {
+                  dispatch(changeOptions({ type: 'bar', displayLimit }));
+                }
+              }}
+              step={1}
+              type="number"
+              value={String(
+                options?.type === 'bar' ? options.displayLimit : 10
+              )}
+            />
+          </div>
         )}
         {fields.includes('criteria') && (
           <div className="flex items-center justify-between gap-4">
