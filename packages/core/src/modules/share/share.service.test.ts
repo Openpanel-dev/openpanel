@@ -354,7 +354,7 @@ test('getShareDashboardReports rejects without the unlock cookie when password-p
 
   await expect(
     subject.getShareDashboardReports('share_1', cookies())
-  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
 });
 
 test('getShareDashboardReports returns the dashboard reports once unlocked', async () => {

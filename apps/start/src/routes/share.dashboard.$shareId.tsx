@@ -85,11 +85,14 @@ function RouteComponent() {
     })
   );
 
-  const reportsQuery = useQuery(
-    trpc.share.dashboardReports.queryOptions({
+  // Not fetched while locked: the server answers FORBIDDEN until the password
+  // cookie is set, and there is nothing to render before then anyway.
+  const reportsQuery = useQuery({
+    ...trpc.share.dashboardReports.queryOptions({
       shareId,
-    })
-  );
+    }),
+    enabled: !shareQuery.data?.requiresPassword,
+  });
 
   const share = shareQuery.data;
 

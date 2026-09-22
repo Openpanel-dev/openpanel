@@ -13,7 +13,7 @@
 // (docs/TECH_DEBT.md §4).
 
 import ShortUniqueId from 'short-unique-id';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getProjectAccess } from '../../shared/access-lookups';
 import { hashPassword } from '../auth/auth.service';
@@ -483,9 +483,13 @@ export async function getShareDashboardReports(
     throw new TRPCNotFoundError('Dashboard share not found');
   }
 
+  // FORBIDDEN, not UNAUTHORIZED: the dashboard treats a 401 as "session
+  // gone" and hard-navigates to /login, which made every password-protected
+  // share unusable. A locked share is an authorization refusal, like the
+  // share guards in overview.rpc.ts and chart.rpc.ts.
   const hasAccess = !!cookies.get(`shared-dashboard-${share.id}`);
   if (share.password && !hasAccess) {
-    throw new TRPCAccessError('Password required');
+    throw new TRPCForbiddenError('Password required');
   }
 
   return getReportsByDashboardId(deps, share.dashboardId);

@@ -298,7 +298,11 @@ import { generateSecureId } from '@openpanel/shared';
 import { decrypt, encrypt } from '@openpanel/shared/server';
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
-import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import {
+  TRPCAccessError,
+  TRPCForbiddenError,
+  TRPCNotFoundError,
+} from '../../rpc/errors';
 import { connectUserToOrganization } from '../organization/organization.service';
 import { getUserAccount } from '../user/user.service';
 import {
@@ -906,7 +910,8 @@ export async function signInToShare(
 
   const validPassword = await verifyPasswordHash(share.password, password);
   if (!validPassword) {
-    throw new TRPCAccessError('Incorrect password');
+    // FORBIDDEN so the dashboard's 401 handler does not log the viewer out.
+    throw new TRPCForbiddenError('Incorrect password');
   }
 
   setCookie(cookieName, '1', { maxAge: 60 * 60 * 24 * 7 });
