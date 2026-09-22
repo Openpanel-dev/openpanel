@@ -1,17 +1,19 @@
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ColumnDef } from '@tanstack/react-table';
-import { toast } from 'sonner';
-
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import type { IServiceMember } from '@openpanel/db';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouteContext } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { toast } from 'sonner';
 
 export function useColumns() {
+  const { session } = useRouteContext({ strict: false });
+  const currentUserId = session?.userId;
+
   const columns: ColumnDef<IServiceMember>[] = [
     {
       accessorKey: 'user',
@@ -87,6 +89,7 @@ export function useColumns() {
     createActionColumn(({ row }) => {
       const queryClient = useQueryClient();
       const trpc = useTRPC();
+      const isSelf = !!currentUserId && row.original.userId === currentUserId;
       const revoke = useMutation(
         trpc.organization.removeMember.mutationOptions({
           onSuccess() {
@@ -107,13 +110,15 @@ export function useColumns() {
 
       return (
         <>
-          <DropdownMenuItem
-            onClick={() => {
-              pushModal('EditMember', row.original);
-            }}
-          >
-            Edit access
-          </DropdownMenuItem>
+          {!isSelf && (
+            <DropdownMenuItem
+              onClick={() => {
+                pushModal('EditMember', row.original);
+              }}
+            >
+              Edit member
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="text-destructive"
             onClick={() => {
