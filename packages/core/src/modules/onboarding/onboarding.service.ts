@@ -16,8 +16,8 @@ import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import { hashClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
-import { hashPassword } from '../auth/auth.service';
 import {
   runSequence,
   type SequenceStep,
@@ -170,7 +170,7 @@ export async function createOnboardingProject(
       organizationId: organization.id,
       projectId: project.id,
       type: 'write',
-      secret: await hashPassword(secret),
+      secret: await hashClientSecret(secret),
     },
   });
 

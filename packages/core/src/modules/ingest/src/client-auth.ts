@@ -14,9 +14,9 @@
 // ADR-011 leaves to Carl, not to a port.
 
 import { getRedisCache } from '@openpanel/redis';
-import { verifyPassword } from '@openpanel/shared/server';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
+import { verifyClientSecret as verifyClientSecretHash } from '../../../shared/client-secret';
 import { headerValue, type IngestHeaders } from '../../../shared/headers';
 import {
   getClientByIdCached,
@@ -124,7 +124,7 @@ async function verifyClientSecret(
     return true;
   }
 
-  const isVerified = await verifyPassword(clientSecret, storedSecret);
+  const isVerified = await verifyClientSecretHash(clientSecret, storedSecret);
 
   if (isVerified) {
     getRedisCache()

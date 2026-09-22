@@ -34,8 +34,8 @@ import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
+import { hashClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
-import { hashPassword } from '../auth/auth.service';
 import { getClientByIdCached } from '../client/client.service';
 
 // The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
@@ -378,7 +378,7 @@ export function createProjectService(
             organizationId,
             name: 'First client',
             type: 'write',
-            secret: await hashPassword(secret),
+            secret: await hashClientSecret(secret),
           },
         },
       },

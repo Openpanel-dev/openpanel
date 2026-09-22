@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { getCache } from '@openpanel/redis';
-import { verifyPassword } from '@openpanel/shared/server';
 import type { ServiceDeps, Services } from '../../../services';
+import { verifyClientSecret } from '../../../shared/client-secret';
 
 export interface McpAuthContext {
   /**
@@ -111,7 +111,7 @@ export async function authenticateToken(
   const isVerified = await getCache(
     cacheKey,
     60 * 5,
-    async () => await verifyPassword(clientSecret, client.secret!),
+    async () => await verifyClientSecret(clientSecret, client.secret!),
     true
   );
 

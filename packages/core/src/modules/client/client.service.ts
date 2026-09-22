@@ -23,7 +23,7 @@ import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
-import { hashPassword } from '../auth/auth.service';
+import { hashClientSecret } from '../../shared/client-secret';
 
 export type IServiceClient = Client;
 export type IServiceClientWithProject = Prisma.ClientGetPayload<{
@@ -164,20 +164,13 @@ export function createClientService(
     }
 
     const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-    // FIXME(M15-104, reported not fixed): `hashPassword` here is
-    // auth.service.ts's argon2 one; every verifier
-    // (ingest/mcp/http client-auth) checks against `@openpanel/shared/server`'s
-    // scrypt `verifyPassword`. No secret minted through this path can
-    // currently authenticate. See docs/review/client.md's "Not covered by
-    // any rule" #1 — fixing the algorithm is a behaviour change, out of this
-    // task's scope.
     const client = await deps.db.client.create({
       data: {
         organizationId,
         projectId: input.projectId || null,
         name: input.name,
         type: input.type || 'write',
-        secret: await hashPassword(secret),
+        secret: await hashClientSecret(secret),
       },
     });
 

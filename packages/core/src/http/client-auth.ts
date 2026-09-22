@@ -19,9 +19,9 @@
 // below. MCP is NOT here — it authenticates its own `token` form inside
 // `modules/mcp/src/auth.ts`, exactly as V1's mcp router did.
 
-import { verifyPassword } from '@openpanel/shared/server';
 import type { DbScope } from '../cacheable-per-deps';
 import type { HttpCtx } from '../context';
+import { verifyClientSecret } from '../shared/client-secret';
 import { headerValue, type IngestHeaders } from '../shared/headers';
 
 /** V1 refuses a client id that is not a UUID before it ever queries
@@ -205,7 +205,7 @@ async function authenticateAllowedClient(
     if (options.allow && !options.allow.includes(client.type as ClientType)) {
       return refuse(FORBIDDEN_TYPE_MESSAGE[label]);
     }
-    if (!(await verifyPassword(clientSecret, client.secret))) {
+    if (!(await verifyClientSecret(clientSecret, client.secret))) {
       return refuse(`${label}: Invalid client secret`);
     }
 
