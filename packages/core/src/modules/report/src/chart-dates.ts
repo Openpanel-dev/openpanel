@@ -7,7 +7,21 @@
 import { DateTime } from '@openpanel/shared';
 import type { IChartRange, IReportInput } from '../report.constants';
 
-export function getDatesFromRange(range: IChartRange, timezone: string) {
+const FALLBACK_TIMEZONE = 'UTC';
+
+// Luxon renders "Invalid DateTime" for an unknown zone, which then reaches
+// ClickHouse as a date literal; fall back rather than poison every query.
+function usableTimezone(timezone: string): string {
+  return DateTime.now().setZone(timezone).isValid
+    ? timezone
+    : FALLBACK_TIMEZONE;
+}
+
+export function getDatesFromRange(
+  range: IChartRange,
+  requestedTimezone: string
+) {
+  const timezone = usableTimezone(requestedTimezone);
   if (range === '30min' || range === 'lastHour') {
     const minutes = range === '30min' ? 30 : 60;
     const startDate = DateTime.now()

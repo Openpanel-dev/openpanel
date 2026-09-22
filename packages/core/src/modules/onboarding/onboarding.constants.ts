@@ -5,6 +5,7 @@
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 
 import { z } from 'zod';
+import { zTimezone } from '../organization/organization.constants';
 
 export const zOnboardingProject = z
   .object({
@@ -16,7 +17,7 @@ export const zOnboardingProject = z
     website: z.boolean(),
     app: z.boolean(),
     backend: z.boolean(),
-    timezone: z.string().optional(),
+    timezone: zTimezone.optional(),
   })
   .superRefine((data, ctx) => {
     if (!(data.organization || data.organizationId)) {

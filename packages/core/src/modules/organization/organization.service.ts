@@ -54,6 +54,7 @@ import {
 } from '../../shared/access-lookups';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
+import { DEFAULT_TIMEZONE, isValidTimezone } from './organization.constants';
 
 export type IServiceOrganization = Awaited<
   ReturnType<typeof getOrganizationById>
@@ -64,7 +65,6 @@ export type IServiceMember = Prisma.MemberGetPayload<{
 }> & { access: ProjectAccess[] };
 export type IServiceProjectAccess = ProjectAccess;
 
-const DEFAULT_TIMEZONE = 'UTC';
 // Grace period between a scheduled deletion and the `delete` cron sweeping it
 // up — matches V1's `addHours(new Date(), 24)`.
 // Session bookkeeping rows are worker-generated (the reaper can emit
@@ -458,8 +458,27 @@ export async function getSettingsForOrganization(
   });
 
   return {
-    timezone: organization.timezone || DEFAULT_TIMEZONE,
+    timezone: resolveTimezone(deps, organization.id, organization.timezone),
   };
+}
+
+// One bad stored zone must not take the whole organization down.
+function resolveTimezone(
+  deps: ServiceDeps,
+  organizationId: string,
+  stored: string | null
+): string {
+  if (!stored) {
+    return DEFAULT_TIMEZONE;
+  }
+  if (isValidTimezone(stored)) {
+    return stored;
+  }
+  deps.logger.warn(
+    { organizationId, timezone: stored },
+    'organization has an invalid timezone; using UTC'
+  );
+  return DEFAULT_TIMEZONE;
 }
 
 export async function getSettingsForProject(
@@ -477,7 +496,11 @@ export async function getSettingsForProject(
   });
 
   return {
-    timezone: project.organization.timezone || DEFAULT_TIMEZONE,
+    timezone: resolveTimezone(
+      deps,
+      project.organization.id,
+      project.organization.timezone
+    ),
   };
 }
 

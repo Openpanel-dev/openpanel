@@ -35,8 +35,35 @@ export const zUpdateMemberAccess = z.object({
   access: z.array(zProjectAccessGrant),
 });
 
+export const DEFAULT_TIMEZONE = 'UTC';
+
+/** True when the runtime's ICU knows the zone (accepts aliases like `Etc/UTC`, `utc`). */
+export function isValidTimezone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The spelling ICU resolves (`utc` → `UTC`), so one zone has one stored form. */
+export function canonicalTimezone(value: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions()
+    .timeZone;
+}
+
+// An unknown zone stored on the organization used to turn every date-driven
+// query in it into `Invalid Date` 500s, so the zone is checked at the door.
+export const zTimezone = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(isValidTimezone, { message: 'Unknown IANA time zone' })
+  .transform(canonicalTimezone);
+
 export const zEditOrganization = z.object({
   id: z.string().min(2),
   name: z.string().min(2),
-  timezone: z.string().min(1),
+  timezone: zTimezone,
 });

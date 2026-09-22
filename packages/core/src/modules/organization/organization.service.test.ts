@@ -5,6 +5,7 @@
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
+import { recordingLogger } from '../../../test/service-deps';
 
 interface FakeOrganization {
   id: string;
@@ -410,6 +411,7 @@ const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 // the `@openpanel/redis` stand-in below stays.
 const chCommand = mock(async () => undefined);
 const deps = {
+  logger: recordingLogger(),
   db: {
     organization,
     project,
@@ -777,6 +779,15 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
   const result = await subject.runDeleteCron(deps);
   expect(result).toEqual({ organizations: 0, projects: 0 });
   expect(organizationStore.has('org_healthy')).toBe(true);
+});
+
+test('getSettingsForOrganization falls back to UTC when the stored timezone is unknown', async () => {
+  organizationStore.set(
+    'org_1',
+    makeOrganization({ id: 'org_1', timezone: 'Not/AZone' })
+  );
+  const result = await subject.getSettingsForOrganization(deps, 'org_1');
+  expect(result).toEqual({ timezone: 'UTC' });
 });
 
 test('getSettingsForOrganization falls back to UTC when the organization has no timezone', async () => {
