@@ -23,7 +23,6 @@
 // no `IN (subquery)` is introduced or removed.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { CoreConfig } from '../../../config';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -55,21 +54,11 @@ export const EMPTY_BREAKDOWN_LABEL = 'Not set';
 /** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
 const EVENTS_ALIAS = 'events';
 
-/**
- * windowFunnel's 'strict_increase' mode requires every step's timestamp to be
- * strictly greater than the previous step's, so same-timestamp sequences
- * (server-side senders, batched SDKs, imported data with coarse timestamps)
- * never connect. Mixpanel/Amplitude count those as ordered, so deployments
- * migrating from them can opt into the default (>=) mode; strict stays the
- * default here.
- */
-const STRICT_INCREASE_MODE = ", 'strict_increase'";
-
-function windowFunnelMode(config: CoreConfig): SqlFragment {
-  return config.query.funnelNonStrictOrdering
-    ? sql.empty
-    : compiledText(STRICT_INCREASE_MODE);
-}
+// windowFunnel runs in its default (>=) ordering on purpose. 'strict_increase'
+// resets step 1 on every matching row and then rejects a later step at the
+// same millisecond, so a track() followed by a screen_view in the same ms
+// zeroed every step after the first — and server-stamped back-to-back requests
+// do collide at ms precision. Same mode as the conversion query.
 
 export interface FunnelBaseInput {
   projectId: string;
@@ -86,8 +75,6 @@ export interface FunnelBaseInput {
   cohortMetadata: Map<string, CohortMetadata>;
   /** Travels to `session_timezone`; `toDateTime('…')` parses in it. */
   timezone: string;
-  /** FUNNEL_NON_STRICT_ORDERING decides `windowFunnel`'s ordering mode. */
-  config: CoreConfig;
 }
 
 /** Everything the funnel chart and the funnel profile list share. */
@@ -288,7 +275,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
-    sql`windowFunnel(${sql.uint64(input.funnelWindowMilliseconds)}${windowFunnelMode(input.config)})(toUInt64(toUnixTimestamp64Milli(created_at)), ${sql.join(conditions)}) AS level`,
+    sql`windowFunnel(${sql.uint64(input.funnelWindowMilliseconds)})(toUInt64(toUnixTimestamp64Milli(created_at)), ${sql.join(conditions)}) AS level`,
   ];
   if (group === 'session_id') {
     // Resolves identity changes mid-session.

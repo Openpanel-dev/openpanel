@@ -196,8 +196,6 @@ export interface QueryConfig {
   importBatchSize: number | undefined;
   insightsRetentionDays: number | undefined;
   windDownMaxPerRun: number | undefined;
-  /** FUNNEL_NON_STRICT_ORDERING: drops `strict_increase` from windowFunnel. */
-  funnelNonStrictOrdering: boolean;
 }
 
 export interface ObjectStoreExportConfig {

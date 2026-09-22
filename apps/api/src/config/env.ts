@@ -592,7 +592,6 @@ const rawSchema = z.object({
   IMPORT_BATCH_SIZE: optionalPositiveInt,
   INSIGHTS_RETENTION_DAYS: optionalPositiveInt,
   WIND_DOWN_MAX_PER_RUN: optionalPositiveInt,
-  FUNNEL_NON_STRICT_ORDERING: trueOrOneSchema,
 
   // --- object-store export ---
   EXPORT_LAG_SECONDS: optionalPositiveInt,
@@ -933,7 +932,6 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       importBatchSize: raw.IMPORT_BATCH_SIZE,
       insightsRetentionDays: raw.INSIGHTS_RETENTION_DAYS,
       windDownMaxPerRun: raw.WIND_DOWN_MAX_PER_RUN,
-      funnelNonStrictOrdering: raw.FUNNEL_NON_STRICT_ORDERING,
     },
     objectStoreExport: {
       lagSeconds: raw.EXPORT_LAG_SECONDS,

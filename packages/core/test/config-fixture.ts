@@ -140,7 +140,6 @@ export function testCoreConfig(
       importBatchSize: undefined,
       insightsRetentionDays: undefined,
       windDownMaxPerRun: undefined,
-      funnelNonStrictOrdering: false,
     },
     objectStoreExport: {
       lagSeconds: undefined,

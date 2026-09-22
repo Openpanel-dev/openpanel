@@ -22,7 +22,6 @@
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { testCoreConfig } from '../../../../test/config-fixture';
 import type {
   IChartBreakdown,
   IReportInput,
@@ -162,19 +161,6 @@ const chartSql = async (breakdowns: IChartBreakdown[]) =>
 
 const chartText = async (breakdowns: IChartBreakdown[]) =>
   render(await chartStatement({ breakdowns })).text;
-
-/** `deps` with FUNNEL_NON_STRICT_ORDERING flipped, as the loader resolves it. */
-function withNonStrictOrdering(
-  nonStrict: boolean
-): import('../../../services').ServiceDeps {
-  // Object.create, not a spread: `testServiceDeps` exposes `clients`/`buffers`
-  // as throwing getters and a spread would read them.
-  return Object.assign(Object.create(deps), {
-    config: testCoreConfig({
-      query: { ...deps.config.query, funnelNonStrictOrdering: nonStrict },
-    }),
-  });
-}
 
 beforeAll(async () => {
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
@@ -388,28 +374,10 @@ describe('funnel.sql / buildFunnelBase — breakdown attribution', () => {
 });
 
 describe('funnel.sql / funnel CTE — windowFunnel ordering', () => {
-  it('defaults to strict_increase (unchanged behavior)', async () => {
-    expect(await chartSql([])).toContain("'strict_increase'");
-  });
-
-  it('drops strict_increase when FUNNEL_NON_STRICT_ORDERING is set', async () => {
-    const base = await buildFunnelBase(
-      withNonStrictOrdering(true),
-      baseInput()
-    );
-    const sql = render(funnelChartQuery(base)).sql;
-    expect(sql).not.toContain('strict_increase');
+  it('uses the default (>=) ordering: same-millisecond steps still connect', async () => {
+    const sql = await chartSql([]);
+    expect(sql).not.toContain('strict_');
     expect(sql).toMatch(/windowFunnel\(\{p:UInt64\}\)\(/);
-  });
-
-  it('non-strict funnel SQL parses and resolves', async () => {
-    const base = await buildFunnelBase(
-      withNonStrictOrdering(true),
-      baseInput()
-    );
-    const statement = funnelChartQuery(base);
-    expect(render(statement).sql).not.toContain('strict_increase');
-    await explain(statement);
   });
 });
 
