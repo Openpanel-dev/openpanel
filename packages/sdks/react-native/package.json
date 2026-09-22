@@ -20,8 +20,8 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "expo-application": "5 - 7",
-    "expo-constants": "14 - 18",
+    "expo-application": "5 - 7 || 50 - 55",
+    "expo-constants": "14 - 18 || 50 - 55",
     "react-native": "*"
   }
 }
