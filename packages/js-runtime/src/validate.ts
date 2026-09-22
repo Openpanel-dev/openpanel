@@ -233,6 +233,19 @@ function forbiddenPropertyInChain(target: Node): string | undefined {
   return undefined;
 }
 
+/** The identifier at the root of a member chain: payload in payload.a.b. */
+function chainRoot(target: Node): Node | undefined {
+  let current: Node | undefined = target;
+  while (
+    current &&
+    (current.type === 'MemberExpression' ||
+      current.type === 'OptionalMemberExpression')
+  ) {
+    current = current.object as Node | undefined;
+  }
+  return current;
+}
+
 /** Validate the one statement at the root: a single arrow function. */
 function validateRoot(program: Node): string | undefined {
   const body = program.body as Node[];
@@ -358,6 +371,9 @@ export function validate(code: string): {
 
     // Collect all declared identifiers (variables, parameters)
     const declaredIdentifiers = collectDeclaredIdentifiers(ast);
+    const rootArrow = (
+      ((ast.program as unknown as Node).body as Node[])[0]! as Node
+    ).expression as Node;
 
     let validationError: string | undefined;
 
@@ -378,9 +394,24 @@ export function validate(code: string): {
         return;
       }
 
-      if (type === 'ArrowFunctionExpression' && node.async) {
-        validationError = 'async/await is not allowed';
-        return;
+      if (type === 'ArrowFunctionExpression') {
+        if (node.async) {
+          validationError = 'async/await is not allowed';
+          return;
+        }
+        // Besides the root, an arrow may only be a callback handed straight
+        // to a call, e.g. arr.map((x) => ...). One stored in a variable or
+        // assigned onto a global is never callable and is only useful for
+        // wrapping a built-in in itself.
+        const isDirectCallback =
+          (parent?.type === 'CallExpression' ||
+            parent?.type === 'OptionalCallExpression') &&
+          (parent.arguments as Node[]).includes(node);
+        if (node !== rootArrow && !isDirectCallback) {
+          validationError =
+            'Arrow functions are only allowed as callbacks passed directly to a method, e.g. arr.map((x) => x.name).';
+          return;
+        }
       }
 
       if (type === 'VariableDeclaration' && node.kind === 'var') {
@@ -512,6 +543,17 @@ export function validate(code: string): {
         const reached = forbiddenPropertyInChain(target);
         if (reached) {
           validationError = `Assigning through '${reached}' is not allowed.`;
+          return;
+        }
+        // Math.round = ..., JSON.parse = ...: writing to a global replaces a
+        // built-in for the rest of the run. Only locals may be written.
+        const root = chainRoot(target);
+        if (
+          root?.type !== 'Identifier' ||
+          !declaredIdentifiers.has(root.name as string)
+        ) {
+          validationError =
+            'Assignments may only target local variables and their properties.';
           return;
         }
       }

@@ -279,7 +279,7 @@ describe('validate', () => {
 
     it('should block calling a local variable', () => {
       const result = validate(
-        '(payload) => { const fmt = (v) => v.trim(); return fmt(payload.name); }',
+        '(payload) => { const fmt = payload.name; return fmt(payload.name); }',
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain("Calling 'fmt'");
@@ -308,6 +308,30 @@ describe('validate', () => {
       const result = validate(
         '(payload) => { const Date = payload; return new Date(); }',
       );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block assigning to a method on a global', () => {
+      const result = validate(
+        '(payload) => { Math.round = (x) => Math.round(x); return Math.round(1); }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('only target local variables');
+    });
+
+    it('should block assigning to a global itself', () => {
+      const result = validate('(payload) => { JSON = payload; return 1; }');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block an arrow stored in a variable', () => {
+      const result = validate('(payload) => { const f = (x) => x; return 1; }');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('callbacks passed directly');
+    });
+
+    it('should block an arrow in an object literal', () => {
+      const result = validate('(payload) => ({ f: (x) => x })');
       expect(result.valid).toBe(false);
     });
 
@@ -621,6 +645,13 @@ describe('execute', () => {
       const payload = { name: 'x', nested: { a: 1 } };
       execute('(payload) => { payload.nested.a = 2; return payload; }', payload);
       expect(payload.nested.a).toBe(1);
+    });
+
+    it('measures the output cap in UTF-8 bytes', () => {
+      // 600k three-byte characters is 600k UTF-16 units but 1.8MB on the wire.
+      expect(() =>
+        execute("(payload) => 'ࠀ'.repeat(600000)", {}),
+      ).toThrow('too large');
     });
 
     it('stops a template that runs too long', () => {

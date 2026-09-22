@@ -56,7 +56,7 @@ export function execute(
     if (typeof resultJson !== 'string') {
       throw new Error('Template did not return a JSON-serializable value');
     }
-    if (resultJson.length > MAX_OUTPUT_BYTES) {
+    if (Buffer.byteLength(resultJson, 'utf8') > MAX_OUTPUT_BYTES) {
       throw new Error('Template output is too large');
     }
     return JSON.parse(resultJson);
