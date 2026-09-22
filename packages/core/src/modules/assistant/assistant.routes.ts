@@ -4,9 +4,13 @@
 // Elysia has no adapter in `@better-agent/adapters` (only express/fastify),
 // but `BetterAgentApp.handler` already speaks the Web `Request`/`Response`
 // pair Elysia's own handlers do, so this route calls it directly instead of
-// waiting on one. The request body is read via `request.clone()` for the
-// project-access check below — `chatApp.handler` gets the original,
-// unconsumed `request` so it can re-read the body itself.
+// waiting on one. `parse: 'none'` is load-bearing, as on the /trpc mount in
+// apps/api/src/main.ts: the global request-logging hook references `body`,
+// which makes Elysia infer body parsing for every route and consume the
+// stream before the handler runs; `request.clone()` then throws "Body is
+// disturbed or locked". With parsing off, the body is read via
+// `request.clone()` for the project-access check below and `chatApp.handler`
+// gets the original, unconsumed `request` so it can re-read it itself.
 //
 // M15-003: this route is where `deps` lives, so everything below it reaches
 // Postgres/ClickHouse through `ctx` — the chat app, the conversation lookup
@@ -103,6 +107,6 @@ export const assistantRoutes = defineRoutes((app) =>
         () => chatApp.handler(request)
       );
     },
-    { session: true, detail: { hide: true } }
+    { session: true, detail: { hide: true }, parse: 'none' }
   )
 );
