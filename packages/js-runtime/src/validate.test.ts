@@ -245,7 +245,7 @@ describe('validate', () => {
     });
 
     it('should block a template literal key with substitutions', () => {
-      const result = validate('(payload) => payload[`${payload.key}`]');
+      const result = validate(`(payload) => payload[\`\${payload.key}\`]`);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Dynamic computed property access');
     });
@@ -275,16 +275,65 @@ describe('validate', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('should still allow calling a local arrow function', () => {
+    it('should block calling a local variable', () => {
       const result = validate(
         '(payload) => { const fmt = (v) => v.trim(); return fmt(payload.name); }',
       );
-      expect(result.valid).toBe(true);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'fmt'");
     });
 
-    it('should still allow an immediately invoked arrow function', () => {
+    it('should block an immediately invoked arrow function', () => {
       const result = validate('(payload) => (() => payload.name)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling a global that is not a function', () => {
+      const result = validate('(payload) => Math(payload.name)');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'Math'");
+    });
+
+    it('should block a static method on a shadowed global', () => {
+      const result = validate(
+        '(payload) => { const JSON = payload; return JSON.parse(payload.raw); }',
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block new Date when Date is shadowed', () => {
+      const result = validate(
+        '(payload) => { const Date = payload; return new Date(); }',
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should still allow callbacks passed to allowed methods', () => {
+      const result = validate(
+        '(payload) => payload.tags.map((t) => t.toUpperCase()).filter((t) => t.length > 1)',
+      );
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Allowlist fallbacks', () => {
+    it('should reject syntax outside the allowlist by default', () => {
+      // A class field, a label, a switch: none of these need a dedicated
+      // rule, they are refused because they are not on the list.
+      expect(validate('(payload) => { switch (payload.name) { default: return 1; } }').valid).toBe(false);
+      expect(validate('(payload) => { x: return 1; }').valid).toBe(false);
+      expect(validate('(payload) => { var x = 1; return x; }').valid).toBe(false);
+      expect(validate('(payload) => { let i = 0; i++; return i; }').valid).toBe(false);
+      expect(validate('(payload) => delete payload.name').valid).toBe(false);
+      expect(validate('(payload) => ({ [payload.k]: 1 })').valid).toBe(false);
+      expect(validate('(payload) => ({ f() { return 1; } })').valid).toBe(false);
+      expect(validate('async (payload) => payload').valid).toBe(false);
+    });
+
+    it('should reject TypeScript syntax', () => {
+      const result = validate('(payload: any) => payload');
+      expect(result.valid).toBe(false);
     });
   });
 
@@ -526,6 +575,59 @@ describe('execute', () => {
       expect(() => {
         execute(code, basePayload);
       }).toThrow('Invalid JavaScript template');
+    });
+  });
+
+  describe('Templates in use in production', () => {
+    // Real templates customers have saved. Every one must keep validating
+    // and executing whenever the allowlist is tightened.
+    const productionTemplates = [
+      `(payload) => ({   name: payload.name || 'identify',   profileId: payload.profileId,   timestamp: new Date(payload.createdAt).toISOString(),   properties: {     ...(payload.properties || {}),     country: payload.country,     city: payload.city,     device: payload.device,     os: payload.os,     browser: payload.browser,     path: payload.path,     firstName: payload.profile ? payload.profile.firstName : undefined,     lastName: payload.profile ? payload.profile.lastName : undefined,     email: payload.profile ? payload.profile.email : undefined   } })`,
+      `(payload) => {   if (!payload.profileId || !payload.profileId.includes('@')) return null;   return {     email_address: payload.profileId,     fields: { "city": payload.city || "", "country": payload.country || "" }     }; }`,
+      '(payload) => ({   event: payload.name,   email: payload.properties?.email ?? null,   occurredAt: payload.createdAt })',
+      `(payload) => {   return {     event_name: payload.name,     first_name: payload.properties?.first_name || '',     last_name: payload.properties?.last_name || '',     email: payload.properties?.email || '',     phone: payload.properties?.phone || '',     sms_consent: payload.properties?.sms_consent || '',     form_name: payload.properties?.form_name || '',     form_id: payload.properties?.form_id || '',     page_url: payload.properties?.page_url || ''   }; }`,
+    ];
+
+    it.each(productionTemplates)('validates and runs: %s', (code) => {
+      expect(validate(code)).toEqual({ valid: true });
+      expect(() => execute(code, basePayload)).not.toThrow();
+    });
+
+    it('produces the expected shape for the identify template', () => {
+      const result = execute(productionTemplates[0]!, basePayload) as Record<
+        string,
+        unknown
+      >;
+      expect(result.name).toBe('page_view');
+      expect(result.timestamp).toBe('2024-01-15T10:30:00.000Z');
+      expect(result.properties).toMatchObject({
+        plan: 'premium',
+        city: 'New York',
+        firstName: 'John',
+      });
+    });
+
+    it('returns null when the template returns null', () => {
+      expect(execute(productionTemplates[1]!, basePayload)).toBeNull();
+    });
+  });
+
+  describe('Isolation', () => {
+    it('does not hand the template a host object', () => {
+      // The payload crosses into the context as JSON, so mutations never
+      // reach the caller's object.
+      const payload = { name: 'x', nested: { a: 1 } };
+      execute('(payload) => { payload.nested.a = 2; return payload; }', payload);
+      expect(payload.nested.a).toBe(1);
+    });
+
+    it('stops a template that runs too long', () => {
+      expect(() =>
+        execute(
+          "(payload) => 'a'.repeat(100000000).replace(/(a+)+b/, '')",
+          {},
+        ),
+      ).toThrow('Error executing JavaScript template');
     });
   });
 });
