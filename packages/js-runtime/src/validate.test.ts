@@ -245,7 +245,9 @@ describe('validate', () => {
     });
 
     it('should block a template literal key with substitutions', () => {
-      const result = validate(`(payload) => payload[\`\${payload.key}\`]`);
+      // Built by concatenation so the source file itself has no placeholder.
+      const code = ['(payload) => payload[`$', '{payload.key}`]'].join('');
+      const result = validate(code);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Dynamic computed property access');
     });
