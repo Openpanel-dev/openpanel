@@ -92,10 +92,30 @@ function getProjectId(req: RequestWithProjectParam): Promise<string> {
   });
 }
 
+/**
+ * Search Console stores one row per day: the ClickHouse `date` column is a
+ * `Date`, and Google's searchAnalytics API takes `YYYY-MM-DD`. `resolveDates`
+ * returns a full datetime, which is right for the event and session tables but
+ * breaks both GSC paths — ClickHouse rejects the comparison outright with
+ * `Cannot convert string '2026-08-07 00:00:00' to type Date`.
+ */
+async function resolveGscDates(
+  projectId: string,
+  data: DateRangeInput
+): Promise<{ startDate: string; endDate: string }> {
+  const { startDate, endDate } = await resolveDates(projectId, data);
+  return { startDate: startDate.slice(0, 10), endDate: endDate.slice(0, 10) };
+}
+
 function getOrgId(req: RequestWithProjectParam): string {
   return req.client!.organizationId;
 }
 
+/**
+ * Resolve a date range to the full datetime bounds the event and session tables
+ * expect, whose ClickHouse columns are `DateTime`. Search Console stores one row
+ * per day and needs `resolveGscDates` instead.
+ */
 async function resolveDates(
   projectId: string,
   data: DateRangeInput
@@ -659,73 +679,83 @@ export const zGscOverviewQuery = zDateRange.extend({
   interval: z.enum(['day', 'week', 'month']).default('day'),
 });
 
+/** Search performance over time: clicks, impressions, CTR, and average position. */
 export async function gscOverview(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOverviewQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
 }
 
 export const zGscLimitQuery = zDateRange.extend({ limit: z.number().int().min(1).max(1000).default(100) });
 
+/** Top pages by clicks over the window. */
 export async function gscPages(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
 export const zGscPageDetailsQuery = zDateRange.extend({ page: z.string().url() });
 
+/** One page's daily series, plus the queries that drove traffic to it. */
 export async function gscPageDetails(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscPageDetailsQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: req.query.page }));
 }
 
+/** Top search queries by clicks over the window. */
 export async function gscQueries(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
 export const zGscQueryDetailsQuery = zDateRange.extend({ query: z.string() });
 
+/** One query's daily series, plus the pages that rank for it. */
 export async function gscQueryDetails(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscQueryDetailsQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: req.query.query }));
 }
 
 export const zGscOpportunitiesQuery = zDateRange.extend({ minImpressions: z.number().int().min(1).default(50) });
 
+/**
+ * Queries ranking 4-20 with enough impressions to be worth improving: already on or
+ * near the first page, so a position gain converts to clicks fastest.
+ */
 export async function gscQueryOpportunities(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOpportunitiesQuery> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: req.query.minImpressions }));
 }
 
+/** Queries where several of the project's own pages compete with each other. */
 export async function gscCannibalization(
   req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDateRange> }>,
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetCannibalizationCore({ projectId, startDate, endDate }));
 }

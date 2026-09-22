@@ -11,6 +11,26 @@ import {
 } from '@openpanel/db';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
+/**
+ * Search Console stores one row per day: its ClickHouse `date` column is a `Date`,
+ * and Google's searchAnalytics API takes `YYYY-MM-DD`. `resolveDateRange` returns a
+ * full datetime, which is correct for the event and session tables and breaks every
+ * GSC query. Mirrors `resolveGscDates` in insights.controller.ts.
+ *
+ * Applied per call site rather than to the whole range: `correlate_seo_with_traffic`
+ * feeds the same range to a GSC core and an OpenPanel core, and the latter needs the
+ * datetime.
+ */
+function gscRange(range: { startDate: string; endDate: string }): {
+  startDate: string;
+  endDate: string;
+} {
+  return {
+    startDate: range.startDate.slice(0, 10),
+    endDate: range.endDate.slice(0, 10),
+  };
+}
+
 export const gscGetOverview = chatTool(
   {
     name: 'gsc_get_overview',
@@ -30,8 +50,7 @@ export const gscGetOverview = chatTool(
     });
     return gscGetOverviewCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       interval,
     });
   },
@@ -56,8 +75,7 @@ export const gscGetTopQueries = chatTool(
     });
     const rows = await gscGetTopQueriesCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       limit: limit ?? 50,
     });
     return truncateRows(rows, 100);
@@ -83,8 +101,7 @@ export const gscGetTopPages = chatTool(
     });
     const rows = await gscGetTopPagesCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       limit: limit ?? 50,
     });
     return truncateRows(rows, 100);
@@ -110,8 +127,7 @@ export const gscGetQueryDetails = chatTool(
     });
     return gscGetQueryDetailsCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       query,
     });
   },
@@ -136,8 +152,7 @@ export const gscGetPageDetails = chatTool(
     });
     return gscGetPageDetailsCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       page,
     });
   },
@@ -162,8 +177,7 @@ export const gscGetQueryOpportunities = chatTool(
     });
     return gscGetQueryOpportunitiesCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
       minImpressions,
     });
   },
@@ -187,8 +201,7 @@ export const gscGetCannibalization = chatTool(
     });
     return gscGetCannibalizationCore({
       projectId: context.projectId,
-      startDate: range.startDate,
-      endDate: range.endDate,
+      ...gscRange(range),
     });
   },
 );
@@ -214,8 +227,7 @@ export const correlateSeoWithTraffic = chatTool(
     const [gscPages, opPages] = await Promise.all([
       gscGetTopPagesCore({
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...gscRange(range),
         limit: 200,
       }),
       getTopPagesCore({
