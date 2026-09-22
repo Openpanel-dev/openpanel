@@ -19,7 +19,13 @@
 // server where `deps` is in hand — not a context problem.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import {
+  ErrorCode,
+  isJSONRPCNotification,
+  isJSONRPCRequest,
+  type JSONRPCMessage,
+  RequestIdSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import type { ServiceDeps, Services } from '../../services';
 import {
   authenticateToken,
@@ -50,6 +56,26 @@ export interface McpHttpResult {
   body: unknown;
 }
 
+const INVALID_REQUEST_STATUS = 400;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** JSON-RPC `-32600`, echoing the caller's id when it is a legal one. */
+function invalidRequest(body: unknown, message: string): McpHttpResult {
+  const rawId = isRecord(body) ? body.id : undefined;
+  const id = RequestIdSchema.safeParse(rawId).success ? rawId : null;
+  return {
+    status: INVALID_REQUEST_STATUS,
+    body: {
+      jsonrpc: '2.0',
+      id,
+      error: { code: ErrorCode.InvalidRequest, message },
+    },
+  };
+}
+
 /**
  * Handle one stateless MCP POST request end-to-end.
  *
@@ -76,12 +102,23 @@ export async function handleStatelessMcpRequest(
     throw err;
   }
 
-  const message = body as JSONRPCMessage;
+  // The SDK drops anything that is not a request or notification on the
+  // floor via `Protocol.onerror` and never replies — a well-formed *response*
+  // message included — so an unvalidated body left the HTTP request pending
+  // forever. The gate has to sit here, before dispatch.
+  if (!isRecord(body)) {
+    return invalidRequest(body, 'Invalid Request: body must be a JSON object');
+  }
 
   // Notifications carry no `id` and expect no response.
-  if (!('id' in message)) {
+  if (isJSONRPCNotification(body)) {
     return { status: 202, body: null };
   }
+
+  if (!isJSONRPCRequest(body)) {
+    return invalidRequest(body, 'Invalid Request: not a JSON-RPC 2.0 request');
+  }
+  const message: JSONRPCMessage = body;
 
   logToolCall(deps, message, context);
   const isInitializeRequest =
@@ -122,6 +159,10 @@ async function runOnEphemeralServer(
 
     return await new Promise<JSONRPCMessage>((resolve, reject) => {
       clientTransport.onmessage = resolve;
+      // The SDK reports an undispatchable message here and nowhere else, so a
+      // message that slips past the gate rejects instead of leaking a pending
+      // HTTP request.
+      server.server.onerror = reject;
       clientTransport.send(message).catch(reject);
     });
   } finally {

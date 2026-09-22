@@ -163,6 +163,51 @@ describe('handleStatelessMcpRequest — auth', () => {
 });
 
 describe('handleStatelessMcpRequest — protocol', () => {
+  const INVALID_BODIES: Array<[string, unknown]> = [
+    ['id without method', { jsonrpc: '2.0', id: 9 }],
+    ['a response message', { jsonrpc: '2.0', id: 9, result: {} }],
+    ['missing jsonrpc', { id: 9, method: 'ping' }],
+    ['null id', { jsonrpc: '2.0', id: null, method: 'ping' }],
+    ['non-string method', { jsonrpc: '2.0', id: 9, method: 5 }],
+    ['jsonrpc 1.0', { jsonrpc: '1.0', id: 9, method: 'ping' }],
+  ];
+
+  for (const [label, body] of INVALID_BODIES) {
+    it(`400s ${label} with -32600 instead of hanging`, async () => {
+      const res = await Promise.race([
+        post(VALID_TOKEN, body),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('request hung')), 2000)
+        ),
+      ]);
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        jsonrpc: '2.0',
+        error: { code: -32_600 },
+      });
+    });
+  }
+
+  it('echoes a legal id on an invalid request and nulls an illegal one', async () => {
+    const legal = await post(VALID_TOKEN, { jsonrpc: '2.0', id: 9 });
+    expect(legal.body).toMatchObject({ id: 9 });
+    const illegal = await post(VALID_TOKEN, { jsonrpc: '2.0', id: { a: 1 } });
+    expect(illegal.body).toMatchObject({ id: null });
+  });
+
+  for (const [label, body] of [
+    ['an empty string', ''],
+    ['a string', 'hello'],
+    ['null', null],
+    ['an array', [1, 2]],
+  ] as Array<[string, unknown]>) {
+    it(`400s ${label} body instead of throwing`, async () => {
+      const res = await post(VALID_TOKEN, body);
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ error: { code: -32_600 } });
+    });
+  }
+
   it('202s a notification and never runs it through the MCP server', async () => {
     const res = await post(VALID_TOKEN, {
       jsonrpc: '2.0',
