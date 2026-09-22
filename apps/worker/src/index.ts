@@ -54,7 +54,11 @@ async function start() {
         res.end(metrics);
       })
       .catch((error) => {
-        res.status(500).end(error);
+        // res.end() only accepts a string/Buffer; passing a raw Error object
+        // throws a TypeError inside this catch, which is unhandled and crashes
+        // the worker. Since /metrics is scraped on every pod, one failing
+        // collector can take down the whole fleet. Stringify to be safe.
+        res.status(500).end(String(error?.message ?? error));
       });
   });
 
