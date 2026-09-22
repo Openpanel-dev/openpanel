@@ -21,6 +21,7 @@ import { Route as WidgetTestRouteImport } from './routes/widget/test'
 import { Route as WidgetRealtimeRouteImport } from './routes/widget/realtime'
 import { Route as WidgetCounterRouteImport } from './routes/widget/counter'
 import { Route as WidgetBadgeRouteImport } from './routes/widget/badge'
+import { Route as IframeTestRouteImport } from './routes/iframe-test'
 import { Route as ApiHealthcheckRouteImport } from './routes/api/healthcheck'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as PublicOnboardingRouteImport } from './routes/_public.onboarding'
@@ -182,6 +183,11 @@ const WidgetBadgeRoute = WidgetBadgeRouteImport.update({
 const ApiHealthcheckRoute = ApiHealthcheckRouteImport.update({
   id: '/api/healthcheck',
   path: '/api/healthcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IframeTestRoute = IframeTestRouteImport.update({
+  id: '/iframe-test',
+  path: '/iframe-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConfigRoute = ApiConfigRouteImport.update({
@@ -711,6 +717,7 @@ export interface FileRoutesByFullPath {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/iframe-test': typeof IframeTestRoute
   '/widget/test': typeof WidgetTestRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
@@ -798,6 +805,7 @@ export interface FileRoutesByTo {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/iframe-test': typeof IframeTestRoute
   '/widget/test': typeof WidgetTestRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -880,6 +888,7 @@ export interface FileRoutesById {
   '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
+  '/iframe-test': typeof IframeTestRoute
   '/widget/test': typeof WidgetTestRoute
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
@@ -980,6 +989,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/iframe-test'
     | '/widget/test'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
@@ -1067,6 +1077,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/iframe-test'
     | '/widget/test'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
@@ -1148,6 +1159,7 @@ export interface FileRouteTypes {
     | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
+    | '/iframe-test'
     | '/widget/test'
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
@@ -1245,6 +1257,7 @@ export interface RootRouteChildren {
   WidgetBadgeRoute: typeof WidgetBadgeRoute
   WidgetCounterRoute: typeof WidgetCounterRoute
   WidgetRealtimeRoute: typeof WidgetRealtimeRoute
+  IframeTestRoute: typeof IframeTestRoute
   WidgetTestRoute: typeof WidgetTestRoute
   ShareDashboardShareIdRoute: typeof ShareDashboardShareIdRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
@@ -1293,6 +1306,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iframe-test': {
+      id: '/iframe-test'
+      path: '/iframe-test'
+      fullPath: '/iframe-test'
+      preLoaderRoute: typeof IframeTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/widget/test': {
@@ -2499,6 +2519,7 @@ const rootRouteChildren: RootRouteChildren = {
   WidgetBadgeRoute: WidgetBadgeRoute,
   WidgetCounterRoute: WidgetCounterRoute,
   WidgetRealtimeRoute: WidgetRealtimeRoute,
+  IframeTestRoute: IframeTestRoute,
   WidgetTestRoute: WidgetTestRoute,
   ShareDashboardShareIdRoute: ShareDashboardShareIdRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,

@@ -2,12 +2,26 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 import type * as React from 'react';
 
+import { useEmbedViewport, isInIframe } from '@/hooks/use-embed-viewport';
+import { embeddedDialogCenterY } from '@/utils/embed-viewport';
 import { cn } from '@/lib/utils';
 
+const overlayClassName =
+  'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50';
+
 function Dialog({
+  modal,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  // Scroll-lock + focus trap fight iframe auto-height (parent owns the scroll).
+  const embedded = typeof window !== 'undefined' && isInIframe();
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      modal={embedded ? false : modal}
+      {...props}
+    />
+  );
 }
 
 function DialogTrigger({
@@ -30,15 +44,37 @@ function DialogClose({
 
 function DialogOverlay({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  const embedded = typeof window !== 'undefined' && isInIframe();
+  const viewport = useEmbedViewport();
+  const embeddedStyle =
+    viewport != null && viewport.visibleHeight > 0
+      ? {
+          top: viewport.visibleTop,
+          height: viewport.visibleHeight,
+          bottom: 'auto' as const,
+        }
+      : undefined;
+
+  // Radix drops Overlay when modal={false}; paint our own so embeds keep a backdrop.
+  if (embedded) {
+    return (
+      <div
+        data-slot="dialog-overlay"
+        aria-hidden
+        className={cn(overlayClassName, className)}
+        style={{ ...embeddedStyle, ...style }}
+      />
+    );
+  }
+
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
-      className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50',
-        className,
-      )}
+      className={cn(overlayClassName, className)}
+      style={style}
       {...props}
     />
   );
@@ -48,10 +84,20 @@ function DialogContent({
   className,
   children,
   showCloseButton = false,
+  style,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
 }) {
+  const viewport = useEmbedViewport();
+  const embeddedStyle =
+    viewport != null && viewport.visibleHeight > 0
+      ? {
+          top: embeddedDialogCenterY(viewport),
+          maxHeight: Math.min(viewport.visibleHeight * 0.9, 720),
+        }
+      : undefined;
+
   // Not using DialogPortal because it's breaking useRef's for some reason
   return (
     <div data-slot="dialog-portal">
@@ -66,6 +112,7 @@ function DialogContent({
           'bg-def-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg [&>*]:min-w-0',
           className,
         )}
+        style={{ ...embeddedStyle, ...style }}
         {...props}
       >
         {children}

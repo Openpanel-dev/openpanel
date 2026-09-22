@@ -1,3 +1,4 @@
+import { useReportEmbedHeight } from '@/hooks/use-embed-viewport';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -75,6 +76,7 @@ function RouteComponent() {
       shareId,
     }),
   );
+  useReportEmbedHeight();
 
   if (shareQuery.isLoading) {
     return <div>Loading...</div>;
@@ -98,7 +100,7 @@ function RouteComponent() {
     header !== '0' && header !== 0 && header !== 'false' && header !== false;
 
   return (
-    <div>
+    <div data-openpanel-embed-root>
       {isHeaderVisible && (
         <div className="mx-auto max-w-7xl">
           <LoginNavbar className="relative p-4" />

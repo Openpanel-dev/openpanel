@@ -27,6 +27,7 @@ export default function ShareOverviewModal() {
   const { projectId, organizationId } = useAppParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -43,7 +44,10 @@ export default function ShareOverviewModal() {
   const shareUrl = existingShare?.id
     ? `${window.location.origin}/share/overview/${existingShare.id}`
     : '';
-
+  const embedScriptUrl = `${window.location.origin}/openpanel-embed.js`;
+  const embedCode = shareUrl
+    ? `<iframe data-openpanel-embed src="${shareUrl}" style="width:100%;border:0;min-height:400px" title="OpenPanel"></iframe>\n<script async src="${embedScriptUrl}"></script>`
+    : '';
   const { register, handleSubmit, watch } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -88,6 +92,20 @@ export default function ShareOverviewModal() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast('Link copied to clipboard');
+  };
+
+  const handleCopyEmbed = async () => {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard API unavailable');
+      }
+      await navigator.clipboard.writeText(embedCode);
+      setCopiedEmbed(true);
+      setTimeout(() => setCopiedEmbed(false), 2000);
+      toast('Embed code copied to clipboard');
+    } catch {
+      toast('Could not copy embed code');
+    }
   };
 
   const handleMakePrivate = () => {
@@ -151,6 +169,32 @@ export default function ShareOverviewModal() {
                 <TrashIcon className="size-4" />
               </Button>
             </Tooltiper>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Embed (auto-resizes to content height):
+            </p>
+            <div className="flex items-start gap-1">
+              <textarea
+                readOnly
+                value={embedCode}
+                className="flex-1 text-xs font-mono bg-background border rounded-md p-2 min-h-[72px]"
+              />
+              <Tooltiper content="Copy embed code">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyEmbed}
+                >
+                  {copiedEmbed ? (
+                    <CheckCircle2 className="size-4" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                </Button>
+              </Tooltiper>
+            </div>
           </div>
         </div>
       )}
