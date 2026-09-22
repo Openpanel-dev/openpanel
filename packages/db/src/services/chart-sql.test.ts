@@ -13,7 +13,7 @@
  */
 import type { IChartBreakdown, IChartEvent } from '@openpanel/validation';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { ch } from '../clickhouse/client';
+import { ch, formatClickhouseDate } from '../clickhouse/client';
 import {
   getAggregateChartSql as _getAggregateChartSql,
   getChartSql as _getChartSql,
@@ -712,4 +712,40 @@ describe('chart.service / single-pass total_count', () => {
     });
     await explain(sql);
   });
+});
+
+describe('chart.service / profile event window', () => {
+  for (const [name, build] of [
+    ['timeseries', getChartSql],
+    ['aggregate', getAggregateChartSql],
+  ] as const) {
+    it(`${name} restricts profile reads to the same project, event and dates`, async () => {
+      const sql = await build({
+        event: event(),
+        breakdowns: [breakdown('profile.properties.plan')],
+        interval: 'day',
+        startDate: '2026-09-01 00:00:00',
+        endDate: '2026-09-02 00:00:00',
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      expect(sql).toContain(`id IN (SELECT profile_id FROM events WHERE project_id = '${PROJECT_ID}' AND created_at >= toDateTime('${formatClickhouseDate('2026-09-01 00:00:00')}') AND created_at <= toDateTime('${formatClickhouseDate('2026-09-02 00:00:00')}') AND name = ('screen_view'))`);
+      expect(sql).toContain('FROM profiles FINAL');
+      if (chReachable) await explain(sql);
+    });
+
+    it(`${name} keeps all event names for wildcard series`, async () => {
+      const sql = await build({
+        event: event({ name: '*' }),
+        breakdowns: [breakdown('profile.properties.plan')],
+        interval: 'day',
+        startDate: '',
+        endDate: '',
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      expect(sql).toContain(`id IN (SELECT profile_id FROM events WHERE project_id = '${PROJECT_ID}')`);
+      expect(sql).not.toContain("name = '*'");
+    });
+  }
 });

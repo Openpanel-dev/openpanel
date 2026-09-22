@@ -9,7 +9,8 @@ import {
   type IReportInput,
 } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
-import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
+import { ch, formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
@@ -462,6 +463,30 @@ export function rewriteProfilePropertyRefs(sql: string, keys: string[]): string 
   return out;
 }
 
+function profileEventWindow({
+  projectId,
+  startDate,
+  endDate,
+  event,
+}: Pick<IGetChartDataInput, 'projectId' | 'startDate' | 'endDate' | 'event'>) {
+  const query = clix(ch)
+    .select(['profile_id'])
+    .from(TABLE_NAMES.events)
+    .where('project_id', '=', projectId);
+  if (startDate) {
+    query.where('created_at', '>=', clix.datetime(startDate, 'toDateTime'));
+  }
+  if (endDate) {
+    query.where('created_at', '<=', clix.datetime(endDate, 'toDateTime'));
+  }
+  if (event.name !== '*') {
+    // Event names must remain string literals, even when they look like dates.
+    query.where('name', '=', clix.exp(sqlstring.escape(event.name)));
+  }
+  // Filter by the join key before FINAL without excluding profiles updated outside the event window.
+  return `id IN (${query.toSQL()})`;
+}
+
 export async function getChartSql({
   event,
   breakdowns: initialBreakdowns,
@@ -691,7 +716,8 @@ export async function getChartSql({
       'profile',
       `SELECT ${selectFields.join(', ')}
       FROM ${TABLE_NAMES.profiles} FINAL
-      WHERE project_id = ${sqlstring.escape(projectId)}`
+      WHERE project_id = ${sqlstring.escape(projectId)}
+      AND ${profileEventWindow({ projectId, startDate, endDate, event })}`
     );
 
     // Use the CTE reference in the main query
@@ -1073,7 +1099,8 @@ export async function getAggregateChartSql({
       'profile',
       `SELECT ${selectFields.join(', ')}
       FROM ${TABLE_NAMES.profiles} FINAL
-      WHERE project_id = ${sqlstring.escape(projectId)}`
+      WHERE project_id = ${sqlstring.escape(projectId)}
+      AND ${profileEventWindow({ projectId, startDate, endDate, event })}`
     );
 
     sb.joins.profiles = profilesJoinRef;
