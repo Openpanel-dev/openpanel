@@ -1,7 +1,7 @@
 import { DateTime, toDots } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
-import { assocPath, last, mergeDeepRight, path, uniq } from 'ramda';
+import { assocPath, last, mergeDeepRight, path } from 'ramda';
 import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 import { botBuffer, eventBuffer } from '../buffers';
@@ -18,7 +18,7 @@ import { db } from '../prisma-client';
 import { createSqlBuilder, type SqlBuilderObject } from '../sql-builder';
 import { resolveMaxLookbackDays } from './lookback';
 import { getEventFiltersWhereClause } from './chart.service';
-import { buildFilterWhere } from './filter-where.service';
+import { buildFilterWhere, profileJoinColumns } from './filter-where.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
   getProfileById,
@@ -696,7 +696,7 @@ export async function getEventList(options: GetEventListOptions) {
       .map((f) => f.name.replace('profile.', ''));
 
     if (profileFilters.length > 0) {
-      sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+      sb.joins.profiles = `LEFT ANY JOIN (SELECT ${profileJoinColumns(profileFilters).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
     }
 
     // Join groups table if any filter uses group fields
@@ -787,7 +787,7 @@ export async function getEventsCount({
       .map((f) => f.name.replace('profile.', ''));
 
     if (profileFilters.length > 0) {
-      sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+      sb.joins.profiles = `LEFT ANY JOIN (SELECT ${profileJoinColumns(profileFilters).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
     }
 
     // Join groups table if any filter uses group fields
@@ -926,7 +926,7 @@ class EventService {
       .where('project_id', '=', projectId)
       .when(profileFilters.length > 0, (q) => {
         q.leftJoin(
-          `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
+          `(SELECT ${profileJoinColumns(profileFilters).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
           'profile.id = e.profile_id'
         );
       })

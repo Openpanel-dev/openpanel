@@ -24,6 +24,7 @@ import {
   rewriteProfilePropertyRefs,
 } from './chart.service';
 import { mergeGlobalFilters, onlyReportEvents } from './reports.service';
+import { profileJoinColumns } from './filter-where.service';
 
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
@@ -383,13 +384,12 @@ export class FunnelService {
     if (anyFilterOnProfile || profileBreakdowns.length > 0) {
       // Scalar columns (email etc.) are selected as-is; the properties Map is
       // narrowed to the referenced keys via profilePropertiesCteSelect.
-      const profileFields = new Set<string>(['id']);
-      for (const f of profileFilters) {
-        const fieldName = f.split('.')[0]!;
-        if (fieldName !== 'properties') {
-          profileFields.add(fieldName);
-        }
-      }
+      // Column names are identifiers and cannot be escaped: only allowlisted
+      // profile columns may be selected. The properties Map is added below
+      // via profilePropertiesCteSelect instead.
+      const profileFields = new Set<string>(
+        profileJoinColumns(profileFilters).filter((c) => c !== 'properties'),
+      );
       for (const b of profileBreakdowns) {
         const fieldName = b.name.replace('profile.', '').split('.')[0];
         if (
