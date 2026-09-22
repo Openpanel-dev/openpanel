@@ -145,7 +145,7 @@ describe('validate', () => {
         `(payload) => payload['constructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed call target reached by optional chaining', () => {
@@ -153,7 +153,7 @@ describe('validate', () => {
         `(payload) => payload?.['constructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed key written with escape sequences', () => {
@@ -161,7 +161,7 @@ describe('validate', () => {
         `(payload) => payload['\\u0063onstructor']['constructor']('return 1')()`,
       );
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Computed property access');
+      expect(result.error).toContain('not allowed');
     });
 
     it('should block a computed call target on a nested value', () => {
@@ -190,6 +190,176 @@ describe('validate', () => {
       const result = validate(`(payload) => import('node:fs')`);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Dynamic import()');
+    });
+  });
+
+  describe('Reads that reach the Function constructor', () => {
+    // Every form here stores or forwards a reference instead of calling it
+    // as a member, which the call checks alone never see. See
+    // GHSA-mc99-9jf5-22cq / GHSA-fmf9-23m7-xg84.
+    it('should block reading .constructor into a local', () => {
+      const result = validate(
+        '(payload) => { const F = payload.constructor.constructor; return F; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor through optional chaining', () => {
+      const result = validate('(payload) => payload?.constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor off a literal', () => {
+      const result = validate('(payload) => [].constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading __proto__ and prototype', () => {
+      expect(validate('(payload) => payload.__proto__').valid).toBe(false);
+      expect(validate('(payload) => payload.name.prototype').valid).toBe(false);
+    });
+
+    it('should block destructuring a forbidden key', () => {
+      const result = validate(
+        '(payload) => { const { constructor: C } = payload; return C; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Destructuring 'constructor'");
+    });
+
+    it('should block destructuring with a computed key', () => {
+      const result = validate(
+        '(payload) => { const { [payload.k]: v } = payload; return v; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed keys in destructuring');
+    });
+
+    it('should block dynamic computed reads', () => {
+      const result = validate('(payload) => payload[payload.key]');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a template literal key with substitutions', () => {
+      // Built by concatenation so the source file itself has no placeholder.
+      const code = ['(payload) => payload[`$', '{payload.key}`]'].join('');
+      const result = validate(code);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a sequence-expression callee', () => {
+      const result = validate('(payload) => (0, payload.name.toUpperCase)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling the result of a call', () => {
+      const result = validate('(payload) => JSON.parse(payload.raw)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block tagged template literals', () => {
+      const result = validate('(payload) => payload.name.trim`x`');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Tagged template literals');
+    });
+
+    it('should still allow literal keys and numeric indexes', () => {
+      const result = validate(
+        `(payload) => ({ a: payload['name'], b: payload.items[0], c: payload.items.at(-1) })`,
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should block calling a local variable', () => {
+      const result = validate(
+        '(payload) => { const fmt = payload.name; return fmt(payload.name); }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'fmt'");
+    });
+
+    it('should block an immediately invoked arrow function', () => {
+      const result = validate('(payload) => (() => payload.name)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling a global that is not a function', () => {
+      const result = validate('(payload) => Math(payload.name)');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'Math'");
+    });
+
+    it('should block a static method on a shadowed global', () => {
+      const result = validate(
+        '(payload) => { const JSON = payload; return JSON.parse(payload.raw); }',
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block new Date when Date is shadowed', () => {
+      const result = validate(
+        '(payload) => { const Date = payload; return new Date(); }',
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block assigning to a method on a global', () => {
+      const result = validate(
+        '(payload) => { Math.round = (x) => Math.round(x); return Math.round(1); }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('only target local variables');
+    });
+
+    it('should block assigning to a global itself', () => {
+      const result = validate('(payload) => { JSON = payload; return 1; }');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block an arrow stored in a variable', () => {
+      const result = validate('(payload) => { const f = (x) => x; return 1; }');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('callbacks passed directly');
+    });
+
+    it('should block an arrow in an object literal', () => {
+      const result = validate('(payload) => ({ f: (x) => x })');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should still allow callbacks passed to allowed methods', () => {
+      const result = validate(
+        '(payload) => payload.tags.map((t) => t.toUpperCase()).filter((t) => t.length > 1)',
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Allowlist fallbacks', () => {
+    it('should reject syntax outside the allowlist by default', () => {
+      // A class field, a label, a switch: none of these need a dedicated
+      // rule, they are refused because they are not on the list.
+      expect(validate('(payload) => { switch (payload.name) { default: return 1; } }').valid).toBe(false);
+      expect(validate('(payload) => { x: return 1; }').valid).toBe(false);
+      expect(validate('(payload) => { var x = 1; return x; }').valid).toBe(false);
+      expect(validate('(payload) => { let i = 0; i++; return i; }').valid).toBe(false);
+      expect(validate('(payload) => delete payload.name').valid).toBe(false);
+      expect(validate('(payload) => ({ [payload.k]: 1 })').valid).toBe(false);
+      expect(validate('(payload) => ({ f() { return 1; } })').valid).toBe(false);
+      expect(validate('async (payload) => payload').valid).toBe(false);
+    });
+
+    it('should reject TypeScript syntax', () => {
+      const result = validate('(payload: any) => payload');
+      expect(result.valid).toBe(false);
     });
   });
 
@@ -431,6 +601,66 @@ describe('execute', () => {
       expect(() => {
         execute(code, basePayload);
       }).toThrow('Invalid JavaScript template');
+    });
+  });
+
+  describe('Templates in use in production', () => {
+    // Real templates customers have saved. Every one must keep validating
+    // and executing whenever the allowlist is tightened.
+    const productionTemplates = [
+      `(payload) => ({   name: payload.name || 'identify',   profileId: payload.profileId,   timestamp: new Date(payload.createdAt).toISOString(),   properties: {     ...(payload.properties || {}),     country: payload.country,     city: payload.city,     device: payload.device,     os: payload.os,     browser: payload.browser,     path: payload.path,     firstName: payload.profile ? payload.profile.firstName : undefined,     lastName: payload.profile ? payload.profile.lastName : undefined,     email: payload.profile ? payload.profile.email : undefined   } })`,
+      `(payload) => {   if (!payload.profileId || !payload.profileId.includes('@')) return null;   return {     email_address: payload.profileId,     fields: { "city": payload.city || "", "country": payload.country || "" }     }; }`,
+      '(payload) => ({   event: payload.name,   email: payload.properties?.email ?? null,   occurredAt: payload.createdAt })',
+      `(payload) => {   return {     event_name: payload.name,     first_name: payload.properties?.first_name || '',     last_name: payload.properties?.last_name || '',     email: payload.properties?.email || '',     phone: payload.properties?.phone || '',     sms_consent: payload.properties?.sms_consent || '',     form_name: payload.properties?.form_name || '',     form_id: payload.properties?.form_id || '',     page_url: payload.properties?.page_url || ''   }; }`,
+    ];
+
+    it.each(productionTemplates)('validates and runs: %s', (code) => {
+      expect(validate(code)).toEqual({ valid: true });
+      expect(() => execute(code, basePayload)).not.toThrow();
+    });
+
+    it('produces the expected shape for the identify template', () => {
+      const result = execute(productionTemplates[0]!, basePayload) as Record<
+        string,
+        unknown
+      >;
+      expect(result.name).toBe('page_view');
+      expect(result.timestamp).toBe('2024-01-15T10:30:00.000Z');
+      expect(result.properties).toMatchObject({
+        plan: 'premium',
+        city: 'New York',
+        firstName: 'John',
+      });
+    });
+
+    it('returns null when the template returns null', () => {
+      expect(execute(productionTemplates[1]!, basePayload)).toBeNull();
+    });
+  });
+
+  describe('Isolation', () => {
+    it('does not hand the template a host object', () => {
+      // The payload crosses into the context as JSON, so mutations never
+      // reach the caller's object.
+      const payload = { name: 'x', nested: { a: 1 } };
+      execute('(payload) => { payload.nested.a = 2; return payload; }', payload);
+      expect(payload.nested.a).toBe(1);
+    });
+
+    it('measures the output cap in UTF-8 bytes', () => {
+      // 600k three-byte characters is 600k UTF-16 units but 1.8MB on the wire.
+      expect(() =>
+        execute("(payload) => 'ࠀ'.repeat(600000)", {}),
+      ).toThrow('too large');
+    });
+
+    it('stops a template that runs too long', () => {
+      expect(() =>
+        execute(
+          "(payload) => 'a'.repeat(100000000).replace(/(a+)+b/, '')",
+          {},
+        ),
+      ).toThrow('Error executing JavaScript template');
     });
   });
 });

@@ -7,7 +7,8 @@
     ".": "./index.ts",
     "./server": "./server/index.ts",
     "./server/get-client-ip": "./server/get-client-ip.ts",
-    "./server/safe-fetch": "./server/safe-fetch.ts"
+    "./server/safe-fetch": "./server/safe-fetch.ts",
+    "./server/share-access": "./server/share-access.ts"
   },
   "scripts": {
     "test": "vitest",
