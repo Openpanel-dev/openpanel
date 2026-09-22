@@ -224,10 +224,7 @@ export interface CoreConfig {
   dashboardUrl: string;
   /** Set on the demo deployment only: every session resolves to this user. */
   demoUserId: string | undefined;
-  /**
-   * CLICKHOUSE_CLUSTER, else the inverse of SELF_HOSTED — the one place that
-   * cross-field rule is applied.
-   */
+  /** CLICKHOUSE_CLUSTER. Must agree with what `migrate:deploy` created. */
   clickhouseClustered: boolean;
   /** The single symmetric key for at-rest encryption; 32 bytes as 64 hex. */
   encryptionKey: string | undefined;

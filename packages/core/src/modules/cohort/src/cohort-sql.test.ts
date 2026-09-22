@@ -28,12 +28,14 @@
 // so this ports as direct calls instead.
 
 import { expect, test } from 'bun:test';
-import { getReplicatedTableName } from '../../../shared/ch-tables';
+import {
+  getReplicatedTableName,
+  replicatedTarget,
+} from '../../../shared/ch-tables';
 import type { PropertyBasedCohortDefinition } from '../cohort.constants';
 import {
   buildPropertyBasedCohortQuery,
   deriveCohortQuerySettings,
-  replicatedTarget,
 } from '../cohort.service';
 
 const PROJECT_ID = 'test-sql-validation';

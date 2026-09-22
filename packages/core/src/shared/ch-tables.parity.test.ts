@@ -17,7 +17,7 @@ describe('ch-tables parity with @openpanel/db', () => {
   });
 
   // The cluster VERDICT is the config loader's since M15-006
-  // (`config.clickhouseClustered` = CLICKHOUSE_CLUSTER, else not SELF_HOSTED);
+  // (`config.clickhouseClustered` = CLICKHOUSE_CLUSTER);
   // @openpanel/db still reads it itself. Feeding db's verdict in is what makes
   // this a parity check of the NAME derivation rather than of two env reads.
   it('derives the same mutation table name for the same verdict', () => {

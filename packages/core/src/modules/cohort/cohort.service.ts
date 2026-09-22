@@ -36,6 +36,7 @@ import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
+import { replicatedTarget } from '../../shared/ch-tables';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {
@@ -57,26 +58,6 @@ const TABLE = {
   eventProfileSummaryMv: 'event_profile_summary_mv',
   eventPropertyProfileSummaryMv: 'event_property_profile_summary_mv',
 } as const;
-
-/**
- * The mutation target for a table: `<name>_replicated ON CLUSTER '{cluster}'`
- * when clustered, the plain name otherwise — the exact text
- * `getReplicatedTableName` produces (asserted in src/cohort-sql.test.ts).
- *
- * Built here rather than fed through `sql.id` because the clustered form is
- * not an identifier. The `ON CLUSTER` clause is literal template text, and
- * `'{cluster}'` is a ClickHouse *macro*, not a `{name:Type}` placeholder — it
- * carries no type suffix, so parameter substitution leaves it alone.
- */
-export function replicatedTarget(
-  clustered: boolean,
-  tableName: string
-): SqlFragment {
-  if (clustered) {
-    return sql`${sql.id(`${tableName}_replicated`)} ON CLUSTER '{cluster}'`;
-  }
-  return sql.id(tableName);
-}
 
 // Max members materialized into cohort_members per compute. Cohorts larger
 // than this are silently truncated to an arbitrary subset, so deployments

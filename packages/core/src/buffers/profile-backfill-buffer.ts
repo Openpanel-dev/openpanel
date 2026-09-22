@@ -1,7 +1,7 @@
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { getSafeJson } from '@openpanel/shared';
-import { getReplicatedTableName, TABLE_NAMES } from '../shared/ch-tables';
+import { replicatedTarget, TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 export interface ProfileBackfillEntry {
@@ -71,7 +71,10 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     const entries = Array.from(seen.values());
 
     const ch = this.resolveCh();
-    const table = getReplicatedTableName(
+    // `replicatedTarget`, not `sql.id`: the clustered form carries an
+    // `ON CLUSTER` clause and is not a bare identifier, so `sql.id` refused it
+    // and every backfill flush threw before reaching ClickHouse.
+    const target = replicatedTarget(
       this.deps.config.clickhouseClustered,
       TABLE_NAMES.events
     );
@@ -97,7 +100,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
       );
 
       const statement = sql`
-        UPDATE ${sql.id(table)}
+        UPDATE ${target}
         SET profile_id = CASE session_id
           ${caseClause}
         END

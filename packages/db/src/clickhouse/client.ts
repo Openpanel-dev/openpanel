@@ -80,20 +80,15 @@ export const TABLE_NAMES = {
 };
 
 /**
- * Check if ClickHouse is running in clustered mode
- * Clustered mode = production (not self-hosted)
- * Non-clustered mode = self-hosted environments
+ * Whether ClickHouse runs as a cluster with `<table>_replicated` targets.
+ * Keyed on CLICKHOUSE_CLUSTER alone — the same rule the code migrations use
+ * when they create the schema — so runtime never mutates tables that were
+ * never created.
  */
 export function isClickhouseClustered(): boolean {
-  if (
+  return (
     process.env.CLICKHOUSE_CLUSTER === 'true' ||
     process.env.CLICKHOUSE_CLUSTER === '1'
-  ) {
-    return true;
-  }
-
-  return !(
-    process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
   );
 }
 

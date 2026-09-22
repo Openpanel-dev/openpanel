@@ -13,6 +13,8 @@
 // this map and @openpanel/db's are identical, so a table added on one side
 // and not the other fails the suite rather than a query.
 
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+
 export const TABLE_NAMES = {
   events: 'events',
   profiles: 'profiles',
@@ -51,6 +53,23 @@ export const TABLE_NAMES = {
  * The verdict is `config.clickhouseClustered`, resolved once by the config
  * loader from CLICKHOUSE_CLUSTER and SELF_HOSTED.
  */
+/**
+ * The mutation target as a SQL fragment. Built here rather than fed through
+ * `sql.id` because the clustered form is not an identifier: the `ON CLUSTER`
+ * clause is literal template text, and `'{cluster}'` is a ClickHouse *macro*,
+ * not a `{name:Type}` placeholder — it carries no type suffix, so parameter
+ * substitution leaves it alone.
+ */
+export function replicatedTarget(
+  clustered: boolean,
+  tableName: string
+): SqlFragment {
+  if (clustered) {
+    return sql`${sql.id(`${tableName}_replicated`)} ON CLUSTER '{cluster}'`;
+  }
+  return sql.id(tableName);
+}
+
 export function getReplicatedTableName(
   clustered: boolean,
   tableName: string

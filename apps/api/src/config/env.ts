@@ -813,8 +813,12 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
     selfHosted: raw.SELF_HOSTED,
     dashboardUrl: deriveDashboardUrl(raw),
     demoUserId: raw.DEMO_USER_ID,
-    // Clustered mode = production (not self-hosted), unless said otherwise.
-    clickhouseClustered: raw.CLICKHOUSE_CLUSTER || !raw.SELF_HOSTED,
+    // The same rule packages/db/scripts/migrate-code.ts applies when it creates
+    // the schema: `<table>_replicated ON CLUSTER` exists only when the operator
+    // set CLICKHOUSE_CLUSTER. Inferring it from !SELF_HOSTED made any process
+    // without that flag (dev, a cloud box that never set it) mutate tables the
+    // migrations never created, so cohorts never computed and deletions failed.
+    clickhouseClustered: raw.CLICKHOUSE_CLUSTER,
     encryptionKey: raw.ENCRYPTION_KEY,
     pingDisabled: raw.DISABLE_PING,
     logging: {

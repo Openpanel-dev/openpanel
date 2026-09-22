@@ -202,11 +202,14 @@ describe('derived values, computed once in the transform', () => {
     ).toBe('https://own');
   });
 
-  it('clickhouseClustered is CLICKHOUSE_CLUSTER, else the inverse of SELF_HOSTED', () => {
-    expect(loadConfig(base).core.clickhouseClustered).toBe(true);
+  it('clickhouseClustered is CLICKHOUSE_CLUSTER alone, the rule the migrations use', () => {
+    expect(loadConfig(base).core.clickhouseClustered).toBe(false);
     expect(
       loadConfig({ ...base, SELF_HOSTED: 'true' }).core.clickhouseClustered
     ).toBe(false);
+    expect(
+      loadConfig({ ...base, CLICKHOUSE_CLUSTER: '1' }).core.clickhouseClustered
+    ).toBe(true);
     expect(
       loadConfig({ ...base, SELF_HOSTED: 'true', CLICKHOUSE_CLUSTER: '1' }).core
         .clickhouseClustered
