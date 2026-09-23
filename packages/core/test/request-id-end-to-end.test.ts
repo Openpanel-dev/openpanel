@@ -811,7 +811,11 @@ function chainDeps() {
               criteria: {
                 operator: 'and',
                 properties: [
-                  { name: 'country', operator: 'is', value: ['US'] },
+                  {
+                    name: 'profile.properties.country',
+                    operator: 'is',
+                    value: ['US'],
+                  },
                 ],
               },
             },

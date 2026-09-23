@@ -7,7 +7,16 @@ ClickHouse and, where relevant, against V1 on the local `main` branch.
 
 Seven critical findings were fixed in commits `9ee15582`..`5e92441f` (timezone validation,
 client-secret hashing, assistant body parsing, share FORBIDDEN, MCP request gate, clustered
-table verdict, funnel ordering). Everything below is still open.
+table verdict, funnel ordering).
+
+A second pass (`9bd5fb4b`..`cfdb7c3c`) ported the outstanding `origin/main` changes into the
+rewrite and closed more of this list: **H2 is fixed** (`7b885237`), and **H12 is partly
+fixed** (`f3e9ae4e`: `profile.values` is a 400 now; the rest of that entry stands). Those
+commits also closed five published advisories that were live here and are not otherwise in
+this file: the webhook template sandbox escape, the share-password cookie bypass, the
+unsubscribe-token default secret, the email fallback log, and the migration banner.
+
+Everything below is still open.
 
 For an agent working this list: one issue per commit, verify like the "Verify" line says
 (the worktree API is `$API_URL`, loopback `http://127.0.0.1:21101`; ClickHouse HTTP is
@@ -30,7 +39,7 @@ misleading feature; **low** = cosmetic.
 - **Fix**: delete the four `console.log` calls. Consider a lint rule (`noConsole`) for `apps/start/src`.
 - **Verify**: `grep -rn "console.log(" apps/start/src` is empty; `$HUB_LOG_DIR/web.log` has no `ENVS`.
 
-### H2. `reference.getChartReferences` is public with no access check
+### H2. `reference.getChartReferences` is public with no access check — FIXED (`7b885237`)
 - **Symptom**: anonymous `GET /trpc/reference.getChartReferences?input={"json":{"projectId":"acme-web","range":"30d"}}`
   → 200 with the project's references (title, description, date).
 - **Files**: `packages/core/src/modules/reference/reference.rpc.ts` (~line 60, `publicProcedure`).
@@ -165,7 +174,10 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
   during the run — confirm it does not reproduce on a warm server).
 - **Verify**: temporarily make `profile.list` throw; the tab shows an error, not "No profiles".
 
-### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks)
+### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks) — PARTLY FIXED (`f3e9ae4e`)
+`profile.values` now answers 400. Everything else in this entry is untouched, including
+`gsc_get_cannibalization` without a connected integration, which still returns a raw Prisma
+error.
 - **tRPC** (`{id:"nope"}` or garbage): `cohort.get/update`, `cohort.refresh` (static), `report.get/update/delete/move/create`,
   `dashboard.update`, `integration.get/delete`, `notification.deleteRule`, `reference.update/delete`,
   `client.update/remove`, `import.retry/delete`, `insight.explain`, `share.reportSettings`,
@@ -372,6 +384,20 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
   the seeded signup cohort has 18,760 — the UI should say the count is truncated.
 
 ---
+
+### L1. `test/midnight-window.test.ts` rots with the calendar
+- **Symptom**: three failures in `bun test --isolate` (`pass with the wall clock at
+  2026-09-16T00:0*`). The suite pins the JS clock to a hardcoded `2026-09-16` and re-runs the
+  mcp/chart fixture suites inside it, but `inactiveDays` and the last-seen buckets compare
+  against ClickHouse's own `now()`, which cannot be faked — `test/fixture-clock.ts:8-10` says
+  so. Once the real date drifts a week past the pinned one the fixture and the server disagree
+  and `find_profiles` / `get_user_last_seen_distribution` fail.
+- **Files**: `packages/core/test/midnight-window.test.ts:19-23` (the hardcoded dates),
+  `packages/core/test/fixture-clock.ts`.
+- **Fix**: derive the in-window clocks from today rather than hardcoding them — keep the time
+  of day (00:01, 00:10, 00:19 UTC) and take the current date.
+- **Verify**: `bun test --isolate test/midnight-window.test.ts` passes, and still passes if the
+  machine clock is moved a month forward.
 
 ## Test debt worth adding while fixing the above
 - A route test that mounts `requestLogging` for every body-forwarding route (assistant now has one;
