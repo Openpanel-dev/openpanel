@@ -405,6 +405,9 @@ const rawSchema = z.object({
   ENABLED_QUEUES: enabledQueuesSchema,
   DISABLE_WORKERS: definedIsTrueSchema,
   DISABLE_BULLBOARD: trueOrOneSchema,
+  /** HTTP Basic credentials for operator-only surfaces; bull-board today. */
+  ADMIN_USERNAME: optionalString,
+  ADMIN_PASSWORD: optionalString,
 
   // --- HTTP surface ---
   /**
@@ -653,6 +656,20 @@ function kafkaSslEnabled(raw: RawEnv): boolean {
   return raw.KAFKA_SSL ?? saslEnabled;
 }
 
+/** Half an operator credential pair protects nothing; say so at boot. */
+function checkAdminAuthIsComplete(raw: RawEnv, ctx: z.RefinementCtx): void {
+  const hasUsername = raw.ADMIN_USERNAME !== undefined;
+  const hasPassword = raw.ADMIN_PASSWORD !== undefined;
+  if (hasUsername === hasPassword) {
+    return;
+  }
+  const missing = hasUsername ? 'ADMIN_PASSWORD' : 'ADMIN_USERNAME';
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message: `Admin auth is partially configured: ${missing} is missing (both ADMIN_USERNAME and ADMIN_PASSWORD are required)`,
+  });
+}
+
 /** Half a credential pair, or a mechanism with none, is a misconfiguration. */
 function checkKafkaSaslIsComplete(raw: RawEnv, ctx: z.RefinementCtx): void {
   const hasUsername = raw.KAFKA_SASL_USERNAME !== undefined;
@@ -818,6 +835,10 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
     // without that flag (dev, a cloud box that never set it) mutate tables the
     // migrations never created, so cohorts never computed and deletions failed.
     clickhouseClustered: raw.CLICKHOUSE_CLUSTER,
+    adminAuth:
+      raw.ADMIN_USERNAME && raw.ADMIN_PASSWORD
+        ? { username: raw.ADMIN_USERNAME, password: raw.ADMIN_PASSWORD }
+        : undefined,
     encryptionKey: raw.ENCRYPTION_KEY,
     pingDisabled: raw.DISABLE_PING,
     logging: {
@@ -997,6 +1018,7 @@ const envSchema = rawSchema
     checkOtlpHasKey(raw, ctx);
     checkKafkaHeartbeatFitsSession(raw, ctx);
     checkKafkaSaslIsComplete(raw, ctx);
+    checkAdminAuthIsComplete(raw, ctx);
     checkKafkaTlsOptionsHaveTls(raw, ctx);
     checkReaperDeadmanOutlivesSession(raw, ctx);
     checkVacuumOutlivesReaper(raw, ctx);

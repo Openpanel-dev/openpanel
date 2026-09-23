@@ -229,6 +229,10 @@ services:
       # Must match the API's secret: unsubscribe links in worker emails are
       # verified by the API, and signing them needs a real secret
       - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      # Operator credentials for the queue dashboard (HTTP Basic, on top of
+      # the dashboard session guard)
+      - ADMIN_USERNAME=${SERVICE_USER_ADMIN}
+      - ADMIN_PASSWORD=${SERVICE_PASSWORD_ADMIN}
       # Optional: Google Search Console sync needs the Google OAuth client
       - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}

@@ -17,11 +17,13 @@
 import type { Queue as BullQueue } from 'bullmq';
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
+import { basicAuthChallenge, matchesBasicAuth } from '../shared/basic-auth';
 import { requestContext } from './context';
 
 export const BULL_BOARD_BASE_PATH = '/bullboard';
 
 const UNAUTHORIZED = 401;
+const BULL_BOARD_REALM = 'OpenPanel ops';
 
 /**
  * Mounted only where the role consumes and `DISABLE_BULLBOARD` is unset
@@ -67,13 +69,31 @@ export async function bullBoardRoutes(
 
   return new Elysia({ name: 'core/http/bull-board' })
     .use(requestContext(deps))
-    .onBeforeHandle({ as: 'global' }, async ({ path, ctx, status }) => {
-      if (!path.startsWith(BULL_BOARD_BASE_PATH)) {
-        return;
+    .onBeforeHandle(
+      { as: 'global' },
+      async ({ path, ctx, status, request, set }) => {
+        if (!path.startsWith(BULL_BOARD_BASE_PATH)) {
+          return;
+        }
+        // Two gates, both required: a dashboard session proves a human, the
+        // operator credentials prove an operator. The queue UI can add, retry
+        // and clean jobs, so being any signed-up user is not enough
+        // (main #511, GHSA-r627-6vrh-65p9).
+        if (!(await ctx.session())) {
+          return status(UNAUTHORIZED);
+        }
+        const admin = ctx.config.adminAuth;
+        if (
+          admin &&
+          !matchesBasicAuth(request.headers.get('authorization'), admin)
+        ) {
+          set.headers = {
+            ...set.headers,
+            ...basicAuthChallenge(BULL_BOARD_REALM),
+          };
+          return status(UNAUTHORIZED);
+        }
       }
-      if (!(await ctx.session())) {
-        return status(UNAUTHORIZED);
-      }
-    })
+    )
     .use(board) as unknown as Elysia;
 }

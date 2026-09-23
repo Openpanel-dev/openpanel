@@ -202,6 +202,20 @@ describe('derived values, computed once in the transform', () => {
     ).toBe('https://own');
   });
 
+  it('adminAuth needs both halves or neither', () => {
+    expect(loadConfig(base).core.adminAuth).toBeUndefined();
+    expect(
+      loadConfig({ ...base, ADMIN_USERNAME: 'ops', ADMIN_PASSWORD: 'pw' }).core
+        .adminAuth
+    ).toEqual({ username: 'ops', password: 'pw' });
+    expect(() => loadConfig({ ...base, ADMIN_USERNAME: 'ops' })).toThrow(
+      'ADMIN_PASSWORD'
+    );
+    expect(() => loadConfig({ ...base, ADMIN_PASSWORD: 'pw' })).toThrow(
+      'ADMIN_USERNAME'
+    );
+  });
+
   it('clickhouseClustered is CLICKHOUSE_CLUSTER alone, the rule the migrations use', () => {
     expect(loadConfig(base).core.clickhouseClustered).toBe(false);
     expect(

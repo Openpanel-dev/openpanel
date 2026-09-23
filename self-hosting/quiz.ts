@@ -21,6 +21,8 @@ let envs = {
   DATABASE_URL: '',
   DOMAIN_NAME: '',
   COOKIE_SECRET: generatePassword(32),
+  ADMIN_USERNAME: 'admin',
+  ADMIN_PASSWORD: generatePassword(24),
   // AES-256 key for at-rest encryption (GSC tokens, 2FA secrets). Must be
   // exactly 32 bytes / 64 hex chars, so it can't reuse generatePassword.
   ENCRYPTION_KEY: randomBytes(32).toString('hex'),
@@ -159,6 +161,8 @@ function writeEnvFile(envs: EnvVars) {
 
   const newEnvFile = envTemplate
     .replace('$COOKIE_SECRET', envs.COOKIE_SECRET)
+    .replace('$ADMIN_USERNAME', envs.ADMIN_USERNAME)
+    .replace('$ADMIN_PASSWORD', envs.ADMIN_PASSWORD)
     .replace('$ENCRYPTION_KEY', envs.ENCRYPTION_KEY)
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$REDIS_URL', envs.REDIS_URL)
@@ -420,6 +424,8 @@ async function initiateOnboarding() {
       'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
     DOMAIN_NAME: envs.DOMAIN_NAME,
     COOKIE_SECRET: envs.COOKIE_SECRET,
+    ADMIN_USERNAME: envs.ADMIN_USERNAME,
+    ADMIN_PASSWORD: envs.ADMIN_PASSWORD,
     RESEND_API_KEY: envs.RESEND_API_KEY || '',
     EMAIL_SENDER: envs.EMAIL_SENDER || '',
     KAFKA_EVENTS_TOPIC_PARTITIONS: envs.KAFKA_EVENTS_TOPIC_PARTITIONS,

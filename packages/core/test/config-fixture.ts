@@ -18,6 +18,7 @@ export function testCoreConfig(
     dashboardUrl: '',
     demoUserId: undefined,
     clickhouseClustered: true,
+    adminAuth: undefined,
     encryptionKey: undefined,
     pingDisabled: false,
     logging: {

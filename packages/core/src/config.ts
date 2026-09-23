@@ -226,6 +226,12 @@ export interface CoreConfig {
   demoUserId: string | undefined;
   /** CLICKHOUSE_CLUSTER. Must agree with what `migrate:deploy` created. */
   clickhouseClustered: boolean;
+  /**
+   * ADMIN_USERNAME / ADMIN_PASSWORD: HTTP Basic credentials for operator-only
+   * surfaces (bull-board today). Undefined leaves those surfaces on their own
+   * guard alone.
+   */
+  adminAuth: { username: string; password: string } | undefined;
   /** The single symmetric key for at-rest encryption; 32 bytes as 64 hex. */
   encryptionKey: string | undefined;
   /** DISABLE_PING: a self-hosted instance opts out of the usage ping. */
