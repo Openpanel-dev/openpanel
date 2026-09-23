@@ -29,7 +29,6 @@ function Component() {
   ]);
 
   const handleTabChange = (tabId: string) => {
-    console.log('tabId', tabId, tabs[0].id === tabId);
     router.navigate({
       from: Route.fullPath,
       to: tabId,

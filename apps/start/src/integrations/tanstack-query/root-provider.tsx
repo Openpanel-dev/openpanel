@@ -44,8 +44,6 @@ function handleUnauthorized(error: unknown) {
 // server-side only. The client always uses the public `apiUrl` it was given.
 const getSsrApiUrlOverride = createIsomorphicFn()
   .server(() => {
-    console.log('ENVS', process.env);
-    console.log('API_URL_SSR', process.env.API_URL_SSR);
     return process.env.API_URL_SSR || undefined;
   })
   .client(() => undefined);
@@ -71,7 +69,6 @@ export const getIsomorphicHeaders = createIsomorphicFn()
 // Create a function that returns a tRPC client with optional cookies
 export function createTRPCClientWithHeaders(apiUrl: string) {
   const baseUrl = getSsrApiUrlOverride() || apiUrl;
-  console.log('baseUrl', baseUrl);
   return createTRPCClient<AppRouter>({
     links: [
       httpLink({

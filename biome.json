@@ -108,6 +108,19 @@
   ],
   "overrides": [
     {
+      "includes": ["apps/start/src/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "error",
+              "options": { "allow": ["error", "warn"] }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/core/src/clients/datacenter-asns.ts"],
       "linter": {
         "rules": {
