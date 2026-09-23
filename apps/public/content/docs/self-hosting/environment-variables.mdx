@@ -188,10 +188,25 @@ API_CORS_ORIGINS=https://app.example.com,https://another-app.com
 
 Secret key for encrypting session cookies. Generate a secure random string (32+ characters).
 
+It also keys two HMACs: the cookie that proves a viewer entered a password-protected share's password, and the signature on unsubscribe links. Set the same value on the API and the worker — the worker sends the emails, the API verifies the links. Without it, password-protected shares cannot be unlocked and unsubscribe links cannot be signed.
+
 **Example**:
 ```bash
 # Generate with: openssl rand -base64 32
 COOKIE_SECRET=your-random-secret-here
+```
+
+### UNSUBSCRIBE_SECRET
+
+**Type**: `string`
+**Required**: No
+**Default**: falls back to `COOKIE_SECRET`
+
+Keys the HMAC on unsubscribe links, if you want it separate from `COOKIE_SECRET`. One of the two must be set or sending an email that carries an unsubscribe link fails; there is no built-in default, because a known default makes every unsubscribe link forgeable.
+
+**Example**:
+```bash
+UNSUBSCRIBE_SECRET=$(openssl rand -hex 32)
 ```
 
 <Callout type="warn">

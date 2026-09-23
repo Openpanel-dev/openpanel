@@ -226,6 +226,9 @@ services:
       - API_URL=$SERVICE_FQDN_OPAPI
       # Must match the API's key: the worker decrypts GSC tokens during sync
       - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
+      # Must match the API's secret: unsubscribe links in worker emails are
+      # verified by the API, and signing them needs a real secret
+      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
       # Optional: Google Search Console sync needs the Google OAuth client
       - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}

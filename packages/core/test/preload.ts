@@ -14,3 +14,6 @@ process.env.DATABASE_URL =
 process.env.CLICKHOUSE_URL = 'http://localhost:23123/openpanel_test';
 process.env.REDIS_URL = 'redis://localhost:23379';
 process.env.SELF_HOSTED = 'true';
+// Unsubscribe links are HMAC-signed and there is no default secret any more,
+// so a test that exercises one needs a key just like a deployment does.
+process.env.UNSUBSCRIBE_SECRET ||= 'test-unsubscribe-secret';
