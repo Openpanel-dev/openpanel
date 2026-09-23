@@ -219,19 +219,24 @@ export const EventIconColors = [
   'slate',
 ];
 
+/** What `EventIconRecords.default` resolves to; also the last-resort lookup. */
+const FALLBACK_ICON_NAME = 'BotIcon';
+const FALLBACK_COLOR = 'slate';
+
 export function EventIcon({ className, name, size, meta }: EventIconProps) {
-  const Icon =
-    EventIconMapper[
-      meta?.icon ??
-        EventIconRecords[name]?.icon ??
-        EventIconRecords.default?.icon ??
-        ''
-    ]!;
+  const iconName =
+    meta?.icon ??
+    EventIconRecords[name]?.icon ??
+    EventIconRecords.default?.icon ??
+    FALLBACK_ICON_NAME;
+  // `meta.icon` is operator-entered and may name an icon this mapper does not
+  // carry; an undefined component makes React throw the whole tree away.
+  const Icon = EventIconMapper[iconName] ?? EventIconMapper[FALLBACK_ICON_NAME];
   const color =
     meta?.color ??
     EventIconRecords[name]?.color ??
     EventIconRecords.default?.color ??
-    '';
+    FALLBACK_COLOR;
 
   return (
     <div className={cn(`bg-${color}-200`, variants({ size }), className)}>
