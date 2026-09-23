@@ -46,7 +46,7 @@ the entry text is kept for context.
 | **M12** | restrict CORS on `/mcp` | `http/cors.ts` documents the open scope as deliberate V1 parity, and a browser MCP client would break. Fix only the two header bugs (`allow-headers: undefined`, `expose-headers` echoing every request header name) and leave the origin policy alone |
 | **M13** | 400 on `/export` `limit=0\|-5`, `includes=bogus` | clamp, do not reject. M13's tRPC half (`overview.*` filter validation, a `profile.list` take cap) is dashboard-only and safe to make strict |
 
-**H8a was a judgement call and the owner took it (2026-09-23): fixed in `14d6e8f1`.**
+**H8a was a judgement call and the owner took it (2026-09-23): fixed in `60d96d8d`.**
 A bare `YYYY-MM-DD` end bound now names the whole day, as it already did on the
 dashboard path. MCP numbers change, by design — `get_analytics_overview` for
 acme-web August went from 276535 sessions to 283780, which is the ClickHouse count.
@@ -161,7 +161,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: sign up a user, create an org, `user.delete` → blocker listed or org scheduled for deletion.
 
 ### H8. MCP data-correctness bugs
-- **a. `endDate` exclusive — FIXED (`14d6e8f1`)** — every `zDateRange` tool drops the whole last day
+- **a. `endDate` exclusive — FIXED (`60d96d8d`)** — every `zDateRange` tool drops the whole last day
   (`startDate=endDate` → zeros; the default range excludes today). Files:
   `packages/core/src/modules/mcp/src/tools/shared.ts:80-89` (bare `YYYY-MM-DD`),
   `packages/core/src/modules/overview/src/overview.sql.ts:118-124`, `pages.sql.ts:16-22`
