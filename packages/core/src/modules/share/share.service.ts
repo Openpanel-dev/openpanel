@@ -16,6 +16,7 @@ import ShortUniqueId from 'short-unique-id';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getProjectAccess } from '../../shared/access-lookups';
+import { hasShareAccess, type ShareType } from '../../shared/share-access';
 import { hashPassword } from '../auth/auth.service';
 import { getDashboardById } from '../dashboard/dashboard.service';
 import {
@@ -171,7 +172,11 @@ export async function validateShareAccess(
       return { projectId, isValid: true };
     }
 
-    const hasCookie = !!ctx.cookies.get(`shared-dashboard-${shareId}`);
+    const hasCookie = hasShareAccess(deps.config.cookies.secret, ctx.cookies, {
+      type: 'dashboard',
+      id: shareId,
+      passwordHash: dashboardShare.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({ userId: ctx.session.userId, projectId }));
@@ -195,7 +200,11 @@ export async function validateShareAccess(
       return { projectId, isValid: true };
     }
 
-    const hasCookie = !!ctx.cookies.get(`shared-report-${shareId}`);
+    const hasCookie = hasShareAccess(deps.config.cookies.secret, ctx.cookies, {
+      type: 'report',
+      id: shareId,
+      passwordHash: reportShare.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({ userId: ctx.session.userId, projectId }));
@@ -234,7 +243,11 @@ export async function validateOverviewShareAccess(
       return { isValid: true };
     }
 
-    const hasCookie = !!ctx.cookies.get(`shared-overview-${shareId}`);
+    const hasCookie = hasShareAccess(deps.config.cookies.secret, ctx.cookies, {
+      type: 'overview',
+      id: shareId,
+      passwordHash: share.password,
+    });
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({ userId: ctx.session.userId, projectId }));
@@ -270,6 +283,60 @@ export async function validateOverviewShareAccess(
 //
 // The `*Settings`/`create*` functions are for the owner's share modal and
 // never return the password hash either — only whether one is set.
+
+/** The share rows these readers hold: an id and the stored password hash. */
+function isUnlocked(
+  deps: ServiceDeps,
+  cookies: CookieReader,
+  type: ShareType,
+  share: { id: string; password: string | null }
+): boolean {
+  if (!share.password) {
+    return true;
+  }
+  return hasShareAccess(deps.config.cookies.secret, cookies, {
+    type,
+    id: share.id,
+    passwordHash: share.password,
+  });
+}
+
+/**
+ * Whether an anonymous viewer may read project-scoped side data — chart
+ * annotations today — for a project.
+ *
+ * Allowed only when the project has a share of one of `kinds` that is public
+ * and, if password-protected, unlocked with a verified cookie. A share row
+ * merely existing is not enough: a share is switched off by setting
+ * `public: false` and the row stays, and a password share must not leak
+ * through a side endpoint the share page itself would refuse.
+ */
+export async function hasAnonymousShareAccessToProject(
+  deps: ServiceDeps,
+  projectId: string,
+  cookies: CookieReader,
+  kinds: ShareType[] = ['overview', 'dashboard', 'report']
+): Promise<boolean> {
+  const db = deps.db;
+  const select = { id: true, password: true } as const;
+  const where = { projectId, public: true } as const;
+
+  const [overviews, dashboards, reports] = await Promise.all([
+    kinds.includes('overview')
+      ? db.shareOverview.findMany({ where, select })
+      : [],
+    kinds.includes('dashboard')
+      ? db.shareDashboard.findMany({ where, select })
+      : [],
+    kinds.includes('report') ? db.shareReport.findMany({ where, select }) : [],
+  ]);
+
+  return (
+    overviews.some((share) => isUnlocked(deps, cookies, 'overview', share)) ||
+    dashboards.some((share) => isUnlocked(deps, cookies, 'dashboard', share)) ||
+    reports.some((share) => isUnlocked(deps, cookies, 'report', share))
+  );
+}
 
 /** Shape returned to a viewer who has not unlocked a password-protected share. */
 function lockedShare(
@@ -307,8 +374,7 @@ export async function getShareOverview(
     throw new TRPCNotFoundError('Share not found');
   }
 
-  const hasAccess = !!cookies.get(`shared-overview-${share.id}`);
-  if (share.password && !hasAccess) {
+  if (share.password && !isUnlocked(deps, cookies, 'overview', share)) {
     return lockedShare(share.id, share.organization, share.project);
   }
 
@@ -392,8 +458,7 @@ export async function getShareDashboard(
     throw new TRPCNotFoundError('Dashboard share not found');
   }
 
-  const hasAccess = !!cookies.get(`shared-dashboard-${share.id}`);
-  if (share.password && !hasAccess) {
+  if (share.password && !isUnlocked(deps, cookies, 'dashboard', share)) {
     return lockedShare(share.id, share.organization, share.project);
   }
 
@@ -487,8 +552,7 @@ export async function getShareDashboardReports(
   // gone" and hard-navigates to /login, which made every password-protected
   // share unusable. A locked share is an authorization refusal, like the
   // share guards in overview.rpc.ts and chart.rpc.ts.
-  const hasAccess = !!cookies.get(`shared-dashboard-${share.id}`);
-  if (share.password && !hasAccess) {
+  if (share.password && !isUnlocked(deps, cookies, 'dashboard', share)) {
     throw new TRPCForbiddenError('Password required');
   }
 
@@ -518,8 +582,7 @@ export async function getShareReport(
     throw new TRPCNotFoundError('Report share not found');
   }
 
-  const hasAccess = !!cookies.get(`shared-report-${share.id}`);
-  if (share.password && !hasAccess) {
+  if (share.password && !isUnlocked(deps, cookies, 'report', share)) {
     return lockedShare(share.id, share.organization, share.project);
   }
 

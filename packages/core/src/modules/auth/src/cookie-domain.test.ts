@@ -9,7 +9,7 @@ const parse = (url: string) => parseCookieDomain(testCoreConfig(), url);
 const parseWithTlds = (extraMultiPartTlds: string[], url: string) =>
   parseCookieDomain(
     testCoreConfig({
-      cookies: { extraMultiPartTlds, customDomain: undefined },
+      cookies: { secret: 'test', extraMultiPartTlds, customDomain: undefined },
     }),
     url
   );
@@ -477,6 +477,7 @@ describe('parseCookieDomain', () => {
         parseCookieDomain(
           testCoreConfig({
             cookies: {
+              secret: 'test',
               extraMultiPartTlds: [],
               customDomain: '.openpanel.dev',
             },

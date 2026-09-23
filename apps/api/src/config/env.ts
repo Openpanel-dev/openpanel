@@ -850,6 +850,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       googleGsc: { ...googleClient, redirectUri: raw.GSC_GOOGLE_REDIRECT_URI },
     },
     cookies: {
+      secret: raw.COOKIE_SECRET,
       extraMultiPartTlds: raw.COOKIE_TLDS.map((tld) => tld.toLowerCase()),
       customDomain: raw.CUSTOM_COOKIE_DOMAIN,
     },

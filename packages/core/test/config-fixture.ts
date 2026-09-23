@@ -36,7 +36,11 @@ export function testCoreConfig(
       google: { clientId: '', clientSecret: '', redirectUri: '' },
       googleGsc: { clientId: '', clientSecret: '', redirectUri: '' },
     },
-    cookies: { extraMultiPartTlds: [], customDomain: undefined },
+    cookies: {
+      secret: 'test-cookie-secret',
+      extraMultiPartTlds: [],
+      customDomain: undefined,
+    },
     ai: {
       openai: {
         apiKey: undefined,

@@ -5,7 +5,9 @@
 // `afterAll` restores the real module instead of re-applying the mock.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
+import { createShareAccessToken } from '../../shared/share-access';
 
 interface FakeShare {
   id: string;
@@ -224,6 +226,7 @@ beforeAll(async () => {
   subject = createShareService(
     {
       db: { shareOverview, shareDashboard, shareReport },
+      config: testCoreConfig(),
     } as unknown as import('../../services').ServiceDeps,
     testServices()
   );
@@ -244,6 +247,20 @@ function cookies(values: Record<string, string> = {}) {
   return { get: (name: string) => values[name] };
 }
 
+/** The cookie a viewer gets from `signInToShare` — an HMAC, not a constant. */
+function unlocked(
+  type: 'overview' | 'dashboard' | 'report',
+  id: string,
+  passwordHash: string
+) {
+  return cookies({
+    [`shared-${type}-${id}`]: createShareAccessToken(
+      testCoreConfig().cookies.secret,
+      { type, id, passwordHash }
+    ),
+  });
+}
+
 test('getShareOverview throws NOT_FOUND when the share is missing or not public', async () => {
   await expect(
     subject.getShareOverview('missing', cookies())
@@ -259,6 +276,45 @@ test('getShareOverview throws NOT_FOUND when the share is missing or not public'
   await expect(
     subject.getShareOverview('share_1', cookies())
   ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+});
+
+test('getShareOverview stays locked for a forged cookie (GHSA-p6c2-mq9r-cx3r)', async () => {
+  overviewStore.set('share_1', {
+    id: 'share_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    public: true,
+    password: 'hashed',
+  });
+
+  const result = await subject.getShareOverview(
+    'share_1',
+    cookies({ 'shared-overview-share_1': '1' })
+  );
+
+  expect(result).toMatchObject({ requiresPassword: true });
+});
+
+test('getShareOverview stays locked for a token minted for another share', async () => {
+  overviewStore.set('share_1', {
+    id: 'share_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    public: true,
+    password: 'hashed',
+  });
+  const stolen = createShareAccessToken(testCoreConfig().cookies.secret, {
+    type: 'overview',
+    id: 'share_2',
+    passwordHash: 'hashed',
+  });
+
+  const result = await subject.getShareOverview(
+    'share_1',
+    cookies({ 'shared-overview-share_1': stolen })
+  );
+
+  expect(result).toMatchObject({ requiresPassword: true });
 });
 
 test('getShareOverview returns a locked shape when password-protected without the unlock cookie', async () => {
@@ -292,7 +348,7 @@ test('getShareOverview unlocks with the shared-overview cookie', async () => {
 
   const result = await subject.getShareOverview(
     'share_1',
-    cookies({ 'shared-overview-share_1': '1' })
+    unlocked('overview', 'share_1', 'hashed')
   );
   expect(result).toMatchObject({ id: 'share_1', requiresPassword: false });
 });

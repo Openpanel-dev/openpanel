@@ -303,6 +303,10 @@ import {
   TRPCForbiddenError,
   TRPCNotFoundError,
 } from '../../rpc/errors';
+import {
+  createShareAccessToken,
+  shareAccessCookieName,
+} from '../../shared/share-access';
 import { connectUserToOrganization } from '../organization/organization.service';
 import { getUserAccount } from '../user/user.service';
 import {
@@ -875,7 +879,11 @@ export interface SignInShareInput {
 /** Share's three lookups arrive through the composition root's thunk
  *  (ADR-022 R3), not a dynamic import: `share.service.ts` statically imports
  *  this file's `hashPassword`, so a static edge back would be a real cycle. */
+/** A week, as V1's `maxAge` was. */
+const SHARE_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+
 export async function signInToShare(
+  deps: ServiceDeps,
   services: () => Services,
   input: SignInShareInput,
   setCookie: ISetCookie
@@ -885,17 +893,13 @@ export async function signInToShare(
     services().share;
 
   let share: { password: string | null; public: boolean } | null = null;
-  let cookieName = '';
 
   if (shareType === 'overview') {
     share = await getShareOverviewById(shareId);
-    cookieName = `shared-overview-${shareId}`;
   } else if (shareType === 'dashboard') {
     share = await getShareDashboardById(shareId);
-    cookieName = `shared-dashboard-${shareId}`;
   } else if (shareType === 'report') {
     share = await getShareReportById(shareId);
-    cookieName = `shared-report-${shareId}`;
   }
 
   if (!share) {
@@ -914,7 +918,17 @@ export async function signInToShare(
     throw new TRPCForbiddenError('Incorrect password');
   }
 
-  setCookie(cookieName, '1', { maxAge: 60 * 60 * 24 * 7 });
+  // The value is the proof, not the presence: a constant let anyone unlock a
+  // password-protected share by inventing the cookie (GHSA-p6c2-mq9r-cx3r).
+  setCookie(
+    shareAccessCookieName(shareType, shareId),
+    createShareAccessToken(deps.config.cookies.secret, {
+      type: shareType,
+      id: shareId,
+      passwordHash: share.password,
+    }),
+    { maxAge: SHARE_ACCESS_MAX_AGE_SECONDS }
+  );
   return true;
 }
 

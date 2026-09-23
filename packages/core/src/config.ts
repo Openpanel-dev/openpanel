@@ -48,6 +48,8 @@ export interface AuthConfig {
 }
 
 export interface CookieConfig {
+  /** COOKIE_SECRET: keys the share-access HMAC. Empty means shares stay locked. */
+  secret: string;
   /** COOKIE_TLDS: extra multi-part public suffixes, lowercased. */
   extraMultiPartTlds: string[];
   /** CUSTOM_COOKIE_DOMAIN: overrides the domain derived from the dashboard. */
