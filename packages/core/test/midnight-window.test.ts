@@ -17,11 +17,27 @@ const MIDNIGHT_FLAKE_SUITES = [
 ];
 const MIDNIGHT_FLAKE_SUITE_TEST_COUNT = 54;
 // 00:01 is inside the chart pair's window, 00:10 and 00:19 inside charlie's.
-const IN_WINDOW_WALL_CLOCKS = [
-  '2026-09-16T00:01:00.000Z',
-  '2026-09-16T00:10:00.000Z',
-  '2026-09-16T00:19:00.000Z',
-];
+// Only the TIME of day is the subject here; the date must track the calendar.
+// `inactiveDays` and the last-seen buckets compare against ClickHouse's own
+// `now()`, which `setSystemTime` cannot fake (test/fixture-clock.ts says so),
+// so a hardcoded date drifts further from it every day until the suites fail.
+// Measured on the current fixtures: 26 h of drift still passes, 30 h does not.
+const IN_WINDOW_UTC_TIMES = ['00:01', '00:10', '00:19'] as const;
+
+/**
+ * The most recent occurrence of `HH:MM` UTC that is not in the future, so the
+ * child's clock trails ClickHouse by at most 24 h whatever day this runs.
+ */
+function mostRecentUtcTime(hourMinute: string, now: Date = new Date()): string {
+  const [hours, minutes] = hourMinute.split(':').map(Number);
+  const pinned = new Date(now);
+  pinned.setUTCHours(hours ?? 0, minutes ?? 0, 0, 0);
+  if (pinned > now) {
+    pinned.setUTCDate(pinned.getUTCDate() - 1);
+  }
+  return pinned.toISOString();
+}
+
 const CHILD_RUN_TIMEOUT_MS = 120_000;
 
 function runSuitesAt(wallClockIso: string) {
@@ -43,9 +59,10 @@ function runSuitesAt(wallClockIso: string) {
 }
 
 describe('mcp/chart fixture suites inside the midnight window', () => {
-  for (const wallClockIso of IN_WINDOW_WALL_CLOCKS) {
+  for (const hourMinute of IN_WINDOW_UTC_TIMES) {
+    const wallClockIso = mostRecentUtcTime(hourMinute);
     it(
-      `pass with the wall clock at ${wallClockIso}`,
+      `pass with the wall clock at ${hourMinute} UTC (${wallClockIso})`,
       () => {
         const { exitCode, output } = runSuitesAt(wallClockIso);
         expect(output).toContain(`${WALL_CLOCK_PINNED_MARKER} ${wallClockIso}`);
@@ -56,4 +73,28 @@ describe('mcp/chart fixture suites inside the midnight window', () => {
       CHILD_RUN_TIMEOUT_MS
     );
   }
+});
+
+// The rot this replaced was a hardcoded date, so the derivation itself is
+// asserted rather than left to the calendar to disprove a year from now.
+const HOURS_IN_A_DAY = 24;
+const MS_PER_HOUR = 3_600_000;
+
+describe('mostRecentUtcTime', () => {
+  it('keeps the time of day and never returns a future instant', () => {
+    for (const now of [
+      new Date('2027-03-01T00:00:30.000Z'), // before 00:01 — must step back a day
+      new Date('2027-03-01T12:00:00.000Z'),
+      new Date('2027-12-31T23:59:59.000Z'),
+    ]) {
+      for (const hourMinute of IN_WINDOW_UTC_TIMES) {
+        const pinned = new Date(mostRecentUtcTime(hourMinute, now));
+        expect(pinned.toISOString()).toContain(`T${hourMinute}:00.000Z`);
+        expect(pinned.getTime()).toBeLessThanOrEqual(now.getTime());
+        expect(now.getTime() - pinned.getTime()).toBeLessThan(
+          HOURS_IN_A_DAY * MS_PER_HOUR
+        );
+      }
+    }
+  });
 });
