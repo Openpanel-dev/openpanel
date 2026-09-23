@@ -16,7 +16,12 @@ commits also closed five published advisories that were live here and are not ot
 this file: the webhook template sandbox escape, the share-password cookie bypass, the
 unsubscribe-token default secret, the email fallback log, and the migration banner.
 
-Everything below is still open.
+A third pass (2026-09-23) triaged the list against the no-breaking-change rule below and
+closed four more: **H1** (`8149f200`), **H3** (`565cca66`), **H9** (`6e8e3eb8`) and **L1**
+(`092b240e`). With L1 gone `bun test --isolate` in `packages/core` is green: 1797 pass,
+12 skip, 0 fail.
+
+Everything else below is still open.
 
 ---
 
@@ -70,7 +75,7 @@ misleading feature; **low** = cosmetic.
 
 ## High
 
-### H1. Secrets logged: `console.log('ENVS', process.env)` on SSR
+### H1. Secrets logged: `console.log('ENVS', process.env)` on SSR — FIXED (`8149f200`)
 - **Symptom**: every dashboard SSR render prints the whole process env (`POLAR_WEBHOOK_SECRET`,
   DB URLs, …) into the web process log; plus `baseUrl` logged three times per page load in the
   browser console and `tabId` logs on three tab routes.
@@ -91,7 +96,7 @@ misleading feature; **low** = cosmetic.
   overview/report charts) for the share case.
 - **Verify**: anonymous call → 401; share page still shows reference markers.
 
-### H3. Client secret hashes returned to the browser and the management API
+### H3. Client secret hashes returned to the browser and the management API — FIXED (`565cca66`)
 - **Symptom**: `client.list`, `project.getProjectWithClients` and `GET /manage/clients` (list and
   by id) include `secret` (the scrypt/argon2 hash) for every client.
 - **Files**: `packages/core/src/modules/client/client.rpc.ts` (`list`),
@@ -178,7 +183,7 @@ misleading feature; **low** = cosmetic.
   (`profile-metrics.ts:29`); Settings → MCP page says "38 tools", `tools/list` returns 48
   (`apps/start/src/routes/_app.$organizationId.$projectId.settings._tabs.mcp.tsx`).
 
-### H9. Mobile Events page crashes
+### H9. Mobile Events page crashes — FIXED (`6e8e3eb8`)
 - **Symptom**: `/acme/acme-web/events` at 390 px → "Something went wrong";
   `Element type is invalid … EventIcon`.
 - **Files**: `apps/start/src/components/events/event-icon.tsx:224`
@@ -433,7 +438,7 @@ error.
 
 ---
 
-### L1. `test/midnight-window.test.ts` rots with the calendar
+### L1. `test/midnight-window.test.ts` rots with the calendar — FIXED (`092b240e`)
 - **Symptom**: three failures in `bun test --isolate` (`pass with the wall clock at
   2026-09-16T00:0*`). The suite pins the JS clock to a hardcoded `2026-09-16` and re-runs the
   mcp/chart fixture suites inside it, but `inactiveDays` and the last-seen buckets compare
