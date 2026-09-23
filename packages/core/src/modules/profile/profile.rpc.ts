@@ -23,6 +23,7 @@ import {
   getProfilePropertyNames,
   getProfileValues,
 } from './profile.service';
+import { PROFILE_VALUE_COLUMNS } from './src/sql';
 
 const DEFAULT_LIST_TAKE = 50;
 
@@ -43,6 +44,18 @@ const zProfileWindow = {
 };
 
 const zProfileRef = z.object({ profileId: z.string(), projectId: z.string() });
+
+// The picker offers the bare columns plus any `properties.*` path. Validating
+// here keeps an unknown column a 400 instead of `sql.id`'s SqlIdentifierError
+// surfacing as a 500 (main #512, GHSA-4j6c-j6vc-xq96).
+const zProfileValueProperty = z
+  .string()
+  .refine(
+    (property) =>
+      property.startsWith('properties.') ||
+      (PROFILE_VALUE_COLUMNS as readonly string[]).includes(property),
+    { message: 'Unknown profile property' }
+  );
 
 export const profileRouter = createTRPCRouter({
   byId: protectedProcedure.input(zProfileRef).query(async ({ input, ctx }) => {
@@ -165,7 +178,7 @@ export const profileRouter = createTRPCRouter({
     }),
 
   values: protectedProcedure
-    .input(z.object({ property: z.string(), projectId: z.string() }))
+    .input(z.object({ property: zProfileValueProperty, projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,

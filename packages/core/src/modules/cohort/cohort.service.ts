@@ -37,6 +37,7 @@ import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { replicatedTarget } from '../../shared/ch-tables';
+import { PROFILE_SELECT_COLUMNS } from '../chart/chart.constants';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
 import type {
@@ -356,6 +357,14 @@ export function buildEventCriteriaQuery(
   `;
 }
 
+// The bare profiles columns a cohort filter may reach. Every name is
+// qualified by the time it gets here, and anything outside the list is a
+// filter naming a column that is not the caller's to read (main #512,
+// GHSA-gvwr-5684-wjqc).
+const COHORT_PROFILE_COLUMNS = PROFILE_SELECT_COLUMNS.map(
+  (column) => `profiles.${column}`
+);
+
 // `profile.<x>` and `profiles.<x>` name the same column; normalizing first
 // makes the dedup in buildProfileCohortHavingClause see them as one.
 function normalizeProfileColumn(name: string): string {
@@ -375,7 +384,7 @@ function profileColumnAccess(normalizedName: string): SqlFragment {
     const propKey = normalizedName.replace('profiles.properties.', '');
     return sql`profiles.properties[${sql.string(propKey)}]`;
   }
-  return sql.id(normalizedName);
+  return sql.id(normalizedName, COHORT_PROFILE_COLUMNS);
 }
 
 function buildProfileCohortHavingClause(

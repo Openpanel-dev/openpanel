@@ -51,6 +51,9 @@ export type FunnelGroup = (typeof FUNNEL_GROUPS)[number];
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
 
+/** What the profiles join may select: the joinable columns plus the key. */
+const FUNNEL_JOIN_COLUMNS = [...JOINABLE_PROFILE_COLUMNS, 'id'];
+
 /** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
 const EVENTS_ALIAS = 'events';
 
@@ -184,6 +187,32 @@ function breakdownSelects(
  * instead of every profile's whole properties Map: the join hash was carrying
  * ~1KB of Map per profile and OOMing at scale.
  */
+/**
+ * The profiles columns this join may select, from the filter and breakdown
+ * names the caller supplied. Both are user input, so both are matched against
+ * the allowlist — V1 split the filter names raw and spliced the result
+ * (main #512, GHSA-pc3q-gw7f-p2x2).
+ */
+export function profileJoinFields(
+  profileFilters: string[],
+  profileBreakdowns: { name: string }[]
+): string[] {
+  const fields = new Set<string>(['id']);
+  for (const filter of profileFilters) {
+    const fieldName = filter.split('.')[0];
+    if (fieldName && JOINABLE_PROFILE_COLUMNS.includes(fieldName)) {
+      fields.add(fieldName);
+    }
+  }
+  for (const breakdown of profileBreakdowns) {
+    const fieldName = breakdown.name.replace('profile.', '').split('.')[0];
+    if (fieldName && JOINABLE_PROFILE_COLUMNS.includes(fieldName)) {
+      fields.add(fieldName);
+    }
+  }
+  return Array.from(fields);
+}
+
 function profileCteColumns(
   input: FunnelBaseInput,
   profileFilters: string[],
@@ -196,25 +225,14 @@ function profileCteColumns(
     return [];
   }
 
-  const fields = new Set<string>(['id']);
-  for (const filter of profileFilters) {
-    const fieldName = filter.split('.')[0] as string;
-    if (fieldName !== 'properties') {
-      fields.add(fieldName);
-    }
-  }
-  for (const breakdown of profileBreakdowns) {
-    const fieldName = breakdown.name.replace('profile.', '').split('.')[0];
-    if (fieldName && JOINABLE_PROFILE_COLUMNS.includes(fieldName)) {
-      fields.add(fieldName);
-    }
-  }
+  const fields = new Set(profileJoinFields(profileFilters, profileBreakdowns));
 
-  // ADR-013 R3: the breakdown-derived names are vetted above, the
-  // filter-derived ones are not — V1 spliced both unchecked, `sql.id`
-  // validates the shape and throws instead of inlining.
+  // Both the breakdown- and the filter-derived names are vetted above; the
+  // allowlist here is the backstop that makes `sql.id` throw rather than
+  // inline if either loop ever lets something else through (main #512,
+  // GHSA-pc3q-gw7f-p2x2). V1 spliced both unchecked.
   const columns: SqlFragment[] = Array.from(fields).map((field) =>
-    sql.id(field)
+    sql.id(field, FUNNEL_JOIN_COLUMNS)
   );
   const referencesProperties =
     profileFilters.some((filter) => filter.startsWith('properties')) ||
