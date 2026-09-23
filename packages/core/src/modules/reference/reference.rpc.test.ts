@@ -4,7 +4,7 @@
 // real Postgres is P6's (protectedProcedure) job, not this one's — see
 // reference.rpc.ts's header.
 
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
@@ -29,6 +29,94 @@ async function anonCaller() {
   });
   return referenceRouter.createCaller(trpcCtx);
 }
+
+// Ported from packages/trpc/src/routers/reference.test.ts (main #511).
+// getChartReferences is public so a share page can annotate its charts, so
+// the guard inside the handler is the only thing standing between an
+// anonymous caller and another tenant's annotations (GHSA-vrrm-p9p4-2gfg).
+const CHART_INPUT = { projectId: 'proj_1', range: '30d' as const };
+const ANNOTATIONS = [{ title: 'Deploy v2' }];
+
+function guardCaller(options: {
+  userId: string | null;
+  projectAccess?: unknown;
+  anonymousShareAccess?: boolean;
+}) {
+  const getChartReferences = mock(() => Promise.resolve(ANNOTATIONS));
+  const getProjectAccess = mock(() =>
+    Promise.resolve(options.projectAccess ?? null)
+  );
+  const hasAnonymousShareAccessToProject = mock(() =>
+    Promise.resolve(options.anonymousShareAccess ?? false)
+  );
+
+  const { ctx } = stubHttpCtx(
+    {
+      services: {
+        reference: { getChartReferences },
+        auth: { getProjectAccess },
+        share: { hasAnonymousShareAccessToProject },
+      },
+    } as unknown as Parameters<typeof stubHttpCtx>[0],
+    options.userId
+      ? { session: {}, user: {}, userId: options.userId }
+      : EMPTY_SESSION
+  );
+
+  return {
+    getChartReferences,
+    getProjectAccess,
+    hasAnonymousShareAccessToProject,
+    caller: async () =>
+      referenceRouter.createCaller(
+        await makeTrpcContext(ctx, new Headers(), {
+          cookieOptions: COOKIE_OPTIONS,
+        })
+      ),
+  };
+}
+
+test('getChartReferences refuses an anonymous caller with no unlocked share', async () => {
+  const t = guardCaller({ userId: null, anonymousShareAccess: false });
+  const caller = await t.caller();
+
+  await expect(caller.getChartReferences(CHART_INPUT)).rejects.toMatchObject({
+    code: 'FORBIDDEN',
+  });
+  expect(t.hasAnonymousShareAccessToProject).toHaveBeenCalledTimes(1);
+  expect(t.getChartReferences).not.toHaveBeenCalled();
+});
+
+test('getChartReferences serves an anonymous caller holding an unlocked share', async () => {
+  const t = guardCaller({ userId: null, anonymousShareAccess: true });
+  const caller = await t.caller();
+
+  const result = await caller.getChartReferences(CHART_INPUT);
+  expect(result).toEqual(ANNOTATIONS as unknown as typeof result);
+  expect(t.hasAnonymousShareAccessToProject).toHaveBeenCalledTimes(1);
+});
+
+test('getChartReferences refuses a member without access to the project', async () => {
+  const t = guardCaller({ userId: 'user_1', projectAccess: null });
+  const caller = await t.caller();
+
+  await expect(caller.getChartReferences(CHART_INPUT)).rejects.toMatchObject({
+    code: 'FORBIDDEN',
+  });
+  expect(t.getProjectAccess).toHaveBeenCalledTimes(1);
+  expect(t.hasAnonymousShareAccessToProject).not.toHaveBeenCalled();
+  expect(t.getChartReferences).not.toHaveBeenCalled();
+});
+
+test('getChartReferences serves a member with access', async () => {
+  const t = guardCaller({ userId: 'user_1', projectAccess: { level: 'read' } });
+  const caller = await t.caller();
+
+  const result = await caller.getChartReferences(CHART_INPUT);
+  expect(result).toEqual(ANNOTATIONS as unknown as typeof result);
+  expect(t.getProjectAccess).toHaveBeenCalledTimes(1);
+  expect(t.hasAnonymousShareAccessToProject).not.toHaveBeenCalled();
+});
 
 test('getReferences rejects an unauthenticated caller', async () => {
   const caller = await anonCaller();

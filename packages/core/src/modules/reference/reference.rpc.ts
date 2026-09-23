@@ -93,7 +93,22 @@ export const referenceRouter = createTRPCRouter({
         range: zRange,
       })
     )
-    .query(({ input, ctx }) =>
-      ctx.services.reference.getChartReferences(input)
-    ),
+    .query(async ({ input, ctx }) => {
+      // Public so a share page can draw annotations on its charts, but never
+      // without a check: a member needs project access, an anonymous viewer
+      // needs an unlocked public share for the project (GHSA-vrrm-p9p4-2gfg).
+      const allowed = ctx.session.userId
+        ? await ctx.services.auth.getProjectAccess({
+            userId: ctx.session.userId,
+            projectId: input.projectId,
+          })
+        : await ctx.services.share.hasAnonymousShareAccessToProject(
+            input.projectId,
+            ctx.cookies
+          );
+      if (!allowed) {
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+      return ctx.services.reference.getChartReferences(input);
+    }),
 });

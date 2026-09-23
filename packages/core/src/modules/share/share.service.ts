@@ -708,6 +708,12 @@ export function createShareService(
       accessContext: ShareAccessContext
     ): Promise<{ isValid: boolean }> =>
       validateOverviewShareAccess(deps, shareId, projectId, accessContext),
+    hasAnonymousShareAccessToProject: (
+      projectId: string,
+      cookies: CookieReader,
+      kinds?: ShareType[]
+    ): Promise<boolean> =>
+      hasAnonymousShareAccessToProject(deps, projectId, cookies, kinds),
     getShareOverview: (
       shareId: string,
       cookies: CookieReader
