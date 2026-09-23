@@ -185,14 +185,20 @@ export function toSeries(
   // Group by breakdown values (normalize empty/null to "Not set").
   const series = funnel.reduce(
     (acc, row) => {
-      if (limit && Object.keys(acc).length >= limit) {
-        return acc;
-      }
-
       const key = breakdowns
         .map((_, index) => normalizeBreakdownValue(row[`b_${index}`]))
         .join('|');
       if (!acc[key]) {
+        // The limit caps how many breakdown series come back, so it must only
+        // reject NEW keys. Bailing out of the whole reduce dropped the
+        // remaining rows of series already accepted: the query is ordered by
+        // level DESC, so those rows are the lower funnel steps, and losing
+        // them leaves each series holding only its deepest level. fillFunnel
+        // then accumulates that one row into every step, so every step
+        // reports an identical count at 100%.
+        if (limit && Object.keys(acc).length >= limit) {
+          return acc;
+        }
         acc[key] = [];
       }
       (acc[key] as FunnelSerieRow[]).push({
