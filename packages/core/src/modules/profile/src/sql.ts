@@ -14,6 +14,7 @@
 // binds as `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import {
   type CompiledFilterClauses,
   compiledFilterFragments,
@@ -55,17 +56,13 @@ function optional(
   return condition ? fragment() : sql.empty;
 }
 
-function toDateTimeLiteral(value: string): string {
-  return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
-}
-
 /** Same spelling `overview/src/pages.sql.ts` uses, so the two read alike. */
 function dateRangeWhere(
   column: string,
   startDate: string,
   endDate: string
 ): SqlFragment {
-  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
+  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toRangeBoundaryLiteral(startDate, 'start'))}) AND toDateTime(${sql.string(toRangeBoundaryLiteral(endDate, 'end'))})`;
 }
 
 /** The window every profile-list / power-user statement is now bounded to. */

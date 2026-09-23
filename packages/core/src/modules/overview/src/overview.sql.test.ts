@@ -292,3 +292,47 @@ describe('overview.sql — sql.id() identifier whitelists (R3)', () => {
     ).toThrow();
   });
 });
+
+// The MCP tools send a bare `YYYY-MM-DD`; the dashboard sends the day's edges
+// already. Both have to end up bounding the same last day, or every MCP range
+// silently loses it (ISSUES.md H8a).
+describe('overview.sql — date-only range boundaries', () => {
+  function boundsOf(fragment: SqlFragment): string[] {
+    const { query_params } = fragment.toStatement();
+    return Object.values(query_params).filter(
+      (value): value is string =>
+        typeof value === 'string' && value.startsWith('2026-08-')
+    );
+  }
+
+  it('widens a bare end date to the end of that day', () => {
+    const bounds = boundsOf(
+      OV.revenueQuery({
+        projectId: PROJECT_ID,
+        startDate: '2026-08-01',
+        endDate: '2026-08-31',
+        interval: 'day',
+        rawFilterWhere: null,
+      })
+    );
+
+    expect(bounds).toContain('2026-08-01 00:00:00');
+    expect(bounds).toContain('2026-08-31 23:59:59');
+    expect(bounds).not.toContain('2026-08-31 00:00:00');
+  });
+
+  it('leaves an explicit datetime boundary exactly as given', () => {
+    const bounds = boundsOf(
+      OV.revenueQuery({
+        projectId: PROJECT_ID,
+        startDate: '2026-08-01 00:00:00',
+        endDate: '2026-08-31 23:59:59',
+        interval: 'day',
+        rawFilterWhere: null,
+      })
+    );
+
+    expect(bounds).toContain('2026-08-01 00:00:00');
+    expect(bounds).toContain('2026-08-31 23:59:59');
+  });
+});

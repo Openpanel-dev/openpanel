@@ -19,6 +19,10 @@
 // (see src/run-query.ts).
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import {
+  toRangeBoundaryDate,
+  toRangeBoundaryLiteral,
+} from '../../../shared/ch-dates';
 import { compiledText } from '../../chart/src/compiled';
 import { getSelectPropertyKey } from '../../chart/src/field-resolution';
 import type { IInterval } from '../../report/report.constants';
@@ -26,14 +30,6 @@ import type { IInterval } from '../../report/report.constants';
 const ROLLUP_DATE_PREFIX = '1970-01-01';
 
 export type OverviewTable = 'events' | 'sessions';
-
-function toDateTimeLiteral(value: string): string {
-  return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
-}
-
-function toDateLiteral(value: string): string {
-  return new Date(value).toISOString().slice(0, 10);
-}
 
 /** V1 `clix.toStartOf` — deliberately timezone-blind for week/month (see header). */
 export function toStartOf(node: string, interval: IInterval): SqlFragment {
@@ -79,18 +75,22 @@ function toIntervalStep(interval: IInterval): string {
  * `sql.date`/`sql.dateTime64` bind the boundary itself; the wrapping
  * functions around them reproduce that expression shape.
  */
-function fillBoundaryParam(interval: IInterval, value: string) {
+function fillBoundaryParam(
+  interval: IInterval,
+  value: string,
+  boundary: 'start' | 'end'
+) {
   // The bucket column's type must match exactly: `toStartOfX(created_at)`
   // returns plain `DateTime`/`Date`, not `DateTime64` — ClickHouse's WITH
   // FILL rejects a boundary whose type doesn't match the sorted column's.
   return interval === 'month' || interval === 'week'
-    ? sql.date(toDateLiteral(value))
-    : sql.param('DateTime', toDateTimeLiteral(value));
+    ? sql.date(toRangeBoundaryDate(value, boundary))
+    : sql.param('DateTime', toRangeBoundaryLiteral(value, boundary));
 }
 
 /** V1 always bucket-aligns FROM (via `toStartOf`) but leaves TO as-is. */
 function fillFrom(interval: IInterval, startDate: string): SqlFragment {
-  const boundary = fillBoundaryParam(interval, startDate);
+  const boundary = fillBoundaryParam(interval, startDate, 'start');
   switch (interval) {
     case 'minute':
       return sql`toStartOfMinute(${boundary})`;
@@ -112,7 +112,7 @@ export function fillClause(
   startDate: string,
   endDate: string
 ): SqlFragment {
-  return sql`WITH FILL FROM ${fillFrom(interval, startDate)} TO ${fillBoundaryParam(interval, endDate)} STEP ${compiledText(toIntervalStep(interval))}`;
+  return sql`WITH FILL FROM ${fillFrom(interval, startDate)} TO ${fillBoundaryParam(interval, endDate, 'end')} STEP ${compiledText(toIntervalStep(interval))}`;
 }
 
 function dateRangeWhere(
@@ -120,7 +120,7 @@ function dateRangeWhere(
   startDate: string,
   endDate: string
 ): SqlFragment {
-  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
+  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toRangeBoundaryLiteral(startDate, 'start'))}) AND toDateTime(${sql.string(toRangeBoundaryLiteral(endDate, 'end'))})`;
 }
 
 /** `getRawWhereClause`'s output — already a bound fragment, or nothing. */

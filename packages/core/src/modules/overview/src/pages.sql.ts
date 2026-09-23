@@ -6,19 +6,16 @@
 // sets diffed against V1's on the local prod-copy — see pages.sql.proof.md.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import type { IInterval } from '../../report/report.constants';
 import { fillClause, toStartOf } from './overview.sql';
-
-function toDateTimeLiteral(value: string): string {
-  return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
-}
 
 function dateRangeWhere(
   column: string,
   startDate: string,
   endDate: string
 ): SqlFragment {
-  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
+  return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toRangeBoundaryLiteral(startDate, 'start'))}) AND toDateTime(${sql.string(toRangeBoundaryLiteral(endDate, 'end'))})`;
 }
 
 export interface TopPagesQueryInput {
