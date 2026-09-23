@@ -434,11 +434,17 @@ function countExpression(
   return sql`count(*) as count`;
 }
 
+// Aliased `e`, not `subQuery`: breakdown SELECT expressions are always built
+// with the events alias, so `e.properties` was out of scope in the outer
+// query and any chart combining this segment with a property breakdown failed
+// with UNKNOWN_IDENTIFIER. The subquery already does `SELECT * FROM events e`,
+// so every `e.`-qualified reference outside it resolves unchanged
+// (main a2cbf2e8).
 function oneEventPerUserFrom(body: ChartBody): SqlFragment {
   return sql`(
       SELECT DISTINCT ON (profile_id) * from ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} WHERE ${sql.join(clauses(body.where), ' AND ')}
         ORDER BY profile_id, created_at DESC
-      ) as subQuery`;
+      ) as e`;
 }
 
 function dateRangeWhere(
@@ -522,8 +528,8 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   body.select.count = countExpression(event, body, undefined);
 
   if (event.segment === 'one_event_per_user') {
-    // Filters were applied inside the subquery and the `e` alias is out of
-    // scope outside it, so neither joins nor WHERE are re-emitted.
+    // Filters were applied inside the subquery, so neither joins nor WHERE
+    // are re-emitted; the subquery carries the `e` alias outward.
     const from = oneEventPerUserFrom(body);
     return sql`${withClause(body.ctes)}${selectClause(body.select)} FROM ${from}   ${groupByClause(groupBy)} ${orderByClause(orderBy)} ${fill}`;
   }
@@ -566,10 +572,12 @@ export function aggregateChartQuery(
   const head = sql`${withClause(body.ctes)}${selectClause(body.select)}`;
 
   if (event.segment === 'one_event_per_user') {
-    // V1 re-emitted its WHERE after the subquery here (unlike the series
-    // shape); kept as is — converting a query is not the place to change it.
+    // The filters were applied inside the subquery; re-emitting the outer
+    // WHERE made it reference aliases the subquery dropped (a profile or
+    // group filter, or the ARRAY JOIN's _group_id). Same shape as the series
+    // branch below (main a2cbf2e8).
     const from = oneEventPerUserFrom(body);
-    return sql`${head} FROM ${from} ${whereClause(body.where)} ${groupByClause(groupBy)}`;
+    return sql`${head} FROM ${from} ${groupByClause(groupBy)}`;
   }
 
   orderBy.count = sql`count DESC`;

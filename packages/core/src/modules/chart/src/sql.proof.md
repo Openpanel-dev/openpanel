@@ -1,5 +1,17 @@
 # sql.ts — V1 → V2 result-set proof (M7-003)
 
+> **Amended 2026-09-23 (port of main `a2cbf2e8`).** Two of the five "pre-existing
+> V1 defects" below are no longer reproduced: `one_event_per_user` now aliases
+> its subquery `e` instead of `subQuery`, and the aggregate shape no longer
+> re-emits the outer WHERE. Defects 2 and 3 in the list below, and the cases at
+> "chartSeriesQuery — all-cohorts breakdown + one_event_per_user" and
+> "aggregateChartQuery — one_event_per_user + breakdown path", therefore record
+> V1's behaviour and V2's behaviour *before* that port. Upstream fixed them in
+> main after this proof was taken; the entries are kept as the record of what
+> the conversion itself did, not as a description of the current code.
+> Coverage for the new behaviour is `sql.test.ts`'s two `one_event_per_user`
+> cases, which EXPLAIN against local ClickHouse and fail against the old alias.
+
 Every query builder in `sql.ts` was executed twice against the same data — once as V1 (the `git HEAD` `packages/db/src/services/chart.service.ts` `getChartSql` / `getAggregateChartSql`, and the `packages/trpc/src/routers/chart.ts` clix / `createSqlBuilder` texts, `f1573b1a`) and once as V2 (the fragment returned by the core builder, bound through `query_params`) — through one `@clickhouse/client` with `format: 'JSON'` and the same `session_timezone`. The two responses were compared on `data` (every row, every column, as JSON) and `meta` (column names and types). Chart statements were compared as row **sets**: V1's `ORDER BY date ASC WITH FILL` leaves rows sharing a `date` in arbitrary order, and three V1-vs-V1 runs of the 191-row wildcard-breakdown case produced three different orders; the engine groups rows by label, so order is not part of the contract. Statements without an `ORDER BY` (values lists, getProfiles) were compared as sets for the same reason.
 
 - **Date**: 2026-09-04. **Data**: local prod-copy `openpanel` (319,499,000 events, static). Projects: `verdict` / `secure-privacy` (UTC), `bayse` (America/New_York), `website-8103` (Asia/Kolkata), `dream-mate` (Australia/Sydney), `authc-project-a1` (the only project with a Postgres cohort; `cohort_members` is empty in the prod-copy, so cohort cases prove statement equivalence on 0 rows — positive-row coverage is `sql.test.ts` on `openpanel_test`).

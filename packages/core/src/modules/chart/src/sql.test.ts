@@ -322,6 +322,20 @@ describe('getChartSql', () => {
     );
   });
 
+  // main a2cbf2e8: the subquery was aliased `subQuery`, so the `e` every
+  // breakdown SELECT is built with was out of scope and the chart failed
+  // with UNKNOWN_IDENTIFIER on `e.properties`.
+  it('one_event_per_user + a property breakdown resolves the events alias', async () => {
+    const rendered = await getChartSql({
+      event: event({ segment: 'one_event_per_user' }),
+      breakdowns: [breakdown('properties.__query.utm_source')],
+      ...base,
+    });
+    expect(rendered.sql).toContain(') as e');
+    expect(rendered.sql).not.toContain('subQuery');
+    await explain(rendered);
+  });
+
   // Regressions from HyperDX 2026-05-14 → 2026-05-17 ClickHouse error log.
   // Saved reports / older clients send field names that don't match the events
   // schema; the chart service used to inline them verbatim, crashing parse.
@@ -408,6 +422,19 @@ describe('getAggregateChartSql', () => {
     );
     expect(rendered.sql).not.toMatch(/_uc_label_\d+\s*=\s*'Unknown'/);
     expect(rendered.sql).not.toContain('_all_cohorts');
+    await explain(rendered);
+  });
+
+  it('one_event_per_user + a group filter drops the outer WHERE', async () => {
+    const rendered = await getAggregateChartSql({
+      event: event({
+        segment: 'one_event_per_user',
+        filters: [{ name: 'group.plan', operator: 'is', value: ['pro'] }],
+      }),
+      breakdowns: [breakdown('properties.__query.utm_source')],
+      ...base,
+    });
+    expect(rendered.sql).toContain(') as e');
     await explain(rendered);
   });
 
