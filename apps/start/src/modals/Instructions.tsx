@@ -1,4 +1,4 @@
-import type { IServiceClient } from '@openpanel/core';
+import type { IPublicClient } from '@openpanel/core';
 import type { frameworks } from '@openpanel/sdk-info';
 import { ExternalLinkIcon, XIcon } from 'lucide-react';
 import { popModal } from '.';
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 
 type Props = {
-  client: IServiceClient | null;
+  client: IPublicClient | null;
   framework: (typeof frameworks)[number];
 };
 

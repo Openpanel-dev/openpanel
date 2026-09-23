@@ -56,7 +56,7 @@ const NON_TRACKING_EVENT_NAMES = ['session_start', 'session_end'];
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
   include: {
-    clients: true;
+    clients: { omit: { secret: true } };
   };
 }>;
 
@@ -95,7 +95,8 @@ export async function getProjectWithClients(deps: ServiceDeps, id: string) {
       id,
     },
     include: {
-      clients: true,
+      // The stored secret is a hash and is never retrievable after creation.
+      clients: { omit: { secret: true } },
     },
   });
 

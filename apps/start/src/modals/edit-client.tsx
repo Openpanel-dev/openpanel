@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceClient } from '@openpanel/core';
+import type { IPublicClient } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
-type EditClientProps = IServiceClient;
+type EditClientProps = IPublicClient;
 
 const validator = z.object({
   id: z.string().min(1),

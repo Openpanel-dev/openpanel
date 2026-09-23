@@ -1,4 +1,4 @@
-import type { IServiceClient } from '@openpanel/core';
+import type { IPublicClient } from '@openpanel/core';
 import { frameworks } from '@openpanel/sdk-info';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -27,11 +27,11 @@ function Component() {
 }
 
 interface Props {
-  clients: IServiceClient[];
+  clients: IPublicClient[];
 }
 
 const ConnectWeb = ({ clients }: Props) => {
-  const [client, setClient] = useState<IServiceClient | null>(null);
+  const [client, setClient] = useState<IPublicClient | null>(null);
   useEffect(() => {
     if (!client && clients && clients.length > 0) {
       setClient(clients[0]);

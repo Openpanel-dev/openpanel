@@ -1,4 +1,4 @@
-import type { IServiceClient } from '@openpanel/core';
+import type { IPublicClient } from '@openpanel/core';
 import { frameworks } from '@openpanel/sdk-info';
 import { CopyIcon, PlugIcon } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -8,7 +8,7 @@ import { pushModal } from '@/modals';
 import { clipboard } from '@/utils/clipboard';
 
 interface Props {
-  client: IServiceClient | null;
+  client: IPublicClient | null;
 }
 
 const ConnectWeb = ({ client }: Props) => {

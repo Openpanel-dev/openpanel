@@ -123,7 +123,7 @@ function Component() {
             </div>
           </div>
           <div className="-mx-4 h-px bg-muted" />
-          <ConnectWeb client={{ ...client, secret }} />
+          <ConnectWeb client={client} />
         </div>
       </div>
       <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">

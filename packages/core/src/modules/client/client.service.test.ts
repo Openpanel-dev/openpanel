@@ -249,3 +249,57 @@ test('deleteClientForOrganization deletes only when the client belongs to the or
   expect(result).toBe(true);
   expect(clientStore.has('client_a')).toBe(false);
 });
+
+// The stored secret is a hash, and the published docs promise it is never
+// retrievable after creation (docs/api/manage/clients.mdx). The fake Prisma
+// above ignores `omit`, so these assert on what the service ASKED FOR rather
+// than on the rows it got back.
+const OMIT_SECRET = { secret: true };
+
+test('every client read path asks Prisma to omit the secret', async () => {
+  clientStore.set(
+    'client_1',
+    makeClient({ id: 'client_1', projectId: 'proj_1' })
+  );
+
+  client.findMany.mockClear();
+  await subject.getClientsByProjectId('proj_1');
+  await subject.getClientsByOrganizationId('org_1');
+  await subject.listClientsForOrganization('org_1');
+  expect(client.findMany).toHaveBeenCalledTimes(3);
+  for (const call of client.findMany.mock.calls) {
+    expect(call[0]).toMatchObject({ omit: OMIT_SECRET });
+  }
+
+  client.findFirst.mockClear();
+  await subject.getClientForOrganization('client_1', 'org_1');
+  expect(client.findFirst).toHaveBeenCalledTimes(1);
+  expect(client.findFirst.mock.calls[0]?.[0]).toMatchObject({
+    omit: OMIT_SECRET,
+  });
+});
+
+test('updateClientForOrganization omits the secret from the row it returns', async () => {
+  clientStore.set('client_1', makeClient({ id: 'client_1' }));
+
+  client.update.mockClear();
+  await subject.updateClientForOrganization('client_1', 'org_1', {
+    name: 'renamed',
+  });
+
+  expect(client.update).toHaveBeenCalledTimes(1);
+  expect(client.update.mock.calls[0]?.[0]).toMatchObject({
+    omit: OMIT_SECRET,
+  });
+});
+
+test('getClientById keeps the secret — client authentication verifies against it', async () => {
+  clientStore.set('client_1', makeClient({ id: 'client_1' }));
+
+  client.findUnique.mockClear();
+  const found = await subject.getClientById('client_1');
+
+  expect(client.findUnique).toHaveBeenCalledTimes(1);
+  expect(client.findUnique.mock.calls[0]?.[0]).not.toHaveProperty('omit');
+  expect(found?.secret).toBe('hashed');
+});

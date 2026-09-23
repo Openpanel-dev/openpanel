@@ -26,6 +26,17 @@ import type { ServiceDeps, Services } from '../../services';
 import { hashClientSecret } from '../../shared/client-secret';
 
 export type IServiceClient = Client;
+
+/**
+ * What a read path may return. The stored `secret` is a hash and the docs
+ * promise it is never retrievable after creation
+ * (apps/public/content/docs/api/manage/clients.mdx), so every path but the
+ * one authentication uses drops it.
+ */
+export type IPublicClient = Omit<Client, 'secret'>;
+
+/** Handed to Prisma by every read path that serves a response. */
+const OMIT_SECRET = { secret: true } as const;
 export type IServiceClientWithProject = Prisma.ClientGetPayload<{
   include: {
     project: true;
@@ -49,6 +60,7 @@ export async function getClientsByOrganizationId(
     where: {
       organizationId,
     },
+    omit: OMIT_SECRET,
     include: {
       project: true,
     },
@@ -67,6 +79,7 @@ export async function getClientsByProjectId(
     where: {
       projectId,
     },
+    omit: OMIT_SECRET,
   });
 }
 
@@ -118,6 +131,7 @@ export async function listClientsForOrganization(
       organizationId,
       ...(projectId ? { projectId } : {}),
     },
+    omit: OMIT_SECRET,
     orderBy: {
       createdAt: 'desc',
     },
@@ -134,6 +148,7 @@ export async function getClientForOrganization(
       id,
       organizationId,
     },
+    omit: OMIT_SECRET,
   });
 }
 
@@ -183,9 +198,10 @@ export function createClientService(
     id: string,
     organizationId: string,
     input: { name?: string }
-  ): Promise<IServiceClient | null> {
+  ): Promise<IPublicClient | null> {
     const existing = await deps.db.client.findFirst({
       where: { id, organizationId },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -200,6 +216,7 @@ export function createClientService(
     const client = await deps.db.client.update({
       where: { id },
       data: updateData,
+      omit: OMIT_SECRET,
     });
 
     await getClientByIdCached.clear(deps, client.id);

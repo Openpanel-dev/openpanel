@@ -354,6 +354,7 @@ export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // re-export shim.
 export type {
   CreatedClient,
+  IPublicClient,
   IServiceClient,
   IServiceClientWithProject,
 } from './modules/client/client.service';
