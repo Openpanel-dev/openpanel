@@ -12,6 +12,23 @@ import {
 import { getTopPagesCore } from '../../../overview/pages.service';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
+/** `YYYY-MM-DD`. */
+const DATE_ONLY_LENGTH = 10;
+
+/**
+ * The GSC tables store `date` as a ClickHouse `Date` and Google's
+ * searchAnalytics API takes `YYYY-MM-DD`, so the datetime bounds
+ * `resolveDateRange` returns — right for the event and session tables — are
+ * refused here with "Cannot convert string ... to type Date"
+ * (main a0e122e8).
+ */
+function toGscRange(range: { startDate: string; endDate: string }) {
+  return {
+    startDate: range.startDate.slice(0, DATE_ONLY_LENGTH),
+    endDate: range.endDate.slice(0, DATE_ONLY_LENGTH),
+  };
+}
+
 export const gscGetOverview = (deps: ServiceDeps) =>
   chatTool(
     {
@@ -32,8 +49,7 @@ export const gscGetOverview = (deps: ServiceDeps) =>
       });
       return gscGetOverviewCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         interval,
       });
     }
@@ -59,8 +75,7 @@ export const gscGetTopQueries = (deps: ServiceDeps) =>
       });
       const rows = await gscGetTopQueriesCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         limit: limit ?? 50,
       });
       return truncateRows(rows, 100);
@@ -87,8 +102,7 @@ export const gscGetTopPages = (deps: ServiceDeps) =>
       });
       const rows = await gscGetTopPagesCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         limit: limit ?? 50,
       });
       return truncateRows(rows, 100);
@@ -115,8 +129,7 @@ export const gscGetQueryDetails = (deps: ServiceDeps) =>
       });
       return gscGetQueryDetailsCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         query,
       });
     }
@@ -142,8 +155,7 @@ export const gscGetPageDetails = (deps: ServiceDeps) =>
       });
       return gscGetPageDetailsCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         page,
       });
     }
@@ -169,8 +181,7 @@ export const gscGetQueryOpportunities = (deps: ServiceDeps) =>
       });
       return gscGetQueryOpportunitiesCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
         minImpressions,
       });
     }
@@ -195,8 +206,7 @@ export const gscGetCannibalization = (deps: ServiceDeps) =>
       });
       return gscGetCannibalizationCore(deps, {
         projectId: context.projectId,
-        startDate: range.startDate,
-        endDate: range.endDate,
+        ...toGscRange(range),
       });
     }
   );
@@ -223,8 +233,7 @@ export const correlateSeoWithTraffic = (deps: ServiceDeps) =>
       const [gscPages, opPages] = await Promise.all([
         gscGetTopPagesCore(deps, {
           projectId: context.projectId,
-          startDate: range.startDate,
-          endDate: range.endDate,
+          ...toGscRange(range),
           limit: 200,
         }),
         getTopPagesCore(deps, {

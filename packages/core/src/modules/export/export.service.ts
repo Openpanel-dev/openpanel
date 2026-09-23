@@ -108,6 +108,33 @@ export async function resolveInsightsDateRange(
   );
 }
 
+/** `YYYY-MM-DD`. */
+const DATE_ONLY_LENGTH = 10;
+
+/**
+ * The GSC tables store `date` as a ClickHouse `Date` and Google's
+ * searchAnalytics API takes `YYYY-MM-DD`, so the datetime bounds the event and
+ * session tables need are wrong for both: ClickHouse refuses
+ * `'2026-08-07 00:00:00'` with "Cannot convert string ... to type Date", which
+ * failed every /insights/:projectId/gsc/* route for a named `range`
+ * (main a0e122e8).
+ */
+export async function resolveGscInsightsDateRange(
+  deps: ServiceDeps,
+  projectId: string,
+  data: { startDate?: string; endDate?: string; range?: IChartRange }
+): Promise<{ startDate: string; endDate: string }> {
+  const { startDate, endDate } = await resolveInsightsDateRange(
+    deps,
+    projectId,
+    data
+  );
+  return {
+    startDate: startDate.slice(0, DATE_ONLY_LENGTH),
+    endDate: endDate.slice(0, DATE_ONLY_LENGTH),
+  };
+}
+
 // --- service ------------------------------------------------------------
 
 export function createExportService(
