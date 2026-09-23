@@ -47,6 +47,38 @@ export interface CodeMigrationEnv {
   clickhouseUrl: string | undefined;
 }
 
+const CREDENTIAL_QUERY_PARAMS = new Set(['password', 'sslpassword', 'user']);
+
+/**
+ * Connection URLs carry credentials; the startup banner must not put them in
+ * container and CI logs. Keeps scheme, host, port and database, drops the
+ * rest. ClickHouse accepts a comma-separated list, so each URL is handled.
+ */
+export function redactConnectionUrls(value: string | undefined): string {
+  if (!value) {
+    return '(not set)';
+  }
+  return value
+    .split(',')
+    .map((raw) => {
+      try {
+        const url = new URL(raw.trim());
+        const params = new URLSearchParams(url.search);
+        for (const key of [...params.keys()]) {
+          if (CREDENTIAL_QUERY_PARAMS.has(key.toLowerCase())) {
+            params.set(key, '***');
+          }
+        }
+        const query = params.toString();
+        const auth = url.username ? '***@' : '';
+        return `${url.protocol}//${auth}${url.host}${url.pathname}${query ? `?${query}` : ''}`;
+      } catch {
+        return '(unparseable url)';
+      }
+    })
+    .join(',');
+}
+
 export function getIsCluster(env: CodeMigrationEnv) {
   return process.argv.includes('--cluster') || env.clickhouseCluster;
 }

@@ -9,6 +9,7 @@ import {
   getIsSelfHosting,
   getShouldIgnoreRecord,
   printBoxMessage,
+  redactConnectionUrls,
 } from './helpers';
 
 // The numbered migration files live beside this runner.
@@ -58,8 +59,8 @@ export async function runCodeMigrations(env: CodeMigrationEnv) {
   ]);
 
   printBoxMessage('🌍 Environment', [
-    `POSTGRES:   ${env.databaseUrl}`,
-    `CLICKHOUSE: ${env.clickhouseUrl}`,
+    `POSTGRES:   ${redactConnectionUrls(env.databaseUrl)}`,
+    `CLICKHOUSE: ${redactConnectionUrls(env.clickhouseUrl)}`,
   ]);
 
   if (!getIsSelfHosting(env)) {
