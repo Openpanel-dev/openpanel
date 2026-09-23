@@ -18,6 +18,47 @@ unsubscribe-token default secret, the email fallback log, and the migration bann
 
 Everything below is still open.
 
+---
+
+## Ground rule (2026-09-23): no breaking changes
+
+The owner's constraint on this list: **nothing here may break a self-hoster or the public
+API** (`/track`, `/profile`, `/event`, `/import`, `/export`, `/insights`, `/manage`,
+`/mcp`). A fix that would reject a payload those endpoints accept today, change a
+documented response shape, or add a mandatory env var is out of scope *even when this
+file's own "Fix" line proposes it*.
+
+Six entries propose exactly that. The Fix lines below are **superseded** by this table;
+the entry text is kept for context.
+
+| Entry | The proposed fix that would break callers | Do this instead |
+|---|---|---|
+| **H5** | cap `/track` bodies at 1 MB | cap at the *current* effective ceiling (Kafka's `max.message.bytes`) so nothing that succeeds today starts failing, and answer 413 instead of a raw KafkaJS 500 |
+| **H6** | reject `__timestamp` older than ~30 days | **Do not.** Back-dating is documented and deliberate — `docs/(tracking)/how-it-works.mdx` § Timestamps, and the Mixpanel migration guide imports years-old events through it. Only reject values that do not parse to a real date; `__timestamp: 12345` landing in 1970 is the bug, `2020-01-01` is not |
+| **H6** | enforce a shape on `__deviceId`, or hash it | **Won't fix.** Hashing rewrites `profile_id` and orphans every existing profile. The value binds as a query parameter and React escapes it, so the `<script>` example is inert |
+| **M10** | `.trim().min(1).max(100)` on names | rejecting a name `/manage/projects` accepts today is breaking. Fix the actual defect: generate a fallback id when the slug comes out empty, so the project stops being unfetchable and undeletable |
+| **M11** | omit `deviceId`/`sessionId` from the `/track` response | removing response fields is breaking. Either store the ids on the `isServer` branch or leave the entry |
+| **M12** | restrict CORS on `/mcp` | `http/cors.ts` documents the open scope as deliberate V1 parity, and a browser MCP client would break. Fix only the two header bugs (`allow-headers: undefined`, `expose-headers` echoing every request header name) and leave the origin policy alone |
+| **M13** | 400 on `/export` `limit=0\|-5`, `includes=bogus` | clamp, do not reject. M13's tRPC half (`overview.*` filter validation, a `profile.list` take cap) is dashboard-only and safe to make strict |
+
+**H8a is a judgement call, not a safe fix.** Making `endDate` inclusive is *correct* —
+the last day is silently dropped today — but it changes every number `/insights/*` and
+the MCP tools return for an unchanged request. Decide it deliberately and document it;
+do not fold it into a batch of bug fixes.
+
+**H4 is larger than the entry says.** There is no rate limiter in the rewrite at all:
+`grep -rn rateLimit packages/core/src` finds only the unmounted `createRateLimitMiddleware`
+seam in `rpc/base.ts` and an in-memory one under `modules/tools/src/`. Meanwhile
+`apps/public/content/docs/api-reference/rate-limits.mdx` publishes 100 req/10 s for
+Insights and Export and 20 req/10 s for Manage. Porting V1's `packages/trpc/src/rate-limit.ts`
+therefore *restores* documented behaviour rather than imposing a new limit — keep V1's
+numbers exactly, and leave `/track`, `/profile` and `/import` unlimited as the docs promise.
+
+**H3 is the reverse case**: `docs/api/manage/clients.mdx:34` already states that secrets
+are "only returned once at creation time and are never retrievable afterwards". Removing
+the hash from the list/get responses makes the code match the published contract.
+
+
 For an agent working this list: one issue per commit, verify like the "Verify" line says
 (the worktree API is `$API_URL`, loopback `http://127.0.0.1:21101`; ClickHouse HTTP is
 `http://localhost:23123/?database=<db>`; sign in with `admin@openpanel.local` / `openpanel`,
@@ -63,6 +104,7 @@ misleading feature; **low** = cosmetic.
   table still renders (it never used the hash).
 
 ### H4. No rate limiting on login and MCP auth; user enumeration
+> **Wider than written: the rewrite has no rate limiter at all. See the ground rule.**
 - **Symptom**: 30 wrong passwords to `auth.signInEmail` in 13 s all get 401; 20 wrong MCP tokens in
   1 s each run a hash verify; unknown email → 404 "User does not exists" vs 401 for a wrong
   password.
@@ -76,6 +118,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: 11th attempt in a minute → 429; unknown email and wrong password give identical bodies.
 
 ### H5. Malformed request bodies crash routes (500) and legacy `/event` stores nameless events
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom** (all with a valid write client, `content-type: application/json`):
   `POST /profile` empty body → 500 `payload.properties`; `POST /profile/increment` `{}`/`"x"`/empty
   → 500 (`input.property.split`, destructure of null); `POST /event` `"x"` → 500, `{"foo":1}`/`[1,2]`
@@ -92,6 +135,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: each case above → 400/413 with a message; `SELECT count() FROM events WHERE name=''` stays 0.
 
 ### H6. Client-controlled timestamps and device ids accepted unbounded
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `__timestamp: 12345` → `created_at = 1970-01-01`; `"2020-01-01T…"` stored as-is;
   every date-filled series (e.g. `/insights/:id/active_users`, `WITH FILL`) then starts in 1970.
   `__deviceId: "../../etc/passwd<script>"` stored verbatim as `device_id` and `profile_id`.
@@ -112,7 +156,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: sign up a user, create an org, `user.delete` → blocker listed or org scheduled for deletion.
 
 ### H8. MCP data-correctness bugs
-- **a. `endDate` exclusive** — every `zDateRange` tool drops the whole last day
+- **a. `endDate` exclusive** *(decide deliberately — changes public-API numbers)* — every `zDateRange` tool drops the whole last day
   (`startDate=endDate` → zeros; the default range excludes today). Files:
   `packages/core/src/modules/mcp/src/tools/shared.ts:80-89` (bare `YYYY-MM-DD`),
   `packages/core/src/modules/overview/src/overview.sql.ts:118-124`, `pages.sql.ts:16-22`
@@ -304,6 +348,7 @@ error.
 - **Fix**: field-level messages; validate integration ids belong to the project → 400/404.
 
 ### M10. Empty and odd ids from names
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `dashboard.create {name:""}` and MCP `create_dashboard` → id `""`;
   `POST /manage/projects {"name":"   "}` → project id `""` (listed but unfetchable/undeletable);
   `"🚀🚀"` → id `3457`; a 1000-char name → 1000-char id.
@@ -313,6 +358,7 @@ error.
 - **Fix**: `.trim().min(1).max(100)` on names; fall back to a generated id when the slug is empty.
 
 ### M11. Ingest response/state mismatches
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - Server-side (`clientSecretAuth`, non-browser UA) `/track` returns a `deviceId`/`sessionId` but
   the stored row has empty device/session/profile (`ingest.service.ts:313-317`, `isServer` branch).
   Either omit the ids from the response or store them.
@@ -321,6 +367,7 @@ error.
 - `__revenue` is only validated when `name === 'revenue'`; `1e400` properties are silently dropped.
 
 ### M12. CORS on `/mcp` and `/gsc`
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `OPTIONS /mcp` with `origin: https://evil.example` → `access-control-allow-origin`
   echoed with `allow-credentials: true`; preflight without request headers →
   `access-control-allow-headers: undefined`; `expose-headers` echoes every request header name.
@@ -330,6 +377,7 @@ error.
   fixed origin list; `/gsc` should use the dashboard origin.
 
 ### M13. Silent acceptance of bad input
+> **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - `overview.*` filters are `z.array(z.any())`; unknown names/operators are dropped
   (`overview.service.ts:538` `WHITELISTED_FILTERS`), so a typo returns unfiltered totals —
   validate with the filter schema and 400.
