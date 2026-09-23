@@ -213,9 +213,14 @@ export function profileListQuery(
   `;
 }
 
+// `uniqExact`, not `count`: the page reads `profiles FINAL` so it sees one row
+// per id, while the count deliberately skips FINAL (it is the expensive half
+// on a large tenant). Counting rows therefore counted every unmerged
+// ReplacingMergeTree version and the total ran ahead of the list
+// (main 1f21214a).
 export function profileListCountQuery(query: ProfileListQuery): SqlFragment {
   return sql`
-    SELECT count(id) as count
+    SELECT uniqExact(id) as count
     FROM ${sql.id(TABLE.profiles)}
     WHERE ${profileListCondition(query)}
     GROUP BY project_id

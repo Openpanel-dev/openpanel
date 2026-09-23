@@ -1,5 +1,15 @@
 # profile.sql.ts (now src/sql.ts) — V1 → V2 result-set proof (M7-002)
 
+> **Amended 2026-09-23 (port of main `1f21214a`).** `profileListCountQuery` now
+> reads `uniqExact(id)` where the two `profileListCountQuery` cases below show
+> `count(id)`. The WHERE, the GROUP BY and the absence of FINAL are unchanged,
+> and on a fully merged table both return the same number — which is why the
+> proof's `5604` still holds. They diverge only while the table has unmerged
+> ReplacingMergeTree versions, where `count(id)` counted every version and ran
+> ahead of the page, which reads FINAL. Demonstrated on a scratch
+> ReplacingMergeTree with one id written twice: `count(id)` 3, `uniqExact(id)`
+> 2, `FINAL` 2.
+
 Every query builder in `src/sql.ts` (`profile.sql.ts` at proof time; renamed under R1, M15-121) was executed twice against the same data — once as V1 (the `git HEAD` service/router code, `3300f2a0`) and once as V2 (core's service, which renders the builder) — through one patched ClickHouse client that captured each statement, its `query_params`, `clickhouse_settings`, wall time and the raw JSON response. The two responses were compared on `data` (every row, every column, as JSON) and `meta` (column names and types). Statements without an `ORDER BY` were compared as row sets, because ClickHouse's parallel aggregation returns them in a different order run to run — V1 against itself too.
 
 - **Amended by M27-002 (2026-09-15): `profileRecentEventsQuery`'s ORDER BY is no longer V1's text.**

@@ -205,7 +205,9 @@ describe('profileListQuery', () => {
         .replace(/ ORDER BY.*$/, '')
         .replace(/ GROUP BY.*$/, '');
 
-    expect(count).toStartWith('SELECT count(id) as count FROM profiles WHERE');
+    expect(count).toStartWith(
+      'SELECT uniqExact(id) as count FROM profiles WHERE'
+    );
     expect(count).toEndWith('GROUP BY project_id');
     expect(whereOf(count)).toBe(whereOf(page));
   });
