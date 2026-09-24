@@ -322,11 +322,16 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
   /**
    * Stream user profiles from Mixpanel Engage API.
-   * Paginates with page/page_size (5k per page) and yields each profile.
+   *
+   * Engage pagination is session based: page 0 opens a snapshot and returns its
+   * `session_id`, and every later page has to replay that id or Mixpanel answers
+   * 400 "must have session_id when requesting page > 0".
    */
   async *streamProfiles(): AsyncGenerator<MixpanelRawProfile, void, unknown> {
     const { serviceAccount, serviceSecret, projectId } = this.config;
-    const pageSize = 5000;
+    const requestedPageSize = 5000;
+    let pageSize = requestedPageSize;
+    let sessionId: string | undefined;
     let page = 0;
 
     while (true) {
@@ -335,8 +340,11 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       const url = `${this.residencyUrls.apiBase}/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
       const body = new URLSearchParams({
         page: String(page),
-        page_size: String(pageSize),
+        page_size: String(requestedPageSize),
       });
+      if (sessionId) {
+        body.set('session_id', sessionId);
+      }
 
       this.logger?.info(
         { page, page_size: pageSize, projectId },
@@ -371,9 +379,16 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
       const data = (await response.json()) as {
         results?: Array<{ $distinct_id: string | number; $properties?: Record<string, unknown> }>;
+        session_id?: string;
         page?: number;
+        page_size?: number;
         total?: number;
       };
+
+      sessionId = data.session_id ?? sessionId;
+      // Mixpanel may hand back a smaller page than we asked for; the size it
+      // reports is the one its own paging follows.
+      pageSize = data.page_size ?? pageSize;
 
       const results = data.results ?? [];
       for (const row of results) {
@@ -389,6 +404,15 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       }
 
       if (results.length < pageSize) {
+        break;
+      }
+      // Without a session id Mixpanel would reject the next page anyway, so stop
+      // rather than spend a request on a guaranteed 400.
+      if (!sessionId) {
+        this.logger?.warn(
+          { page, projectId },
+          'Mixpanel Engage returned a full page without a session_id; stopping profile pagination',
+        );
         break;
       }
       page++;

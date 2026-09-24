@@ -1,5 +1,5 @@
 import { omit } from 'ramda';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MixpanelProvider } from './mixpanel';
 
 describe('mixpanel', () => {
@@ -336,5 +336,121 @@ describe('mixpanel', () => {
 
     // Undefined defaults to 'us' without throwing
     expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();
+  });
+
+  describe('streamProfiles', () => {
+    const makeProvider = () =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-01-02',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+      });
+
+    const engagePage = (
+      body: Record<string, unknown>
+    ): Response =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+    const profiles = (count: number, offset: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        $distinct_id: `user-${offset + i}`,
+        $properties: { $email: `user-${offset + i}@example.com` },
+      }));
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('replays session_id on pages after the first', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        return Promise.resolve(
+          engagePage({
+            page,
+            page_size: 5000,
+            session_id: 'sess-abc',
+            total: 7000,
+            results: page === 0 ? profiles(5000, 0) : profiles(2000, 5000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(7000);
+      expect(bodies).toHaveLength(2);
+
+      const first = new URLSearchParams(bodies[0]);
+      expect(first.get('page')).toBe('0');
+      expect(first.get('session_id')).toBeNull();
+
+      const second = new URLSearchParams(bodies[1]);
+      expect(second.get('page')).toBe('1');
+      expect(second.get('session_id')).toBe('sess-abc');
+    });
+
+    it('paginates on the page_size Mixpanel reports, not the one requested', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        return Promise.resolve(
+          engagePage({
+            page,
+            // Mixpanel caps the page below the 5000 we ask for.
+            page_size: 1000,
+            session_id: 'sess-abc',
+            total: 1500,
+            results: page === 0 ? profiles(1000, 0) : profiles(500, 1000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(1500);
+      expect(bodies).toHaveLength(2);
+    });
+
+    it('stops after a full page when Mixpanel returns no session_id', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        return Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            results: profiles(5000, 0),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(5000);
+      expect(bodies).toHaveLength(1);
+    });
   });
 });
