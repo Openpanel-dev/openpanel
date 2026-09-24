@@ -154,22 +154,35 @@ const updatePackageJsonForRelease = (
       module: './dist/index.js',
       types: './dist/index.d.ts',
       files: ['dist', 'README.md', 'LICENSE'],
-      exports: restPkgJson.exports ?? {
-        '.': {
-          import: './dist/index.js',
-          require: './dist/index.cjs',
-          types: './dist/index.d.ts',
-        },
-        ...(name === '@openpanel/nextjs'
+      exports:
+        name === '@openpanel/web'
           ? {
-              './server': {
-                import: './dist/server.js',
-                require: './dist/server.cjs',
-                types: './dist/server.d.ts',
+              '.': {
+                import: './dist/index.js',
+                require: './dist/index.cjs',
+                types: './dist/index.d.ts',
+              },
+              './replay': {
+                import: './dist/src/replay.js',
+                types: './dist/src/replay.d.ts',
               },
             }
-          : {}),
-      },
+          : (restPkgJson.exports ?? {
+              '.': {
+                import: './dist/index.js',
+                require: './dist/index.cjs',
+                types: './dist/index.d.ts',
+              },
+              ...(name === '@openpanel/nextjs'
+                ? {
+                    './server': {
+                      import: './dist/server.js',
+                      require: './dist/server.cjs',
+                      types: './dist/server.d.ts',
+                    },
+                  }
+                : {}),
+            }),
     };
   }
 

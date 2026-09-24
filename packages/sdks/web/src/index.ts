@@ -3,9 +3,18 @@ import type {
   TrackProperties,
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+import {
+  resolveSessionReplayRecorder,
+  type SessionReplayRecorder,
+} from './resolve-replay-recorder';
 
 export type * from '@openpanel/sdk';
 export { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+export type {
+  SessionReplayChunkPayload,
+  SessionReplayRecorder,
+  SessionReplayRecorderConfig,
+} from './resolve-replay-recorder';
 
 export type SessionReplayOptions = {
   enabled: boolean;
@@ -31,10 +40,23 @@ export type SessionReplayOptions = {
   /**
    * URL to the replay recorder script.
    * Only used when loading the SDK via a script tag (IIFE / op1.js).
-   * When using the npm package with a bundler this option is ignored
-   * because the bundler resolves the replay module from the package.
+   * When using the npm package with a bundler this option is ignored —
+   * pass `recorder` from `@openpanel/web/replay` instead.
    */
   scriptUrl?: string;
+  /**
+   * Recorder implementation. Required for the npm / bundler build when
+   * `enabled` is true, so rrweb is only included when you import
+   * `@openpanel/web/replay`. The script-tag build loads the CDN
+   * recorder automatically when this is omitted.
+   *
+   * @example
+   * import { startReplayRecorder } from '@openpanel/web/replay'
+   * new OpenPanel({
+   *   sessionReplay: { enabled: true, recorder: startReplayRecorder },
+   * })
+   */
+  recorder?: SessionReplayRecorder;
 };
 
 // Injected at build time only in the IIFE (tracker) build.
@@ -42,7 +64,7 @@ export type SessionReplayOptions = {
 declare const __OPENPANEL_REPLAY_URL__: string | undefined;
 
 // Capture script element synchronously; currentScript is only set during sync execution.
-// Used by loadReplayModule() to derive the replay script URL in the IIFE build.
+// Used by loadIifeReplayRecorder() to derive the replay script URL in the IIFE build.
 const _replayScriptRef: HTMLScriptElement | null =
   typeof document !== 'undefined'
     ? (document.currentScript as HTMLScriptElement | null)
@@ -113,75 +135,84 @@ export class OpenPanel extends OpenPanelBase {
         const sampleRate = this.options.sessionReplay.sampleRate ?? 1;
         const sampled = Math.random() < sampleRate;
         if (sampled) {
-          this.loadReplayModule().then((mod) => {
-            if (!mod) {
-              return;
-            }
-            mod.startReplayRecorder(this.options.sessionReplay!, (chunk) => {
-              // Replay chunks go through send() and are queued when disabled or waitForProfile
-              // until ready() is called (base SDK also queues replay until sessionId is set).
-              this.send({
-                type: 'replay',
-                payload: {
-                  ...chunk,
-                  sessionId: this.sessionId,
-                },
-              });
-            });
-          });
+          void this.startSessionReplay();
         }
       }
     }
   }
 
   /**
-   * Load the replay recorder module.
-   *
-   * - **IIFE build (op1.js)**: `__OPENPANEL_REPLAY_URL__` is replaced at
-   *   build time with a CDN URL (e.g. `https://openpanel.dev/op1-replay.js`).
-   *   The user can also override it via `sessionReplay.scriptUrl`.
-   *   We load the IIFE replay script via a classic `<script>` tag which
-   *   avoids CORS issues (dynamic `import(url)` uses `cors` mode).
-   *   The IIFE exposes its exports on `window.__openpanel_replay`.
-   *
-   * - **Library build (npm)**: `__OPENPANEL_REPLAY_URL__` is `undefined`
-   *   (never replaced). We use `import('./replay')` which the host app's
-   *   bundler resolves and code-splits from the package source.
+   * Start session replay with either an explicit `recorder` (npm) or the
+   * CDN script (IIFE / op1.js). The library build never `import()`s
+   * `./replay`, so rrweb stays out of apps that do not opt in.
    */
-  private async loadReplayModule(): Promise<typeof import('./replay') | null> {
+  private async startSessionReplay(): Promise<void> {
+    const options = this.options.sessionReplay;
+    if (!options) {
+      return;
+    }
+
+    const recorder = await resolveSessionReplayRecorder({
+      recorder: options.recorder,
+      isIifeBuild: typeof __OPENPANEL_REPLAY_URL__ !== 'undefined',
+      loadIifeRecorder: () => this.loadIifeReplayRecorder(),
+    });
+
+    if (!recorder) {
+      console.warn(
+        '[OpenPanel] sessionReplay.enabled but no recorder was provided. Import startReplayRecorder from @openpanel/web/replay and pass it as sessionReplay.recorder.',
+      );
+      return;
+    }
+
+    recorder(options, (chunk) => {
+      // Replay chunks go through send() and are queued when disabled or waitForProfile
+      // until ready() is called (base SDK also queues replay until sessionId is set).
+      this.send({
+        type: 'replay',
+        payload: {
+          ...chunk,
+          sessionId: this.sessionId,
+        },
+      });
+    });
+  }
+
+  /**
+   * Load the IIFE replay recorder from the CDN (script-tag builds only).
+   *
+   * `__OPENPANEL_REPLAY_URL__` is replaced at build time with a CDN URL
+   * (e.g. `https://openpanel.dev/op1-replay.js`). The user can also
+   * override it via `sessionReplay.scriptUrl`. Classic `<script>` avoids
+   * CORS issues that dynamic `import(url)` would hit. Exports land on
+   * `window.__openpanel_replay`.
+   */
+  private async loadIifeReplayRecorder(): Promise<SessionReplayRecorder | null> {
     try {
-      // typeof check avoids a ReferenceError when the constant is not
-      // defined (library build). tsup replaces the constant with a
-      // string literal only in the IIFE build, so this branch is
-      // dead-code-eliminated in the library build.
-      if (typeof __OPENPANEL_REPLAY_URL__ !== 'undefined') {
-        const scriptEl = _replayScriptRef;
-        const url =
-          this.options.sessionReplay?.scriptUrl ||
-          scriptEl?.src?.replace('.js', '-replay.js') ||
-          'https://openpanel.dev/op1-replay.js';
+      const scriptEl = _replayScriptRef;
+      const url =
+        this.options.sessionReplay?.scriptUrl ||
+        scriptEl?.src?.replace('.js', '-replay.js') ||
+        'https://openpanel.dev/op1-replay.js';
 
-        // Already loaded (e.g. user included the script manually)
-        if ((window as any).__openpanel_replay) {
-          return (window as any).__openpanel_replay;
-        }
-
-        // Load via classic <script> tag — no CORS restrictions
-        return new Promise((resolve) => {
-          const script = document.createElement('script');
-          script.src = url;
-          script.onload = () => {
-            resolve((window as any).__openpanel_replay ?? null);
-          };
-          script.onerror = () => {
-            console.warn('[OpenPanel] Failed to load replay script from', url);
-            resolve(null);
-          };
-          document.head.appendChild(script);
-        });
+      if ((window as any).__openpanel_replay?.startReplayRecorder) {
+        return (window as any).__openpanel_replay.startReplayRecorder;
       }
-      // Library / bundler context — resolved by the bundler
-      return await import('./replay');
+
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = () => {
+          resolve(
+            (window as any).__openpanel_replay?.startReplayRecorder ?? null,
+          );
+        };
+        script.onerror = () => {
+          console.warn('[OpenPanel] Failed to load replay script from', url);
+          resolve(null);
+        };
+        document.head.appendChild(script);
+      });
     } catch (e) {
       console.warn('[OpenPanel] Failed to load replay module', e);
       return null;

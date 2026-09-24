@@ -55,7 +55,7 @@ See the [Web SDK docs](/docs/sdks/web) or [Script tag docs](/docs/sdks/script) f
 
 ## Enable session replay [#enable]
 
-Session replay is **off by default**. Enable it by adding `sessionReplay: { enabled: true }` to your init config.
+Session replay is **off by default**. For the script tag, add `sessionReplay: { enabled: true }` to your init config. For the npm package, also import `@openpanel/web/replay` and pass `recorder` (see below).
 
 ### Script tag
 
@@ -80,6 +80,7 @@ The replay script (`op1-replay.js`) is fetched automatically alongside the main 
 
 ```ts title="op.ts"
 import { OpenPanel } from '@openpanel/web';
+import { startReplayRecorder } from '@openpanel/web/replay';
 
 const op = new OpenPanel({
   clientId: 'YOUR_CLIENT_ID',
@@ -87,11 +88,12 @@ const op = new OpenPanel({
   trackOutgoingLinks: true,
   sessionReplay: {
     enabled: true,
+    recorder: startReplayRecorder,
   },
 });
 ```
 
-With the npm package, the replay module is a dynamic import resolved by your bundler. It is automatically code-split from your main bundle—if you don't enable replay, the module is never included.
+Import `startReplayRecorder` from `@openpanel/web/replay` and pass it as `recorder`. Apps that never import that subpath do not ship rrweb.
 
 ### Next.js
 
