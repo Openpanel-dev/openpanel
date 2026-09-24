@@ -27,6 +27,31 @@ export const zMixpanelRawProfile = z.object({
 });
 export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
 
+/** `2025-05-20T18:42:11` / `2025-05-20 18:42:11` — no trailing offset. */
+const NAIVE_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?$/u;
+
+/**
+ * Parse a Mixpanel profile timestamp ($created / $last_seen). Returns undefined
+ * for anything missing or unparseable, so callers can pick their own fallback
+ * rather than silently getting an Invalid Date.
+ *
+ * Mixpanel sends these without a timezone offset, and `new Date()` reads such
+ * strings as *local* time — which would make every imported profile's dates
+ * depend on the worker container's TZ. Pin them to UTC so the import is
+ * reproducible wherever it runs.
+ */
+function parseMixpanelDate(value: unknown): Date | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  const raw = String(value).trim();
+  const normalized = NAIVE_TIMESTAMP_RE.test(raw)
+    ? `${raw.replace(' ', 'T')}Z`
+    : raw;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 class MixpanelRateLimitError extends Error {
   readonly retryAfterMs?: number;
 
@@ -454,9 +479,28 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     const props = (parsed.$properties || {}) as Record<string, unknown>;
 
     const id = String(parsed.$distinct_id).replace(/^\$device:/, '');
-    const createdAt = props.$created
-      ? formatClickhouseDate(new Date(String(props.$created)))
-      : formatClickhouseDate(new Date());
+
+    // Mixpanel's reserved profile properties: $created is when the profile was
+    // first created, $last_seen its most recent activity. Neither is guaranteed
+    // to be present, so fall back to each other before the import window.
+    //
+    // Never fall back to Date.now(): that stamps every profile with the import's
+    // wall clock, and since profiles is ReplacingMergeTree(last_seen_at) it also
+    // hands the bad row the highest possible version, so a corrected re-import
+    // silently loses to it.
+    const created = parseMixpanelDate(props.$created);
+    const lastSeen = parseMixpanelDate(props.$last_seen);
+
+    if (!(created || lastSeen)) {
+      this.logger?.warn(
+        { id },
+        'Mixpanel profile has neither $created nor $last_seen; dating it from the import window start',
+      );
+    }
+
+    const fallback = new Date(this.config.from);
+    const createdAt = formatClickhouseDate(created ?? lastSeen ?? fallback);
+    const lastSeenAt = formatClickhouseDate(lastSeen ?? created ?? fallback);
 
     const properties: Record<string, string> = {};
     const stripPrefix = /^\$/;
@@ -475,7 +519,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       avatar: String(props.$avatar ?? props.$image ?? ''),
       properties,
       created_at: createdAt,
-      last_seen_at: createdAt,
+      last_seen_at: lastSeenAt,
       is_external: true,
       groups: [],
     };

@@ -338,6 +338,80 @@ describe('mixpanel', () => {
     expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();
   });
 
+  describe('transformProfile', () => {
+    const makeProvider = () =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-06-30',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+      });
+
+    it('uses $created and $last_seen rather than the import wall clock', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-1',
+        $properties: {
+          $created: '2025-02-03T09:15:00',
+          $last_seen: '2025-05-20T18:42:11',
+          $email: 'a@example.com',
+        },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:11');
+      expect(profile.created_at).not.toBe(profile.last_seen_at);
+    });
+
+    it('falls back to $last_seen when $created is absent', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-2',
+        $properties: { $last_seen: '2025-05-20T18:42:11' },
+      });
+
+      expect(profile.created_at).toBe('2025-05-20 18:42:11');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:11');
+    });
+
+    it('falls back to $created when $last_seen is absent', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-3',
+        $properties: { $created: '2025-02-03T09:15:00' },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-02-03 09:15:00');
+    });
+
+    it('dates from the import window, never now, when both are absent', () => {
+      const before = new Date();
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-4',
+        $properties: { $email: 'b@example.com' },
+      });
+
+      expect(profile.created_at).toBe('2025-01-01 00:00:00');
+      expect(profile.last_seen_at).toBe('2025-01-01 00:00:00');
+      // The regression being guarded: import wall-clock time leaking in.
+      expect(profile.created_at.startsWith(String(before.getFullYear()))).toBe(
+        false
+      );
+    });
+
+    it('ignores unparseable timestamps instead of writing Invalid Date', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-5',
+        $properties: { $created: 'not-a-date', $last_seen: '' },
+      });
+
+      expect(profile.created_at).toBe('2025-01-01 00:00:00');
+      expect(profile.last_seen_at).toBe('2025-01-01 00:00:00');
+    });
+  });
+
   describe('streamProfiles', () => {
     const makeProvider = () =>
       new MixpanelProvider('pid', {
