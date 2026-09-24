@@ -338,6 +338,66 @@ describe('mixpanel', () => {
     expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();
   });
 
+  describe('project timezone', () => {
+    const providerFor = (timezone?: string) =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-12-31',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+        timezone,
+      });
+
+    const eventAt = (time: number, timezone?: string) =>
+      providerFor(timezone).transformEvent({
+        event: 'custom_event',
+        properties: { time, distinct_id: 'u1', $device_id: 'd1', mp_lib: 'web' },
+      }).created_at;
+
+    it('leaves timestamps alone when no timezone is configured', () => {
+      expect(eventAt(1_746_097_970)).toBe('2025-05-01 11:12:50');
+      expect(eventAt(1_746_097_970, 'UTC')).toBe('2025-05-01 11:12:50');
+    });
+
+    it('converts project-local event times to UTC', () => {
+      // Asia/Riyadh is UTC+3 year round, no DST.
+      expect(eventAt(1_746_097_970, 'Asia/Riyadh')).toBe('2025-05-01 08:12:50');
+    });
+
+    it('resolves the offset per instant, so DST is handled', () => {
+      // Both are 12:00 on the project's wall clock. Europe/Stockholm is UTC+2
+      // in July and UTC+1 in January, so they land an hour apart in UTC — a
+      // fixed offset would get one of them wrong.
+      expect(eventAt(1_751_371_200, 'Europe/Stockholm')).toBe(
+        '2025-07-01 10:00:00'
+      );
+      expect(eventAt(1_735_732_800, 'Europe/Stockholm')).toBe(
+        '2025-01-01 11:00:00'
+      );
+    });
+
+    it('converts profile timestamps too', () => {
+      const profile = providerFor('Asia/Riyadh').transformProfile({
+        $distinct_id: 'u1',
+        $properties: {
+          $created: '2025-02-03T09:15:00',
+          $last_seen: '2025-05-20T18:42:11',
+        },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 06:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 15:42:11');
+    });
+
+    it('falls back to the raw timestamp on an unknown timezone', () => {
+      expect(eventAt(1_746_097_970, 'Not/AZone')).toBe('2025-05-01 11:12:50');
+    });
+  });
+
   describe('transformProfile', () => {
     const makeProvider = () =>
       new MixpanelProvider('pid', {

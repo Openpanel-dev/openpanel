@@ -707,6 +707,13 @@ export const zMixpanelImportConfig = z.object({
   to: z.string().min(1),
   mapScreenViewProperty: z.string().optional(),
   dataResidency: zMixpanelDataResidency.optional(),
+  /**
+   * IANA name of the Mixpanel project's timezone (Project Settings -> Timezone).
+   * Mixpanel's export APIs report timestamps in project time, so this is what
+   * they get converted from on the way to UTC. Defaults to UTC when unset,
+   * which reproduces the pre-timezone behaviour.
+   */
+  timezone: z.string().min(1).optional(),
 });
 export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
 

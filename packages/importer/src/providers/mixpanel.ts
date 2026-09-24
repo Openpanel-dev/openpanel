@@ -37,6 +37,62 @@ const NAIVE_TIMESTAMP_RE =
   /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/u;
 
 /**
+ * How far `timeZone` is ahead of UTC at a given instant, in ms. DST-aware:
+ * the offset is resolved at that instant, not assumed constant.
+ */
+function timeZoneOffsetMs(instantMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(instantMs));
+
+  const at = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? '0');
+
+  const asUtc = Date.UTC(
+    at('year'),
+    at('month') - 1,
+    at('day'),
+    at('hour'),
+    at('minute'),
+    at('second')
+  );
+  return asUtc - Math.floor(instantMs / 1000) * 1000;
+}
+
+/**
+ * Mixpanel reports timestamps as a wall clock in the project's timezone. Read
+ * naively they look like UTC, which shifts every row by the project's offset.
+ * Convert that wall clock to the real UTC instant.
+ *
+ * Two passes: the offset depends on the instant we're solving for, so guess,
+ * correct, and re-resolve. That settles DST correctly everywhere except the
+ * ambiguous hour of a backward transition, where the earlier instant wins.
+ */
+export function projectTimeToUtc(
+  wallClockMs: number,
+  timeZone: string | undefined
+): number {
+  if (!timeZone || timeZone === 'UTC') {
+    return wallClockMs;
+  }
+  try {
+    let utcMs = wallClockMs - timeZoneOffsetMs(wallClockMs, timeZone);
+    utcMs = wallClockMs - timeZoneOffsetMs(utcMs, timeZone);
+    return utcMs;
+  } catch {
+    // An unknown IANA name shouldn't fail the whole import.
+    return wallClockMs;
+  }
+}
+
+/**
  * Parse a Mixpanel profile timestamp ($created / $last_seen). Returns undefined
  * for anything missing or unparseable, so callers can pick their own fallback
  * rather than silently getting an Invalid Date.
@@ -46,16 +102,24 @@ const NAIVE_TIMESTAMP_RE =
  * depend on the worker container's TZ. Pin them to UTC so the import is
  * reproducible wherever it runs.
  */
-function parseMixpanelDate(value: unknown): Date | undefined {
+function parseMixpanelDate(
+  value: unknown,
+  timeZone?: string
+): Date | undefined {
   if (value == null || value === '') {
     return undefined;
   }
   const raw = String(value).trim();
-  const normalized = NAIVE_TIMESTAMP_RE.test(raw)
-    ? `${raw.replace(' ', 'T')}Z`
-    : raw;
-  const date = new Date(normalized);
-  return Number.isNaN(date.getTime()) ? undefined : date;
+  const isNaive = NAIVE_TIMESTAMP_RE.test(raw);
+  const date = new Date(isNaive ? `${raw.replace(' ', 'T')}Z` : raw);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  // Only a naive timestamp is a project-local wall clock; one that carried its
+  // own offset is already an absolute instant.
+  return isNaive
+    ? new Date(projectTimeToUtc(date.getTime(), timeZone))
+    : date;
 }
 
 class MixpanelRateLimitError extends Error {
@@ -494,8 +558,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     // wall clock, and since profiles is ReplacingMergeTree(last_seen_at) it also
     // hands the bad row the highest possible version, so a corrected re-import
     // silently loses to it.
-    const created = parseMixpanelDate(props.$created);
-    const lastSeen = parseMixpanelDate(props.$last_seen);
+    const { timezone } = this.config;
+    const created = parseMixpanelDate(props.$created, timezone);
+    const lastSeen = parseMixpanelDate(props.$last_seen, timezone);
 
     if (!(created || lastSeen)) {
       this.logger?.warn(
@@ -644,7 +709,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       project_id: projectId,
       session_id: '', // Will be generated in SQL after import
       properties: toDots(properties), // Flatten nested objects/arrays to Map(String, String)
-      created_at: formatClickhouseDate(new Date(props.time * 1000)),
+      created_at: formatClickhouseDate(
+        new Date(projectTimeToUtc(props.time * 1000, this.config.timezone))
+      ),
       country,
       city,
       region,
