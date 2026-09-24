@@ -18,6 +18,7 @@ import {
   getReplicatedTableName,
 } from '../clickhouse/client';
 import { db } from '../prisma-client';
+import { transformPropertyKey } from './chart.service';
 import { buildFilterWhere, PROFILE_TABLE_COLUMNS } from './filter-where.service';
 import {
   getProfiles,
@@ -168,6 +169,17 @@ function buildNeverDidEventQuery(
   `;
 }
 
+// The property picker rewrites `products.0.name` to `properties.products.*.name`.
+// Charts expand that via transformPropertyKey; this summary table stores the
+// original key, so `*` has to become a LIKE pattern or the row never matches.
+function eventPropertyKeyPredicate(name: string): string {
+  const propertyKey = name.replace(/^properties\./, '');
+  if (!propertyKey.includes('*')) {
+    return `property_key = ${sqlstring.escape(propertyKey)}`;
+  }
+  return `property_key LIKE ${sqlstring.escape(transformPropertyKey(name.startsWith('properties.') ? name : `properties.${propertyKey}`))}`;
+}
+
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria,
@@ -187,40 +199,54 @@ export function buildEventCriteriaQuery(
 
     const propertyConditions = propertyFilters
       .map((filter) => {
-        const propertyKey = filter.name.replace('properties.', '');
         const { value, operator } = filter;
+        const keyMatch = eventPropertyKeyPredicate(filter.name);
 
         switch (operator) {
           case 'is':
             if (value.length === 1) {
-              return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value = ${sqlstring.escape(String(value[0]).trim())})`;
+              return `(${keyMatch} AND property_value = ${sqlstring.escape(String(value[0]).trim())})`;
             }
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value
+            return `(${keyMatch} AND property_value IN (${value
               .map((val) => sqlstring.escape(String(val).trim()))
               .join(', ')}))`;
           case 'isNot':
             if (value.length === 1) {
-              return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value != ${sqlstring.escape(String(value[0]).trim())})`;
+              return `(${keyMatch} AND property_value != ${sqlstring.escape(String(value[0]).trim())})`;
             }
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value NOT IN (${value
+            return `(${keyMatch} AND property_value NOT IN (${value
               .map((val) => sqlstring.escape(String(val).trim()))
               .join(', ')}))`;
           case 'contains':
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
+            return `(${keyMatch} AND (${value
               .map(
                 (val) =>
                   `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
               )
               .join(' OR ')}))`;
           case 'doesNotContain':
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
+            return `(${keyMatch} AND (${value
               .map(
                 (val) =>
                   `property_value NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
               )
               .join(' AND ')}))`;
+          case 'startsWith':
+            return `(${keyMatch} AND (${value
+              .map(
+                (val) =>
+                  `property_value LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`,
+              )
+              .join(' OR ')}))`;
+          case 'endsWith':
+            return `(${keyMatch} AND (${value
+              .map(
+                (val) =>
+                  `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`,
+              )
+              .join(' OR ')}))`;
           default:
-            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value
+            return `(${keyMatch} AND property_value IN (${value
               .map((val) => sqlstring.escape(String(val).trim()))
               .join(', ')}))`;
         }
