@@ -107,14 +107,16 @@ function TooltipIndicatorInner({
         <linearGradient id={gradientId} x1="0%" x2="0%" y1="0%" y2="100%">
           <stop
             offset="0%"
-            style={{ stopColor: colorEdge, stopOpacity: edgeOpacity }}
+            stopColor={colorEdge}
+            stopOpacity={edgeOpacity}
           />
-          <stop offset="10%" style={{ stopColor: colorEdge, stopOpacity: 1 }} />
-          <stop offset="50%" style={{ stopColor: colorMid, stopOpacity: 1 }} />
-          <stop offset="90%" style={{ stopColor: colorEdge, stopOpacity: 1 }} />
+          <stop offset="10%" stopColor={colorEdge} stopOpacity={1} />
+          <stop offset="50%" stopColor={colorMid} stopOpacity={1} />
+          <stop offset="90%" stopColor={colorEdge} stopOpacity={1} />
           <stop
             offset="100%"
-            style={{ stopColor: colorEdge, stopOpacity: edgeOpacity }}
+            stopColor={colorEdge}
+            stopOpacity={edgeOpacity}
           />
         </linearGradient>
       </defs>

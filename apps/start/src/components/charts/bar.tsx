@@ -3,7 +3,8 @@
 import type { scaleBand } from "@visx/scale";
 import type { Transition } from "motion/react";
 import { motion } from "motion/react";
-import { memo, useId, useMemo } from "react";
+import { memo, useMemo } from "react";
+import { useSvgId } from "./use-svg-id";
 import { chartCssVars, useChart, useChartStable } from "./chart-context";
 import { transitionWithDelay } from "./motion-utils";
 
@@ -163,7 +164,7 @@ const BarInner = memo(function BarInner({
   const staggerSpread = totalAnimDuration * 0.4; // 40% of time for stagger spread
   const calculatedStaggerDelay =
     staggerDelay ?? (data.length > 1 ? staggerSpread / 1000 / data.length : 0);
-  const uniqueId = useId();
+  const uniqueId = useSvgId("bar");
 
   const isHorizontal = orientation === "horizontal";
 

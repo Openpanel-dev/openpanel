@@ -1,7 +1,8 @@
 "use client";
 
 import { GridColumns, GridRows } from "@visx/grid";
-import { useId } from "react";
+import { useSvgId } from "./use-svg-id";
+
 import { chartCssVars, useChartStable } from "./chart-context";
 
 export interface GridProps {
@@ -68,7 +69,7 @@ export function Grid({
   // For vertical grid lines in horizontal bar charts, use yScale (the value scale)
   // For time-based charts, use xScale
   const columnScale = isHorizontalBarChart ? yScale : xScale;
-  const uniqueId = useId();
+  const uniqueId = useSvgId("grid");
 
   // Horizontal fade mask (for grid rows - fades left/right)
   const hMaskId = `grid-rows-fade-${uniqueId}`;
@@ -84,13 +85,10 @@ export function Grid({
       {horizontal && fadeHorizontal && (
         <defs>
           <linearGradient id={hGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" style={{ stopColor: "white", stopOpacity: 0 }} />
-            <stop offset="10%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop offset="90%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop
-              offset="100%"
-              style={{ stopColor: "white", stopOpacity: 0 }}
-            />
+            <stop offset="0%" stopColor="white" stopOpacity={0} />
+            <stop offset="10%" stopColor="white" stopOpacity={1} />
+            <stop offset="90%" stopColor="white" stopOpacity={1} />
+            <stop offset="100%" stopColor="white" stopOpacity={0} />
           </linearGradient>
           <mask id={hMaskId}>
             <rect
@@ -108,13 +106,10 @@ export function Grid({
       {vertical && fadeVertical && (
         <defs>
           <linearGradient id={vGradientId} x1="0%" x2="0%" y1="0%" y2="100%">
-            <stop offset="0%" style={{ stopColor: "white", stopOpacity: 0 }} />
-            <stop offset="10%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop offset="90%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop
-              offset="100%"
-              style={{ stopColor: "white", stopOpacity: 0 }}
-            />
+            <stop offset="0%" stopColor="white" stopOpacity={0} />
+            <stop offset="10%" stopColor="white" stopOpacity={1} />
+            <stop offset="90%" stopColor="white" stopOpacity={1} />
+            <stop offset="100%" stopColor="white" stopOpacity={0} />
           </linearGradient>
           <mask id={vMaskId}>
             <rect

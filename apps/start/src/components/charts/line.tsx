@@ -7,7 +7,9 @@ import { LinePath } from "@visx/shape";
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useRef } from "react";
+import { useSvgId } from "./use-svg-id";
+
 import { chartCssVars, useChartStable } from "./chart-context";
 import {
   type FadeEdges,
@@ -90,8 +92,7 @@ export function Line({
   const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${animate}`;
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, pathMetricsKey);
 
-  const reactId = useId();
-  const gradientId = `line-gradient-${dataKey}-${reactId}`;
+  const gradientId = useSvgId(`line-gradient-${dataKey}`);
 
   const getY = useCallback(
     (d: Record<string, unknown>) => {
@@ -115,7 +116,8 @@ export function Line({
               <stop
                 key={stop.offset}
                 offset={stop.offset}
-                style={{ stopColor: stroke, stopOpacity: stop.opacity }}
+                stopColor={stroke}
+                stopOpacity={stop.opacity}
               />
             ))}
           </linearGradient>

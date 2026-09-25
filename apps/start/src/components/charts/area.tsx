@@ -7,7 +7,9 @@ import { AreaClosed, LinePath } from "@visx/shape";
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useRef } from "react";
+import { useSvgId } from "./use-svg-id";
+
 import { AreaGradientDefs } from "./area-gradient-defs";
 import { chartCssVars, useChartStable } from "./chart-context";
 import { type FadeEdges, resolveFadeSides } from "./fade-edges";
@@ -100,8 +102,8 @@ export function Area({
   const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${showLine}`;
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, pathMetricsKey);
 
-  // Unique IDs for this area
-  const uniqueId = useId();
+  // Unique IDs for this area (Safari-safe — raw useId breaks url(#…) paints)
+  const uniqueId = useSvgId("area");
   const gradientId = `area-gradient-${dataKey}-${uniqueId}`;
   const strokeGradientId = `area-stroke-gradient-${dataKey}-${uniqueId}`;
   const edgeMaskId = `area-edge-mask-${dataKey}-${uniqueId}`;

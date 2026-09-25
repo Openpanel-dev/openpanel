@@ -47,11 +47,13 @@ export function AreaGradientDefs({
         <linearGradient id={gradientId} x1="0%" x2="0%" y1="0%" y2="100%">
           <stop
             offset="0%"
-            style={{ stopColor: fill, stopOpacity: fillOpacity }}
+            stopColor={fill}
+            stopOpacity={fillOpacity}
           />
           <stop
             offset="100%"
-            style={{ stopColor: fill, stopOpacity: gradientToOpacity }}
+            stopColor={fill}
+            stopOpacity={gradientToOpacity}
           />
         </linearGradient>
       )}
@@ -62,7 +64,8 @@ export function AreaGradientDefs({
             <stop
               key={stop.offset}
               offset={stop.offset}
-              style={{ stopColor: resolvedStroke, stopOpacity: stop.opacity }}
+              stopColor={resolvedStroke}
+              stopOpacity={stop.opacity}
             />
           ))}
         </linearGradient>
@@ -75,7 +78,8 @@ export function AreaGradientDefs({
               <stop
                 key={stop.offset}
                 offset={stop.offset}
-                style={{ stopColor: "white", stopOpacity: stop.opacity }}
+                stopColor="white"
+                stopOpacity={stop.opacity}
               />
             ))}
           </linearGradient>
