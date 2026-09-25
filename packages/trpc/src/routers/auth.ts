@@ -610,6 +610,11 @@ export const authRouter = createTRPCRouter({
     return ctx.session;
   }),
 
+  // Lets the login/onboarding pages hide sign-up when it would be rejected.
+  isRegistrationAllowed: publicProcedure
+    .input(z.object({ inviteId: z.string().nullish() }))
+    .query(({ input }) => getIsRegistrationAllowed(input.inviteId)),
+
   extendSession: publicProcedure.mutation(async ({ ctx }) => {
     if (!(ctx.session.session && ctx.cookies.session)) {
       return { extended: false };

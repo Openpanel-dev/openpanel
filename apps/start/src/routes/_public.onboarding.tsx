@@ -39,12 +39,18 @@ export const Route = createFileRoute('/_public/onboarding')({
         })
       );
     }
+    return context.queryClient.ensureQueryData(
+      context.trpc.auth.isRegistrationAllowed.queryOptions({
+        inviteId: search.success ? search.data.inviteId : undefined,
+      })
+    );
   },
   pendingComponent: FullPageLoadingState,
 });
 
 function Component() {
   const { inviteId } = Route.useSearch();
+  const isRegistrationAllowed = Route.useLoaderData();
   const trpc = useTRPC();
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
@@ -61,6 +67,32 @@ function Component() {
       }
     )
   );
+
+  if (!isRegistrationAllowed) {
+    return (
+      <div className="col w-full gap-8 py-4 text-left">
+        <div>
+          <h1 className="mb-2 font-bold text-3xl text-foreground">
+            {inviteId
+              ? 'Registration is unavailable'
+              : 'Registration is disabled'}
+          </h1>
+          <p className="text-muted-foreground">
+            {inviteId
+              ? 'This invitation no longer exists, has already been used, or invitations are disabled on this instance. Ask an administrator for help.'
+              : "New accounts can't be created on this instance. Ask an administrator to invite you."}
+          </p>
+          <p className="mt-3 text-muted-foreground">
+            Already have an account?{' '}
+            <a className="font-medium text-foreground underline" href="/login">
+              Sign in
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="col w-full gap-8 py-4 text-left">
       <div>

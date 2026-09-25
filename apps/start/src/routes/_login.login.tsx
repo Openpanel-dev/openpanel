@@ -11,6 +11,11 @@ import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
+const validateSearch = z.object({
+  error: z.string().optional(),
+  correlationId: z.string().optional(),
+  inviteId: z.string().optional(),
+});
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
   head: () => ({
@@ -19,15 +24,20 @@ export const Route = createFileRoute('/_login/login')({
       { name: 'robots', content: 'noindex, follow' },
     ],
   }),
-  validateSearch: z.object({
-    error: z.string().optional(),
-    correlationId: z.string().optional(),
-    inviteId: z.string().optional(),
-  }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      context.trpc.auth.providers.queryOptions()
-    );
+  validateSearch,
+  loader: async ({ context, location }) => {
+    const search = validateSearch.safeParse(location.search);
+    const [, isRegistrationAllowed] = await Promise.all([
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.providers.queryOptions()
+      ),
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.isRegistrationAllowed.queryOptions({
+          inviteId: search.success ? search.data.inviteId : undefined,
+        })
+      ),
+    ]);
+    return isRegistrationAllowed;
   },
 });
 
@@ -38,6 +48,7 @@ function LoginPage() {
     trpc.auth.providers.queryOptions()
   );
   const hasOAuthProviders = providers.google || providers.github;
+  const isRegistrationAllowed = Route.useLoaderData();
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
     null
@@ -47,15 +58,21 @@ function LoginPage() {
     <div className="col w-full gap-8 text-left">
       <div>
         <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
-        <p className="text-muted-foreground">
-          Don't have an account?{' '}
-          <a
-            className="font-medium text-foreground underline"
-            href="/onboarding"
-          >
-            Create one today
-          </a>
-        </p>
+        {isRegistrationAllowed && (
+          <p className="text-muted-foreground">
+            Don't have an account?{' '}
+            <a
+              className="font-medium text-foreground underline"
+              href={
+                inviteId
+                  ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
+                  : '/onboarding'
+              }
+            >
+              Create one today
+            </a>
+          </p>
+        )}
       </div>
       {error && (
         <Alert
