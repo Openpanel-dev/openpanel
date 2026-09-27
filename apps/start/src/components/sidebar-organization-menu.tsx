@@ -157,7 +157,11 @@ export function ActionCTAButton() {
           >
             <PlusIcon className="size-5 shrink-0" />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
-              <AnimatePresence mode="popLayout">
+              {/* `initial={false}` suppresses only the FIRST mount: framer writes
+                  transform/opacity into the style attribute, and the SSR string
+                  differs from the client's first frame (ISSUES.md H10). The
+                  cycling animation between actions is unaffected. */}
+              <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
                   animate={{ y: 0, opacity: 1 }}
                   className="absolute whitespace-nowrap"

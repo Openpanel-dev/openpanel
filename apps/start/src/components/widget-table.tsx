@@ -118,10 +118,13 @@ export function WidgetTable<T>({
           .join(' ')}`
       : '1fr';
 
-  const containerId = React.useMemo(
-    () => `widget-table-${Math.random().toString(36).substring(7)}`,
-    []
-  );
+  // `useId` is stable across SSR and hydration where `Math.random()` was not:
+  // the id lands in a className AND inside injected <style> text, so both the
+  // attribute and the stylesheet differed and React regenerated the subtree
+  // (ISSUES.md H10). React's ids contain colons, which are not valid in a CSS
+  // selector, so they are stripped.
+  const reactId = React.useId();
+  const containerId = `widget-table-${reactId.replace(/:/g, '')}`;
 
   // Generate CSS for container queries
   const containerQueryStyles = React.useMemo(() => {

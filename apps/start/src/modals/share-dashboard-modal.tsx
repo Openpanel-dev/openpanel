@@ -124,7 +124,7 @@ export default function ShareDashboardModal({
           </div>
           <div className="flex items-center gap-1">
             <Input className="flex-1 text-sm" readOnly value={shareUrl} />
-            <Tooltiper content="Copy link">
+            <Tooltiper asChild content="Copy link">
               <Button
                 onClick={handleCopyLink}
                 size="sm"
@@ -138,7 +138,7 @@ export default function ShareDashboardModal({
                 )}
               </Button>
             </Tooltiper>
-            <Tooltiper content="Open in new tab">
+            <Tooltiper asChild content="Open in new tab">
               <Button
                 onClick={() => window.open(shareUrl, '_blank')}
                 size="sm"
@@ -148,7 +148,7 @@ export default function ShareDashboardModal({
                 <ExternalLink className="size-4" />
               </Button>
             </Tooltiper>
-            <Tooltiper content="Make private">
+            <Tooltiper asChild content="Make private">
               <Button
                 onClick={handleMakePrivate}
                 type="button"

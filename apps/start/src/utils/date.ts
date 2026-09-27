@@ -8,12 +8,22 @@ export function dateDifferanceInDays(date1: Date, date2: Date) {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Pinned, deliberately. This used to return `navigator.language` and fall back
+ * to `en-US` only when `navigator` was undefined — which is dead code on
+ * modern runtimes, since node defines `navigator` too. The server therefore
+ * formatted with the MACHINE locale while the browser used the visitor's, so
+ * the two renders disagreed and React discarded the tree: `21:35:55` against
+ * `9:35:55 PM`, and Swedish month names in an English UI (ISSUES.md H10).
+ *
+ * Numbers were already pinned this way in `use-numer-formatter.ts`.
+ *
+ * Note this pins the LOCALE, not the timezone: a server in a different zone
+ * from the visitor still renders different clock times. That is a separate
+ * problem and this does not solve it.
+ */
 export function getLocale() {
-  if (typeof navigator === 'undefined') {
-    return 'en-US';
-  }
-
-  return navigator.language ?? 'en-US';
+  return 'en-US';
 }
 
 export function formatDate(date: Date) {

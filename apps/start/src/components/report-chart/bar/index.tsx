@@ -7,6 +7,13 @@ import { Chart } from './chart';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
+// Fixed, not random. The server and the browser each rendered their own
+// widths, so every skeleton row was an attribute mismatch and React threw the
+// SSR tree away (ISSUES.md H10). The exact values do not matter; only that
+// both renders agree.
+const SKELETON_NAME_WIDTHS = [186, 134, 158, 112, 170, 126, 194, 148, 120, 176];
+const SKELETON_BAR_WIDTHS = [72, 48, 63, 35, 57, 41, 78, 52, 29, 66];
+
 export function ReportBarChart() {
   const { isLazyLoading, shareId } = useReportChartContext();
   const chartInput = useChartInput();
@@ -71,7 +78,7 @@ function Loading() {
                       <div
                         className="h-4 rounded bg-def-200 dark:bg-def-700"
                         style={{
-                          width: `${Math.random() * 100 + 100}px`,
+                          width: `${SKELETON_NAME_WIDTHS[index % SKELETON_NAME_WIDTHS.length]}px`,
                         }}
                       />
                     </div>
@@ -89,7 +96,7 @@ function Loading() {
                     <div
                       className="h-full rounded-full bg-def-200 dark:bg-def-700"
                       style={{
-                        width: `${Math.random() * 60 + 20}%`,
+                        width: `${SKELETON_BAR_WIDTHS[index % SKELETON_BAR_WIDTHS.length]}%`,
                       }}
                     />
                   </div>

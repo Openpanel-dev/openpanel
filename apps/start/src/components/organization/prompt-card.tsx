@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { XIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface PromptCardProps {
@@ -19,9 +20,20 @@ export function PromptCard({
   gradientColor = 'rgb(16 185 129)',
   show,
 }: PromptCardProps) {
+  // `show` comes from a cookie, which the server can read, so this card can
+  // render during SSR. framer writes its `initial` transform and opacity into
+  // the style attribute and the client's first frame differs, so React threw
+  // the tree away (ISSUES.md H10). Waiting for mount keeps the slide-in —
+  // `initial={false}` would have removed it — and costs nothing, since the
+  // card is a popup nobody expects in the server-rendered HTML.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <AnimatePresence>
-      {show && (
+      {show && mounted && (
         <motion.div
           animate={{ opacity: 1, x: 0, scale: 1 }}
           className="fixed right-0 bottom-0 z-50 max-w-sm p-4"
