@@ -33,6 +33,25 @@ WITH weekly_active AS ( SELECT profile_id, toStartOfWeek(created_at) AS week FRO
 -- V2 params: {"p1":"secure-privacy"}
 ```
 
+### rollingActiveUsersQuery — AMENDED 2026-09-27 (ISSUES.md H8c)
+
+**The three records below are superseded: V2 now DIVERGES from V1 deliberately.**
+
+The parity was real, and both sides were wrong in the same way. `date + n` smears each
+active day forward, so with no upper bound the series ran up to `days - 1` days past today.
+Measured on the seeded acme-web at `days = 7` with `today()` = 2026-09-27, it returned rows
+for 2026-09-28 and 2026-09-29 — the chart drew two points into the future.
+
+V2 adds `AND date <= today()` to the outer WHERE. On that data it removes exactly those two
+rows, 98 → 96, and leaves every remaining value unchanged.
+
+```sql
+-- V2 now (only the outer WHERE differs from the records below)
+… ARRAY JOIN range({p2:UInt64}) AS n ) WHERE project_id = {p3:String} AND date <= today() GROUP BY date
+```
+
+The row counts recorded in the three entries below are therefore pre-amendment figures.
+
 ### rollingActiveUsersQuery — verdict, 7d
 
 **IDENTICAL** — rows V1/V2 = 62/62; rows_read V1/V2 = 73247/73247; wall V1/V2 = 355 ms / 358 ms.

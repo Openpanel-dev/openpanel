@@ -126,7 +126,9 @@ export function rollingActiveUsersQuery(
       )
       ARRAY JOIN range(${sql.uint64(days)}) AS n
     )
-    WHERE project_id = ${sql.string(projectId)}
+    -- date + n smears each active day forward, so without this the series
+    -- runs up to days-1 days past today.
+    WHERE project_id = ${sql.string(projectId)} AND date <= today()
     GROUP BY date`;
 }
 
