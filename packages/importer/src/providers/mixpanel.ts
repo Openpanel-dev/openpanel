@@ -27,8 +27,14 @@ export const zMixpanelRawProfile = z.object({
 });
 export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
 
-/** `2025-05-20T18:42:11` / `2025-05-20 18:42:11` — no trailing offset. */
-const NAIVE_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?$/u;
+/**
+ * `2025-05-20T18:42:11` / `2025-05-20 18:42:11` / `2025-05-20T18:42` — no
+ * trailing offset. Seconds are optional: Mixpanel sends minute-precision
+ * timestamps too, and without this they'd fall through unnormalized to
+ * `new Date()`, which reads an offset-free string as local time.
+ */
+const NAIVE_TIMESTAMP_RE =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/u;
 
 /**
  * Parse a Mixpanel profile timestamp ($created / $last_seen). Returns undefined

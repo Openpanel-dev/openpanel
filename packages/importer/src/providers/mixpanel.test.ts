@@ -410,6 +410,20 @@ describe('mixpanel', () => {
       expect(profile.created_at).toBe('2025-01-01 00:00:00');
       expect(profile.last_seen_at).toBe('2025-01-01 00:00:00');
     });
+
+    it('pins minute-precision timestamps to UTC too', () => {
+      // Mixpanel doesn't always include seconds. Without matching this form,
+      // it falls through to `new Date()` unmodified, which reads an
+      // offset-free string as local time and makes the result depend on the
+      // worker's TZ.
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-6',
+        $properties: { $created: '2025-02-03T09:15', $last_seen: '2025-05-20 18:42' },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:00');
+    });
   });
 
   describe('streamProfiles', () => {
