@@ -14,7 +14,7 @@ interface Props {
 
 export const ClientsTable = ({ query }: Props) => {
   const columns = useColumns();
-  const { data, isLoading } = query;
+  const { data, isLoading, isError } = query;
 
   const { table } = useTable({
     name: 'clients',
@@ -35,7 +35,7 @@ export const ClientsTable = ({ query }: Props) => {
           Create client
         </Button>
       </DataTableToolbar>
-      <DataTable loading={isLoading} table={table} />
+      <DataTable error={isError} loading={isLoading} table={table} />
     </>
   );
 };

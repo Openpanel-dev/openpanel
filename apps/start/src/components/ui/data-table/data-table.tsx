@@ -10,6 +10,7 @@ import {
 } from '../table';
 import { getCommonPinningStyles } from './data-table-helpers';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { FullPageErrorState } from '@/components/full-page-error-state';
 import { FloatingPagination } from '@/components/pagination-floating';
 import { Skeleton } from '@/components/skeleton';
 import { cn } from '@/utils/cn';
@@ -18,6 +19,12 @@ export interface DataTableProps<TData> {
   table: ITable<TData>;
   className?: string;
   loading?: boolean;
+  /**
+   * A failed query, not an empty one. Without this the table renders its
+   * empty state for both, so a 500 from `profile.list` reads as "you haven't
+   * identified any profiles yet" (ISSUES.md H11).
+   */
+  error?: boolean;
   empty?: {
     title: string;
     description: string;
@@ -35,6 +42,7 @@ declare module '@tanstack/react-table' {
 export function DataTable<TData>({
   table,
   loading,
+  error,
   className,
   onRowClick,
   empty = {
@@ -75,7 +83,19 @@ export function DataTable<TData>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {error ? (
+              <TableRow>
+                <TableCell
+                  className="h-24 text-center"
+                  colSpan={table.getAllColumns().length}
+                >
+                  <FullPageErrorState
+                    description="We could not load this data. Try again in a moment."
+                    title="Something went wrong"
+                  />
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   className={onRowClick ? 'cursor-pointer' : undefined}

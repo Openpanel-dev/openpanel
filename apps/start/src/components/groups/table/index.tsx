@@ -39,7 +39,7 @@ const LOADING_DATA = [
 
 export const GroupsTable = memo(
   ({ query, pageSize = PAGE_SIZE, toolbarLeft }: Props) => {
-    const { data, isLoading } = query;
+    const { data, isLoading, isError } = query;
     const columns = useGroupColumns();
 
     const { setPage, state: pagination } = useDataTablePagination(pageSize);
@@ -90,13 +90,20 @@ export const GroupsTable = memo(
             description:
               'Groups represent companies, teams, or other entities that events belong to.',
           }}
+          error={isError}
           loading={isLoading}
           table={table}
         />
       </>
     );
   },
-  arePropsEqual(['query.isLoading', 'query.data', 'pageSize', 'toolbarLeft'])
+  arePropsEqual([
+    'query.isLoading',
+    'query.isError',
+    'query.data',
+    'pageSize',
+    'toolbarLeft',
+  ])
 );
 
 function GroupsTableToolbar({

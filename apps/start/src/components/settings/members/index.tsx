@@ -13,7 +13,7 @@ type Props = CommonProps;
 
 export const MembersTable = ({ query }: Props) => {
   const columns = useColumns();
-  const { data, isLoading } = query;
+  const { data, isLoading, isError } = query;
   const { table } = useTable({
     name: 'members',
     columns,
@@ -25,7 +25,7 @@ export const MembersTable = ({ query }: Props) => {
   return (
     <>
       <DataTableToolbar table={table} />
-      <DataTable loading={isLoading} table={table} />
+      <DataTable error={isError} loading={isLoading} table={table} />
     </>
   );
 };

@@ -124,6 +124,7 @@ export function PagesTable({ projectId }: PagesTableProps) {
             ? `No pages found matching "${debouncedSearch}"`
             : 'Integrate our web SDK to your site to get pages here.',
         }}
+        error={pagesQuery.isError}
         loading={pagesQuery.isLoading}
         onRowClick={(row) => {
           if (!isGscConnected) {

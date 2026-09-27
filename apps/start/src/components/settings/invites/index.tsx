@@ -16,7 +16,7 @@ type Props = CommonProps;
 
 export const InvitesTable = ({ query }: Props) => {
   const columns = useColumns();
-  const { data, isLoading } = query;
+  const { data, isLoading, isError } = query;
   const { table } = useTable({
     name: 'invites',
     columns,
@@ -36,7 +36,7 @@ export const InvitesTable = ({ query }: Props) => {
           Invite user
         </Button>
       </DataTableToolbar>
-      <DataTable loading={isLoading} table={table} />
+      <DataTable error={isError} loading={isLoading} table={table} />
     </>
   );
 };

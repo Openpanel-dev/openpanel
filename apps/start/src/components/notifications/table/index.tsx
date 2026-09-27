@@ -14,7 +14,7 @@ type Props = {
 
 export const NotificationsTable = ({ query }: Props) => {
   const columns = useColumns();
-  const { data, isLoading } = query;
+  const { data, isLoading, isError } = query;
   const { table } = useTable({
     name: 'notifications',
     columns,
@@ -26,7 +26,7 @@ export const NotificationsTable = ({ query }: Props) => {
   return (
     <>
       <DataTableToolbar table={table} />
-      <DataTable loading={isLoading} table={table} />
+      <DataTable error={isError} loading={isLoading} table={table} />
     </>
   );
 };

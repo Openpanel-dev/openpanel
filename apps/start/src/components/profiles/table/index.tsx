@@ -33,7 +33,7 @@ const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceProfile[];
 
 export const ProfilesTable = memo(
   ({ type, query, pageSize = PAGE_SIZE }: Props) => {
-    const { data, isLoading } = query;
+    const { data, isLoading, isError } = query;
     const columns = useColumns(type);
     const navigate = useNavigate();
     const { organizationId, projectId } = useAppParams();
@@ -99,6 +99,7 @@ export const ProfilesTable = memo(
             title: 'No profiles',
             description: "Looks like you haven't identified any profiles yet.",
           }}
+          error={isError}
           loading={isLoading}
           onRowClick={handleRowClick}
           table={table}
@@ -106,7 +107,13 @@ export const ProfilesTable = memo(
       </>
     );
   },
-  arePropsEqual(['query.isLoading', 'query.data', 'type', 'pageSize'])
+  arePropsEqual([
+    'query.isLoading',
+    'query.isError',
+    'query.data',
+    'type',
+    'pageSize',
+  ])
 );
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {

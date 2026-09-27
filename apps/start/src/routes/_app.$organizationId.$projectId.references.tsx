@@ -185,7 +185,7 @@ function Component() {
           <span className="sm:hidden">Reference</span>
         </Button>
       </DataTableToolbar>
-      <DataTable loading={loading} table={table} />
+      <DataTable error={query.isError} loading={loading} table={table} />
     </PageContainer>
   );
 }
