@@ -69,6 +69,7 @@ export function testCoreConfig(
       eventsTopic: 'events',
       eventsDlqTopic: 'events-dlq',
       consumerGroup: 'openpanel-events',
+      maxMessageBytes: 1_048_576,
       partitionsConcurrent: 8,
       minMessages: 1,
       maxWaitMs: 500,

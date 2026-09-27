@@ -175,8 +175,10 @@ export function getTimestamp(
   payload: ITrackHandlerPayload['payload']
 ): { timestamp: number; isTimestampFromThePast: boolean } {
   const safeTimestamp = timestamp || Date.now();
+  // `/event` has no body schema (ADR-003), so `payload` can be a string or
+  // null; `'properties' in payload` throws on a primitive.
   const userDefinedTimestamp =
-    'properties' in payload
+    typeof payload === 'object' && payload !== null && 'properties' in payload
       ? (payload?.properties?.__timestamp as string | undefined)
       : undefined;
 
@@ -653,6 +655,15 @@ export async function ingestLegacyEvent(
   const { projectId } = request;
   if (!projectId) {
     return { status: 'missing-project-id' };
+  }
+
+  // An event with no name is not an event. V1 answered 202 and wrote a row
+  // with `name = ''`, which then shows up in every picker and breakdown.
+  // The status stays 202 — this route has no body schema (ADR-003) and the
+  // HTTP contract must not change — but nothing is written.
+  const name = (request.body as { name?: unknown } | null | undefined)?.name;
+  if (typeof name !== 'string' || name.trim() === '') {
+    return { status: 'ok' };
   }
 
   // The cast is V1's own call (event.controller.ts:26): `/event` has no body

@@ -139,6 +139,12 @@ export interface KafkaConfig {
   producerBatchSize: number;
   /** A partial batch's maximum wait, in ms, before it is sent anyway. */
   producerBatchLingerMs: number;
+  /**
+   * The broker's `max.message.bytes`. `/track` refuses a larger body with a
+   * 413 rather than letting kafkajs answer with a raw protocol error at 500.
+   * Raise this alongside the broker's own setting.
+   */
+  maxMessageBytes: number;
   handlerMaxAttempts: number;
   handlerRetryInitialMs: number;
   handlerRetryMaxMs: number;

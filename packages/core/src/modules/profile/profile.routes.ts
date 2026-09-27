@@ -15,8 +15,10 @@
 // behaviour change"), so the bodies are typed but not shape-validated.
 
 import { parseUserAgent } from '@openpanel/shared/server';
+import { z } from 'zod';
 import { getGeoLocation } from '../../clients/geo';
 import { defineRoutes } from '../../http/define';
+import { zProfileId } from '../ingest/ingest.constants';
 import { validateIngestRequest } from '../ingest/src/client-auth';
 import {
   type AdjustProfilePropertyResult,
@@ -27,13 +29,21 @@ import {
 
 const TAGS = ['Profile'];
 
-interface AdjustPropertyBody {
-  profileId: string;
-  property: string;
-  value: number;
-}
-
 type StatusFn = (code: 400 | 404, body: string) => unknown;
+
+/**
+ * Deliberately NOT `zIncrementPayload` from ingest.constants: that schema is
+ * `/track`'s, where `value` is optional and must be positive. This route has
+ * always accepted a negative delta and has always needed a value — without
+ * one the service writes NaN. So the schema below is exactly as permissive as
+ * the paths that work today, and rejects only the bodies that reached
+ * `input.property.split` and answered 500.
+ */
+const zAdjustProperty = z.object({
+  profileId: zProfileId,
+  property: z.string().min(1),
+  value: z.number(),
+});
 
 function respondAdjusted(
   result: AdjustProfilePropertyResult,
@@ -57,6 +67,9 @@ export const profileRoutes = defineRoutes((app) =>
       async ({ body, client, ctx, status, set }) => {
         if (!client.projectId) {
           return status(400, 'No projectId');
+        }
+        if (body === null || body === undefined) {
+          return status(400, 'Missing body');
         }
         const payload = body as IdentifyProfileInput;
         const userAgent = parseUserAgent(
@@ -85,9 +98,9 @@ export const profileRoutes = defineRoutes((app) =>
         if (!client.projectId) {
           return status(400, 'No projectId');
         }
-        const { profileId, property, value } = body as AdjustPropertyBody;
+        const { profileId, property, value } = body;
         const result = await adjustProfileProperty(ctx, client.projectId, {
-          profileId,
+          profileId: String(profileId),
           property,
           delta: value,
         });
@@ -95,6 +108,7 @@ export const profileRoutes = defineRoutes((app) =>
       },
       {
         clientAuth: { ingest: validateIngestRequest },
+        body: zAdjustProperty,
         detail: {
           tags: TAGS,
           description: 'Increment a numeric property on a user profile.',
@@ -107,9 +121,9 @@ export const profileRoutes = defineRoutes((app) =>
         if (!client.projectId) {
           return status(400, 'No projectId');
         }
-        const { profileId, property, value } = body as AdjustPropertyBody;
+        const { profileId, property, value } = body;
         const result = await adjustProfileProperty(ctx, client.projectId, {
-          profileId,
+          profileId: String(profileId),
           property,
           delta: -value,
         });
@@ -117,6 +131,7 @@ export const profileRoutes = defineRoutes((app) =>
       },
       {
         clientAuth: { ingest: validateIngestRequest },
+        body: zAdjustProperty,
         detail: {
           tags: TAGS,
           description: 'Decrement a numeric property on a user profile.',

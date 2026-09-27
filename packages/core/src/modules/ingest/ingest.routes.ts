@@ -59,6 +59,36 @@ const ACCEPTED_STATUS = 202;
 
 type StatusFn = (code: number, body?: unknown) => unknown;
 
+const PAYLOAD_TOO_LARGE = 413;
+
+/**
+ * kafkajs answers a body over the broker's `max.message.bytes` with a raw
+ * protocol error, which surfaced as a 500 carrying "The request included a
+ * message larger than the max message size the server will accept". The
+ * threshold is the broker's, so it is configuration rather than a constant —
+ * a deployment that raises `max.message.bytes` raises this with it.
+ */
+function refuseOversizedBody({
+  ctx,
+  request,
+  status,
+}: {
+  ctx: { config: { kafka: { maxMessageBytes: number } } };
+  request: Request;
+  status: StatusFn;
+}) {
+  const declared = Number(request.headers.get('content-length'));
+  const limit = ctx.config.kafka.maxMessageBytes;
+  if (!Number.isFinite(declared) || declared <= limit) {
+    return;
+  }
+  return status(PAYLOAD_TOO_LARGE, {
+    status: PAYLOAD_TOO_LARGE,
+    error: 'Payload Too Large',
+    message: `Body is ${declared} bytes; the limit is ${limit}.`,
+  });
+}
+
 // V1's error handler turns each thrown HttpError into this body; core has no
 // such handler, so the mapping is explicit and the codes and messages are
 // V1's.
@@ -200,7 +230,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
           {
             clientAuth: { ingest: validateIngestRequest },
             body: zTrackHandlerPayload,
-            beforeHandle: [botGuard, blockWhenWoundDown],
+            beforeHandle: [refuseOversizedBody, botGuard, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:

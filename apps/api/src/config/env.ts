@@ -57,6 +57,8 @@ const DEFAULT_KAFKA_SESSION_TIMEOUT_MS = 30_000;
 const DEFAULT_KAFKA_HEARTBEAT_INTERVAL_MS = 3000;
 const DEFAULT_KAFKA_REQUEST_TIMEOUT_MS = 5000;
 const DEFAULT_KAFKA_CONNECTION_TIMEOUT_MS = 2000;
+/** Kafka's and Redpanda's own default `max.message.bytes`: 1 MiB. */
+const DEFAULT_KAFKA_MAX_MESSAGE_BYTES = 1_048_576;
 const DEFAULT_KAFKA_PRODUCER_RETRIES = 2;
 const DEFAULT_KAFKA_PRODUCER_INITIAL_RETRY_MS = 100;
 const DEFAULT_KAFKA_PRODUCER_MAX_RETRY_MS = 1000;
@@ -534,6 +536,7 @@ const rawSchema = z.object({
   KAFKA_SSL_REJECT_UNAUTHORIZED: strictOptionalBoolean,
   KAFKA_SASL_USERNAME: optionalString,
   KAFKA_SASL_PASSWORD: optionalString,
+  KAFKA_MAX_MESSAGE_BYTES: optionalPositiveInt,
   KAFKA_SASL_MECHANISM: kafkaSaslMechanismSchema,
 
   // --- ingest dead-letter ---
@@ -774,6 +777,8 @@ function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
     eventsDlqTopic:
       raw.KAFKA_EVENTS_DLQ_TOPIC ?? `${raw.KAFKA_EVENTS_TOPIC}-dlq`,
     consumerGroup: raw.KAFKA_CONSUMER_GROUP,
+    maxMessageBytes:
+      raw.KAFKA_MAX_MESSAGE_BYTES ?? DEFAULT_KAFKA_MAX_MESSAGE_BYTES,
     partitionsConcurrent: raw.KAFKA_PARTITIONS_CONCURRENT,
     minMessages: raw.KAFKA_MIN_MESSAGES,
     maxWaitMs: raw.KAFKA_MAX_WAIT_MS,

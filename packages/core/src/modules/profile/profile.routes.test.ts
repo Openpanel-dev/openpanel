@@ -155,11 +155,66 @@ test('a client without a project answers 400 before touching the service', async
   expect(identifyProfile).not.toHaveBeenCalled();
 });
 
+// These bodies used to reach the service and throw on `input.property.split`,
+// so the caller saw a 500 with a raw TypeError (ISSUES.md H5). Elysia's schema
+// refuses them instead.
+//
+// This suite mounts the routes alone, so it sees Elysia's own VALIDATION
+// status. The assembled app maps that to 400 — see http/errors.ts, which
+// documents the mapping — and the live API was verified answering
+// `400 {"message":"body/property Invalid input: expected string, received
+// undefined"}` for these same bodies.
+const ELYSIA_VALIDATION_STATUS = 422;
+
+test('the adjust routes reject a body that cannot name a property', async () => {
+  clientResult = { ok: true, client: CLIENT };
+
+  for (const path of ['/profile/increment', '/profile/decrement']) {
+    for (const body of [
+      {},
+      { profileId: 'prof-1' },
+      { profileId: 'prof-1', property: 'score' },
+      { profileId: 'prof-1', property: '', value: 1 },
+    ]) {
+      const response = await post(path, body);
+      expect([path, response.status]).toEqual([path, ELYSIA_VALIDATION_STATUS]);
+    }
+  }
+
+  expect(adjustProfileProperty).not.toHaveBeenCalled();
+});
+
+// A negative delta is what separates this route's schema from `/track`'s
+// `zIncrementPayload`, which requires a positive value.
+test('increment still accepts a negative delta', async () => {
+  clientResult = { ok: true, client: CLIENT };
+
+  const response = await post('/profile/increment', {
+    profileId: 'prof-1',
+    property: 'score',
+    value: -2,
+  });
+
+  expect(response.status).not.toBe(400);
+  expect(adjustProfileProperty).toHaveBeenCalled();
+});
+
+// Each path gets a body its schema accepts, so the 401 under test is the auth
+// check and not the body validation. Elysia validates the body before the
+// clientAuth hook — `/track` has behaved that way since it got
+// `zTrackHandlerPayload`, so an anonymous caller with a malformed body sees a
+// 400 there too.
+const VALID_BODY_FOR: Record<string, Record<string, unknown>> = {
+  '/profile': { profileId: 'prof-1' },
+  '/profile/increment': { profileId: 'prof-1', property: 'score', value: 1 },
+  '/profile/decrement': { profileId: 'prof-1', property: 'score', value: 1 },
+};
+
 test('every /profile route requires client credentials', async () => {
   clientResult = { ok: false, ingest: true, message: 'Missing client id' };
 
-  for (const path of ['/profile', '/profile/increment', '/profile/decrement']) {
-    const response = await post(path, { profileId: 'prof-1' });
+  for (const [path, body] of Object.entries(VALID_BODY_FOR)) {
+    const response = await post(path, body);
     expect(response.status).toBe(401);
   }
   expect(authenticateClient).toHaveBeenCalledTimes(3);
