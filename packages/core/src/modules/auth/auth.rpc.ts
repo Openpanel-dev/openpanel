@@ -7,19 +7,22 @@
 // `organizationId`, so anything resolved from another id needs its own
 // (ADR-011).
 //
-// The ten V1 `rateLimitMiddleware` wrappers on this router did NOT move with
-// M11-001 and are not mounted; `createRateLimitMiddleware` in rpc/base.ts is
-// the seam that will carry them.
+// V1's `rateLimitMiddleware` wrappers are mounted below through
+// `createRateLimitMiddleware` (rpc/base.ts) with V1's own limits, procedure
+// for procedure. Blocks are keyed per procedure and per trusted IP, and
+// escalate on repeat offence — see rpc/rate-limit.ts.
 //
 // This module has no queue/cron of its own, so there is no
 // `ctx.services.auth` entry here — same shape as `user`/`project`.
 
 import { z } from 'zod';
 import {
+  createRateLimitMiddleware,
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
+import { enforceRateLimit } from '../../rpc/rate-limit';
 import {
   zProvider,
   zRequestResetPassword,
@@ -48,6 +51,8 @@ import {
   startOAuthSignIn,
 } from './auth.service';
 
+const rateLimit = createRateLimitMiddleware(enforceRateLimit);
+
 export const authRouter = createTRPCRouter({
   /**
    * Which optional OAuth-backed features this instance has credentials for.
@@ -68,16 +73,19 @@ export const authRouter = createTRPCRouter({
     .mutation(({ input, ctx }) => startOAuthSignIn(ctx, input, ctx.setCookie)),
 
   signUpEmail: publicProcedure
+    .use(rateLimit({ max: 5, windowMs: 60_000 }))
     .input(zSignUpEmail)
     .mutation(({ input, ctx }) => signUpWithEmail(ctx, input, ctx.setCookie)),
 
   signInEmail: publicProcedure
+    .use(rateLimit({ max: 3, windowMs: 30_000 }))
     .input(zSignInEmail)
     .mutation(({ input, ctx }) =>
       signInWithEmail(ctx, input, ctx.setCookie, ctx.logger)
     ),
 
   signInTotp: publicProcedure
+    .use(rateLimit({ max: 5, windowMs: 60_000 }))
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(({ input, ctx }) =>
       signInWithTotp(ctx, input, ctx.cookies, ctx.setCookie, ctx.logger)
@@ -92,28 +100,33 @@ export const authRouter = createTRPCRouter({
   ),
 
   totpEnable: protectedProcedure
+    .use(rateLimit({ max: 5, windowMs: 60_000 }))
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
       enableTotp(ctx, ctx.session.userId, input.code)
     ),
 
   totpDisable: protectedProcedure
+    .use(rateLimit({ max: 5, windowMs: 60_000 }))
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(({ input, ctx }) =>
       disableTotp(ctx, ctx.session.userId, input.code)
     ),
 
   totpRegenerateRecoveryCodes: protectedProcedure
+    .use(rateLimit({ max: 3, windowMs: 60_000 }))
     .input(z.object({ code: zTotpCode }))
     .mutation(({ input, ctx }) =>
       regenerateTotpRecoveryCodes(ctx, ctx.session.userId, input.code)
     ),
 
   resetPassword: publicProcedure
+    .use(rateLimit({ max: 3, windowMs: 60_000 }))
     .input(zResetPassword)
     .mutation(({ input, ctx }) => resetPasswordWithToken(ctx, input)),
 
   requestResetPassword: publicProcedure
+    .use(rateLimit({ max: 3, windowMs: 60_000 }))
     .input(zRequestResetPassword)
     .mutation(({ input, ctx }) => requestPasswordReset(ctx, input)),
 
@@ -129,6 +142,7 @@ export const authRouter = createTRPCRouter({
   ),
 
   signInShare: publicProcedure
+    .use(rateLimit({ max: 3, windowMs: 30_000 }))
     .input(zSignInShare)
     .mutation(({ input, ctx }) =>
       signInToShare(ctx, () => ctx.services, input, ctx.setCookie)
