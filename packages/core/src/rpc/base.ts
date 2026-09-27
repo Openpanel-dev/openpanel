@@ -16,6 +16,7 @@ import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
 import { runWithAlsSession } from '../shared/als-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
+import { classifyDriverError } from '../shared/driver-errors';
 import { EMPTY_SESSION } from '../shared/session';
 import { cancelledCallError, raceCancellation } from './deadline';
 import { TRPCForbiddenError } from './errors';
@@ -114,7 +115,36 @@ const stopWhenCancelled = t.middleware(async ({ ctx, next }) => {
  * only ones are the share-aware `chartProcedure`/`overviewProcedure` bases,
  * and those are `publicProcedure` plus their own middleware.
  */
-export const procedure = t.procedure.use(stopWhenCancelled);
+/**
+ * Turns a driver failure caused by the CALLER into the status it deserves.
+ *
+ * A malformed id raised Prisma P2023 before any `findUnique` null check could
+ * run, so procedures with a perfectly good not-found guard still answered 500
+ * — with the driver's own message, which for ClickHouse echoes the generated
+ * SQL. Anything `classifyDriverError` does not recognise is rethrown
+ * untouched and stays a 500, because a query bug is not the caller's mistake.
+ *
+ * This sits on `procedure` itself, which every builder derives from, so all
+ * 177 procedures are covered by one `.use()`.
+ */
+const mapDriverErrors = t.middleware(async ({ next }) => {
+  const result = await next();
+  if (result.ok) {
+    return result;
+  }
+
+  const cause = result.error.cause;
+  const failure = classifyDriverError(cause);
+  if (!failure) {
+    return result;
+  }
+
+  throw new TRPCError({ code: failure.trpc, message: failure.message });
+});
+
+export const procedure = t.procedure
+  .use(stopWhenCancelled)
+  .use(mapDriverErrors);
 
 // ---------------------------------------------------------------------------
 // The procedure stack (M11-001), ported from packages/trpc/src/trpc.ts:35-155.

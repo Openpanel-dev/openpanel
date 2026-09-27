@@ -2,6 +2,8 @@
 // and the Kafka consumer all throw and normalize through this, not through
 // an rpc/-specific error type (see rpc/errors.ts for the TRPCError family).
 
+import { classifyDriverError } from './driver-errors';
+
 const DEFAULT_HTTP_STATUS = 500;
 
 export class LogError extends Error {
@@ -52,6 +54,19 @@ export interface NormalizedError {
 }
 
 export function normalizeError(error: unknown): NormalizedError {
+  // A driver failure the CALLER caused answers with its own status and a
+  // message that is not the driver's — Prisma's invocation text and
+  // ClickHouse's scope clause are not the caller's business (ISSUES.md H12).
+  const driverFailure = classifyDriverError(error);
+  if (driverFailure) {
+    return {
+      status: driverFailure.status,
+      code: undefined,
+      message: driverFailure.message,
+      errorName: 'Error',
+    };
+  }
+
   if (error instanceof Error) {
     const meta = error as Error & {
       statusCode?: unknown;

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ServiceDeps, Services } from '../../../../services';
+import { classifyDriverError } from '../../../../shared/driver-errors';
 import { resolveClientProjectId } from '../../../project/project.service';
 import type { McpAuthContext } from '../auth';
 
@@ -355,8 +356,13 @@ export async function withErrorHandling<T>(
     const result = await fn();
     return toText(deps, result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    deps.logger.error({ err }, `MCP tool error: ${message}`);
+    const raw = err instanceof Error ? err.message : String(err);
+    // The model sees this text, so a driver failure must not hand it Prisma's
+    // invocation dump or a ClickHouse message quoting the generated SQL
+    // (ISSUES.md H12). The full error still goes to the log.
+    const failure = classifyDriverError(err);
+    const message = failure ? failure.message : raw;
+    deps.logger.error({ err }, `MCP tool error: ${raw}`);
     return {
       content: [{ type: 'text' as const, text: `Error: ${message}` }],
       isError: true,
