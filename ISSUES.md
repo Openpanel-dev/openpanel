@@ -35,6 +35,29 @@ shared seams** and its "partly fixed" note was an overstatement; **H10's locale 
 line**; **H11 is ~11 places, not twenty**; and two Low claims do not reproduce. Each entry now
 carries its own evidence. Where an entry says something was measured, it was.
 
+The fourth pass then closed, in order: **M1**, **H8b + the rest of H8a**, **H8c**, **H8e**,
+**H6**, **M2**, **H5**, **H13**, **H11**, **H12** (its systemic half), **H10** (most), the
+low-hanging batch, the seed conversions, and **H4** (both halves). **H7 is closed as not a
+bug.** Core suite 1830 pass, 12 skip, 0 fail.
+
+### Still open after the fourth pass
+
+- **H8d** — deferred by the owner; the diagnosis is settled above.
+- **H10** — the virtualized tables (also the oversized-container item in Low) and the
+  pie-label `key`, which needs a browser console to locate.
+- **H11** — the "~12 % stuck on skeletons" half, unsized; needs a warm-server re-run.
+- **H12** — the per-case validation tail: reversed date ranges outside ClickHouse,
+  `cursor:"garbage"`, negative `take`, regex `"(("`, `chart.funnel {series:[]}`,
+  `/webhook/slack`'s TypeError in a redirect URL, and rendering a 404 as a not-found page.
+  Re-run the procedure sweep and let the remaining 500s define the list.
+- **H13** — the default series limit, deferred as a product decision.
+- **M3-M13** — not re-investigated beyond M1 and M2.
+- **Low** — the insights cron (not a bug, needs a product call), the cohort cap (needs a
+  migration), the trailing-slash router option, the 42-site `toLocaleString` sweep, the
+  36-route `head:` sweep, bundling the external logos, negative favicon caching, and the
+  realtime empty states.
+- **Test debt** — untouched.
+
 Everything else below is still open.
 
 ---
@@ -122,7 +145,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: none of the three responses contain a `secret` key; `apps/start` client settings
   table still renders (it never used the hash).
 
-### H4. No rate limiting on login and MCP auth; user enumeration
+### H4. No rate limiting on login and MCP auth; user enumeration — FIXED (`2318f3c3`, `1b514e07`)
 > **Wider than written: the rewrite has no rate limiter at all. See the ground rule.**
 - **Symptom**: 30 wrong passwords to `auth.signInEmail` in 13 s all get 401; 20 wrong MCP tokens in
   1 s each run a hash verify; unknown email → 404 "User does not exists" vs 401 for a wrong
@@ -136,7 +159,7 @@ misleading feature; **low** = cosmetic.
   results briefly); return the same 401 message for unknown email and wrong password.
 - **Verify**: 11th attempt in a minute → 429; unknown email and wrong password give identical bodies.
 
-### H5. Malformed request bodies crash routes (500) and legacy `/event` stores nameless events
+### H5. Malformed request bodies crash routes (500) and legacy `/event` stores nameless events — FIXED (`f55b91b1`)
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom** (all with a valid write client, `content-type: application/json`):
   `POST /profile` empty body → 500 `payload.properties`; `POST /profile/increment` `{}`/`"x"`/empty
@@ -240,7 +263,7 @@ worth noting is that the sweep is hourly rather than immediate.
 - **Fix**: `?? EventIconMapper.BotIcon` fallback after the lookup.
 - **Verify**: Playwright at 390 px, events list renders for all four projects.
 
-### H10. Hydration mismatches on every data page
+### H10. Hydration mismatches on every data page — MOSTLY FIXED (`5a118cfa`)
 React discards the SSR tree ("tree will be regenerated on the client") or logs attribute mismatches on 158/168 loads:
 - `apps/start/src/components/widget-table.tsx:121-123` — class name from `Math.random()`, used
   both as a `className` at `:163` and inside injected `<style>` text at `:141-154`, so the CSS
@@ -282,7 +305,7 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
   matches the warning. **Needs a console run to confirm.**
 - **Verify**: `browser_console_messages` on overview, realtime, events, session and profile detail show no hydration errors.
 
-### H11. Server errors rendered as empty states; stalled loads
+### H11. Server errors rendered as empty states; stalled loads — FIXED (`8bd2bb5f`) except the stalled-loads half
 - **Symptom**: a 500 from `profile.list` renders "No profiles — you haven't identified any
   profiles yet"; overview cards show 0 and the map "Error loading map" on 500; the crawl saw
   ~12 % of loads stuck on skeletons with data queries never resolving (blank sidebar, no
@@ -314,7 +337,7 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
 - **The "~12 % stuck on skeletons" half is unsized.** No evidence found either way; it needs a
   warm-server re-run, as the entry itself suggests. Treat it as a separate item.
 
-### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks)
+### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks) — SYSTEMIC HALF FIXED (`baebfcb0`)
 **No error-mapping work has landed.** The earlier "partly fixed (`f3e9ae4e`)" note overstated
 things: that commit was a SQL-allowlist security port, and the `profile.values` 400 was an
 incidental side effect of allowlisting a column name, not a deliberate error mapping.
@@ -372,7 +395,7 @@ are already fixed.
   matching `/export`. The tRPC `errorFormatter` should also drop `stack` outside development.
 - **Verify**: the list above returns 400/404 with a short message; `bun test` in the touched modules.
 
-### H13. Slow `chart.chart` with breakdowns over long ranges — NOT A SQL PROBLEM
+### H13. Slow `chart.chart` with breakdowns over long ranges — FIXED (`ae3665cf`); was never a SQL problem
 - **Symptom**: 12 months / day with three breakdowns (`path`, `country`, `device`) takes 14 s
   alone and 30 s under load (hits the deadline yet still returns 200).
 - **The original diagnosis in this entry was wrong.** There is no missing `LIMIT` problem and
