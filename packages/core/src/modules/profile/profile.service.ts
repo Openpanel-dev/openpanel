@@ -187,23 +187,36 @@ async function compileProfileFilters(
   return buildFilterWhere(filters, projectId, PROFILE_FILTER_TARGET);
 }
 
+/**
+ * `null` when nothing is known about the profile — no row in `profiles` and no
+ * events. The query aggregates, so an unknown id comes back as a row of zeros
+ * rather than as no row at all, and callers that reported those zeros were
+ * indistinguishable from a real but inactive user. A profile that exists and
+ * simply has no events still returns metrics, with a `firstSeen`.
+ */
 export async function getProfileMetrics(
   deps: ServiceDeps,
   profileId: string,
   projectId: string
-): Promise<IProfileMetrics> {
+): Promise<IProfileMetrics | null> {
   const [data] = await chQuery<
     Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
       lastSeen: string;
       firstSeen: string;
     }
   >(deps, profileMetricsQuery({ profileId, projectId }));
-  const metrics = data!;
-  return {
-    ...metrics,
-    lastSeen: toNullIfDefaultMinDate(metrics.lastSeen),
-    firstSeen: toNullIfDefaultMinDate(metrics.firstSeen),
-  };
+
+  if (!data) {
+    return null;
+  }
+
+  const lastSeen = toNullIfDefaultMinDate(data.lastSeen);
+  const firstSeen = toNullIfDefaultMinDate(data.firstSeen);
+  if (lastSeen === null && firstSeen === null && data.totalEvents === 0) {
+    return null;
+  }
+
+  return { ...data, lastSeen, firstSeen };
 }
 
 export async function getProfileById(

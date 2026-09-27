@@ -480,6 +480,22 @@ describe('get_profile_metrics', () => {
     expect(res.conversionEvents).toBe(1); // page_view only
     expect(res.screenViews).toBe(0);
   });
+
+  // The query aggregates, so an unknown id used to come back as a row of
+  // zeros and the tool's not-found branch could never fire — a made-up
+  // profile reported confident zeros, indistinguishable from a real but
+  // inactive user (ISSUES.md H8e).
+  it('reports not found for a profile that does not exist', async () => {
+    const server = makeServer();
+    registerProfileMetricTools(server as any, TOOLS);
+    const res = await server.invoke('get_profile_metrics', {
+      projectId: TEST_PROJECT_ID,
+      profileId: 'no-such-profile-at-all',
+    });
+
+    expect(res.error).toBe('Profile not found or has no events');
+    expect(res.totalEvents).toBeUndefined();
+  });
 });
 
 // ─── Groups ───────────────────────────────────────────────────────────────────

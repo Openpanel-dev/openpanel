@@ -194,8 +194,9 @@ function Component() {
         <h2 className="font-semibold text-lg">MCP Server</h2>
         <p className="text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your OpenPanel data. The server is read-only and exposes 38 tools for
-          querying events, sessions, profiles, funnels, retention and more.
+          your OpenPanel data. Most of its tools read — events, sessions,
+          profiles, funnels, retention and more — but it can also create, edit
+          and delete dashboards and reports, so treat the token as write access.
         </p>
       </div>
 

@@ -13,7 +13,7 @@ export function registerRetentionTools(
 ) {
   server.tool(
     'get_retention_cohort',
-    'Get a weekly active-user retention cohort for the last 12 weeks. Returns one row per cohort (the week users were first seen), each with `cohort_interval`, `sum` (cohort size), `values` (retained user counts per following week) and `percentages` (retained share, 0-1). The leading "Weighted Average" row summarises all cohorts. Useful for understanding long-term user engagement and product stickiness.',
+    'Get a weekly active-user retention cohort for the last 12 weeks. Returns one row per cohort (the week users were first seen), each with `cohort_interval`, `sum` (cohort size), `values` (users still active in or after each following week — the count is cumulative, not week-by-week) and `percentages` (retained share, 0-1). The leading "Weighted Average" row summarises all cohorts. Useful for understanding long-term user engagement and product stickiness.',
     {
       projectId: projectIdSchema(context),
     },

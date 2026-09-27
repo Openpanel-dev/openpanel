@@ -2,7 +2,8 @@ import type { IProfileMetrics } from '@openpanel/core';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 
 type Props = {
-  data: IProfileMetrics;
+  /** `null` when nothing is known about the profile — no row and no events. */
+  data: IProfileMetrics | null;
 };
 
 const PROFILE_METRICS = [
@@ -100,6 +101,10 @@ const PROFILE_METRICS = [
 ] as const;
 
 export const ProfileMetrics = ({ data }: Props) => {
+  if (!data) {
+    return null;
+  }
+
   return (
     <div className="relative col-span-6 -m-4 mt-0 mb-0 md:m-0">
       <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-4 lg:grid-cols-6">
