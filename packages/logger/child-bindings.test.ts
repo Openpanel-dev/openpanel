@@ -71,6 +71,22 @@ describe('child logger bindings', () => {
     expect(parsed.config.provider).toBe('mixpanel');
   });
 
+  it('redacts a secret nested past the traversal depth limit', () => {
+    const { lines, restore } = captureStdout();
+    try {
+      const logger = createLogger({ name: 'test' });
+      const child = logger.child({
+        a: { b: { c: { d: { e: { serviceSecret: 'SHOULD_NOT_APPEAR' } } } } },
+      });
+
+      child.info('line');
+    } finally {
+      restore();
+    }
+
+    expect(lines[0]).not.toContain('SHOULD_NOT_APPEAR');
+  });
+
   it('redacts bindings on a grandchild logger too', () => {
     const { lines, restore } = captureStdout();
     try {

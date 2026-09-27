@@ -101,15 +101,18 @@ export function redactSensitive(value: unknown, depth = 0): unknown {
       name: value.name,
     };
   }
-  if (
-    depth >= MAX_REDACT_DEPTH ||
-    value === null ||
-    typeof value !== 'object'
-  ) {
+  if (value === null || typeof value !== 'object') {
     return value;
   }
   if (value instanceof Date) {
     return value;
+  }
+  if (depth >= MAX_REDACT_DEPTH) {
+    // An object this deep could still be hiding a sensitive key we no longer
+    // recurse into. Passing it through unchanged -- the previous behaviour --
+    // would silently defeat the redaction for anything nested past the
+    // limit, which is worse than losing that depth of detail from the log.
+    return REDACTED;
   }
   if (Array.isArray(value)) {
     return value.map((v) => redactSensitive(v, depth + 1));
