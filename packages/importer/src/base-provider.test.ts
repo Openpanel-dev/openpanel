@@ -70,6 +70,17 @@ describe('getChunkSizeDays', () => {
     process.env.IMPORT_CHUNK_SIZE_DAYS = '';
     expect(provider.chunkSizeDays()).toBe(1);
   });
+
+  it('does not let a numeric prefix stand in for the whole value', () => {
+    // Number.parseInt('7days', 10) and Number.parseInt('7.5', 10) both read
+    // the leading digits and would silently chunk at 7 instead of falling
+    // back to the 1-day default for an invalid setting.
+    process.env.IMPORT_CHUNK_SIZE_DAYS = '7days';
+    expect(provider.chunkSizeDays()).toBe(1);
+
+    process.env.IMPORT_CHUNK_SIZE_DAYS = '7.5';
+    expect(provider.chunkSizeDays()).toBe(1);
+  });
 });
 
 describe('getDateChunks with a larger chunk size', () => {
@@ -109,5 +120,24 @@ describe('getDateChunks with a larger chunk size', () => {
     // Same coverage either way.
     expect(daily[0]![0]).toBe(weekly[0]![0]);
     expect(daily.at(-1)![1]).toBe(weekly.at(-1)![1]);
+  });
+
+  it('never overlaps chunks, regardless of the host timezone', () => {
+    // Local-time setDate/getDate on UTC-parsed dates drifts by the host's UTC
+    // offset. Crossing America/New_York's March 2025 "spring forward" used to
+    // duplicate 2025-03-09 across two 3-day chunks -- and both providers that
+    // call getDateChunks would re-request (and re-import) that day's events.
+    // process.env.TZ can't be flipped mid-test here (vitest's worker threads
+    // don't re-resolve it), so this is also run with
+    // TZ=America/New_York and TZ=Pacific/Kiritimati at the shell to confirm.
+    const chunks = provider.getDateChunks('2025-03-07', '2025-03-21', {
+      chunkSizeDays: 3,
+    });
+
+    for (let i = 1; i < chunks.length; i++) {
+      const previousEnd = chunks[i - 1]![1];
+      const [currentStart] = chunks[i]!;
+      expect(currentStart > previousEnd).toBe(true);
+    }
   });
 });

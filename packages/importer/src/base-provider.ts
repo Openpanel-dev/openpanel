@@ -85,8 +85,11 @@ export abstract class BaseImportProvider<
     if (!raw) {
       return 1;
     }
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isNaN(parsed)) {
+    // Number.parseInt would accept a numeric prefix ("7days" -> 7, "7.5" -> 7)
+    // and silently chunk at the wrong size instead of falling back. Number()
+    // rejects trailing garbage, so validate the whole string through it.
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed)) {
       return 1;
     }
     return Math.min(31, Math.max(1, parsed));
@@ -123,9 +126,13 @@ export abstract class BaseImportProvider<
     while (cursor <= endDate) {
       const chunkStart = cursor.toISOString().split('T')[0]!;
 
-      // Calculate chunk end: move forward by (chunkSizeDays - 1) to get the last day of the chunk
+      // Calculate chunk end: move forward by (chunkSizeDays - 1) to get the last day of the chunk.
+      // UTC arithmetic throughout: `from`/`to` parse as UTC midnight and format
+      // back via toISOString (UTC). Advancing with local-time setDate/getDate
+      // in between drifts by the host's UTC offset -- worth a full day across
+      // a DST transition -- and can make consecutive chunks overlap.
       const chunkEndDate = new Date(cursor);
-      chunkEndDate.setDate(chunkEndDate.getDate() + (chunkSizeDays - 1));
+      chunkEndDate.setUTCDate(chunkEndDate.getUTCDate() + (chunkSizeDays - 1));
 
       // Don't go past the end date
       const chunkEnd =
@@ -136,7 +143,7 @@ export abstract class BaseImportProvider<
       chunks.push([chunkStart, chunkEnd]);
 
       // Move cursor to the next chunk start (after the current chunk)
-      cursor.setDate(cursor.getDate() + chunkSizeDays);
+      cursor.setUTCDate(cursor.getUTCDate() + chunkSizeDays);
 
       if (cursor > endDate) break;
     }
