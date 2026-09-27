@@ -129,6 +129,28 @@ async function upsertOrganization(userId: string): Promise<string> {
 }
 
 /** Ingest verifies client secrets with scrypt (`verifyPassword`), so that is what the seed stores. */
+/**
+ * `.seed.json` advertises each project's conversions, and the manifest always
+ * did, but nothing ever wrote the rows that make them conversions — so the
+ * Conversions tab was empty on every seeded project. `event.service.ts` reads
+ * these through `findMany({ where: { conversion: true } })`.
+ *
+ * Postgres only, and an upsert on the `(name, projectId)` unique, so re-running
+ * just the Postgres half is enough; no ClickHouse reseed, no manifest change.
+ */
+async function upsertConversions(
+  projectId: string,
+  conversions: readonly string[]
+): Promise<void> {
+  for (const name of conversions) {
+    await db.eventMeta.upsert({
+      where: { name_projectId: { name, projectId } },
+      create: { name, projectId, conversion: true },
+      update: { conversion: true },
+    });
+  }
+}
+
 async function upsertClient(
   rng: Rng,
   input: {
@@ -178,6 +200,7 @@ async function upsertProject(
       deleteAt: null,
     },
   });
+  await upsertConversions(id, archetype.conversions);
   const client = await upsertClient(rng, {
     name: `${archetype.projectName} Client`,
     organizationId,
