@@ -1,5 +1,5 @@
 import * as HyperDX from '@hyperdx/node-opentelemetry';
-import pino, { type Logger } from 'pino';
+import pino, { type Bindings, type Logger } from 'pino';
 
 export type ILogger = Logger;
 
@@ -139,13 +139,39 @@ export function getServiceName(name: string): string {
     .join('-');
 }
 
+/**
+ * Apply `redactSensitive` to a logger's child bindings.
+ *
+ * `formatters.log` only sees the object passed to an individual log call.
+ * Bindings given to `.child()` are serialized once by pino and written
+ * verbatim on every subsequent line, so they never reach that formatter —
+ * and neither does `formatters.bindings`, which only shapes the root
+ * pid/hostname pair. A secret handed to `.child()` is therefore printed in
+ * full on every line that logger emits, which is the opposite of what the
+ * redaction is there for and far higher volume than a single log call.
+ *
+ * Wrapping `child` closes that gap for every caller at once, rather than
+ * relying on each one to remember which of its bindings are sensitive.
+ */
+function withRedactedChildBindings(logger: ILogger): ILogger {
+  const original = logger.child.bind(logger);
+
+  // biome-ignore lint/suspicious/noExplicitAny: matching pino's generic child overloads
+  logger.child = ((bindings: any, options?: any) =>
+    withRedactedChildBindings(
+      original(redactSensitive(bindings) as Bindings, options)
+    )) as unknown as typeof logger.child;
+
+  return logger;
+}
+
 export function createLogger({ name }: { name: string }): ILogger {
   const service = getServiceName(name);
 
   const useHyperDX = logExporter === 'otlp' && !!process.env.HYPERDX_API_KEY;
   const usePretty = !useHyperDX && process.env.NODE_ENV !== 'production';
 
-  return pino({
+  return withRedactedChildBindings(pino({
     name: service,
     level: logLevel,
     enabled: !silent,
@@ -174,7 +200,8 @@ export function createLogger({ name }: { name: string }): ILogger {
             },
           }
         : undefined,
-  });
+    })
+  );
 }
 
 const MAX_INTERCEPTED_LINE_LENGTH = 8192;
