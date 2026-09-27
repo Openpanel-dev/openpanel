@@ -356,6 +356,27 @@ export async function importJob(job: Job<ImportQueuePayload>) {
     await updateImportStatus(jobLogger, job, importId, { step: 'completed' });
     jobLogger.info('Import completed');
 
+    // Everything staged has been copied into the events table and the sessions
+    // table is built from it, so the staged rows are now a duplicate of
+    // production. Nothing reads them again: a later retry of this import would
+    // re-stage from scratch, and every other code path filters by its own
+    // import_id.
+    //
+    // Deliberately after the status update and inside its own try/catch. The
+    // import is already complete and correct at this point — failing it over a
+    // disk-space tidy-up would be a far worse outcome than leaving the rows
+    // behind, and the mutation is fire-and-forget so a large import does not
+    // sit waiting on it.
+    try {
+      await cleanupStagingData(importId, { wait: false });
+      jobLogger.info('Staging cleanup queued');
+    } catch (cleanupError) {
+      jobLogger.warn(
+        { err: cleanupError },
+        'Failed to queue staging cleanup; staged rows will remain'
+      );
+    }
+
     return { success: true };
   } catch (error) {
     jobLogger.error({ err: error }, 'Import job failed');
