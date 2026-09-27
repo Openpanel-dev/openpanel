@@ -131,16 +131,24 @@ export function format(
             }
           : {}),
       },
-      data: cs.data.map((item, index) => ({
-        date: item.date,
-        count: item.count,
-        previous: previousSerie?.data[index]
-          ? getPreviousMetric(
-              item.count,
-              previousSerie.data[index]?.count ?? null
-            )
-          : undefined,
-      })),
+      // The key is OMITTED rather than set to `undefined` when there is no
+      // previous point. superjson records one metadata entry per `undefined`,
+      // each carrying its full path string, so a 12-month three-breakdown
+      // chart spent ~77 MB and several seconds encoding 1.69 M entries whose
+      // entire content was "this field is undefined". Reading
+      // `data[i].previous` still yields `undefined` either way, and superjson
+      // already erased the key over the wire, so no consumer can tell.
+      data: cs.data.map((item, index) => {
+        const previousPoint = previousSerie?.data[index];
+        if (!previousPoint) {
+          return { date: item.date, count: item.count };
+        }
+        return {
+          date: item.date,
+          count: item.count,
+          previous: getPreviousMetric(item.count, previousPoint.count ?? null),
+        };
+      }),
     };
   });
 

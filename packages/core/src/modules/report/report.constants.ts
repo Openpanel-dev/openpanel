@@ -1044,7 +1044,13 @@ export type IChartSerie = {
   data: {
     date: string;
     count: number;
-    previous: PreviousValue;
+    /**
+     * Absent, not `undefined`, when the request asked for no previous period.
+     * superjson writes one metadata entry per explicit `undefined`, and a long
+     * range with breakdowns produced millions of them; over the wire the two
+     * are indistinguishable. Read it as optional.
+     */
+    previous?: PreviousValue;
   }[];
 };
 

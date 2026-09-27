@@ -60,16 +60,21 @@ export function groupByLabels(data: ISerieDataItem[]): GroupedResult[] {
     ),
   }));
 
+  // Every group is padded to the full set of dates so all series share an
+  // x-axis. The lookup is a Map rather than a `.find()` per date: that scan
+  // was O(groups x dates x points), and a 12-month chart with three
+  // breakdowns reaches 4,640 groups over 365 dates. The OUTPUT is unchanged —
+  // same dates, same order, same zero-filled points.
+  const allDates = Array.from(timestamps);
   return result
     .filter((group) => group.name.length > 0)
     .map((group) => {
+      const byDate = new Map(group.data.map((dp) => [dp.date, dp]));
       return {
         ...group,
-        // This will ensure that all dates are present in the data array
-        data: Array.from(timestamps).map((date) => {
-          const dataPoint = group.data.find((dp) => dp.date === date);
-          return dataPoint || { date, count: 0, total_count: 0 };
-        }),
+        data: allDates.map(
+          (date) => byDate.get(date) ?? { date, count: 0, total_count: 0 }
+        ),
       };
     });
 }
