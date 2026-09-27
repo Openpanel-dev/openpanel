@@ -333,6 +333,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     let pageSize = requestedPageSize;
     let sessionId: string | undefined;
     let page = 0;
+    let receivedCount = 0;
 
     while (true) {
       await this.waitForRateLimit();
@@ -391,6 +392,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       pageSize = data.page_size ?? pageSize;
 
       const results = data.results ?? [];
+      receivedCount += results.length;
       for (const row of results) {
         const parsed = zMixpanelRawProfile.safeParse(row);
         if (parsed.success) {
@@ -406,9 +408,15 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       if (results.length < pageSize) {
         break;
       }
-      // Without a session id Mixpanel would reject the next page anyway, so stop
-      // rather than spend a request on a guaranteed 400.
+      // Without a session id Mixpanel would reject the next page anyway. `total`
+      // tells us whether that actually truncates the import or just happens to
+      // land on a page boundary.
       if (!sessionId) {
+        if (typeof data.total === 'number' && receivedCount < data.total) {
+          throw new Error(
+            `Mixpanel Engage returned a full page without a session_id, but ${data.total - receivedCount} of ${data.total} profiles remain unfetched (project ${projectId})`
+          );
+        }
         this.logger?.warn(
           { page, projectId },
           'Mixpanel Engage returned a full page without a session_id; stopping profile pagination',

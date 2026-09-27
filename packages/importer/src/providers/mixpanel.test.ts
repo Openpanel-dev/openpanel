@@ -452,5 +452,51 @@ describe('mixpanel', () => {
       expect(seen).toHaveLength(5000);
       expect(bodies).toHaveLength(1);
     });
+
+    it('throws instead of silently truncating when total shows more profiles remain', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            total: 7000,
+            results: profiles(5000, 0),
+          })
+        )
+      );
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/2000 of 7000 profiles remain/);
+    });
+
+    it('does not throw when a full page coincidentally exhausts total', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        return Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            total: 5000,
+            results: profiles(5000, 0),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(5000);
+      expect(bodies).toHaveLength(1);
+    });
   });
 });
