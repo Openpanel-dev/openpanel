@@ -19,7 +19,16 @@ unsubscribe-token default secret, the email fallback log, and the migration bann
 A third pass (2026-09-23) triaged the list against the no-breaking-change rule below and
 closed four more: **H1** (`8149f200`), **H3** (`565cca66`), **H9** (`6e8e3eb8`) and **L1**
 (`092b240e`). With L1 gone `bun test --isolate` in `packages/core` is green: 1797 pass,
-12 skip, 0 fail.
+12 skip, 0 fail. H8a followed (`60d96d8d`).
+
+A fourth pass (2026-09-27) re-investigated the open entries against the running databases
+rather than trusting the QA text. **Several diagnoses in this file were wrong and have been
+rewritten in place.** In particular: **H7 is not a bug** and is closed; **H13 is not a SQL
+problem** (ClickHouse answers in 0.3 s, the 14 s is superjson); **H8b is half fixed**;
+**H8d's proposed `profile_aliases` fix cannot work** and the entry is deferred; **H12 has three
+shared seams** and its "partly fixed" note was an overstatement; **H10's locale bug is one
+line**; **H11 is ~11 places, not twenty**; and two Low claims do not reproduce. Each entry now
+carries its own evidence. Where an entry says something was measured, it was.
 
 Everything else below is still open.
 
@@ -134,9 +143,13 @@ misleading feature; **low** = cosmetic.
   `packages/core/src/modules/ingest/ingest.service.ts:170` (`getTimestamp` from `ingestLegacyEvent`
   ~649); `packages/core/src/modules/ingest/ingest.routes.ts` (no body size limit;
   `maxRequestBodySize` is set nowhere).
-- **Fix**: zod body schemas on `/profile*` and legacy `/event` (the routes header says "no
-  request-body schema, V1 parity", but V1 parity does not include 500s); reject events with an
-  empty name; cap `/track` bodies (e.g. 1 MB) at the route and answer 413.
+- **Fix — and it must NOT add body schemas.** ADR-003 is an accepted decision, quoted at
+  `profile.routes.ts:13-15`: "/profile, /import, /event and /tools have no request schemas
+  today, and adding them would be a behaviour change". The 500s are fixable without touching
+  it: guard the three `/profile*` handlers (`profile.routes.ts:61,87,110` destructure
+  `body as …` with no null check), keep `/event` answering 202 but **skip the write** when the
+  name is empty so the HTTP contract is byte-unchanged, and cap `/track` at the broker's
+  configured maximum with a 413 instead of a raw KafkaJS 500.
 - **Verify**: each case above → 400/413 with a message; `SELECT count() FROM events WHERE name=''` stays 0.
 
 ### H6. Client-controlled timestamps and device ids accepted unbounded
@@ -146,19 +159,31 @@ misleading feature; **low** = cosmetic.
   `__deviceId: "../../etc/passwd<script>"` stored verbatim as `device_id` and `profile_id`.
 - **Files**: `packages/core/src/modules/ingest/ingest.service.ts:154-161` (`sanitizeOverrideDeviceId`),
   `:164-193` (`getTimestamp`: only `> now + 1 min` is rejected; numbers are epoch-ms).
-- **Fix**: reject/clamp timestamps older than a sane window (e.g. 30 days, configurable) and
-  non-string values; enforce a shape (hex, max length) or hash the device-id override.
+- **Fix — reduced to one thing.** The device-id half is **already handled**:
+  `sanitizeOverrideDeviceId` (`ingest.service.ts:142-151`) already requires a string, trims it,
+  rejects empty and enforces `MAX_OVERRIDE_DEVICE_ID_LENGTH`. Character-shape enforcement is
+  unnecessary (the value binds as a query parameter and React escapes it) and hashing would
+  orphan every existing profile. What remains is a **sanity floor** in `getTimestamp`
+  (`ingest.service.ts:163-193`) so a resolved timestamp before the floor falls back to server
+  time. A floor, not a window: real epoch-ms numbers and ISO strings both resolve correctly
+  today, and historical imports must keep working.
 - **Verify**: the two `/track` bodies above → 400 or clamped `created_at`; `events` has no rows before the project's `firstEventAt`.
 
-### H7. `user.delete` orphans an organization
-- **Symptom**: a user who is the sole `org:admin` of an org: `user.deletionBlockers` → `[]`,
-  `user.delete` → true, the org (and its project, client, dashboards, cohort, rules) stays with
-  `createdByUserId = null` and 0 members. Admin of `acme` *is* blocked, so the check misses
-  trial/new orgs (probably keyed on subscription state).
-- **Files**: `packages/core/src/modules/user/user.service.ts` (`deletionBlockers`, `deleteUser`).
-- **Fix**: block when the user is the last admin of any org (regardless of subscription), or
-  cascade-schedule that org for deletion as the account page text promises.
-- **Verify**: sign up a user, create an org, `user.delete` → blocker listed or org scheduled for deletion.
+### H7. `user.delete` orphans an organization — NOT A BUG, closed 2026-09-27
+The organization is not orphaned. It is swept within the hour, and the UI says so.
+- `organization.service.ts:602` `runDeleteCron` selects
+  `{ members: { none: { role: 'org:admin' } } }` and deletes those organizations and their
+  projects from both ClickHouse and Postgres.
+- It runs hourly: `organization.jobs.ts:29`, `cron: { pattern: '0 * * * *' }`.
+- `apps/start/src/components/settings/delete-account.tsx:25-27` already promises exactly this:
+  "Organizations you created that have no other admin will also be deleted, along with their
+  projects and events."
+- `user.service.ts:73` `listUserDeletionBlockers` blocks only on an active subscription **by
+  design** — do not delete a paying org. That is why the admin of `acme` was blocked and a
+  trial org was not. It is not "keyed on subscription state" by accident.
+
+The QA run observed the state inside the one-hour window before the sweep. The only thing
+worth noting is that the sweep is hourly rather than immediate.
 
 ### H8. MCP data-correctness bugs
 - **a. `endDate` exclusive — FIXED (`60d96d8d`)** — every `zDateRange` tool drops the whole last day
@@ -167,21 +192,39 @@ misleading feature; **low** = cosmetic.
   `packages/core/src/modules/overview/src/overview.sql.ts:118-124`, `pages.sql.ts:16-22`
   (`BETWEEN … AND toDateTime('<end> 00:00:00')`). Fix: `< end + 1 day`. Verify against
   ClickHouse: `get_analytics_overview` Aug 1–31 on acme-web → 283780 sessions (inclusive), not 276535.
-- **b. `query_events` / `query_sessions` unordered** — `LIMIT` without `ORDER BY` while the
-  response says "created_at desc". Files: `packages/core/src/modules/event/src/sql.ts:372-377`
-  (`queryEventsQuery`), `packages/core/src/modules/session/src/sql.ts` (~296, `querySessionsQuery`).
-  Fix: `ORDER BY created_at DESC`. (Note: commit `f37bb130` on rewrite/v2 touched event ordering
-  — re-check before fixing.)
+- **b. `query_sessions` unordered — HALF ALREADY FIXED** — `queryEventsQuery` got its
+  `ORDER BY created_at DESC` from `f37bb130` and is fine today
+  (`packages/core/src/modules/event/src/sql.ts:384-393`, with a comment explaining why).
+  Only `packages/core/src/modules/session/src/sql.ts:315` `querySessionsQuery` still has a
+  bare `LIMIT` while the response claims "created_at desc". Verified: asking for the 5 newest
+  sessions returns rows from 26 Aug, four seconds apart. Fix: one line, that file only.
 - **c. `get_rolling_active_users` returns future dates** — `date + n` ARRAY JOIN with no
   `WHERE date <= today()`. File: `packages/core/src/modules/chart/src/retention.sql.ts:107-127`.
-- **d. `get_page_conversions` empty when users identify at conversion** — joins on raw
-  `profile_id`; prior page views carry the anonymous device hash. File:
-  `packages/core/src/modules/overview/src/pages.sql.ts:190-200`. Fix: join through
-  `profile_aliases` or fall back to `session_id`. Verify: acme-web `signup_completed` Aug 1–8 → non-empty.
-- **e. Descriptions** — `get_retention_cohort` says "retained per following week" but computes
-  on-or-after (`retention.sql.ts:44-47`); `get_profile_metrics` never reports "not found"
-  (`profile-metrics.ts:29`); Settings → MCP page says "38 tools", `tools/list` returns 48
-  (`apps/start/src/routes/_app.$organizationId.$projectId.settings._tabs.mcp.tsx`).
+- **d. `get_page_conversions` empty when users identify at conversion — DEFERRED by the
+  owner 2026-09-27; diagnosis below is settled, do not re-derive it.** The join at
+  `packages/core/src/modules/overview/src/pages.sql.ts:190` is `e.profile_id = c.profile_id`,
+  and page views seen before the visitor identified carry the anonymous device hash.
+  **This entry's proposed `profile_aliases` fix does not work**: that table holds 0 rows for
+  every project, because `alias` is not implemented at all — `ingest.service.ts:468` returns
+  `alias-not-supported`. The other stitching mechanism is `EXPERIMENTAL_PROFILE_BACKFILL`
+  (`env.ts:579`), **off unless explicitly set**, optionally limited to named projects
+  (`session-end.ts:136-144`), and even when on it only rewrites `profile_id` for events in the
+  same session within 6 hours (`profile-backfill-buffer.ts:103-108`). So the seed is faithful
+  to the default configuration, not unrepresentative. Joining on `session_id` returns 3,004
+  rows where the current join returns 0 (acme-web / `signup_completed` / Aug 1-8), and gives
+  the same attribution the backfill would. It is deferred because it narrows attribution to a
+  single session and makes the tool's `windowHours` parameter close to meaningless.
+- **e. Descriptions** — three, and one is worse than reported.
+  `get_retention_cohort` says "retained per following week" but computes on-or-after, because
+  `retention.service.ts:256` defaults `criteria` to `'on_or_after'` which `retention.sql.ts:44-47`
+  compiles to `>=`. `get_profile_metrics` has a not-found guard at `profile-metrics.ts:28` that
+  **can never fire**, because `profile.service.ts:203` is `const metrics = data!` over an
+  unconditional aggregate that always returns a row — fix belongs there, not in the tool.
+  The MCP settings page (`settings._tabs.mcp.tsx:196-198`) says the server is **"read-only and
+  exposes 38 tools"**: there are 48, and **9 of them mutate** (`create_dashboard`,
+  `create_report`, `update_dashboard`, `update_report`, `update_report_layout`,
+  `reset_dashboard_layout`, `delete_dashboard`, `delete_report`, `duplicate_report`).
+  "Read-only" is the more important error of the two.
 
 ### H9. Mobile Events page crashes — FIXED (`6e8e3eb8`)
 - **Symptom**: `/acme/acme-web/events` at 390 px → "Something went wrong";
@@ -194,20 +237,44 @@ misleading feature; **low** = cosmetic.
 
 ### H10. Hydration mismatches on every data page
 React discards the SSR tree ("tree will be regenerated on the client") or logs attribute mismatches on 158/168 loads:
-- `apps/start/src/components/widget-table.tsx:122` — class name from `Math.random()`; use `useId()`.
-- `apps/start/src/components/report-chart/bar/index.tsx:75,93` — skeleton widths from `Math.random()`; use a fixed pattern.
-- Locale time text (`21:35:55` server vs `9:35:55 PM` client) in `FieldValue`/`KeyValueGrid`
-  (session detail, profile detail); dates elsewhere render Swedish abbreviations (`21 sep`, `20 okt`)
-  because the server formats with the machine locale. Pin an explicit locale (`en-US`) in the
-  date/number formatters (`apps/start/src/utils/date*.ts`, `number.ts`) or format only on the client.
-- `<button>` inside `<button>` in the share-dashboard modal ("Copy link" `Tooltiper`),
-  `apps/start/src/modals/share-dashboard.tsx` (see console trace) — make the outer element a `div`.
-- framer-motion inline styles: `apps/start/src/components/organization/prompt-card.tsx:34`,
-  `sidebar-project-menu.tsx:175`, `sidebar-organization-menu.tsx:153` (`motion.span`) — render
-  `initial={false}` or client-only.
-- `VirtualizedEventsTable` renders the empty state on the client where SSR rendered the table
-  (`apps/start/src/components/events/virtualized-events-table.tsx`).
-- Missing `key` warnings in `Chart` on `/events/stats` and realtime.
+- `apps/start/src/components/widget-table.tsx:121-123` — class name from `Math.random()`, used
+  both as a `className` at `:163` and inside injected `<style>` text at `:141-154`, so the CSS
+  itself differs between server and client. Use `useId()`, but strip the colons — `:r3:` is not
+  a valid CSS selector.
+- `apps/start/src/components/report-chart/bar/index.tsx:74,92` — skeleton widths from `Math.random()`; use a fixed array indexed by the `index` already in scope at `:53`.
+- **Locale — this is ONE LINE, not a formatter sweep.** `apps/start/src/utils/date.ts:11-17`
+  `getLocale()` returns `'en-US'` only when `typeof navigator === 'undefined'`, which is dead
+  code on modern runtimes: node and the browser both define `navigator`, so the server formats
+  with the machine locale. Pinning that one function covers `formatDate`, `formatDateTime`,
+  `formatTime` and `TimeAgo`, and through them **104 call sites across 19 files**. Numbers are
+  already pinned (`use-numer-formatter.ts:76` hardcodes `en-US`). A separate sweep of 42 raw
+  `.toLocaleString()` call sites across 21 files is optional and mechanical. Note the fix pins
+  the *locale* but not the *timezone*, so a server in a different zone from the browser still
+  mismatches on times.
+- **`<button>` inside `<button>` — 10 sites, not 1.** `ui/tooltip.tsx:63-72` `Tooltiper`
+  renders a real `<button>` unless `asChild` is passed. The offenders are
+  `share-dashboard-modal.tsx:127,141,151` (note: `-modal`, the path in the original entry was
+  wrong), `share-report-modal.tsx:119,133,143`, `share-overview-modal.tsx:118,132,142` and
+  `fullscreen-toggle.tsx:44`. Of 38 `Tooltiper` uses only 9 pass `asChild`.
+- framer-motion inline styles: `apps/start/src/components/organization/prompt-card.tsx:25-35`,
+  `sidebar-project-menu.tsx:173-184`, `sidebar-organization-menu.tsx:161+` (`motion.span`;
+  the original entry's `:153` points at the enclosing button) — render `initial={false}` or
+  client-only. `initial={false}` removes the entry animation, so `prompt-card` is a small
+  design call.
+- **The virtualized table is a real bug, not just a hydration warning.** The file is
+  `apps/start/src/components/events/table/index.tsx` (not `virtualized-events-table.tsx`).
+  Two divergences: `:195` flips the empty-state branch because `isLoading`/`data` resolve
+  differently on the server, and `useWindowVirtualizer` at `:150-155` yields a different
+  `getTotalSize()` with no window. The oversized container in the Low section is the same
+  defect: `:206` sets the body height from `getTotalSize()`, and the infinite-scroll sentinel
+  at `:314` then sits below an 8k-px container and keeps firing `fetchNextPage` at `:301`.
+  Same pattern in `components/sessions/table/index.tsx:179` and
+  `components/ui/data-table/virtualized-data-table.tsx:45`.
+- Missing `key` warnings in `Chart` on `/events/stats`. **The realtime half does not
+  reproduce** — every `.map()` on that page is keyed. The best candidate for `/events/stats` is
+  `report-chart/pie/chart.tsx:132-188`, whose `renderLabel` is passed to recharts at `:103` and
+  returns a bare fragment; recharts renders one per slice, so a keyless fragment per element
+  matches the warning. **Needs a console run to confirm.**
 - **Verify**: `browser_console_messages` on overview, realtime, events, session and profile detail show no hydration errors.
 
 ### H11. Server errors rendered as empty states; stalled loads
@@ -215,18 +282,65 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
   profiles yet"; overview cards show 0 and the map "Error loading map" on 500; the crawl saw
   ~12 % of loads stuck on skeletons with data queries never resolving (blank sidebar, no
   console output) — `crawl` screenshots in the original run.
-- **Files**: `apps/start/src/routes/_app.$organizationId.$projectId.profiles._tabs.*.tsx` and the
-  shared data-table empty state (`apps/start/src/components/data-table/*`), overview metric
-  cards; root query error handling in `root-provider.tsx`.
-- **Fix**: distinguish `isError` from empty data in the list/table components (show an error
-  card with a retry); investigate the stalled hydration (suspect Vite dep re-optimisation
-  during the run — confirm it does not reproduce on a warm server).
+- **Scope is ~11 places, and one of them is the whole bug.** The shared component is
+  `apps/start/src/components/ui/data-table/data-table.tsx` (the path in the original entry,
+  `components/data-table/*`, does not exist). Its props at `:18-26` are `loading` and `empty`
+  with **no error concept at all**, and `:75` / `:107-118` branch on
+  `rows?.length ? rows : <FullPageEmptyState …>` — an error produces zero rows, so it renders
+  the same pixels as "nothing here yet".
+- **Files**: one component above, plus eight wrappers that destructure only `isLoading` and
+  drop `isError`: `profiles/table/index.tsx:36,64`, `groups/table/index.tsx:42,54`,
+  `clients/table/index.tsx:17,38`, `notifications/table/index.tsx:17,29`,
+  `settings/invites/index.tsx:19,39`, `settings/members/index.tsx:16,28`,
+  `pages/table/index.tsx:101,127` and `routes/…references.tsx:172`. Plus two `arePropsEqual`
+  key lists that must learn about `isError` or the error will not re-render:
+  `profiles/table/index.tsx:105` and `groups/table/index.tsx:99`.
+- **The report charts already do this correctly** (`overview-map.tsx:57` renders "Error loading
+  map"), so they are the pattern to copy. `grep -rn "isError" apps/start/src` finds 16 hits in
+  15 files and **not one is a list**.
+- **An error boundary does not save you**: `__root.tsx:70-91` only catches `beforeLoad`/loader
+  throws, and these lists fetch in the component body. `root-provider.tsx:126`'s `QueryCache`
+  `onError` handles 401 only, and `shouldRetryQuery` (`:13-21`) retries a 500 once first, so
+  the user waits two round-trips for the wrong empty state.
+- **Fix**: add an `error` prop to `data-table.tsx` and branch before the empty branch; pass
+  `error={query.isError}` from the eight wrappers. Optionally add a toast in the `QueryCache`
+  `onError`, which would cover every query in the app.
 - **Verify**: temporarily make `profile.list` throw; the tab shows an error, not "No profiles".
+- **The "~12 % stuck on skeletons" half is unsized.** No evidence found either way; it needs a
+  warm-server re-run, as the entry itself suggests. Treat it as a separate item.
 
-### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks) — PARTLY FIXED (`f3e9ae4e`)
-`profile.values` now answers 400. Everything else in this entry is untouched, including
-`gsc_get_cannibalization` without a connected integration, which still returns a raw Prisma
-error.
+### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks)
+**No error-mapping work has landed.** The earlier "partly fixed (`f3e9ae4e`)" note overstated
+things: that commit was a SQL-allowlist security port, and the `profile.values` 400 was an
+incidental side effect of allowlisting a column name, not a deliberate error mapping.
+
+**Do not work the enumeration below item by item.** There are three shared seams, and they
+cover most of it at once:
+- **tRPC**: every one of the 177 procedures passes through `rpc/base.ts:117`
+  (`export const procedure = t.procedure.use(stopWhenCancelled)`); all three public builders
+  derive from it and `grep -rn "t\.procedure" | grep -v rpc/base.ts` returns zero hits. One
+  `.use()` there reaches all of them. Note `errorFormatter` at `:77-88` is **not** the seam —
+  tRPC derives the HTTP status from `error.code` before it runs. It *is* the right place for
+  the separate `stack`-stripping ask.
+- **REST**: `.onError({ as: 'global' })` in `http/errors.ts` delegates to `normalizeError`
+  (`shared/errors.ts:52-103`), covering `/insights` and `/manage` together.
+- **MCP**: the leak is one line, `mcp/src/tools/shared.ts:358`
+  (`const message = err instanceof Error ? err.message : String(err)`).
+
+**The culprit is also not the one this entry names.** `findUniqueOrThrow` has ~41 real call
+sites, but the bigger cause is the Prisma column type: `Report`, `Cohort`, `Integration`,
+`Client`, `Reference`, `NotificationRule` and `Import` ids are `@db.Uuid` (`Dashboard` is
+not), so a malformed id raises Prisma **P2023 before any guard runs**. `cohort.get`
+(`cohort.rpc.ts:98-105`), `report.get` (`report.rpc.ts:145-148`) and `event.byId/details`
+(`event.rpc.ts:96-98,110-112`) **already throw `TRPCNotFoundError` correctly** for a
+well-formed-but-absent id — they fail only on garbage, so the entry's "`findUniqueOrThrow` →
+`findUnique`" fix pattern does not describe them. `event.byId` is worse than written: the
+ClickHouse error (code 376, `CANNOT_PARSE_UUID`) echoes the generated SQL including the scope
+clause. No `.uuid()` appears in any `*.rpc.ts`.
+
+Suggested approach: land the three seams, re-run the 177-procedure sweep, and let the
+**remaining** 500s define the tail (expect ~8-12 genuine validation bugs). Several items below
+are already fixed.
 - **tRPC** (`{id:"nope"}` or garbage): `cohort.get/update`, `cohort.refresh` (static), `report.get/update/delete/move/create`,
   `dashboard.update`, `integration.get/delete`, `notification.deleteRule`, `reference.update/delete`,
   `client.update/remove`, `import.retry/delete`, `insight.explain`, `share.reportSettings`,
@@ -242,22 +356,59 @@ error.
   `/webhook/slack` puts an internal TypeError in the redirect URL.
 - **MCP**: `get_report_data` non-UUID, `update_report_layout` huge ints, `gsc_get_*` without a
   connection, inverted date range on `get_analytics_overview` (raw "WITH FILL" error).
-- **UI**: `/acme/acme-web/cohorts/does-not-exist` and `/reports/does-not-exist` show the Prisma
-  invocation text; `/acme/does-not-exist` shows the generic error instead of the no-access page
-  (`apps/start/src/routes/__root.tsx:71` only handles `TRPCClientError`).
+- **UI**: mostly evaporates once the server returns proper codes. `__root.tsx:70-91` already
+  renders "No access" on 403 and a clean error state otherwise; it shows Prisma text only
+  because the server hands it Prisma text in `error.message`. The entry's claim that it "only
+  handles `TRPCClientError`" is misleading. One small follow-up remains: render a 404 as a
+  not-found page rather than "Something went wrong".
 - **Fix pattern**: `z.string().uuid()` on id inputs; `findUnique` + `TRPCNotFoundError` instead of
   `findUniqueOrThrow`; validate dates with `zDate` and reject reversed ranges with
   `TRPCBadRequestError`; wrap ClickHouse parse errors; a shared error mapper for `/insights`
   matching `/export`. The tRPC `errorFormatter` should also drop `stack` outside development.
 - **Verify**: the list above returns 400/404 with a short message; `bun test` in the touched modules.
 
-### H13. Slow `chart.chart` with breakdowns over long ranges
+### H13. Slow `chart.chart` with breakdowns over long ranges — NOT A SQL PROBLEM
 - **Symptom**: 12 months / day with three breakdowns (`path`, `country`, `device`) takes 14 s
   alone and 30 s under load (hits the deadline yet still returns 200).
-- **Files**: `packages/core/src/modules/chart/src/*.sql.ts` (breakdown query), `chart.service.ts`.
-- **Fix**: EXPLAIN the generated SQL against the large seed; likely candidates are a missing
-  `LIMIT` on breakdown combinations before the time series join, or per-breakdown subqueries.
-- **Verify**: same call under 5 s on the `large` seed.
+- **The original diagnosis in this entry was wrong.** There is no missing `LIMIT` problem and
+  no per-breakdown subquery. The generated statement is ONE `GROUP BY`, no join; `path`,
+  `country` and `device` are native columns, not Map lookups. **ClickHouse answers in 0.3 s**,
+  reading 3.7M rows / 179 MB with 69 MB of memory.
+- **The cost is `superjson.serialize` at `rpc/base.ts:76`**, measured at 6.7-10.3 s:
+
+  | stage | 12 months |
+  |---|---|
+  | ClickHouse | 0.32 s |
+  | `JSON.parse` | 0.06 s |
+  | `runQuery` Int coercion (`src/run-query.ts:47-58`) | 0.13 s |
+  | `groupByLabels` (`src/shared/group-by-labels.ts:24-75`) | 0.52 s |
+  | `format` (`src/engine/format.ts:11`) | 0.40 s |
+  | **superjson.serialize** | **6.7-10.3 s** |
+  | `JSON.stringify` | 0.37-0.61 s |
+
+- **Two multiplicative causes.**
+  **(a)** 4,640 series × 365 dates = 1,693,600 points. `group-by-labels.ts:63-74` pads every
+  group to the union of all dates seen, and `WITH FILL` put all 365 calendar days in that union
+  even though the seed holds 91 days of data, so a 12-month window costs 4× a 90-day one purely
+  in JS padding over empty days.
+  **(b)** `format.ts:134-143` emits `previous: undefined` on every point when `previousSeries`
+  is null, and superjson records one metadata entry per `undefined` **with its full path
+  string**: 1,693,602 entries, **77 MB of metadata whose entire content is "this field is
+  undefined"**. Dropping the key cuts meta to 2 entries.
+- **Fix (chosen)**: build the data point without the `previous` key rather than with
+  `previous: undefined` (`format.ts:134-143`, same pattern at `:79`), then narrow the date
+  union in `group-by-labels.ts:63-74` to the span the data covers. **Nothing changes over the
+  wire** — superjson already erased those keys to nothing, so `data[i].previous` reads
+  `undefined` either way. Measured 10.3 s → 5.1 s, response 175 MB → ~98 MB.
+- **Rejected**: a default series `limit`. It is a much bigger win (`limit=500` takes superjson
+  to 0.5 s and the payload to 19 MB) but it **drops series** — 4,640 → 500 — so saved reports,
+  CSV export and the MCP `get_report_data` tool would silently return less. Deferred as a
+  product decision. Note `offset` is accepted by the schema and threaded to `fetch.ts:167` but
+  **never consumed**, so paging is not actually implemented.
+- **Also rejected**: pushing a `LIMIT` into SQL. The database is already fast; it would save
+  ~0.3 s and change results the same way a JS limit does.
+- **Verify**: same call under 5 s on the `large` seed, and diff the JSON before/after to show
+  it is identical apart from absent `previous` keys.
 
 ---
 
@@ -269,8 +420,13 @@ error.
 - **Files**: `packages/core/src/modules/chart/src/sql.ts:610` (`count(name)` over
   `distinct_event_names_mv` rows — one row per insert part), `apps/start/src/components/ui/combobox-events.tsx`;
   `chart.service.test.ts:262` documents the current behaviour.
-- **Fix**: `sum(event_count)`; update the test to assert the sum.
-- **Verify**: picker count for `cta_clicked` on acme-web ≈ `SELECT count() FROM events WHERE name='cta_clicked'`.
+- **Fix**: `sum(event_count)` in `eventNamesWithCountQuery` (`chart/src/sql.ts:616`); update
+  `chart.service.test.ts:262`, which pins the current behaviour.
+- **Confirmed with numbers** (acme-web): the picker shows **52** for `screen_view`, which has
+  **974,387** occurrences. `sum(event_count)` matches the `events` table exactly for every
+  name — 974387 / 659361 / 659361 / 95582 / 46334 / 34533 across the top six.
+- **Verify**: picker count for `cta_clicked` on acme-web equals `SELECT count() FROM events
+  WHERE project_id='acme-web' AND name='cta_clicked'` (95,582).
 
 ### M2. Pages table: hidden session counts and near-zero durations
 - **Symptom**: Sessions column shows `—` for every row when no previous-period value exists
@@ -278,8 +434,12 @@ error.
   sessions average 61 s; acme-app pages show Bounce 0 % / 0s on every row.
 - **Files**: `apps/start/src/components/pages/table/columns.tsx:104` (returns `—` when
   `prev == null`), the `event.pages` query in `packages/core/src/modules/event/` (duration unit).
-- **Fix**: always render the count, show the delta only when `prev` exists; audit the duration
-  column's unit (ms vs s) and the bounce computation for the app archetype.
+- **Confirmed**: `pages/table/columns.tsx:102-104` returns an em dash whenever `prev == null`,
+  hiding the real count; `pages.sql.ts:88` is `round(avg(e.duration) / 1000 / 60, 2)`, i.e.
+  **minutes**, which the UI renders as seconds — a 61-second average becomes "1.02" and is
+  shown as "0s".
+- **Fix**: always render the count, show the delta only when `prev` exists; make the duration
+  unit and the formatter agree (seconds is the simpler of the two).
 - **Verify**: "Last 3 months" shows numbers in the Sessions column; `/` on acme-web shows a
   duration in the same order as the session average.
 
@@ -411,8 +571,12 @@ error.
   overview/pages/org page (seed domains do not resolve; safe-fetch rejects) and `?url=` → 404 on
   pages without origin (`apps/start/src/components/pages/table/columns.tsx:45` renders `<img>`
   even when `origin` is empty) — skip the request when the origin is empty, cache negatives.
-  Integrations/imports load logos from `static.vecteezy.com` and `docs.brandfetch.com` (blocked by
-  ORB, shows alt text) — bundle the assets.
+  Integrations load one logo from `static.vecteezy.com` (`integrations.tsx:60`) and one from
+  `play-lh.googleusercontent.com` (`:50`). **`docs.brandfetch.com` does not appear anywhere in
+  the repo** — that half of the claim does not reproduce. Bundling means committing binary
+  assets and settling the vecteezy licence, so it is not a one-liner.
+  Negative caching is also not free: `misc.service.ts:239-292` only caches the success path,
+  so a new cache value shape is needed.
 - **Titles/URLs**: `/acme/account` has no `<title>`; profile → Sessions tab is titled
   "Dashboard | …"; changing the range rewrites the URL to `/acme/acme-web/?range=3m` (trailing slash).
 - **Layout**: realtime page has a blank second card (recharts 0×0 warning) and no "no traffic"
@@ -420,21 +584,45 @@ error.
   (`VirtualizedEventsTable` height not tied to row count); the feedback popup overlaps the
   overview chart; the cohort event popover opens far from its trigger.
 - **Seed/product mismatch**: `packages/seed` advertises conversions per project in `.seed.json`
-  but never writes `event_meta.conversion = true`, so the Conversions tab is empty everywhere
-  (`packages/seed/src/postgres.ts`).
-- **Insights**: empty until the 02:00 cron runs (`packages/core/src/modules/insight/insight.jobs.ts:35`)
-  — consider running the insight job once at seed time or exposing a "compute now" in dev.
-- **API nits**: `Authorization: bearer` (lowercase scheme) rejected on `/mcp`
-  (`mcp/src/auth.ts:143`); GET/DELETE `/mcp` → 404 instead of 405; form-encoded JSON-RPC bodies
-  accepted; `get_dashboard_urls` does not URL-encode ids; `/export/events` returns
-  `"country":"\u0000\u0000"` for events without geo (FixedString(2) zero bytes); `/manage`
+  (`postgres.ts:193`, `manifest.ts:31,82`) but writes **no `event_meta` rows at all** — the
+  table holds 0 rows — so the Conversions tab is empty everywhere. The consumer is
+  `event.service.ts:830-833` (`findMany({ where: { conversion: true } })`).
+  **No ClickHouse reseed and no `.seed.json` change are needed**: `EventMeta` is Postgres-only
+  with `@@unique([name, projectId])`, so it is an upsert loop next to `upsertClient`, and
+  `seedPostgres` is already idempotent. Give it its own commit so the re-run is a clean step.
+- **Insights — NOT A BUG, needs a product decision before any code.** Empty until the 02:00
+  cron (`insight.jobs.ts:35`, with a per-day dedupe `jobId` at `:44`). The comment at `:31-33`
+  says the schedule deliberately matches V1. Nothing is broken; a fresh seed simply has no
+  computed insights. Three possible answers: run `insightsProject` once at seed time (dev-only,
+  small), expose a "compute now" (a new user-facing feature), or document it. **Do not batch
+  this with the copy fixes.**
+- **API nits** — six of these change public HTTP behaviour; the owner's calls are marked.
+  **DO**: `Authorization: bearer` (lowercase scheme) rejected on `/mcp` (`mcp/src/auth.ts:146`,
+  `startsWith('Bearer ')`) — RFC 7235 makes the scheme case-insensitive, so this is strictly
+  loosening and cannot break a caller. **DO**: GET/DELETE `/mcp` → 404 instead of 405
+  (`mcp.routes.ts:23` registers only `.post`) — add the methods returning 405 with
+  `Allow: POST`. **SKIP**: form-encoded JSON-RPC bodies accepted (`mcp.service.ts:109` gates on
+  `isRecord` with no content-type check) — rejecting them is pure tightening that can only
+  break callers that work today. `get_dashboard_urls` does not URL-encode ids
+  (`dashboard-links.ts:74,89-99`, six raw interpolations). **DO, but in its own commit**:
+  `/export/events` returns `"country":"\u0000\u0000"` for events without geo — the fix belongs
+  at `event.service.ts:334` (`transformEvent`), so it changes the dashboard, MCP and charts at
+  the same time as the documented export API. `/manage`
   missing-auth message says "Client ID must be a valid UUIDv4" (`http/client-auth.ts:189-193`);
-  unmatched routes log a warn with a stack trace each; tRPC error bodies carry the full server
-  `stack` (dev default — confirm it is off in production); the "cluster" note in
+  unmatched routes log a warn with a stack trace each (`http/errors.ts:25-29`,
+  `SKIP_LOG_ERROR_CODES` omits `NOT_FOUND`); tRPC error bodies carry the full server `stack`
+  — **already off in production**, since `apps/api/Dockerfile:123`, `apps/start/Dockerfile:89`
+  and `self-hosting/coolify.yml:146,187,218` all set `NODE_ENV=production`, so this is a
+  regression test at most, not a code change; the "cluster" note in
   `packages/core/src/modules/organization/organization.service.ts:548-560` hand-rolls the
   `_replicated` fragment — use `replicatedTarget` from `shared/ch-tables.ts`.
-- **Cohort cap**: `cohort.service.ts` materialises at most 10,000 members per compute (documented);
-  the seeded signup cohort has 18,760 — the UI should say the count is truncated.
+- **Cohort cap — the least low-hanging item in this section.** `cohort.service.ts:72`
+  `DEFAULT_COHORT_MATERIALIZE_LIMIT = 10_000` (env-tunable at `:74-79`), and the stored count is
+  **already the truncated one** (`:874` `profileCount: profileIds.length`). To say "truncated"
+  the UI needs a flag that does not exist: either persist `truncated` on the `Cohort` model
+  (**a Prisma migration**) or derive it at read time and add a field to the tRPC response. The
+  comment at `:64` says the subset is arbitrary, so even "10,000+" would be a lie without an
+  uncapped `count()`. Needs a decision first.
 
 ---
 
