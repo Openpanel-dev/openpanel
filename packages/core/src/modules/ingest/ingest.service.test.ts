@@ -54,6 +54,7 @@ const getProfileById = mock(async () => null);
 mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let getOverrideDeviceId: typeof import('./ingest.service').getOverrideDeviceId;
+let getTimestamp: typeof import('./ingest.service').getTimestamp;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
 
@@ -80,9 +81,8 @@ beforeAll(async () => {
     ...realSaltService,
     getSalts,
   }));
-  ({ getOverrideDeviceId, handleReplay, ingestTrack } = await import(
-    './ingest.service'
-  ));
+  ({ getOverrideDeviceId, getTimestamp, handleReplay, ingestTrack } =
+    await import('./ingest.service'));
 });
 
 afterAll(() => {
@@ -94,6 +94,47 @@ const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>
     type: 'track',
     payload: { name: 'page_view', properties },
   }) as ITrackHandlerPayload;
+
+// Back-dating is documented and deliberate, so the guard here is a FLOOR, not
+// a window: historical imports must keep working, and only values that cannot
+// be a real event time fall back to the server clock (ISSUES.md H6).
+describe('getTimestamp', () => {
+  const ARRIVED_AT = Date.UTC(2026, 8, 27, 12, 0, 0);
+  const withTimestamp = (value: unknown) =>
+    getTimestamp(ARRIVED_AT, track({ __timestamp: value }).payload);
+
+  it('keeps an old but plausible timestamp, so imports still work', () => {
+    const result = withTimestamp('2020-01-01T00:00:00.000Z');
+    expect(result.timestamp).toBe(Date.UTC(2020, 0, 1));
+    expect(result.isTimestampFromThePast).toBe(true);
+  });
+
+  it('keeps a real epoch-millisecond value', () => {
+    const epochMs = Date.UTC(2024, 0, 15, 10, 30, 0);
+    expect(withTimestamp(epochMs).timestamp).toBe(epochMs);
+  });
+
+  it('falls back to the server clock for a value that lands in 1970', () => {
+    // `new Date(12345)` is 1970-01-01T00:00:12.345Z. One such row reached
+    // ClickHouse during the QA run and every WITH FILL series then began there.
+    expect(withTimestamp(12_345).timestamp).toBe(ARRIVED_AT);
+    expect(withTimestamp(0).timestamp).toBe(ARRIVED_AT);
+  });
+
+  it('still falls back for garbage and for the future', () => {
+    expect(withTimestamp('not a date').timestamp).toBe(ARRIVED_AT);
+    expect(withTimestamp(ARRIVED_AT + 10 * 60 * 1000).timestamp).toBe(
+      ARRIVED_AT
+    );
+  });
+
+  it('leaves a recent timestamp alone', () => {
+    const recent = ARRIVED_AT - 60 * 1000;
+    const result = withTimestamp(new Date(recent).toISOString());
+    expect(result.timestamp).toBe(recent);
+    expect(result.isTimestampFromThePast).toBe(false);
+  });
+});
 
 describe('getOverrideDeviceId', () => {
   it('returns a trimmed device id', () => {

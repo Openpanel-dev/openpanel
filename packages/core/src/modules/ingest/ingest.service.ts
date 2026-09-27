@@ -107,6 +107,15 @@ const QUEUE_PAYLOAD_HEADERS = [
 const MAX_OVERRIDE_DEVICE_ID_LENGTH = 64;
 const ONE_MINUTE_MS = 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+/**
+ * A floor, not a window. Back-dating is a documented feature — the tracking
+ * docs describe it and the Mixpanel migration guide imports years-old events
+ * through it — so historical imports must keep working. This only catches
+ * values that cannot be a real event time: `__timestamp: 12345` is read as
+ * epoch milliseconds and lands on 1970-01-01, after which every date-filled
+ * series starts there.
+ */
+const EARLIEST_ACCEPTED_TIMESTAMP_MS = Date.UTC(2000, 0, 1);
 const FALLBACK_USER_AGENT = 'unknown/1.0';
 
 /** The whitelisted subset that ships with the queue payload. */
@@ -178,9 +187,11 @@ export function getTimestamp(
   const clientTimestamp = new Date(userDefinedTimestamp);
   const clientTimestampNumber = clientTimestamp.getTime();
 
-  // Use safeTimestamp if invalid or more than 1 minute in the future
+  // Use safeTimestamp if invalid, implausibly old, or more than 1 minute
+  // in the future
   if (
     Number.isNaN(clientTimestampNumber) ||
+    clientTimestampNumber < EARLIEST_ACCEPTED_TIMESTAMP_MS ||
     clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS
   ) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
