@@ -7,6 +7,11 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 
+// `avg_duration` arrives in MINUTES — the MCP `get_page_performance` tool
+// documents that unit and its SEO thresholds are built on it — while
+// `fancyMinutes` takes seconds. Without this every page rendered "0s".
+const SECONDS_PER_MINUTE = 60;
+
 export type PageRow = RouterOutputs['event']['pages'][number] & {
   gsc?: { clicks: number; impressions: number; ctr: number; position: number };
 };
@@ -100,15 +105,23 @@ export function useColumns({
           const prev = previousMap?.get(
             row.original.origin + row.original.path
           );
+          // The count is always known. Only the comparison depends on having a
+          // previous period, so a missing `prev` hides the delta, not the
+          // number — it used to replace the whole cell with an em dash.
+          const count = (
+            <span className="font-mono text-sm tabular-nums">
+              {number.short(row.original.sessions)}
+            </span>
+          );
+
           if (prev == null) {
-            return <span className="text-muted-foreground">—</span>;
+            return count;
           }
+
           if (prev === 0) {
             return (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm tabular-nums">
-                  {number.short(row.original.sessions)}
-                </span>
+                {count}
                 <span className="text-muted-foreground">new</span>
               </div>
             );
@@ -119,9 +132,7 @@ export function useColumns({
 
           return (
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm tabular-nums">
-                {number.short(row.original.sessions)}
-              </span>
+              {count}
               <span
                 className={`font-mono text-sm tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
               >
@@ -148,7 +159,7 @@ export function useColumns({
         size: 90,
         cell: ({ row }) => (
           <span className="whitespace-nowrap font-mono text-sm tabular-nums">
-            {fancyMinutes(row.original.avg_duration)}
+            {fancyMinutes(row.original.avg_duration * SECONDS_PER_MINUTE)}
           </span>
         ),
       },
