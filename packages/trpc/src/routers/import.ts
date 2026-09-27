@@ -163,8 +163,17 @@ export const importRouter = createTRPCRouter({
         level: 'write',
       });
 
-      // Only allow retry for failed imports
-      if (importRecord.status !== 'failed') {
+      // Only allow retry for failed imports. Checked-then-enqueued atomically:
+      // two concurrent retry calls both reading status 'failed' before either
+      // writes would otherwise enqueue two jobs for the same importId, and
+      // the worker's success-path cleanup deletes staging rows by importId —
+      // one job finishing would delete rows the other has staged but not yet
+      // consumed.
+      const { count } = await db.import.updateMany({
+        where: { id: importRecord.id, status: 'failed' },
+        data: { status: 'pending', errorMessage: null },
+      });
+      if (count === 0) {
         throw new Error('Only failed imports can be retried');
       }
 
@@ -181,8 +190,6 @@ export const importRouter = createTRPCRouter({
         where: { id: importRecord.id },
         data: {
           jobId: job.id,
-          status: 'pending',
-          errorMessage: null,
         },
       });
     }),
