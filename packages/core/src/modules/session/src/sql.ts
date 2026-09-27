@@ -16,6 +16,7 @@
 // query is not the place to change its cluster semantics.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import { formatClickhouseDate } from './dates';
 import {
   type CompiledFilterClauses,
@@ -296,6 +297,11 @@ export interface QuerySessionsQuery
   filterClauses?: CompiledFilterClauses;
 }
 
+/**
+ * Without an explicit order ClickHouse returns whatever it reads first, so a
+ * bare LIMIT hands back the oldest sessions in the window while the MCP tool
+ * labels them `created_at desc`. The events twin took the same fix in #476.
+ */
 export function querySessionsQuery(query: QuerySessionsQuery): SqlFragment {
   const equalities = QUERY_SESSIONS_EQUALITY_COLUMNS.filter(
     ([key]) => query[key]
@@ -310,8 +316,9 @@ export function querySessionsQuery(query: QuerySessionsQuery): SqlFragment {
     WHERE project_id = ${sql.string(query.projectId)}
       AND sign = 1
       ${sql.join(equalities, ' ')}
-      AND created_at BETWEEN ${sql.string(query.startDate)} AND ${sql.string(query.endDate)}
+      AND created_at BETWEEN ${sql.string(toRangeBoundaryLiteral(query.startDate, 'start'))} AND ${sql.string(toRangeBoundaryLiteral(query.endDate, 'end'))}
       ${spliceCompiledFilters(query.filterClauses ?? {})}
+    ORDER BY created_at DESC
     LIMIT ${sql.uint64(query.limit)}
   `;
 }

@@ -15,7 +15,11 @@ const MIDNIGHT_FLAKE_SUITES = [
   'src/modules/chart/chart.service.test.ts',
   'src/modules/mcp/src/integration/tools.test.ts',
 ];
-const MIDNIGHT_FLAKE_SUITE_TEST_COUNT = 54;
+// A floor, not an exact count: this asserted `54 pass` and went red the moment
+// someone added a test to either child suite, which says nothing about the
+// midnight window. The floor still proves both suites actually ran.
+const MIDNIGHT_FLAKE_SUITE_MIN_TESTS = 54;
+const PASS_COUNT = /(\d+) pass/;
 // 00:01 is inside the chart pair's window, 00:10 and 00:19 inside charlie's.
 // Only the TIME of day is the subject here; the date must track the calendar.
 // `inactiveDays` and the last-seen buckets compare against ClickHouse's own
@@ -66,7 +70,9 @@ describe('mcp/chart fixture suites inside the midnight window', () => {
       () => {
         const { exitCode, output } = runSuitesAt(wallClockIso);
         expect(output).toContain(`${WALL_CLOCK_PINNED_MARKER} ${wallClockIso}`);
-        expect(output).toContain(` ${MIDNIGHT_FLAKE_SUITE_TEST_COUNT} pass`);
+        expect(
+          Number(PASS_COUNT.exec(output)?.[1] ?? 0)
+        ).toBeGreaterThanOrEqual(MIDNIGHT_FLAKE_SUITE_MIN_TESTS);
         expect(output).toContain(' 0 fail');
         expect(exitCode).toBe(0);
       },

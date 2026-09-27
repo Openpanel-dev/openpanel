@@ -21,6 +21,7 @@ import { getSafeJson, resolveDateRange } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
@@ -448,11 +449,6 @@ export interface QuerySessionsInput {
   limit?: number;
 }
 
-/** `clix.datetime`: any date input to a UTC `YYYY-MM-DD HH:mm:ss`. */
-function toClixDatetime(date: string): string {
-  return new Date(date).toISOString().slice(0, 19).replace('T', ' ');
-}
-
 export async function querySessionsCore(
   deps: ServiceDeps,
   input: QuerySessionsInput
@@ -462,17 +458,27 @@ export async function querySessionsCore(
     input.endDate
   );
 
+  // MCP sends a bare `YYYY-MM-DD`. The local `clix.datetime` helper this
+  // replaces flattened that to midnight before the query builder could widen
+  // it, so the whole last day was dropped, and it read an explicit datetime in
+  // the server's local zone on the way through.
+  const from = toRangeBoundaryLiteral(startDate, 'start');
+  const to = toRangeBoundaryLiteral(endDate, 'end');
+
   return chQuery<IClickhouseSession>(
     deps,
     querySessionsQuery({
       ...input,
-      startDate: toClixDatetime(startDate),
-      endDate: toClixDatetime(endDate),
+      startDate: from,
+      endDate: to,
       limit: input.limit ?? QUERY_SESSIONS_DEFAULT_LIMIT,
       filterClauses: await compileSessionFilters(
         input.filters,
         input.projectId,
-        { startDate: new Date(startDate), endDate: new Date(endDate) }
+        {
+          startDate: convertClickhouseDateToJs(from),
+          endDate: convertClickhouseDateToJs(to),
+        }
       ),
     }),
     CLIX_SESSION_TIMEZONE

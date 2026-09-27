@@ -217,7 +217,7 @@ describe('querySessionsQuery', () => {
     }).toStatement();
 
     expect(collapse(query)).toBe(
-      'SELECT * FROM sessions WHERE project_id = {p1:String} AND sign = 1 AND profile_id = {p2:String} AND country = {p3:String} AND browser = {p4:String} AND created_at BETWEEN {p5:String} AND {p6:String} LIMIT {p7:UInt64}'
+      'SELECT * FROM sessions WHERE project_id = {p1:String} AND sign = 1 AND profile_id = {p2:String} AND country = {p3:String} AND browser = {p4:String} AND created_at BETWEEN {p5:String} AND {p6:String} ORDER BY created_at DESC LIMIT {p7:UInt64}'
     );
     expect(query_params).toEqual({
       p1: PROJECT_ID,
@@ -228,6 +228,40 @@ describe('querySessionsQuery', () => {
       p6: '2026-07-31 00:00:00',
       p7: 20,
     });
+  });
+
+  // `query_sessions` labels its rows `created_at desc`, so the cut has to
+  // happen after the sort rather than wherever the scan starts. Without this
+  // the seeded August window returned the five OLDEST sessions (ISSUES.md H8b).
+  test('takes the newest sessions, not an arbitrary slice', () => {
+    const { query } = querySessionsQuery({
+      projectId: PROJECT_ID,
+      startDate: '2026-07-01 00:00:00',
+      endDate: '2026-07-31 00:00:00',
+      limit: 20,
+    }).toStatement();
+
+    expect(query.indexOf('ORDER BY created_at DESC')).toBeGreaterThan(-1);
+    expect(query.indexOf('ORDER BY')).toBeLessThan(query.indexOf('LIMIT'));
+  });
+
+  // `query_sessions` is reached from MCP with bare `YYYY-MM-DD`, which bound
+  // straight through as midnight and dropped the whole last day — 7,245
+  // sessions on the seeded 31 Aug (ISSUES.md H8a, missed in 60d96d8d).
+  test('widens a bare end date to the end of that day', () => {
+    const { query_params } = querySessionsQuery({
+      projectId: PROJECT_ID,
+      startDate: '2026-08-01',
+      endDate: '2026-08-31',
+      limit: 20,
+    }).toStatement();
+
+    const bounds = Object.values(query_params).filter(
+      (value): value is string =>
+        typeof value === 'string' && value.startsWith('2026-08-')
+    );
+    expect(bounds).toContain('2026-08-01 00:00:00');
+    expect(bounds).toContain('2026-08-31 23:59:59');
   });
 });
 
