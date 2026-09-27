@@ -9,6 +9,7 @@ import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
 import { createDebugRoutes } from './http/debug.routes';
 import { httpMetrics } from './http/http.metrics';
+import { httpRateLimit } from './http/rate-limit';
 import { queues } from './jobs.registry';
 import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
@@ -68,6 +69,10 @@ const METRICS_EXPOSITION_TTL_MS = 5000;
 // the one route surface whose hook ORDER is part of the contract.
 export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' })
+    // Mounted on the SURFACE, not per module, so a new /manage or /export
+    // route cannot arrive without the limit the docs advertise. The prefix
+    // table is in http/rate-limit.ts.
+    .use(httpRateLimit(deps))
     .use(ingestRoutes(deps))
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
@@ -96,6 +101,8 @@ export const publicApiRoutes = (deps: AppDeps) =>
 // misc's `/misc/*` (M7-008) joined it too — `/misc` IS in `corsPaths`.
 export const dashboardRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' })
+    // For `/mcp`; every other path on this surface is unmatched by the table.
+    .use(httpRateLimit(deps))
     .use(gscRoutes(deps))
     .use(assistantRoutes(deps))
     .use(mcpRoutes(deps))
