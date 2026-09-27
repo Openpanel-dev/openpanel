@@ -51,6 +51,12 @@ export async function generateGapBasedSessionIds(
   //
   // `lagInFrame` needs the explicit frame — the default window frame would
   // otherwise look at the whole partition rather than the preceding row.
+  //
+  // Every `ORDER BY created_at` also carries `, id`: two events at the same
+  // millisecond otherwise let ClickHouse pick a different tie order at each
+  // of the three nested windows, so a row `lagInFrame`/`row_number` place one
+  // way could land elsewhere in the outer `sum` -- splitting or merging a
+  // session inconsistently within a single run, not just between reruns.
   await ch.command({
     query: `
       INSERT INTO ${TABLE_NAMES.events_imports} (${CARRIED_COLUMNS}, session_id)
@@ -61,7 +67,7 @@ export async function generateGapBasedSessionIds(
         SELECT
           ${CARRIED_COLUMNS},
           sum(is_session_start) OVER (
-            PARTITION BY device_id ORDER BY created_at
+            PARTITION BY device_id ORDER BY created_at, id
             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
           ) - 1 AS session_index
         FROM (
@@ -80,11 +86,11 @@ export async function generateGapBasedSessionIds(
             SELECT
               ${CARRIED_COLUMNS},
               lagInFrame(created_at) OVER (
-                PARTITION BY device_id ORDER BY created_at
+                PARTITION BY device_id ORDER BY created_at, id
                 ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
               ) AS previous_created_at,
               row_number() OVER (
-                PARTITION BY device_id ORDER BY created_at
+                PARTITION BY device_id ORDER BY created_at, id
               ) AS row_in_device
             FROM ${TABLE_NAMES.events_imports}
             WHERE import_id = {importId:String}
