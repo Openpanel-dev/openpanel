@@ -35,6 +35,7 @@ import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import {
@@ -331,7 +332,7 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     sessionId: event.session_id,
     properties: event.properties,
     createdAt: convertClickhouseDateToJs(event.created_at),
-    country: event.country,
+    country: stripFixedStringPadding(event.country),
     city: event.city,
     region: event.region,
     longitude: event.longitude,

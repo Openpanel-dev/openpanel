@@ -11,7 +11,7 @@ export const PopularRoutes = ({ data }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Most visted pages</WidgetTitle>
+        <WidgetTitle>Most visited pages</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
         <WidgetEmptyState icon={RouteIcon} text="No pages visited yet" />

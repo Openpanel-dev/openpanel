@@ -53,7 +53,7 @@ import {
   getProjectAccess,
 } from '../../shared/access-lookups';
 import { formatClickhouseDate } from '../../shared/ch-dates';
-import { TABLE_NAMES } from '../../shared/ch-tables';
+import { replicatedTarget, TABLE_NAMES } from '../../shared/ch-tables';
 import { DEFAULT_TIMEZONE, isValidTimezone } from './organization.constants';
 
 export type IServiceOrganization = Awaited<
@@ -565,12 +565,7 @@ export async function deleteFromClickhouse(
   ];
 
   for (const table of tables) {
-    // `getReplicatedTableName` appends `ON CLUSTER '{cluster}'` in clustered
-    // mode, which is a clause rather than an identifier — so the table name
-    // goes through `sql.id` and the clause stays literal template text.
-    const target = deps.config.clickhouseClustered
-      ? sql`${sql.id(`${table}_replicated`)} ON CLUSTER '{cluster}'`
-      : sql.id(table);
+    const target = replicatedTarget(deps.config.clickhouseClustered, table);
     // If materialized view, use ALTER TABLE since DELETE is not supported
     const statement = table.endsWith('_mv')
       ? sql`ALTER TABLE ${target} DELETE WHERE ${where};`

@@ -71,7 +71,11 @@ export function registerDashboardLinkTools(
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
-        const base = `${dashboardBaseUrl(deps.config)}/${context.organizationId}/${projectId}`;
+        // Every segment below is caller data — a project or profile id can
+        // contain `/`, `?` or `#` and would otherwise change what the URL
+        // points at.
+        const segment = encodeURIComponent;
+        const base = `${dashboardBaseUrl(deps.config)}/${segment(context.organizationId)}/${segment(projectId)}`;
 
         const urls: Record<string, string> = {
           overview: base,
@@ -86,16 +90,16 @@ export function registerDashboardLinkTools(
         };
 
         if (profileId) {
-          urls.profile = `${base}/profiles/${profileId}`;
+          urls.profile = `${base}/profiles/${segment(profileId)}`;
         }
         if (sessionId) {
-          urls.session = `${base}/sessions/${sessionId}`;
+          urls.session = `${base}/sessions/${segment(sessionId)}`;
         }
         if (dashboardId) {
-          urls.dashboard = `${base}/dashboards/${dashboardId}`;
+          urls.dashboard = `${base}/dashboards/${segment(dashboardId)}`;
         }
         if (reportId) {
-          urls.report = `${base}/reports/${reportId}`;
+          urls.report = `${base}/reports/${segment(reportId)}`;
         }
 
         return urls;

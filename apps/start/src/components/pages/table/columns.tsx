@@ -40,15 +40,22 @@ export function useColumns({
           const page = row.original;
           return (
             <div className="flex min-w-0 items-center gap-3">
-              <img
-                alt=""
-                className="size-4 shrink-0 rounded-sm"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-                src={`${apiUrl}/misc/favicon?url=${page.origin}`}
-              />
+              {/* No origin means no favicon to fetch; the request used to go
+                  out anyway as `?url=` and answer 404 on every render. The
+                  value is also user data, so it is encoded. */}
+              {page.origin ? (
+                <img
+                  alt=""
+                  className="size-4 shrink-0 rounded-sm"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                  src={`${apiUrl}/misc/favicon?url=${encodeURIComponent(page.origin)}`}
+                />
+              ) : (
+                <div className="size-4 shrink-0" />
+              )}
               <div className="min-w-0">
                 {page.title && (
                   <div className="truncate font-medium text-sm leading-tight">

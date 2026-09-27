@@ -120,7 +120,12 @@ export function ComboboxAdvanced({
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent align="start" className="w-full max-w-md p-0">
+        {/* `w-full` resolved against the PORTAL, not the trigger, so the
+            popover opened at an unrelated width and position. */}
+        <PopoverContent
+          align="start"
+          className="w-[--radix-popover-trigger-width] max-w-md p-0"
+        >
           <Command shouldFilter={false}>
             <CommandInput
               onValueChange={setInputValue}

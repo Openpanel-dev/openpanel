@@ -26,6 +26,9 @@ const SKIP_LOG_ERROR_CODES = [
   'UNAUTHORIZED',
   'FORBIDDEN',
   'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+  // Every request for a route that does not exist logged a warning with a
+  // stack trace. A 404 is the caller's business, not an incident.
+  'NOT_FOUND',
 ];
 
 const VALIDATION_STATUS = 400;

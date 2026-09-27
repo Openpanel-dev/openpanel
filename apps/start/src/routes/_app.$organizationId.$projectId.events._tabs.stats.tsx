@@ -65,7 +65,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Share of events</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -109,7 +109,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Events by name</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -153,7 +153,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Events over time</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut

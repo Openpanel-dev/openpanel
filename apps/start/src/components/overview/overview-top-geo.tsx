@@ -201,7 +201,7 @@ export default function OverviewTopGeo({
             Geo data provided by{' '}
             <a
               className="hover:underline"
-              href="https://ipdata.co"
+              href="https://www.maxmind.com"
               rel="noopener noreferrer nofollow"
               target="_blank"
             >

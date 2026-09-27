@@ -32,7 +32,7 @@ export function ReportChartEmpty({
           Ready when you're
         </div>
         <div className="mt-2 text-muted-foreground">
-          Pick atleast one event to start visualize
+          Pick at least one event to start visualising
         </div>
       </div>
     );
