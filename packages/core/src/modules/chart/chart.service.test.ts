@@ -264,8 +264,8 @@ describe('picker queries', () => {
   it('lists event names with counts, `*` first', async () => {
     const events = await service.listChartEvents(TEST_PROJECT_ID);
 
-    // Counts come from distinct_event_names_mv (V1): one row per name and
-    // insert part, not one per event.
+    // Counts are `sum(event_count)` over distinct_event_names_mv, so they are
+    // real event totals. `count(name)` would count insert parts (ISSUES.md M1).
     expect(events[0]?.name).toBe('*');
     expect(events[0]?.count).toBe(
       events.slice(1).reduce((total, event) => total + event.count, 0)
@@ -282,6 +282,34 @@ describe('picker queries', () => {
       'session_end',
       'session_start',
     ]);
+  });
+
+  // The picker used to show `count(name)` over distinct_event_names_mv, which
+  // counts one row per name PER INSERT PART, not per event (ISSUES.md M1). On
+  // the large seed that showed 52 for an event with 974,387 occurrences. The
+  // only assertion that catches it is one against the events table itself.
+  it('counts real events, not materialized-view rows', async () => {
+    const events = await service.listChartEvents(TEST_PROJECT_ID);
+    const actual = await ch.query({
+      query:
+        'SELECT name, count() AS count FROM events WHERE project_id = {projectId:String} GROUP BY name',
+      query_params: { projectId: TEST_PROJECT_ID },
+      format: 'JSONEachRow',
+    });
+    const truth = Object.fromEntries(
+      (await actual.json<{ name: string; count: string }>()).map((row) => [
+        row.name,
+        Number(row.count),
+      ])
+    );
+    const fromPicker = Object.fromEntries(
+      events
+        .filter((event) => event.name !== '*')
+        .map((event) => [event.name, event.count])
+    );
+
+    expect(Object.keys(truth).length).toBeGreaterThan(0);
+    expect(fromPicker).toEqual(truth);
   });
 
   it('lists filterable properties, `name` only for the wildcard event', async () => {

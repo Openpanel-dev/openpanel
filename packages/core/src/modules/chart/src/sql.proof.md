@@ -611,15 +611,29 @@ SELECT uniqHLL12(if(created_at >= (now() - toIntervalMonth(3)), profile_id, null
 
 ### eventNamesWithCountQuery — events (verdict)
 
-**statement** — IDENTICAL; rows V1/V2 = 85/85; rows_read V1/V2 = 221184/221184; wall V1/V2 = 11 ms / 11 ms; clickhouse_settings: session_timezone=UTC (both).
+**Amended 2026-09-27 (ISSUES.md M1): V2 now DIVERGES from V1 deliberately.**
+
+The parity recorded below was real — both statements returned the same numbers because both
+were wrong in the same way. `count(name)` counts rows of `distinct_event_names_mv`, and that
+MV holds one row per name per insert part, so the report builder's event picker showed the
+number of insert parts rather than the number of events. On the `large` seed acme-web showed
+**52** for `screen_view`, which has **974,387** occurrences.
+
+`sum(event_count)` reads the total the MV already stores. Verified against the seeded data:
+it equals `SELECT count() FROM events GROUP BY name` exactly for every name (974387 / 659361 /
+659361 / 95582 / 46334 / 34533 across the top six on acme-web).
 
 ```sql
--- V1
+-- V1 (and V2 before this amendment) — counts MV rows, not events
 SELECT name, count(name) as count FROM distinct_event_names_mv WHERE project_id = 'verdict' GROUP BY name ORDER BY count DESC, name ASC
--- V2
-SELECT name, count(name) as count FROM distinct_event_names_mv WHERE project_id = {p1:String} GROUP BY name ORDER BY count DESC, name ASC
+-- V2 now
+SELECT name, sum(event_count) as count FROM distinct_event_names_mv WHERE project_id = {p1:String} GROUP BY name ORDER BY count DESC, name ASC
 -- V2 params: {"p1":"verdict"}
 ```
+
+Original record, kept for the paper trail:
+
+**statement** — IDENTICAL; rows V1/V2 = 85/85; rows_read V1/V2 = 221184/221184; wall V1/V2 = 11 ms / 11 ms; clickhouse_settings: session_timezone=UTC (both).
 
 ### eventPropertyKeysQuery — properties (secure-privacy, event=undefined)
 

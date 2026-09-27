@@ -615,7 +615,9 @@ export function projectCardMetricsQuery(projectId: string): SqlFragment {
 }
 
 export function eventNamesWithCountQuery(projectId: string): SqlFragment {
-  return sql`SELECT name, count(name) as count FROM ${sql.id(CHART_TABLE.eventNamesMv)} WHERE project_id = ${sql.string(projectId)} GROUP BY name ORDER BY count DESC, name ASC`;
+  // `count(name)` counts MV ROWS — one per name per insert part — not events.
+  // The table carries the real total in `event_count`.
+  return sql`SELECT name, sum(event_count) as count FROM ${sql.id(CHART_TABLE.eventNamesMv)} WHERE project_id = ${sql.string(projectId)} GROUP BY name ORDER BY count DESC, name ASC`;
 }
 
 function optionalEventName(event: string | undefined): SqlFragment {
