@@ -21,6 +21,11 @@ closed four more: **H1** (`8149f200`), **H3** (`565cca66`), **H9** (`6e8e3eb8`) 
 (`092b240e`). With L1 gone `bun test --isolate` in `packages/core` is green: 1797 pass,
 12 skip, 0 fail. H8a followed (`60d96d8d`).
 
+The fourth pass then fixed, in order: **M1** (`08eaec41`), **H8b + the rest of H8a**
+(`d98a3c14`), **H8c** (`9718c5bf`), **H8e** (`695fc8ce`), **H6** (`352b204e`) and **M2**
+(`c968481d`). **H8 is now closed apart from H8d, which is deferred.** Core suite 1810 pass,
+12 skip, 0 fail.
+
 A fourth pass (2026-09-27) re-investigated the open entries against the running databases
 rather than trusting the QA text. **Several diagnoses in this file were wrong and have been
 rewritten in place.** In particular: **H7 is not a bug** and is closed; **H13 is not a SQL
@@ -152,7 +157,7 @@ misleading feature; **low** = cosmetic.
   configured maximum with a 413 instead of a raw KafkaJS 500.
 - **Verify**: each case above → 400/413 with a message; `SELECT count() FROM events WHERE name=''` stays 0.
 
-### H6. Client-controlled timestamps and device ids accepted unbounded
+### H6. Client-controlled timestamps and device ids accepted unbounded — FIXED (`352b204e`)
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `__timestamp: 12345` → `created_at = 1970-01-01`; `"2020-01-01T…"` stored as-is;
   every date-filled series (e.g. `/insights/:id/active_users`, `WITH FILL`) then starts in 1970.
@@ -192,13 +197,13 @@ worth noting is that the sweep is hourly rather than immediate.
   `packages/core/src/modules/overview/src/overview.sql.ts:118-124`, `pages.sql.ts:16-22`
   (`BETWEEN … AND toDateTime('<end> 00:00:00')`). Fix: `< end + 1 day`. Verify against
   ClickHouse: `get_analytics_overview` Aug 1–31 on acme-web → 283780 sessions (inclusive), not 276535.
-- **b. `query_sessions` unordered — HALF ALREADY FIXED** — `queryEventsQuery` got its
+- **b. `query_sessions` unordered — FIXED (`d98a3c14`)** — `queryEventsQuery` got its
   `ORDER BY created_at DESC` from `f37bb130` and is fine today
   (`packages/core/src/modules/event/src/sql.ts:384-393`, with a comment explaining why).
   Only `packages/core/src/modules/session/src/sql.ts:315` `querySessionsQuery` still has a
   bare `LIMIT` while the response claims "created_at desc". Verified: asking for the 5 newest
   sessions returns rows from 26 Aug, four seconds apart. Fix: one line, that file only.
-- **c. `get_rolling_active_users` returns future dates** — `date + n` ARRAY JOIN with no
+- **c. `get_rolling_active_users` returns future dates — FIXED (`9718c5bf`)** — `date + n` ARRAY JOIN with no
   `WHERE date <= today()`. File: `packages/core/src/modules/chart/src/retention.sql.ts:107-127`.
 - **d. `get_page_conversions` empty when users identify at conversion — DEFERRED by the
   owner 2026-09-27; diagnosis below is settled, do not re-derive it.** The join at
@@ -214,7 +219,7 @@ worth noting is that the sweep is hourly rather than immediate.
   rows where the current join returns 0 (acme-web / `signup_completed` / Aug 1-8), and gives
   the same attribution the backfill would. It is deferred because it narrows attribution to a
   single session and makes the tool's `windowHours` parameter close to meaningless.
-- **e. Descriptions** — three, and one is worse than reported.
+- **e. Descriptions — FIXED (`695fc8ce`)** — three, and one was worse than reported.
   `get_retention_cohort` says "retained per following week" but computes on-or-after, because
   `retention.service.ts:256` defaults `criteria` to `'on_or_after'` which `retention.sql.ts:44-47`
   compiles to `>=`. `get_profile_metrics` has a not-found guard at `profile-metrics.ts:28` that
@@ -414,7 +419,7 @@ are already fixed.
 
 ## Medium
 
-### M1. Event picker counts are meaningless
+### M1. Event picker counts are meaningless — FIXED (`08eaec41`)
 - **Symptom**: report builder shows "Any events 676" and "52" next to every event (real 30-day
   counts are 39,202 … 3,097).
 - **Files**: `packages/core/src/modules/chart/src/sql.ts:610` (`count(name)` over
@@ -428,7 +433,7 @@ are already fixed.
 - **Verify**: picker count for `cta_clicked` on acme-web equals `SELECT count() FROM events
   WHERE project_id='acme-web' AND name='cta_clicked'` (95,582).
 
-### M2. Pages table: hidden session counts and near-zero durations
+### M2. Pages table: hidden session counts and near-zero durations — FIXED (`c968481d`), except the acme-app bounce-rate note
 - **Symptom**: Sessions column shows `—` for every row when no previous-period value exists
   (the real count, e.g. 152,116, is hidden); `avg_duration` is 0.1–0.24 (renders "0s") while
   sessions average 61 s; acme-app pages show Bounce 0 % / 0s on every row.
