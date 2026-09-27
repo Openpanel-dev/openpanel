@@ -8,8 +8,19 @@ import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createTitle } from '@/utils/title';
+import { z } from 'zod';
+
+const validateSearch = z.object({
+  /**
+   * Set by the OAuth callback when an invite could not be consumed. Carried
+   * into onboarding so an invited user is told their invite expired instead of
+   * silently being walked through creating an organization of their own.
+   */
+  inviteError: z.string().optional(),
+});
 
 export const Route = createFileRoute('/')({
+  validateSearch,
   beforeLoad: ({ context }) => {
     if (!context.session?.session) {
       throw redirect({ to: '/login' });
@@ -19,7 +30,7 @@ export const Route = createFileRoute('/')({
   head: () => ({
     meta: [{ title: createTitle('Welcome') }],
   }),
-  loader: async ({ context }) => {
+  loader: async ({ context, location }) => {
     // Unsure why not using ensureQueryData here works
     // We need to put staleTime and gcTime to 0 to get the latest data
     // Even tho this query has never been called before
@@ -33,7 +44,13 @@ export const Route = createFileRoute('/')({
       .catch(() => []);
 
     if (organizations.length === 0) {
-      throw redirect({ to: '/onboarding/project' });
+      const search = validateSearch.safeParse(location.search);
+      throw redirect({
+        to: '/onboarding/project',
+        search: search.success && search.data.inviteError
+          ? { inviteError: search.data.inviteError }
+          : undefined,
+      });
     }
 
     if (organizations.length === 1) {

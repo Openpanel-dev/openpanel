@@ -30,6 +30,7 @@ import {
   db,
   decrypt,
   encrypt,
+  getInviteFailureCode,
   getIsRegistrationAllowed,
   getShareOverviewById,
   getUserAccount,
@@ -62,21 +63,26 @@ const zProvider = z.enum(['email', 'google', 'github']);
 /**
  * Best-effort consumption of an invite for a user that just authenticated.
  * Failures (expired/invalid invite) must not block the sign-in itself, so we
- * swallow and log the error instead of rethrowing.
+ * swallow and log the error instead of rethrowing — but we return why, so the
+ * caller can tell the person their invite expired rather than silently landing
+ * them in onboarding to create an organization of their own.
  */
 async function consumeInviteForUser(
   userId: string,
   inviteId: string,
   log: { error: (obj: unknown, msg?: string) => void }
-) {
+): Promise<{ inviteError: string | null }> {
   try {
     const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
     await connectUserToOrganization({ user, inviteId });
+    return { inviteError: null };
   } catch (error) {
+    const inviteError = getInviteFailureCode(error) ?? 'failed';
     log.error(
-      { userId, inviteId, error },
+      { userId, inviteId, error, inviteError },
       'Failed to connect user to organization via invite'
     );
+    return { inviteError };
   }
 }
 
@@ -285,12 +291,18 @@ export const authRouter = createTRPCRouter({
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
 
+      let inviteError: string | null = null;
       if (input.inviteId) {
-        await consumeInviteForUser(user.id, input.inviteId, ctx.req.log);
+        ({ inviteError } = await consumeInviteForUser(
+          user.id,
+          input.inviteId,
+          ctx.req.log
+        ));
       }
 
       return {
         type: 'email' as const,
+        inviteError,
       };
     }),
 
@@ -362,12 +374,17 @@ export const authRouter = createTRPCRouter({
       setLastAuthProviderCookie(ctx.setCookie, 'email');
 
       const inviteId = ctx.cookies[INVITE_COOKIE];
+      let inviteError: string | null = null;
       if (inviteId) {
-        await consumeInviteForUser(challenge.userId, inviteId, ctx.req.log);
+        ({ inviteError } = await consumeInviteForUser(
+          challenge.userId,
+          inviteId,
+          ctx.req.log
+        ));
         ctx.setCookie(INVITE_COOKIE, '', { maxAge: 0 });
       }
 
-      return { type: 'email' as const };
+      return { type: 'email' as const, inviteError };
     }),
 
   totpStatus: protectedProcedure.query(async ({ ctx }) => {

@@ -31,7 +31,28 @@ import { op } from '@/utils/op';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
+  /** Why a pending invite could not be consumed, set by the OAuth callback. */
+  inviteError: z.string().optional(),
 });
+
+const INVITE_ERROR_MESSAGES: Record<string, string> = {
+  expired:
+    "Your invitation has expired, so you have not been added to that organization. Ask an admin to send a new one, or continue below to create your own.",
+  not_found:
+    "That invitation could not be found, so you have not been added to any organization. Ask an admin to send a new one, or continue below to create your own.",
+  not_allowed:
+    "Invitations are disabled on this instance, so you have not been added to that organization. Continue below to create your own.",
+};
+
+function inviteErrorMessage(code: string | undefined): string | null {
+  if (!code) {
+    return null;
+  }
+  return (
+    INVITE_ERROR_MESSAGES[code] ??
+    "We could not apply your invitation, so you have not been added to that organization. Ask an admin to send a new one, or continue below to create your own."
+  );
+}
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
@@ -64,6 +85,8 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
+  const { inviteError } = Route.useSearch();
+  const inviteMessage = inviteErrorMessage(inviteError);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -149,6 +172,14 @@ function Component() {
       onSubmit={form.handleSubmit(onSubmit)}
     >
       <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
+        {inviteMessage && (
+          <div
+            className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive text-sm"
+            role="alert"
+          >
+            {inviteMessage}
+          </div>
+        )}
         <div className="row mb-4 gap-2 rounded-lg bg-muted p-1">
           <button
             className={cn(

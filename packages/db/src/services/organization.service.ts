@@ -134,6 +134,32 @@ export async function getMember(organizationId: string, userId: string) {
   });
 }
 
+/** Why an invite could not be consumed. */
+export type InviteFailureCode = 'not_found' | 'expired' | 'not_allowed';
+
+/**
+ * Thrown when an invite cannot be consumed.
+ *
+ * Callers sit on the sign-in path and must not fail the sign-in itself, but
+ * they do need to tell the difference between "this invite is expired" — which
+ * the person can act on by asking for a new one — and an unexpected fault.
+ * Swallowing both identically is how an invited user silently ends up creating
+ * their own organization instead.
+ */
+export class InviteError extends Error {
+  readonly code: InviteFailureCode;
+
+  constructor(code: InviteFailureCode, message: string) {
+    super(message);
+    this.name = 'InviteError';
+    this.code = code;
+  }
+}
+
+export function getInviteFailureCode(error: unknown): InviteFailureCode | null {
+  return error instanceof InviteError ? error.code : null;
+}
+
 export async function connectUserToOrganization({
   user,
   inviteId,
@@ -150,15 +176,15 @@ export async function connectUserToOrganization({
   });
 
   if (!invite) {
-    throw new Error('Invite not found');
+    throw new InviteError('not_found', 'Invite not found');
   }
 
   if (process.env.ALLOW_INVITATION === 'false') {
-    throw new Error('Invitations are not allowed');
+    throw new InviteError('not_allowed', 'Invitations are not allowed');
   }
 
   if (invite.expiresAt < new Date()) {
-    throw new Error('Invite expired');
+    throw new InviteError('expired', 'Invite expired');
   }
 
   // The invite might be consumed by a user who is already a member of the
