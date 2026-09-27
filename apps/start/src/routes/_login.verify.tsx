@@ -29,9 +29,11 @@ function VerifyPage() {
 
   const mutation = useMutation(
     trpc.auth.signInTotp.mutationOptions({
-      onSuccess() {
+      onSuccess(data) {
         toast.success('Signed in');
-        window.location.href = '/';
+        window.location.href = data.inviteError
+          ? `/?inviteError=${encodeURIComponent(data.inviteError)}`
+          : '/';
       },
       onError(error) {
         toast.error(error.message);

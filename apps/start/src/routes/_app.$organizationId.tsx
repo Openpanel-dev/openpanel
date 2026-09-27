@@ -6,6 +6,7 @@ import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { inviteErrorMessage } from '@/utils/invite-error';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ import {
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { Building2Icon } from 'lucide-react';
+import { z } from 'zod';
 
 const IGNORE_ORGANIZATION_IDS = ['.well-known', 'onboarding', 'assets'];
 
@@ -42,6 +44,10 @@ const isStaticFile = (path: string) => {
 
 export const Route = createFileRoute('/_app/$organizationId')({
   component: Component,
+  validateSearch: z.object({
+    /** Why a pending invite could not be consumed, set by the OAuth callback. */
+    inviteError: z.string().optional(),
+  }),
   beforeLoad: async ({ context, params }) => {
     if (IGNORE_ORGANIZATION_IDS.includes(params.organizationId)) {
       throw notFound();
@@ -92,7 +98,7 @@ function Alert({
 }: {
   title: string;
   description: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }) {
   const location = useLocation();
@@ -106,13 +112,15 @@ function Alert({
     <div className={cn('p-4 lg:p-8 bg-card border-b col gap-1', className)}>
       <div className="text-lg font-medium">{title}</div>
       <div className="mb-1">{description}</div>
-      <div className="row gap-2">{children}</div>
+      {children && <div className="row gap-2">{children}</div>}
     </div>
   );
 }
 
 function Component() {
   const { organizationId } = Route.useParams();
+  const { inviteError } = Route.useSearch();
+  const inviteMessage = inviteErrorMessage(inviteError);
   const trpc = useTRPC();
   const { data: organization } = useSuspenseQuery(
     trpc.organization.get.queryOptions({
@@ -144,6 +152,12 @@ function Component() {
 
   return (
     <>
+      {inviteMessage && (
+        <Alert
+          title="Invitation couldn't be applied"
+          description={inviteMessage}
+        />
+      )}
       {!stateMeta.banner && !isBillingPage && (
         <YearlySwitchPrompt organization={organization} />
       )}

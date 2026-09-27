@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { inviteErrorMessage } from '@/utils/invite-error';
 import { op } from '@/utils/op';
 
 const validateSearch = z.object({
@@ -35,24 +36,6 @@ const validateSearch = z.object({
   inviteError: z.string().optional(),
 });
 
-const INVITE_ERROR_MESSAGES: Record<string, string> = {
-  expired:
-    "Your invitation has expired, so you have not been added to that organization. Ask an admin to send a new one, or continue below to create your own.",
-  not_found:
-    "That invitation could not be found, so you have not been added to any organization. Ask an admin to send a new one, or continue below to create your own.",
-  not_allowed:
-    "Invitations are disabled on this instance, so you have not been added to that organization. Continue below to create your own.",
-};
-
-function inviteErrorMessage(code: string | undefined): string | null {
-  if (!code) {
-    return null;
-  }
-  return (
-    INVITE_ERROR_MESSAGES[code] ??
-    "We could not apply your invitation, so you have not been added to that organization. Ask an admin to send a new one, or continue below to create your own."
-  );
-}
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,

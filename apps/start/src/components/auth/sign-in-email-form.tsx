@@ -26,7 +26,9 @@ export function SignInEmailForm({
           return;
         }
         toast.success('Successfully signed in');
-        window.location.href = '/';
+        window.location.href = data.inviteError
+          ? `/?inviteError=${encodeURIComponent(data.inviteError)}`
+          : '/';
       },
       onError(error) {
         toast.error(error.message);

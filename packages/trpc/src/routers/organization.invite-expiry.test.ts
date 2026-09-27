@@ -40,4 +40,17 @@ describe('getInviteExpiryDays', () => {
     process.env.INVITE_EXPIRY_DAYS = '';
     expect(getInviteExpiryDays()).toBe(7);
   });
+
+  it('does not let a numeric prefix stand in for the whole value', () => {
+    // Number.parseInt('3days', 10) reads the leading digits and would
+    // silently use 3 instead of falling back to the 7-day default for an
+    // invalid setting.
+    process.env.INVITE_EXPIRY_DAYS = '3days';
+    expect(getInviteExpiryDays()).toBe(7);
+
+    // Number.parseInt('1e2', 10) stops at 'e' and would silently use 1
+    // instead of the 100 (clamped to 90) the value actually spells out.
+    process.env.INVITE_EXPIRY_DAYS = '1e2';
+    expect(getInviteExpiryDays()).toBe(90);
+  });
 });

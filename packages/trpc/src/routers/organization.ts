@@ -34,8 +34,12 @@ export function getInviteExpiryDays(): number {
   if (!raw) {
     return DEFAULT_INVITE_EXPIRY_DAYS;
   }
-  const parsed = Number.parseInt(raw, 10);
-  if (Number.isNaN(parsed)) {
+  // Number.parseInt would accept a numeric prefix ("7days" -> 7, "1e2" -> 1)
+  // and silently apply the wrong value instead of falling back or clamping.
+  // Number() rejects trailing garbage and evaluates scientific notation
+  // properly, so validate the whole string through it first.
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed)) {
     return DEFAULT_INVITE_EXPIRY_DAYS;
   }
   return Math.min(

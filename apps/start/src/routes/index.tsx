@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
+import { inviteErrorMessage } from '@/utils/invite-error';
 import { createTitle } from '@/utils/title';
 import { z } from 'zod';
 
@@ -43,13 +44,16 @@ export const Route = createFileRoute('/')({
       )
       .catch(() => []);
 
+    const search = validateSearch.safeParse(location.search);
+    const inviteError =
+      search.success && search.data.inviteError
+        ? search.data.inviteError
+        : undefined;
+
     if (organizations.length === 0) {
-      const search = validateSearch.safeParse(location.search);
       throw redirect({
         to: '/onboarding/project',
-        search: search.success && search.data.inviteError
-          ? { inviteError: search.data.inviteError }
-          : undefined,
+        search: inviteError ? { inviteError } : undefined,
       });
     }
 
@@ -57,6 +61,7 @@ export const Route = createFileRoute('/')({
       throw redirect({
         to: '/$organizationId',
         params: { organizationId: organizations[0].id },
+        search: inviteError ? { inviteError } : undefined,
       });
     }
   },
@@ -70,6 +75,8 @@ function LandingPage() {
     trpc.organization.list.queryOptions()
   );
   const number = useNumber();
+  const { inviteError } = Route.useSearch();
+  const inviteMessage = inviteErrorMessage(inviteError);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
@@ -81,6 +88,15 @@ function LandingPage() {
             title="Welcome to OpenPanel.dev"
           />
         </div>
+
+        {inviteMessage && (
+          <div
+            className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive text-sm"
+            role="alert"
+          >
+            {inviteMessage}
+          </div>
+        )}
 
         <div className="col gap-2">
           {organizations?.map((org) => (
