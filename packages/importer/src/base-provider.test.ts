@@ -140,4 +140,16 @@ describe('getDateChunks with a larger chunk size', () => {
       expect(currentStart > previousEnd).toBe(true);
     }
   });
+
+  it('never repeats a day at the default chunk size across a DST transition', () => {
+    // The default (chunkSizeDays: 1, or omitted entirely) hits the same
+    // UTC/local-time mismatch: pre-fix, this range repeats 2025-03-09 as two
+    // separate one-day chunks under America/New_York, so every provider using
+    // the default -- not just a configured multi-day size -- re-requested and
+    // re-imported that day's events. Predates this PR; not new to it.
+    const chunks = provider.getDateChunks('2025-03-07', '2025-03-12');
+    const starts = chunks.map(([start]) => start);
+
+    expect(new Set(starts).size).toBe(starts.length);
+  });
 });
