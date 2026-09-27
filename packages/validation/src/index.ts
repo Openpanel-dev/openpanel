@@ -712,8 +712,27 @@ export const zMixpanelImportConfig = z.object({
    * Mixpanel's export APIs report timestamps in project time, so this is what
    * they get converted from on the way to UTC. Defaults to UTC when unset,
    * which reproduces the pre-timezone behaviour.
+   *
+   * Validated here rather than left to fail at conversion time: the converter
+   * treats an unrecognized name as "no timezone" and imports every timestamp
+   * unconverted, which is the exact bug this field exists to fix -- a typo
+   * should reject the config, not silently reproduce it.
    */
-  timezone: z.string().min(1).optional(),
+  timezone: z
+    .string()
+    .min(1)
+    .refine(
+      (tz) => {
+        try {
+          new Intl.DateTimeFormat('en-US', { timeZone: tz });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Invalid IANA timezone' }
+    )
+    .optional(),
 });
 export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
 
