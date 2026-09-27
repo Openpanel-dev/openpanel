@@ -148,7 +148,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
     // Split the date range into daily chunks for reliability
     // Uses base class utility to avoid timeout issues with large date ranges
-    const dateChunks = this.getDateChunks(overrideFrom ?? from, to); // 1 day per chunk (default)
+    const dateChunks = this.getDateChunks(overrideFrom ?? from, to, {
+      chunkSizeDays: this.getChunkSizeDays(),
+    });
 
     for (const [chunkFrom, chunkTo] of dateChunks) {
       let retries = 0;

@@ -111,7 +111,9 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     overrideFrom?: string
   ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
     const { from, to } = this.config;
-    const dateChunks = this.getDateChunks(overrideFrom ?? from, to);
+    const dateChunks = this.getDateChunks(overrideFrom ?? from, to, {
+      chunkSizeDays: this.getChunkSizeDays(),
+    });
 
     for (const [chunkFrom, chunkTo] of dateChunks) {
       // Amplitude expects YYYYMMDDTHH (hour inclusive on both ends).

@@ -68,6 +68,31 @@ export abstract class BaseImportProvider<
   }
 
   /**
+   * How many days each export request should cover.
+   *
+   * One day per chunk is a safe default for dense projects, but it is also the
+   * only thing deciding how many sequential requests an import makes: a
+   * nine-month range becomes 270-odd round trips, one after another, whatever
+   * the volume per day. For sparse or historical backfills that is most of the
+   * wall-clock time and nowhere near any provider rate limit.
+   *
+   * Raise it with IMPORT_CHUNK_SIZE_DAYS. Clamped to 1..31 -- beyond that the
+   * per-request payload starts risking provider-side timeouts, which is the
+   * failure chunking exists to avoid in the first place.
+   */
+  protected getChunkSizeDays(): number {
+    const raw = process.env.IMPORT_CHUNK_SIZE_DAYS;
+    if (!raw) {
+      return 1;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isNaN(parsed)) {
+      return 1;
+    }
+    return Math.min(31, Math.max(1, parsed));
+  }
+
+  /**
    * Utility: Split a date range into chunks to avoid timeout issues with large imports
    * Returns array of [from, to] date pairs in YYYY-MM-DD format
    *
