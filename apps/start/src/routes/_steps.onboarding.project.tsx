@@ -27,7 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { inviteErrorMessage } from '@/utils/invite-error';
+import { onboardingInviteErrorMessage } from '@/utils/invite-error';
 import { op } from '@/utils/op';
 
 const validateSearch = z.object({
@@ -69,7 +69,7 @@ type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
   const { inviteError } = Route.useSearch();
-  const inviteMessage = inviteErrorMessage(inviteError);
+  const inviteMessage = onboardingInviteErrorMessage(inviteError);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
