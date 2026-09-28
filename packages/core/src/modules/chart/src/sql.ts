@@ -1,17 +1,16 @@
-// Every ClickHouse query the chart module runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse query the chart module runs, as pure `sql` fragments.
 //
 // The field resolver and filter compiler render text (see compiled.ts); their
 // output is spliced, everything else is bound. Dates bind as strings: a String
 // param in a DateTime position is parsed exactly like the literal it replaces.
 //
 // Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
-// Distributed on Cloud. The cohort CTEs, the profile / group / cohort
-// LEFT ANY JOINs and any `IN (SELECT ...)` a filter compiles run under the
-// client's `distributed_product_mode: 'allow'`.
+// Distributed on Cloud. The cohort CTEs, the profile / group / cohort LEFT ANY
+// JOINs and any `IN (SELECT...)` a filter compiles run under the client's
+// `distributed_product_mode: 'allow'`.
 //
-// The keyed part records below are a local, function-scoped builder (ADR-013
-// R5): assigning clauses by key keeps a stable clause order.
+// The keyed part records below are a local, function-scoped builder: assigning
+// clauses by key keeps a stable clause order.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
@@ -689,7 +688,7 @@ function profileFieldsToSelect(refs: string[]): SqlFragment[] {
       fields.push(field);
     }
   }
-  // ADR-013 R3: V1 spliced these unchecked (trpc chart.ts:781).
+  // V1 spliced these unchecked (trpc chart.ts:781).
   return fields.map((field) => sql.id(field, PROFILE_COLUMNS));
 }
 

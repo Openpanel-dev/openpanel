@@ -1,6 +1,6 @@
-// Ported from apps/api/src/utils/ids.ts (M8-002). Device and session identity
-// for an incoming event: the salted device id, and the session id the API
-// answers with synchronously while the worker persists the blob async.
+// Ported from apps/api/src/utils/ids.ts. Device and session identity for an
+// incoming event: the salted device id, and the session id the API answers with
+// synchronously while the worker persists the blob async.
 
 import crypto from 'node:crypto';
 import type { SessionBuffer } from '../../../buffers/session-buffer';

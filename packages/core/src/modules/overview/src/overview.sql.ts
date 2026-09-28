@@ -1,10 +1,9 @@
-// Every ClickHouse query OverviewService runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse query OverviewService runs, as pure `sql` fragments.
 //
 // Both filter compilers and the field resolver return fragments and are
-// interpolated directly. `compiledText` is left with one job
-// here: the `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is
-// SQL syntax, not a value.
+// interpolated directly. `compiledText` is left with one job here: the
+// `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is SQL
+// syntax, not a value.
 //
 // `toStartOf`/`toInterval`/`datetime` reproduce V1's `clix` static helpers
 // verbatim (query-builder.ts) rather than chart.sql.ts's own `intervalBucket`:
@@ -211,7 +210,7 @@ export function metricsWithPageFilterQuery(
   // needs alongside the columns every other metric aggregates. A CTE is
   // re-executed once per reference, so each source is read exactly once here
   // and the window-wide totals are lifted off its own `WITH ROLLUP` row rather
-  // than from a second scan (M28-001).
+  // than from a second scan.
   const filteredScreenViews = sql`
     SELECT
       ${dateBucket} AS date,

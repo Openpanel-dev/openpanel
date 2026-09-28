@@ -2,42 +2,41 @@
  * Session stress + drain-to-completion.
  *
  * Ramps out many short sessions (default 500, not all at once), then drives the
- * reaper + buffer flushes until EVERYTHING has fully drained — every session_end
- * emitted, Redis cleaned, the session buffer empty — and reconciles the
- * ClickHouse counts. Exits 0 only when nothing is left open.
+ * reaper + buffer flushes until EVERYTHING has fully drained — every
+ * session_end emitted, Redis cleaned, the session buffer empty — and reconciles
+ * the ClickHouse counts. Exits 0 only when nothing is left open.
  *
  * Also instruments the run (BENCH-001): per-request /track latency
- * (P50/P95/P99, emit phase only), RSS/CPU of the api + worker processes
- * (>=1Hz, peak + steady-state), Kafka consumer-group lag on the events
- * topic (>=1Hz; peak, lag at emit-end, seconds-to-zero after emit stops),
- * and every BullMQ queue depth + buffer pending count scraped off /metrics
- * (>=1Hz; peak, depth at emit-end, whether it returned to zero — M16-001).
- * None of it changes what the run asserts — see `check()` calls below,
- * unchanged from the un-instrumented version.
+ * (P50/P95/P99, emit phase only), RSS/CPU of the api + worker processes (>=1Hz,
+ * peak + steady-state), Kafka consumer-group lag on the events topic (>=1Hz;
+ * peak, lag at emit-end, seconds-to-zero after emit stops), and every BullMQ
+ * queue depth + buffer pending count scraped off /metrics (>=1Hz; peak, depth
+ * at emit-end, whether it returned to zero — M16-001). None of it changes what
+ * the run asserts — see `check` calls below, unchanged from the un-instrumented
+ * version.
  *
  * `saturation-sweep.ts` drives this script across a ladder of offered loads;
  * see docs/BENCHMARK_HARNESS.md.
  *
  * Run (shrink the idle window; start the stack with the SAME value):
- *   SESSION_TIMEOUT_MS=4000 pnpm dev
- *   SESSION_TIMEOUT_MS=4000 pnpm --filter @openpanel/api e2e:sessions:stress
+ * SESSION_TIMEOUT_MS=4000 pnpm dev SESSION_TIMEOUT_MS=4000 pnpm --filter
+ * @openpanel/api e2e:sessions:stress
  *
  * Tunables (env): E2E_SESSIONS (500), E2E_CONCURRENCY (25),
- *   E2E_EVENTS_PER_SESSION (3), E2E_DRAIN_TIMEOUT_MS (120000),
- *   E2E_RECONCILE_TIMEOUT_MS (30000), E2E_RUNS (1) — run the whole harness
- *   E2E_RUNS times (as separate processes, so no state leaks between them)
- *   and print a median summary across runs at the end. E2E_NO_SAMPLING (0) —
- *   skip starting the process/lag monitors entirely (per-request latency
- *   still records; it's inherent to what's measured, not background
- *   polling). Control lever for isolating whether the >=1Hz sampling itself
- *   is dragging on throughput, e.g. `E2E_RUNS=3 E2E_NO_SAMPLING=1`.
- *   E2E_AUTH_MODE (bypass) — which ingest auth path every request takes:
- *   `bypass` | `cors` | `secret`; see AUTH_PATH_DESCRIPTION in lib.ts. The
- *   default keeps this script on the path the pre-existing suites were
- *   written against; `saturation-sweep.ts` defaults to `secret`.
- *   E2E_AUTH_WARM_REQUESTS (3) — authenticated requests sent and discarded
- *   before recording starts, so the scrypt verify behind VERIFY_CACHE_SECONDS
- *   is paid outside the measured window.
+ * E2E_EVENTS_PER_SESSION (3), E2E_DRAIN_TIMEOUT_MS (120000),
+ * E2E_RECONCILE_TIMEOUT_MS (30000), E2E_RUNS (1) — run the whole harness
+ * E2E_RUNS times (as separate processes, so no state leaks between them) and
+ * print a median summary across runs at the end. E2E_NO_SAMPLING (0) — skip
+ * starting the process/lag monitors entirely (per-request latency still
+ * records; it's inherent to what's measured, not background polling). Control
+ * lever for isolating whether the >=1Hz sampling itself is dragging on
+ * throughput, e.g. `E2E_RUNS=3 E2E_NO_SAMPLING=1`. E2E_AUTH_MODE (bypass) —
+ * which ingest auth path every request takes: `bypass` | `cors` | `secret`; see
+ * AUTH_PATH_DESCRIPTION in lib.ts. The default keeps this script on the path
+ * the pre-existing suites were written against; `saturation-sweep.ts` defaults
+ * to `secret`. E2E_AUTH_WARM_REQUESTS (3) — authenticated requests sent and
+ * discarded before recording starts, so the scrypt verify behind
+ * VERIFY_CACHE_SECONDS is paid outside the measured window.
  */
 
 import { spawn } from 'node:child_process';
@@ -597,12 +596,12 @@ function runChild(index: number, total: number): Promise<RunResult> {
   );
   return new Promise<RunResult>((resolve, reject) => {
     // Re-run the same package.json script rather than replaying argv: argv[1]
-    // here is a bare .ts path that only resolves because the *current*
-    // process already has jiti's loader hook registered in-process — a fresh
-    // node/bun invocation needs the same wrapper the user ran ("pnpm run
-    // <script>") to get that hook again. This also means the repeat mode
-    // keeps working unchanged once the toolchain moves to Bun (ADR-001):
-    // whatever `e2e:sessions:stress` runs then is what gets re-exec'd.
+    // here is a bare.ts path that only resolves because the *current* process
+    // already has jiti's loader hook registered in-process — a fresh node/bun
+    // invocation needs the same wrapper the user ran ("pnpm run <script>") to
+    // get that hook again. This also means the repeat mode keeps working
+    // unchanged once the toolchain moves to Bun: whatever `e2e:sessions:stress`
+    // runs then is what gets re-exec'd.
     const child = spawn('pnpm', ['run', 'e2e:sessions:stress'], {
       cwd: process.cwd(),
       env: { ...process.env, E2E_RUNS: '1', E2E_STRESS_CHILD: '1' },

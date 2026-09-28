@@ -1,14 +1,13 @@
 // Slug-based primary-id generation for project/dashboard/organization rows.
-// Moved from packages/db/src/services/id.service.ts (M8-005) — a sibling of
+// Moved from packages/db/src/services/id.service.ts — a sibling of
 // shared/access-lookups.ts: needs @openpanel/db, so it stays out of
 // shared/id.ts (the database-free id helpers).
 //
-// M10-009: Postgres comes from the caller's scope (`deps.db`), not a lazy
+// Postgres comes from the caller's scope (`deps.db`), not a lazy
 // `import('@openpanel/db/...')` — so the requestId minted at the edge reaches
-// the uniqueness probe (ADR-018, docs/TECH_DEBT.md §4). `deps` is narrowed to
-// `Pick<ServiceDeps, 'db'>` because mcp's tool handlers have a fixed
-// `@modelcontextprotocol/sdk` signature and only ever hold the db the route
-// closed over.
+// the uniqueness probe. `deps` is narrowed to `Pick<ServiceDeps, 'db'>` because
+// mcp's tool handlers have a fixed `@modelcontextprotocol/sdk` signature and
+// only ever hold the db the route closed over.
 
 import { slug } from '@openpanel/shared';
 import type { ServiceDeps } from './services';

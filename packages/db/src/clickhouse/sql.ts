@@ -1,34 +1,33 @@
 /**
- * The ClickHouse `sql` tag (ADR-013).
+ * The ClickHouse `sql` tag.
  *
  * Two tiers, one tag:
  *
- *  1. **Static queries** are plain SQL text — the tag is a no-op wrapper.
- *  2. **Dynamic composition** builds from fragments, and every *value* binds
- *     as a ClickHouse-native `{name:Type}` query parameter, escaped by the
- *     server rather than by us.
+ * 1. **Static queries** are plain SQL text — the tag is a no-op wrapper. 2.
+ * **Dynamic composition** builds from fragments, and every *value* binds as a
+ * ClickHouse-native `{name:Type}` query parameter, escaped by the server rather
+ * than by us.
  *
  * The safety property is the type of an interpolation slot: it accepts only
  * `SqlFragment | SqlParam`, so a bare string or number in a slot is a
- * compile-time error. There is deliberately no `sql.raw()` — dynamic
- * structure composes with {@link SqlBuilder.join}, and the only path from an
- * untrusted string to SQL text is {@link SqlBuilder.id}, which validates and
- * throws.
+ * compile-time error. There is deliberately no `sql.raw` — dynamic structure
+ * composes with {@link SqlBuilder.join}, and the only path from an untrusted
+ * string to SQL text is {@link SqlBuilder.id}, which validates and throws.
  *
  * Placeholder names are assigned at render time from a single counter, so
  * fragments nest and repeat without colliding (R2).
  *
- * Exported from the package barrel (M12-009). It could not be during the clix
- * coexistence window — `query-builder.ts` exported its own `SqlParam` type and
- * `export *` from both was ambiguous — and that file is now deleted.
+ * Exported from the package barrel. It could not be during the clix coexistence
+ * window — `query-builder.ts` exported its own `SqlParam` type and `export *`
+ * from both was ambiguous — and that file is now deleted.
  *
  * `packages/core` still imports this module by its deep path rather than
  * through the barrel: the barrel also re-exports `clickhouse/client.ts` and
  * `prisma-client.ts`, which construct a ClickHouse client array and a
  * PrismaClient at module load, so a barrel import from core would acquire a
  * second, request-scope-less client. `.dependency-cruiser.cjs`'s
- * `core-uses-ctx-not-db-internals` encodes exactly that, exempting this file
- * by path and not the barrel.
+ * `core-uses-ctx-not-db-internals` encodes exactly that, exempting this file by
+ * path and not the barrel.
  */
 
 /** Auto-generated placeholders are `{p1:Type}`, `{p2:Type}`, … */

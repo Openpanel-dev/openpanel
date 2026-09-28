@@ -1,17 +1,16 @@
-// Moved from packages/validation/src/cohort.validation.ts (M5-003, ADR-008's
-// module map: cohort owns "C"). packages/validation/src/cohort.validation.ts
-// becomes a re-export shim of this file's `./modules/cohort/cohort.constants`
-// subpath (same shape as packages/db/src/gsc.ts since M5-002), so
-// apps/start and packages/db/src/types.ts keep resolving these symbols
-// through packages/validation's existing barrel unchanged.
+// Moved from packages/validation/src/cohort.validation.ts (ADR-008's module
+// map: cohort owns "C"). packages/validation/src/cohort.validation.ts becomes a
+// re-export shim of this file's `./modules/cohort/cohort.constants` subpath
+// (same shape as packages/db/src/gsc.ts since M5-002), so apps/start and
+// packages/db/src/types.ts keep resolving these symbols through
+// packages/validation's existing barrel unchanged.
 //
-// Isomorphic by the AGENTS.md rule: zod, another `*.constants.ts`, or
-// nothing. `zChartEventFilter` used to be a diverged local copy here
-// (TODO(P7) in M5-003) to dodge a TDZ from importing it through
-// packages/validation's barrel before that barrel finished initializing;
-// now that it lives in report.constants.ts — an isomorphic, cycle-free
-// sibling — importing it directly is safe, and the duplicate is gone
-// (M7-006).
+// Isomorphic by the AGENTS.md rule: zod, another `*.constants.ts`, or nothing.
+// `zChartEventFilter` used to be a diverged local copy here (TODO(P7) in
+// M5-003) to dodge a TDZ from importing it through packages/validation's barrel
+// before that barrel finished initializing; now that it lives in
+// report.constants.ts — an isomorphic, cycle-free sibling — importing it
+// directly is safe, and the duplicate is gone.
 
 import { z } from 'zod';
 import { zChartEventFilter } from '../report/report.constants';

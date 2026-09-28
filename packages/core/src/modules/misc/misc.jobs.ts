@@ -1,14 +1,13 @@
 // Ported from apps/worker/src/jobs/cron.ping.ts + boot-cron.ts's `ping`
-// schedule (M7-008); `dataHealth` joined it at M9-003, the wave that deletes
-// apps/worker (ADR-005's acceptance note gives it to this module).
+// schedule; `dataHealth` joined it at M9-003, the wave that deletes apps/worker
+// (ADR-005's acceptance note gives it to this module).
 //
 // `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
-// here and spread into jobs.registry.ts, same shape as
-// organization.jobs.ts's `delete` (M6-001). Its `cron` is explicitly `null`
-// (ADR-021's on-demand state, not "always scheduled") — `PING_SCHEDULE` in
-// jobs/schedulers.ts adds it separately, conditionally on
-// `SELF_HOSTED && production`, because it is the one scheduler that isn't
-// always-on.
+// here and spread into jobs.registry.ts, same shape as organization.jobs.ts's
+// `delete`. Its `cron` is explicitly `null` (ADR-021's on-demand state, not
+// "always scheduled") — `PING_SCHEDULE` in jobs/schedulers.ts adds it
+// separately, conditionally on `SELF_HOSTED && production`, because it is the
+// one scheduler that isn't always-on.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

@@ -1,6 +1,6 @@
 // A re-export seam, not an implementation: the JSON helpers moved to
-// @openpanel/shared in M15-010 (ADR-022 R21), and every caller inside core
-// imports them from there.
+// @openpanel/shared in M15-010, and every caller inside core imports them from
+// there.
 //
 // This file survives for ONE importer: packages/db/src/clickhouse/client.ts
 // reaches `getSafeJson` by relative path across the package boundary

@@ -1,4 +1,4 @@
-// M10-004: reaches Postgres as `deps.db`; the `loadDb()` lazy loader is gone.
+// Reaches Postgres as `deps.db`; the `loadDb` lazy loader is gone.
 
 import type { ServiceDeps } from '../../../services';
 

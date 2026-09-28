@@ -1,7 +1,7 @@
-// Structural interface only. pino satisfies this shape once it is
-// instantiated in apps/api (ADR-007 layout: "pino instantiated later in
-// apps/api") — nothing here imports pino, so shared/ and modules/ can depend
-// on the shape of a logger without pulling the implementation into core.
+// Structural interface only. pino satisfies this shape once it is instantiated
+// in apps/api (ADR-007 layout: "pino instantiated later in apps/api") — nothing
+// here imports pino, so shared/ and modules/ can depend on the shape of a
+// logger without pulling the implementation into core.
 
 export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
@@ -20,13 +20,13 @@ export interface Logger {
   child(bindings: Record<string, unknown>): Logger;
 }
 
-// ADR-018 R1: one identifier, one name, one constant — the field is
-// `requestId` everywhere (JobMeta.requestId, every log line, Ctx), replacing
-// V1's `reqId`. Exported here to kill the four-file literal coupling.
+// One identifier, one name, one constant — the field is `requestId` everywhere
+// (JobMeta.requestId, every log line, Ctx), replacing V1's `reqId`. Exported
+// here to kill the four-file literal coupling.
 export const REQUEST_ID_LOG_FIELD = 'requestId' as const;
 
-// 126 bits of nanoid (ADR-018 R2). A correlation id, not a secret, and the
-// hot path pays for it 5000x/s — hence `nanoid/non-secure` behind generateId.
+// 126 bits of nanoid. A correlation id, not a secret, and the hot path pays for
+// it 5000x/s — hence `nanoid/non-secure` behind generateId.
 export const REQUEST_ID_LENGTH = 21;
 
 // The wire header stays `request-id` byte-for-byte — it is caller-visible

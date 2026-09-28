@@ -1,18 +1,20 @@
-// Moved from packages/constants/index.ts (M6-002, ADR-008's module map:
-// project owns "C"). packages/constants/index.ts becomes a re-export shim of
-// `ProjectTypeNames` (same shape as packages/validation/src/import.validation.ts
-// since M5-004), so existing packages/constants importers keep resolving it
-// unchanged. `zCreateProject`/`zUpdateProject` are the /manage REST body
-// schemas (apps/api/src/controllers/manage.controller.ts), moved here with
-// the CRUD bodies they validate (project.service.ts's
+// Moved from packages/constants/index.ts (ADR-008's module map: project owns
+// "C"). packages/constants/index.ts becomes a re-export shim of
+// `ProjectTypeNames` (same shape as
+// packages/validation/src/import.validation.ts since M5-004), so existing
+// packages/constants importers keep resolving it unchanged.
+// `zCreateProject`/`zUpdateProject` are the /manage REST body schemas
+// (apps/api/src/controllers/manage.controller.ts), moved here with the CRUD
+// bodies they validate (project.service.ts's
 // createProjectForOrganization/updateProjectForOrganization).
 //
 // The project filter/edit schemas below moved from
-// packages/validation/src/index.ts (M11-006, same module map row). `zChartEvent`
-// is imported by name, not re-exported: `zProjectFilterEvent` extends it as a
+// packages/validation/src/index.ts (same module map row). `zChartEvent` is
+// imported by name, not re-exported: `zProjectFilterEvent` extends it as a
 // bound identifier.
 //
-// Isomorphic by the AGENTS.md rule: zod, another *.constants.ts, and nothing else.
+// Isomorphic by the AGENTS.md rule: zod, another *.constants.ts, and nothing
+// else.
 
 import { z } from 'zod';
 import { zChartEvent } from '../report/report.constants';

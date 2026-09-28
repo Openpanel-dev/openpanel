@@ -1,4 +1,4 @@
-// Ported from apps/api/src/utils/image-proxy.test.ts (M7-008).
+// Ported from apps/api/src/utils/image-proxy.test.ts.
 
 import { describe, expect, it } from 'bun:test';
 import sharp from 'sharp';

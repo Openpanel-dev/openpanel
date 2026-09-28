@@ -1,11 +1,10 @@
-// Ported from packages/common's id.ts, then to @openpanel/shared (M15-010,
-// ADR-022 R21) — apps/start had copied `shortId` into its own utils/math.ts.
-// nanoid/non-secure is deliberate: these are correlation/display ids, not
-// secrets.
+// Ported from packages/common's id.ts, then to @openpanel/shared — apps/start
+// had copied `shortId` into its own utils/math.ts. nanoid/non-secure is
+// deliberate: these are correlation/display ids, not secrets.
 
-// Ported from packages/common/server's id.ts (M4-003). Regular `nanoid`,
-// not the non-secure variant above: these ids back password-reset tokens and
-// invite links, so they must stay cryptographically random.
+// Ported from packages/common/server's id.ts. Regular `nanoid`, not the
+// non-secure variant above: these ids back password-reset tokens and invite
+// links, so they must stay cryptographically random.
 import { nanoid as secureNanoid } from 'nanoid';
 import { nanoid } from 'nanoid/non-secure';
 

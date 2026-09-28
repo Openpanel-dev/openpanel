@@ -20,9 +20,9 @@ const chQuery = mock(
   async (_query: string | SqlFragment): Promise<unknown[]> => []
 );
 
-// M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
-// own `chQuery` (ch-query.ts) — so the insert path needs no module mock
-// at all, and the read path mocks one core module instead of
+// The client comes in as `BufferDeps.ch` and reads go through core's own
+// `chQuery` (ch-query.ts) — so the insert path needs no module mock at all, and
+// the read path mocks one core module instead of
 // `@openpanel/db/src/clickhouse/client` (whose import builds a real client and
 // a pino transport worker thread per test file).
 mock.module('../ch-query', () => ({
@@ -335,10 +335,10 @@ describe('EventBuffer', () => {
     expect(await eventBuffer.getBufferSize()).toBe(5);
   });
 
-  // M18-001 / drill 03: the shutdown path has to be able to SEE a failed
-  // rpush, because it decides whether to commit the Kafka offsets on the
-  // answer. `flush()` deliberately swallows one (the micro-batch timer retries
-  // while the process lives); `flushPendingOrThrow()` does not.
+  // / drill 03: the shutdown path has to be able to SEE a failed rpush, because
+  // it decides whether to commit the Kafka offsets on the answer. `flush`
+  // deliberately swallows one (the micro-batch timer retries while the process
+  // lives); `flushPendingOrThrow` does not.
   describe('flushPendingOrThrow', () => {
     // A failed flush re-queues its events AND arms the micro-batch timer, so
     // without this the retry lands in whichever test runs next.
@@ -428,11 +428,11 @@ describe('EventBuffer', () => {
     });
   });
 
-  // M18-005 / drill 03 re-run: the gate has to answer "are my events in
-  // Redis?", not "did I start the write?". Answering the second question made
-  // 221 durability failures in 5.5 minutes on a HEALTHY stack and turned 16.9%
-  // of accepted events into duplicates, because a caller that lost the race to
-  // start a write was told its already-durable events were not durable.
+  // / drill 03 re-run: the gate has to answer "are my events in Redis?", not
+  // "did I start the write?". Answering the second question made 221 durability
+  // failures in 5.5 minutes on a HEALTHY stack and turned 16.9% of accepted
+  // events into duplicates, because a caller that lost the race to start a
+  // write was told its already-durable events were not durable.
   describe('flushPendingOrThrow under concurrency', () => {
     // 24 partitions is what drill 03 ran; the callers are its `eachBatch`
     // handlers, and the background producer stands in for the HTTP path and
@@ -539,10 +539,10 @@ describe('EventBuffer', () => {
     });
   });
 
-  // M18-007 / drill 02 re-run: a failed flush leaves the batch's Kafka offsets
-  // unresolved (M18-001) and the fail-fast cache client (M18-003) brings the
-  // redelivery back in ~90ms. Re-queueing the failed events then holds one
-  // copy per lap — 4,759 ClickHouse rows for 230 events, measured.
+  // / drill 02 re-run: a failed flush leaves the batch's Kafka offsets
+  // unresolved and the fail-fast cache client brings the redelivery back in
+  // ~90ms. Re-queueing the failed events then holds one copy per lap — 4,759
+  // ClickHouse rows for 230 events, measured.
   describe('events a redelivery will produce again', () => {
     const REDELIVERY_LAPS = 5;
 

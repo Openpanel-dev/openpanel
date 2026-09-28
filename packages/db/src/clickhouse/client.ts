@@ -325,7 +325,7 @@ export const ch = new Proxy(chTarget as unknown as ClickHouseClient, {
 
 /**
  * A query is either finished SQL text or a `sql` fragment carrying its own
- * bound params (ADR-013 R1). Both go through the same round-robin/retry path.
+ * bound params. Both go through the same round-robin/retry path.
  */
 export type ChQueryInput = string | SqlFragment;
 

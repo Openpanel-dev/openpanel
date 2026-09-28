@@ -1,14 +1,14 @@
 // The seven BullMQ queues, statically composed. Adding a module's jobs is one
 // spread into the queue that owns them; there is no auto-discovery, because
-// static composition is what keeps `QueueProducers` typed (ADR-007).
+// static composition is what keeps `QueueProducers` typed.
 //
-// Registry key === Redis name for all seven, `cohortCompute` included: ADR-005's
-// acceptance note refuses the rename, so `COHORTCOMPUTE_CONCURRENCY` keeps
-// working. `queueKey` decides what actually reaches Redis.
+// Registry key === Redis name for all seven, `cohortCompute` included:
+// ADR-005's acceptance note refuses the rename, so `COHORTCOMPUTE_CONCURRENCY`
+// keeps working. `queueKey` decides what actually reaches Redis.
 //
-// Retry and retention values are V1's, verbatim, defects included — five
-// queues that never retry, four whose failed sets are unbounded. Changing them
-// is a behaviour change and a separate decision (ADR-005 acceptance note).
+// Retry and retention values are V1's, verbatim, defects included — five queues
+// that never retry, four whose failed sets are unbounded. Changing them is a
+// behaviour change and a separate decision (ADR-005 acceptance note).
 
 import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
@@ -66,8 +66,8 @@ const sessions = defineQueue('sessions', {
 });
 
 // One queue, one worker at concurrency 1, every scheduled job in the system.
-// Pausing it from bull-board halts all buffer flushing — preserved
-// deliberately (docs/ANSWERS.md §3: "known!").
+// Pausing it from bull-board halts all buffer flushing — preserved deliberately
+// (docs/ANSWERS.md §3: "known!").
 const cron = defineQueue('cron', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.cron },
@@ -155,10 +155,10 @@ export type Queues = typeof queues;
 
 // V1's exact 19 always-on scheduler ids and cadences
 // (apps/worker/src/boot-cron.ts), derived from the `cron` queue's own jobs so a
-// job and its schedule cannot drift apart (ADR-021). It is computed HERE, in
-// the registry, and not in `jobs/schedulers.ts`: that file is transport
-// infrastructure and may not import a registry (ADR-022 R22). `ping` is the
-// 20th and is conditional — see `PING_SCHEDULE` and `startSchedulers`.
+// job and its schedule cannot drift apart. It is computed HERE, in the
+// registry, and not in `jobs/schedulers.ts`: that file is transport
+// infrastructure and may not import a registry. `ping` is the 20th and is
+// conditional — see `PING_SCHEDULE` and `startSchedulers`.
 export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
   schedulersFromRegistry(cron);
 

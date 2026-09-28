@@ -1,8 +1,8 @@
-// Moved from packages/db/src/session-context.ts (M7-001), and out of
-// `modules/session/src/` at M15-009 (ADR-022 R22): both transports open the
-// scope and nothing in the session module reads it, so it is request scoping,
-// not session domain logic. Dependency-free — `node:async_hooks` and nothing
-// else — so it sits at the bottom, where a transport may reach it.
+// Moved from packages/db/src/session-context.ts, and out of
+// `modules/session/src/` at M15-009: both transports open the scope and nothing
+// in the session module reads it, so it is request scoping, not session domain
+// logic. Dependency-free — `node:async_hooks` and nothing else — so it sits at
+// the bottom, where a transport may reach it.
 //
 // The ALS scopes a request's dashboard session id so anything downstream —
 // today only the Prisma read-replica consistency extension ADR-012 retires —

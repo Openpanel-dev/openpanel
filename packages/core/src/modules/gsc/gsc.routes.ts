@@ -1,13 +1,13 @@
-// The GSC OAuth callback (M5-002). V1's Fastify controller
+// The GSC OAuth callback. V1's Fastify controller
 // (apps/api/src/controllers/gsc-oauth-callback.controller.ts) stays the LIVE
 // route (DELEGATE PATTERN) and delegates its token-exchange/upsert logic to
 // gsc.service.ts's `completeGscOAuthCallback` — the same function this route
 // calls. This route is not yet reachable: main.ts does not mount
 // `dashboardRoutes` until a real `AppDeps` exists (P3/P4/P8).
 //
-// NAMED GAP: per-route cookie signing is not wired yet (http/context.ts:147
-// — "app.ts lists the signed names (P3)"), so `ctx.cookies.get()` here reads
-// the raw, unsigned cookie value. V1's Fastify controller still verifies the
+// NAMED GAP: per-route cookie signing is not wired yet (http/context.ts:147 —
+// "app.ts lists the signed names (P3)"), so `ctx.cookies.get` here reads the
+// raw, unsigned cookie value. V1's Fastify controller still verifies the
 // signature; this route only re-checks the state match, and should not be
 // treated as a signature-verified equivalent until that wiring lands.
 

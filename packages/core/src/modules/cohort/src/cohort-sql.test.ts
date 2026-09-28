@@ -1,30 +1,30 @@
 // SQL-shape tests for property-based cohort queries. Ported from
-// packages/db/src/services/cohort-property-sql.test.ts (M5-003) — minus its
-// itCH ClickHouse-reachability EXPLAIN check: `mock.module` substitutions
-// apply process-wide, not per file, so a sibling file's
+// packages/db/src/services/cohort-property-sql.test.ts — minus its itCH
+// ClickHouse-reachability EXPLAIN check: `mock.module` substitutions apply
+// process-wide, not per file, so a sibling file's
 // `@openpanel/db/src/clickhouse/client` mock (cohort.service.test.ts) can
-// silently replace this file's "real" import too, making a reachability
-// check meaningless. No module in core's suite ports that pattern for the
-// same reason; the generated SQL was verified against local ClickHouse by
-// hand instead (see the M5-003 task summary).
+// silently replace this file's "real" import too, making a reachability check
+// meaningless. No module in core's suite ports that pattern for the same
+// reason; the generated SQL was verified against local ClickHouse by hand
+// instead (see the M5-003 task summary).
 //
-// String assertions need no mocking at all: cohort.service.ts's db/ch access
-// is lazy, and buildPropertyBasedCohortQuery / deriveCohortQuerySettings
-// touch neither — see cohort.service.ts's header.
+// String assertions need no mocking at all: cohort.service.ts's db/ch access is
+// lazy, and buildPropertyBasedCohortQuery / deriveCohortQuerySettings touch
+// neither — see cohort.service.ts's header.
 //
-// M12-004: the builders return `SqlFragment`s now, so every assertion below
-// runs against the RENDERED statement plus its bound params rather than a
-// finished string. The assertions themselves are unchanged in what they
-// claim, except the one about quotes in a user-controlled property key: a
-// quote no longer needs escaping because the key is not in the SQL text at
-// all, so that test asserts the binding instead.
+// The builders return `SqlFragment`s now, so every assertion below runs against
+// the RENDERED statement plus its bound params rather than a finished string.
+// The assertions themselves are unchanged in what they claim, except the one
+// about quotes in a user-controlled property key: a quote no longer needs
+// escaping because the key is not in the SQL text at all, so that test asserts
+// the binding instead.
 //
-// V1's `PROFILE_COHORT_QUERY_SETTINGS` test used `vi.resetModules()` +
-// `vi.stubEnv()` to re-import the module under different env vars — the
-// suite's only `vi.resetModules` site (ADR-010's tail table). bun:test shares
-// one module registry per file even under `--isolate`, so re-importing would
-// not re-evaluate a module-level const. `deriveCohortQuerySettings` exists
-// so this ports as direct calls instead.
+// V1's `PROFILE_COHORT_QUERY_SETTINGS` test used `vi.resetModules` +
+// `vi.stubEnv` to re-import the module under different env vars — the suite's
+// only `vi.resetModules` site (ADR-010's tail table). bun:test shares one
+// module registry per file even under `--isolate`, so re-importing would not
+// re-evaluate a module-level const. `deriveCohortQuerySettings` exists so this
+// ports as direct calls instead.
 
 import { expect, test } from 'bun:test';
 import {

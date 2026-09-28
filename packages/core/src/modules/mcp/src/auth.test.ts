@@ -25,12 +25,12 @@ const noopLogger = {
   child: () => noopLogger,
 };
 
-// M15-003: the client lookup and the logger are ARGUMENTS now — `deps` and
-// `services` come from the route, so only `@openpanel/redis`'s process-global
-// `getCache` and argon2 verification are still mocked at the specifier the
-// source resolves to (a whole-barrel replacement would drop every other
-// export those barrels carry for any other file sharing this process —
-// bun:test only isolates modules per file under `--isolate`, see AGENTS.md).
+// The client lookup and the logger are ARGUMENTS now — `deps` and `services`
+// come from the route, so only `@openpanel/redis`'s process-global `getCache`
+// and argon2 verification are still mocked at the specifier the source resolves
+// to (a whole-barrel replacement would drop every other export those barrels
+// carry for any other file sharing this process — bun:test only isolates
+// modules per file under `--isolate`, see AGENTS.md).
 const actualRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...actualRedis,

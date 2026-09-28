@@ -1,7 +1,7 @@
-// Ported from apps/worker/src/jobs/sessions.ts (M7-001): after each
-// session_end the owning project's and organization's event counters are
-// refreshed, at most once an hour per project, and usage alert emails go out
-// at 80% / 100% of the billing limit.
+// Ported from apps/worker/src/jobs/sessions.ts: after each session_end the
+// owning project's and organization's event counters are refreshed, at most
+// once an hour per project, and usage alert emails go out at 80% / 100% of the
+// billing limit.
 
 import type { Organization } from '@openpanel/db/src/prisma-client';
 import { cacheablePerDeps } from '../../../cacheable-per-deps';

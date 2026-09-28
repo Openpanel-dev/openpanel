@@ -1,8 +1,8 @@
 // One boot scope, one work scope, one builder. HTTP routes, tRPC procedures,
 // job handlers and the Kafka consumer all extend the same `Ctx`, so a service
-// written once works under every transport and the requestId minted at the
-// edge reaches the query, the enqueue and the job that enqueue causes
-// (ADR-007 decision 18, ADR-018 R1).
+// written once works under every transport and the requestId minted at the edge
+// reaches the query, the enqueue and the job that enqueue causes (ADR-007
+// decision 18).
 
 import type { Buffers } from './buffers/create-buffers';
 import { bindReadsToSignal } from './ch-abortable';
@@ -14,11 +14,10 @@ import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
 // The four boot handles, landed at M9-004 when main.ts became the only
-// entrypoint and had to build a real `AppDeps` for the mounted route
-// surfaces. Each is a TYPE QUERY over the module that constructs the client,
-// so the alias cannot drift from what `main.ts` actually passes; all four are
-// type-only, so core still imports no database at runtime and `bun test`
-// still runs offline.
+// entrypoint and had to build a real `AppDeps` for the mounted route surfaces.
+// Each is a TYPE QUERY over the module that constructs the client, so the alias
+// cannot drift from what `main.ts` actually passes; all four are type-only, so
+// core still imports no database at runtime and `bun test` still runs offline.
 export type Db = typeof import('@openpanel/db/src/prisma-client').db;
 export type ClickHouseClient =
   typeof import('@openpanel/db/src/clickhouse/client').ch;
@@ -43,13 +42,13 @@ export type PrismaNamespace =
  * Prisma's JSON sentinels (`DbNull`, `JsonNull`): frozen constants that write
  * an explicit SQL NULL — or a JSON `null` — onto a nullable `Json?` column.
  * They are values on the namespace, not a client, so nothing about them is
- * per-request — but they are still `@openpanel/db` VALUES, and the four
- * modules that write a `Json?` column each reached them through a lazy
- * `load*` back into this file. ADR-022 R6 has one answer for that: the scope
- * carries it. `main.ts` reads the two off the namespace once and puts them on
- * `AppDeps`; every writer reads `deps.prisma.DbNull`. Two named fields, not
- * the namespace itself — nothing else on it belongs in a request scope, and
- * `Prisma` is a very large type for every consumer's `tsc` to walk.
+ * per-request — but they are still `@openpanel/db` VALUES, and the four modules
+ * that write a `Json?` column each reached them through a lazy `load*` back
+ * into this file. ADR-022 R6 has one answer for that: the scope carries it.
+ * `main.ts` reads the two off the namespace once and puts them on `AppDeps`;
+ * every writer reads `deps.prisma.DbNull`. Two named fields, not the namespace
+ * itself — nothing else on it belongs in a request scope, and `Prisma` is a
+ * very large type for every consumer's `tsc` to walk.
  */
 export interface PrismaSentinels {
   DbNull: PrismaNamespace['DbNull'];
@@ -74,18 +73,18 @@ export function unscopedDb(): Promise<Db> {
 // module singleton.
 export type { Buffers } from './buffers/create-buffers';
 
-// The resolved session. `SessionValidationResult` is Prisma-shaped
-// (Session + User) but the import above is type-only, so nothing of
-// `@openpanel/db` is loaded at runtime — core stays importable with no
-// database, which is what lets `bun test` run offline. It stays defined next
-// to the Prisma-touching session CRUD in `./modules/auth/src/login-session.ts`
-// (M8-005) rather than here, which is the same file that CRUD lazily reaches
-// `@openpanel/db`'s Prisma client from.
+// The resolved session. `SessionValidationResult` is Prisma-shaped (Session +
+// User) but the import above is type-only, so nothing of `@openpanel/db` is
+// loaded at runtime — core stays importable with no database, which is what
+// lets `bun test` run offline. It stays defined next to the Prisma-touching
+// session CRUD in `./modules/auth/src/login-session.ts` rather than here, which
+// is the same file that CRUD lazily reaches `@openpanel/db`'s Prisma client
+// from.
 export type Session = SessionValidationResult;
 
 // The parsed environment. `apps/api`'s config/env.ts is the sole reader of
-// process.env and core reads none (ADR-022 R7, made true at M15-006), so the
-// shape of what core needs is declared in `./config.ts` and arrives here.
+// process.env and core reads none (made true at M15-006), so the shape of what
+// core needs is declared in `./config.ts` and arrives here.
 export type { CoreConfig } from './config';
 
 /** Boot scope. Built once in apps/api's main.ts, closed once in shutdown. */

@@ -1,7 +1,7 @@
-// The permission ladder. M15-009 (ADR-022 R10/R22): it lives in the auth
-// module, not in `shared/` — it threw a transport error (`TRPCForbiddenError`)
-// from the bottom layer, and R10 puts every access check in the auth service
-// and the procedure builders.
+// The permission ladder. M15-009 (R22): it lives in the auth module, not in
+// `shared/` — it threw a transport error (`TRPCForbiddenError`) from the bottom
+// layer, and R10 puts every access check in the auth service and the procedure
+// builders.
 //
 // Ported verbatim from packages/trpc/src/access.ts — the rules, the fail-closed
 // ordering and the messages are unchanged, and ADR-011 invariants 5 and 6 bind
@@ -12,9 +12,9 @@
 // database — `bun test` loads this package with no DATABASE_URL and no Prisma
 // client — and it is the same seam `createCacheMiddleware` and
 // `createRateLimitMiddleware` already use in rpc/base.ts. `auth.service.ts`'s
-// `createAccessChecks` call binds it to the real services (M10-002); V1's
-// now-deleted `@openpanel/trpc` used to bind it the same way; a test binds
-// it to two functions.
+// `createAccessChecks` call binds it to the real services; V1's now-deleted
+// `@openpanel/trpc` used to bind it the same way; a test binds it to two
+// functions.
 
 import { TRPCForbiddenError } from '../../../rpc/errors';
 

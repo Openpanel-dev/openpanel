@@ -1,5 +1,5 @@
 // Every ClickHouse query PagesService/getPageConversionsCore runs, as pure
-// `sql` fragments (ADR-013).
+// `sql` fragments.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -31,10 +31,10 @@ function searchClause(search: string | undefined): SqlFragment {
 }
 
 export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
-  // M34-002: titles come from the requested range, not V1's `now() - 30 DAY`,
-  // which read a month of the widest Map column for any window and made the
-  // answer depend on the wall clock. A page titled only outside the range now
-  // resolves to '' (approved, Group C fix 8).
+  // Titles come from the requested range, not V1's `now - 30 DAY`, which read a
+  // month of the widest Map column for any window and made the answer depend on
+  // the wall clock. A page titled only outside the range now resolves to ''
+  // (approved, Group C fix 8).
   const titlesCte = sql`
     SELECT concat(origin, path) as page_key, anyLast(properties['__title']) as title
     FROM events
@@ -108,10 +108,9 @@ export interface PageTimeseriesQueryInput {
   /**
    * Keep only the `n` busiest pages in each date bucket. Omitted means
    * unbounded, which is one row per (origin, path, bucket) and on a project
-   * with per-user URL segments is millions of rows.
-   * `origin`/`path` break the ranking's ties so the truncated set is stable
-   * between calls; without them ClickHouse returns a different top-n on every
-   * run (measured, M31-002).
+   * with per-user URL segments is millions of rows. `origin`/`path` break the
+   * ranking's ties so the truncated set is stable between calls; without them
+   * ClickHouse returns a different top-n on every run (measured).
    */
   topPagesPerBucket?: number;
 }

@@ -1,32 +1,31 @@
-// Ported from apps/api/src/routes/track.router.ts + track.controller.ts
-// (M8-002). V1's Fastify router stays the LIVE route (DELEGATE PATTERN) and
-// its controller and hooks delegate into ingest.service.ts — the same
-// functions this file calls.
+// Ported from apps/api/src/routes/track.router.ts + track.controller.ts. V1's
+// Fastify router stays the LIVE route (DELEGATE PATTERN) and its controller and
+// hooks delegate into ingest.service.ts — the same functions this file calls.
 //
 // THE HOOK ORDER IS THE CONTRACT (ADR-002 "behaviour that must be preserved
-// explicitly" 5): duplicate -> clientAuth -> isBot. Here it holds by
-// lifecycle phase rather than by registration luck — measured on Elysia
-// 1.4.30, a route declaring all three runs
-// `derive -> transform -> macro resolve -> beforeHandle`. So the duplicate
-// check is a `transform` (V1's `preValidation`), `clientAuth` is the macro,
-// and the bot check is a `beforeHandle`, which is what lets it read
-// `client.secretVerified` the way V1's `isBotHook` reads the
-// `req.clientSecretAuth` side channel `validateSdkRequest` sets.
+// explicitly" 5): duplicate -> clientAuth -> isBot. Here it holds by lifecycle
+// phase rather than by registration luck — measured on Elysia 1.4.30, a route
+// declaring all three runs `derive -> transform -> macro resolve ->
+// beforeHandle`. So the duplicate check is a `transform` (V1's
+// `preValidation`), `clientAuth` is the macro, and the bot check is a
+// `beforeHandle`, which is what lets it read `client.secretVerified` the way
+// V1's `isBotHook` reads the `req.clientSecretAuth` side channel
+// `validateSdkRequest` sets.
 //
 // Both routes carry the whole chain because V1's `fastify.addHook` calls are
 // plugin-scoped, so `GET /track/device-id` goes through it too.
 //
-// M9-004 mounted this surface and closed the two gaps its header used to
-// record. V1's `subscriptionHook` (the wind-down gate) is now the last link in
-// the chain — `duplicate -> clientAuth -> isBot -> subscription`, V1's
-// registration order exactly — with `selfHosted` read off `AppDeps.config`
-// instead of `process.env`. And `POST /event`, the legacy compat route ADR-015
-// entry 1 was reversed to KEEP, is here beside `/track`: same hook chain plus
-// the per-client usage counter the deferred removal decision needs, recorded
-// after authentication (so a label can only ever be a client id that exists)
-// and before the hooks that can short-circuit (so a client whose events are
-// dropped as bot/wind-down traffic still counts as a client that would break
-// if `/event` disappeared).
+// Mounted this surface and closed the two gaps its header used to record. V1's
+// `subscriptionHook` (the wind-down gate) is now the last link in the chain —
+// `duplicate -> clientAuth -> isBot -> subscription`, V1's registration order
+// exactly — with `selfHosted` read off `AppDeps.config` instead of
+// `process.env`. And `POST /event`, the legacy compat route ADR-015 entry 1 was
+// reversed to KEEP, is here beside `/track`: same hook chain plus the
+// per-client usage counter the deferred removal decision needs, recorded after
+// authentication (so a label can only ever be a client id that exists) and
+// before the hooks that can short-circuit (so a client whose events are dropped
+// as bot/wind-down traffic still counts as a client that would break if
+// `/event` disappeared).
 
 import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
@@ -44,9 +43,9 @@ import {
 } from './ingest.service';
 import { validateIngestRequest } from './src/client-auth';
 import { recordLegacyEventRequest } from './src/ingest.metrics';
-// The Kafka producer is a sibling now (M11-003), not an `AppDeps` field:
-// kafka.ts moved into this module, so there is nothing left for main.ts to
-// inject. It still constructs no client at import time.
+// The Kafka producer is a sibling now, not an `AppDeps` field: kafka.ts moved
+// into this module, so there is nothing left for main.ts to inject. It still
+// constructs no client at import time.
 import { produceIncomingEvent } from './src/kafka';
 
 const TAGS = ['Track'];

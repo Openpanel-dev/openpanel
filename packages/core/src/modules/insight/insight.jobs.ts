@@ -1,11 +1,12 @@
 // Ported from apps/worker/src/jobs/insights.ts, insights-enrich.ts,
-// cron.insight-cleanup.ts and cron.weekly-digest.ts (M5-001); the schedules
-// moved onto the jobs at ADR-021 (M10-007).
+// cron.insight-cleanup.ts and cron.weekly-digest.ts; the schedules moved onto
+// the jobs at ADR-021.
 //
 // `insightsProject` is this module's own queue (`insights` in the registry —
 // ADR-005's registry key). `insightsDaily` / `insightCleanup` / `weeklyDigest`
 // are cron fragments, spread into the ONE `cron` queue by jobs.registry.ts.
-// Scheduler ids and cadences are V1's, unchanged (apps/worker/src/boot-cron.ts).
+// Scheduler ids and cadences are V1's, unchanged
+// (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

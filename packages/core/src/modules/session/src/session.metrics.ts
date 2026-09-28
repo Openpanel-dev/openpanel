@@ -1,9 +1,9 @@
-// The session lifecycle collectors, moved from apps/worker/src/metrics.ts
-// (M7-001) onto core's one registry. Names, labels and buckets are V1's; the
-// worker-side copies die with apps/worker (P9). The ingest-side
-// `sessions_started_total` lives with the ingest path
-// (modules/ingest/src/ingest.metrics.ts); the three at-scrape gauges joined
-// this file at M9-002 — see `registerSessionScrapeMetrics` at the bottom.
+// The session lifecycle collectors, moved from apps/worker/src/metrics.ts onto
+// core's one registry. Names, labels and buckets are V1's; the worker-side
+// copies die with apps/worker (P9). The ingest-side `sessions_started_total`
+// lives with the ingest path (modules/ingest/src/ingest.metrics.ts); the three
+// at-scrape gauges joined this file at M9-002 — see
+// `registerSessionScrapeMetrics` at the bottom.
 
 import client from 'prom-client';
 import { registry } from '../../../metrics';
@@ -12,7 +12,7 @@ import { registry } from '../../../metrics';
 const SESSION_PROJECTS_KEY = 'session:projects';
 
 /**
- * The slice of the cache client the gauges use. `multi()` is V1's, and it is
+ * The slice of the cache client the gauges use. `multi` is V1's, and it is
  * batching rather than a transaction — the ADR-006 swap replaces it with
  * `Promise.all` over Bun's auto-pipelining when packages/redis moves.
  */

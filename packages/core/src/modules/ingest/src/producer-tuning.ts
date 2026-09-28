@@ -1,10 +1,10 @@
-// The Kafka producer's throughput knobs (M16-002, turned on by ADR-023),
-// resolved in one place.
+// The Kafka producer's throughput knobs (turned on by ADR-023), resolved in one
+// place.
 //
 // The three fields are required members of `KafkaConfig`
-// (`packages/core/src/config.ts`): the config loader always sets them, so
-// there is no fallback here and no second default anywhere. This file only
-// decides whether the configured size batches at all.
+// (`packages/core/src/config.ts`): the config loader always sets them, so there
+// is no fallback here and no second default anywhere. This file only decides
+// whether the configured size batches at all.
 
 import type { KafkaConfig } from '../../../config';
 

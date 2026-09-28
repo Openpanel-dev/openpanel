@@ -1,7 +1,7 @@
 // Ported from packages/trpc/src/routers/overview.ts.
 //
-// M11-001: `overviewProcedure` is V1's own builder — `publicProcedure` plus
-// one middleware that resolves share-or-membership off the raw
+// `overviewProcedure` is V1's own builder — `publicProcedure` plus one
+// middleware that resolves share-or-membership off the raw
 // `projectId`/`shareId`, BEFORE the input parser. `runFilterCommand` is a
 // `protectedProcedure`, as in V1.
 //
@@ -10,7 +10,7 @@
 //
 // `liveData`'s ClickHouse queries used to live inline in packages/trpc's
 // router; they moved to `services.overview.getLiveData` (src/overview.sql.ts)
-// so every query this module runs goes through the same `sql` tag (M7-005).
+// so every query this module runs goes through the same `sql` tag.
 
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { format } from 'date-fns';

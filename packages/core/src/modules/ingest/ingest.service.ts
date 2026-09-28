@@ -1,8 +1,7 @@
-// The ingestion pipeline (M8-002). Ported from apps/api's
-// track.controller.ts, its three route hooks (duplicate / client / is-bot)
-// and utils/ids.ts. V1's Fastify controller and hooks stay the LIVE route
-// (DELEGATE PATTERN) and call the functions below; ingest.routes.ts is the
-// V2 half over the same functions.
+// The ingestion pipeline. Ported from apps/api's track.controller.ts, its three
+// route hooks (duplicate / client / is-bot) and utils/ids.ts. V1's Fastify
+// controller and hooks stay the LIVE route (DELEGATE PATTERN) and call the
+// functions below; ingest.routes.ts is the V2 half over the same functions.
 //
 // Nothing here throws for a caller error: each transport owns its own status
 // codes and bodies, so the pipeline returns a `TrackOutcome` and V1 maps it
@@ -175,8 +174,8 @@ export function getTimestamp(
   payload: ITrackHandlerPayload['payload']
 ): { timestamp: number; isTimestampFromThePast: boolean } {
   const safeTimestamp = timestamp || Date.now();
-  // `/event` has no body schema (ADR-003), so `payload` can be a string or
-  // null; `'properties' in payload` throws on a primitive.
+  // `/event` has no body schema, so `payload` can be a string or null;
+  // `'properties' in payload` throws on a primitive.
   const userDefinedTimestamp =
     typeof payload === 'object' && payload !== null && 'properties' in payload
       ? (payload?.properties?.__timestamp as string | undefined)
@@ -626,9 +625,9 @@ export async function isIngestionWoundDown(
 }
 
 /**
- * `POST /event` — the legacy compat route (ADR-004/ADR-015 entry 1, REVERSED:
- * kept, not deleted, because production still has projects posting to it).
- * Ported from apps/api/src/controllers/event.controller.ts.
+ * `POST /event` — the legacy compat route (ADR-015 entry 1, REVERSED: kept, not
+ * deleted, because production still has projects posting to it). Ported from
+ * apps/api/src/controllers/event.controller.ts.
  *
  * It is NOT `ingestTrack` with a different body: the legacy payload carries a
  * client-supplied ISO `timestamp`, has no `type` discriminator, no schema, and
@@ -657,10 +656,10 @@ export async function ingestLegacyEvent(
     return { status: 'missing-project-id' };
   }
 
-  // An event with no name is not an event. V1 answered 202 and wrote a row
-  // with `name = ''`, which then shows up in every picker and breakdown.
-  // The status stays 202 — this route has no body schema (ADR-003) and the
-  // HTTP contract must not change — but nothing is written.
+  // An event with no name is not an event. V1 answered 202 and wrote a row with
+  // `name = ''`, which then shows up in every picker and breakdown. The status
+  // stays 202 — this route has no body schema and the HTTP contract must not
+  // change — but nothing is written.
   const name = (request.body as { name?: unknown } | null | undefined)?.name;
   if (typeof name !== 'string' || name.trim() === '') {
     return { status: 'ok' };

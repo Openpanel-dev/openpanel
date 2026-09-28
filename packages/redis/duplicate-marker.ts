@@ -1,5 +1,5 @@
 /**
- * The ingest consumer's duplicate MARKER (M21-001).
+ * The ingest consumer's duplicate MARKER.
  *
  * Carl, 2026-09-14, on the offset watermark this replaces: *"are they purely
  * for logging reprocessed? Then we should remove them, i dont care. we can use
@@ -14,26 +14,26 @@
  * in-process watermark survived: drill 08 measured 161 real duplicates and 0
  * `REPROCESSED` lines.
  *
- * MARK MEANS COUNT AND LOG. IT DOES NOT MEAN DROP. This tells the caller the
- * id has been seen before; the caller inserts the event either way. A false
+ * MARK MEANS COUNT AND LOG. IT DOES NOT MEAN DROP. This tells the caller the id
+ * has been seen before; the caller inserts the event either way. A false
  * positive on a suppressing check is silent data loss, and whether the events
  * table ever gets dedupe is Carl's decision, not this file's.
  *
  * ONE round trip, `SET key NX PX`: the set and the "did it already exist"
- * answer are the same command, and there is no clean seam to fold it into —
- * the session buffer's own GET and Lua EVAL live in `packages/core`'s
- * `buffers/`, which this change does not own.
+ * answer are the same command, and there is no clean seam to fold it into — the
+ * session buffer's own GET and Lua EVAL live in `packages/core`'s `buffers/`,
+ * which this change does not own.
  *
- * IT MUST BE GIVEN THE CACHE CLIENT. That one fails fast (M18-003): offline
- * queue off once connected, `commandTimeout` 500 ms. `getRedisQueue()` keeps
- * `maxRetriesPerRequest: null` for BullMQ and would block a handler for tens
- * of seconds — which is how drill 02's consumer was evicted past its 30 s
- * session timeout, and an eviction is the only reassignment M19 measured
- * costing duplicate rows.
+ * IT MUST BE GIVEN THE CACHE CLIENT. That one fails fast: offline queue off
+ * once connected, `commandTimeout` 500 ms. `getRedisQueue` keeps
+ * `maxRetriesPerRequest: null` for BullMQ and would block a handler for tens of
+ * seconds — which is how drill 02's consumer was evicted past its 30 s session
+ * timeout, and an eviction is the only reassignment M19 measured costing
+ * duplicate rows.
  *
- * Why here and not in `packages/core`'s ingest module: the whole of it is
- * Redis mechanics, and core's only export door is its barrel, which this
- * task's scope does not cover — the same reason `dead-letter.ts` lives here.
+ * Why here and not in `packages/core`'s ingest module: the whole of it is Redis
+ * mechanics, and core's only export door is its barrel, which this task's scope
+ * does not cover — the same reason `dead-letter.ts` lives here.
  */
 
 /** Live key prefix. An operator has to be able to find these. */

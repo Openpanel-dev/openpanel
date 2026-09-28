@@ -1,4 +1,4 @@
-// Moved from apps/worker/src/jobs/cron.wind-down.test.ts (M9-003).
+// Moved from apps/worker/src/jobs/cron.wind-down.test.ts.
 //
 // Prisma, the event counts, the last-event lookup, the highlight builder and
 // the email transport are injected stubs — these assert the job's decisions

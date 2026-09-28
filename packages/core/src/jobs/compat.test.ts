@@ -4,9 +4,9 @@ import { resolveJob } from './compat';
 import { wrap } from './envelope';
 
 // One test per legacy shape, from ADR-005's table. The data is exactly what a
-// V1 producer left in Redis; the assertion is the V2 (job name, payload) pair
-// a worker must see. Fixtures are shape-only — nothing here validates a
-// payload, and nothing in V1 did either.
+// V1 producer left in Redis; the assertion is the V2 (job name, payload) pair a
+// worker must see. Fixtures are shape-only — nothing here validates a payload,
+// and nothing in V1 did either.
 
 describe('sessions', () => {
   const payload = {

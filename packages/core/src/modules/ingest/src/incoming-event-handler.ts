@@ -1,15 +1,15 @@
-// Ported from apps/worker/src/jobs/events.incoming-event.ts (M8-003): the
-// Kafka consumer's per-message handler — the step that turns one topic
-// payload into session lifecycle decisions and ClickHouse rows.
+// Ported from apps/worker/src/jobs/events.incoming-event.ts: the Kafka
+// consumer's per-message handler — the step that turns one topic payload into
+// session lifecycle decisions and ClickHouse rows.
 //
 // Everything that touches Redis, Postgres, ClickHouse or a queue is INJECTED
-// (`IncomingEventDeps`), the way session-end.ts does it, so the tests drive
-// the real code with recording doubles instead of `mock.module`.
-// `createIncomingEventDeps` binds it to ONE MESSAGE'S ctx (M10-006): the
-// buffers, the Postgres client and the session-end enqueue all ride the scope
-// carrying that envelope's requestId, so the id the producer stamped reaches
-// the row the consumer writes (ADR-018 R1). The two lookups a work scope
-// cannot supply arrive as `IncomingEventBindings` from the composition root.
+// (`IncomingEventDeps`), the way session-end.ts does it, so the tests drive the
+// real code with recording doubles instead of `mock.module`.
+// `createIncomingEventDeps` binds it to ONE MESSAGE'S ctx: the buffers, the
+// Postgres client and the session-end enqueue all ride the scope carrying that
+// envelope's requestId, so the id the producer stamped reaches the row the
+// consumer writes. The two lookups a work scope cannot supply arrive as
+// `IncomingEventBindings` from the composition root.
 
 import { getTime, isSameDomain, parsePath } from '@openpanel/shared';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
@@ -110,7 +110,7 @@ export interface IncomingEventDeps {
  * The one lookup a work scope cannot supply, resolved once at the composition
  * root (`apps/api`'s main.ts) rather than per message.
  *
- * M15-005 removed the other two: `getProjectByIdCached` is now a module-scope
+ * Removed the other two: `getProjectByIdCached` is now a module-scope
  * `cacheablePerDb` keyed on the Postgres client, so the message's own scope
  * reaches the same process-lived cache ingest, http and mcp read.
  */
@@ -126,11 +126,11 @@ export interface IncomingEventBindings {
     payload: IServiceCreateEventPayload
   ): Promise<unknown>;
   /**
-   * `@openpanel/redis`'s `createDuplicateEventMarker`, already bound to the
-   * TTL `apps/api` parsed. Injected rather than built here because the TTL is
-   * configuration and `packages/core` reads no environment (ADR-022 R7), and
-   * because building it once at the composition root keeps the key prefix and
-   * the TTL out of the per-message path.
+   * `@openpanel/redis`'s `createDuplicateEventMarker`, already bound to the TTL
+   * `apps/api` parsed. Injected rather than built here because the TTL is
+   * configuration and `packages/core` reads no environment, and because
+   * building it once at the composition root keeps the key prefix and the TTL
+   * out of the per-message path.
    */
   markDuplicateEvent(eventId: string): Promise<boolean>;
 }

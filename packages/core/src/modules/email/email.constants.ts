@@ -1,5 +1,5 @@
-// Moved from packages/constants/index.ts (M6-004, ADR-008's module map:
-// email owns "C"). packages/constants was deleted whole at M11-009.
+// Moved from packages/constants/index.ts (ADR-008's module map: email owns
+// "C"). packages/constants was deleted whole at M11-009.
 //
 // Keys must match the template `category` in @openpanel/email. Each entry's
 // label + description drive the account email-preferences toggles.

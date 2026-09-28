@@ -1,18 +1,18 @@
-// The /manage/clients REST surface (M6-002), delegating its CRUD bodies to
+// The /manage/clients REST surface, delegating its CRUD bodies to
 // client.service.ts's createClientForOrganization/updateClientForOrganization/
 // etc — the same functions the tRPC router (client.rpc.ts) calls. Response
 // envelopes (`{ data }` / `{ success }`) match V1's `reply.send(...)` shape
 // (byte-unchanged URL surface).
 //
-// Body schemas are local, not a client.constants.ts file: the module map
-// gives client "R,H,S" only, no "C" (unlike project, whose zCreateProject /
+// Body schemas are local, not a client.constants.ts file: the module map gives
+// client "R,H,S" only, no "C" (unlike project, whose zCreateProject /
 // zUpdateProject moved with ProjectTypeNames).
 //
 // `authenticateAllowedClient` (http/client-auth.ts) is filled in and
-// `publicApiRoutes` is mounted in main.ts, so this route is live.
-// `allow: ['root']` mirrors V1's rule: only root clients may manage
-// resources. (A client minted through client.service.ts cannot currently
-// authenticate at all — see that file's FIXME on `createClientForOrganization`.)
+// `publicApiRoutes` is mounted in main.ts, so this route is live. `allow:
+// ['root']` mirrors V1's rule: only root clients may manage resources. (A
+// client minted through client.service.ts cannot currently authenticate at all
+// — see that file's FIXME on `createClientForOrganization`.)
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';

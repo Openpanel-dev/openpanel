@@ -1,10 +1,10 @@
 // Ported from apps/worker/src/jobs/events.create-session-end.ts and
-// utils/session-handler.ts (M7-001).
+// utils/session-handler.ts.
 //
 // Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
 // (`SessionEndDeps`): M10-006 moved the binding into `session.jobs.ts`, where
 // the job's `ctx` supplies every client, so the requestId that opened the
-// session still labels the rows this close writes (ADR-018 R1).
+// session still labels the rows this close writes.
 
 import type { CoreConfig } from '../../../config';
 import type { EnqueueOptions } from '../../../jobs/define';
@@ -68,11 +68,11 @@ export interface SessionEndJobData {
 }
 
 /**
- * `SessionEndJobData` as it comes back OFF the queue (ADR-022 R18). BullMQ
- * stores job data as JSON, so `event.createdAt` is a string by the time a
- * handler sees it however the producer typed it — `createSessionEnd`
- * overwrites the field before use, and this type is what stops the next
- * reader from trusting the `Date` the producer side declares.
+ * `SessionEndJobData` as it comes back OFF the queue. BullMQ stores job data as
+ * JSON, so `event.createdAt` is a string by the time a handler sees it however
+ * the producer typed it — `createSessionEnd` overwrites the field before use,
+ * and this type is what stops the next reader from trusting the `Date` the
+ * producer side declares.
  */
 export interface SessionEndJobWire {
   event: Omit<IServiceCreateEventPayload, 'createdAt'> & { createdAt: string };

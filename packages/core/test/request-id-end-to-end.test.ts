@@ -1,27 +1,26 @@
-// ADR-007 benchmark 3 / ADR-018 R1 — the requestId chain, end to end, on all
-// three paths core actually has. One file, three sections:
+// Benchmark 3 / ADR-018 R1 — the requestId chain, end to end, on all three
+// paths core actually has. One file, three sections:
 //
-//   1. HTTP  (P2-010's original): route log -> enqueued envelope meta -> job
-//      handler's logger -> the enqueue that job makes. Four hops, one id.
-//   2. CHART (M10-003): a REAL `ctx.services.chart` query, observed on the
-//      ClickHouse call's own `query info` line. This is the hop the
-//      `loadChClient()` loaders failed silently — a module that reached
-//      @openpanel/db's client itself got a connection with no request scope,
-//      so the id stopped at the service boundary (docs/TECH_DEBT.md §2).
-//   3. KAFKA/INGEST (M10-006): the other edge. `createIncomingEventHandler` is
-//      the exact function apps/api's main.ts hands the consumer, and the seam
-//      under test — createCtx -> incomingEvent -> ctx.buffers / ctx.db /
-//      ctx.services — is the real one. Nothing in this section is mocked.
+// 1. HTTP (P2-010's original): route log -> enqueued envelope meta -> job
+// handler's logger -> the enqueue that job makes. Four hops, one id. 2. CHART:
+// a REAL `ctx.services.chart` query, observed on the ClickHouse call's own
+// `query info` line. This is the hop the `loadChClient` loaders failed silently
+// — a module that reached @openpanel/db's client itself got a connection with
+// no request scope, so the id stopped at the service boundary. 3. KAFKA/INGEST:
+// the other edge. `createIncomingEventHandler` is the exact function apps/api's
+// main.ts hands the consumer, and the seam under test — createCtx ->
+// incomingEvent -> ctx.buffers / ctx.db / ctx.services — is the real one.
+// Nothing in this section is mocked.
 //
-// M10-009 merged sections 2 and 3 in from their own files, so the property
-// these three prove together — that no path loses the id — is one file's
-// result rather than three that could drift apart.
+// Merged sections 2 and 3 in from their own files, so the property these three
+// prove together — that no path loses the id — is one file's result rather than
+// three that could drift apart.
 //
 // Each half is already covered next to its own code — `createCtx` scoping the
 // producers, `wrap` carrying `meta.requestId`, `runJob` reading it back. What
-// no unit test can show is that they agree, and that agreement is the
-// property core's shape was chosen for: if this goes red the design is wrong,
-// not this file.
+// no unit test can show is that they agree, and that agreement is the property
+// core's shape was chosen for: if this goes red the design is wrong, not this
+// file.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Elysia } from 'elysia';
@@ -63,17 +62,16 @@ interface ProofServices {
 // resolve to the same file).
 const realServicesModule = { ...(await import('../src/services')) };
 
-// `Services` grows with every module that lands, so this proof mocks the
-// whole container with a shape of its own rather than the real one — but the
-// mock is a real service: built from the SCOPED ctx, logging to that request's
-// logger and enqueueing through that request's producers. A hand-rolled
-// function called from the route would skip exactly the seam under test.
-// M10-009: the proof's `ingest.record` is layered ON TOP of the REAL
-// container rather than replacing it — sections 2 and 3 below need
-// `ctx.services.chart` and `ctx.services.session` to be the real ones. The
-// mock is still a real service in the sense that matters: built from the
-// SCOPED ctx, logging to that request's logger and enqueueing through that
-// request's producers.
+// `Services` grows with every module that lands, so this proof mocks the whole
+// container with a shape of its own rather than the real one — but the mock is
+// a real service: built from the SCOPED ctx, logging to that request's logger
+// and enqueueing through that request's producers. A hand-rolled function
+// called from the route would skip exactly the seam under test. M10-009: the
+// proof's `ingest.record` is layered ON TOP of the REAL container rather than
+// replacing it — sections 2 and 3 below need `ctx.services.chart` and
+// `ctx.services.session` to be the real ones. The mock is still a real service
+// in the sense that matters: built from the SCOPED ctx, logging to that
+// request's logger and enqueueing through that request's producers.
 const createServices = mock((deps: ServiceDeps) => ({
   ...realServicesModule.createServices(deps),
   ingest: {
@@ -310,7 +308,7 @@ test('a minted requestId travels the same four hops, and does not leak into the 
 });
 
 // ===========================================================================
-// Section 2 — the chart query hop (M10-003).
+// Section 2 — the chart query hop.
 // ===========================================================================
 
 const CHART_REQUEST_ID = 'm10-003-chart-query';
@@ -442,7 +440,7 @@ test('two concurrent requests do not share a requestId on their ClickHouse calls
 });
 
 // ===========================================================================
-// Section 3 — the Kafka/ingest handler hop (M10-006).
+// Section 3 — the Kafka/ingest handler hop.
 // ===========================================================================
 
 const INGEST_REQUEST_ID = 'adr018-kafka-1';
@@ -534,8 +532,8 @@ function ingestDeps() {
 
   const eventBuffer = {
     add: (event: { id: string }) => eventsBuffered.push(event),
-    // The consumer scope reaches the buffer through this view (M18-007); it
-    // must still be the same buffer underneath.
+    // The consumer scope reaches the buffer through this view; it must still be
+    // the same buffer underneath.
     asRedeliverable: () => eventBuffer,
   };
 
@@ -557,9 +555,9 @@ function ingestDeps() {
     prisma: {} as AppDeps['prisma'],
     db: {
       project: {
-        // M15-005: the handler reads the project through
-        // `project.service.ts`'s module-scope `getProjectByIdCached`, off the
-        // message's own scope, instead of a binding resolved at boot.
+        // The handler reads the project through `project.service.ts`'s
+        // module-scope `getProjectByIdCached`, off the message's own scope,
+        // instead of a binding resolved at boot.
         findUnique: () =>
           Promise.resolve({ firstEventAt: new Date(), filters: [] }),
         updateMany: () => Promise.resolve({ count: 0 }),
@@ -580,7 +578,7 @@ function ingestDeps() {
 const ingestBindings: IncomingEventBindings = {
   checkNotificationRulesForEvent: () => Promise.resolve(null),
   // Never a duplicate here: this suite is about the requestId, and the marker
-  // must not decide anything about the row either way (M21-001).
+  // must not decide anything about the row either way.
   markDuplicateEvent: () => Promise.resolve(false),
 };
 
@@ -671,13 +669,12 @@ test("the envelope's requestId reaches the handler's logger, its buffer write an
   ]);
 });
 
-// M15-004: the notification dispatch used to reach Postgres and the
-// `notification` producer through the deleted compat seam's BOOT scope, so
-// every job it enqueued was stamped with that scope's id no matter which
-// message triggered it. It
-// takes the caller's scope now, and this is the hop that proves it: the
-// binding enqueues exactly what `triggerNotification` enqueues, off the deps
-// it was handed, and the envelope must carry the message's own id.
+// The notification dispatch used to reach Postgres and the `notification`
+// producer through the deleted compat seam's BOOT scope, so every job it
+// enqueued was stamped with that scope's id no matter which message triggered
+// it. It takes the caller's scope now, and this is the hop that proves it: the
+// binding enqueues exactly what `triggerNotification` enqueues, off the deps it
+// was handed, and the envelope must carry the message's own id.
 test("a converted read path's own enqueue carries the message's requestId", async () => {
   const handleEvent = createIncomingEventHandler(ingestHarness.deps, {
     ...ingestBindings,
@@ -737,36 +734,33 @@ test('a second message is scoped to its own id, and an envelope without one stil
 });
 
 // ===========================================================================
-// Section 4 — one request, one id, all six hops (ADR-022 A3, M15-202).
+// Section 4 — one request, one id, all six hops (ADR-022 A3).
 // ===========================================================================
 //
-// Sections 1-3 each prove a segment: 1 the HTTP -> job chain through a
-// MOCKED service, 2 a real converted read path with no job behind it, 3 the
-// Kafka edge. A3 names the property Carl actually asked for — "follow what
-// has happened for a certain request, and see the entire flow" — as one
-// chain, and the hops it lists are:
+// Sections 1-3 each prove a segment: 1 the HTTP -> job chain through a MOCKED
+// service, 2 a real converted read path with no job behind it, 3 the Kafka
+// edge. A3 names the property Carl actually asked for — "follow what has
+// happened for a certain request, and see the entire flow" — as one chain, and
+// the hops it lists are:
 //
-//   requestId minted at the edge
-//     -> ctx
-//     -> a service's bound logger
-//     -> producers.scope({ requestId })
-//     -> the { payload, meta } envelope
-//     -> the job's child logger
+// RequestId minted at the edge -> ctx -> a service's bound logger ->
+// producers.scope({ requestId }) -> the { payload, meta } envelope -> the job's
+// child logger
 //
 // Nothing below is a stand-in for a hop. The read path is
 // `ctx.services.chart.getRetentionSeries`, a REAL converted service reaching
 // ClickHouse through `deps.ch`; the enqueue is
 // `ctx.services.cohort.enqueueCompute`, a REAL service writing onto
 // `ctx.queues`; the envelope is what `wrap` produces from what the recording
-// producer captured; and the job is the REAL `cohortCompute` definition and
-// the REAL handler off `jobs.registry.ts`, which reaches ClickHouse again —
-// so the last hop is a converted read path INSIDE a job, observed on its own
-// `query info` line.
+// producer captured; and the job is the REAL `cohortCompute` definition and the
+// REAL handler off `jobs.registry.ts`, which reaches ClickHouse again — so the
+// last hop is a converted read path INSIDE a job, observed on its own `query
+// info` line.
 //
 // Only the two connections are stubs, and both are the seam under test: the
 // ClickHouse client records what it was asked and the Postgres client answers
-// one row. A `load*` loader anywhere on this path, a client that built its
-// own logger, or a handler that reached past `ctx` breaks exactly one of the
+// one row. A `load*` loader anywhere on this path, a client that built its own
+// logger, or a handler that reached past `ctx` breaks exactly one of the
 // assertions below and names itself.
 
 const CHAIN_REQUEST_ID = 'adr022-a3-one-request';
@@ -952,8 +946,7 @@ test('a job whose envelope carries no requestId is scoped to a fresh one, not to
   }
 
   const linesBefore = lines.length;
-  // What a scheduler enqueues: a payload with no originating request
-  // (ADR-018 R2).
+  // What a scheduler enqueues: a payload with no originating request.
   await runJob(
     queues.cohortCompute,
     {

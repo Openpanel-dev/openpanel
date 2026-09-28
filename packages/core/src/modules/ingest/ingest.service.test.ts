@@ -1,15 +1,15 @@
 /**
- * Tests for:
- * - getOverrideDeviceId — the guard around a track event's caller-supplied
- *   `__deviceId` (it becomes a Redis key segment, a BullMQ jobId and a ClickHouse
- *   device_id, so it must be trimmed, non-empty, and length-bounded).
- * - handleReplay — replay files a chunk under the session id the SDK echoes back;
- *   it needs no device resolution and trusts the client-sent session id.
- * - ingestTrack — the single events transport (ADR-004): every tracked event goes
- *   to Kafka via the injected producer, with no branch and no fallback queue.
+ * Tests for: - getOverrideDeviceId — the guard around a track event's
+ * caller-supplied `__deviceId` (it becomes a Redis key segment, a BullMQ jobId
+ * and a ClickHouse device_id, so it must be trimmed, non-empty, and
+ * length-bounded). - handleReplay — replay files a chunk under the session id
+ * the SDK echoes back; it needs no device resolution and trusts the client-sent
+ * session id. - ingestTrack — the single events transport: every tracked event
+ * goes to Kafka via the injected producer, with no branch and no fallback
+ * queue.
  *
- * Moved from apps/api/src/controllers/track.controller.test.ts with M8-002.
- * The producer and the buffers are arguments now, so V1's `vi.mock` of
+ * Moved from apps/api/src/controllers/track.controller.test.ts with M8-002. The
+ * producer and the buffers are arguments now, so V1's `vi.mock` of
  * @openpanel/queue and its `vi.spyOn(replayBuffer)` become plain stubs — same
  * assertions. Geo/ASN and the salts are still module-level, so those keep a
  * `mock.module` (unhoisted, hence the `await import` in `beforeAll`).
@@ -60,13 +60,13 @@ let ingestTrack: typeof import('./ingest.service').ingestTrack;
 
 // The profile module is spread and then overridden by name: event.service
 // imports more of profile.service than ingest.service does. Overriding
-// `identifyProfile` (not just `upsertProfile`) is what keeps the identify
-// path off Postgres and the profile buffer — profile.service calls its own
-// local `upsertProfile`, not the exported binding.
+// `identifyProfile` (not just `upsertProfile`) is what keeps the identify path
+// off Postgres and the profile buffer — profile.service calls its own local
+// `upsertProfile`, not the exported binding.
 //
-// M15-005: ingest.service.ts calls salt.service.ts's module-scope `getSalts`
-// with the scope it holds, so that is the specifier mocked here,
-// spread-actual like the rest.
+// Ingest.service.ts calls salt.service.ts's module-scope `getSalts` with the
+// scope it holds, so that is the specifier mocked here, spread-actual like the
+// rest.
 let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
   const profile = await import('../profile/profile.service');

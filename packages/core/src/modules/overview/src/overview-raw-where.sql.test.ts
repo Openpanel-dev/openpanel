@@ -1,21 +1,20 @@
 /**
  * SQL-syntax tests for the overview module's `getRawWhereClause` (the UTM
  * remapping). Moved from packages/db/src/services/overview-sql.test.ts
- * (M8-005) alongside its subject, which moved to core in M7-005 — same
- * pattern as the chart cases moving to chart.sql.test.ts with theirs
- * (M7-003). M12-002 put `getRawWhereClause` on the `sql` tag, so these
- * assertions read the rendered statement AND its bound params instead of one
- * escaped string; the rest of the overview module's queries already run
- * through overview.sql.ts, covered by overview.sql.test.ts. M10-005 turned it
- * from a class method into a module function — it never needed a client,
- * being pure fragment building.
+ * alongside its subject, which moved to core in M7-005 — same pattern as the
+ * chart cases moving to chart.sql.test.ts with theirs. M12-002 put
+ * `getRawWhereClause` on the `sql` tag, so these assertions read the rendered
+ * statement AND its bound params instead of one escaped string; the rest of the
+ * overview module's queries already run through overview.sql.ts, covered by
+ * overview.sql.test.ts. M10-005 turned it from a class method into a module
+ * function — it never needed a client, being pure fragment building.
  *
  * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local
  * ClickHouse instance. EXPLAIN parses the query, resolves columns, and builds
  * the query plan without executing it — so we catch UNKNOWN_IDENTIFIER,
- * AMBIGUOUS_IDENTIFIER and bad JOIN ON expressions without needing seeded
- * data. WITH FILL TO < FROM is a runtime check, so it's covered by a plain
- * string assertion instead.
+ * AMBIGUOUS_IDENTIFIER and bad JOIN ON expressions without needing seeded data.
+ * WITH FILL TO < FROM is a runtime check, so it's covered by a plain string
+ * assertion instead.
  *
  * Requires a locally reachable CH at http://localhost:23123/openpanel. All
  * `itCH` tests auto-skip if CH is unreachable.
@@ -81,8 +80,8 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
         { name: 'utm_source', operator: 'is', value: ['awn'] },
       ])
     );
-    // M12-003: the map KEY binds too, so the shape is asserted on the
-    // statement and the key on the params.
+    // The map KEY binds too, so the shape is asserted on the statement and the
+    // key on the params.
     expect(query).toContain('properties[{p1:String}]');
     expect(query).not.toMatch(/(?<![._\w])utm_source\s*=/);
     expect(query_params).toEqual({ p1: '__query.utm_source', p2: 'awn' });

@@ -1,25 +1,23 @@
 // Ported from apps/api/src/controllers/misc.controller.ts +
-// apps/worker/src/jobs/cron.ping.ts (M7-008). V1's Fastify controller and the
-// worker's `cron.ping.ts` stay the LIVE code paths (DELEGATE PATTERN) and
-// call the functions below verbatim — no new behaviour.
+// apps/worker/src/jobs/cron.ping.ts. V1's Fastify controller and the worker's
+// `cron.ping.ts` stay the LIVE code paths (DELEGATE PATTERN) and call the
+// functions below verbatim — no new behaviour.
 //
 // `GET/POST /misc/og/clear` and `/misc/favicon/clear` are NOT ported: ADR-015
 // entry #6 grades them RULED + DEAD (`docs/ANSWERS.md` §1.4 confirms no proxy
 // depends on them), so this wave is where V1 drops them too.
 //
-// M10-005: the ClickHouse CLIENT is `deps.ch` — reads through
-// ch-query.ts, the one write through `deps.ch.insert` — so the
-// `loadCh()` lazy import of `@openpanel/db` is gone. M15-005 dropped the last
-// hop too: these three statements are raw strings, not `sql` fragments, so
-// they still need `TABLE_NAMES` / `formatClickhouseDate`, and core owns its
-// own parity-tested copies of both (shared/ch-tables.ts, shared/ch-dates.ts,
-// guarded by their `.parity.test.ts` siblings). Converting the STATEMENTS is
-// ADR-013's P7 work, not this wave's.
+// The ClickHouse CLIENT is `deps.ch` — reads through ch-query.ts, the one write
+// through `deps.ch.insert` — so the `loadCh` lazy import of `@openpanel/db` is
+// gone. M15-005 dropped the last hop too: these three statements are raw
+// strings, not `sql` fragments, so they still need `TABLE_NAMES` /
+// `formatClickhouseDate`, and core owns its own parity-tested copies of both
+// (shared/ch-tables.ts, shared/ch-dates.ts, guarded by their `.parity.test.ts`
+// siblings). Converting the STATEMENTS is ADR-013's P7 work, not this wave's.
 //
-// M15-202: `getCache` is a plain static import (ADR-022 R6). It was lazy to
-// survive core tests that partially mock `@openpanel/redis` without a
-// `getCache` export; those mocks snapshot the real module and spread it now,
-// so the loader bought nothing.
+// `getCache` is a plain static import. It was lazy to survive core tests that
+// partially mock `@openpanel/redis` without a `getCache` export; those mocks
+// snapshot the real module and spread it now, so the loader bought nothing.
 
 import crypto from 'node:crypto';
 import { getCache, getRedisCache } from '@openpanel/redis';

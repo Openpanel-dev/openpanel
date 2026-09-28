@@ -1,23 +1,22 @@
 #!/usr/bin/env bun
 /**
- * tRPC routing golden — proves every procedure the mounted router declares is
+ * TRPC routing golden — proves every procedure the mounted router declares is
  * reachable through the real HTTP lifecycle, and that the auth layer answers
  * identically before and after the M11-001 mount swap.
  *
  * Only 11 of 217 procedures have any end-to-end coverage and 22 of the 29
- * routers have none (docs/RPC_PROCEDURE_SET_EQUIVALENCE.md), so swapping
- * `apps/api/src/main.ts`'s `appRouter` import needs a proof of its own. This
- * is it: with the harness up, run it against the OLD mount, swap, run it
- * against the NEW mount, and diff the two maps.
+ * routers have none, so swapping `apps/api/src/main.ts`'s `appRouter` import
+ * needs a proof of its own. This is it: with the harness up, run it against the
+ * OLD mount, swap, run it against the NEW mount, and diff the two maps.
  *
- * It asserts REACHABILITY, not behaviour. Every request is unauthenticated
- * with an empty input, so 401/403/400 are the expected answers — they prove
- * the procedure was resolved and its auth/validation middleware ran. Only a
- * 404 or a tRPC `NOT_FOUND` means the router did not resolve the path, and
- * that is the single failure this script exists to catch.
+ * It asserts REACHABILITY, not behaviour. Every request is unauthenticated with
+ * an empty input, so 401/403/400 are the expected answers — they prove the
+ * procedure was resolved and its auth/validation middleware ran. Only a 404 or
+ * a tRPC `NOT_FOUND` means the router did not resolve the path, and that is the
+ * single failure this script exists to catch.
  *
- * Usage (needs `verification/harness start`):
- *   cd apps/api && bun run e2e/trpc-routing-golden.ts /tmp/trpc-routing-after.json
+ * Usage (needs `verification/harness start`): cd apps/api && bun run
+ * e2e/trpc-routing-golden.ts /tmp/trpc-routing-after.json
  *
  * The router is imported from whatever specifier `main.ts` mounts, read out of
  * main.ts itself, so the same committed script measures both sides of the swap

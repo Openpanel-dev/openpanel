@@ -253,7 +253,7 @@ function toSeries(
 }
 
 /** See funnel.service.ts's `createFunnelService` for why each chart
- *  sub-module carries its own factory (M10-009, ADR-007). */
+ * Sub-module carries its own factory. */
 export function createConversionService(
   deps: ServiceDeps,
   _services: () => Services

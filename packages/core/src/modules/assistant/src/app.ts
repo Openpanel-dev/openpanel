@@ -1,12 +1,10 @@
-// Moved from V1's agents/app.ts (M5-005, ADR-007's module map: assistant
-// owns "S").
+// Moved from V1's agents/app.ts (ADR-007's module map: assistant owns "S").
 //
-// M15-003: the app is BUILT from the `deps` `assistant.routes.ts` already
-// holds, not constructed at module scope (ADR-022 R6/R15). Importing this
-// file now opens nothing — no provider client, no agent, no conversation
-// store — and every tool handler closes over the same `deps`, which is what
-// `@better-agent/core`'s context-free tool-handler signature ruled out doing
-// as an argument.
+// The app is BUILT from the `deps` `assistant.routes.ts` already holds, not
+// constructed at module scope (R15). Importing this file now opens nothing — no
+// provider client, no agent, no conversation store — and every tool handler
+// closes over the same `deps`, which is what `@better-agent/core`'s
+// context-free tool-handler signature ruled out doing as an argument.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import type { ServiceDeps } from '../../../services';
 import { type ChatAgentContext, chatContextSchema } from './context';

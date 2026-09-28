@@ -1,5 +1,5 @@
-// Ported from packages/validation/src/integrations.test.ts (M6-006, vitest ->
-// bun:test per the module map).
+// Ported from packages/validation/src/integrations.test.ts (vitest -> bun:test
+// per the module map).
 
 import { describe, expect, it } from 'bun:test';
 import {

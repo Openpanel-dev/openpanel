@@ -1,4 +1,4 @@
-// Ported from apps/worker/src/jobs/cron.session-vacuum.ts (M7-001).
+// Ported from apps/worker/src/jobs/cron.session-vacuum.ts.
 
 import type { Logger } from '../../../logger';
 import { PROJECTS_SET_KEY, wallclockSetKey } from './keys';

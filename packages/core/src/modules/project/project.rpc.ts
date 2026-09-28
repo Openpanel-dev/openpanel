@@ -1,16 +1,15 @@
-// Ported from packages/trpc/src/routers/project.ts (M6-002).
+// Ported from packages/trpc/src/routers/project.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
-// `ctx.services.project` carries this module's factory (M10-004).
+// `ctx.services.project` carries this module's factory.
 //
-// The project-access ladder itself is bound once, in auth.service.ts
-// (M10-002); every procedure here reaches it through `ctx.services.auth`.
+// The project-access ladder itself is bound once, in auth.service.ts; every
+// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

@@ -152,8 +152,8 @@ test('session answers 401 when the cookie resolves to nothing', async () => {
   expect(response.status).toBe(401);
 });
 
-// ADR-002 problem 2: a route is unauthenticated because it did not ask for a
-// tier, not because of which `.use()` it was nested under.
+// Problem 2: a route is unauthenticated because it did not ask for a tier, not
+// because of which `.use` it was nested under.
 test('a route that requests no tier authenticates nobody', async () => {
   const response = await buildApp().handle(
     new Request('http://localhost/open')

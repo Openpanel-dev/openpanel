@@ -4,14 +4,13 @@
 // event/session/profile/group/gsc/report services already ported to core
 // (M7-001..006). This file holds only the plumbing every route shares —
 // resolving a project id and a date range — ported verbatim from
-// apps/api/src/controllers/{export,insights}.controller.ts. No new query
-// logic: every resolution here already existed in V1's controllers.
+// apps/api/src/controllers/{export,insights}.controller.ts. No new query logic:
+// every resolution here already existed in V1's controllers.
 //
-// M10-003: `loadDb()` and `loadCore()` are gone. Postgres is `deps.db`, and
-// the sibling services these routes delegate to are imported by RELATIVE
-// path — the hazard the old `loadCore()` guarded against was re-entering
-// this package's own barrel (`@openpanel/core`) mid-evaluation, which a
-// relative import cannot do (docs/TECH_DEBT.md §4).
+// `loadDb` and `loadCore` are gone. Postgres is `deps.db`, and the sibling
+// services these routes delegate to are imported by RELATIVE path — the hazard
+// the old `loadCore` guarded against was re-entering this package's own barrel
+// (`@openpanel/core`) mid-evaluation, which a relative import cannot do.
 
 import { resolveDateRange } from '@openpanel/shared';
 import type { AuthenticatedClient } from '../../http/client-auth';
@@ -73,8 +72,8 @@ export async function resolveExportProjectId(
 
 /**
  * `/insights/:projectId/*`'s project-id resolution — `resolveClientProjectId`
- * is the single client->project resolution point (ADR-011 A-iii invariant
- * 12), already what apps/api's insights.controller.ts `getProjectId` calls.
+ * is the single client->project resolution point (ADR-011 A-iii invariant 12),
+ * already what apps/api's insights.controller.ts `getProjectId` calls.
  */
 export async function resolveInsightsProjectId(
   deps: ServiceDeps,

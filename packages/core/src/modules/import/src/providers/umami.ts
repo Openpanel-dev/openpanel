@@ -8,11 +8,11 @@ import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
-// M10-009: core's own date helper, not @openpanel/db's — importing
+// Core's own date helper, not @openpanel/db's — importing
 // `@openpanel/db/src/clickhouse/client` constructs a ClickHouse client and a
 // pino-pretty transport at import time (fatal under bun:test's `--isolate`
-// worker threads, AGENTS.md's eager-barrel-chain hazard) and is a value
-// import of `@openpanel/db` from core. See shared/ch-dates.ts's header.
+// worker threads, AGENTS.md's eager-barrel-chain hazard) and is a value import
+// of `@openpanel/db` from core. See shared/ch-dates.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,

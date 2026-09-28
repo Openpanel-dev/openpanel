@@ -1,5 +1,6 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
-// Cred to (@OpenStatusHQ) https://github.com/openstatusHQ/openstatus/blob/main/packages/notifications/discord/src/index.ts
+// Ported from @openpanel/integrations (dissolved into core — M4-005). Cred to
+// (@OpenStatusHQ)
+// https://github.com/openstatusHQ/openstatus/blob/main/packages/notifications/discord/src/index.ts
 
 import {
   browserFetcher,

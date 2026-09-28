@@ -1,6 +1,6 @@
-// A work scope's ClickHouse reads, bound to that scope's AbortSignal (M36-001),
-// so a read whose answer nobody can receive stops on the server instead of
-// running to completion.
+// A work scope's ClickHouse reads, bound to that scope's AbortSignal, so a read
+// whose answer nobody can receive stops on the server instead of running to
+// completion.
 //
 // Aborting the HTTP call alone does not stop the query: ClickHouse only cancels
 // on client close for a READ-ONLY query with

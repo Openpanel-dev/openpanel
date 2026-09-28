@@ -4,8 +4,8 @@ import { type SqlFragment, SqlIdentifierError, sql, toStatement } from './sql';
 describe('sql tag — slot typing (R1)', () => {
   it('is a compile-time error to interpolate a bare value', () => {
     // The whole safety property of ADR-013: a raw string or number can never
-    // reach the SQL text. If either of these ever stops erroring, injection
-    // has become writable again and `pnpm run typecheck` is the alarm.
+    // reach the SQL text. If either of these ever stops erroring, injection has
+    // become writable again and `pnpm run typecheck` is the alarm.
     const path = "/blog' OR '1'='1";
     // @ts-expect-error — a bare string is not a SqlFragment | SqlParam
     const withString = sql`SELECT * FROM events WHERE path = ${path}`;
@@ -248,11 +248,11 @@ describe('injection (ported from query-builder.test.ts)', () => {
     expect(query_params.p1).toBe('{p1:String}');
   });
 
-  // M12-009 completed the port: the four cases below were still only asserted
-  // against clix when query-builder.test.ts was deleted. Each keeps that
-  // test's payload; what changes is the mechanism the payload proves —
-  // clix asserted on the escaped literal it produced, the tag asserts the
-  // value never reaches the text at all.
+  // Completed the port: the four cases below were still only asserted against
+  // clix when query-builder.test.ts was deleted. Each keeps that test's
+  // payload; what changes is the mechanism the payload proves — clix asserted
+  // on the escaped literal it produced, the tag asserts the value never reaches
+  // the text at all.
 
   it('binds a plain ISO date string instead of quoting it', () => {
     const { query, query_params } =

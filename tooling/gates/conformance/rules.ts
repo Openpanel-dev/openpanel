@@ -8,18 +8,17 @@
  *
  * Where a grep would lie, the check walks the TypeScript AST:
  *
- *   R3   a factory signature can span lines, so the argument list is not on the
- *        `export function` line. `rg 'create[A-Za-z]+Service\(deps'` saw 28 of
- *        36 on 2026-09-08.
- *   R5   `ReturnType<typeof create` appears once in services.ts and the match is
- *        a COMMENT (services.ts:154) explaining the circularity rule. The
- *        pattern is applied in code zero times.
- *   R6   `createServices(` in a comment or a string is not a call site.
- *   R7   `rg 'process\.env\.'` both over- and under-counts: rpc/base.ts:246 is a
- *        comment saying core reads no process.env, and get-client-ip.ts:83 is a
- *        real read written `process.env?.` that the pattern misses.
- *   R15  `new Redis(` inside a factory body is exactly what core is supposed to
- *        do; at module scope it is the violation. Only scope tells them apart.
+ * R3 a factory signature can span lines, so the argument list is not on the
+ * `export function` line. `rg 'create[A-Za-z]+Service\(deps'` saw 28 of 36 on
+ * 2026-09-08. R5 `ReturnType<typeof create` appears once in services.ts and the
+ * match is a COMMENT (services.ts:154) explaining the circularity rule. The
+ * pattern is applied in code zero times. R6 `createServices(` in a comment or a
+ * string is not a call site. R7 `rg 'process\.env\.'` both over- and
+ * under-counts: rpc/base.ts:246 is a comment saying core reads no process.env,
+ * and get-client-ip.ts:83 is a real read written `process.env?.` that the
+ * pattern misses. R15 `new Redis(` inside a factory body is exactly what core
+ * is supposed to do; at module scope it is the violation. Only scope tells them
+ * apart.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -506,8 +505,8 @@ export function checkResidue(files: ResidueScanInput[]): Metric[] {
     }
 
     // ADR-022's baseline states NEXT_PUBLIC_ for packages/core/src on its own
-    // (10 across 10 files); the rest of the tree is a second, wider metric. Both
-    // are asserted, so splitting them costs nothing and keeps the baseline
+    // (10 across 10 files); the rest of the tree is a second, wider metric.
+    // Both are asserted, so splitting them costs nothing and keeps the baseline
     // number reproducible line-for-line.
     if (pattern.source.includes(NEXT_PUBLIC_PREFIX)) {
       const inCore = offenders.filter((offender) =>

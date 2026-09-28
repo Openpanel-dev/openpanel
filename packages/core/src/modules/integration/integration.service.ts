@@ -1,7 +1,7 @@
-// Moved from packages/trpc/src/routers/integration.ts (M6-006, ADR-008's
-// module map: integration owns "S"+"C"). V1's router stays the LIVE route
-// (DELEGATE PATTERN) and delegates every handler body to these functions,
-// same as notification's router does (M6-005).
+// Moved from packages/trpc/src/routers/integration.ts (ADR-008's module map:
+// integration owns "S"+"C"). V1's router stays the LIVE route (DELEGATE
+// PATTERN) and delegates every handler body to these functions, same as
+// notification's router does.
 //
 // Authorization here is data-dependent — an update must authorize against the
 // EXISTING row's scope, not the attacker-controlled input — so, unlike the
@@ -13,13 +13,13 @@
 // `userId` (DELEGATE PATTERN), so these can't take a `ctx`/`deps` the way a
 // core-only module's checks would; `requireProjectAccess` /
 // `requireOrganizationAdmin` come from auth.service.ts's single,
-// lazily-memoized `getAccessChecks()` (M10-002); `getOrganizationAccess` is a
-// raw lookup (no ladder involved), reached directly from the sibling
+// lazily-memoized `getAccessChecks`; `getOrganizationAccess` is a raw lookup
+// (no ladder involved), reached directly from the sibling
 // `shared/access-lookups.ts`.
 //
-// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
-// as `deps.db`; the `loadDb()` lazy loader is gone, so a requestId minted at
-// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4).
+// Every exported function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb` lazy loader is gone, so a requestId minted at the
+// edge reaches the query.
 
 import { z } from 'zod';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
@@ -394,12 +394,11 @@ export async function deleteIntegration(
   return { id };
 }
 
-// -- Slack OAuth callback -----------------------------------------------
-// Ported from apps/api/src/controllers/webhook.controller.ts's
-// `slackWebhook` (M6-006). V1's Fastify controller stays the LIVE route
-// (DELEGATE PATTERN) and delegates the token-exchange/upsert logic here, the
-// same function this module's own `/webhook/slack` route
-// (integration.routes.ts) calls.
+// - Slack OAuth callback ----------------------------------------------- Ported
+// from apps/api/src/controllers/webhook.controller.ts's `slackWebhook`. V1's
+// Fastify controller stays the LIVE route (DELEGATE PATTERN) and delegates the
+// token-exchange/upsert logic here, the same function this module's own
+// `/webhook/slack` route (integration.routes.ts) calls.
 
 const slackOAuthMetadataSchema = z.object({
   organizationId: z.string(),
@@ -489,7 +488,7 @@ type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
     : never;
 
 /** M10-009: this module had no factory at all — the one `*.service.ts` file
- *  `services.ts` did not register (docs/TECH_DEBT.md §5a). */
+ * `services.ts` did not register. */
 export function createIntegrationService(
   deps: ServiceDeps,
   _services: () => Services

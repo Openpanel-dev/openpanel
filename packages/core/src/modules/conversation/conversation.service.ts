@@ -1,5 +1,5 @@
-// M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb` lazy loader is gone.
 
 import type {
   ChatMessage,

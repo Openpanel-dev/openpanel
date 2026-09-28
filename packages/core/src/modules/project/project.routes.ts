@@ -1,4 +1,4 @@
-// The /manage/projects REST surface (M6-002). V1's Fastify controller
+// The /manage/projects REST surface. V1's Fastify controller
 // (apps/api/src/controllers/manage.controller.ts) stays the LIVE route
 // (DELEGATE PATTERN) and delegates its CRUD bodies to project.service.ts's
 // createProjectForOrganization/updateProjectForOrganization/etc — the same
@@ -6,11 +6,11 @@
 // match V1's `reply.send(...)` shape exactly (byte-unchanged URL surface).
 //
 // NAMED GAP, same as import.routes.ts: this route is not yet reachable.
-// `authenticateClient` (http/client-auth.ts) is a P8 stub that always
-// returns null, so `clientAuth` 401s every request until it is filled in;
-// main.ts also does not mount `publicApiRoutes` until a real `AppDeps`
-// exists. `allow: ['root']` mirrors V1's rule (utils/auth.ts's
-// `validateManageRequest`: only root clients may manage resources).
+// `authenticateClient` (http/client-auth.ts) is a P8 stub that always returns
+// null, so `clientAuth` 401s every request until it is filled in; main.ts also
+// does not mount `publicApiRoutes` until a real `AppDeps` exists. `allow:
+// ['root']` mirrors V1's rule (utils/auth.ts's `validateManageRequest`: only
+// root clients may manage resources).
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';

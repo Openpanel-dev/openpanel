@@ -1,18 +1,18 @@
-// Moved from @openpanel/auth (M4-007): token issuance/hashing, argon2
-// password hashing, TOTP, the OAuth clients and cookie helpers. The
-// Prisma-touching half — creating, validating and invalidating a `sessions`
-// row — moved here too (M8-005, `./src/login-session.ts`).
+// Moved from @openpanel/auth: token issuance/hashing, argon2 password hashing,
+// TOTP, the OAuth clients and cookie helpers. The Prisma-touching half —
+// creating, validating and invalidating a `sessions` row — moved here too
+// (`./src/login-session.ts`).
 //
-// M10-002 (docs/TECH_DEBT.md §5b): the permission ladder (`modules/auth/src/access.ts`)
-// is bound to its real lookups exactly here, once, instead of once per module
-// in a `modules/*/src/access.ts` copy — see `getAccessChecks` below for the
-// binding itself.
+// The permission ladder (`modules/auth/src/access.ts`) is bound to its real
+// lookups exactly here, once, instead of once per module in a
+// `modules/*/src/access.ts` copy — see `getAccessChecks` below for the binding
+// itself.
 //
-// M10-004: every module in this wave, INCLUDING auth's own remaining lazy
-// imports, moves to `ServiceDeps`. `signUpWithEmail`/`signInWithEmail`/TOTP/
+// Every module in this wave, INCLUDING auth's own remaining lazy imports, moves
+// to `ServiceDeps`. `signUpWithEmail`/`signInWithEmail`/TOTP/
 // password-reset/OAuth-callback all take `deps` now and reach Postgres as
-// `deps.db`; `./src/login-session.ts` and `./src/registration.ts` do the
-// same and are plain static imports here (neither cycles back to this file).
+// `deps.db`; `./src/login-session.ts` and `./src/registration.ts` do the same
+// and are plain static imports here (neither cycles back to this file).
 // `auth.rpc.ts` already carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
@@ -95,20 +95,19 @@ type ProjectAccessChecks = AccessChecks<IProjectAccess>;
 let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
 
 /**
- * The single binding of the ladder to real lookups
- * (M10-002, docs/TECH_DEBT.md §5b) — memoized: `createAccessChecks` runs
- * exactly once per process, on however many requests, no matter how many of
- * this function's callers invoke it. Nothing runs at module-import time or at
- * `createAuthService` construction time; the binding is built on the first
- * actual check. An earlier attempt bound it at module scope and hung
- * `bun test` for 30 minutes.
+ * The single binding of the ladder to real lookups — memoized:
+ * `createAccessChecks` runs exactly once per process, on however many requests,
+ * no matter how many of this function's callers invoke it. Nothing runs at
+ * module-import time or at `createAuthService` construction time; the binding
+ * is built on the first actual check. An earlier attempt bound it at module
+ * scope and hung `bun test` for 30 minutes.
  *
- * Still a `Promise` because the contract is awaited at every call site and
- * was what each module's own access file used to resolve lazily.
+ * Still a `Promise` because the contract is awaited at every call site and was
+ * what each module's own access file used to resolve lazily.
  *
- * `integration.service.ts` and `subscription.service.ts` import this
- * directly instead of going through `ctx.services.auth`: both are called with
- * a bare `userId` and no `ctx`. Operator-authorized (docs/TECH_DEBT.md §5b).
+ * `integration.service.ts` and `subscription.service.ts` import this directly
+ * instead of going through `ctx.services.auth`: both are called with a bare
+ * `userId` and no `ctx`. Operator-authorized.
  */
 export function getAccessChecks(): Promise<ProjectAccessChecks> {
   if (!accessChecksPromise) {
@@ -137,15 +136,15 @@ export function resetAccessChecksForTests(): void {
 }
 
 /**
- * The one login check in the tree (ADR-022 R10).
+ * The one login check in the tree.
  *
  * `protectedProcedure` already refuses an anonymous caller and hands the
- * handler a `session.userId` that is a `string`, so a protected procedure
- * needs nothing here. This is for the paths the builder cannot decide: the
- * share-aware `chartProcedure` / `overviewProcedure`, which are public
- * because a valid share link is an alternative to being signed in, and only
- * demand a user when no share was presented. Until M15-007 it was copied,
- * unexported, into 28 `*.rpc.ts` files.
+ * handler a `session.userId` that is a `string`, so a protected procedure needs
+ * nothing here. This is for the paths the builder cannot decide: the
+ * share-aware `chartProcedure` / `overviewProcedure`, which are public because
+ * a valid share link is an alternative to being signed in, and only demand a
+ * user when no share was presented. Until M15-007 it was copied, unexported,
+ * into 28 `*.rpc.ts` files.
  */
 export function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -156,20 +155,20 @@ export function requireLogin(userId: string | null | undefined): string {
 
 /**
  * Registered in `services.ts`. Ignores BOTH arguments, and takes them only
- * because ADR-022 R3 keeps the composition root a flat list: every member
- * here is either pure, reads its own env, or — for the access checks —
- * reaches the shared, memoized `getAccessChecks()` above, whose lookups are
- * `cacheable` (their key is derived from the call's arguments, so they cannot
- * take a leading `deps`; see shared/access-lookups.ts). A member that later
- * needs `db` / `logger` drops the underscore and reads the parameter.
+ * because ADR-022 R3 keeps the composition root a flat list: every member here
+ * is either pure, reads its own env, or — for the access checks — reaches the
+ * shared, memoized `getAccessChecks` above, whose lookups are `cacheable`
+ * (their key is derived from the call's arguments, so they cannot take a
+ * leading `deps`; see shared/access-lookups.ts). A member that later needs `db`
+ * / `logger` drops the underscore and reads the parameter.
  */
 export function createAuthService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  // One function per member, closing over `deps`, so the return statement
-  // below stays a plain index (ADR-022 R4) — nothing here is a `return { ... }`
-  // literal with logic inside it.
+  // One function per member, closing over `deps`, so the return statement below
+  // stays a plain index — nothing here is a `return {... }` literal with logic
+  // inside it.
   async function requireProjectAccess(
     args: Parameters<ProjectAccessChecks['requireProjectAccess']>[0]
   ): ReturnType<ProjectAccessChecks['requireProjectAccess']> {
@@ -208,9 +207,9 @@ export function createAuthService(
   }
 
   /**
-   * The session cookie's other half. `http/session.ts` reaches it here
-   * rather than deep-importing `./src/login-session` (ADR-022 R22), which
-   * is also what keeps the demo-user branch inside one function.
+   * The session cookie's other half. `http/session.ts` reaches it here rather
+   * than deep-importing `./src/login-session`, which is also what keeps the
+   * demo-user branch inside one function.
    */
   function checkSessionToken(
     token: string | null | undefined
@@ -272,27 +271,26 @@ export function createAuthService(
   };
 }
 
-// -----------------------------------------------------------------------
-// The Prisma-touching half (M6-003): sign-up/sign-in, TOTP challenges,
-// password reset, share unlock and the github/google OAuth callback. This
-// is the logic packages/trpc/src/routers/auth.ts and
-// apps/api/src/controllers/oauth-callback.controller.tsx held inline —
-// neither ever had a `packages/db/src/services/*` home to move from, unlike
-// every other M5/M6 module, so it is written directly here (DELEGATE
-// PATTERN: both V1's trpc router and this package's own auth.rpc.ts call
-// these same functions).
+// ---------------------------------------------------------------------- The
+// Prisma-touching half: sign-up/sign-in, TOTP challenges, password reset, share
+// unlock and the github/google OAuth callback. This is the logic
+// packages/trpc/src/routers/auth.ts and
+// apps/api/src/controllers/oauth-callback.controller.tsx held inline — neither
+// ever had a `packages/db/src/services/*` home to move from, unlike every other
+// M5/M6 module, so it is written directly here (DELEGATE PATTERN: both V1's
+// trpc router and this package's own auth.rpc.ts call these same functions).
 //
 // Session/registration access is `deps.db`, via static imports of
-// `./src/login-session` and `./src/registration` (M10-004) — neither cycles
-// back to this file, so there is nothing to keep lazy there. Share is the one
-// real cycle (M6-004) — share.service.ts statically imports this file's own
-// `hashPassword` — so `signInToShare` reaches it through the composition
-// root's `services()` thunk instead of importing it at all.
+// `./src/login-session` and `./src/registration` — neither cycles back to this
+// file, so there is nothing to keep lazy there. Share is the one real cycle —
+// share.service.ts statically imports this file's own `hashPassword` — so
+// `signInToShare` reaches it through the composition root's `services` thunk
+// instead of importing it at all.
 //
 // None of these functions take a `TrpcContext`/`Ctx` directly — they take a
 // `deps: ServiceDeps` plus exactly the other primitives they touch
-// (`setCookie`, `cookies.get`, `logger`), so this file has no dependency on
-// the rpc layer that calls it.
+// (`setCookie`, `cookies.get`, `logger`), so this file has no dependency on the
+// rpc layer that calls it.
 
 import { generateSecureId } from '@openpanel/shared';
 import { decrypt, encrypt } from '@openpanel/shared/server';
@@ -877,8 +875,8 @@ export interface SignInShareInput {
 }
 
 /** Share's three lookups arrive through the composition root's thunk
- *  (ADR-022 R3), not a dynamic import: `share.service.ts` statically imports
- *  this file's `hashPassword`, so a static edge back would be a real cycle. */
+ * Not a dynamic import: `share.service.ts` statically imports this file's
+ * `hashPassword`, so a static edge back would be a real cycle. */
 /** A week, as V1's `maxAge` was. */
 const SHARE_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 

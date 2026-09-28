@@ -1,5 +1,5 @@
 /**
- * The regression test for drill 03's loss (M18-001).
+ * The regression test for drill 03's loss.
  *
  * Both halves matter and the happy path alone would not have caught the bug:
  * (a) the event buffer is flushed to Redis BEFORE the Kafka consumer is

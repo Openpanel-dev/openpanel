@@ -1,10 +1,9 @@
-// M10-002 (docs/TECH_DEBT.md §5b): auth.service.ts is now the ONLY place
-// the ladder is bound to real lookups, via the lazy,
-// memoized `getAccessChecks()`. This proves that seam still takes a fake
-// `AccessLookups` cleanly — mocking `../../shared/access-lookups`, which
-// auth.service.ts reaches only through a dynamic import and which owns all
-// four lookups since M15-005 — and that ADR-011's fail-closed ordering,
-// messages and write-level gate are unchanged.
+// Auth.service.ts is now the ONLY place the ladder is bound to real lookups,
+// via the lazy, memoized `getAccessChecks`. This proves that seam still takes a
+// fake `AccessLookups` cleanly — mocking `../../shared/access-lookups`, which
+// auth.service.ts reaches only through a dynamic import and which owns all four
+// lookups since M15-005 — and that ADR-011's fail-closed ordering, messages and
+// write-level gate are unchanged.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -58,8 +57,8 @@ afterAll(() => {
 
 function authService() {
   // Both arguments are ignored by `createAuthService` — it takes them so the
-  // composition root stays a flat list (ADR-022 R3). Every member reaches the
-  // mocked lookups above.
+  // composition root stays a flat list. Every member reaches the mocked lookups
+  // above.
   return createAuthService(
     {} as import('../../services').ServiceDeps,
     testServices()

@@ -1,22 +1,20 @@
 /**
- * P11 (ADR-008): repoint importers of the four dissolving packages
- * — @openpanel/validation, @openpanel/constants, @openpanel/common,
- * @openpanel/json — at the targets recorded in ./p11-map.json.
+ * P11: repoint importers of the four dissolving packages —
+ * @openpanel/validation, @openpanel/constants, @openpanel/common,
+ * @openpanel/json — at the targets recorded in./p11-map.json.
  *
  * The map is the single source of truth and is the JSON block of
  * docs/P11_DISSOLUTION_MAP.md verbatim. A row's `to` is the default target;
  * `toByConsumer[<workspace>]` overrides it for one workspace.
  *
- * Three things it does that a sed cannot:
- *  - one import statement fans out to several targets (packages/db/src/types.ts
- *    splits eight ways), so statements are regrouped by target;
- *  - per-symbol `type` keywords are preserved exactly as written. A `type`
- *    keyword can sit on a runtime binding used only in `z.infer<typeof x>`;
- *    dropping it promotes an erased import into a real one and changes the
- *    bundle (ADR-008 risk 4);
- *  - a named re-export (`export { X } from '@openpanel/validation'`) is
- *    rewritten the same way an import is — same clause grammar, same
- *    per-symbol targets.
+ * Three things it does that a sed cannot: - one import statement fans out to
+ * several targets (packages/db/src/types.ts splits eight ways), so statements
+ * are regrouped by target; - per-symbol `type` keywords are preserved exactly
+ * as written. A `type` keyword can sit on a runtime binding used only in
+ * `z.infer<typeof x>`; dropping it promotes an erased import into a real one
+ * and changes the bundle (ADR-008 risk 4); - a named re-export (`export { X }
+ * from '@openpanel/validation'`) is rewritten the same way an import is — same
+ * clause grammar, same per-symbol targets.
  *
  * Idempotent: a rewritten specifier no longer matches DYING, so a second run
  * over the same files changes nothing.

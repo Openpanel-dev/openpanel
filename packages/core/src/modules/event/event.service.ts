@@ -1,6 +1,6 @@
-// The event read path. Every query is a `sql` fragment (src/sql.ts), per
-// ADR-013; the two filter compilers (`getEventFiltersWhereClause`,
-// `buildFilterWhere`) are shared, and src/filter-clauses.ts is the bridge.
+// The event read path. Every query is a `sql` fragment (src/sql.ts); the two
+// filter compilers (`getEventFiltersWhereClause`, `buildFilterWhere`) are
+// shared, and src/filter-clauses.ts is the bridge.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';

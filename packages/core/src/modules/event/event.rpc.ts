@@ -1,11 +1,10 @@
-// Ported from packages/trpc/src/routers/event.ts (M7-002).
+// Ported from packages/trpc/src/routers/event.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
 // `bots` was V1's only `publicProcedure` here (anonymous callers were let in
 // when a share-overview row existed); ADR-011 makes it protected.
@@ -40,11 +39,11 @@ const DEFAULT_BOTS_LIMIT = 8;
 
 /**
  * `pagesTimeseries` returns every page in the project, so its size is the
- * project's page cardinality, not its traffic: unbounded it is 5,050,763 rows
- * / 486 MiB on the busiest anchor (M31-002). 50 is enough to carry any chart
- * legend or table page the result could feed, and caps the response at
- * `50 x buckets`. The origin+path-filtered `pageTimeseries` below is bounded
- * by its own filters and stays unbounded here.
+ * project's page cardinality, not its traffic: unbounded it is 5,050,763 rows /
+ * 486 MiB on the busiest anchor. 50 is enough to carry any chart legend or
+ * table page the result could feed, and caps the response at `50 x buckets`.
+ * The origin+path-filtered `pageTimeseries` below is bounded by its own filters
+ * and stays unbounded here.
  */
 const PAGES_TIMESERIES_TOP_PAGES_PER_BUCKET = 50;
 

@@ -1,10 +1,10 @@
 // Route-handler coverage for runSiteCheck — the smell docs/review/tools.md
-// (M14-133) flagged as "zero test coverage of the two route handlers." Only
-// the pre-fetch guards (missing/invalid URL, SSRF rejection, rate limit) are
-// covered here: they run with no outbound I/O. The full probe (fetch, TLS,
-// robots.txt, hosting lookup) is 700 lines of live network calls and is left
-// uncovered — exercising it would mean mocking most of the file's behaviour,
-// which risks diverging from what it actually does more than it protects.
+// flagged as "zero test coverage of the two route handlers." Only the pre-fetch
+// guards (missing/invalid URL, SSRF rejection, rate limit) are covered here:
+// they run with no outbound I/O. The full probe (fetch, TLS, robots.txt,
+// hosting lookup) is 700 lines of live network calls and is left uncovered —
+// exercising it would mean mocking most of the file's behaviour, which risks
+// diverging from what it actually does more than it protects.
 
 import { describe, expect, it } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';

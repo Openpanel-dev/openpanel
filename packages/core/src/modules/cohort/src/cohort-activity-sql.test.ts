@@ -1,7 +1,7 @@
 // SQL-shape tests for the cohort detail page's `mostEvents` / `popularRoutes`
 // statements. M36-005 bounded both to a window: before it they had no date
 // filter and read the project's whole event history however small the cohort
-// was (docs/UNPROVEN_ENDPOINTS.md §4.4). Pure builders — no ClickHouse.
+// was. Pure builders — no ClickHouse.
 
 import { describe, expect, test } from 'bun:test';
 import {

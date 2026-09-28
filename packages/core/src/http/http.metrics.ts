@@ -1,22 +1,20 @@
 // `fastify-metrics`'s two route series, re-created on Elysia
-// (TARGET_ARCHITECTURE §18 / ADR-018's metrics-continuity register: "kept,
-// name and labels reproduced exactly"). The plugin itself dies with Fastify
+// (TARGET_ARCHITECTURE §18 / ADR-018's metrics-continuity register: "kept, name
+// and labels reproduced exactly"). The plugin itself dies with Fastify
 // (ADR-002's deleted-plugin list), so these are ours now.
 //
 // What "reproduced exactly" pins, from fastify-metrics 12.1.0's own source
 // (dist/fastify-metrics.js:181-210, 258-290):
 //
-//   * names   `http_request_duration_seconds` (histogram) and
-//             `http_request_summary_seconds` (summary)
-//   * help    "request duration in seconds" / "... summary"
-//   * labels  `method`, `route`, `status_code`, in that order
-//   * unit    SECONDS. prom-client's `startTimer()` observes seconds; a
-//             milliseconds observation on the same series silently multiplies
-//             every existing percentile by 1000.
-//   * scope   HEAD and OPTIONS are excluded (fastify-metrics' default
-//             `methodBlacklist`), and only a MATCHED route is observed
-//             (`registeredRoutesOnly` defaults true) — so a 404 produces no
-//             series, exactly as today.
+// * names `http_request_duration_seconds` (histogram) and
+// `http_request_summary_seconds` (summary) * help "request duration in seconds"
+// / "... summary" * labels `method`, `route`, `status_code`, in that order *
+// unit SECONDS. prom-client's `startTimer` observes seconds; a milliseconds
+// observation on the same series silently multiplies every existing percentile
+// by 1000. * scope HEAD and OPTIONS are excluded (fastify-metrics' default
+// `methodBlacklist`), and only a MATCHED route is observed
+// (`registeredRoutesOnly` defaults true) — so a 404 produces no series, exactly
+// as today.
 //
 // The `route` label VALUE moves, because it is the framework's own route
 // pattern and the framework changed. That is the one thing a dashboard owner

@@ -1,5 +1,5 @@
 // The tRPC instance, its context, and the middleware factories procedures are
-// built from (ADR-009).
+// built from.
 //
 // The tRPC context IS the Elysia-derived `HttpCtx`: `makeTrpcContext` adds the
 // tRPC-specific bits and overrides exactly one field. There is no `req`/`res`
@@ -51,16 +51,16 @@ export interface Meta {
 export interface TrpcContext extends Omit<HttpCtx, 'session'> {
   readonly session: Session;
   /**
-   * The connection's peer address — the one address a client cannot forge,
-   * and therefore the rate limiter's last-resort fallback when no trusted
-   * header is present. It is NOT `ctx.ip`: that is the *attribution* ip,
-   * which prefers client-forwarded headers and would give every request its
-   * own bucket (ADR-002 "behaviour that must be preserved explicitly" 2).
+   * The connection's peer address — the one address a client cannot forge, and
+   * therefore the rate limiter's last-resort fallback when no trusted header is
+   * present. It is NOT `ctx.ip`: that is the *attribution* ip, which prefers
+   * client-forwarded headers and would give every request its own bucket
+   * (ADR-002 "behaviour that must be preserved explicitly" 2).
    *
    * `undefined` where the transport does not expose it. Elysia's
-   * `server.requestIP()` is not plumbed through `HttpCtx` yet, so the fetch
-   * mount leaves it unset and the limiter falls back to its shared
-   * `unknown` bucket — fail-closed, which is the documented intent.
+   * `server.requestIP` is not plumbed through `HttpCtx` yet, so the fetch mount
+   * leaves it unset and the limiter falls back to its shared `unknown` bucket —
+   * fail-closed, which is the documented intent.
    */
   readonly remoteAddress: string | undefined;
   /**
@@ -146,28 +146,26 @@ export const procedure = t.procedure
   .use(stopWhenCancelled)
   .use(mapDriverErrors);
 
-// ---------------------------------------------------------------------------
-// The procedure stack (M11-001), ported from packages/trpc/src/trpc.ts:35-155.
+// --------------------------------------------------------------------------
+// The procedure stack, ported from packages/trpc/src/trpc.ts:35-155.
 //
-// ADR-011 is this code's law; invariants 1-13 are binding. Three properties of
-// the port are load-bearing and are the reason it is a middleware stack rather
-// than per-handler code:
+// Is this code's law; invariants 1-13 are binding. Three properties of the port
+// are load-bearing and are the reason it is a middleware stack rather than
+// per-handler code:
 //
-//  1. AUTHENTICATION RUNS BEFORE INPUT PARSING. tRPC runs `.use()` middleware
-//     ahead of the `.input()` parser, so an anonymous caller gets UNAUTHORIZED
-//     whatever it sends. Doing the same check inside a handler inverts that:
-//     the caller learns the input shape first, and 176 procedures changed
-//     answer from 401 to 400 when core mounted the bare `procedure`
-//     (docs/RPC_PROCEDURE_SET_EQUIVALENCE.md).
-//  2. THE CHECK CANNOT BE FORGOTTEN. It is a property of the builder, not of a
-//     line a port might drop. Three procedures (`client.list`,
-//     `subscription.getCurrent`, `subscription.usage`) had no check at all
-//     while this stack was missing.
-//  3. `enforceAccess` READS THE RAW, PRE-ZOD INPUT (ADR-011 invariant 2) and
-//     only its TOP-LEVEL `projectId` / `organizationId`. A procedure that
-//     resolves the project from a reportId/dashboardId is invisible to it and
-//     keeps its in-handler check — ADR-011 counts 58 of those, and a redundant
-//     check is harmless where a missing one is not.
+// 1. AUTHENTICATION RUNS BEFORE INPUT PARSING. tRPC runs `.use` middleware
+// ahead of the `.input` parser, so an anonymous caller gets UNAUTHORIZED
+// whatever it sends. Doing the same check inside a handler inverts that: the
+// caller learns the input shape first, and 176 procedures changed answer from
+// 401 to 400 when core mounted the bare `procedure`. 2. THE CHECK CANNOT BE
+// FORGOTTEN. It is a property of the builder, not of a line a port might drop.
+// Three procedures (`client.list`, `subscription.getCurrent`,
+// `subscription.usage`) had no check at all while this stack was missing. 3.
+// `enforceAccess` READS THE RAW, PRE-ZOD INPUT (ADR-011 invariant 2) and only
+// its TOP-LEVEL `projectId` / `organizationId`. A procedure that resolves the
+// project from a reportId/dashboardId is invisible to it and keeps its
+// in-handler check — ADR-011 counts 58 of those, and a redundant check is
+// harmless where a missing one is not.
 //
 // The lookups arrive through `ctx.services.auth` (M10-002 bound the ladder
 // there, once, in auth.service.ts); core reaches no database directly.
@@ -181,8 +179,8 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 
   try {
     // Narrowed, not merely copied: the spread of the checked union member is
-    // what gives every handler below a `session.userId` of type `string`, so
-    // a procedure reads it instead of re-deriving it through a per-file
+    // what gives every handler below a `session.userId` of type `string`, so a
+    // procedure reads it instead of re-deriving it through a per-file
     // `requireLogin` (ADR-022 R10 — 38 of those, deleted at M15-007).
     return next({
       ctx: {
@@ -505,10 +503,10 @@ export interface RateLimitOptions {
  * both are boot-scope concerns, and injecting it is what lets a procedure be
  * tested without one.
  *
- * The fingerprint is derived from `headers` and `remoteAddress`. `ip` is in
- * the signature because ADR-009 names it, but a limiter must never key on it:
- * it is the attribution address, which prefers client-forwarded headers and
- * would give every request its own bucket (ADR-002 preserved-behaviour 2).
+ * The fingerprint is derived from `headers` and `remoteAddress`. `ip` is in the
+ * signature because ADR-009 names it, but a limiter must never key on it: it is
+ * the attribution address, which prefers client-forwarded headers and would
+ * give every request its own bucket (ADR-002 preserved-behaviour 2).
  */
 export type EnforceRateLimit = (
   args: RateLimitOptions & {

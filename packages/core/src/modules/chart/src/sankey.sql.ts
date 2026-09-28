@@ -1,13 +1,13 @@
-// Every ClickHouse statement the sankey (user-flow) service runs, as pure
-// `sql` fragments (ADR-013).
+// Every ClickHouse statement the sankey (user-flow) service runs, as pure `sql`
+// fragments.
 //
 // The filter compiler renders text (see compiled.ts); only its output is
 // spliced.
 //
-// Cluster note: `events` is Distributed on Cloud, and the
-// `session_id IN (SELECT session_id FROM start_event_sessions)` HAVING clauses
-// are plain `IN (subquery)` over a CTE. Whether these should be `GLOBAL IN` on
-// a cluster is an open question.
+// Cluster note: `events` is Distributed on Cloud, and the `session_id IN
+// (SELECT session_id FROM start_event_sessions)` HAVING clauses are plain `IN
+// (subquery)` over a CTE. Whether these should be `GLOBAL IN` on a cluster is
+// an open question.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { compiledText } from './compiled';
@@ -21,8 +21,8 @@ export const TOP_ENTRY_EVENTS = 3;
 /**
  * Consecutive-repeat dedup, shared by every mode. V1 spelled it as an
  * `arrayFilter` whose lambda indexed its own captured `groupArray`, which
- * ClickHouse re-materialises once per element: Theta(n^2) in the longest
- * single session's event count, fatal on a tenant with one very long session
+ * ClickHouse re-materialises once per element: Theta(n^2) in the longest single
+ * session's event count, fatal on a tenant with one very long session
  * (docs/ANALYTICS_PERFORMANCE.md section 6.1). `arrayCompact` is the built-in
  * for exactly this and is linear; the result is byte-identical.
  */

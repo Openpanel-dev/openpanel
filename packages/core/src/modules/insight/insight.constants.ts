@@ -1,7 +1,6 @@
-// Moved from packages/validation/src/types.insights.ts (M11-006, ADR-008's
-// module map: insight owns "C"). Plain TypeScript, no zod — isomorphic by the
-// AGENTS.md rule, which constrains a constants file's imports, and this file
-// has none.
+// Moved from packages/validation/src/types.insights.ts (ADR-008's module map:
+// insight owns "C"). Plain TypeScript, no zod — isomorphic by the AGENTS.md
+// rule, which constrains a constants file's imports, and this file has none.
 
 // The two list procedures' page bounds. Vocabulary, not implementation: the
 // dashboard pages that call `insight.list` / `insight.listAll` size their own

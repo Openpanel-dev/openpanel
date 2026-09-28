@@ -5,14 +5,14 @@
 // It is a NAMING of what already exists under `src/clients/`, not a new
 // abstraction: every member below is the exact function this package already
 // exports, gathered so a service can reach an outbound client through its
-// scoped `Ctx` instead of importing the module directly. Nothing is
-// constructed here — the geo readers open their mmdb lazily and the email /
-// Discord transports read their own credentials — so building it costs one
-// object literal per process.
+// scoped `Ctx` instead of importing the module directly. Nothing is constructed
+// here — the geo readers open their mmdb lazily and the email / Discord
+// transports read their own credentials — so building it costs one object
+// literal per process.
 //
-// M15-008 removed the `slack` and `ai` members: those transports moved into
-// the single module that calls each (ADR-022 A2), and a client handle cannot
-// reach up into a module. Nothing read either member.
+// Removed the `slack` and `ai` members: those transports moved into the single
+// module that calls each (ADR-022 A2), and a client handle cannot reach up into
+// a module. Nothing read either member.
 
 import { sendEmail } from './email';
 import { getAsnInfo, getGeoLocation } from './geo';

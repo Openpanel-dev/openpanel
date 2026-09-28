@@ -1,10 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { ServiceDeps } from '../../../../../services';
 
-// M10-005: `findProfilesCore` takes `ServiceDeps` and reaches ClickHouse as
-// `deps.ch` (through ch-query.ts), so the client is HANDED IN rather
-// than mocked onto `@openpanel/db/src/clickhouse/client` process-wide. Same
-// assertions, one less shared-registry hazard.
+// `findProfilesCore` takes `ServiceDeps` and reaches ClickHouse as `deps.ch`
+// (through ch-query.ts), so the client is HANDED IN rather than mocked onto
+// `@openpanel/db/src/clickhouse/client` process-wide. Same assertions, one less
+// shared-registry hazard.
 const chQuery = mock(
   async (_params: {
     query: string;
@@ -34,8 +34,8 @@ beforeAll(async () => {
   ({ findProfilesCore } = await import('../../../../profile/profile.service'));
 });
 
-// Since M7-002 the service hands ClickHouse a `sql` fragment (ADR-013): the
-// text carries `{pN:Type}` placeholders and every value travels in params.
+// Since M7-002 the service hands ClickHouse a `sql` fragment: the text carries
+// `{pN:Type}` placeholders and every value travels in params.
 function captured(): { query: string; params: Record<string, unknown> } {
   const call = chQuery.mock.calls[0]?.[0];
   return {

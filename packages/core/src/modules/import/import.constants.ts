@@ -1,7 +1,7 @@
 // Moved from packages/validation/src/index.ts + packages/importer/src/
-// providers/metadata.ts (M5-004, ADR-008's module map: import owns "C").
-// packages/validation/src/import.validation.ts becomes a re-export shim of
-// this file (same shape as packages/validation/src/cohort.validation.ts since
+// providers/metadata.ts (ADR-008's module map: import owns "C").
+// packages/validation/src/import.validation.ts becomes a re-export shim of this
+// file (same shape as packages/validation/src/cohort.validation.ts since
 // M5-003), so apps/start and packages/db/src/types.ts keep resolving these
 // symbols through packages/validation's existing barrel unchanged.
 //

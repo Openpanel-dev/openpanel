@@ -39,7 +39,7 @@ const authenticateClient = mock(
   (_deps: unknown, _headers: Headers, _options: ClientAuthOptions) =>
     Promise.resolve(clientResult)
 );
-// M10-005: both take `ServiceDeps` first; the route hands them `ctx`.
+// Both take `ServiceDeps` first; the route hands them `ctx`.
 const identifyProfile = mock(
   (
     _deps: unknown,

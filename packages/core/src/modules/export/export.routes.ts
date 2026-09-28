@@ -1,30 +1,29 @@
 // Ported from apps/api/src/routes/export.router.ts + insights.router.ts and
-// their controllers (M7-007). V1's Fastify routes stay the LIVE surface
-// (DELEGATE PATTERN) and already call these same `@openpanel/db`-re-exported
-// `*Core` functions (M7-001..006 moved the implementations; the V1
-// controllers were updated to delegate as each module landed). This file is
-// the same surface rebuilt on Elysia, so the target port has somewhere to
-// land at P8 without redesigning the API it replaces — no new query logic,
-// every call below is the same function V1's controller calls.
+// their controllers. V1's Fastify routes stay the LIVE surface (DELEGATE
+// PATTERN) and already call these same `@openpanel/db`-re-exported `*Core`
+// functions (M7-001..006 moved the implementations; the V1 controllers were
+// updated to delegate as each module landed). This file is the same surface
+// rebuilt on Elysia, so the target port has somewhere to land at P8 without
+// redesigning the API it replaces — no new query logic, every call below is the
+// same function V1's controller calls.
 //
 // `allow: ['read', 'root']` mirrors V1's rule (utils/auth.ts's
 // `validateExportRequest`, shared by both `/export` and `/insights`: a
 // `write`-type client may not read analytics back out).
 //
-// M9-004 mounted this surface and landed the missing half: V1's
-// `parseQueryString` pre-pass is now `http/query.ts`'s `transform` hook,
-// registered LOCAL on both surfaces below. Every zod schema here is the one V1
-// validates AFTER that hook runs, so without it a plain `?limit=5` fails
-// validation.
+// Mounted this surface and landed the missing half: V1's `parseQueryString`
+// pre-pass is now `http/query.ts`'s `transform` hook, registered LOCAL on both
+// surfaces below. Every zod schema here is the one V1 validates AFTER that hook
+// runs, so without it a plain `?limit=5` fails validation.
 //
 // `listDashboards`/`listReports` (insights.controller.ts) are mounted under
-// `/manage/projects/:projectId/dashboards[...]` in V1 (manage.router.ts) —
-// that surface belongs to the project module, not here.
+// `/manage/projects/:projectId/dashboards[...]` in V1 (manage.router.ts) — that
+// surface belongs to the project module, not here.
 //
-// The 18 `overviewColumns` routes are written out rather than looped: a
-// mutable reassignment of the Elysia chain inside a `for` loop widens past
-// what `defineRoutes`'s `const T` inference can carry, same reason every
-// other module here writes its routes as one static `.get()`/`.post()` chain.
+// The 18 `overviewColumns` routes are written out rather than looped: a mutable
+// reassignment of the Elysia chain inside a `for` loop widens past what
+// `defineRoutes`'s `const T` inference can carry, same reason every other
+// module here writes its routes as one static `.get`/`.post` chain.
 
 import { DateTime } from '@openpanel/shared';
 import { z } from 'zod';

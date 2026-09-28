@@ -1,7 +1,7 @@
 // Ported from apps/api/src/routes/misc.router.ts +
-// apps/api/src/controllers/misc.controller.ts (M7-008). V1's Fastify router
-// stays the LIVE route (DELEGATE PATTERN) and calls the same misc.service.ts
-// functions this file does.
+// apps/api/src/controllers/misc.controller.ts. V1's Fastify router stays the
+// LIVE route (DELEGATE PATTERN) and calls the same misc.service.ts functions
+// this file does.
 //
 // `GET /misc/og/clear` and `GET /misc/favicon/clear` are dropped, not ported
 // (ADR-015 entry #6: RULED + DEAD — `docs/ANSWERS.md` §1.4 confirms nothing

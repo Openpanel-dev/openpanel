@@ -1,17 +1,17 @@
-// M12-007: the replacement for `cached-clix.ts` (ADR-013 decision 21).
+// The replacement for `cached-clix.ts` (ADR-013 decision 21).
 //
-// The wrapper it replaces memoised `clix`'s `execute()` on
-// `sha256(query.toSQL() + '|' + timezone)` — safe only because clix inlined
-// every value into the text it hashed. The `sql` tag renders `{pN:Type}`
-// placeholders whose names come from a per-render counter, so two statements
-// that differ only in their bound values render to the SAME text: the key must
-// carry the params as well, or one project's window would serve another's.
+// The wrapper it replaces memoised `clix`'s `execute` on `sha256(query.toSQL +
+// '|' + timezone)` — safe only because clix inlined every value into the text
+// it hashed. The `sql` tag renders `{pN:Type}` placeholders whose names come
+// from a per-render counter, so two statements that differ only in their bound
+// values render to the SAME text: the key must carry the params as well, or one
+// project's window would serve another's.
 //
 // Everything else is deliberately unchanged from the clix wrapper: the `Map`
 // belongs to the caller (per module+window, never module-level — it is keyed by
 // nothing tenant-scoped), the timezone defaults to `'UTC'` exactly as
 // `clix(client, timezone)` did (query-builder.ts:696) and travels as
-// `session_timezone` in `clickhouse_settings` exactly as `.execute()` sent it
+// `session_timezone` in `clickhouse_settings` exactly as `.execute` sent it
 // (query-builder.ts:562).
 
 import crypto from 'node:crypto';
@@ -28,10 +28,10 @@ export type StatementRunner = <T extends object>(
 ) => Promise<T[]>;
 
 /**
- * @param deps  the scope's ClickHouse client + logger (so the requestId reaches
- *              the query — ADR-018).
- * @param cache per module+window result cache; omit to disable memoisation.
- * @param timezone `session_timezone` for every statement run through it.
+ * @param deps the scope's ClickHouse client + logger (so the requestId reaches
+ * the query — ADR-018). @param cache per module+window result cache; omit to
+ * disable memoisation. @param timezone `session_timezone` for every statement
+ * run through it.
  */
 export function createStatementCache(
   deps: ChScope,

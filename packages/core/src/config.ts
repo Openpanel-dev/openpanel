@@ -1,15 +1,14 @@
-// The shape of everything core needs from the environment (ADR-022 R7: only
-// the config loader reads `process.env`). `apps/api/src/config/env.ts` is that
+// The shape of everything core needs from the environment (ADR-022 R7: only the
+// config loader reads `process.env`). `apps/api/src/config/env.ts` is that
 // loader; it parses, validates and derives, and hands the result down as
 // `AppDeps.config` / `Ctx.config`, so nothing below this file re-derives a
 // value or reaches for `process.env` again.
 //
-// Two conventions hold throughout:
-//   - `undefined` means "not set", never "blank". A blank `KEY=` is absent.
-//   - a field that only ever had one spelling of a default keeps that default
-//     next to the code that documents WHY (e.g. the buffers' batch sizes), so
-//     the loader parses and the module decides. Anything DERIVED from more
-//     than one variable is resolved here and arrives finished.
+// Two conventions hold throughout: - `undefined` means "not set", never
+// "blank". A blank `KEY=` is absent. - a field that only ever had one spelling
+// of a default keeps that default next to the code that documents WHY (e.g. the
+// buffers' batch sizes), so the loader parses and the module decides. Anything
+// DERIVED from more than one variable is resolved here and arrives finished.
 
 /** Which pino transport ships the logs, and how the service name is built. */
 export interface LoggingConfig {

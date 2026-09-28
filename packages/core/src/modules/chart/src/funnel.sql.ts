@@ -1,11 +1,10 @@
-// Every ClickHouse statement the funnel service runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse statement the funnel service runs, as pure `sql` fragments.
 //
-// The chart and the profile list are built from ONE base: a breakdown expression only works if the join it
-// references was added, and the joins depend on the breakdowns, so building
-// the selects in one place and the joins in another is exactly the bug that
-// made funnel "View Users" return "No users found" for profile-property and
-// cohort breakdowns.
+// The chart and the profile list are built from ONE base: a breakdown
+// expression only works if the join it references was added, and the joins
+// depend on the breakdowns, so building the selects in one place and the joins
+// in another is exactly the bug that made funnel "View Users" return "No users
+// found" for profile-property and cohort breakdowns.
 //
 // The field resolver and filter compiler render text (see compiled.ts); their
 // output — filter clauses, breakdown expressions, the profile CTE columns and

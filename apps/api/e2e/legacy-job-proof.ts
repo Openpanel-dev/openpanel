@@ -1,9 +1,8 @@
 /**
- * M9-001 acceptance proof: a LEGACY-shaped job already sitting in Redis is
- * still picked up and run by the V2 worker, with no drain and no rename
- * (ADR-005). Plus the other direction — a job the V2 producer enqueues
- * carries the `{payload, meta}` envelope and its `requestId` reaches the
- * handler's logger (ADR-018 R1).
+ * Acceptance proof: a LEGACY-shaped job already sitting in Redis is still
+ * picked up and run by the V2 worker, with no drain and no rename. Plus the
+ * other direction — a job the V2 producer enqueues carries the `{payload,
+ * meta}` envelope and its `requestId` reaches the handler's logger.
  *
  * What is real here: the registry (`queues`), every `compat` hook, every job
  * payload schema, `resolveJob`, BullMQ, and Redis. The legacy jobs are put in
@@ -13,16 +12,15 @@
  *
  * Two deliberate narrowings, both stated in the output:
  *
- *  1. It runs on a `-m9001proof` queue-key namespace, not on the shared dev
- *     Redis's live `cron`/`sessions`/… keys, so it can neither consume nor be
- *     confused by whatever the golden harness left there. Only the key string
- *     differs; the un-namespaced keys' byte-identity is pinned separately by
- *     `packages/core/src/jobs/naming.test.ts`.
- *  2. `cron` runs its REAL handlers over the REAL boot buffers. The other six
- *     queues' handlers reach `ctx.services`, which needs the db/ch clients
- *     `AppDeps` does not carry until M9-002/M9-003, so for those six the
- *     handler body is a recorder — everything up to and including the handler
- *     lookup is the real thing.
+ * 1. It runs on a `-m9001proof` queue-key namespace, not on the shared dev
+ * Redis's live `cron`/`sessions`/… keys, so it can neither consume nor be
+ * confused by whatever the golden harness left there. Only the key string
+ * differs; the un-namespaced keys' byte-identity is pinned separately by
+ * `packages/core/src/jobs/naming.test.ts`. 2. `cron` runs its REAL handlers
+ * over the REAL boot buffers. The other six queues' handlers reach
+ * `ctx.services`, which needs the db/ch clients `AppDeps` does not carry until
+ * M9-002/M9-003, so for those six the handler body is a recorder — everything
+ * up to and including the handler lookup is the real thing.
  *
  * Run: `bash apps/api/e2e/legacy-job-proof.sh`
  */

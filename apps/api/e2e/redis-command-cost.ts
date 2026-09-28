@@ -1,23 +1,22 @@
 /**
- * M18-003 — what does a LEGITIMATE Redis command on the cache client cost?
+ * What does a LEGITIMATE Redis command on the cache client cost?
  *
  * `commandTimeout` on the cache client is a deadline every command on the
  * ingest path now runs under, including the event buffer's writes and reads.
- * Picking it needs the cost of the heaviest honest command, not a guess: if
- * the deadline is anywhere near a busy flush, a healthy server starts looking
- * like a down one and M18-001's shutdown path starts refusing to commit
- * offsets it should have committed.
+ * Picking it needs the cost of the heaviest honest command, not a guess: if the
+ * deadline is anywhere near a busy flush, a healthy server starts looking like
+ * a down one and M18-001's shutdown path starts refusing to commit offsets it
+ * should have committed.
  *
- * Measures the four shapes the cache client actually issues, worst first:
- *   - `MULTI` of `EVENT_BUFFER_BATCH_SIZE` rpush — the shutdown flush of a
- *     full local buffer (`event-buffer.ts:writeToRedis`).
- *   - `MULTI` of the micro-batch size — the steady-state ingest write.
- *   - `LRANGE 0..batchSize-1` — the cron flush read (`processBuffer`).
- *   - `GET` — every cache/auth lookup.
+ * Measures the four shapes the cache client actually issues, worst first: -
+ * `MULTI` of `EVENT_BUFFER_BATCH_SIZE` rpush — the shutdown flush of a full
+ * local buffer (`event-buffer.ts:writeToRedis`). - `MULTI` of the micro-batch
+ * size — the steady-state ingest write. - `LRANGE 0..batchSize-1` — the cron
+ * flush read (`processBuffer`). - `GET` — every cache/auth lookup.
  *
  * Runs against the local server in its own database with its own key prefix.
  *
- *   dotenv -e ../../.env -- bun e2e/redis-command-cost.ts
+ * Dotenv -e../../.env -- bun e2e/redis-command-cost.ts
  */
 
 import { Redis } from '@openpanel/redis';

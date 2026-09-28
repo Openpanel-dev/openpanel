@@ -1,7 +1,7 @@
 // Ported from apps/worker/src/jobs/cron.delete.ts + boot-cron.ts's `delete`
-// schedule (M6-001); `windDown` joined it at M9-003, the wave that deletes
-// apps/worker (ADR-005's acceptance note gives it to this module). The
-// schedules moved onto the jobs at ADR-021 (M10-007).
+// schedule; `windDown` joined it at M9-003, the wave that deletes apps/worker
+// (ADR-005's acceptance note gives it to this module). The schedules moved onto
+// the jobs at ADR-021.
 //
 // `delete` is this module's fragment of the ONE `cron` queue's jobs, spread
 // into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
@@ -48,12 +48,12 @@ export const organizationCronJobs = {
 /**
  * The wind-down cron's dependencies, bound to the job's own ctx.
  *
- * Two reaches stay dynamic. The sibling service's two ClickHouse counts are
- * not on `OrganizationService`, and `src/win-back-pitch.ts` pulls the agent
- * runtime — a static edge from here would drag either into jobs.registry.ts's
- * eager import graph, which every core test file walks. M15-119 (R11) ruled
- * this the ADR-022 "legitimate lazy asset load" exception, not the sibling-
- * service defect R6 forbids: kept as is.
+ * Two reaches stay dynamic. The sibling service's two ClickHouse counts are not
+ * on `OrganizationService`, and `src/win-back-pitch.ts` pulls the agent runtime
+ * — a static edge from here would drag either into jobs.registry.ts's eager
+ * import graph, which every core test file walks. M15-119 (R11) ruled this the
+ * ADR-022 "legitimate lazy asset load" exception, not the sibling- service
+ * defect R6 forbids: kept as is.
  */
 async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
   const [

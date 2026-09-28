@@ -1,16 +1,15 @@
-// Ported from V1's MCP `runReport` / `runReportFromConfig` (M5-005), now
+// Ported from V1's MCP `runReport` / `runReportFromConfig`, now
 // `modules/mcp/src/tools/analytics/reports.ts`.
 //
-// ADR-007 explicitly defers unifying MCP's tool definitions with assistant's,
-// so `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
+// Explicitly defers unifying MCP's tool definitions with assistant's, so
+// `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
 // dispatch — reaching into another module's tool tree is not the fix.
 //
 // The result is a second copy of this dispatch logic, which is exactly the
 // "four independent wrapper layers over the same 34 *Core functions"
-// TARGET_ARCHITECTURE already records as accepted technical debt — this
-// becomes a third layer, not a new problem. Both copies call the same
-// @openpanel/db primitives and must be kept in sync by hand until that debt
-// is paid down.
+// TARGET_ARCHITECTURE already records as accepted technical debt — this becomes
+// a third layer, not a new problem. Both copies call the same @openpanel/db
+// primitives and must be kept in sync by hand until that debt is paid down.
 
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';

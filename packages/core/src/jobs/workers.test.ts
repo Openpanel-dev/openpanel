@@ -92,7 +92,7 @@ test('a legacy job reaches the same handler through the compat hook', async () =
   expect(seen).toHaveLength(1);
   expect(seen[0]?.payload).toEqual({ importId: 'imp_1' });
   // No request caused it, so one is minted rather than left absent — a job's
-  // own logs and its follow-up enqueues still correlate (ADR-018 R2).
+  // own logs and its follow-up enqueues still correlate.
   expect(seen[0]?.ctx.requestId).toMatch(/^[\w-]{21}$/);
 });
 

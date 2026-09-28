@@ -1,24 +1,24 @@
 // `cacheable` for a function that needs the caller's `ServiceDeps`.
 //
-// M10-005: the three cross-module caches on the runtime path
-// (`getEventMetasCached`, `getProfilesCached`, `getProfilePropertyKeysCached`)
-// wrap a function that now reaches Postgres/ClickHouse through `deps`. Passing
-// `deps` to `cacheable` directly is not an option: it keys on EVERY argument
-// through `stringify`, which walks an object's entries recursively — it would
-// serialize the whole Prisma client into the Redis key.
+// The three cross-module caches on the runtime path (`getEventMetasCached`,
+// `getProfilesCached`, `getProfilePropertyKeysCached`) wrap a function that now
+// reaches Postgres/ClickHouse through `deps`. Passing `deps` to `cacheable`
+// directly is not an option: it keys on EVERY argument through `stringify`,
+// which walks an object's entries recursively — it would serialize the whole
+// Prisma client into the Redis key.
 //
 // `deps` is not cache identity anyway. It is the scope a call runs in (the
 // process's clients plus this request's logger); two calls with the same
 // arguments are the same call whichever scope makes them. So the cacheable is
 // built once per `deps` and remembered in a WeakMap, and the Redis key stays
 // byte-identical to what the module-scope `cacheable(fn, ttl)` this replaces
-// produced — hence the EXPLICIT `name`, which is what `fn.name` used to
-// supply and what an inline arrow would silently drop.
+// produced — hence the EXPLICIT `name`, which is what `fn.name` used to supply
+// and what an inline arrow would silently drop.
 //
 // Consequence, stated: `createCtx` builds a fresh deps object per request
-// (context.ts's `installLazyServices`), so the L1 LRU inside `cacheable` is
-// per scope rather than per process. The L2 Redis cache — the shared one, the
-// one that actually saves the query — is unchanged, so a repeat call costs one
+// (context.ts's `installLazyServices`), so the L1 LRU inside `cacheable` is per
+// scope rather than per process. The L2 Redis cache — the shared one, the one
+// that actually saves the query — is unchanged, so a repeat call costs one
 // Redis GET where it used to cost none. A cache that must be process-lived
 // takes `cacheablePerDb` below instead.
 

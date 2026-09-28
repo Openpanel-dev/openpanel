@@ -1,7 +1,7 @@
-// Ported from V1's packages/validation/src/index.ts (M6-006, ADR-008's
-// module map: subscription owns "C") — that package doesn't exist in this
-// tree; apps/start's billing forms and this module's own
-// subscription.rpc.ts resolve these symbols through this file directly.
+// Ported from V1's packages/validation/src/index.ts (ADR-008's module map:
+// subscription owns "C") — that package doesn't exist in this tree;
+// apps/start's billing forms and this module's own subscription.rpc.ts resolve
+// these symbols through this file directly.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

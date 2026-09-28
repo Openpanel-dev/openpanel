@@ -1,8 +1,8 @@
-// Ported from packages/trpc/src/routers/chart.ts (M7-003).
+// Ported from packages/trpc/src/routers/chart.ts.
 //
-// M11-001: the seven member-only procedures are back on `protectedProcedure`,
-// so `enforceAccess` reads the top-level `projectId` before the input is
-// parsed, exactly as V1 does.
+// The seven member-only procedures are back on `protectedProcedure`, so
+// `enforceAccess` reads the top-level `projectId` before the input is parsed,
+// exactly as V1 does.
 //
 // `chartProcedure` (funnel, conversion, chart, aggregate, cohort) is V1's
 // share-aware builder: `publicProcedure` plus one middleware that admits an

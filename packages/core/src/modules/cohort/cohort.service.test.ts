@@ -1,13 +1,13 @@
-// M10-009: every function under test takes `ServiceDeps`, so `deps.db` and
-// `deps.ch` ARE the fakes below — the two `@openpanel/db` module mocks this
-// file used to install (and had to carefully restore, because `mock.module`
-// has no per-file scope without `--isolate`) are gone. The one module still
-// mocked is core's own `ch-query`, which is what the subject now calls.
+// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` ARE
+// the fakes below — the two `@openpanel/db` module mocks this file used to
+// install (and had to carefully restore, because `mock.module` has no per-file
+// scope without `--isolate`) are gone. The one module still mocked is core's
+// own `ch-query`, which is what the subject now calls.
 //
 // The pure SQL-shape builders (buildEventCriteriaQuery,
 // buildPropertyBasedCohortQuery, deriveCohortQuerySettings) have their own
-// file, src/cohort-sql.test.ts, and need none of this — they take no
-// ClickHouse connection.
+// file, src/cohort-sql.test.ts, and need none of this — they take no ClickHouse
+// connection.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -217,8 +217,8 @@ test('createCohortService() delegates updateMembership and listRefreshableCohort
   seedCohort({ id: 'c2', isStatic: true });
   const service = subject.createCohortService(deps, testServices());
 
-  // M10-009: the container's members are closures over `deps`, not the bare
-  // functions, so identity is no longer the observable — delegation is.
+  // The container's members are closures over `deps`, not the bare functions,
+  // so identity is no longer the observable — delegation is.
   expect((await service.listRefreshableCohortIds()).sort()).toEqual(['c1']);
 
   chCommand.mockClear();

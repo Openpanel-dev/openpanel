@@ -1,21 +1,21 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
 // V1's chart field resolution, moved verbatim from
-// packages/db/src/services/chart.service.ts (M7-003): how a report's field
-// name (`referrerName`, `utm_source`, `properties.x.*`, `profile.email`,
-// `group.name`, `cohort:<id>`, `has_profile`) becomes a ClickHouse
-// expression, plus the profile-CTE narrowing helpers.
+// packages/db/src/services/chart.service.ts: how a report's field name
+// (`referrerName`, `utm_source`, `properties.x.*`, `profile.email`,
+// `group.name`, `cohort:<id>`, `has_profile`) becomes a ClickHouse expression,
+// plus the profile-CTE narrowing helpers.
 //
-// M12-003 converted every resolver onto the `sql` tag: each one returns a
-// `SqlFragment` whose values — cohort ids, cohort labels, project ids and the
+// Converted every resolver onto the `sql` tag: each one returns a `SqlFragment`
+// whose values — cohort ids, cohort labels, project ids and the
 // `properties[...]` map keys — bind as `{pN:Type}` params, and whose
 // identifiers go through `sql.id`. Callers interpolate the fragment directly;
 // nothing wraps it in `compiledText` any more.
 //
-// The one piece of text this file still builds is the backtick-quoted CTE
-// alias `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`),
-// which is an identifier `sql.id` cannot express — three dot-separated parts —
-// and which `collectProfilePropertyKeys` already guards. It goes through
-// `compiled.ts`, the module's one text seam.
+// The one piece of text this file still builds is the backtick-quoted CTE alias
+// `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`), which is
+// an identifier `sql.id` cannot express — three dot-separated parts — and which
+// `collectProfilePropertyKeys` already guards. It goes through `compiled.ts`,
+// the module's one text seam.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartBreakdown } from '../../report/report.constants';
@@ -261,7 +261,7 @@ export function cohortBreakdownLabelExpr(
 /**
  * The membership subselect both filter compilers use for `inCohort` /
  * `notInCohort`. V1 wrote a plain `IN (subquery)` here; ADR-013 conversions
- * never change `IN` / `GLOBAL IN` in either direction (docs/ENVIRONMENT.md).
+ * never change `IN` / `GLOBAL IN` in either direction.
  */
 export function buildCohortMembersSubselect(
   cohortIds: string[],
@@ -451,8 +451,8 @@ export function getSelectPropertyKey(
   const match = matchPropertyMapPrefix(property);
   if (!match) {
     // Not a map access: a top-level column, or a name the caller has already
-    // vetted with `isKnownEventField`. `sql.id` throws on anything else
-    // rather than inlining it (ADR-013 R3).
+    // vetted with `isKnownEventField`. `sql.id` throws on anything else rather
+    // than inlining it.
     return sql.id(property);
   }
 

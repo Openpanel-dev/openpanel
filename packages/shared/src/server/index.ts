@@ -1,7 +1,7 @@
-// The Node-only entrypoint of @openpanel/shared (ADR-022 R21):
-// `@openpanel/shared/server`. Everything behind it may use `node:*`.
+// The Node-only entrypoint of @openpanel/shared: `@openpanel/shared/server`.
+// Everything behind it may use `node:*`.
 //
-// A web app may not import it — `no-web-to-server` in .dependency-cruiser.cjs
+// A web app may not import it — `no-web-to-server` in.dependency-cruiser.cjs
 // forbids apps/start, apps/public and packages/sdks/* from reaching this path.
 export {
   createHash,

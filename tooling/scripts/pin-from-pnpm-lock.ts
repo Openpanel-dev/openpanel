@@ -1,50 +1,48 @@
 #!/usr/bin/env bun
 /**
- * P13 groundwork (ADR-014): pin every declared range to the version
- * `pnpm-lock.yaml` already resolved for it.
+ * P13 groundwork: pin every declared range to the version `pnpm-lock.yaml`
+ * already resolved for it.
  *
- * ADR-014's stop rule ends P13 the moment a pin cannot be reproduced under
- * bun, and bun 1.4.0 cannot read `pnpm-lock.yaml` — it re-resolves the whole
- * graph from the declared ranges. A caret in a manifest is therefore an
- * instruction to a resolver we are about to replace. Writing the resolved
- * version into the manifest turns each range into a fact the next installer
- * has to reproduce rather than a question it gets to answer.
+ * ADR-014's stop rule ends P13 the moment a pin cannot be reproduced under bun,
+ * and bun 1.4.0 cannot read `pnpm-lock.yaml` — it re-resolves the whole graph
+ * from the declared ranges. A caret in a manifest is therefore an instruction
+ * to a resolver we are about to replace. Writing the resolved version into the
+ * manifest turns each range into a fact the next installer has to reproduce
+ * rather than a question it gets to answer.
  *
- * For every workspace importer in the lock this rewrites each
- * `dependencies` / `devDependencies` / `optionalDependencies` range in that
- * importer's package.json to the EXACT version the lock resolved FOR THAT
- * IMPORTER, pins every `catalog:` entry in `pnpm-workspace.yaml` the same way,
- * and carries the identical values into the lock's own `specifier:` fields so
- * the tree stays installable with `--frozen-lockfile`.
+ * For every workspace importer in the lock this rewrites each `dependencies` /
+ * `devDependencies` / `optionalDependencies` range in that importer's
+ * package.json to the EXACT version the lock resolved FOR THAT IMPORTER, pins
+ * every `catalog:` entry in `pnpm-workspace.yaml` the same way, and carries the
+ * identical values into the lock's own `specifier:` fields so the tree stays
+ * installable with `--frozen-lockfile`.
  *
- * Left alone, deliberately:
- *   - `workspace:` / `catalog:` / `npm:` specifiers, which name a resolution
- *     strategy rather than a range;
- *   - `peerDependencies`, which are compatibility contracts (pnpm's
- *     `autoInstallPeers: true` lists them under an importer's `dependencies`
- *     in the lock even though the manifest declares them as peers);
- *   - the two stale `prisma: ^5.1.1` devDeps ADR-017 rule 2 carves out by path
- *     (see ADR_017_RULE_2_FROZEN below);
- *   - every `version:` field in the lock. NOT ONE RESOLUTION MOVES.
+ * Left alone, deliberately: - `workspace:` / `catalog:` / `npm:` specifiers,
+ * which name a resolution strategy rather than a range; - `peerDependencies`,
+ * which are compatibility contracts (pnpm's `autoInstallPeers: true` lists them
+ * under an importer's `dependencies` in the lock even though the manifest
+ * declares them as peers); - the two stale `prisma: ^5.1.1` devDeps ADR-017
+ * rule 2 carves out by path (see ADR_017_RULE_2_FROZEN below); - every
+ * `version:` field in the lock. NOT ONE RESOLUTION MOVES.
  *
- * Why the lock's specifiers are rewritten here instead of by `pnpm install`:
- * a non-frozen `pnpm install` re-resolves the whole graph and dedupes it. On
- * this tree, on 2026-09-07, that pruned 142 package versions across 135
- * package names and added none — `@babel/core` collapsing from four copies to
- * two, `magicast` from three to two — which is real resolution movement in the
- * same commit that is supposed to prove nothing moved. Rewriting the specifier
+ * Why the lock's specifiers are rewritten here instead of by `pnpm install`: a
+ * non-frozen `pnpm install` re-resolves the whole graph and dedupes it. On this
+ * tree, on 2026-09-07, that pruned 142 package versions across 135 package
+ * names and added none — `@babel/core` collapsing from four copies to two,
+ * `magicast` from three to two — which is real resolution movement in the same
+ * commit that is supposed to prove nothing moved. Rewriting the specifier
  * fields is the mechanical, resolution-preserving half of what that install
  * would do; `pnpm install --frozen-lockfile` then verifies the result is
- * consistent. The full measurement is in
- * docs/BUN_INSTALL_RECIPE.md § Why the lock is edited, not refreshed.
+ * consistent. The full measurement is in docs/BUN_INSTALL_RECIPE.md § Why the
+ * lock is edited, not refreshed.
  *
  * Edits are surgical — only the value on a matched line is replaced — so key
  * order, indentation and every comment survive byte-for-byte, and nothing is
  * written when a file would be unchanged. That is what makes a second run a
  * no-op.
  *
- *   bun run tooling/scripts/pin-from-pnpm-lock.ts
- *   bun run tooling/scripts/pin-from-pnpm-lock.ts --check   # exit 1 if stale
+ * Bun run tooling/scripts/pin-from-pnpm-lock.ts bun run
+ * tooling/scripts/pin-from-pnpm-lock.ts --check # exit 1 if stale
  */
 
 import { write, YAML } from 'bun';
@@ -69,12 +67,12 @@ const PROTOCOL_SPECIFIER = /^(workspace|catalog|npm|link|file|git|github):/;
 const PLAIN_VERSION = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z-.]+)?$/;
 
 /**
- * ADR-017 rule 2 (ACCEPTED) names these two lines by path and rules that the
- * stale `prisma: ^5.1.1` devDeps "are to be **deleted, not aligned to 6.14**" —
- * i.e. touching their version is itself the wrong move, and the deletion belongs
- * to a CLEAN task. Pinning them to the 5.9.1 the lock resolved would be exactly
- * the aligning edit the ADR forbids, so the pinner leaves the manifest entry AND
- * its `specifier:` in the lock alone. Rule 3 is the general P13 pinning
+ * Rule 2 (ACCEPTED) names these two lines by path and rules that the stale
+ * `prisma: ^5.1.1` devDeps "are to be **deleted, not aligned to 6.14**" — i.e.
+ * touching their version is itself the wrong move, and the deletion belongs to
+ * a CLEAN task. Pinning them to the 5.9.1 the lock resolved would be exactly
+ * the aligning edit the ADR forbids, so the pinner leaves the manifest entry
+ * AND its `specifier:` in the lock alone. Rule 3 is the general P13 pinning
  * permission; rule 2 is a specific, named exception to it.
  */
 const ADR_017_RULE_2_FROZEN: ReadonlySet<string> = new Set([

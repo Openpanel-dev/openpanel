@@ -1,11 +1,11 @@
-// Ported from packages/trpc/src/routers/group.ts (M7-002).
+// Ported from packages/trpc/src/routers/group.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. Every procedure below carries a
-// top-level `projectId`, so `enforceAccess` already covers it (ADR-011) - the
-// explicit `requireProjectAccess` calls in the handlers are the tree-wide
-// M15-007 pattern (ADR-022 R10), not the resolved-from-another-id exception.
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. Every procedure below carries a top-level `projectId`, so
+// `enforceAccess` already covers it - the explicit `requireProjectAccess` calls
+// in the handlers are the tree-wide M15-007 pattern, not the
+// resolved-from-another-id exception.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

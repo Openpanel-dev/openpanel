@@ -1,28 +1,27 @@
-// The runnable ws proof this task's notes require: `app.handle()` cannot
-// exercise a websocket upgrade (no real HTTP connection to upgrade), so this
-// boots the actual Elysia app with `.listen()` (== `Bun.serve` under the
-// hood, same as main.ts) on an ephemeral port and drives it with a real
-// `WebSocket` client — the same shape `apps/api/e2e/boot-proof.sh` uses for
-// the plain-HTTP ops surface, extended to a ws handshake.
+// The runnable ws proof this task's notes require: `app.handle` cannot exercise
+// a websocket upgrade (no real HTTP connection to upgrade), so this boots the
+// actual Elysia app with `.listen` (== `Bun.serve` under the hood, same as
+// main.ts) on an ephemeral port and drives it with a real `WebSocket` client —
+// the same shape `apps/api/e2e/boot-proof.sh` uses for the plain-HTTP ops
+// surface, extended to a ws handshake.
 //
 // The harness buffers messages/close events from the moment the socket is
-// constructed: the server can send its "No active session" / "No access"
-// frame and close the connection before the test ever gets to `await` a
-// listener, and a listener attached after the fact misses an event that
-// already fired.
+// constructed: the server can send its "No active session" / "No access" frame
+// and close the connection before the test ever gets to `await` a listener, and
+// a listener attached after the fact misses an event that already fired.
 //
 // `./realtime.service` and `../../shared/access-lookups` (the real lookups
-// auth.service.ts's `createAuthService` binds `ctx.services.auth` to,
-// M10-002) are mocked (not a real Postgres/ClickHouse/Redis), and
-// `../../http/session` for the same reason http/auth.test.ts mocks it:
-// `resolveSession` is still a P6 stub.
+// auth.service.ts's `createAuthService` binds `ctx.services.auth` to) are
+// mocked (not a real Postgres/ClickHouse/Redis), and `../../http/session` for
+// the same reason http/auth.test.ts mocks it: `resolveSession` is still a P6
+// stub.
 //
-// M12-005: every import here is STATIC. Bun 1.4.0's `mock.module` swaps an
+// Every import here is STATIC. Bun 1.4.0's `mock.module` swaps an
 // already-loaded module's exports in place, so a subject imported above the
 // `mock.module` calls still sees them; the "not called" and "called with"
 // assertions on every mock below are what would go red if that ever stopped
-// holding. The deferred loads this file used to need are gone with the
-// module's own (docs/TECH_DEBT.md's no-lazy-loaders ruling).
+// holding. The deferred loads this file used to need are gone with the module's
+// own (docs/TECH_DEBT.md's no-lazy-loaders ruling).
 
 import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { getSuperJson } from '@openpanel/shared';
@@ -80,9 +79,9 @@ afterAll(() => {
   mock.module('./realtime.service', () => realService);
 });
 
-// The real module, not `./src/access` (deleted, M10-002) — `ctx.services.auth`
-// binds these same lookups in auth.service.ts, so mocking them here is what
-// makes `ws.data.ctx.services.auth.getProjectAccess`/`getOrganizationAccess`
+// The real module, not `./src/access` (deleted) — `ctx.services.auth` binds
+// these same lookups in auth.service.ts, so mocking them here is what makes
+// `ws.data.ctx.services.auth.getProjectAccess`/`getOrganizationAccess`
 // observable from the test.
 let projectAccess: { level: string } | null = null;
 let organizationAccess: { role: string } | null = null;
@@ -310,12 +309,12 @@ test('wsOrganizationEvents: session but no org access -> "No access" then close'
   });
 });
 
-// M30-003 / F2: `organization:subscription_updated` is an instance-wide
-// channel. Before the fix the open handler subscribed to it unscoped, so a
-// member of org_1 was sent the `organizationId` of every OTHER organization
-// whose subscription changed. The scope handed to the subscription must be the
-// id `getOrganizationAccess` just proved this caller is a member of — the
-// filter itself is asserted in realtime.service.test.ts.
+// / F2: `organization:subscription_updated` is an instance-wide channel. Before
+// the fix the open handler subscribed to it unscoped, so a member of org_1 was
+// sent the `organizationId` of every OTHER organization whose subscription
+// changed. The scope handed to the subscription must be the id
+// `getOrganizationAccess` just proved this caller is a member of — the filter
+// itself is asserted in realtime.service.test.ts.
 test('wsOrganizationEvents: subscribes scoped to the organization the caller is a member of', async () => {
   session = { userId: 'user_1' };
   organizationAccess = { role: 'org:member' };

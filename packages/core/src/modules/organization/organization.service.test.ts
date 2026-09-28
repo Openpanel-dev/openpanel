@@ -403,12 +403,12 @@ const projectAccess = {
 
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
-// M10-009: every function under test takes `ServiceDeps`, so `deps.db` and
-// `deps.ch` ARE the fakes below — the two `@openpanel/db` module mocks this
-// file used to install are gone, and with them the process-wide leak they had
-// to be restored from. `connectUserToOrganization` reaches
-// `shared/access-lookups.ts` (cacheable, on the unscoped db), which is why
-// the `@openpanel/redis` stand-in below stays.
+// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` ARE
+// the fakes below — the two `@openpanel/db` module mocks this file used to
+// install are gone, and with them the process-wide leak they had to be restored
+// from. `connectUserToOrganization` reaches `shared/access-lookups.ts`
+// (cacheable, on the unscoped db), which is why the `@openpanel/redis` stand-in
+// below stays.
 const chCommand = mock(async () => undefined);
 const deps = {
   logger: recordingLogger(),
@@ -448,10 +448,10 @@ function cacheableStub(
   });
 }
 // Spread the real module for the same reason the clickhouse/client mock above
-// does: `mock.module` replaces this specifier process-wide. Surfaced by
-// M8-001, which put `createBuffers` on core's barrel — event-buffer.ts
-// value-imports `publishEvent` from here, so a partial factory turns this
-// file's own barrel import into a SyntaxError.
+// does: `mock.module` replaces this specifier process-wide. Surfaced by M8-001,
+// which put `createBuffers` on core's barrel — event-buffer.ts value-imports
+// `publishEvent` from here, so a partial factory turns this file's own barrel
+// import into a SyntaxError.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,

@@ -4,8 +4,8 @@ import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 
-// M10-009: the client comes in as `BufferDeps.ch` — no module mock needed for
-// the flush path at all. See event-buffer.test.ts's header.
+// The client comes in as `BufferDeps.ch` — no module mock needed for the flush
+// path at all. See event-buffer.test.ts's header.
 const chInsert = mock(
   async (_options: {
     table: string;

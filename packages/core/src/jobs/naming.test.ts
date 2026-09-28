@@ -2,11 +2,10 @@ import { expect, test } from 'bun:test';
 import { queues } from '../jobs.registry';
 import { queueKey } from './naming';
 
-// Byte-identity snapshot, mirroring
-// `verification/golden/queue-keys/keys.json` — which the controller's
-// `check.sh` independently recomputes from V1's `getQueueName`. Both sides pin
-// the same 14 strings; a one-character drift orphans every queue in Redis
-// (ADR-005 risk 4).
+// Byte-identity snapshot, mirroring `verification/golden/queue-keys/keys.json`
+// — which the controller's `check.sh` independently recomputes from V1's
+// `getQueueName`. Both sides pin the same 14 strings; a one-character drift
+// orphans every queue in Redis (ADR-005 risk 4).
 const GOLDEN_KEYS = [
   { name: 'cohortCompute', queueCluster: false, key: 'cohortCompute' },
   { name: 'cohortCompute', queueCluster: true, key: '{cohortCompute}' },

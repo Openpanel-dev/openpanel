@@ -1,6 +1,6 @@
 // Shared with the frontend (chat-drawer-header.tsx, title-stream.tsx) so the
-// page size / title length and the zod defaults never drift apart (ADR-022
-// R8, "Not covered by any rule" #3 in docs/review/conversation.md).
+// page size / title length and the zod defaults never drift apart ("Not covered
+// by any rule" #3 in docs/review/conversation.md).
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

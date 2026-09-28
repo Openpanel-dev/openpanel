@@ -1,7 +1,7 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved
-// out of `clients/integrations/` by M15-008: it dispatches to this module's
-// own transports, so leaving it below them would have made every one of those
-// edges point upward (ADR-022 R22/A2).
+// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved out
+// of `clients/integrations/` by M15-008: it dispatches to this module's own
+// transports, so leaving it below them would have made every one of those edges
+// point upward (A2).
 
 import {
   type EncryptionKey,
@@ -131,10 +131,10 @@ export interface IConfigSecret<C> {
 }
 
 /**
- * ADR-022 R19: a delivery that the destination did not accept is a
- * `ProviderError`, carrying the `retryable` the transport already classified.
- * Returning the failed result instead is what let a 500 from a customer's
- * webhook report as a delivered notification.
+ * A delivery that the destination did not accept is a `ProviderError`, carrying
+ * the `retryable` the transport already classified. Returning the failed result
+ * instead is what let a 500 from a customer's webhook report as a delivered
+ * notification.
  */
 async function deliverWebhook(
   provider: string,

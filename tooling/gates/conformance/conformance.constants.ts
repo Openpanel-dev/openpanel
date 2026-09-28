@@ -39,9 +39,9 @@ export const SANCTIONED_CREATE_SERVICES_SITES: readonly string[] = [
 /**
  * R6 — the asset-loader carve-out, and the reason for each entry.
  *
- * ADR-022: "Lazy-load assets, never dependencies." Reading a file or a row on
- * first use is data loading and is legal; lazily importing a sibling service or
- * a db/ch/redis handle the caller was already handed is the defect the rule
+ * "Lazy-load assets, never dependencies." Reading a file or a row on first use
+ * is data loading and is legal; lazily importing a sibling service or a
+ * db/ch/redis handle the caller was already handed is the defect the rule
  * exists to remove.
  *
  * This is an ALLOWLIST of exact `file::function` pairs, deliberately NOT a
@@ -55,7 +55,7 @@ export const ASSET_LOADER_ALLOWLIST: readonly {
   functionName: string;
   reason: string;
 }[] = [
-  // geo.ts reads a MaxMind .mmdb file from disk on first use. That is an ASSET
+  // Geo.ts reads a MaxMind.mmdb file from disk on first use. That is an ASSET
   // load: no sibling service, no db/ch/redis handle, nothing the caller already
   // holds. ADR-022 names it as one of the two legitimate cases.
   {
@@ -64,7 +64,7 @@ export const ASSET_LOADER_ALLOWLIST: readonly {
     reason:
       'reads a MaxMind .mmdb file from disk on first use - an asset, not a dependency',
   },
-  // flush-exports.ts reads an export cursor ROW on first use. Also data, and it
+  // Flush-exports.ts reads an export cursor ROW on first use. Also data, and it
   // reads it through the db handle it was already handed rather than importing
   // one. ADR-022 names it as the second legitimate case.
   {

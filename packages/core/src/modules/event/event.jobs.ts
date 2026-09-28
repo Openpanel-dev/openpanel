@@ -1,8 +1,8 @@
 // Ported from apps/worker/src/jobs/cron.ts's `flushEvents` case +
-// boot-cron.ts's `flush`/`flushEvents` schedule (M8-004); the schedule moved
-// onto the job at ADR-021 (M10-007). The event buffer (Redis → ClickHouse
-// `events`) is this module's domain, so its flush cron fragment lives here
-// rather than on the ingest module that merely writes to it.
+// boot-cron.ts's `flush`/`flushEvents` schedule; the schedule moved onto the
+// job at ADR-021. The event buffer (Redis → ClickHouse `events`) is this
+// module's domain, so its flush cron fragment lives here rather than on the
+// ingest module that merely writes to it.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

@@ -496,13 +496,13 @@ export async function subscribeToProjectNotifications(
 
 /**
  * V1: `wsOrganizationEvents`. Scoped to the single organization the caller's
- * membership was verified against, exactly as the three siblings above scope
- * to a verified `projectId`.
+ * membership was verified against, exactly as the three siblings above scope to
+ * a verified `projectId`.
  *
  * The channel is instance-wide: without this filter every subscriber saw the
- * `organizationId` of every organization whose subscription changed, which is
- * a cross-tenant identifier leak (M30-003 / F2). V1 had no filter either —
- * this is a deliberate divergence, approved 2026-09-15.
+ * `organizationId` of every organization whose subscription changed, which is a
+ * cross-tenant identifier leak (F2). V1 had no filter either — this is a
+ * deliberate divergence, approved 2026-09-15.
  */
 export async function subscribeToOrganizationSubscriptionUpdates(
   organizationId: string,

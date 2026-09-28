@@ -2,9 +2,9 @@
 //
 // This is a WIRE FORMAT, not an internal type: a rolling deploy overlaps a V1
 // producer with a V2 consumer on the same topic, so it stays byte-compatible
-// with V1's `EventsQueuePayloadIncomingEvent['payload']` (ADR-004). A leaf
-// file, so both ./kafka.ts's producer and the consumer can name the payload
-// without reaching into the ingest service.
+// with V1's `EventsQueuePayloadIncomingEvent['payload']`. A leaf file, so
+// both./kafka.ts's producer and the consumer can name the payload without
+// reaching into the ingest service.
 
 import type { parseUserAgent } from '@openpanel/shared/server';
 import type { GeoLocation } from '../../../clients/geo';

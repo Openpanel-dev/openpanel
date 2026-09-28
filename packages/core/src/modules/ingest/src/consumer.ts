@@ -1,15 +1,14 @@
-// Ported from apps/worker/src/jobs/events.kafka-consumer.ts (M8-003). The
-// delivery contract is ADR-004's and is unchanged line for line: per-key
-// serial groups, the ascending contiguous-prefix offset walk, at-least-once,
-// bounded in-consumer retry, and a dead-letter on exhaustion. Only the
-// dead-letter DESTINATION and its failure behaviour changed (M20-001): the
-// record goes to a capped Redis list, and the event is dropped whether or not
-// that write lands.
+// Ported from apps/worker/src/jobs/events.kafka-consumer.ts. The delivery
+// contract is ADR-004's and is unchanged line for line: per-key serial groups,
+// the ascending contiguous-prefix offset walk, at-least-once, bounded
+// in-consumer retry, and a dead-letter on exhaustion. Only the dead-letter
+// DESTINATION and its failure behaviour changed: the record goes to a capped
+// Redis list, and the event is dropped whether or not that write lands.
 //
-// The kafkajs client, the topic/consumer-group names, the DLQ producer and
-// the retry bounds are all INJECTED, and stay so now that they live one
-// directory away in ./kafka.ts (M11-003): injection is what keeps those names
-// byte-identical, because this file never spells one.
+// The kafkajs client, the topic/consumer-group names, the DLQ producer and the
+// retry bounds are all INJECTED, and stay so now that they live one directory
+// away in./kafka.ts: injection is what keeps those names byte-identical,
+// because this file never spells one.
 
 import type {
   Consumer,
@@ -21,11 +20,11 @@ import type { IncomingEventPayload } from './incoming-event';
 
 export interface KafkaConsumerHandle {
   /**
-   * Stop fetching, then wait for the in-flight `eachBatch` to finish. Split
-   * out from `stop()` so a graceful shutdown has a point where nothing new can
-   * enter the event buffer but the consumer has not been torn down yet — that
-   * is where shutdown flushes whatever was buffered OUTSIDE a Kafka batch
-   * (M18-001, drill 03). Events buffered inside one are already durable: see
+   * Stop fetching, then wait for the in-flight `eachBatch` to finish. Split out
+   * from `stop` so a graceful shutdown has a point where nothing new can enter
+   * the event buffer but the consumer has not been torn down yet — that is
+   * where shutdown flushes whatever was buffered OUTSIDE a Kafka batch (drill
+   * 03). Events buffered inside one are already durable: see
    * `flushBufferedEvents` below.
    */
   stopConsuming: () => Promise<void>;
@@ -41,18 +40,17 @@ const HEARTBEAT_EVERY = 16;
 const RETRY_BACKOFF_FACTOR = 2;
 
 /**
- * Ceiling on the wait a batch takes before it returns from a failed
- * durability flush and lets the broker redeliver it.
+ * Ceiling on the wait a batch takes before it returns from a failed durability
+ * flush and lets the broker redeliver it.
  *
  * The wait itself is seeded from `initialRetryMs` and doubled per consecutive
- * failure — the consumer's own retry convention — but it is capped HERE
- * rather than at `maxRetryMs`, which is sized for a flaky handler (1s by
- * default) and not for a dependency that is down. Without any cap a failed
- * flush redelivers in ~90ms and spins: drill 02's re-run measured ~162 laps
- * per message in one 96s outage, hammering Redis and Kafka at the worst
- * possible moment. 5s keeps a ~15s outage to single-digit redeliveries and
- * stays well below the 30s session timeout, so waiting cannot cost the
- * consumer its group membership (M18-007).
+ * failure — the consumer's own retry convention — but it is capped HERE rather
+ * than at `maxRetryMs`, which is sized for a flaky handler (1s by default) and
+ * not for a dependency that is down. Without any cap a failed flush redelivers
+ * in ~90ms and spins: drill 02's re-run measured ~162 laps per message in one
+ * 96s outage, hammering Redis and Kafka at the worst possible moment. 5s keeps
+ * a ~15s outage to single-digit redeliveries and stays well below the 30s
+ * session timeout, so waiting cannot cost the consumer its group membership.
  */
 const DURABILITY_RETRY_MAX_MS = 5000;
 
@@ -65,7 +63,7 @@ export type DeadLetterReason = 'parse_error' | 'handler_error';
  *
  * Two implementations satisfy this, and the seam exists so the choice is one
  * line in `apps/api`'s wiring: `@openpanel/redis`'s `createDeadLetterRecorder`
- * (the capped list, in use since M20-001) and ./kafka.ts's
+ * (the capped list, in use since M20-001) and./kafka.ts's
  * `produceDeadLetterEvent` (the DLQ topic, kept because Carl's decision was
  * explicitly "for now"; a DLQ message produced from these bytes is replayable
  * onto the events topic unchanged).
@@ -93,7 +91,7 @@ export interface ConsumerMetrics {
   deadLettered: (partition: string, reason: DeadLetterReason) => void;
   /**
    * The message was DROPPED WITHOUT being recorded — the dead-letter write
-   * failed. Not "will be retried": nothing retries it (M20-001).
+   * failed. Not "will be retried": nothing retries it.
    */
   deadLetterFailed: (partition: string) => void;
 }
@@ -116,14 +114,14 @@ export interface EventsBatchHandlerDeps {
    * message has been handled and BEFORE the first `resolveOffset`, because
    * kafkajs commits the resolved offsets as soon as `eachBatch` returns
    * (`autoCommit` defaults to true and this consumer does not turn it off) —
-   * not at `consumer.stop()`.
+   * not at `consumer.stop`.
    *
-   * The gate MUST reject when the events THIS batch buffered are not in
-   * Redis: drill 03 lost 2 of 44,075 events on a graceful restart because the
-   * offsets of events that existed only in the event buffer's in-process array
-   * were committed anyway (M18-001). The window is what makes "this batch's"
-   * answerable at all, now that a failed write drops the events it knows the
-   * broker will redeliver instead of keeping them (M18-007).
+   * The gate MUST reject when the events THIS batch buffered are not in Redis:
+   * drill 03 lost 2 of 44,075 events on a graceful restart because the offsets
+   * of events that existed only in the event buffer's in-process array were
+   * committed anyway. The window is what makes "this batch's" answerable at
+   * all, now that a failed write drops the events it knows the broker will
+   * redeliver instead of keeping them.
    */
   openDurabilityWindow: () => () => Promise<void>;
   logger: ConsumerLogger;
@@ -157,12 +155,12 @@ export interface EventsBatchHandler {
  * the per-key serial groups and the failure paths are testable without a
  * broker.
  *
- * Delivery contract (ADR-004): at-least-once. An offset is resolved only once
- * its message has been handled, dead-lettered, or deliberately skipped —
- * never merely because it failed. Since M20-001 a dead-letter always counts as
- * finished, because the message is dropped either way; the one place an
- * unresolved offset is still correct is a failed DURABILITY flush, which
- * leaves the whole batch for redelivery (M18-001).
+ * Delivery contract: at-least-once. An offset is resolved only once its message
+ * has been handled, dead-lettered, or deliberately skipped — never merely
+ * because it failed. Since M20-001 a dead-letter always counts as finished,
+ * because the message is dropped either way; the one place an unresolved offset
+ * is still correct is a failed DURABILITY flush, which leaves the whole batch
+ * for redelivery.
  */
 export function createEventsBatchHandler(
   deps: EventsBatchHandlerDeps
@@ -170,9 +168,9 @@ export function createEventsBatchHandler(
   const sleep = deps.sleep ?? defaultSleep;
 
   /**
-   * Park the message and DROP it. The drop is unconditional: whether the
-   * record was stored or not, this message's offset is resolved by the caller
-   * and the event is gone from the pipeline (M20-001, gate M20).
+   * Park the message and DROP it. The drop is unconditional: whether the record
+   * was stored or not, this message's offset is resolved by the caller and the
+   * event is gone from the pipeline (gate M20).
    *
    * There is deliberately no retry, no backoff and no unresolved offset here.
    * The dead-letter destination is Redis, and Redis being unavailable is
@@ -185,8 +183,8 @@ export function createEventsBatchHandler(
    *
    * The two counters are what carry the volume, since a capped list makes
    * 50,000 drops look like 12: `deadLettered` = recorded and dropped,
-   * `deadLetterFailed` = dropped WITHOUT being recorded. Neither means
-   * "will be retried".
+   * `deadLetterFailed` = dropped WITHOUT being recorded. Neither means "will be
+   * retried".
    */
   const deadLetter = async (
     message: KafkaMessage,
@@ -364,9 +362,9 @@ export function createEventsBatchHandler(
     }
 
     const pk = `${batch.topic}-${batch.partition}`;
-    // Opened before the first handler buffers anything, so the gate answers
-    // for THIS batch's events and not for whatever else was pending when it
-    // finished (M18-007).
+    // Opened before the first handler buffers anything, so the gate answers for
+    // THIS batch's events and not for whatever else was pending when it
+    // finished.
     const closeDurabilityWindow = deps.openDurabilityWindow();
 
     // Group by partition key (= deviceId or `${projectId}:${profileId}`).
@@ -405,10 +403,10 @@ export function createEventsBatchHandler(
           }
 
           // No "unresolvable" branch: a message is handled or dropped, and a
-          // dropped one is still finished (M20-001). The only gap this walk
-          // can now stop at is the isRunning/isStale early return above, and
-          // the only offsets left uncommitted are a whole batch whose
-          // durability flush failed — see below.
+          // dropped one is still finished. The only gap this walk can now stop
+          // at is the isRunning/isStale early return above, and the only
+          // offsets left uncommitted are a whole batch whose durability flush
+          // failed — see below.
           await processMessage(m, batch.partition);
 
           processed.add(m.offset);

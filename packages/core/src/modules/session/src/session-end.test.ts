@@ -1,7 +1,7 @@
-// Ported from apps/worker/src/jobs/events.create-session-end.test.ts (M7-001).
-// Covers the three-case logic (extended-after-enqueue skip, live vs snapshot,
-// boundary), the first-writer idempotency claim, and that cleanup() is
-// id-gated to the closed session.
+// Ported from apps/worker/src/jobs/events.create-session-end.test.ts. Covers
+// the three-case logic (extended-after-enqueue skip, live vs snapshot,
+// boundary), the first-writer idempotency claim, and that cleanup is id-gated
+// to the closed session.
 
 import { describe, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';

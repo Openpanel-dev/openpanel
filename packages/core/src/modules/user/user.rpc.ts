@@ -1,12 +1,12 @@
 // Account deletion, profile updates and the deletion-blockers check.
 //
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser. The explicit checks in the handlers below stay:
-// `enforceAccess` only sees a TOP-LEVEL `projectId` / `organizationId`, so
-// anything resolved from another id needs its own (ADR-011).
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. The explicit checks in the handlers below stay: `enforceAccess`
+// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
+// from another id needs its own.
 //
-// `ctx.services.user` carries this module's factory (M10-004); it has no
-// queue/cron of its own, same as `conversation`.
+// `ctx.services.user` carries this module's factory; it has no queue/cron of
+// its own, same as `conversation`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

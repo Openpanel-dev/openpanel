@@ -1,6 +1,6 @@
-// Ported from apps/worker/src/jobs/cron.session-reaper.test.ts (M7-001). The
-// wall-clock deadman that closes idle sessions: stub Redis drives the
-// wallclock ZSET + lock, so the assertions are on decisions, not side effects.
+// Ported from apps/worker/src/jobs/cron.session-reaper.test.ts. The wall-clock
+// deadman that closes idle sessions: stub Redis drives the wallclock ZSET +
+// lock, so the assertions are on decisions, not side effects.
 
 import { describe, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';

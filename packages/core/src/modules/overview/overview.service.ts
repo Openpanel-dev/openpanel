@@ -1,14 +1,14 @@
 // Ported from packages/db/src/services/overview.service.ts. The ClickHouse
-// queries moved to src/overview.sql.ts (ADR-013, M7-005).
+// queries moved to src/overview.sql.ts.
 //
-// M10-005: `OverviewService` is no longer a class and there is no
-// `overviewService` module singleton. Every method is a module-scope function
-// taking `ServiceDeps` first and otherwise the same arguments, and
+// `OverviewService` is no longer a class and there is no `overviewService`
+// module singleton. Every method is a module-scope function taking
+// `ServiceDeps` first and otherwise the same arguments, and
 // `createOverviewService(deps)` binds them under their old method names, so
 // `services.overview.getMetrics(input)` reads exactly as
 // `overviewService.getMetrics(input)` did. The caller-supplied
-// `constructor(client)` slot is gone with it: the client is `deps.ch`, which
-// is what puts the request's id on the query's log line (ADR-018 R1).
+// `constructor(client)` slot is gone with it: the client is `deps.ch`, which is
+// what puts the request's id on the query's log line.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { average, sum } from '@openpanel/shared';

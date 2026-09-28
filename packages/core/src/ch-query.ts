@@ -1,24 +1,24 @@
-// core's ClickHouse read path, bound to the scope's client.
+// Core's ClickHouse read path, bound to the scope's client.
 //
-// M10-005: the six modules on the runtime path used to reach ClickHouse
-// through `await import('@openpanel/db/src/clickhouse/client')` and call that
-// package's `chQuery`. That client has no request scope, so the requestId
-// minted at the edge stopped there (ADR-018 R1, docs/TECH_DEBT.md §2). These
-// two functions are `chQuery` / `chQueryWithMeta` over `deps.ch` — the same
-// round-robin/retry proxy `main.ts` builds and hands to every scope — and
-// `deps.logger`, so the `query info` line carries the request's id.
+// The six modules on the runtime path used to reach ClickHouse through `await
+// import('@openpanel/db/src/clickhouse/client')` and call that package's
+// `chQuery`. That client has no request scope, so the requestId minted at the
+// edge stopped there. These two functions are `chQuery` / `chQueryWithMeta`
+// over `deps.ch` — the same round-robin/retry proxy `main.ts` builds and hands
+// to every scope — and `deps.logger`, so the `query info` line carries the
+// request's id.
 //
 // Behaviour is @openpanel/db's, unchanged: `deps.ch.query` IS `withRetry
-// (client => client.query(...))`, the same transport, and the Int-meta
-// coercion below is the same one — ClickHouse's JSON format returns every
-// Int*/UInt* column as a string, so a caller's `count: number` only holds if
-// it is parsed back out here. The one field that cannot survive the move is
-// `host`: the retry proxy does not report which replica served the query.
-// chart/src/run-query.ts (M10-003) made the same trade.
+// (client => client.query(...))`, the same transport, and the Int-meta coercion
+// below is the same one — ClickHouse's JSON format returns every Int*/UInt*
+// column as a string, so a caller's `count: number` only holds if it is parsed
+// back out here. The one field that cannot survive the move is `host`: the
+// retry proxy does not report which replica served the query.
+// chart/src/run-query.ts made the same trade.
 //
 // `@openpanel/db/src/clickhouse/sql` is a value import and stays one: ADR-013
-// puts the `sql` tag in packages/db by name, and it is a compile-time
-// template tag with no client and no request scope.
+// puts the `sql` tag in packages/db by name, and it is a compile-time template
+// tag with no client and no request scope.
 
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import {

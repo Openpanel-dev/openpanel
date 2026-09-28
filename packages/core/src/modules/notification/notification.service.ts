@@ -1,19 +1,19 @@
-// Moved from packages/db/src/services/notification.service.ts (M6-005,
-// ADR-008's module map: "rules + dispatch stay together"). The delivery body
-// moves here too, from apps/worker/src/jobs/notification.ts (DELEGATE
-// PATTERN: that file becomes a thin wrapper calling `deliverNotification`).
+// Moved from packages/db/src/services/notification.service.ts (ADR-008's module
+// map: "rules + dispatch stay together"). The delivery body moves here too,
+// from apps/worker/src/jobs/notification.ts (DELEGATE PATTERN: that file
+// becomes a thin wrapper calling `deliverNotification`).
 //
-// `createNotification` / `triggerNotification` / `checkNotificationRulesForEvent`
-// / `checkNotificationRulesForSessionEnd` — the BullMQ-producer orchestration
-// around a rule match — live in this module's own `src/notification-dispatch.ts`
-// since M11-003, built on the rule matching, templates, cache and constants
-// exported below. They are a separate file only so the enqueue side is not
-// dragged into every import of this one.
+// `createNotification` / `triggerNotification` /
+// `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
+// the BullMQ-producer orchestration around a rule match — live in this module's
+// own `src/notification-dispatch.ts` since M11-003, built on the rule matching,
+// templates, cache and constants exported below. They are a separate file only
+// so the enqueue side is not dragged into every import of this one.
 //
-// Postgres is `deps.db` and `Prisma.DbNull` is `deps.prisma.DbNull`
-// (M15-202): nothing here imports @openpanel/db as a value, which is what
-// keeps constructing a client out of the eager barrel chain that
-// jobs.registry.ts and services.ts pull this module into.
+// Postgres is `deps.db` and `Prisma.DbNull` is `deps.prisma.DbNull`: nothing
+// here imports @openpanel/db as a value, which is what keeps constructing a
+// client out of the eager barrel chain that jobs.registry.ts and services.ts
+// pull this module into.
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
@@ -71,9 +71,9 @@ export type INotificationPayload =
   | { type: 'event'; event: IServiceCreateEventPayload }
   | { type: 'funnel'; funnel: IServiceEvent[] };
 
-// M15-004: `getNotificationRulesByProjectId` is `cacheablePerDeps` — `cacheable`
-// keys on the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's
-// deps travel beside the key rather than inside it and the Redis key stays
+// `getNotificationRulesByProjectId` is `cacheablePerDeps` — `cacheable` keys on
+// the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps
+// travel beside the key rather than inside it and the Redis key stays
 // byte-identical. Every function in this file now reads `deps.db`.
 
 // -- Rule cache --------------------------------------------------------

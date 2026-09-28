@@ -1,28 +1,28 @@
 import { afterAll, describe, expect, it } from 'bun:test';
 
-// M10-009: the buffers take the boot scope's client as `BufferDeps.ch` now, so
-// the `loadClickHouse()` seam this file used to call through is gone. What it
-// proves is unchanged — the round-robin/retry client the buffers are handed
-// (`ch` / `chQuery`, `@openpanel/db`'s exports) must survive a dead node — so
-// the subject is imported directly here. This is a test file, which
+// The buffers take the boot scope's client as `BufferDeps.ch` now, so the
+// `loadClickHouse` seam this file used to call through is gone. What it proves
+// is unchanged — the round-robin/retry client the buffers are handed (`ch` /
+// `chQuery`, `@openpanel/db`'s exports) must survive a dead node — so the
+// subject is imported directly here. This is a test file, which
 // `core-uses-ctx-not-db-internals` exempts.
 function loadClickHouse() {
   return import('@openpanel/db/src/clickhouse/client');
 }
 
 /**
- * ADR-013 R1 / M8-006: the deliberate ECONNREFUSED to a dead ClickHouse node
- * must be caught and retried (sin-binning) on the client the buffers are
- * handed as `BufferDeps.ch`, exactly as packages/db's
+ * / M8-006: the deliberate ECONNREFUSED to a dead ClickHouse node must be
+ * caught and retried (sin-binning) on the client the buffers are handed as
+ * `BufferDeps.ch`, exactly as packages/db's
  * `sql.round-robin.clickhouse.test.ts` proves for `chQuery`/`chQueryWithMeta`
- * directly. That file is NOT touched here; this extends the same proof onto
- * the path M8-001 moved: `ch.insert` reached via the core buffer seam.
+ * directly. That file is NOT touched here; this extends the same proof onto the
+ * path M8-001 moved: `ch.insert` reached via the core buffer seam.
  *
- * Setup mirrors that file exactly: a two-node `CLICKHOUSE_URL` whose first
- * node (port 1, privileged and unbindable without root) is reliably refused.
- * The picker starts at index 0, so every call here fails over to node 1 — if
- * the seam let the rejection escape instead of retrying, this file would
- * throw or hang rather than pass.
+ * Setup mirrors that file exactly: a two-node `CLICKHOUSE_URL` whose first node
+ * (port 1, privileged and unbindable without root) is reliably refused. The
+ * picker starts at index 0, so every call here fails over to node 1 — if the
+ * seam let the rejection escape instead of retrying, this file would throw or
+ * hang rather than pass.
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';

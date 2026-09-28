@@ -38,7 +38,7 @@ export function printBoxMessage(title: string, lines: (string | unknown)[]) {
 /**
  * The environment this script needs, read by its shell
  * (`packages/db/scripts/migrate-code.ts`) rather than here, so no migration
- * file reads `process.env` (ADR-022 R7, which travelled with the move).
+ * file reads `process.env` (which travelled with the move).
  */
 export interface CodeMigrationEnv {
   clickhouseCluster: boolean;

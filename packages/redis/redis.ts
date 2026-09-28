@@ -7,10 +7,10 @@ const options: RedisOptions = {
 };
 
 /**
- * The cache client's tail bound, for the fault the offline queue cannot see:
- * a server whose socket is UP and which answers nothing (a frozen or
- * partitioned node). Nothing else in the request path sets a deadline there —
- * `/track` never answered inside 30 s in that fault before this.
+ * The cache client's tail bound, for the fault the offline queue cannot see: a
+ * server whose socket is UP and which answers nothing (a frozen or partitioned
+ * node). Nothing else in the request path sets a deadline there — `/track`
+ * never answered inside 30 s in that fault before this.
  *
  * It has to clear the heaviest LEGITIMATE command by a wide margin, or a busy
  * event-buffer flush would start failing as if Redis were down — and under
@@ -109,27 +109,27 @@ const createRedisClient = (
 };
 
 /**
- * The CACHE client fails fast (M18-003). Drill 02 measured `/track` blocking
- * 9,427 / 12,039 / 41,978 ms on a stopped Redis, and 10 of 20 requests getting
- * no answer inside 30 s, because on ioredis's defaults the command is QUEUED
- * and waits out 20 reconnect attempts (backoff `min(times * 50, 2000)` ms)
- * before `MaxRetriesPerRequestError`. Everything on the ingest path already
- * treats these reads as optional — `device-id.ts` catches the session-buffer
- * failure and mints the deterministic session id — so the wait bought nothing
- * but a slower failure.
+ * The CACHE client fails fast. Drill 02 measured `/track` blocking 9,427 /
+ * 12,039 / 41,978 ms on a stopped Redis, and 10 of 20 requests getting no
+ * answer inside 30 s, because on ioredis's defaults the command is QUEUED and
+ * waits out 20 reconnect attempts (backoff `min(times * 50, 2000)` ms) before
+ * `MaxRetriesPerRequestError`. Everything on the ingest path already treats
+ * these reads as optional — `device-id.ts` catches the session-buffer failure
+ * and mints the deterministic session id — so the wait bought nothing but a
+ * slower failure.
  *
  * Two mechanisms, because there are two faults:
  *
- *  - **The offline queue goes off**, so a command issued while the socket is
- *    known-down is rejected in microseconds rather than queued. This is what
- *    keeps a warm-cache `/track` at its normal latency during an outage.
- *  - **`commandTimeout`** bounds the case the offline queue cannot see, where
- *    the socket is up and the server answers nothing.
+ * **The offline queue goes off**, so a command issued while the socket is
+ * known-down is rejected in microseconds rather than queued. This is what keeps
+ * a warm-cache `/track` at its normal latency during an outage. -
+ * **`commandTimeout`** bounds the case the offline queue cannot see, where the
+ * socket is up and the server answers nothing.
  *
  * Reproduced and measured before/after on this box, with the API pointed at a
  * TCP proxy that can stop or freeze: with Redis stopped, a warm-auth `/track`
- * goes from 2-of-3 requests never answered inside 30 s to 200 × 10 at p50
- * 10.0 ms, and a cold-auth one from the same 30 s hang to 500 at p50 1.3 ms.
+ * goes from 2-of-3 requests never answered inside 30 s to 200 × 10 at p50 10.0
+ * ms, and a cold-auth one from the same 30 s hang to 500 at p50 1.3 ms.
  * `commandTimeout` on its own, with the queue left on, was measured as well and
  * is not enough: it bounds the tail but leaves that warm `/track` at 1,011 ms,
  * because ioredis arms the deadline before the writable check, so the queued
@@ -138,10 +138,10 @@ const createRedisClient = (
  *
  * THE OFFLINE QUEUE STAYS ON UNTIL THE CLIENT HAS CONNECTED ONCE. ioredis
  * rejects every command issued before the first connect completes when the
- * queue is off — including the ones a process issues while it is still
- * booting — which would make boot order decide whether a command works. A
- * process that has never reached Redis therefore still falls back to
- * `commandTimeout`, which is bounded; one that has connected fails instantly.
+ * queue is off — including the ones a process issues while it is still booting
+ * — which would make boot order decide whether a command works. A process that
+ * has never reached Redis therefore still falls back to `commandTimeout`, which
+ * is bounded; one that has connected fails instantly.
  */
 export function createFailFastCacheClient(
   name: string,

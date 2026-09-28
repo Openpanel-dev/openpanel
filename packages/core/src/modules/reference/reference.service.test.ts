@@ -1,7 +1,7 @@
-// The subject is built by its factory over a fake `ServiceDeps` (M10-003), so
-// Postgres needs no module mock at all — `deps.db` IS the fake below. Only the
-// two sibling modules the service still calls as plain functions are mocked,
-// at the specifier the source resolves through.
+// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
+// needs no module mock at all — `deps.db` IS the fake below. Only the two
+// sibling modules the service still calls as plain functions are mocked, at the
+// specifier the source resolves through.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -105,11 +105,11 @@ const getChartStartEndDate = mock(() => ({
   startDate: '2026-08-25 00:00:00',
   endDate: '2026-09-01 23:59:59',
 }));
-// M10-003: the module no longer reaches either through a lazy
-// `@openpanel/core` hop — Postgres arrives as `deps.db` and these two are
-// plain relative imports, so each is mocked at the specifier the source
-// actually resolves through. Snapshot-before-mock so `afterAll` restores the
-// real module rather than re-applying the mock.
+// The module no longer reaches either through a lazy `@openpanel/core` hop —
+// Postgres arrives as `deps.db` and these two are plain relative imports, so
+// each is mocked at the specifier the source actually resolves through.
+// Snapshot-before-mock so `afterAll` restores the real module rather than
+// re-applying the mock.
 const actualOrganization = await import('../organization/organization.service');
 const realOrganization = { ...actualOrganization };
 mock.module('../organization/organization.service', () => ({

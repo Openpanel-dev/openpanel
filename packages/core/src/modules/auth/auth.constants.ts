@@ -1,9 +1,9 @@
-// Moved from packages/validation/src/index.ts (M6-003, ADR-008's module map:
-// auth owns "C"). packages/validation/src/index.ts becomes a re-export shim
-// for these symbols (same shape as packages/validation/src/cohort.validation.ts
-// since M5-003), so apps/start and packages/trpc keep resolving them through
-// packages/validation's existing barrel unchanged. `zProvider` is new here —
-// it validated `signInOAuth`'s input inline in packages/trpc/src/routers/auth.ts
+// Moved from packages/validation/src/index.ts (ADR-008's module map: auth owns
+// "C"). packages/validation/src/index.ts becomes a re-export shim for these
+// symbols (same shape as packages/validation/src/cohort.validation.ts since
+// M5-003), so apps/start and packages/trpc keep resolving them through
+// packages/validation's existing barrel unchanged. `zProvider` is new here — it
+// validated `signInOAuth`'s input inline in packages/trpc/src/routers/auth.ts
 // and was never exported, but it is vocabulary the same way the rest of this
 // file is.
 //

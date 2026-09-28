@@ -1,5 +1,5 @@
 /**
- * M18-003 — how long does `/track` take when the Redis CACHE is unreachable?
+ * How long does `/track` take when the Redis CACHE is unreachable?
  *
  * Drill 02 measured 9,427 / 12,039 / 41,978 ms and 10-of-20 no-answer. This
  * harness reproduces that measurement in-repo so the fix can be justified with
@@ -7,10 +7,10 @@
  *
  * It never touches the shared Redis server: the API under test is pointed at a
  * local TCP proxy which is then stopped (`refuse`, docker-stop shaped) or
- * frozen (`blackhole`, docker-pause shaped). The operator's stack keeps its
- * own connection to :6379 throughout.
+ * frozen (`blackhole`, docker-pause shaped). The operator's stack keeps its own
+ * connection to:6379 throughout.
  *
- *   dotenv -e ../../.env -- bun e2e/redis-fail-fast.ts
+ * Dotenv -e../../.env -- bun e2e/redis-fail-fast.ts
  */
 
 import { spawn } from 'node:child_process';

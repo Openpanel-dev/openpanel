@@ -1,15 +1,15 @@
-// Moved from packages/queue/src/kafka.ts (M11-003), byte-for-byte apart from
-// the three repointed imports and the de-duplicated `DeadLetterMessage` below.
-// What kept it out of core was the import direction, not the code: it lived
-// in @openpanel/queue, a package that imports @openpanel/core for its logger,
-// so core could not import it back. Moving the file takes it out of that
-// cycle — `createLogger` is a sibling now, and both the producer and the
-// consumer sit in the module that owns the transport (ADR-004: Kafka is the
-// sole events transport — no topic, group or envelope changes with the move).
+// Moved from packages/queue/src/kafka.ts, byte-for-byte apart from the three
+// repointed imports and the de-duplicated `DeadLetterMessage` below. What kept
+// it out of core was the import direction, not the code: it lived in
+// @openpanel/queue, a package that imports @openpanel/core for its logger, so
+// core could not import it back. Moving the file takes it out of that cycle —
+// `createLogger` is a sibling now, and both the producer and the consumer sit
+// in the module that owns the transport (ADR-004: Kafka is the sole events
+// transport — no topic, group or envelope changes with the move).
 //
-// NOTHING here constructs a Kafka client at import time: `getKafka()` is lazy
-// and only `assertKafkaConfigured` reads the broker list eagerly, so core
-// stays importable with no broker and `bun test` still runs offline.
+// NOTHING here constructs a Kafka client at import time: `getKafka` is lazy and
+// only `assertKafkaConfigured` reads the broker list eagerly, so core stays
+// importable with no broker and `bun test` still runs offline.
 
 import {
   type Admin,
@@ -55,9 +55,9 @@ export const kafkaLogger = (config: CoreConfig): ILogger => {
   return kafkaLoggerInstance;
 };
 
-// Kafka/Redpanda is the sole events transport (ADR-004): there is no fallback,
-// so an unset KAFKA_BROKERS must fail loudly at boot rather than quietly at the
-// first event.
+// Kafka/Redpanda is the sole events transport: there is no fallback, so an
+// unset KAFKA_BROKERS must fail loudly at boot rather than quietly at the first
+// event.
 export const assertKafkaConfigured = (config: KafkaConfig): void => {
   if (config.brokers.length === 0) {
     throw new Error(
@@ -106,9 +106,9 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
     const tuning = resolveProducerTuning(config.kafka);
     const p = client.producer({
       idempotent: true,
-      // Stays 1 (not 5) to avoid in-flight reordering after a transient
-      // broker hiccup: with idempotency on and low retries, reordered batches
-      // trip OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
+      // Stays 1 (not 5) to avoid in-flight reordering after a transient broker
+      // hiccup: with idempotency on and low retries, reordered batches trip
+      // OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
       // ADR-023 measured raising it at +2-3% and rejected it; batching is what
       // amortises the round-trip. KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it
       // for a measurement run — read docs/KAFKA_PRODUCER_OPTIONS.md first: it

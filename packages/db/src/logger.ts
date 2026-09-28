@@ -1,11 +1,11 @@
 // Self-contained pino instantiation. packages/db is a leaf "stays" package
 // (TARGET_ARCHITECTURE §7) and must not reach into @openpanel/core just to
 // build a logger — that direction is backwards, since core itself depends on
-// db. This is the same implementation @openpanel/core/clients/logger.ts
-// carries (both descend from the pre-dissolve @openpanel/logger package,
-// M4-003) — duplicated here deliberately rather than shared, because there is
-// no home narrower than "the package itself" that both can reach without
-// reintroducing the db <-> core cycle this file exists to remove.
+// db. This is the same implementation @openpanel/core/clients/logger.ts carries
+// (both descend from the pre-dissolve @openpanel/logger package) — duplicated
+// here deliberately rather than shared, because there is no home narrower than
+// "the package itself" that both can reach without reintroducing the db <->
+// core cycle this file exists to remove.
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';

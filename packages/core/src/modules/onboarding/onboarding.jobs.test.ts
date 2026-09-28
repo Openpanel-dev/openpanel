@@ -124,8 +124,8 @@ test('onboarding does not log when the cron is a self-hosted no-op', async () =>
 });
 
 // Byte-identity with the id/cadence schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts). The cadence now lives on the job itself
-// (ADR-021), so this reads it straight off the registry.
+// (apps/worker/src/boot-cron.ts). The cadence now lives on the job itself, so
+// this reads it straight off the registry.
 test('the onboarding cron fragment carries V1 id and cadence unchanged', () => {
   expect(queues.cron.jobs.onboarding.cron).toEqual({
     pattern: '0 * * * *',

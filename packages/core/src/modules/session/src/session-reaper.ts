@@ -1,4 +1,4 @@
-// Ported from apps/worker/src/jobs/cron.session-reaper.ts (M7-001).
+// Ported from apps/worker/src/jobs/cron.session-reaper.ts.
 
 import type { Logger } from '../../../logger';
 import type { IServiceCreateEventPayload } from '../../event/event.service';

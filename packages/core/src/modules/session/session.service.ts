@@ -1,6 +1,6 @@
-// The session read path. Every query is a `sql` fragment (src/sql.ts), per
-// ADR-013; `buildFilterWhere` is the shared filter compiler and
-// src/filter-clauses.ts is the bridge to it.
+// The session read path. Every query is a `sql` fragment (src/sql.ts);
+// `buildFilterWhere` is the shared filter compiler and src/filter-clauses.ts is
+// the bridge to it.
 //
 // `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the
 // call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps have to
@@ -495,8 +495,8 @@ export function createSessionService(
   }
 
   /** `event.service.ts` reaches this through the composition root's thunk
-   *  (ADR-022 R3): `session-end.ts` statically imports the event module, so
-   *  the two are a real cycle and an import back would be the wrong answer. */
+   * `session-end.ts` statically imports the event module, so the two are a real
+   * cycle and an import back would be the wrong answer. */
   function getById(
     sessionId: string,
     projectId: string

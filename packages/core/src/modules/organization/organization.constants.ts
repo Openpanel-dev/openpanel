@@ -1,10 +1,10 @@
-// Moved from packages/validation/src/index.ts (M11-006, ADR-008's module map:
+// Moved from packages/validation/src/index.ts (ADR-008's module map:
 // organization owns "C" for the member/invite/organization vocabulary).
 // `zProjectAccessGrant` is a per-project grant but every consumer is
 // organization-shaped (organization.rpc.ts's invite/access mutations), so it
-// lives here and `zInviteUser` embeds it without a cross-file constants
-// import. @openpanel/db's `code-migrations/constants.ts` keeps its own frozen
-// copy of the schema (ADR-022, Carl's rulings) — it is not a consumer.
+// lives here and `zInviteUser` embeds it without a cross-file constants import.
+// @openpanel/db's `code-migrations/constants.ts` keeps its own frozen copy of
+// the schema (Carl's rulings) — it is not a consumer.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

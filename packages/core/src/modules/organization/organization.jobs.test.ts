@@ -110,8 +110,8 @@ test('delete delegates to runDeleteCron', async () => {
 });
 
 // Byte-identity with the id/cadence schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts). The cadences now live on the jobs
-// themselves (ADR-021), so this reads them straight off the registry.
+// (apps/worker/src/boot-cron.ts). The cadences now live on the jobs themselves,
+// so this reads them straight off the registry.
 test('the organization cron fragment carries V1 id and cadence unchanged', () => {
   expect(queues.cron.jobs.delete.cron).toEqual({ pattern: '0 * * * *' });
   expect(queues.cron.jobs.windDown.cron).toEqual({ pattern: '0 * * * *' });

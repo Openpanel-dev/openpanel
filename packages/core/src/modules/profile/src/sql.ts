@@ -1,8 +1,7 @@
-// Every ClickHouse query the profile module runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse query the profile module runs, as pure `sql` fragments.
 //
 // Cluster note: `profiles`, `events` and `sessions` are Distributed on Cloud.
-// `findProfilesQuery`'s three `IN (SELECT ...)` subqueries, and any a filter
+// `findProfilesQuery`'s three `IN (SELECT...)` subqueries, and any a filter
 // compiles to, run under the client's `distributed_product_mode: 'allow'`.
 // Every `IN` list binds as `Array(String)`, a literal list to the planner.
 
@@ -172,7 +171,7 @@ export interface ProfileListQuery extends ProfileWindow {
 }
 
 /**
- * V1's `WHERE project_id = .. [AND search] [AND is_external = ..] [AND filters]`,
+ * V1's `WHERE project_id =.. [AND search] [AND is_external =..] [AND filters]`,
  * plus the M31-003 window: V1 read every profile the project ever had, so the
  * cost grew with the tenant's lifetime rather than with anything the caller
  * asked for. `created_at` is the column the list already orders by, so the
@@ -370,9 +369,9 @@ export function profilePropertyNamesQuery(projectId: string): SqlFragment {
 }
 
 /**
- * M31-003: bounded to the caller's window. Unbounded this ranked every event
- * the project ever recorded (44.2 M rows on the busiest anchor), so "power
- * users of all time" is now "power users of the range".
+ * Bounded to the caller's window. Unbounded this ranked every event the project
+ * ever recorded (44.2 M rows on the busiest anchor), so "power users of all
+ * time" is now "power users of the range".
  */
 export function powerUsersQuery(
   query: ProfileWindow & {

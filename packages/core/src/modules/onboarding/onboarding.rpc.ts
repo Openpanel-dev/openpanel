@@ -1,16 +1,15 @@
-// Ported from packages/trpc/src/routers/onboarding.ts (M6-003).
+// Ported from packages/trpc/src/routers/onboarding.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
 // `project`'s input can carry an existing `organizationId`, which
-// `enforceAccess` gates on membership (not admin — joining an org you
-// already belong to needs no more than that); this router repeats the check
-// explicitly through the organization module's own lookup.
+// `enforceAccess` gates on membership (not admin — joining an org you already
+// belong to needs no more than that); this router repeats the check explicitly
+// through the organization module's own lookup.
 
 import {
   createTRPCRouter,
@@ -35,9 +34,9 @@ export const onboardingRouter = createTRPCRouter({
       const userId = ctx.session.userId;
 
       if (input.organizationId) {
-        // The auth service owns every access lookup (ADR-022 R10); this
-        // procedure is protected but the organization is an input, so the
-        // builder cannot decide it.
+        // The auth service owns every access lookup; this procedure is
+        // protected but the organization is an input, so the builder cannot
+        // decide it.
         const access = await ctx.services.auth.getOrganizationAccess({
           userId,
           organizationId: input.organizationId,

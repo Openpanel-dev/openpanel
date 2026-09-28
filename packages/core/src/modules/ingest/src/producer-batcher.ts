@@ -1,20 +1,19 @@
-// Option 2 of the produce-path options (M16-002): amortise the produce
-// round-trip by accumulating messages and sending them as ONE `send()`
-// carrying MANY messages, instead of one awaited `send()` per /track request.
+// Option 2 of the produce-path options: amortise the produce round-trip by
+// accumulating messages and sending them as ONE `send` carrying MANY messages,
+// instead of one awaited `send` per /track request.
 //
 // It is OFF unless the config loader says otherwise — see `producer-tuning.ts`.
 //
 // Two invariants the tests hold this file to:
 //
-//   1. ORDER. Messages leave in the order they were enqueued: within a batch
-//      because the array keeps that order (kafkajs partitions per message by
-//      key, and same-key messages in one `send()` land in one partition batch
-//      in array order), and across batches because this file keeps exactly
-//      ONE send outstanding at a time. That second half is why the guarantee
-//      does not depend on `maxInFlightRequests` staying at 1.
-//   2. SETTLEMENT. A caller's promise settles on ITS OWN batch's result. A
-//      failed send rejects exactly the callers whose messages were in it, and
-//      no others.
+// 1. ORDER. Messages leave in the order they were enqueued: within a batch
+// because the array keeps that order (kafkajs partitions per message by key,
+// and same-key messages in one `send` land in one partition batch in array
+// order), and across batches because this file keeps exactly ONE send
+// outstanding at a time. That second half is why the guarantee does not depend
+// on `maxInFlightRequests` staying at 1. 2. SETTLEMENT. A caller's promise
+// settles on ITS OWN batch's result. A failed send rejects exactly the callers
+// whose messages were in it, and no others.
 
 interface BatchWaiter {
   resolve: () => void;

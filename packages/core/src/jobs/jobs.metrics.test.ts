@@ -31,8 +31,8 @@ test('five gauges per queue, named from the Redis key exactly as V1 named them',
   for (const suffix of COUNT_SUFFIXES) {
     expect(names).toContain(`sessions_${suffix}_count`);
     expect(names).toContain(`cron_${suffix}_count`);
-    // ADR-005 acceptance note: the registry key stays `cohortCompute`, so the
-    // series name does too.
+    // Acceptance note: the registry key stays `cohortCompute`, so the series
+    // name does too.
     expect(names).toContain(`cohortCompute_${suffix}_count`);
   }
 });

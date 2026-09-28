@@ -1,6 +1,6 @@
 // The graceful-shutdown sequence, lifted out of `main.ts` so its ORDER is a
 // thing a test can assert rather than a property of how a `Promise.all` was
-// typed (M18-001).
+// typed.
 //
 // Drill 03 (`verification/drills/03-restart-in-flight.md`) measured a SIGTERM
 // restart permanently losing 2 of 44,075 accepted events while both SIGKILL
@@ -10,12 +10,11 @@
 // redelivered. A crash commits nothing, so Kafka replays the same window.
 //
 // The commit itself is NOT here: kafkajs auto-commits the offsets a batch
-// resolved as soon as `eachBatch` returns, so the events a Kafka batch
-// buffered are made durable inside the batch handler, before it resolves
-// anything (`consumer.ts`'s `flushBufferedEvents`). What is left for this
-// sequence is everything buffered OUTSIDE a Kafka batch — a session-end job's
-// event, an import — which no offset covers and which a `process.exit` would
-// simply drop.
+// resolved as soon as `eachBatch` returns, so the events a Kafka batch buffered
+// are made durable inside the batch handler, before it resolves anything
+// (`consumer.ts`'s `flushBufferedEvents`). What is left for this sequence is
+// everything buffered OUTSIDE a Kafka batch — a session-end job's event, an
+// import — which no offset covers and which a `process.exit` would simply drop.
 //
 // Either way it is one rpush of at most `microBatchMaxSize` events —
 // milliseconds, well inside `SHUTDOWN_FORCE_EXIT_MS`. It is NOT a Redis ->

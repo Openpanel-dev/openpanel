@@ -164,8 +164,8 @@ export async function runJob(
   const payload = jobDefinition.payload.parse(resolved.payload);
 
   const attempt = job.attemptsMade + 1;
-  // A scheduled or legacy job has no originating request; minting one keeps
-  // its own logs and its follow-up enqueues correlated (ADR-018 R2).
+  // A scheduled or legacy job has no originating request; minting one keeps its
+  // own logs and its follow-up enqueues correlated.
   const requestId =
     resolved.meta.requestId ?? generateId(undefined, REQUEST_ID_LENGTH);
 

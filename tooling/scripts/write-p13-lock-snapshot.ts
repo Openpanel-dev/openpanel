@@ -4,23 +4,22 @@
  *
  * The snapshot is the reference `tooling/gates/p13-drift.sh` compares an
  * installed tree against. It exists as a separate committed file because
- * M13-002 DELETES `pnpm-lock.yaml`: once the lock is gone there is nothing
- * left to say what pnpm had resolved, and "did the installer swap move
- * anything?" becomes unanswerable. This file outlives the lock.
+ * M13-002 DELETES `pnpm-lock.yaml`: once the lock is gone there is nothing left
+ * to say what pnpm had resolved, and "did the installer swap move anything?"
+ * becomes unanswerable. This file outlives the lock.
  *
- * Shape:
- *   { "<importer path>": { "<dependency>": "<exact version>" } }
+ * Shape: { "<importer path>": { "<dependency>": "<exact version>" } }
  *
  * Every direct dependency of every workspace importer — `dependencies`,
  * `devDependencies` and `optionalDependencies` alike, registry copies and
  * `workspace:` links alike. Links are recorded at the linked package's own
  * `version`, which is what a correctly-linked `node_modules/<dep>/package.json`
  * reports; that is deliberate, because a resolver silently preferring the
- * REGISTRY copy of a workspace package over the local one is a real hazard
- * here (`apps/start` depends on `@openpanel/web@1.0.5` from npm while the
- * workspace source is 1.4.1-local) and the gate should see it.
+ * REGISTRY copy of a workspace package over the local one is a real hazard here
+ * (`apps/start` depends on `@openpanel/web@1.0.5` from npm while the workspace
+ * source is 1.4.1-local) and the gate should see it.
  *
- *   bun run tooling/scripts/write-p13-lock-snapshot.ts
+ * Bun run tooling/scripts/write-p13-lock-snapshot.ts
  */
 
 import { file, write, YAML } from 'bun';

@@ -1,10 +1,10 @@
-// Ported from apps/worker/src/jobs/notification.ts (M6-005).
+// Ported from apps/worker/src/jobs/notification.ts.
 //
-// `sendNotification` is this module's own queue (`notification` in the
-// registry — ADR-005's registry key). legacyCompat.notification already
-// discriminates on this exact job name (jobs/compat.ts), so this pins the two
-// in agreement. No cron fragment — notifications are always triggered by a
-// rule match, never scheduled.
+// `sendNotification` is this module's own queue (`notification` in the registry
+// — ADR-005's registry key). legacyCompat.notification already discriminates on
+// this exact job name (jobs/compat.ts), so this pins the two in agreement. No
+// cron fragment — notifications are always triggered by a rule match, never
+// scheduled.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { z } from 'zod';
@@ -41,10 +41,10 @@ export const notificationQueueJobs = {
           payload.notification as Prisma.NotificationUncheckedCreateInput
         );
       } catch (error) {
-        // ADR-022 R19: the transport classified this once. A destination that
-        // refused the request (4xx) will refuse the identical retry, so it is
-        // logged and the job completes; anything retryable is rethrown so the
-        // failure is recorded against the job.
+        // The transport classified this once. A destination that refused the
+        // request (4xx) will refuse the identical retry, so it is logged and
+        // the job completes; anything retryable is rethrown so the failure is
+        // recorded against the job.
         if (isProviderError(error) && !error.retryable) {
           ctx.logger.error(
             {

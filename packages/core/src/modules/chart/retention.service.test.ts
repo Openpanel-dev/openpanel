@@ -19,8 +19,8 @@ import {
 
 const PROJECT_ID = 'test-retention-cohort';
 
-// M10-003: retention reaches ClickHouse as `deps.ch`, so the suite builds the
-// same `ServiceDeps` main.ts does (pointed at `openpanel_test` by preload.ts).
+// Retention reaches ClickHouse as `deps.ch`, so the suite builds the same
+// `ServiceDeps` main.ts does (pointed at `openpanel_test` by preload.ts).
 let deps: ServiceDeps;
 const { day, week } = RETENTION_FIXTURE;
 /** RU1-RU5 and WU1-WU2, per the dataset table in retention-fixtures.ts. */

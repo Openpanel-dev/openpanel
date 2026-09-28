@@ -9,11 +9,11 @@ interface RelatedLinksProps {
 
 export function RelatedLinksSection({ relatedLinks }: RelatedLinksProps) {
   if (
-    !relatedLinks ||
     !(
-      relatedLinks.guides?.length ||
-      relatedLinks.articles?.length ||
-      relatedLinks.alternatives?.length
+      relatedLinks &&
+      (relatedLinks.guides?.length ||
+        relatedLinks.articles?.length ||
+        relatedLinks.alternatives?.length)
     )
   ) {
     return null;

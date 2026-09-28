@@ -1,22 +1,22 @@
-// Stateless-POST MCP transport (ADR-015 entry 2, M5-007). V1 kept a Redis
-// session store (`mcp:session:<uuid>`, 30-min TTL) and a `Mcp-Session-Id`
-// header that could stand in for the token on every request after the
-// first — both removed here, along with GET/SSE (already an unconditional
-// 405 — deletes nothing that ever worked) and DELETE. Every POST
-// authenticates from scratch and gets its own ephemeral McpServer; nothing
-// survives between requests, so there is no session to store, touch or
-// close, and no cross-instance stickiness requirement.
+// Stateless-POST MCP transport (ADR-015 entry 2). V1 kept a Redis session store
+// (`mcp:session:<uuid>`, 30-min TTL) and a `Mcp-Session-Id` header that could
+// stand in for the token on every request after the first — both removed here,
+// along with GET/SSE (already an unconditional 405 — deletes nothing that ever
+// worked) and DELETE. Every POST authenticates from scratch and gets its own
+// ephemeral McpServer; nothing survives between requests, so there is no
+// session to store, touch or close, and no cross-instance stickiness
+// requirement.
 //
 // MCP is the one module the wave map allows to change its endpoint surface —
 // every other module in this wave preserves its V1 contract byte-for-byte.
 //
-// M15-003: MCP is NOT a separate process and has no dependency builder of its
-// own. `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route
-// already holds the API's connections; this factory closes over them and
-// hands them to `createMcpServer` per request (ADR-022 R6/R15, Carl's
-// ruling). The `@modelcontextprotocol/sdk` tool-handler signature has no
-// context parameter, which is a CLOSURE problem — solved by building the
-// server where `deps` is in hand — not a context problem.
+// MCP is NOT a separate process and has no dependency builder of its own.
+// `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route already
+// holds the API's connections; this factory closes over them and hands them to
+// `createMcpServer` per request (R15, Carl's ruling). The
+// `@modelcontextprotocol/sdk` tool-handler signature has no context parameter,
+// which is a CLOSURE problem — solved by building the server where `deps` is in
+// hand — not a context problem.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import {
@@ -166,11 +166,11 @@ async function runOnEphemeralServer(
       clientTransport.send(message).catch(reject);
     });
   } finally {
-    // ADR-022 R16: this function opened the pair, so this function closes it.
-    // `server.close()` closes `serverTransport`, and an InMemoryTransport
-    // closes its linked peer, so one call tears down both ends — and with
-    // them the SDK's response handlers and in-flight abort controllers,
-    // which a dropped-on-the-floor server would have kept alive until GC.
+    // This function opened the pair, so this function closes it. `server.close`
+    // closes `serverTransport`, and an InMemoryTransport closes its linked
+    // peer, so one call tears down both ends — and with them the SDK's response
+    // handlers and in-flight abort controllers, which a dropped-on-the-floor
+    // server would have kept alive until GC.
     await server.close();
   }
 }
@@ -261,8 +261,8 @@ function logToolResult(
 
 /**
  * The MCP tool tree reaches Postgres and ClickHouse through the `deps` this
- * factory closes over — there is no singleton and no "no context" path left
- * (ADR-022 R6). `extractToken` is pure and stays a bare re-export.
+ * factory closes over — there is no singleton and no "no context" path left.
+ * `extractToken` is pure and stays a bare re-export.
  */
 export function createMcpService(deps: ServiceDeps, services: () => Services) {
   return {

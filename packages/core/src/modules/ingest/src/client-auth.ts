@@ -10,8 +10,8 @@
 // CORS-before-secret ordering, the ip and profile_id project filters, the
 // `__revenue` gate, the body-field credential fallback, the `mixan-*` header
 // fallback (ADR-015 entry 5 is deferred, not taken) and the 5-minute verify
-// cache whose key holds base64(<plaintext secret>) — a recorded finding
-// ADR-011 leaves to Carl, not to a port.
+// cache whose key holds base64(<plaintext secret>) — a recorded finding ADR-011
+// leaves to Carl, not to a port.
 
 import { getRedisCache } from '@openpanel/redis';
 import { path } from 'ramda';
@@ -61,10 +61,9 @@ export type IngestAuthOutcome =
       client: IServiceClientWithProject;
       /**
        * Whether the supplied client secret VERIFIED against the stored hash
-       * (main #481). The bot hook reads it as "this is a server-side SDK,
-       * never a bot", so it must not be true for any string a browser
-       * happens to send — the side channel survives as a field on the
-       * outcome (ADR-011 A-i).
+       * (main #481). The bot hook reads it as "this is a server-side SDK, never
+       * a bot", so it must not be true for any string a browser happens to send
+       * — the side channel survives as a field on the outcome (ADR-011 A-i).
        */
       secretVerified: boolean;
     }

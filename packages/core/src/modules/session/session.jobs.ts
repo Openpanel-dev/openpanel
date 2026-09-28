@@ -1,7 +1,8 @@
-// Ported from apps/worker/src/jobs/sessions.ts (+ events.create-session-end.ts),
-// cron.session-reaper.ts and cron.session-vacuum.ts (M7-001); `flushSessions`
-// and `flushReplay` (apps/worker/src/jobs/cron.ts) join them here at M8-004.
-// Schedules moved onto the jobs at ADR-021 (M10-007).
+// Ported from apps/worker/src/jobs/sessions.ts (+
+// events.create-session-end.ts), cron.session-reaper.ts and
+// cron.session-vacuum.ts; `flushSessions` and `flushReplay`
+// (apps/worker/src/jobs/cron.ts) join them here at M8-004. Schedules moved onto
+// the jobs at ADR-021.
 //
 // `sessions` is this module's own queue — registry key and Redis name
 // `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1, all
@@ -13,7 +14,7 @@
 //
 // Every handler reads its clients off `ctx` — the buffers and the Redis
 // connection main.ts built once, and the ClickHouse client the job's own
-// requestId is bound to (M10-006, docs/TECH_DEBT.md §2).
+// requestId is bound to.
 
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';
@@ -45,15 +46,15 @@ const FLUSH_SESSIONS_INTERVAL_MS = 10_000;
 const FLUSH_REPLAY_INTERVAL_MS = 10_000;
 
 // Wire-shape check only — V1 never validated it either (see
-// jobs/compat.test.ts), and tightening it now would reject payloads the
-// running system accepts.
+// jobs/compat.test.ts), and tightening it now would reject payloads the running
+// system accepts.
 //
 // The schema's INPUT is what the producer holds (`SessionEndJobData`, a real
 // `Date` on `event.createdAt`) and its OUTPUT is what a handler is actually
 // handed after BullMQ's JSON round-trip (`SessionEndJobWire`, a string there).
-// `PayloadOf` reads the input and the handler reads the output, so the two
-// stay honest without either side casting (ADR-022 R18). The transform is a
-// type seam only — it returns the value it was given.
+// `PayloadOf` reads the input and the handler reads the output, so the two stay
+// honest without either side casting. The transform is a type seam only — it
+// returns the value it was given.
 const sessionEndWireShape = z.object({
   event: z.object({ projectId: z.string(), deviceId: z.string() }),
   snapshot: z.object({
@@ -74,9 +75,9 @@ const sessionEndPayload = z
  * The session-end job's dependencies, bound to the run's own ctx.
  *
  * Two lookups stay dynamic, both for the same reason now that
- * notification-dispatch.ts has moved into core (M11-003): keeping
- * notification.service.ts — and the dispatch module built on it — out of
- * jobs.registry.ts's eager import graph, which every core test file walks.
+ * notification-dispatch.ts has moved into core: keeping notification.service.ts
+ * — and the dispatch module built on it — out of jobs.registry.ts's eager
+ * import graph, which every core test file walks.
  */
 async function sessionEndDeps(
   ctx: Ctx,

@@ -1,6 +1,6 @@
 // Shared in-memory rate limiter for the two public tools endpoints. Ported
-// verbatim from apps/api/src/controllers/tools.controller.ts (M7-008): one
-// process-local map, keyed per endpoint by the caller.
+// verbatim from apps/api/src/controllers/tools.controller.ts: one process-local
+// map, keyed per endpoint by the caller.
 
 // Both endpoints are public and unauthenticated, so a key (one per distinct
 // caller IP) that is only ever seen once would otherwise sit in the map

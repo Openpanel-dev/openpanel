@@ -1,4 +1,4 @@
-// Every query is a `sql` fragment (src/sql.ts), per ADR-013. The one write
+// Every query is a `sql` fragment (src/sql.ts). The one write
 // (`writeGroupToCh`) goes through `deps.ch.insert`.
 
 import { toDots } from '@openpanel/shared';

@@ -294,17 +294,15 @@ export function registerReportTools(
 }
 
 /**
- * Execute a saved report by ID. Dispatches on chart type:
- *  - funnel  → getFunnel
- *  - metric  → AggregateChartEngine.execute
- *  - others  → ChartEngine.execute
+ * Execute a saved report by ID. Dispatches on chart type: - funnel → getFunnel
+ * - metric → AggregateChartEngine.execute - others → ChartEngine.execute
  *
- * The assistant module (`../../assistant/src/report-runner.ts`, M5-005)
- * carries its own copy of this dispatch for its in-app chat tools — ADR-007
- * explicitly defers unifying MCP's tool definitions with assistant's (M5-007),
- * so the two live as hand-synced copies rather than a shared helper.
- * Deliberately returns the raw engine output here — the MCP tool reshapes it
- * for LLM consumption, the chat renderer needs the full chart.
+ * The assistant module (`../../assistant/src/report-runner.ts`) carries its own
+ * copy of this dispatch for its in-app chat tools — ADR-007 explicitly defers
+ * unifying MCP's tool definitions with assistant's, so the two live as
+ * hand-synced copies rather than a shared helper. Deliberately returns the raw
+ * engine output here — the MCP tool reshapes it for LLM consumption, the chat
+ * renderer needs the full chart.
  */
 async function runReport(
   deps: ServiceDeps,

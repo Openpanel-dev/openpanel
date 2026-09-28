@@ -1,4 +1,4 @@
-// Moved from packages/common/src/url.ts (M11-006, ADR-007 shared/ layout).
+// Moved from packages/common/src/url.ts (ADR-007 shared/ layout).
 export function parseSearchParams(
   params: URLSearchParams
 ): Record<string, string> | undefined {

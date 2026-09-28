@@ -1,8 +1,8 @@
-// M10-009: the subject's functions take `ServiceDeps`, so `deps.db` IS the
-// fake below and no Prisma module mock is needed. The intra-package modules
-// (store, referrer-spikes, legacy-scan) are still `mock.module`'d — that works
-// here with no import-time side effects to race because every mock is
-// registered before the subject's first call, not before its import.
+// The subject's functions take `ServiceDeps`, so `deps.db` IS the fake below
+// and no Prisma module mock is needed. The intra-package modules (store,
+// referrer-spikes, legacy-scan) are still `mock.module`'d — that works here
+// with no import-time side effects to race because every mock is registered
+// before the subject's first call, not before its import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -24,9 +24,9 @@ const $executeRaw = mock((..._args: unknown[]) => {
   executeRawCalls.push(_args);
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
-// M15-114: the explain cache is `deps.redis` (ADR-022 R16), so the fake is a
-// map on the scope — no `@openpanel/redis` module mock, which would replace
-// that barrel process-wide for every other file in the run.
+// The explain cache is `deps.redis`, so the fake is a map on the scope — no
+// `@openpanel/redis` module mock, which would replace that barrel process-wide
+// for every other file in the run.
 const redisStore = new Map<string, string>();
 const redis = {
   get: mock((key: string) => Promise.resolve(redisStore.get(key) ?? null)),

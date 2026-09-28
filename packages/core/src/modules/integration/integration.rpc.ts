@@ -1,11 +1,10 @@
-// Ported from packages/trpc/src/routers/integration.ts (M6-006).
+// Ported from packages/trpc/src/routers/integration.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
 // Every access assertion (including the data-dependent "authorize against the
 // EXISTING row" rule) lives in integration.service.ts, not here — see that

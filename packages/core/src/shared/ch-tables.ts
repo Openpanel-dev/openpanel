@@ -1,17 +1,17 @@
 // The physical ClickHouse table names core reads and writes, plus the two
 // cluster helpers that derive from them.
 //
-// M10-009: these live in `@openpanel/db/src/clickhouse/client.ts` too, and
-// that module is where the migrations (`@openpanel/db`'s `code-migrations/`,
-// M15-204) still take them from — but importing it constructs a real ClickHouse client and a real pino
-// logger at module load, which is the cost every `load*()` lazy loader in this
-// package existed to defer, and it is a value import of `@openpanel/db` from
-// core, which `core-uses-ctx-not-db-internals` now forbids. Core takes the
+// These live in `@openpanel/db/src/clickhouse/client.ts` too, and that module
+// is where the migrations (`@openpanel/db`'s `code-migrations/`) still take
+// them from — but importing it constructs a real ClickHouse client and a real
+// pino logger at module load, which is the cost every `load*` lazy loader in
+// this package existed to defer, and it is a value import of `@openpanel/db`
+// from core, which `core-uses-ctx-not-db-internals` now forbids. Core takes the
 // map, not the client: `ch` itself is always `ctx.ch` / `deps.ch`.
 //
 // The duplication is policed, not trusted: `ch-tables.parity.test.ts` asserts
-// this map and @openpanel/db's are identical, so a table added on one side
-// and not the other fails the suite rather than a query.
+// this map and @openpanel/db's are identical, so a table added on one side and
+// not the other fails the suite rather than a query.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 

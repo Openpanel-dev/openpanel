@@ -1,7 +1,7 @@
-// Ported from packages/db/src/services/create-event-id.test.ts (M7-002).
-// M10-005: `createEvent` takes `ServiceDeps` and writes through
-// `deps.buffers.event`, so the buffer is handed in rather than mocked onto a
-// module specifier — no `mock.module` and no restore to get wrong.
+// Ported from packages/db/src/services/create-event-id.test.ts. M10-005:
+// `createEvent` takes `ServiceDeps` and writes through `deps.buffers.event`, so
+// the buffer is handed in rather than mocked onto a module specifier — no
+// `mock.module` and no restore to get wrong.
 
 import { beforeAll, describe, expect, mock, test } from 'bun:test';
 import type { ServiceDeps } from '../../../services';

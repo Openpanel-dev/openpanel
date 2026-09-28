@@ -1,5 +1,5 @@
-// Moved from packages/common/src/group-by-labels.ts (M11-006, ADR-007 shared/
-// layout). Sole consumer: modules/chart/src/engine/fetch.ts.
+// Moved from packages/common/src/group-by-labels.ts (ADR-007 shared/ layout).
+// Sole consumer: modules/chart/src/engine/fetch.ts.
 export interface ISerieDataItem {
   label_0: string | null | undefined;
   label_1?: string | null | undefined;

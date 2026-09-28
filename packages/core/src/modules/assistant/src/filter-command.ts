@@ -1,11 +1,11 @@
-// Moved from V1's tRPC filter-command agent (M5-005). The one caller is
+// Moved from V1's tRPC filter-command agent. The one caller is
 // `overview.rpc.ts`'s `runFilterCommand` procedure, which reaches it through
 // `ctx.services.assistant`.
 //
-// M15-003: the agent app and its five tools are BUILT from the `deps` that
-// procedure already holds (ADR-022 R6/R15) — importing this file constructs
-// nothing, and the tool handlers close over `deps` because
-// `@better-agent/core`'s tool-handler signature has no slot for them.
+// The agent app and its five tools are BUILT from the `deps` that procedure
+// already holds (R15) — importing this file constructs nothing, and the tool
+// handlers close over `deps` because `@better-agent/core`'s tool-handler
+// signature has no slot for them.
 import {
   type AgentToolDefinition,
   betterAgent,

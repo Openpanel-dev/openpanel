@@ -1,8 +1,7 @@
-// The producer's error classification, split out of `kafka.ts` (M16-002) so
-// the batching path can be tested against the same code the single-message
-// path uses: a batch that fails must reset the producer exactly like a lone
-// message did, and that is only provable if the recovery wrapper is reachable
-// without a broker.
+// The producer's error classification, split out of `kafka.ts` so the batching
+// path can be tested against the same code the single-message path uses: a
+// batch that fails must reset the producer exactly like a lone message did, and
+// that is only provable if the recovery wrapper is reachable without a broker.
 
 // Kafka error codes that mean the producer's PID/sequence state is
 // permanently out of sync with the broker for some partition — only a

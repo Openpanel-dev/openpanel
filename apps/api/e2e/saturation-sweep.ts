@@ -1,5 +1,5 @@
 /**
- * Saturation sweep — the ramp driver on top of `session-stress.ts` (M16-001).
+ * Saturation sweep — the ramp driver on top of `session-stress.ts`.
  *
  * GOAL: find the MAX SUSTAINABLE INGEST THROUGHPUT, defined as the highest
  * offered load at which the pipeline still drains. It runs `session-stress.ts`
@@ -7,18 +7,16 @@
  * connection, cached pid or latency sink leaks between rungs), parses each
  * rung's machine-readable result line, and applies the knee definition below.
  *
- * THE KNEE, exactly as implemented in `classifyRung()`. A rung DID NOT DRAIN if
- * any of these is true:
- *   1. `lag.secondsToZeroAfterEmitEnd` is null — the Kafka consumer group was
- *      still behind when sampling stopped.
- *   2. That figure grew rung-over-rung rather than staying flat: more than
- *      SWEEP_DRAIN_GROWTH_FACTOR x the best drain time seen so far, AND more
- *      than SWEEP_DRAIN_GROWTH_MIN_S seconds worse in absolute terms (the
- *      absolute floor keeps 0.4s → 0.9s from reading as a knee).
- *   3. A queue depth or a buffer pending count failed to return to zero.
- * The first such rung is the knee. The last rung BEFORE it is the max
- * sustainable throughput, reported in events/second with that rung's api and
- * worker CPU and RSS.
+ * THE KNEE, exactly as implemented in `classifyRung`. A rung DID NOT DRAIN if
+ * any of these is true: 1. `lag.secondsToZeroAfterEmitEnd` is null — the Kafka
+ * consumer group was still behind when sampling stopped. 2. That figure grew
+ * rung-over-rung rather than staying flat: more than SWEEP_DRAIN_GROWTH_FACTOR
+ * x the best drain time seen so far, AND more than SWEEP_DRAIN_GROWTH_MIN_S
+ * seconds worse in absolute terms (the absolute floor keeps 0.4s → 0.9s from
+ * reading as a knee). 3. A queue depth or a buffer pending count failed to
+ * return to zero. The first such rung is the knee. The last rung BEFORE it is
+ * the max sustainable throughput, reported in events/second with that rung's
+ * api and worker CPU and RSS.
  *
  * A rung that fails to drain is a DATA POINT, not a harness error: it is
  * recorded, the ladder stops climbing, and the sweep still exits 0. The sweep
@@ -26,9 +24,9 @@
  * result).
  *
  * AUTH: defaults to E2E_AUTH_MODE=secret — the pessimistic, server-side-SDK
- * path through the cached scrypt verify. The two other paths are reachable
- * with SWEEP_AUTH_MODE=cors (browser traffic) and SWEEP_AUTH_MODE=bypass
- * (diagnostic baseline, no real traffic takes it).
+ * path through the cached scrypt verify. The two other paths are reachable with
+ * SWEEP_AUTH_MODE=cors (browser traffic) and SWEEP_AUTH_MODE=bypass (diagnostic
+ * baseline, no real traffic takes it).
  *
  * Full knob list and how to read the output: docs/BENCHMARK_HARNESS.md.
  */

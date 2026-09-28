@@ -1,5 +1,4 @@
-// Every ClickHouse query the retention service runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse query the retention service runs, as pure `sql` fragments.
 //
 // The filter compiler renders text (see compiled.ts); its output is the only
 // thing spliced into the cohort statement.
@@ -43,7 +42,7 @@ const COUNT_CRITERIA: Record<IRetentionCriteria, string> = {
 
 /**
  * Without both dates the statement reads the project's whole lifetime, as V1
- * did: the MCP tools pass none and their contracts rely on it (M34-002).
+ * did: the MCP tools pass none and their contracts rely on it.
  */
 export interface RetentionSeriesQueryInput {
   projectId: string;

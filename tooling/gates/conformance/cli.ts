@@ -1,10 +1,10 @@
 /**
  * Assembles every ADR-022 check into one report and decides --assert.
  *
- * Output contract (docs/CONFORMANCE_GATE_SPEC.md, "Output shape"): one block per
- * rule, offenders as `file:line`, a TOTAL line per rule and one overall, stable
- * ordering and no timestamps in the body — so the fix wave proves a rule reached
- * zero by diffing two reports.
+ * Output contract (docs/CONFORMANCE_GATE_SPEC.md, "Output shape"): one block
+ * per rule, offenders as `file:line`, a TOTAL line per rule and one overall,
+ * stable ordering and no timestamps in the body — so the fix wave proves a rule
+ * reached zero by diffing two reports.
  */
 
 import { readFileSync } from 'node:fs';

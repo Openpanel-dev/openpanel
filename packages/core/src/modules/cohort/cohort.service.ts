@@ -53,30 +53,29 @@ export function cohortMaterializeLimit(config: CoreConfig): number {
   );
 }
 
-// Property cohorts aggregate every profile row for the project, so they are
-// the one cohort query that can outgrow the server's memory headroom. Two
-// opt-in knobs bound them; with NEITHER set, no per-query settings are
-// applied and the server's own defaults govern — upstream behavior is
-// unchanged.
+// Property cohorts aggregate every profile row for the project, so they are the
+// one cohort query that can outgrow the server's memory headroom. Two opt-in
+// knobs bound them; with NEITHER set, no per-query settings are applied and the
+// server's own defaults govern — upstream behavior is unchanged.
 //
-//   COHORT_QUERY_MEMORY_LIMIT_BYTES  hard cap for these queries
-//   COHORT_QUERY_SPILL_BYTES         GROUP BY spills to disk past this
+// COHORT_QUERY_MEMORY_LIMIT_BYTES hard cap for these queries
+// COHORT_QUERY_SPILL_BYTES GROUP BY spills to disk past this
 //
-// A GROUP BY only starts spilling once it crosses the threshold, so the
-// spill threshold must sit BELOW the memory limit — inverted, the query is
-// killed before it ever writes to disk (ClickHouse Cloud ships exactly that
-// inversion by default, which is how these queries OOM'd instead of
-// spilling). When only the limit is set — or the pair is inverted — the
-// threshold derives as limit/3. Spilling early costs little: the volume
-// spilled is set by the data, not the threshold (measured on 8.3M profiles,
-// ~281MB spilled whether the threshold was 300, 512 or 768MB, at
-// 6.9s/6.7s/6.0s, while peak memory climbed 410/695/893MiB).
+// A GROUP BY only starts spilling once it crosses the threshold, so the spill
+// threshold must sit BELOW the memory limit — inverted, the query is killed
+// before it ever writes to disk (ClickHouse Cloud ships exactly that inversion
+// by default, which is how these queries OOM'd instead of spilling). When only
+// the limit is set — or the pair is inverted — the threshold derives as
+// limit/3. Spilling early costs little: the volume spilled is set by the data,
+// not the threshold (measured on 8.3M profiles, ~281MB spilled whether the
+// threshold was 300, 512 or 768MB, at 6.9s/6.7s/6.0s, while peak memory climbed
+// 410/695/893MiB).
 //
-// A standalone function of its two parsed inputs (not a module-level read),
-// so a test can exercise every branch by calling it directly — bun:test
-// shares one module registry per file even under --isolate, so vitest's
-// vi.resetModules()-per-case porting has no equivalent (see AGENTS.md; this
-// was the one vi.resetModules site in the suite, ADR-010's tail table).
+// A standalone function of its two parsed inputs (not a module-level read), so
+// a test can exercise every branch by calling it directly — bun:test shares one
+// module registry per file even under --isolate, so vitest's
+// vi.resetModules-per-case porting has no equivalent (see AGENTS.md; this was
+// the one vi.resetModules site in the suite, ADR-010's tail table).
 export function deriveCohortQuerySettings({
   memoryLimitBytes,
   spillBytes: spillBytesParsed,
@@ -347,14 +346,14 @@ function normalizeProfileColumn(name: string): string {
   return name.replace(/^profile\./, 'profiles.');
 }
 
-// SQL for a profile filter's column: either a properties Map lookup or a
-// plain column, qualified with the table name. Cohort definitions come from
-// the API, so both halves are user-controlled: the Map key is a *value* and
-// binds as one, and the plain column goes through `sql.id`, which throws
-// rather than inlining anything that is not a bare (once-qualified)
-// identifier (ADR-013 R3). V1 inlined it verbatim — the one input class whose
-// behaviour changes is a non-identifier column name, which V1 turned into a
-// ClickHouse `UNKNOWN_IDENTIFIER` and V2 rejects before the round trip.
+// SQL for a profile filter's column: either a properties Map lookup or a plain
+// column, qualified with the table name. Cohort definitions come from the API,
+// so both halves are user-controlled: the Map key is a *value* and binds as
+// one, and the plain column goes through `sql.id`, which throws rather than
+// inlining anything that is not a bare (once-qualified) identifier. V1 inlined
+// it verbatim — the one input class whose behaviour changes is a non-identifier
+// column name, which V1 turned into a ClickHouse `UNKNOWN_IDENTIFIER` and V2
+// rejects before the round trip.
 function profileColumnAccess(normalizedName: string): SqlFragment {
   if (normalizedName.startsWith('profiles.properties.')) {
     const propKey = normalizedName.replace('profiles.properties.', '');
@@ -933,9 +932,8 @@ export async function listCohortMemberProfiles(
     ? sql`AND ${sql.join(extraConditions, ' AND ')}`
     : sql.empty;
 
-  // M12-003: converted with `buildFilterWhere`, which now returns fragments.
-  // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
-  // written (docs/ENVIRONMENT.md).
+  // Converted with `buildFilterWhere`, which now returns fragments. V1's plain
+  // `IN (subquery)` on the Distributed `cohort_members` is kept as written.
   const rows = await chQuery<{ id: string; total_count: number }>(
     deps,
     sql`
@@ -970,9 +968,8 @@ export async function listCohortMemberProfiles(
 
 /**
  * The window `mostEvents` / `popularRoutes` read. Both had no date filter, so
- * they scanned the project's whole event history however small the cohort
- * (docs/UNPROVEN_ENDPOINTS.md §4.4). `YYYY-MM-DD HH:mm:ss`, as
- * `getChartStartEndDate` returns it.
+ * they scanned the project's whole event history however small the cohort.
+ * `YYYY-MM-DD HH:mm:ss`, as `getChartStartEndDate` returns it.
  */
 export interface CohortActivityWindow {
   startDate: string;
@@ -1008,7 +1005,7 @@ export function cohortMemberEventsQuery(
 ): SqlFragment {
   // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
   // written — a conversion changes the binding of values and nothing about the
-  // distribution semantics (docs/ENVIRONMENT.md).
+  // distribution semantics.
   return sql`
     SELECT name, count() AS count
     FROM ${sql.id(TABLE.events)}
@@ -1118,14 +1115,14 @@ export function createCohortService(
    * Enqueue a recompute for a cohort.
    *
    * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
-   * short-circuit `add` for as long as *any* record for that id exists in
-   * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
-   * some other job in the queue finishing. That deadlocks: nothing can be
-   * added because the completed record is still there, and the record is
-   * never collected because nothing gets added. `deduplicationId`, in
-   * contrast, is released by `moveToFinished` on both completion and
-   * terminal failure, so it only collapses a compute that is genuinely still
-   * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
+   * short-circuit `add` for as long as *any* record for that id exists in Redis
+   * — and `removeOnComplete: { age }` is not a TTL, it only trims on some other
+   * job in the queue finishing. That deadlocks: nothing can be added because
+   * the completed record is still there, and the record is never collected
+   * because nothing gets added. `deduplicationId`, in contrast, is released by
+   * `moveToFinished` on both completion and terminal failure, so it only
+   * collapses a compute that is genuinely still in flight (ADR-005: "cohort
+   * must NOT be normalised onto jobId").
    */
   async function enqueueCompute(cohortId: string): Promise<void> {
     await deps.queues.cohortCompute.cohortCompute.add(

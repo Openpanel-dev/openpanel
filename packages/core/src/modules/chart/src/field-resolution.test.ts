@@ -2,20 +2,19 @@
  * Unit tests for the event-field resolution helpers.
  *
  * Background — these helpers exist because the chart, funnel, and conversion
- * services used to inline whatever field name the dashboard sent (saved
- * report, autocomplete picker, raw API call) directly into SQL. That worked
- * for the common case but produced UNKNOWN_IDENTIFIER errors when:
+ * services used to inline whatever field name the dashboard sent (saved report,
+ * autocomplete picker, raw API call) directly into SQL. That worked for the
+ * common case but produced UNKNOWN_IDENTIFIER errors when:
  *
- *  - older clients sent camelCase names (`referrerName`) that don't match
- *    the snake_case ClickHouse schema;
- *  - users picked utm_* in the property filter UI without realising those
- *    live in the `properties` map on the events table;
- *  - a saved report referenced a custom property (`temple_name`) as if it
- *    were a top-level column.
+ * Older clients sent camelCase names (`referrerName`) that don't match the
+ * snake_case ClickHouse schema; - users picked utm_* in the property filter UI
+ * without realising those live in the `properties` map on the events table; - a
+ * saved report referenced a custom property (`temple_name`) as if it were a
+ * top-level column.
  *
  * All five errors logged in HyperDX 2026-05-14 → 2026-05-17 are covered here.
  *
- * Ported from packages/db/src/services/chart-field-resolution.test.ts (M7-003).
+ * Ported from packages/db/src/services/chart-field-resolution.test.ts.
  */
 import { describe, expect, it } from 'bun:test';
 import { isKnownEventField, normalizeEventField } from './field-resolution';

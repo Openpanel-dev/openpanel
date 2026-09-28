@@ -1,6 +1,6 @@
 // Deployment-derived: the session cookie's domain and `secure` flag come from
 // the dashboard's own URL, so they are computed from the config the boot path
-// already holds rather than read at import (ADR-022 R7).
+// already holds rather than read at import.
 import type { CoreConfig } from '../../../config';
 import type { CookieOptions } from '../../../shared/cookie';
 import { parseCookieDomain } from './cookie-domain';

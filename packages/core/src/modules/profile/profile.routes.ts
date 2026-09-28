@@ -1,10 +1,10 @@
 // Ported from apps/api/src/routes/profile.router.ts +
-// apps/api/src/controllers/profile.controller.ts (M7-002). V1's Fastify
-// controller stays the LIVE route (DELEGATE PATTERN) and delegates its bodies
-// to profile.service.ts's `identifyProfile` / `adjustProfileProperty` — the
-// same functions these routes call. Status codes and text bodies (`202` +
-// profile id, `400 'No projectId'`, `404 'Not found'`, `400 'Not number'`)
-// match V1's `reply.status(..).send(..)` byte for byte.
+// apps/api/src/controllers/profile.controller.ts. V1's Fastify controller stays
+// the LIVE route (DELEGATE PATTERN) and delegates its bodies to
+// profile.service.ts's `identifyProfile` / `adjustProfileProperty` — the same
+// functions these routes call. Status codes and text bodies (`202` + profile
+// id, `400 'No projectId'`, `404 'Not found'`, `400 'Not number'`) match V1's
+// `reply.status(..).send(..)` byte for byte.
 //
 // `ingest` is V1's `clientHook` (the SDK credential rules); V1's `isBotHook`
 // and `subscriptionHook` on this router live in the ingest module, not this

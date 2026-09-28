@@ -1,19 +1,19 @@
-// Every ClickHouse query the session module runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/session.service.ts
-// and apps/worker/src/jobs/events.create-session-end.ts (M7-001): the SQL text
-// is V1's, with every value bound as a `{pN:Type}` parameter instead of an
-// escaped literal, and each conversion was proven byte-equivalent against the
-// local prod-copy (see the task report).
+// Every ClickHouse query the session module runs, as pure `sql` fragments.
+// Converted 1:1 from packages/db/src/services/session.service.ts and
+// apps/worker/src/jobs/events.create-session-end.ts: the SQL text is V1's, with
+// every value bound as a `{pN:Type}` parameter instead of an escaped literal,
+// and each conversion was proven byte-equivalent against the local prod-copy
+// (see the task report).
 //
 // Dates bind as V1's own `YYYY-MM-DD HH:mm:ss` strings on purpose: a String
 // param in a DateTime64 position is parsed exactly like the literal it
 // replaces, so the result sets cannot drift by a millisecond truncation.
 //
-// Cluster note (docs/ENVIRONMENT.md): `sessions` and `session_replay_chunks`
-// are Distributed on Cloud. The has_replay LEFT JOIN subquery and any
-// `IN (SELECT ...)` a filter compiles to keep V1's exact shape and run under
-// the client's `distributed_product_mode: 'allow'` as before — converting a
-// query is not the place to change its cluster semantics.
+// Cluster note: `sessions` and `session_replay_chunks` are Distributed on
+// Cloud. The has_replay LEFT JOIN subquery and any `IN (SELECT...)` a filter
+// compiles to keep V1's exact shape and run under the client's
+// `distributed_product_mode: 'allow'` as before — converting a query is not the
+// place to change its cluster semantics.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -134,11 +134,11 @@ function sessionListWindow(query: SessionListQuery): SqlFragment {
 }
 
 // No `FINAL`: it reads every column of the whole window and blocks
-// read-in-order (measured 1.1 s → 0.15 s on a large project). A +1 whose
-// `(id, version)` has a −1 is a pending collapse, which `FINAL` would have
-// removed. Plain `sign = 1` alone returns those stale rows, and `LIMIT 1 BY id`
-// drops the orphan +1 duplicates `FINAL` keeps. `GLOBAL` builds the −1 set once
-// on the initiator instead of once per shard (docs/ENVIRONMENT.md).
+// read-in-order (measured 1.1 s → 0.15 s on a large project). A +1 whose `(id,
+// version)` has a −1 is a pending collapse, which `FINAL` would have removed.
+// Plain `sign = 1` alone returns those stale rows, and `LIMIT 1 BY id` drops
+// the orphan +1 duplicates `FINAL` keeps. `GLOBAL` builds the −1 set once on
+// the initiator instead of once per shard.
 export function sessionListQuery(query: SessionListQuery): SqlFragment {
   const { projectId, take, lookbackDays, profileId, search } = query;
   const { filterClauses = {} } = query;

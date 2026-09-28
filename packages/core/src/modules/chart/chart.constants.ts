@@ -1,7 +1,7 @@
-// The chart module's isomorphic surface (ADR-022 R8): limits, zod schemas and
-// the column allow-lists shared by more than one file here. Imports zod and
-// sibling `*.constants.ts` only — anything needing `sql`, `deps` or a
-// ClickHouse type belongs in a service or a `src/` file.
+// The chart module's isomorphic surface: limits, zod schemas and the column
+// allow-lists shared by more than one file here. Imports zod and sibling
+// `*.constants.ts` only — anything needing `sql`, `deps` or a ClickHouse type
+// belongs in a service or a `src/` file.
 
 import { z } from 'zod';
 import { zChartEvent } from '../report/report.constants';
@@ -9,8 +9,8 @@ import { zChartEvent } from '../report/report.constants';
 /**
  * Window the REST retention routes (`/insights/:projectId/retention`,
  * `/engagement`) read when the caller names none; M31-003's default for the
- * same fix, wider than engagement's 60-day churn bucket. Not applied to
- * callers of the service that pass no dates: those still read all time.
+ * same fix, wider than engagement's 60-day churn bucket. Not applied to callers
+ * of the service that pass no dates: those still read all time.
  */
 export const RETENTION_SERIES_DEFAULT_RANGE = '3m';
 

@@ -1,6 +1,6 @@
-// ADR-022 R19: the classification is the whole point of the type, so the
-// boundaries (429 retryable, 4xx not, no status at all) are pinned here rather
-// than re-derived by every handler that reads the flag.
+// The classification is the whole point of the type, so the boundaries (429
+// retryable, 4xx not, no status at all) are pinned here rather than re-derived
+// by every handler that reads the flag.
 
 import { describe, expect, it } from 'bun:test';
 import {

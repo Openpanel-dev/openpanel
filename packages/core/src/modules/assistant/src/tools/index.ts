@@ -16,10 +16,10 @@ import * as ui from './ui';
 
 // A tool is BUILT per unit of work, from the `deps` the route already holds:
 // `@better-agent/core`'s tool-handler signature has no context parameter, so
-// each handler closes over them instead (ADR-022 R6/R15). The lists are typed
-// loosely as `(deps) => AgentToolDefinition` — without the cast, TypeScript
-// tries to compute the union of every tool's schema + result type and hits
-// its instantiation depth limit.
+// each handler closes over them instead (R15). The lists are typed loosely as
+// `(deps) => AgentToolDefinition` — without the cast, TypeScript tries to
+// compute the union of every tool's schema + result type and hits its
+// instantiation depth limit.
 type ToolFactory = (deps: ServiceDeps) => AgentToolDefinition;
 type ToolList = ToolFactory[];
 

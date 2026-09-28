@@ -10,7 +10,7 @@ import type { ServiceDeps } from '../services';
 /**
  * What a buffer needs from the boot scope. Buffers are built once by
  * `createBuffers(deps)` and hung on `AppDeps` — never module singletons, so a
- * test constructs its own and closes nothing shared (ADR-007).
+ * test constructs its own and closes nothing shared.
  */
 export interface BufferDeps {
   /**
@@ -20,11 +20,11 @@ export interface BufferDeps {
    */
   createLogger(name: string): Logger;
   /**
-   * The boot scope's ClickHouse client — the same round-robin/retry proxy
-   * every service reaches as `deps.ch`. M10-009: the buffers used to lazily
-   * `import('@openpanel/db/src/clickhouse/client')` for it, which constructed
-   * a second client (and a second pino transport) outside any scope. M15-004
-   * made it required: the one caller that had none
+   * The boot scope's ClickHouse client — the same round-robin/retry proxy every
+   * service reaches as `deps.ch`. M10-009: the buffers used to lazily
+   * `import('@openpanel/db/src/clickhouse/client')` for it, which constructed a
+   * second client (and a second pino transport) outside any scope. M15-004 made
+   * it required: the one caller that had none
    * (`apps/api/e2e/legacy-job-proof.ts`, a BullMQ-keys-only proof that never
    * flushes to ClickHouse) already passes the field, so the unscoped fallback
    * behind it had no live path left.
@@ -39,9 +39,9 @@ export interface BufferDeps {
   isCronPaused(): Promise<boolean>;
   /**
    * The parsed environment. Every buffer's batch/chunk/TTL knob used to be a
-   * module-scope `process.env` read; they arrive here instead (ADR-022 R7),
-   * which is also what lets a test build a buffer with a different sizing
-   * without touching the process environment.
+   * module-scope `process.env` read; they arrive here instead, which is also
+   * what lets a test build a buffer with a different sizing without touching
+   * the process environment.
    */
   config: CoreConfig;
 }

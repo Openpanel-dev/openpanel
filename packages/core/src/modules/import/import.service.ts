@@ -1,18 +1,18 @@
 // Moved from packages/db/src/services/import.service.ts (the ClickHouse
-// staging/session pipeline) + apps/worker/src/jobs/import.ts (the job body
-// and provider dispatch) + apps/api/src/controllers/import.controller.ts
-// (the /import/events bulk-insert path) — M5-004, ADR-008's module map:
-// import owns "S". packages/db/src/services/import.service.ts is deleted
-// outright: nothing outside the worker job file it moves with reached it
-// through @openpanel/db's barrel (same as cohort.service.ts, M5-003).
+// staging/session pipeline) + apps/worker/src/jobs/import.ts (the job body and
+// provider dispatch) + apps/api/src/controllers/import.controller.ts (the
+// /import/events bulk-insert path) — M5-004, ADR-008's module map: import owns
+// "S". packages/db/src/services/import.service.ts is deleted outright: nothing
+// outside the worker job file it moves with reached it through @openpanel/db's
+// barrel (same as cohort.service.ts).
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
+// Db/ch access is LAZY (`load*` below), not a static top-level import — see
 // gsc.service.ts's header for the full reasoning (jobs.registry.ts and
 // services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches). The provider classes are behind a dynamic `import()`
-// for the same reason: they eagerly import `formatClickhouseDate` from
-// @openpanel/db's clickhouse client, which constructs a real pino transport
-// at import time.
+// test file reaches). The provider classes are behind a dynamic `import` for
+// the same reason: they eagerly import `formatClickhouseDate` from
+// @openpanel/db's clickhouse client, which constructs a real pino transport at
+// import time.
 //
 // ClickHouse queries here still go through raw `ch`/`chQuery` calls, not the
 // `sql` tag: ADR-013 converts the analytics read path one query per P7 task,

@@ -1,28 +1,28 @@
 // Moved from packages/db/src/services/insights* + referrer-spikes.service.ts
-// (M5-001, the AI engine module). ADR-007: "Moves to core: src/services/**
-// (33 services + insights/)".
+// (the AI engine module). ADR-007: "Moves to core: src/services/** (33 services
+// + insights/)".
 //
 // Plain exported functions, not only methods on `createInsightService`'s
 // container — the same shape as modules/auth/auth.service.ts, because V1's
 // worker (apps/worker, no core Ctx today) and V1's trpc router both need a
-// direct call, not one that requires building a Ctx first. `createInsightService`
-// is the `ctx.services.insight` binding for code that already has a Ctx.
+// direct call, not one that requires building a Ctx first.
+// `createInsightService` is the `ctx.services.insight` binding for code that
+// already has a Ctx.
 //
-// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
-// as `deps.db` and ClickHouse as `deps.ch`; the `loadDb()`/`loadCh()` lazy
-// loaders are gone, so the requestId minted at the edge reaches the query
-// (ADR-018, docs/TECH_DEBT.md §4). M15-202 removed the last five `load*`
-// functions here — engine, store, detection modules, referrer spikes and the
-// legacy detector are all plain static imports of this module's own `src/`.
+// Every exported function takes `ServiceDeps` and reaches Postgres as `deps.db`
+// and ClickHouse as `deps.ch`; the `loadDb`/`loadCh` lazy loaders are gone, so
+// the requestId minted at the edge reaches the query. M15-202 removed the last
+// five `load*` functions here — engine, store, detection modules, referrer
+// spikes and the legacy detector are all plain static imports of this module's
+// own `src/`.
 //
-// M12-007: the engine and its five detection modules run on the `sql` tag
-// (ADR-013); `createEngine` therefore takes the scope's deps rather than a bare
-// ClickHouse client, so the requestId reaches every module statement.
-// `legacy-scan.ts` is the last clix holdout in this module (M12-008).
+// The engine and its five detection modules run on the `sql` tag;
+// `createEngine` therefore takes the scope's deps rather than a bare ClickHouse
+// client, so the requestId reaches every module statement. `legacy-scan.ts` is
+// the last clix holdout in this module.
 //
-// M15-114: the explain cache runs on `deps.redis` (ADR-022 R16) — the app
-// shell owns that connection's lifecycle; this module never opens one of
-// its own.
+// The explain cache runs on `deps.redis` — the app shell owns that connection's
+// lifecycle; this module never opens one of its own.
 
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';

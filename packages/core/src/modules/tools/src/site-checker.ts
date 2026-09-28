@@ -1,5 +1,5 @@
 // Ported verbatim from apps/api/src/controllers/tools.controller.ts's
-// `siteChecker` (M7-008).
+// `siteChecker`.
 
 import * as dns from 'node:dns/promises';
 import * as net from 'node:net';

@@ -6,8 +6,8 @@
 // `AppDeps` started carrying the real clients; before that, porting it would
 // have been a fake check rather than a deferred one. `/healthz/ready` never
 // waited for them: its two inputs are the shutdown flag and the events-consumer
-// heartbeat, both real from P9 (M9-002), and a readiness probe that ignores a
-// draining process is the one that actually loses requests.
+// heartbeat, both real from P9, and a readiness probe that ignores a draining
+// process is the one that actually loses requests.
 //
 // `GET /` lands here too: V1 served it from the public-API scope
 // (apps/api/src/app.ts:400), hidden from the OpenAPI document like the probes,
@@ -19,11 +19,11 @@ import { chQuery } from '../../ch-query';
 import { defineRoutes } from '../../http/define';
 import { currentReadiness } from './src/readiness';
 
-// The first zod schema through the OpenAPI plugin (ADR-003): response schemas
-// generate with `io: 'output'`, which is what zod 4's native Standard Schema
-// JSON conversion does by default for the `response` slot — no
-// `mapJsonSchema` override needed, and none is added, because that hook gets
-// no `io` argument and would collapse the input/output split the ADR requires.
+// The first zod schema through the OpenAPI plugin: response schemas generate
+// with `io: 'output'`, which is what zod 4's native Standard Schema JSON
+// conversion does by default for the `response` slot — no `mapJsonSchema`
+// override needed, and none is added, because that hook gets no `io` argument
+// and would collapse the input/output split the ADR requires.
 const healthLiveResponseSchema = z.object({ live: z.literal(true) });
 
 // V1's two readiness bodies, verbatim: `{ready:true}` at 200, and
@@ -86,9 +86,9 @@ export const healthRoutes = defineRoutes((app) =>
     .get(
       '/healthcheck',
       async ({ ctx, set }) => {
-        // core's own `chQuery` over `ctx.ch` — the same round-robin + retry
-        // proxy every real read takes (M10-009; `ctx.ch.query` IS
-        // `withRetry(client => client.query(...))`, see ch-query.ts).
+        // Core's own `chQuery` over `ctx.ch` — the same round-robin + retry
+        // proxy every real read takes (`ctx.ch.query` IS `withRetry(client =>
+        // client.query(...))`, see ch-query.ts).
         const [redisResult, dbResult, chResult] = await Promise.all([
           tryCatch(async () => (await ctx.redis.ping()) === 'PONG'),
           tryCatch(async () => Boolean(await ctx.db.$executeRaw`SELECT 1`)),

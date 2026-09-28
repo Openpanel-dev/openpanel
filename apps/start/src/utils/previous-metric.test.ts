@@ -1,8 +1,7 @@
 // Replaces utils/math.test.ts: the `shortId` it covered moved to
-// @openpanel/shared (M15-010) and is tested there
-// (packages/core/src/shared/id.test.ts). What is left in this file is the one
-// helper that stays duplicated between the dashboard and core, so it is the
-// one worth a test here.
+// @openpanel/shared and is tested there (packages/core/src/shared/id.test.ts).
+// What is left in this file is the one helper that stays duplicated between the
+// dashboard and core, so it is the one worth a test here.
 import { describe, expect, test } from 'vitest';
 import { getPreviousMetric } from './previous-metric';
 

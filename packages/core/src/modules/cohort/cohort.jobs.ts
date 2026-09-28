@@ -1,11 +1,11 @@
-// Ported from apps/worker/src/jobs/cohort.compute.ts + cron.cohort-refresh.ts
-// (M5-003); the schedule moved onto the job at ADR-021 (M10-007).
+// Ported from apps/worker/src/jobs/cohort.compute.ts + cron.cohort-refresh.ts;
+// the schedule moved onto the job at ADR-021.
 //
 // `cohortCompute` is this module's own queue — registry key `cohortCompute`
 // EXACTLY (ADR-005's acceptance note: no env rename, so
-// COHORTCOMPUTE_CONCURRENCY keeps working). `cohortRefresh` is a cron
-// fragment, spread into the ONE `cron` queue by jobs.registry.ts. Scheduler
-// id and cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
+// COHORTCOMPUTE_CONCURRENCY keeps working). `cohortRefresh` is a cron fragment,
+// spread into the ONE `cron` queue by jobs.registry.ts. Scheduler id and
+// cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

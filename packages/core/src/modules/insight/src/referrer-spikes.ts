@@ -1,11 +1,10 @@
-// M10-009: the ClickHouse CLIENT is `deps.ch` (the boot scope's round-robin
-// proxy), so the requestId minted at the edge reaches these queries (ADR-018).
-// Table names and the date helper are core's own copies
-// (shared/ch-tables.ts, shared/ch-dates.ts).
+// The ClickHouse CLIENT is `deps.ch` (the boot scope's round-robin proxy), so
+// the requestId minted at the edge reaches these queries. Table names and the
+// date helper are core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
 //
-// M12-002 converted these three queries off clix: `getRawWhereClause` now
-// returns a `SqlFragment` carrying bound params, and clix's `.execute()` has
-// no `query_params` slot to carry them through. clix always sent
+// Converted these three queries off clix: `getRawWhereClause` now returns a
+// `SqlFragment` carrying bound params, and clix's `.execute` has no
+// `query_params` slot to carry them through. clix always sent
 // `session_timezone` (query-builder.ts:562) — `chQuery` gets the same value.
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { chQuery } from '../../../ch-query';

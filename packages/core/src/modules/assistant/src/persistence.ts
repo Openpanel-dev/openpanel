@@ -6,7 +6,7 @@ import { chatRunContext } from './run-context';
 // `ConversationStore`'s `load`/`save` signatures are @better-agent/core's own
 // interface — betterAgent calls them with no `Ctx`/`ServiceDeps` to thread
 // through, so the store is BUILT from the deps the route already holds and
-// closes over them (ADR-022 R6/R15).
+// closes over them (R15).
 
 /**
  * Prisma-backed `ConversationStore` for Better Agent.

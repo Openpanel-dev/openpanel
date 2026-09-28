@@ -1,14 +1,13 @@
-// Ports apps/worker/src/boot-cron.ts onto BullMQ's job-scheduler API
-// (ADR-005). Upsert is keyed on job name — the V1 scheduler id — which is
-// what makes it idempotent across replicas: two processes upserting the same
-// id with the same repeat options at boot converge on one scheduler, with no
-// locking of our own needed.
+// Ports apps/worker/src/boot-cron.ts onto BullMQ's job-scheduler API. Upsert is
+// keyed on job name — the V1 scheduler id — which is what makes it idempotent
+// across replicas: two processes upserting the same id with the same repeat
+// options at boot converge on one scheduler, with no locking of our own needed.
 //
-// ADR-021: the scheduler list is no longer a second, hand-maintained registry
-// — it is derived from the `cron` queue's own jobs, so a job and its schedule
-// cannot drift apart. `schedulersFromRegistry` takes the registry's `cron`
-// queue as data; the registry itself calls it and exports the result as
-// `CRON_SCHEDULES`, so this file imports nothing above it (ADR-022 R22).
+// The scheduler list is no longer a second, hand-maintained registry — it is
+// derived from the `cron` queue's own jobs, so a job and its schedule cannot
+// drift apart. `schedulersFromRegistry` takes the registry's `cron` queue as
+// data; the registry itself calls it and exports the result as
+// `CRON_SCHEDULES`, so this file imports nothing above it.
 
 import type { Logger } from '../logger';
 import type { AnyJob, QueueDefinition, RepeatSchedule } from './define';
@@ -57,13 +56,13 @@ const CONFLICT_JOB_STATES = [
 const CONFLICT_ERROR_SUBSTRING = 'job ID already exists';
 
 /**
- * Derives the scheduler list from the `cron` queue's own jobs (ADR-021) — the
- * join is by construction now, not by a second registry kept in sync by a
- * test. A job's `cron` is `RepeatSchedule` (always-on), `null` (on-demand —
- * e.g. `ping`, scheduled conditionally elsewhere), or, on the `cron` queue,
- * never simply absent: `defineQueue`'s overload for that queue name makes
- * omitting it a type error. This throw is the defensive fallback for the one
- * hole the type system can't close — a value forced through with `as any`.
+ * Derives the scheduler list from the `cron` queue's own jobs — the join is by
+ * construction now, not by a second registry kept in sync by a test. A job's
+ * `cron` is `RepeatSchedule` (always-on), `null` (on-demand — e.g. `ping`,
+ * scheduled conditionally elsewhere), or, on the `cron` queue, never simply
+ * absent: `defineQueue`'s overload for that queue name makes omitting it a type
+ * error. This throw is the defensive fallback for the one hole the type system
+ * can't close — a value forced through with `as any`.
  */
 export function schedulersFromRegistry(
   cronQueue: QueueDefinition<Record<string, AnyJob>>
@@ -195,8 +194,8 @@ function upsert(
 ): Promise<unknown> {
   // Envelope-shaped for every scheduler-created job — these are freshly
   // enqueued, never a replay of a V1-shaped job, so there is nothing for the
-  // `cron` compat hook to do here (ADR-005: new data only, old shape read
-  // back through `resolveJob`).
+  // `cron` compat hook to do here (ADR-005: new data only, old shape read back
+  // through `resolveJob`).
   return queue.upsertJobScheduler(scheduler.id, scheduler.schedule, {
     data: wrap(null, {}),
   });

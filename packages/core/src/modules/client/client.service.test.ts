@@ -1,10 +1,10 @@
-// The subject is built by its factory over a fake `ServiceDeps` (M10-004), so
-// Postgres needs no module mock at all — `deps.db` IS the fake below, same
-// idiom as reference.service.test.ts. `@openpanel/redis` is still stubbed:
+// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
+// needs no module mock at all — `deps.db` IS the fake below, same idiom as
+// reference.service.test.ts. `@openpanel/redis` is still stubbed:
 // `getClientByIdCached` calls `cacheable(...)` inside `createClientService`
-// itself now (not at this module's import time), but the binding is
-// resolved at `client.service.ts`'s own import time, so the mock must still
-// land before that import — hence the `await import` in `beforeAll`.
+// itself now (not at this module's import time), but the binding is resolved at
+// `client.service.ts`'s own import time, so the mock must still land before
+// that import — hence the `await import` in `beforeAll`.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';

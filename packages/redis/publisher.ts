@@ -44,26 +44,26 @@ export function parsePublishedEvent<Channel extends keyof IPublishChannels>(
 type ChannelMessageListener = (message: string) => void;
 
 /**
- * Every subscriber in the process shares ONE ioredis connection
- * (`getRedisSub()`, a module-level singleton). SUBSCRIBE and UNSUBSCRIBE on it
- * are process-wide, so a per-subscriber UNSUBSCRIBE silences every other
- * subscriber on that channel — measured by M23-003 as F1: closing one `/live`
- * socket left every other open socket receiving nothing for 30 s, across
- * routes and across projects, because `/live/events` and `/live/visitors` both
- * ride `events:batch`.
+ * Every subscriber in the process shares ONE ioredis connection (`getRedisSub`,
+ * a module-level singleton). SUBSCRIBE and UNSUBSCRIBE on it are process-wide,
+ * so a per-subscriber UNSUBSCRIBE silences every other subscriber on that
+ * channel — measured by M23-003 as F1: closing one `/live` socket left every
+ * other open socket receiving nothing for 30 s, across routes and across
+ * projects, because `/live/events` and `/live/visitors` both ride
+ * `events:batch`.
  *
  * So the channel is reference-counted here rather than at each call site: the
- * wire SUBSCRIBE happens only on 0 -> 1 and the wire UNSUBSCRIBE only on
- * 1 -> 0. One `message` handler is installed on the shared connection for the
- * whole process and dispatches by channel name, which also keeps the
- * connection off Node's max-listeners warning as sockets accumulate.
+ * wire SUBSCRIBE happens only on 0 -> 1 and the wire UNSUBSCRIBE only on 1 ->
+ * 0. One `message` handler is installed on the shared connection for the whole
+ * process and dispatches by channel name, which also keeps the connection off
+ * Node's max-listeners warning as sockets accumulate.
  *
  * RECONNECT NEEDS NO HANDLING HERE. ioredis re-issues SUBSCRIBE for every
  * channel it believes it holds when the connection comes back
  * (`ioredis/built/redis/event_handler.js:254`, gated on `autoResubscribe`,
  * which defaults to `true` in `redis/RedisOptions.js:45` and is not overridden
- * for this client). Since the wire commands stay one-to-one with the 0 -> 1
- * and 1 -> 0 edges, ioredis's own set stays exactly the set of channels with a
+ * for this client). Since the wire commands stay one-to-one with the 0 -> 1 and
+ * 1 -> 0 edges, ioredis's own set stays exactly the set of channels with a
  * non-zero count. Confirmed live against the local server on 2026-09-15:
  * destroying the socket under a subscribed client and publishing after the
  * reconnect still delivered, with no re-subscribe from here.

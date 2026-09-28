@@ -1,12 +1,11 @@
 // Moved from packages/db/src/services/dashboard.service.ts, plus the
 // create/update/delete mutation bodies packages/trpc/src/routers/dashboard.ts
-// held inline (M7-006, ADR-008's module map: dashboard owns "R,S").
+// held inline (ADR-008's module map: dashboard owns "R,S").
 //
-// M10-003: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` / `loadIdService()` lazy loaders are gone, so
-// this module value-imports neither `@openpanel/db` nor its own package
-// barrel — the Prisma row types below are `import type`, erased at runtime
-// (docs/TECH_DEBT.md §4).
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb` / `loadIdService` lazy loaders are gone, so this module
+// value-imports neither `@openpanel/db` nor its own package barrel — the Prisma
+// row types below are `import type`, erased at runtime.
 
 import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';

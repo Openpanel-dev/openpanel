@@ -57,15 +57,14 @@ const mockGetDashboardById = mock();
 const mockGetProjectById = mock();
 const mockGetId = mock();
 
-// M15-003: Postgres arrives on `deps.db` (see TOOLS below), so the only
-// module mocks left are the three sibling functions this file asserts calls
-// against. Each is replaced at the specifier the source imports resolve to —
-// a whole-barrel replacement would drop every other export those modules
-// carry for any other file sharing this process (bun:test only isolates
-// modules per file under `--isolate`; see AGENTS.md) — and each is restored
-// in `afterAll` from a plain-object snapshot taken BEFORE the first
-// `mock.module` call, since restoring via the live `await import(...)`
-// binding is a no-op once mocked.
+// Postgres arrives on `deps.db` (see TOOLS below), so the only module mocks
+// left are the three sibling functions this file asserts calls against. Each is
+// replaced at the specifier the source imports resolve to — a whole-barrel
+// replacement would drop every other export those modules carry for any other
+// file sharing this process (bun:test only isolates modules per file under
+// `--isolate`; see AGENTS.md) — and each is restored in `afterAll` from a
+// plain-object snapshot taken BEFORE the first `mock.module` call, since
+// restoring via the live `await import(...)` binding is a no-op once mocked.
 const actualDashboardService = await import(
   '../../../dashboard/dashboard.service'
 );

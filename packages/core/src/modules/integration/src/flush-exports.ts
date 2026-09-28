@@ -1,5 +1,5 @@
-// Ported from apps/worker/src/jobs/cron.flush-exports.ts (M9-003, the wave that
-// deletes apps/worker). ADR-005's acceptance note gives `flushExports` to the
+// Ported from apps/worker/src/jobs/cron.flush-exports.ts (the wave that deletes
+// apps/worker). ADR-005's acceptance note gives `flushExports` to the
 // integration module. Behaviour is V1's, verbatim; Prisma, the ClickHouse
 // client and the object-store adapter factory arrive as injected deps so the
 // orchestration is testable without `mock.module` (same idiom as
@@ -173,10 +173,10 @@ export async function runFlushExportsCron(
     }
   }
 
-  // ADR-022 R19: the adapters classify, this reads the flag. A permanent
-  // refusal (bad bucket, revoked key) is logged and left alone — the next tick
-  // would refuse identically. A retryable one fails the job at the end, so a
-  // provider outage is visible rather than a green run that exported nothing.
+  // The adapters classify, this reads the flag. A permanent refusal (bad
+  // bucket, revoked key) is logged and left alone — the next tick would refuse
+  // identically. A retryable one fails the job at the end, so a provider outage
+  // is visible rather than a green run that exported nothing.
   let retryableFailures = 0;
   await runWithConcurrency(
     items,

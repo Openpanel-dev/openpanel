@@ -1,16 +1,15 @@
-// Every ClickHouse query the event module runs, as pure `sql` fragments
-// (ADR-013).
+// Every ClickHouse query the event module runs, as pure `sql` fragments.
 //
 // Dates bind as `YYYY-MM-DD HH:mm:ss` strings on purpose: a String param in a
 // DateTime64 position is parsed exactly like the literal it replaces, so the
 // result sets cannot drift by a millisecond truncation.
 //
-// Cluster note: `events`, `profiles`, `groups` and
-// `cohort_members` are Distributed on Cloud. The identity-stitching and cohort
-// `IN (SELECT ...)` subqueries, the profile/group LEFT ANY JOINs and any
-// `IN (SELECT ...)` a filter compiles keep V1's exact shape and run under the
-// client's `distributed_product_mode: 'allow'` as before — converting a query
-// is not the place to change its cluster semantics. Every `IN` list binds as
+// Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
+// Distributed on Cloud. The identity-stitching and cohort `IN (SELECT...)`
+// subqueries, the profile/group LEFT ANY JOINs and any `IN (SELECT...)` a
+// filter compiles keep V1's exact shape and run under the client's
+// `distributed_product_mode: 'allow'` as before — converting a query is not the
+// place to change its cluster semantics. Every `IN` list binds as
 // `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';

@@ -106,9 +106,9 @@ beforeAll(async () => {
   pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
-  // M15-003: the tools take `deps`/`services` as arguments, so the suite
-  // builds the same graph `mcp.routes.ts` hands them at runtime — no compat
-  // seam, no process-global registration.
+  // The tools take `deps`/`services` as arguments, so the suite builds the same
+  // graph `mcp.routes.ts` hands them at runtime — no compat seam, no
+  // process-global registration.
   const { testServiceDeps } = await import('../../../../../test/service-deps');
   const { createServices } = await import('../../../../services');
   const deps = await testServiceDeps();

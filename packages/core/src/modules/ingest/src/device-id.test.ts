@@ -2,8 +2,8 @@
  * Tests for getDeviceId's session resolution against the device-keyed session
  * store. The id is reused from the live blob only while it's within the idle
  * window; a lingering (past-window) blob must NOT be reused — see the guard in
- * device-id.ts. Override device ids resolve through the same path with a
- * single read.
+ * device-id.ts. Override device ids resolve through the same path with a single
+ * read.
  *
  * Moved from apps/api/src/utils/ids.test.ts with M8-002. The buffer is now an
  * argument, so the stub replaces V1's spy on the module singleton — same
@@ -140,12 +140,12 @@ describe('getDeviceId — session resolution', () => {
   });
 
   /**
-   * M18-003 made the cache client fail fast, so this read now rejects in
-   * microseconds instead of after ioredis's 20-attempt reconnect cycle. The
-   * degradation itself must be untouched: the api and the worker only agree on
-   * a session because they derive the SAME id from project/device/time bucket,
-   * so a faster failure that changed the id would split every session an
-   * outage touched.
+   * Made the cache client fail fast, so this read now rejects in microseconds
+   * instead of after ioredis's 20-attempt reconnect cycle. The degradation
+   * itself must be untouched: the api and the worker only agree on a session
+   * because they derive the SAME id from project/device/time bucket, so a
+   * faster failure that changed the id would split every session an outage
+   * touched.
    */
   it('mints the SAME deterministic id whether the session read misses or rejects', async () => {
     const { buffer: emptyStore } = stubBuffer(null);

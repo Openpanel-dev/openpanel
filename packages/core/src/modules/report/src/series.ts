@@ -1,9 +1,9 @@
-// The two pure series helpers V1 kept on `reports.service`. They live here,
-// not on report.service.ts, because the chart module needs them and
-// report.service.ts imports the chart engine — a static import back would
-// close a real cycle (report.service -> chart/funnel.service ->
-// report.service). Nothing here touches a database, so both sides stay
-// eager and neither needs a lazy loader (docs/TECH_DEBT.md §4 step 2).
+// The two pure series helpers V1 kept on `reports.service`. They live here, not
+// on report.service.ts, because the chart module needs them and
+// report.service.ts imports the chart engine — a static import back would close
+// a real cycle (report.service -> chart/funnel.service -> report.service).
+// Nothing here touches a database, so both sides stay eager and neither needs a
+// lazy loader.
 
 import type { IChartEventFilter, IChartEventItem } from '../report.constants';
 

@@ -26,9 +26,9 @@ function stubLogger(): Logger {
 }
 
 // A plain object literal, not createCtx/extendCtx: `services` is installed
-// there as a getter with no setter (the lazy-build seam, ADR-007), which
-// makes it unassignable afterwards — exactly what a fake `services.insight`
-// needs to be for a handler test.
+// there as a getter with no setter (the lazy-build seam), which makes it
+// unassignable afterwards — exactly what a fake `services.insight` needs to be
+// for a handler test.
 function stubJobCtx(
   insight: Partial<ReturnType<typeof createInsightService>>,
   jobName = 'test'
@@ -95,9 +95,9 @@ test('the insight jobs registry declares insightsProject on the insights queue',
 });
 
 test('the insight cron fragment is spread into the cron queue', () => {
-  // Subset, not exact equality: other modules (e.g. gsc, M5-002) spread
-  // their own fragments into the same cron queue. jobs.registry.test.ts owns
-  // the exhaustive membership check.
+  // Subset, not exact equality: other modules (e.g. gsc) spread their own
+  // fragments into the same cron queue. jobs.registry.test.ts owns the
+  // exhaustive membership check.
   expect(Object.keys(queues.cron.jobs)).toEqual(
     expect.arrayContaining(['insightCleanup', 'insightsDaily', 'weeklyDigest'])
   );
@@ -236,9 +236,9 @@ test('weeklyDigest delegates to sendWeeklyDigests', async () => {
   expect(called).toBe(true);
 });
 
-// Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot
-// pins (apps/worker/src/boot-cron.ts). The cadences now live on the jobs
-// themselves (ADR-021), so this reads them straight off the registry.
+// Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot pins
+// (apps/worker/src/boot-cron.ts). The cadences now live on the jobs themselves,
+// so this reads them straight off the registry.
 test('the insight cron fragment carries V1 ids and cadences unchanged', () => {
   expect(queues.cron.jobs.insightsDaily.cron).toEqual({
     pattern: '0 2 * * *',

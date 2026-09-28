@@ -98,8 +98,8 @@ export class S3Adapter implements IObjectStoreAdapter {
     // the network, and internal MinIO endpoints are a legitimate use.
     //
     // A refused endpoint is refused on every attempt, so it is classified
-    // permanent rather than left as a bare throw the caller would have to
-    // treat as retryable (ADR-022 R19).
+    // permanent rather than left as a bare throw the caller would have to treat
+    // as retryable.
     let addresses: string[] | null = null;
     if (this.config.endpoint) {
       try {

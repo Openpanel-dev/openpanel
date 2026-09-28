@@ -2,14 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
- * ADR-013 R1, the half the round-trip suite cannot reach: bound params must
- * travel through `withRetry` / round-robin, so a parameterised read keeps the
- * failover behaviour `chQueryWithMeta` already had for raw text.
+ * R1, the half the round-trip suite cannot reach: bound params must travel
+ * through `withRetry` / round-robin, so a parameterised read keeps the failover
+ * behaviour `chQueryWithMeta` already had for raw text.
  *
- * The setup is a two-node `CLICKHOUSE_URL` whose first node is dead. The
- * picker starts at index 0, so every query here fails over to node 1 — if the
- * params were dropped anywhere on the retry path, the second attempt would
- * return a different answer or an error instead of the payload.
+ * The setup is a two-node `CLICKHOUSE_URL` whose first node is dead. The picker
+ * starts at index 0, so every query here fails over to node 1 — if the params
+ * were dropped anywhere on the retry path, the second attempt would return a
+ * different answer or an error instead of the payload.
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';

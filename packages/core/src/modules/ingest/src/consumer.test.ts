@@ -1,12 +1,12 @@
 /**
- * Delivery contract of the Kafka events consumer (ADR-004): at-least-once.
- * An offset is resolved once its message has been handled, dead-lettered, or
- * deliberately skipped — never merely because it failed.
+ * Delivery contract of the Kafka events consumer: at-least-once. An offset is
+ * resolved once its message has been handled, dead-lettered, or deliberately
+ * skipped — never merely because it failed.
  *
- * Ported from apps/worker/src/jobs/events.kafka-consumer.test.ts (M8-003)
- * with the assertions unchanged. The batch handler is exercised directly with
- * injected dependencies; the broker, the metrics registry and `incomingEvent`
- * are all out of the picture — which is why no `mock.module` appears here.
+ * Ported from apps/worker/src/jobs/events.kafka-consumer.test.ts with the
+ * assertions unchanged. The batch handler is exercised directly with injected
+ * dependencies; the broker, the metrics registry and `incomingEvent` are all
+ * out of the picture — which is why no `mock.module` appears here.
  */
 
 import { describe, expect, mock, test } from 'bun:test';
@@ -323,8 +323,8 @@ describe('handler failure', () => {
 
     await handler.eachBatch(payload);
 
-    // Dropped WITHOUT being recorded — and still acked. Holding the offset
-    // back here is what rebuilt the redelivery loop (M20-001, gate M20).
+    // Dropped WITHOUT being recorded — and still acked. Holding the offset back
+    // here is what rebuilt the redelivery loop (gate M20).
     expect(metrics.deadLetterFailed).toHaveBeenCalledWith(String(PARTITION));
     expect(metrics.deadLettered).not.toHaveBeenCalled();
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
@@ -372,15 +372,15 @@ describe('unparseable messages', () => {
 });
 
 /**
- * M21-001 deleted the offset watermark, whose only outputs were the
- * `reprocessed` counter and a warn line — drill 08 measured 161 real
- * duplicates and 0 of those lines, because `resetWatermarks()` fired on
- * GROUP_JOIN and a failed durability flush never advanced it.
+ * Deleted the offset watermark, whose only outputs were the `reprocessed`
+ * counter and a warn line — drill 08 measured 161 real duplicates and 0 of
+ * those lines, because `resetWatermarks` fired on GROUP_JOIN and a failed
+ * durability flush never advanced it.
  *
  * These are the regression tests for the half of that claim that matters: the
  * functional statement in the resolve loop was always `resolveOffset(m.offset)`
- * and never read the watermark, so a redelivery must resolve and commit
- * exactly what it did before.
+ * and never read the watermark, so a redelivery must resolve and commit exactly
+ * what it did before.
  */
 describe('a redelivery after the watermark was deleted', () => {
   test('resolves every offset again, in ascending order', async () => {
@@ -441,15 +441,15 @@ describe('a redelivery after the watermark was deleted', () => {
 });
 
 /**
- * The regression test for drill 03's loss (M18-001).
+ * The regression test for drill 03's loss.
  *
  * The event a handler accepted lives in an in-process array until the buffer
  * pushes it to Redis, and kafkajs commits whatever `resolveOffset` marked the
- * moment `eachBatch` returns — `autoCommit` is on and this consumer never
- * turns it off, so `consumer.stop()` is NOT the commit point. Resolving an
- * offset for an event that is still only in memory is exactly how a graceful
- * restart lost 2 of 44,075 events: the offsets were committed, the process
- * exited, and nothing was redelivered.
+ * moment `eachBatch` returns — `autoCommit` is on and this consumer never turns
+ * it off, so `consumer.stop` is NOT the commit point. Resolving an offset for
+ * an event that is still only in memory is exactly how a graceful restart lost
+ * 2 of 44,075 events: the offsets were committed, the process exited, and
+ * nothing was redelivered.
  *
  * `resolveOffset` is therefore the commit in these tests. It is the only thing
  * that decides what gets committed.
@@ -539,10 +539,9 @@ describe('durability before commit', () => {
   });
 
   test('opens the durability window before the first handler buffers anything', async () => {
-    // The window's lower bound is what makes the gate answer for THIS batch:
-    // a failed write drops the events it knows the broker will redeliver, so
-    // "everything queued is settled" is no longer "my events are in Redis"
-    // (M18-007).
+    // The window's lower bound is what makes the gate answer for THIS batch: a
+    // failed write drops the events it knows the broker will redeliver, so
+    // "everything queued is settled" is no longer "my events are in Redis".
     let handled = 0;
     let handledWhenOpened = -1;
     const { deps, openDurabilityWindow } = makeDeps({
@@ -566,9 +565,9 @@ describe('durability before commit', () => {
 
   test('a failed flush resolves NOTHING, so a redelivery is guaranteed', async () => {
     // Asserted directly rather than left to the drill. With the re-queue gone
-    // (M18-007) the only thing standing between a failed flush and a lost
-    // batch is that its offsets are never resolved — every message, not just
-    // the tail, and regardless of how many of them the handlers finished.
+    // the only thing standing between a failed flush and a lost batch is that
+    // its offsets are never resolved — every message, not just the tail, and
+    // regardless of how many of them the handlers finished.
     const { deps, handleEvent } = makeDeps({
       flushBufferedEvents: mock(() =>
         Promise.reject(new Error('redis is unreachable'))
@@ -689,10 +688,10 @@ describe('durability before commit', () => {
 });
 
 /**
- * M20-001 end to end: the consumer wired to the REAL capped-list recorder
+ * End to end: the consumer wired to the REAL capped-list recorder
  * (`@openpanel/redis`'s `createDeadLetterRecorder`) instead of a mock, against
- * an in-memory stand-in for the one MULTI it issues. Redis itself is out of
- * the picture; the LPUSH/LTRIM arithmetic is not.
+ * an in-memory stand-in for the one MULTI it issues. Redis itself is out of the
+ * picture; the LPUSH/LTRIM arithmetic is not.
  */
 describe('dead letter to a capped redis list', () => {
   const LIST_KEY = 'dead_letter:events-test';

@@ -1,7 +1,7 @@
 // The overview module's one ClickHouse entry point.
 //
-// M10-005: the client is `deps.ch` — the same round-robin/retry proxy
-// `main.ts` builds and hands to every scope — instead of a lazy
+// The client is `deps.ch` — the same round-robin/retry proxy `main.ts` builds
+// and hands to every scope — instead of a lazy
 // `import('@openpanel/db/src/clickhouse/client')`. `OverviewService` /
 // `PagesService` were classes carrying a caller-supplied client precisely
 // because there was no scope to reach one through; there is now, so both are

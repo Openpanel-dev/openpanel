@@ -1,6 +1,6 @@
 // The composition root (ADR-007 build step 4). `auth` is the first module to
-// land here (M4-007); the Ctx <-> Services circularity was proven compiling
-// before it with an empty interface.
+// land here; the Ctx <-> Services circularity was proven compiling before it
+// with an empty interface.
 
 import type { Ctx } from './context';
 import { createAssistantService } from './modules/assistant/assistant.service';
@@ -79,11 +79,11 @@ export interface Services {
   profile: ReturnType<typeof createProfileService>;
   group: ReturnType<typeof createGroupService>;
   chart: ReturnType<typeof createChartService>;
-  // One key per `*.service.ts` (M10-009): the chart module is four files
-  // besides `chart.service.ts`, so each is bound here too. `chart` keeps the
-  // composed facade its own callers already use — the factories build stateless
-  // closures over `deps`, so binding a sub-module twice binds the same
-  // functions, not a second piece of state.
+  // One key per `*.service.ts`: the chart module is four files besides
+  // `chart.service.ts`, so each is bound here too. `chart` keeps the composed
+  // facade its own callers already use — the factories build stateless closures
+  // over `deps`, so binding a sub-module twice binds the same functions, not a
+  // second piece of state.
   funnel: ReturnType<typeof createFunnelService>;
   conversion: ReturnType<typeof createConversionService>;
   sankey: ReturnType<typeof createSankeyService>;
@@ -109,8 +109,8 @@ export interface Services {
 
 // Stays a hoisted `function` declaration, not a `const` arrow: the one static
 // ESM cycle that ran through it died with the compat seam at M15-005, but a
-// `const` here would still put any future cycle in a temporal dead zone that
-// no typecheck reports and that fails at process boot.
+// `const` here would still put any future cycle in a temporal dead zone that no
+// typecheck reports and that fails at process boot.
 export function createServices(deps: ServiceDeps): Services {
   // The thunk is captured, not copied, so two services may call each other
   // without a cycle: `container` is assigned before any thunk body can run,

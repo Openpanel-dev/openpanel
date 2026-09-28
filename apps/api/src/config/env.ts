@@ -1,31 +1,30 @@
 // The sole `process.env` READER on the V2 boot path, and since M15-006 that is
-// true rather than aspirational: `packages/core` reads none (ADR-022 R7), so
-// every variable core used to read itself is parsed here and travels down as
-// `AppDeps.config` (`CoreConfig`). The one other `process.env` touch on the
-// path is `main.ts`'s `process.env.TZ = 'UTC'` write, which sets the process's
-// timezone rather than reading configuration. `packages/db` and
-// `packages/redis` keep reading their own connection env until they grow
-// factories — an accepted pragmatic deviation (ADR-007 §7).
+// true rather than aspirational: `packages/core` reads none, so every variable
+// core used to read itself is parsed here and travels down as `AppDeps.config`
+// (`CoreConfig`). The one other `process.env` touch on the path is `main.ts`'s
+// `process.env.TZ = 'UTC'` write, which sets the process's timezone rather than
+// reading configuration. `packages/db` and `packages/redis` keep reading their
+// own connection env until they grow factories — an accepted pragmatic
+// deviation (ADR-007 §7).
 //
-// The shape is ADR-022 R17's, in this order:
-//   1. one zod object over the raw environment;
-//   2. every cross-field invariant as a `.superRefine` BEFORE the transform,
-//      so a contradiction is named at boot rather than discovered at runtime;
-//   3. one `.transform` that computes every derived value — URLs, namespaces,
-//      IS_PRODUCTION, the listen address, the concurrency map — so nothing
-//      downstream re-derives one;
-//   4. `loadConfig(source = process.env)`, so a test hands in a minimal object.
+// The shape is ADR-022 R17's, in this order: 1. one zod object over the raw
+// environment; 2. every cross-field invariant as a `.superRefine` BEFORE the
+// transform, so a contradiction is named at boot rather than discovered at
+// runtime; 3. one `.transform` that computes every derived value — URLs,
+// namespaces, IS_PRODUCTION, the listen address, the concurrency map — so
+// nothing downstream re-derives one; 4. `loadConfig(source = process.env)`, so
+// a test hands in a minimal object.
 //
 // A blank `KEY=` is absent everywhere: `blankToUndefined` runs in front of
-// every field, so `.default()` fires on an empty value exactly as it does on
-// an unset one.
+// every field, so `.default` fires on an empty value exactly as it does on an
+// unset one.
 //
-// Invalid config fails boot loudly, with every issue reported at once — never
-// a fail-fast on the first bad var. Two classes, deliberately different:
-//   - boot-critical values (roles, queues, Kafka wiring) FAIL;
-//   - tuning knobs (batch sizes, limits, TTLs) fall back to the module's own
-//     documented default on a malformed value, which is what the modules did
-//     when they parsed these themselves.
+// Invalid config fails boot loudly, with every issue reported at once — never a
+// fail-fast on the first bad var. Two classes, deliberately different: -
+// boot-critical values (roles, queues, Kafka wiring) FAIL; - tuning knobs
+// (batch sizes, limits, TTLs) fall back to the module's own documented default
+// on a malformed value, which is what the modules did when they parsed these
+// themselves.
 
 import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
@@ -71,14 +70,14 @@ const DEFAULT_KAFKA_PRODUCER_MAX_IN_FLIGHT = 1;
 const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 25;
 /**
  * A partial batch's maximum wait. The linger is added to the request's own
- * response time, so ADR-023 takes 5 ms (82% of the available gain) over the
- * 25 ms that would roughly double a quiet install's ingest latency.
+ * response time, so ADR-023 takes 5 ms (82% of the available gain) over the 25
+ * ms that would roughly double a quiet install's ingest latency.
  */
 const DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS = 5;
 const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
 /**
- * How many dead-lettered events the capped Redis list keeps (M20-001). A
- * debugging sample, not a recovery mechanism — the volume is in
+ * How many dead-lettered events the capped Redis list keeps. A debugging
+ * sample, not a recovery mechanism — the volume is in
  * `kafka_events_dead_lettered_total`. Carl's "only keep the last N events".
  */
 const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
@@ -87,26 +86,26 @@ const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
 
 /**
- * How long a duplicate marker outlives its event (M21-001). It only has to
- * outlive the REPLAY window, not the data: drill 08's eviction rejoin — the
- * one reassignment that costs duplicate rows — was 3,094 ms, and drill 06's
- * lost-ACK replay landed ~30 s after the produce. Two minutes is ~40x the
- * first and 4x the second, and covers a process restart resuming from its last
+ * How long a duplicate marker outlives its event. It only has to outlive the
+ * REPLAY window, not the data: drill 08's eviction rejoin — the one
+ * reassignment that costs duplicate rows — was 3,094 ms, and drill 06's
+ * lost-ACK replay landed ~30 s after the produce. Two minutes is ~40x the first
+ * and 4x the second, and covers a process restart resuming from its last
  * committed offset.
  *
  * It is the knob that decides the key count, which is `events/s x TTL`: at the
  * 5,000 events/s the scaling requirement targets that is 600,000 live markers.
- * Measured on this box's Redis 2026-09-14 — 200,000 real markers cost
- * 137.6 bytes each including the expires dict — so ~79 MB. Longer is only
- * worth buying if a redelivery window longer than this is ever observed.
+ * Measured on this box's Redis 2026-09-14 — 200,000 real markers cost 137.6
+ * bytes each including the expires dict — so ~79 MB. Longer is only worth
+ * buying if a redelivery window longer than this is ever observed.
  */
 const DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS = 120_000;
 
 /**
- * The Kafka events consumer's token. Renamed from `events_kafka` — there is
- * one events transport now, so there is one token for it (ADR-004 rec 5/6,
- * docs/ANSWERS.md §1.3). Carl updates the cloud env at cutover, which is why
- * the old spelling gets its own message below rather than being aliased.
+ * The Kafka events consumer's token. Renamed from `events_kafka` — there is one
+ * events transport now, so there is one token for it (ADR-004 rec 5/6). Carl
+ * updates the cloud env at cutover, which is why the old spelling gets its own
+ * message below rather than being aliased.
  */
 export const KAFKA_QUEUE_TOKEN = 'events';
 
@@ -124,7 +123,7 @@ const RENAMED_QUEUE_TOKENS: Record<string, string> = {
 };
 
 /** V1's `getConcurrencyFor` key derivation, verbatim — `cohortCompute` keeps
- *  reading `COHORTCOMPUTE_CONCURRENCY` (ADR-005 acceptance note: no rename). */
+ * Reading `COHORTCOMPUTE_CONCURRENCY` (ADR-005 acceptance note: no rename). */
 const NON_ENV_KEY_CHARS = /[^A-Z0-9]/g;
 
 export function concurrencyEnvKey(queueName: string): string {
@@ -306,15 +305,15 @@ const roleSchema = z.preprocess(
         });
       }
     })
-    // Refine before transform (ADR-022 R17): the cast is only ever observed
-    // once the refinement above has already accepted the value.
+    // Refine before transform: the cast is only ever observed once the
+    // refinement above has already accepted the value.
     .transform((value) => value as Role)
 );
 
 /**
- * Same doctrine as ROLE: an unknown token fails boot loudly rather than
- * leaving a worker silently idle (V1 ignored it — boot-workers.ts:78-87 —
- * which docs/ANSWERS.md §1.3 rules must change). Unset means all of them.
+ * Same doctrine as ROLE: an unknown token fails boot loudly rather than leaving
+ * a worker silently idle (V1 ignored it — boot-workers.ts:78-87 — which
+ * docs/ANSWERS.md §1.3 rules must change). Unset means all of them.
  */
 const enabledQueuesSchema = z.preprocess(
   blankToUndefined,
@@ -377,10 +376,10 @@ const rawSchema = z.object({
    */
   API_HOST: optionalString,
   /**
-   * One truthiness rule for the whole tree (M15-006). Core used to read this
-   * three different ways — `=== 'true'`, `'true' || '1'`, and any truthy
-   * string — so a `SELF_HOSTED=1` deployment got the SSRF guard dropped but
-   * kept the cloud-only cron jobs. `true` or `1`, everywhere.
+   * One truthiness rule for the whole tree. Core used to read this three
+   * different ways — `=== 'true'`, `'true' || '1'`, and any truthy string — so
+   * a `SELF_HOSTED=1` deployment got the SSRF guard dropped but kept the
+   * cloud-only cron jobs. `true` or `1`, everywhere.
    */
   SELF_HOSTED: trueOrOneSchema,
   SHUTDOWN_FORCE_EXIT_MS: z.preprocess(
@@ -420,8 +419,8 @@ const rawSchema = z.object({
   DASHBOARD_URL: optionalString,
   API_CORS_ORIGINS: optionalString,
   /**
-   * Signs the three GSC OAuth cookies. Always set in a real deployment
-   * (docs/ANSWERS.md §1.5); an unset value degrades to V1's `?? ''`.
+   * Signs the three GSC OAuth cookies. Always set in a real deployment; an
+   * unset value degrades to V1's `?? ''`.
    */
   COOKIE_SECRET: z.preprocess(
     blankToUndefined,
@@ -987,10 +986,10 @@ export interface Config {
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
   /**
-   * The dead-letter list's cap (M20-001). It sits here rather than in
-   * `core.kafka` because the destination is no longer Kafka: `apps/api`
-   * chooses the dead-letter sink, and `packages/core` only knows the
-   * `sendToDeadLetter` seam it is handed.
+   * The dead-letter list's cap. It sits here rather than in `core.kafka`
+   * because the destination is no longer Kafka: `apps/api` chooses the
+   * dead-letter sink, and `packages/core` only knows the `sendToDeadLetter`
+   * seam it is handed.
    */
   INGEST_DEAD_LETTER_MAX_ENTRIES: number;
   /**
@@ -1016,8 +1015,8 @@ export interface Config {
 }
 
 const envSchema = rawSchema
-  // Every cross-field invariant runs BEFORE the transform (ADR-022 R17), so
-  // the derivations below can assume a coherent environment.
+  // Every cross-field invariant runs BEFORE the transform, so the derivations
+  // below can assume a coherent environment.
   .superRefine((raw, ctx) => {
     checkRoleConsumesSomething(raw, ctx);
     checkOtlpHasKey(raw, ctx);

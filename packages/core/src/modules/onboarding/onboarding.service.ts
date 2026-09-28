@@ -1,14 +1,14 @@
-// New module (M6-003): the onboarding-project mutation inline in
+// New module: the onboarding-project mutation inline in
 // packages/trpc/src/routers/onboarding.ts, plus the onboarding email drip
 // inline in apps/worker/src/jobs/cron.onboarding.ts. Neither had a
-// packages/db/src/services/* home to move from — written directly here,
-// same shape as auth.service.ts's Prisma-touching half (M6-003). DELEGATE
-// PATTERN: V1's trpc router and cron job, and this package's own
+// packages/db/src/services/* home to move from — written directly here, same
+// shape as auth.service.ts's Prisma-touching half. DELEGATE PATTERN: V1's trpc
+// router and cron job, and this package's own
 // onboarding.rpc.ts/onboarding.jobs.ts, all call these same functions.
 //
-// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
-// as `deps.db`; the `loadDb()` lazy loader is gone, so the requestId minted at
-// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4).
+// Every exported function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb` lazy loader is gone, so the requestId minted at the
+// edge reaches the query.
 
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';

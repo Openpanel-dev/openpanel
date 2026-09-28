@@ -1,13 +1,13 @@
-// One `Ctx` per Kafka message, so the consumer's `handleEvent` is the same
-// kind of work scope an HTTP request or a job run is (ADR-007).
+// One `Ctx` per Kafka message, so the consumer's `handleEvent` is the same kind
+// of work scope an HTTP request or a job run is.
 //
 // The requestId comes out of the envelope's `headers` map — the copy `/track`
 // puts there, which ADR-018 R3 keeps as the consumer's source — and is
-// sanitised exactly as an inbound HTTP `request-id` is, because it lands in
-// the same log storage. Before M10-006 the handler read it only to bind a
-// `reqId` log field: the ClickHouse writes, the buffer writes and the
-// session-end enqueue the message caused all ran on boot-scoped clients, so
-// the chain ended at the log line (docs/TECH_DEBT.md §2).
+// sanitised exactly as an inbound HTTP `request-id` is, because it lands in the
+// same log storage. Before M10-006 the handler read it only to bind a `reqId`
+// log field: the ClickHouse writes, the buffer writes and the session-end
+// enqueue the message caused all ran on boot-scoped clients, so the chain ended
+// at the log line.
 
 import { type AppDeps, createCtx } from '../../../context';
 import { REQUEST_ID_HEADER, REQUEST_ID_LOG_FIELD } from '../../../logger';

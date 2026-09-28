@@ -1,5 +1,4 @@
-// The tRPC mount: the official fetch adapter, one handler, one `onError`
-// (ADR-009).
+// The tRPC mount: the official fetch adapter, one handler, one `onError`.
 //
 // Three of the four `onError` branches are V1's (apps/api/src/app.ts:175-206)
 // with one change and no others: the fields come from `ctx` and the `Request`,

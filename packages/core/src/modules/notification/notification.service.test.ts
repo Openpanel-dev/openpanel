@@ -43,10 +43,10 @@ function makeRule(overrides: Partial<FakeRule> & { id: string }): FakeRule {
 }
 
 const publishedEvents: unknown[] = [];
-// M10-009: spread a plain-object SNAPSHOT of the real module and restore it in
-// afterAll — `mock.module` has no per-file scope under bare `bun test`
-// (AGENTS.md), and a partial factory deletes `getRedisCache` and friends for
-// every file that runs next.
+// Spread a plain-object SNAPSHOT of the real module and restore it in afterAll
+// — `mock.module` has no per-file scope under bare `bun test` (AGENTS.md), and
+// a partial factory deletes `getRedisCache` and friends for every file that
+// runs next.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
@@ -124,10 +124,9 @@ const project = {
   findUniqueOrThrow: mock(async () => ({ organizationId: 'org_1' })),
 };
 
-// M10-009: every function under test takes `ServiceDeps`, so `deps.db` IS the
-// fake below. The `@openpanel/db/src/prisma-client` mock stays for
-// `Prisma.JsonNull` / `Prisma.DbNull`, which `prismaSentinels()` reads from
-// that module.
+// Every function under test takes `ServiceDeps`, so `deps.db` IS the fake
+// below. The `@openpanel/db/src/prisma-client` mock stays for `Prisma.JsonNull`
+// / `Prisma.DbNull`, which `prismaSentinels` reads from that module.
 const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
   ...actualPrismaClient,

@@ -85,9 +85,9 @@ const project = {
   findUnique: mock(async ({ where: { id } }: { where: { id: string } }) =>
     id === 'proj_missing' ? null : { id, organizationId: 'org_1' }
   ),
-  // `resolveGscDateRange` reaches organization.service's `getSettingsForProject`
-  // over the SAME deps (M10-009), which reads the project's organization
-  // rather than going through a mocked module.
+  // `resolveGscDateRange` reaches organization.service's
+  // `getSettingsForProject` over the SAME deps, which reads the project's
+  // organization rather than going through a mocked module.
   findUniqueOrThrow: mock(async () => ({
     organization: { timezone: 'UTC' },
   })),
@@ -99,12 +99,11 @@ const ch = {
   insert: mock(async () => undefined),
 };
 
-// M10-009: the subject's functions take `ServiceDeps`, so `deps.db`/`deps.ch`
-// ARE the fakes above — no `@openpanel/db` module mock is needed for either.
-// The one module still mocked is core's own `ch-query`, which is what
-// the subject now calls.
-// `mock.module` has no per-file scope under bare `bun test` (AGENTS.md), so
-// snapshot the real module into a plain object FIRST and restore it in
+// The subject's functions take `ServiceDeps`, so `deps.db`/`deps.ch` ARE the
+// fakes above — no `@openpanel/db` module mock is needed for either. The one
+// module still mocked is core's own `ch-query`, which is what the subject now
+// calls. `mock.module` has no per-file scope under bare `bun test` (AGENTS.md),
+// so snapshot the real module into a plain object FIRST and restore it in
 // afterAll — restoring via the live import binding would re-apply the mock.
 const realChQuery = { ...(await import('../../ch-query')) };
 mock.module('../../ch-query', () => ({
@@ -153,11 +152,11 @@ const validateAuthorizationCode = mock(async () => ({
   accessTokenExpiresAt: () => new Date('2026-09-04T00:00:00.000Z'),
 }));
 // Spread the real module — see the clickhouse/client mock above for why a
-// partial factory here is a process-wide hazard, not a local one. Surfaced
-// by M6-001: @openpanel/db's organization.service.ts shim (imported below)
-// now re-exports from @openpanel/core's full barrel, which reaches this
-// same auth.service.ts for createAuthService — a partial replacement here
-// used to be invisible because nothing else in this file's chain needed it.
+// partial factory here is a process-wide hazard, not a local one. Surfaced by
+// M6-001: @openpanel/db's organization.service.ts shim (imported below) now
+// re-exports from @openpanel/core's full barrel, which reaches this same
+// auth.service.ts for createAuthService — a partial replacement here used to be
+// invisible because nothing else in this file's chain needed it.
 const actualAuthService = await import('../auth/auth.service');
 mock.module('../auth/auth.service', () => ({
   ...actualAuthService,
@@ -171,12 +170,12 @@ const getChartStartEndDate = mock(() => ({
   startDate: '2026-09-01T00:00:00.000Z',
   endDate: '2026-09-03T00:00:00.000Z',
 }));
-// M10-009: `resolveGscDateRange` reaches these two through the DEEP modules
-// they live in, not through this package's barrel (`core-no-self-barrel`), so
-// that is what has to be mocked — mocking `@openpanel/core` would no longer
-// intercept anything. Each factory spreads its real module: `mock.module`
-// replaces a specifier process-wide under bare `bun test` (AGENTS.md), and
-// both are restored from a plain-object snapshot in afterAll below.
+// `resolveGscDateRange` reaches these two through the DEEP modules they live
+// in, not through this package's barrel (`core-no-self-barrel`), so that is
+// what has to be mocked — mocking `@openpanel/core` would no longer intercept
+// anything. Each factory spreads its real module: `mock.module` replaces a
+// specifier process-wide under bare `bun test` (AGENTS.md), and both are
+// restored from a plain-object snapshot in afterAll below.
 const realOrganizationService = {
   ...(await import('../organization/organization.service')),
 };

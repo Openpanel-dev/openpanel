@@ -1,16 +1,16 @@
 // Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts (M8-004).
+// apps/worker/src/jobs/cron.salt.ts.
 //
-// M10-004: reaches Postgres as `deps.db`, no `@openpanel/db` import left.
-// `main.ts` passes its own `deps` to `createInitialSalts` at boot;
-// `salt.jobs.ts`'s handler passes its `JobCtx` (a `ServiceDeps` by
-// construction) to `rotateSalt`.
+// Reaches Postgres as `deps.db`, no `@openpanel/db` import left. `main.ts`
+// passes its own `deps` to `createInitialSalts` at boot; `salt.jobs.ts`'s
+// handler passes its `JobCtx` (a `ServiceDeps` by construction) to
+// `rotateSalt`.
 //
-// M15-005: `getSalts` is a module-scope `cacheablePerDb`, keyed on the
-// Postgres client rather than on the scope — its L1 LRU has to survive across
-// calls to be worth anything, and `ingest.service.ts`'s `/track` hot path now
-// passes the scope it holds instead of reading a boot-scoped singleton through
-// the deleted compat seam. `generateNewSalt` clears the same instance.
+// `getSalts` is a module-scope `cacheablePerDb`, keyed on the Postgres client
+// rather than on the scope — its L1 LRU has to survive across calls to be worth
+// anything, and `ingest.service.ts`'s `/track` hot path now passes the scope it
+// holds instead of reading a boot-scoped singleton through the deleted compat
+// seam. `generateNewSalt` clears the same instance.
 
 import { generateSalt } from '@openpanel/shared/server';
 import { cacheablePerDb } from '../../cacheable-per-deps';

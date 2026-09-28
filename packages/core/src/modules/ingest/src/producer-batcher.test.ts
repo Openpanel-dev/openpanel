@@ -3,12 +3,12 @@
  * Batching exists to amortise the produce round-trip, and it is only adoptable
  * if it changes nothing a caller can observe:
  *
- *   (i)   per-key ordering survives — same-key messages leave in produce
- *         order, inside one `send()` and across consecutive sends;
- *   (ii)  a caller's promise settles on its OWN batch, so a failed send
- *         rejects exactly the callers whose messages were in it;
- *   (iii) a partially filled batch still goes out inside the linger window;
- *   (iv)  a failed batch still runs the fatal-producer recovery path.
+ * (i) per-key ordering survives — same-key messages leave in produce order,
+ * inside one `send` and across consecutive sends; (ii) a caller's promise
+ * settles on its OWN batch, so a failed send rejects exactly the callers whose
+ * messages were in it; (iii) a partially filled batch still goes out inside the
+ * linger window; (iv) a failed batch still runs the fatal-producer recovery
+ * path.
  *
  * No broker: `send` is injected, which is the same seam `kafka.ts` fills with
  * the real producer call.

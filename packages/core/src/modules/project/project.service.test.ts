@@ -1,12 +1,12 @@
-// The subject is built by its factory over a fake `ServiceDeps` (M10-004), so
-// Postgres needs no module mock at all — `deps.db` IS the fake below, same
-// idiom as reference.service.test.ts. `getProjectEventsCount` /
-// `getLastEventPerProject` (ClickHouse) stay a verbatim, still-lazy-loaded
-// port with unchanged SQL (ADR-013 converts them in P7) — executed against
-// local ClickHouse for this task's verification, not re-tested here.
+// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
+// needs no module mock at all — `deps.db` IS the fake below, same idiom as
+// reference.service.test.ts. `getProjectEventsCount` / `getLastEventPerProject`
+// (ClickHouse) stay a verbatim, still-lazy-loaded port with unchanged SQL
+// (ADR-013 converts them in P7) — executed against local ClickHouse for this
+// task's verification, not re-tested here.
 //
-// M15-005: `createProjectForOrganization`/`updateProjectForOrganization`
-// invalidate a project's clients through `client.service.ts`'s module-scope
+// `createProjectForOrganization`/`updateProjectForOrganization` invalidate a
+// project's clients through `client.service.ts`'s module-scope
 // `getClientByIdCached`, which is built from the `cacheable` stub below — so
 // there is no seam left to mock here.
 
@@ -163,10 +163,10 @@ function cacheableStub(
     set: () => async () => 'OK' as const,
   });
 }
-// M10-009: each factory spreads a plain-object SNAPSHOT of the real module and
-// is restored in afterAll. `mock.module` has no per-file scope under bare
-// `bun test` (AGENTS.md), and a partial factory for `@openpanel/redis` deletes
-// every export it does not name for whichever file runs next.
+// Each factory spreads a plain-object SNAPSHOT of the real module and is
+// restored in afterAll. `mock.module` has no per-file scope under bare `bun
+// test` (AGENTS.md), and a partial factory for `@openpanel/redis` deletes every
+// export it does not name for whichever file runs next.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,

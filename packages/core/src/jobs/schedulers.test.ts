@@ -8,11 +8,11 @@ import {
 } from './schedulers';
 
 // Byte-identity snapshot, mirroring
-// `verification/golden/queue-keys/scheduler-ids.json` — which the
-// controller's `check.sh` independently recomputes from V1's
-// `packages/queue/src/queues.ts` (CronQueuePayload union) and
-// `apps/worker/src/boot-cron.ts`. Both sides pin the same 20 ids, including
-// the three ADR-005 fixed omissions (ADR-005 acceptance note).
+// `verification/golden/queue-keys/scheduler-ids.json` — which the controller's
+// `check.sh` independently recomputes from V1's `packages/queue/src/queues.ts`
+// (CronQueuePayload union) and `apps/worker/src/boot-cron.ts`. Both sides pin
+// the same 20 ids, including the three ADR-005 fixed omissions (ADR-005
+// acceptance note).
 const GOLDEN_SCHEDULER_IDS = [
   'cohortRefresh',
   'dataHealth',

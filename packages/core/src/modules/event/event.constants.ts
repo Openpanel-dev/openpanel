@@ -1,8 +1,7 @@
-// Isomorphic vocabulary for the event module (ADR-022 R8). These are column
-// whitelists, not query logic — moved here from event.service.ts / src/sql.ts
-// so a value-import (mcp's property-values tool today; a future dashboard
-// form tomorrow) has a `*.constants.ts` to reach instead of a service or
-// query-builder file.
+// Isomorphic vocabulary for the event module. These are column whitelists, not
+// query logic — moved here from event.service.ts / src/sql.ts so a value-import
+// (mcp's property-values tool today; a future dashboard form tomorrow) has a
+// `*.constants.ts` to reach instead of a service or query-builder file.
 
 /**
  * Top-level filterable columns on the `events` table. These apply to

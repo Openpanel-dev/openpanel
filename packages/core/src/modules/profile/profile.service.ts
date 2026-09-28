@@ -1,4 +1,4 @@
-// Every query is a `sql` fragment (src/sql.ts), per ADR-013. The exception is
+// Every query is a `sql` fragment (src/sql.ts). The exception is
 // `buildFilterWhere`, the shared filter compiler; src/filter-clauses.ts is the
 // bridge to it.
 

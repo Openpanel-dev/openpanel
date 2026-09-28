@@ -3,8 +3,8 @@ import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 
-// M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
-// own `chQuery` — see event-buffer.test.ts's header.
+// The client comes in as `BufferDeps.ch` and reads go through core's own
+// `chQuery` — see event-buffer.test.ts's header.
 const realChQuery = { ...(await import('../ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);

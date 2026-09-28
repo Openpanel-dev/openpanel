@@ -82,11 +82,11 @@ export interface JobDefinition<TPayload extends z.ZodType> {
   /** Defaults for this job alone, over the queue's. */
   options?: EnqueueOptions;
   /**
-   * ADR-021: a property of the job, not a parallel registry. Only meaningful
-   * on the `cron` queue, where `defineQueue`'s overload for that name makes
-   * this field required — `null` for a job the scheduler never enqueues
-   * (e.g. `ping`, gated elsewhere), a schedule otherwise. Leaving it absent
-   * is a type error there, on purpose (the three-state rule).
+   * A property of the job, not a parallel registry. Only meaningful on the
+   * `cron` queue, where `defineQueue`'s overload for that name makes this field
+   * required — `null` for a job the scheduler never enqueues (e.g. `ping`,
+   * gated elsewhere), a schedule otherwise. Leaving it absent is a type error
+   * there, on purpose (the three-state rule).
    */
   cron?: RepeatSchedule | null;
 }
@@ -162,7 +162,7 @@ export type Producers<TQueues extends QueueMap> = {
  * `JobDefinition`'s optional field — that is what lets a caller's omission of
  * `cron` stay a genuinely absent property (rather than an optional one that
  * happens to be `undefined`), which `defineQueue`'s `cron`-queue overload
- * relies on to reject it at the type level (ADR-021).
+ * relies on to reject it at the type level.
  */
 export function defineJob<
   TPayload extends z.ZodType,

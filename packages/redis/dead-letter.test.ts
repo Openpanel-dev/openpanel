@@ -1,5 +1,5 @@
 /**
- * M20-001 — the capped dead-letter list, at the Redis boundary.
+ * The capped dead-letter list, at the Redis boundary.
  *
  * What the consumer does with a rejection is `packages/core`'s
  * `consumer.test.ts`; what this file pins is the write itself: one MULTI, the

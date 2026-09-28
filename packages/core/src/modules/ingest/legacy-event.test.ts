@@ -1,7 +1,7 @@
 /**
  * Tests for the legacy `POST /event` compat route (ADR-015 entry 1, reversed:
- * the route is KEPT, produces to Kafka exactly like /track, and is measured
- * per client so the deferred removal decision has data).
+ * the route is KEPT, produces to Kafka exactly like /track, and is measured per
+ * client so the deferred removal decision has data).
  *
  * Ported from apps/api/src/controllers/event.controller.test.ts with M9-004,
  * when the controller and its usage hook moved into this module. The producer
@@ -9,7 +9,7 @@
  * stub, and the counter lives on core's one registry rather than prom-client's
  * global one — same assertions.
  *
- * The `mixan-*` header fallback moved with the validator itself (M8-002) — see
+ * The `mixan-*` header fallback moved with the validator itself — see
  * `src/client-auth.test.ts`.
  */
 
@@ -62,9 +62,9 @@ mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let ingestLegacyEvent: typeof import('./ingest.service').ingestLegacyEvent;
 
-// M15-005: ingest.service.ts calls salt.service.ts's module-scope `getSalts`
-// with the scope it holds, so that is the specifier mocked here —
-// spread-actual like everywhere else this module is overridden.
+// Ingest.service.ts calls salt.service.ts's module-scope `getSalts` with the
+// scope it holds, so that is the specifier mocked here — spread-actual like
+// everywhere else this module is overridden.
 let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
   realSaltService = { ...(await import('../salt/salt.service')) };
@@ -96,7 +96,7 @@ const buffers = {
 } as unknown as Buffers;
 
 // The legacy route produces to Kafka and never touches Postgres/ClickHouse;
-// `deps` is on `IngestTransport` for the profile writes /track makes (M10-005).
+// `deps` is on `IngestTransport` for the profile writes /track makes.
 const transportDeps = {
   buffers,
   config: testCoreConfig(),

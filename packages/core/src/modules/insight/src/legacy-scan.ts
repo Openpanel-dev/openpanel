@@ -1,20 +1,20 @@
 // The pre-engine insight detector, kept for V1 parity — no live callers today.
 //
-// M12-008: the ten statements moved off clix onto the ADR-013 `sql` tag. The
-// conversion changes how values reach the server and nothing else: every
-// statement below renders byte-identically to the clix output it replaces,
-// with the project id and the computed window bound as `{pN:Type}` params.
-// clix always sent `session_timezone` (query-builder.ts:562) and defaulted it
-// to `'UTC'` (`:696`), so `chQuery` sends the same value.
+// The ten statements moved off clix onto the ADR-013 `sql` tag. The conversion
+// changes how values reach the server and nothing else: every statement below
+// renders byte-identically to the clix output it replaces, with the project id
+// and the computed window bound as `{pN:Type}` params. clix always sent
+// `session_timezone` (query-builder.ts:562) and defaulted it to `'UTC'`
+// (`:696`), so `chQuery` sends the same value.
 //
 // Nine of the ten statements are BROKEN AND WERE ALWAYS BROKEN. clix's
-// `having(column, operator, value)` escaped
-// its comparand as a VALUE, so every `'<column> * <n>'` threshold below reaches
-// ClickHouse as a quoted string and the comparison fails with TYPE_MISMATCH;
-// three more read columns (`is_new`, `is_returning`, `event_name`, `status`)
-// that no OpenPanel table has, and one puts a window function in HAVING. The
-// defects are reproduced verbatim, not fixed: a conversion changes binding, not
-// behaviour, and fixing them is a product decision with no caller to serve.
+// `having(column, operator, value)` escaped its comparand as a VALUE, so every
+// `'<column> * <n>'` threshold below reaches ClickHouse as a quoted string and
+// the comparison fails with TYPE_MISMATCH; three more read columns (`is_new`,
+// `is_returning`, `event_name`, `status`) that no OpenPanel table has, and one
+// puts a window function in HAVING. The defects are reproduced verbatim, not
+// fixed: a conversion changes binding, not behaviour, and fixing them is a
+// product decision with no caller to serve.
 
 import {
   type SqlFragment,
@@ -157,9 +157,9 @@ function since(days: number): SqlParam {
 /**
  * The pre-engine detector, kept for V1 parity — no live callers today.
  *
- * M10-009: the class is no longer exported; `createLegacyInsightsScanner(deps)`
- * below is the module's factory, so every service module in core is reached the
- * same way (ADR-007) and nothing in the tree still exports a `*Service` class.
+ * The class is no longer exported; `createLegacyInsightsScanner(deps)` below is
+ * the module's factory, so every service module in core is reached the same way
+ * and nothing in the tree still exports a `*Service` class.
  */
 class LegacyInsightsScanner {
   constructor(private readonly deps: ChScope) {}

@@ -10,7 +10,7 @@ export * as Arctic from 'arctic';
 
 // Built per call, not at import: an arctic client is a credential holder with
 // no socket, so there is nothing to keep alive and nothing to construct at
-// module scope (ADR-022 R15).
+// module scope.
 export function githubClient(config: CoreConfig): GitHub {
   const { clientId, clientSecret, redirectUri } = config.auth.github;
   return new GitHub(clientId, clientSecret, redirectUri);

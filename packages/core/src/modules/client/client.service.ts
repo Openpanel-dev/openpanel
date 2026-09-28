@@ -1,20 +1,19 @@
-// Moved from V1's clients service (M6-002, module map: client owns "R,H,S" —
-// no constants file, per the module map). Client CRUD lives only here now;
-// no packages/db re-export shim exists in this tree.
+// Moved from V1's clients service (module map: client owns "R,H,S" — no
+// constants file, per the module map). Client CRUD lives only here now; no
+// packages/db re-export shim exists in this tree.
 //
 // The /manage REST CRUD bodies (client.routes.ts's listClients/getClient/
 // createClient/updateClient/deleteClient) call the same
 // create/update/delete/list functions the tRPC router (client.rpc.ts) does.
 //
-// M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone. No dependency on
-// project.service.ts here (the reverse direction exists, for cache
-// invalidation) — project-ownership checks below query `db.project`
-// directly.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb` lazy loader is gone. No dependency on project.service.ts here (the
+// reverse direction exists, for cache invalidation) — project-ownership checks
+// below query `db.project` directly.
 //
-// M15-005: `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on
-// the Postgres client rather than on the scope. Its L1 LRU has to survive
-// across calls to be worth anything, and the ingest hot path
+// `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on the
+// Postgres client rather than on the scope. Its L1 LRU has to survive across
+// calls to be worth anything, and the ingest hot path
 // (`ingest/src/client-auth.ts`, `http/client-auth.ts`) now passes the scope it
 // holds instead of reading a boot-scoped singleton through the deleted compat
 // seam. One instance per process to read, one to invalidate.

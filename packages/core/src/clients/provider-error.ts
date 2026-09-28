@@ -1,10 +1,10 @@
-// ADR-022 R19 / A4: the one failure type every outbound client raises.
+// / A4: the one failure type every outbound client raises.
 //
-// A client classifies ONCE, at the edge where it still holds the provider's
-// own status code; a handler then reads `retryable` instead of re-deriving it
-// from a message string. The rule the flag encodes: a retryable failure is
-// rethrown so the queue runs the unit of work again, a permanent refusal is
-// logged and swallowed, because a retry cannot change it.
+// A client classifies ONCE, at the edge where it still holds the provider's own
+// status code; a handler then reads `retryable` instead of re-deriving it from
+// a message string. The rule the flag encodes: a retryable failure is rethrown
+// so the queue runs the unit of work again, a permanent refusal is logged and
+// swallowed, because a retry cannot change it.
 
 /** Too Many Requests — the provider is asking for the same call, later. */
 export const RATE_LIMITED_STATUS = 429;

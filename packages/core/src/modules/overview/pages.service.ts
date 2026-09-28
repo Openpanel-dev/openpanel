@@ -1,13 +1,13 @@
-// Ported from packages/db/src/services/pages.service.ts. The ClickHouse
-// queries moved to src/pages.sql.ts (ADR-013, M7-005).
+// Ported from packages/db/src/services/pages.service.ts. The ClickHouse queries
+// moved to src/pages.sql.ts.
 //
-// M10-005: `PagesService` is no longer a class and there is no `pagesService`
-// module singleton. It is registered as its OWN service (`services.pages`)
-// rather than folded into `overview`, because both expose a `getTopPages` and
-// they are different queries with different inputs — one over `events` scoped
-// by search, one over `sessions` scoped by filters. Folding them would have
-// had to rename one, which is a call-site contract this wave does not change.
-// The caller-supplied `constructor(client)` slot is gone: the mcp
+// `PagesService` is no longer a class and there is no `pagesService` module
+// singleton. It is registered as its OWN service (`services.pages`) rather than
+// folded into `overview`, because both expose a `getTopPages` and they are
+// different queries with different inputs — one over `events` scoped by search,
+// one over `sessions` scoped by filters. Folding them would have had to rename
+// one, which is a call-site contract this wave does not change. The
+// caller-supplied `constructor(client)` slot is gone: the mcp
 // `get_page_performance` tool constructed a fresh instance per call only to
 // dodge a module-singleton mocking hazard, and there is no singleton left to
 // dodge.

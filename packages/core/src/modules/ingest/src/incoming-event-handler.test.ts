@@ -1,12 +1,12 @@
-// Ported from apps/worker/src/jobs/events.incoming-events.test.ts (M8-003)
-// with every assertion unchanged. What changed is the seam: V1 reached the
-// session buffer, `createEvent` and the sessions queue through
-// `vi.mock('@openpanel/db')` / `vi.mock('@openpanel/queue')`; here they are
-// recording doubles handed in as `IncomingEventDeps`, so the assertions are
-// on calls the code under test actually made and no `mock.module` is needed.
+// Ported from apps/worker/src/jobs/events.incoming-events.test.ts with every
+// assertion unchanged. What changed is the seam: V1 reached the session buffer,
+// `createEvent` and the sessions queue through `vi.mock('@openpanel/db')` /
+// `vi.mock('@openpanel/queue')`; here they are recording doubles handed in as
+// `IncomingEventDeps`, so the assertions are on calls the code under test
+// actually made and no `mock.module` is needed.
 //
-// The session_end enqueue is asserted through the real `sessionEndJobPayload`
-// / `sessionEndEnqueueOptions` — the same functions V1's producer
+// The session_end enqueue is asserted through the real `sessionEndJobPayload` /
+// `sessionEndEnqueueOptions` — the same functions V1's producer
 // (`enqueueSessionEndV2`) calls — so the jobId and the `{payload, snapshot}`
 // mapping are still pinned here, not re-implemented by the test.
 
@@ -575,10 +575,10 @@ describe('duplicate marker', () => {
   });
 
   /**
-   * THE REGRESSION TEST THAT MATTERS. A blocking Redis call in this path is
-   * how drill 02's consumer was evicted past its 30 s session timeout, and
-   * M19 proved an eviction is the only reassignment that costs duplicate
-   * rows. M18-003 removed that trigger; this must not put it back.
+   * THE REGRESSION TEST THAT MATTERS. A blocking Redis call in this path is how
+   * drill 02's consumer was evicted past its 30 s session timeout, and M19
+   * proved an eviction is the only reassignment that costs duplicate rows.
+   * M18-003 removed that trigger; this must not put it back.
    */
   test('Redis unavailable: the event is processed normally and nothing throws', async () => {
     const { deps, createEvent, ingest, markDuplicate, duplicateMarked } = ctx;
@@ -606,11 +606,10 @@ describe('duplicate marker', () => {
 
   test('the marker runs alongside the handler, never in front of it', async () => {
     // "Not slowed" asserted structurally rather than with a stopwatch: the
-    // marker is started BEFORE the handler's own Redis work and awaited
-    // AFTER it, so a slow marker overlaps a slow session read instead of
-    // adding to it. A serial check would give mark:start, mark:end,
-    // ingest:start — which is the shape that would put M18-003's eviction
-    // trigger back.
+    // marker is started BEFORE the handler's own Redis work and awaited AFTER
+    // it, so a slow marker overlaps a slow session read instead of adding to
+    // it. A serial check would give mark:start, mark:end, ingest:start — which
+    // is the shape that would put M18-003's eviction trigger back.
     const timeline: string[] = [];
     const slow = () => new Promise((resolve) => setTimeout(resolve, 20));
     const { deps, ingest, markDuplicate } = ctx;

@@ -1,28 +1,27 @@
-// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003), and out of
-// `shared/` at M15-009 (ADR-022 R22): it sends email, so it sits in the module
-// that owns email, not in the layer below every transport. Its two callers —
-// the onboarding drip (modules/onboarding) and the wind-down track
+// Moved from apps/worker/src/jobs/lib/email-sequence.ts, and out of `shared/`
+// at M15-009: it sends email, so it sits in the module that owns email, not in
+// the layer below every transport. Its two callers — the onboarding drip
+// (modules/onboarding) and the wind-down track
 // (modules/organization/src/wind-down.ts) — reach it sideways, module to
 // module.
 //
-// A day-gated email sequence runner. Each subject carries a pointer (the
-// last step whose email was sent) and an anchor date. On every tick the
-// runner resolves the next step, checks the day gate and the step's own
-// guard, sends, then advances the pointer.
+// A day-gated email sequence runner. Each subject carries a pointer (the last
+// step whose email was sent) and an anchor date. On every tick the runner
+// resolves the next step, checks the day gate and the step's own guard, sends,
+// then advances the pointer.
 //
 // Three deliberate differences from the original inline implementation in
 // cron.onboarding.ts, all of which matter once a sequence ends in deletion:
 //
 // 1. The pointer resolves by step name and an *unknown* name completes the
-//    sequence rather than restarting it. The old `findIndex` returned -1 for a
-//    renamed or removed step, which silently sent the subject back to step 0.
-// 2. `'skip'` advances past a step; `false` only defers it. The old code had
-//    one value for both, so a step that should be passed over stalled the
-//    sequence permanently.
-// 3. `requireDelivery` refuses to advance unless the email actually went out.
-//    `sendEmail` returns null instead of throwing when a send is suppressed or
-//    misconfigured, so a step with side effects could otherwise fire on an
-//    email nobody received.
+// sequence rather than restarting it. The old `findIndex` returned -1 for a
+// renamed or removed step, which silently sent the subject back to step 0. 2.
+// `'skip'` advances past a step; `false` only defers it. The old code had one
+// value for both, so a step that should be passed over stalled the sequence
+// permanently. 3. `requireDelivery` refuses to advance unless the email
+// actually went out. `sendEmail` returns null instead of throwing when a send
+// is suppressed or misconfigured, so a step with side effects could otherwise
+// fire on an email nobody received.
 
 import { differenceInDays } from 'date-fns';
 import {

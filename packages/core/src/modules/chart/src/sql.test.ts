@@ -1,25 +1,25 @@
 /**
  * SQL-shape tests for the chart statements. Ported from
- * packages/db/src/services/chart-sql.test.ts (M7-003); the overview
- * `getRawWhereClause` cases stayed there with their subject.
+ * packages/db/src/services/chart-sql.test.ts; the overview `getRawWhereClause`
+ * cases stayed there with their subject.
  *
  * Strategy: render the statement, then run `EXPLAIN <sql>` with its bound
  * params against the isolated `openpanel_test` ClickHouse (pinned by
  * test/preload.ts). EXPLAIN parses, resolves columns and builds the plan
- * without executing, so UNKNOWN_IDENTIFIER / AMBIGUOUS_IDENTIFIER / bad JOIN
- * ON expressions surface without seeded data. WITH FILL TO < FROM is a
- * runtime check, so it is covered by a plain string assertion instead.
+ * without executing, so UNKNOWN_IDENTIFIER / AMBIGUOUS_IDENTIFIER / bad JOIN ON
+ * expressions surface without seeded data. WITH FILL TO < FROM is a runtime
+ * check, so it is covered by a plain string assertion instead.
  *
  * Text assertions look at the rendered `query`; chart-level values are
- * `{pN:Type}` placeholders there, filter/breakdown expressions are the
- * verbatim V1 text (see field-resolution.ts's header).
+ * `{pN:Type}` placeholders there, filter/breakdown expressions are the verbatim
+ * V1 text (see field-resolution.ts's header).
  *
  * The statements' only Postgres read (the project's cohorts, for the
  * all-cohorts breakdown) is stubbed to "no cohorts": that is the precondition
  * the all-cohorts cases assert on, and it keeps this file independent of
- * whichever partial `prisma-client` mock a module-root service test left
- * behind (bun runs every file in one shared registry without `--isolate`).
- * The real Postgres cohort path runs in ../chart.service.test.ts.
+ * whichever partial `prisma-client` mock a module-root service test left behind
+ * (bun runs every file in one shared registry without `--isolate`). The real
+ * Postgres cohort path runs in../chart.service.test.ts.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
@@ -71,9 +71,9 @@ interface Rendered {
   params: Record<string, unknown>;
   /**
    * `sql` with every `{pN:Type}` substituted back to the literal V1 emitted.
-   * Since M12-003 the field resolver binds `properties[<key>]` keys too, so
-   * an assertion about the SHAPE of a map access reads this; an assertion
-   * about what is bound reads `sql`/`params`.
+   * Since M12-003 the field resolver binds `properties[<key>]` keys too, so an
+   * assertion about the SHAPE of a map access reads this; an assertion about
+   * what is bound reads `sql`/`params`.
    */
   text: string;
 }

@@ -14,8 +14,8 @@ export interface QueueKeyOptions {
  * The Redis key a queue lives under.
  *
  * Braces only under `QUEUE_CLUSTER`, because V1's `getQueueName` did and every
- * existing queue in every deployment is named that way (ADR-005). `-` joins
- * the namespace because BullMQ rejects a `:` in a queue name.
+ * existing queue in every deployment is named that way. `-` joins the namespace
+ * because BullMQ rejects a `:` in a queue name.
  */
 export function queueKey(name: string, options?: QueueKeyOptions): string {
   const scoped = options?.namespace ? `${name}-${options.namespace}` : name;

@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: operator switches are exhaustive by design */
 // V1's event filter compiler (`getEventFiltersWhereClause`), converted onto the
-// `sql` tag (M12-002): every VALUE binds as a `{name:Type}` param and every
-// identifier goes through `sql.id` or a static fragment. The column expression
-// for a `properties.*` / `group.*` filter comes from field-resolution.ts, which
+// `sql` tag: every VALUE binds as a `{name:Type}` param and every identifier
+// goes through `sql.id` or a static fragment. The column expression for a
+// `properties.*` / `group.*` filter comes from field-resolution.ts, which
 // returns a fragment of its own since M12-003 and is interpolated directly.
 
 import {
@@ -428,8 +428,8 @@ export function getEventFiltersWhereClause(
       if (tableScope === 'events' && !EVENT_TOP_LEVEL_COLUMNS.has(name)) {
         return;
       }
-      // ADR-013 R3: the sessions branch has no closed set here, so `sql.id`
-      // validates the shape and throws rather than inlining anything else.
+      // The sessions branch has no closed set here, so `sql.id` validates the
+      // shape and throws rather than inlining anything else.
       const column =
         tableScope === 'events'
           ? sql.id(name, EVENT_COLUMN_ALLOWLIST)

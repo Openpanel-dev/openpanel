@@ -57,9 +57,9 @@ export function requestContext(deps: AppDeps) {
           ? cancelOnDisconnect(request.signal)
           : undefined;
 
-        // `resolveSession` reads `ctx.services.auth` (ADR-022 R22), so the
-        // resolver closes over the ctx it is installed on. Safe because it is
-        // lazy: nothing calls it during the derive.
+        // `resolveSession` reads `ctx.services.auth`, so the resolver closes
+        // over the ctx it is installed on. Safe because it is lazy: nothing
+        // calls it during the derive.
         const ctx: HttpCtx = extendCtx(
           createCtx(deps, { requestId, logger, signal: cancellation?.signal }),
           {
@@ -90,7 +90,7 @@ export interface RequestLoggingOptions {
 /**
  * V1's `onResponse` requestLoggingHook. One `info` line per request, named
  * `request done` — the `requestId` field rides in from the child logger,
- * replacing V1's `reqId` (ADR-018 R1).
+ * replacing V1's `reqId`.
  */
 export function requestLogging(
   deps: AppDeps,
@@ -140,8 +140,8 @@ export function requestLogging(
             method: request.method,
             elapsed,
             headers: pickHeaders(request.headers, LOGGED_INGEST_HEADERS),
-            // V1 logs the whole /track body here; ADR-018 R6's budget for it
-            // is P9's call, not this port's.
+            // V1 logs the whole /track body here; ADR-018 R6's budget for it is
+            // P9's call, not this port's.
             body: path.startsWith('/track') ? body : undefined,
             clientIp: verbose ? ctx.ip : '',
             clientIpHeader: verbose ? clientIpHeader : '',

@@ -1,8 +1,8 @@
-// M10-009: import.service.ts takes its clients from `ServiceDeps`, so this
-// file hands in fakes as `deps.db` / `deps.ch` and mocks NO module at all.
-// That is the point of the conversion: a module mock of
-// `@openpanel/db/src/clickhouse/client` replaced that specifier for every
-// other FILE in the process (bare `bun test` shares one module registry).
+// Import.service.ts takes its clients from `ServiceDeps`, so this file hands in
+// fakes as `deps.db` / `deps.ch` and mocks NO module at all. That is the point
+// of the conversion: a module mock of `@openpanel/db/src/clickhouse/client`
+// replaced that specifier for every other FILE in the process (bare `bun test`
+// shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';

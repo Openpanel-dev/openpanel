@@ -9,14 +9,14 @@
  * the real SDK server, `InMemoryTransport`, the wire-format handshake, tool
  * registration and dispatch — runs for real.
  *
- * M15-003: `deps` and `services` are now ARGUMENTS, so the Postgres handle
- * and the client lookup are supplied by the test rather than mocked into the
- * module registry. The only surviving `mock.module` calls are for the two
- * process-global seams MCP auth still reaches (`@openpanel/redis`'s
- * `getCache` and argon2 verification), and both are restored in `afterAll`
- * from a plain-object snapshot taken before the first `mock.module` call —
- * restoring via the live `await import(...)` binding itself is a no-op once
- * mocked, since namespace bindings track the current mock.
+ * `deps` and `services` are now ARGUMENTS, so the Postgres handle and the
+ * client lookup are supplied by the test rather than mocked into the module
+ * registry. The only surviving `mock.module` calls are for the two
+ * process-global seams MCP auth still reaches (`@openpanel/redis`'s `getCache`
+ * and argon2 verification), and both are restored in `afterAll` from a
+ * plain-object snapshot taken before the first `mock.module` call — restoring
+ * via the live `await import(...)` binding itself is a no-op once mocked, since
+ * namespace bindings track the current mock.
  */
 
 import {
@@ -94,8 +94,8 @@ const noopLogger = {
 
 const deps = {
   db: { project: { findUnique: mockFindUnique } },
-  // The tool runtime is handed `Prisma.DbNull` off the scope (ADR-022 R6);
-  // nothing in this suite writes a Json column, so a marker is enough.
+  // The tool runtime is handed `Prisma.DbNull` off the scope; nothing in this
+  // suite writes a Json column, so a marker is enough.
   prisma: { DbNull: 'DbNull', JsonNull: 'JsonNull' },
   logger: noopLogger,
 } as unknown as ServiceDeps;
@@ -302,7 +302,7 @@ describe('handleStatelessMcpRequest — protocol', () => {
   });
 
   it('closes the ephemeral server — and with it the transport pair it opened', async () => {
-    // ADR-022 R16. `spyOn` calls through, so the close still really happens.
+    // R16. `spyOn` calls through, so the close still really happens.
     const closeSpy = spyOn(McpServer.prototype, 'close');
     try {
       const res = await post(VALID_TOKEN, {

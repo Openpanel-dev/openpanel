@@ -138,11 +138,11 @@ export function stubHttpCtx(
 /**
  * `services` with the permission ladder already granted.
  *
- * `protectedProcedure` runs `enforceAccess` BEFORE the input parser
- * (M11-001), so a test that wants to assert on a zod rejection has to get
- * past the ladder first — and the real one reaches Postgres. Everything a
- * procedure does after the parser is out of these tests' scope, so only the
- * two lookups `enforceAccess` makes are stubbed.
+ * `protectedProcedure` runs `enforceAccess` BEFORE the input parser, so a test
+ * that wants to assert on a zod rejection has to get past the ladder first —
+ * and the real one reaches Postgres. Everything a procedure does after the
+ * parser is out of these tests' scope, so only the two lookups `enforceAccess`
+ * makes are stubbed.
  */
 export function servicesWithProjectAccess(): Services {
   return {

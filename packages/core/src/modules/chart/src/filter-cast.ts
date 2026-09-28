@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
-// Moved from packages/db/src/services/filter-cast.ts (M8-005) — the typed-cast
-// half of `buildFilterWhere` (./table-filter-where.ts) and of
-// `./filter-where.ts` (the event-property compiler).
+// Moved from packages/db/src/services/filter-cast.ts — the typed-cast half of
+// `buildFilterWhere` (./table-filter-where.ts) and of `./filter-where.ts` (the
+// event-property compiler).
 //
 // Both filter compilers call the same pair now: `castFragment` and
 // `buildTypedClauseFragment` bind every value as a `{name:Type}` param. The

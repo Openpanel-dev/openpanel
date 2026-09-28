@@ -6,10 +6,9 @@ import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
-// Cloud runs 24 (docs/ANSWERS.md §1.1). Override by exporting
-// KAFKA_EVENTS_TOPIC_PARTITIONS before running ./setup — see the footgun
-// warning in redpanda/bootstrap.template.yaml before changing this after
-// first boot.
+// Cloud runs 24. Override by exporting KAFKA_EVENTS_TOPIC_PARTITIONS before
+// running./setup — see the footgun warning in redpanda/bootstrap.template.yaml
+// before changing this after first boot.
 const KAFKA_EVENTS_TOPIC_PARTITIONS_DEFAULT = 24;
 const KAFKA_EVENTS_TOPIC_PARTITIONS =
   process.env.KAFKA_EVENTS_TOPIC_PARTITIONS ||

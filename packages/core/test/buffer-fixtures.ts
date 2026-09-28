@@ -20,11 +20,11 @@ const silentLogger: Logger = {
  * `createLogger` spawns a pino transport worker thread per buffer, and these
  * suites build one buffer per test.
  *
- * M10-009: `BufferDeps.ch` is the boot scope's ClickHouse client, so a suite
- * that exercises a flush hands in its own fake here rather than mocking
+ * `BufferDeps.ch` is the boot scope's ClickHouse client, so a suite that
+ * exercises a flush hands in its own fake here rather than mocking
  * `@openpanel/db`'s module. `stubBufferDeps` hands in a client that throws on
- * first touch — a buffer that reaches ClickHouse without one is a bug this
- * stub should surface, not hide.
+ * first touch — a buffer that reaches ClickHouse without one is a bug this stub
+ * should surface, not hide.
  */
 const throwingClickHouse = new Proxy({} as BufferDeps['ch'], {
   get() {

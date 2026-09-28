@@ -1,16 +1,14 @@
-// Moved from packages/db/src/services/share.service.ts, plus the
-// query/mutation bodies packages/trpc/src/routers/share.ts held inline
-// (M6-004, DELEGATE PATTERN: V1's router and this package's own share.rpc.ts
-// share one implementation, same as organization.service.ts since M6-001).
-// packages/db keeps a re-export shim: auth.service.ts's signInToShare
-// (M6-003) and packages/trpc's chart/overview routers still reach
-// validateShareAccess/validateOverviewShareAccess through it.
+// Moved from packages/db/src/services/share.service.ts, plus the query/mutation
+// bodies packages/trpc/src/routers/share.ts held inline (DELEGATE PATTERN: V1's
+// router and this package's own share.rpc.ts share one implementation, same as
+// organization.service.ts since M6-001). packages/db keeps a re-export shim:
+// auth.service.ts's signInToShare and packages/trpc's chart/overview routers
+// still reach validateShareAccess/validateOverviewShareAccess through it.
 //
-// M10-003: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` / `loadAccessService()` / `loadDashboardService()`
-// / `loadReportsService()` lazy loaders are gone, so this module
-// value-imports neither `@openpanel/db` nor its own package barrel
-// (docs/TECH_DEBT.md §4).
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb` / `loadAccessService` / `loadDashboardService` /
+// `loadReportsService` lazy loaders are gone, so this module value-imports
+// neither `@openpanel/db` nor its own package barrel.
 
 import ShortUniqueId from 'short-unique-id';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
@@ -86,8 +84,8 @@ export async function getShareReportByReportId(
 }
 
 /**
- * @deprecated Zero call sites (ADR-015 register entry #14, graded DEAD).
- * Ported as-is — removal is a separate P6/P7 task, not this one's.
+ * @deprecated Zero call sites (ADR-015 register entry #14, graded DEAD). Ported
+ * as-is — removal is a separate P6/P7 task, not this one's.
  */
 export async function validateReportAccess(
   deps: ServiceDeps,

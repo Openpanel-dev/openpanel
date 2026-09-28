@@ -1,14 +1,14 @@
 /**
  * SQL-shape tests for the funnel statements. Ported from
- * packages/db/src/services/funnel-sql.test.ts (M7-004).
+ * packages/db/src/services/funnel-sql.test.ts.
  *
- * Strategy, same as sql.test.ts: render the statement, then run
- * `EXPLAIN <sql>` with its bound params against the isolated `openpanel_test`
- * ClickHouse (pinned by test/preload.ts). EXPLAIN parses and resolves columns
- * without executing, so a breakdown expression referencing a join alias that
- * was never added fails here as UNKNOWN_IDENTIFIER — which is exactly the
- * class of bug that made funnel "View Users" return "No users found" for
- * profile-property and cohort breakdowns.
+ * Strategy, same as sql.test.ts: render the statement, then run `EXPLAIN <sql>`
+ * with its bound params against the isolated `openpanel_test` ClickHouse
+ * (pinned by test/preload.ts). EXPLAIN parses and resolves columns without
+ * executing, so a breakdown expression referencing a join alias that was never
+ * added fails here as UNKNOWN_IDENTIFIER — which is exactly the class of bug
+ * that made funnel "View Users" return "No users found" for profile-property
+ * and cohort breakdowns.
  *
  * Text assertions look at the rendered `query` with placeholder NUMBERS
  * normalised away: a fragment reused in two clauses renders `{p3:String}` in

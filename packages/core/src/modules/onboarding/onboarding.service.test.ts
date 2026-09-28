@@ -1,10 +1,10 @@
 // Onboarding email cron: the sequential drip driven by the
 // `organization.onboarding` pointer. Moved from
-// apps/worker/src/jobs/cron.onboarding.test.ts (M6-003) — db, the
-// organization module's event-count lookup, and email are mocked; asserts
-// template selection, day gating, early completion on active subs, and usage
-// personalization. `mock.module` is not hoisted, so the subject is imported
-// inside `beforeAll` — see AGENTS.md.
+// apps/worker/src/jobs/cron.onboarding.test.ts — db, the organization module's
+// event-count lookup, and email are mocked; asserts template selection, day
+// gating, early completion on active subs, and usage personalization.
+// `mock.module` is not hoisted, so the subject is imported inside `beforeAll` —
+// see AGENTS.md.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';
@@ -15,8 +15,8 @@ const organizationUpdate = mock(async () => ({}));
 const dbMock = {
   organization: { findMany: organizationFindMany, update: organizationUpdate },
 };
-// M10-009: `runOnboardingCron` takes `ServiceDeps` now, so `deps.db` IS the
-// fake below — no Prisma module mock needed.
+// `runOnboardingCron` takes `ServiceDeps` now, so `deps.db` IS the fake below —
+// no Prisma module mock needed.
 const deps = {
   db: dbMock,
   config: testCoreConfig(),

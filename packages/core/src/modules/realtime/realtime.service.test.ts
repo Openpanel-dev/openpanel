@@ -1,27 +1,26 @@
-// M10-005: realtime.service.ts takes `ServiceDeps` now, so the event buffer
-// and the ClickHouse client are HANDED IN (`deps.buffers.event`, `deps.ch`)
-// rather than mocked onto a module specifier.
+// Realtime.service.ts takes `ServiceDeps` now, so the event buffer and the
+// ClickHouse client are HANDED IN (`deps.buffers.event`, `deps.ch`) rather than
+// mocked onto a module specifier.
 //
-// M12-005: the subject and the real-module snapshot are STATIC imports.
-// `@openpanel/redis` is a static import in the subject too (the R6 fix
-// removed the `loadRedis` lazy hop) — Bun's `mock.module` still applies
-// because it swaps an already-loaded module's exports in place, so a
-// consumer that imported before the mock call still sees it — measured on
-// Bun 1.4.0, and the subscribe assertions go red if it ever stops. That
-// leaves this module with no deferred loads at all (docs/TECH_DEBT.md's
-// no-lazy-loaders ruling).
+// The subject and the real-module snapshot are STATIC imports.
+// `@openpanel/redis` is a static import in the subject too (the R6 fix removed
+// the `loadRedis` lazy hop) — Bun's `mock.module` still applies because it
+// swaps an already-loaded module's exports in place, so a consumer that
+// imported before the mock call still sees it — measured on Bun 1.4.0, and the
+// subscribe assertions go red if it ever stops. That leaves this module with no
+// deferred loads at all (docs/TECH_DEBT.md's no-lazy-loaders ruling).
 //
 // Every assertion below is the one it was before the deps switch: the same
-// project scoping, the same 30-minute window, the same filter/limit wiring,
-// the same subscribe/unsubscribe behaviour.
+// project scoping, the same 30-minute window, the same filter/limit wiring, the
+// same subscribe/unsubscribe behaviour.
 //
 // Scope: the "/live websocket glue" (new logic this wave adds) plus one
 // representative ClickHouse query (`getRealtimeActiveSessions`) proving the
-// deps + filter/limit wiring. The other five queries are a verbatim
-// port of packages/trpc/src/routers/realtime.ts's SQL — mechanical, not new
-// behaviour — and are exercised end-to-end by realtime.rpc.test.ts's
-// unauthenticated-boundary tests plus this repo's local ClickHouse run (see
-// the task summary for the executed query + row count).
+// deps + filter/limit wiring. The other five queries are a verbatim port of
+// packages/trpc/src/routers/realtime.ts's SQL — mechanical, not new behaviour —
+// and are exercised end-to-end by realtime.rpc.test.ts's
+// unauthenticated-boundary tests plus this repo's local ClickHouse run (see the
+// task summary for the executed query + row count).
 
 import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
 import * as actualRedis from '@openpanel/redis';
@@ -156,10 +155,10 @@ test('subscribeToProjectNotifications subscribes on notification:created and fil
   expect(onNotification).toHaveBeenCalledTimes(1);
 });
 
-// M30-003 / F2: the `organization:subscription_updated` channel is
-// instance-wide. Unfiltered, a subscriber saw the `organizationId` of every
-// organization whose subscription changed — including ones it is not a
-// member of. This test is red without the filter.
+// / F2: the `organization:subscription_updated` channel is instance-wide.
+// Unfiltered, a subscriber saw the `organizationId` of every organization whose
+// subscription changed — including ones it is not a member of. This test is red
+// without the filter.
 test('subscribeToOrganizationSubscriptionUpdates subscribes on organization:subscription_updated and filters by organizationId', async () => {
   const onUpdate = mock((_message: unknown) => undefined);
   await subject.subscribeToOrganizationSubscriptionUpdates('org_1', onUpdate);
@@ -200,8 +199,8 @@ test('getRealtimeActiveSessions scopes the query to the project and the 30-minut
   const result = await subject.getRealtimeActiveSessions(deps, 'proj_1');
 
   expect(chQuery).toHaveBeenCalledTimes(1);
-  // M12-005: the statement binds its values, so the project scoping and the
-  // window live in `query_params` — the assertion follows them there.
+  // The statement binds its values, so the project scoping and the window live
+  // in `query_params` — the assertion follows them there.
   const { query, query_params } = chQuery.mock.calls[0]![0];
   expect(query).toContain('project_id = {p1:String}');
   expect(query).toContain('created_at >= {p2:String}');

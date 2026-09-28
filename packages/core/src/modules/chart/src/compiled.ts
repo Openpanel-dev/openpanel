@@ -90,11 +90,11 @@ function flatten(
  * `profile.properties[` followed by the key as a bound `String` param and a
  * closing `]`. Collapsing those three pieces is what keeps a narrowed
  * `profile.properties.<key>` ref pointing at the CTE's scalar column once the
- * key stopped being part of the SQL text (M12-003).
+ * key stopped being part of the SQL text.
  *
  * A value can no longer be rewritten even in principle: only a param the
- * resolver placed in that exact position is eligible, and it is replaced by
- * an identifier rather than edited.
+ * resolver placed in that exact position is eligible, and it is replaced by an
+ * identifier rather than edited.
  */
 export function fragmentWithProfileRefs(
   fragment: SqlFragment,

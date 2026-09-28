@@ -1,23 +1,23 @@
 // Where API/SDK credentials become a client principal.
 //
 // V1 has five near-identical validators — `validateSdkRequest`,
-// `validateExportRequest`, `validateImportRequest`, `validateManageRequest`
-// and the MCP copy — that differ only by the accepted `ClientType` set and by
-// the ingest extension. They collapse into this one function (ADR-011 A-i).
+// `validateExportRequest`, `validateImportRequest`, `validateManageRequest` and
+// the MCP copy — that differ only by the accepted `ClientType` set and by the
+// ingest extension. They collapse into this one function (ADR-011 A-i).
 //
-// M8-002 filled in the INGEST branch — `modules/ingest/src/client-auth.ts`
-// holds V1's `validateSdkRequest` verbatim, and this file adapts it onto the
-// principal. M15-009 inverted how it gets there: transport may not deep-import
-// a module (ADR-022 R22), so the route that wants the ingest tier hands its own
-// validator down as `clientAuth: { ingest: validateIngestRequest }`.
+// Filled in the INGEST branch — `modules/ingest/src/client-auth.ts` holds V1's
+// `validateSdkRequest` verbatim, and this file adapts it onto the principal.
+// M15-009 inverted how it gets there: transport may not deep-import a module,
+// so the route that wants the ingest tier hands its own validator down as
+// `clientAuth: { ingest: validateIngestRequest }`.
 //
-// M9-004 filled in the `allow`-list tier, which is the one V1
-// spells three times (`validateExportRequest`, `validateImportRequest`,
-// `validateManageRequest`): identical bodies differing only by the accepted
-// `ClientType` set and by the prefix on their error strings. `allow` carries
-// that difference and the three collapse into `authenticateAllowedClient`
-// below. MCP is NOT here — it authenticates its own `token` form inside
-// `modules/mcp/src/auth.ts`, exactly as V1's mcp router did.
+// Filled in the `allow`-list tier, which is the one V1 spells three times
+// (`validateExportRequest`, `validateImportRequest`, `validateManageRequest`):
+// identical bodies differing only by the accepted `ClientType` set and by the
+// prefix on their error strings. `allow` carries that difference and the three
+// collapse into `authenticateAllowedClient` below. MCP is NOT here — it
+// authenticates its own `token` form inside `modules/mcp/src/auth.ts`, exactly
+// as V1's mcp router did.
 
 import type { DbScope } from '../cacheable-per-deps';
 import type { HttpCtx } from '../context';
@@ -44,9 +44,8 @@ export interface AuthenticatedClient {
   /**
    * Whether the supplied client secret VERIFIED against the stored hash.
    * `isBotHook` reads it as "this is a server-side SDK, never a bot", so it
-   * follows the verification result, not the presence of a secret string
-   * (main #481). The side-channel survives as a field on the principal
-   * (ADR-011 A-i).
+   * follows the verification result, not the presence of a secret string (main
+   * #481). The side-channel survives as a field on the principal (ADR-011 A-i).
    */
   secretVerified: boolean;
 }
@@ -114,11 +113,11 @@ export interface ClientAuthRequest {
 }
 
 /**
- * M15-005: takes the request's own `Ctx`, not the boot scope. The ingest tier
- * reads only `ctx.db` — `getClientByIdCached`'s L1 is keyed on the Postgres
- * client, so `/track` reaches the one process-lived cache without forcing
- * `ctx.services`. The allow-list tier is not a hot path and goes through
- * `ctx.services.client` like every other handler.
+ * Takes the request's own `Ctx`, not the boot scope. The ingest tier reads only
+ * `ctx.db` — `getClientByIdCached`'s L1 is keyed on the Postgres client, so
+ * `/track` reaches the one process-lived cache without forcing `ctx.services`.
+ * The allow-list tier is not a hot path and goes through `ctx.services.client`
+ * like every other handler.
  */
 export async function authenticateClient(
   ctx: HttpCtx,

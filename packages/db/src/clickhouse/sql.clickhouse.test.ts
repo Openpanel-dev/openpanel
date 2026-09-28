@@ -2,19 +2,19 @@ import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
- * The ADR-013 P2 round-trip: every param type the codebase uses, bound
- * through `chQuery` (so the `query_params` path is exercised through
- * `withRetry` / round-robin, R1) and read back off a real local ClickHouse.
+ * The ADR-013 P2 round-trip: every param type the codebase uses, bound through
+ * `chQuery` (so the `query_params` path is exercised through `withRetry` /
+ * round-robin, R1) and read back off a real local ClickHouse.
  *
  * Payloads are hostile on purpose — single quote, double quote, backslash,
- * newline, tab, and a literal `{p1:String}` — because the escaping lives in
- * the driver and the parsing lives in the server, and neither is ours.
+ * newline, tab, and a literal `{p1:String}` — because the escaping lives in the
+ * driver and the parsing lives in the server, and neither is ours.
  *
- * This suite runs against its own `openpanel_test` database, which it
- * creates. It must never touch the local `openpanel` prod-copy: those tables
- * hold hundreds of millions of rows, and a `FINAL` / `ARRAY JOIN` scan over
- * them times the HTTP client out while the rest of the suite runs in
- * parallel against the same node.
+ * This suite runs against its own `openpanel_test` database, which it creates.
+ * It must never touch the local `openpanel` prod-copy: those tables hold
+ * hundreds of millions of rows, and a `FINAL` / `ARRAY JOIN` scan over them
+ * times the HTTP client out while the rest of the suite runs in parallel
+ * against the same node.
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';

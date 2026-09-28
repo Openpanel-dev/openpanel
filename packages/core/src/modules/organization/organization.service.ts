@@ -560,10 +560,10 @@ export interface DeleteCronResult {
 
 /**
  * The `delete` cron fragment's body — moved from
- * apps/worker/src/jobs/cron.delete.ts's `jobDelete` (M6-001). Finds
- * organizations scheduled for deletion or orphaned (no admin member), and
- * projects individually scheduled for deletion, then sweeps both out of
- * ClickHouse and Postgres in one pass.
+ * apps/worker/src/jobs/cron.delete.ts's `jobDelete`. Finds organizations
+ * scheduled for deletion or orphaned (no admin member), and projects
+ * individually scheduled for deletion, then sweeps both out of ClickHouse and
+ * Postgres in one pass.
  */
 export async function runDeleteCron(
   deps: ServiceDeps

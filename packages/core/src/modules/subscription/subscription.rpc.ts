@@ -1,15 +1,14 @@
-// Ported from packages/trpc/src/routers/subscription.ts (M6-006).
+// Ported from packages/trpc/src/routers/subscription.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
-// `requireOrganizationAdmin` lives in subscription.service.ts, not here —
-// see that file's header. `ctx.services.subscription` carries this module's
-// factory the same as every other module now (M10-004).
+// `requireOrganizationAdmin` lives in subscription.service.ts, not here — see
+// that file's header. `ctx.services.subscription` carries this module's factory
+// the same as every other module now.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

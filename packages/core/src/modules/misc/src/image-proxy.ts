@@ -1,11 +1,12 @@
-// Ported verbatim from apps/api/src/utils/image-proxy.ts (M7-008).
+// Ported verbatim from apps/api/src/utils/image-proxy.ts.
 //
 // These bytes come from a third-party server and are then served from the API
 // origin, which also serves the credentialed `/trpc` and `/oauth` endpoints.
 // Anything returned verbatim is therefore attacker-controlled content on a
 // trusted origin — an SVG passed through untouched executes its `<script>` as
 // the victim. Everything Sharp can decode is rasterized to PNG, which drops
-// active content along with every other non-pixel payload (GHSA-r7hx-q6f4-vj6h).
+// active content along with every other non-pixel payload
+// (GHSA-r7hx-q6f4-vj6h).
 
 import sharp from 'sharp';
 import type { Logger } from '../../../logger';

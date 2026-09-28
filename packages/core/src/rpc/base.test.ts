@@ -132,12 +132,12 @@ test('the session is resolved once, before any procedure runs', async () => {
   expect(ctx.session).toEqual(TEST_SESSION);
 });
 
-// M9-004 flipped this from "inherited" to "flattened", because tRPC merges
-// middleware context with `{...ctx, ...next.ctx}` — a spread, which copies own
-// enumerable properties ONLY. Under the prototype-chained shape every
-// inherited field vanished the first time a middleware called `next({ ctx })`,
-// and the next read was a TypeError inside a mutation (caught by the auth
-// contract suite, group c/d).
+// Flipped this from "inherited" to "flattened", because tRPC merges middleware
+// context with `{...ctx,...next.ctx}` — a spread, which copies own enumerable
+// properties ONLY. Under the prototype-chained shape every inherited field
+// vanished the first time a middleware called `next({ ctx })`, and the next
+// read was a TypeError inside a mutation (caught by the auth contract suite,
+// group c/d).
 test('the HttpCtx is flattened onto own properties, and services stay lazy', async () => {
   const { ctx } = stubHttpCtx();
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {

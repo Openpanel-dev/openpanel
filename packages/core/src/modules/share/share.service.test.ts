@@ -1,8 +1,8 @@
-// The subject is built by its factory over a fake `ServiceDeps` (M10-003), so
-// Postgres needs no module mock at all — `deps.db` IS the fake below. Only the
-// three sibling modules the service calls as plain functions are mocked, each
-// at the specifier the source resolves through, snapshot-before-mock so
-// `afterAll` restores the real module instead of re-applying the mock.
+// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
+// needs no module mock at all — `deps.db` IS the fake below. Only the three
+// sibling modules the service calls as plain functions are mocked, each at the
+// specifier the source resolves through, snapshot-before-mock so `afterAll`
+// restores the real module instead of re-applying the mock.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';

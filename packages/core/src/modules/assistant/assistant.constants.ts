@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 /**
- * Moved from the V1 validation package (M5-005, ADR-008's module map:
- * assistant owns "C"). apps/start reaches these symbols through the
+ * Moved from the V1 validation package (ADR-008's module map: assistant owns
+ * "C"). apps/start reaches these symbols through the
  * `@openpanel/core/modules/assistant/assistant.constants` subpath —
  * `src/agents/models.ts`, `src/contexts/page-context.tsx` and
  * `src/components/chat/tool-handlers.ts`.
@@ -10,10 +10,10 @@ import { z } from 'zod';
  * Isomorphic by the AGENTS.md rule: zod and nothing else.
  *
  * The full `ChatApp` type (Better Agent's inferred app type) lives in
- * `./src/app.ts` — it's `ReturnType<typeof createChatApp>` and inherently
- * bound to the server-side agent definition, so it stays out of this
- * constants file (a Prisma/Better-Agent type would follow it into a browser
- * bundle). The frontend type-imports it from the core barrel instead
+ * `./src/app.ts` — it's `ReturnType<typeof createChatApp>` and inherently bound
+ * to the server-side agent definition, so it stays out of this constants file
+ * (a Prisma/Better-Agent type would follow it into a browser bundle). The
+ * frontend type-imports it from the core barrel instead
  * (`apps/start/src/agents/client.ts`); see that file for why.
  */
 

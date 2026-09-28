@@ -1,8 +1,8 @@
-// M10-009: the store is a FACTORY over `ServiceDeps` — `deps.db` is the boot
-// scope's client, so the requestId minted at the edge reaches every insight
-// write (ADR-018, docs/TECH_DEBT.md §4). `Prisma` here is the namespace's JSON
-// sentinel (`DbNull`), which arrives on the same scope as `deps.prisma`
-// (M15-202) rather than by importing `@openpanel/db` from core.
+// The store is a FACTORY over `ServiceDeps` — `deps.db` is the boot scope's
+// client, so the requestId minted at the edge reaches every insight write.
+// `Prisma` here is the namespace's JSON sentinel (`DbNull`), which arrives on
+// the same scope as `deps.prisma` rather than by importing `@openpanel/db` from
+// core.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
@@ -43,7 +43,7 @@ function toPersistedInsight(row: InsightRow): PersistedInsight {
 export function createInsightStore(deps: ServiceDeps): InsightStore {
   const db = deps.db;
   // `Prisma.DbNull` lives in the same module as the constructed client, so it
-  // arrives on the scope (ADR-022 R6) rather than through a lazy import.
+  // arrives on the scope rather than through a lazy import.
   const { DbNull } = deps.prisma;
   return {
     // `cadence` isn't read — there is only one today ('daily') — but it stays

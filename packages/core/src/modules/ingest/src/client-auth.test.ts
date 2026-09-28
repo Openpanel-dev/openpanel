@@ -2,15 +2,16 @@
  * Tests for validateIngestRequest — V1's `validateSdkRequest`, moved with
  * M8-002.
  *
- * The `mixan-*` case comes from apps/api/src/controllers/event.controller.test.ts:
- * ADR-015 entry 5 is pending the `/event` usage metric, so the legacy header
- * fallback stays. `secretVerified` is what V1 exposed as
- * `request.clientSecretAuth` — the side channel the bot check reads — and
- * since main #481 it is true only when the secret verified.
+ * The `mixan-*` case comes from
+ * apps/api/src/controllers/event.controller.test.ts: ADR-015 entry 5 is pending
+ * the `/event` usage metric, so the legacy header fallback stays.
+ * `secretVerified` is what V1 exposed as `request.clientSecretAuth` — the side
+ * channel the bot check reads — and since main #481 it is true only when the
+ * secret verified.
  *
  * The `secret verification` block guards main #481: `secretVerified` and
- * revenue ingestion follow whether the secret verified against the stored
- * hash, not whether a secret string was on the request.
+ * revenue ingestion follow whether the secret verified against the stored hash,
+ * not whether a secret string was on the request.
  */
 
 import {
@@ -63,10 +64,10 @@ mock.module('@openpanel/redis', () => ({
   getRedisCache: () => ({ get: redisGet, setex: redisSetex }),
 }));
 
-// M15-005: client-auth.ts takes the caller's scope and reads
-// `client.service.ts`'s module-scope `cacheablePerDb` — mocked at that
-// specifier, spread-actual so the rest of the module (which `services.ts`'s
-// own import of it still needs) stays intact.
+// Client-auth.ts takes the caller's scope and reads `client.service.ts`'s
+// module-scope `cacheablePerDb` — mocked at that specifier, spread-actual so
+// the rest of the module (which `services.ts`'s own import of it still needs)
+// stays intact.
 const realClientService = { ...(await import('../../client/client.service')) };
 mock.module('../../client/client.service', () => ({
   ...realClientService,

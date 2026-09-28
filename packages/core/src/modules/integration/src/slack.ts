@@ -1,7 +1,7 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved
-// out of `clients/integrations/` by M15-008: this module is its only consumer
-// (ADR-022 A2).
-// Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
+// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved out
+// of `clients/integrations/` by M15-008: this module is its only consumer
+// (ADR-022 A2). Cred to (@c_alares)
+// https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
 import * as Slack from '@slack/bolt';
 import {
@@ -24,9 +24,9 @@ const INSTALL_SCOPES = [
 ];
 
 /**
- * Built from the credentials the config loader parsed (ADR-022 R9). Without a
- * client id there is no install flow, and the stub keeps the two members the
- * integration module touches so an unconfigured deployment still boots.
+ * Built from the credentials the config loader parsed. Without a client id
+ * there is no install flow, and the stub keeps the two members the integration
+ * module touches so an unconfigured deployment still boots.
  */
 export function slackInstaller(config: CoreConfig): InstallProvider {
   const { clientId, clientSecret, stateSecret } = config.slack;

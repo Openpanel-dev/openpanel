@@ -1,8 +1,8 @@
-// Ported from V1's packages/constants + packages/validation (M7-006,
-// ADR-008's module map: report owns "C" for the chart/report/widget
-// vocabulary) — neither package exists in this tree; every importer here
-// (the chart engine, apps/start's report builder) reaches these symbols
-// through this file directly.
+// Ported from V1's packages/constants + packages/validation (ADR-008's module
+// map: report owns "C" for the chart/report/widget vocabulary) — neither
+// package exists in this tree; every importer here (the chart engine,
+// apps/start's report builder) reaches these symbols through this file
+// directly.
 //
 // `getDefaultIntervalByDates` is REWRITTEN from date-fns
 // (differenceInDays/isSameDay) to plain Date math per the module map. Every
@@ -11,8 +11,8 @@
 // getters (getFullYear/getMonth/getDate) already read UTC — the helpers below
 // reproduce date-fns's local-calendar semantics exactly under that invariant,
 // and the only inputs this function ever receives are date-only strings
-// (midnight boundaries), where date-fns's exact-duration-vs-calendar-day
-// nuance cannot diverge from a plain ms division anyway.
+// (midnight boundaries), where date-fns's exact-duration-vs-calendar-day nuance
+// cannot diverge from a plain ms division anyway.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 
@@ -646,11 +646,11 @@ export const chartColors = [
  */
 const CHART_FORMULA_PATTERN = /^[A-Za-z0-9_ .,+\-*/()%^]*$/;
 
-// Helper, not vocabulary — ADR-008 rules this the one genuine exception to
-// the module-export rule: every consumer copies these 4 lines locally
-// instead of importing them (apps/start/src/utils/object-to-zod-enums.ts is
-// the frontend's copy). Kept private here for report.constants.ts's own use
-// building the enums below.
+// Helper, not vocabulary — ADR-008 rules this the one genuine exception to the
+// module-export rule: every consumer copies these 4 lines locally instead of
+// importing them (apps/start/src/utils/object-to-zod-enums.ts is the frontend's
+// copy). Kept private here for report.constants.ts's own use building the enums
+// below.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {
@@ -952,16 +952,16 @@ export const zReport = zReportInput.extend({
 // Alias for backward compatibility
 export const zChartInput = zReportInput;
 
-// ---------------------------------------------------------------------------
-// Inferred report/chart types, moved from packages/validation/src/types.validation.ts
-// (M11-006, ADR-008's module map: report owns "C" for the chart/report/widget
-// vocabulary). They land beside the schemas they infer from, which is what
-// removes that file's `import type { … } from './index'` back-edge.
-// `IChartEvents` and `ISetCookie` do NOT come along: the first is a dead alias
-// with no importers, the second is already ../../shared/cookie.ts.
-// `UnionOmit` has no owning module — it is kept here, with the report types it
-// is only ever applied to (apps/start's reportSlice), until M11-007 gives
-// apps/start its own copy.
+// --------------------------------------------------------------------------
+// Inferred report/chart types, moved from
+// packages/validation/src/types.validation.ts (ADR-008's module map: report
+// owns "C" for the chart/report/widget vocabulary). They land beside the
+// schemas they infer from, which is what removes that file's `import type { … }
+// from './index'` back-edge. `IChartEvents` and `ISetCookie` do NOT come along:
+// the first is a dead alias with no importers, the second is
+// already../../shared/cookie.ts. `UnionOmit` has no owning module — it is kept
+// here, with the report types it is only ever applied to (apps/start's
+// reportSlice), until M11-007 gives apps/start its own copy.
 // ---------------------------------------------------------------------------
 
 export type UnionOmit<T, K extends keyof any> = T extends any

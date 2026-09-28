@@ -1,12 +1,12 @@
-// The concrete, Prisma-backed access lookups (M8-005, moved from
+// The concrete, Prisma-backed access lookups (moved from
 // packages/db/src/services/access.service.ts). Deliberately a sibling of
-// modules/auth/src/access.ts rather than living inside it: the ladder must
-// stay importable with no database (see its own header), while this file is
-// the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
-// to it. Same shape as packages/trpc/src/access.ts's binding.
+// modules/auth/src/access.ts rather than living inside it: the ladder must stay
+// importable with no database (see its own header), while this file is the real
+// `@openpanel/db` binding ~28 modules' `src/access.ts` files supply to it. Same
+// shape as packages/trpc/src/access.ts's binding.
 //
-// M15-005: Postgres comes from `context.ts`'s `unscopedDb()`. Two of the three
-// lookups here are `cacheable`, whose key is derived from the call's ARGUMENTS
+// Postgres comes from `context.ts`'s `unscopedDb`. Two of the three lookups
+// here are `cacheable`, whose key is derived from the call's ARGUMENTS
 // (packages/redis/cachable.ts), so they cannot take a `ServiceDeps` leading
 // parameter at all; the third (`getClientAccess`) delegates to them and stays
 // symmetric. Their bare signature is also a protected wire contract —
@@ -16,8 +16,8 @@
 // `ctx.db` is, not a second one.
 //
 // `getProjectById` is spelled here rather than imported from
-// `project.service.ts`: `shared/` sits below `modules/` (ADR-022 R22) and the
-// ladder reads one field off the row.
+// `project.service.ts`: `shared/` sits below `modules/` and the ladder reads
+// one field off the row.
 
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';

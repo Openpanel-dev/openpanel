@@ -1,21 +1,21 @@
 // Ported from V1's packages/trpc/src/routers/subscription.ts (checkout,
 // products, usage, cancel/pause/resume, save-discount, portal) and from
-// apps/api/src/controllers/webhook.controller.ts's `polarWebhook` (M6-006) —
-// neither exists in this tree; every caller reaches these functions through
-// this file directly (subscription.rpc.ts, subscription.routes.ts).
+// apps/api/src/controllers/webhook.controller.ts's `polarWebhook` — neither
+// exists in this tree; every caller reaches these functions through this file
+// directly (subscription.rpc.ts, subscription.routes.ts).
 //
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
 // do: every mutating procedure in this module gates on it first, before
 // touching Polar. `requireOrganizationAdmin` comes from auth.service.ts's
-// single, lazily-memoized `getAccessChecks()` (M10-002) — independent of
-// `ServiceDeps`, so it needs no change here.
+// single, lazily-memoized `getAccessChecks` — independent of `ServiceDeps`, so
+// it needs no change here.
 //
-// M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()`/`loadPrisma()` lazy loaders are gone.
-// M15-202: `Prisma.DbNull` (the JSON-column null sentinel) arrives as
-// `deps.prisma` — the app shell puts the two sentinels on `AppDeps` — rather
-// than through a lazy import back into `context.ts`.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb`/`loadPrisma` lazy loaders are gone. M15-202: `Prisma.DbNull` (the
+// JSON-column null sentinel) arrives as `deps.prisma` — the app shell puts the
+// two sentinels on `AppDeps` — rather than through a lazy import back into
+// `context.ts`.
 
 import {
   applySubscriptionDiscount,
@@ -354,14 +354,13 @@ export async function portal(
   return { url: created.customerPortalUrl };
 }
 
-// -- Polar webhook --------------------------------------------------------
+// - Polar webhook --------------------------------------------------------
 // Ported from V1's apps/api/src/controllers/webhook.controller.ts's
-// `polarWebhook` + its private helpers (M6-006); that controller doesn't
-// exist in this tree — this module's own `/webhook/polar` route
-// (subscription.routes.ts) is the only caller.
-// `validatePolarEvent` verifies the signature over the RAW body bytes; any
-// body parsing before this call breaks that verification, which is why the
-// route reads `await request.text()` rather than a parsed JSON body.
+// `polarWebhook` + its private helpers; that controller doesn't exist in this
+// tree — this module's own `/webhook/polar` route (subscription.routes.ts) is
+// the only caller. `validatePolarEvent` verifies the signature over the RAW
+// body bytes; any body parsing before this call breaks that verification, which
+// is why the route reads `await request.text` rather than a parsed JSON body.
 
 type PolarEvent = ReturnType<typeof validatePolarEvent>;
 type PolarSubscriptionData = Extract<

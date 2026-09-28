@@ -1,14 +1,13 @@
-// Ported from packages/trpc/src/routers/cohort.ts (M5-003).
+// Ported from packages/trpc/src/routers/cohort.ts.
 //
-// M11-001: every procedure is on its V1 twin's builder.
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
-// the input parser, exactly as V1 does. The explicit checks in the handlers
-// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
-// `organizationId`, so anything resolved from another id needs its own
-// (ADR-011).
+// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
+// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
+// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
+// another id needs its own.
 //
-// The per-project access ladder itself is bound once, in auth.service.ts
-// (M10-002); every procedure here reaches it through `ctx.services.auth`.
+// The per-project access ladder itself is bound once, in auth.service.ts; every
+// procedure here reaches it through `ctx.services.auth`.
 //
 // CRUD (list/get/create/update/delete) reads/writes Prisma's `cohort` table
 // directly, matching V1's router — cohort.service.ts owns only the
@@ -44,10 +43,9 @@ const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
 
 /**
- * `mostEvents` and `popularRoutes` read the project's whole history before
- * this window existed (docs/UNPROVEN_ENDPOINTS.md §4.4). The default is the
- * one `profile.powerUsers` got for the same cause (M31-003); the cohort page
- * passes no range, so this is what it shows.
+ * `mostEvents` and `popularRoutes` read the project's whole history before this
+ * window existed. The default is the one `profile.powerUsers` got for the same
+ * cause; the cohort page passes no range, so this is what it shows.
  */
 const COHORT_ACTIVITY_DEFAULT_RANGE = '3m';
 
@@ -114,8 +112,8 @@ export const cohortRouter = createTRPCRouter({
     }),
 
   // No project-access check here, matching V1 (packages/trpc/src/routers/
-  // cohort.ts) exactly — protectedProcedure's session check is the only
-  // gate today. Preserved as found: ADR-011 invariant 1 forbids deleting an
+  // cohort.ts) exactly — protectedProcedure's session check is the only gate
+  // today. Preserved as found: ADR-011 invariant 1 forbids deleting an
   // in-handler check, and this router does not serve live traffic yet.
   create: protectedProcedure
     .input(zCohortInput)

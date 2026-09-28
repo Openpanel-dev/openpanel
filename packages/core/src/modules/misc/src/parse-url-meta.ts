@@ -1,4 +1,4 @@
-// Ported verbatim from apps/api/src/utils/parseUrlMeta.ts (M7-008).
+// Ported verbatim from apps/api/src/utils/parseUrlMeta.ts.
 
 import urlMetadata from 'url-metadata';
 

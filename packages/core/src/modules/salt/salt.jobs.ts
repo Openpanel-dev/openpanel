@@ -1,9 +1,9 @@
 // Ported from apps/worker/src/jobs/cron.salt.ts + boot-cron.ts's `salt`
-// schedule (M8-004); the schedule moved onto the job at ADR-021 (M10-007).
+// schedule; the schedule moved onto the job at ADR-021.
 //
-// `salt` is this module's fragment of the ONE `cron` queue's jobs, spread
-// into jobs.registry.ts. Its schedule is now derived straight from `cron`
-// below — id and cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
+// `salt` is this module's fragment of the ONE `cron` queue's jobs, spread into
+// jobs.registry.ts. Its schedule is now derived straight from `cron` below — id
+// and cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

@@ -6,9 +6,9 @@
 // slim-down"; three options, none picked). Taken here: option 3, "accept a
 // declared type-only devDependency edge" — `@openpanel/db` already depends on
 // `@openpanel/core` (these shims were the reason), the edge is `import type`
-// only so it creates no runtime cycle, and it is the same shape as this
-// repo's existing type-only `db -> queue` cycle. Revisit if a future task
-// picks a different one of the three named resolutions.
+// only so it creates no runtime cycle, and it is the same shape as this repo's
+// existing type-only `db -> queue` cycle. Revisit if a future task picks a
+// different one of the three named resolutions.
 import type {
   IClickhouseBotEvent,
   IClickhouseEvent,

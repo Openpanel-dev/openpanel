@@ -1,21 +1,20 @@
-// The queue-side collectors, moved from apps/worker/src/metrics.ts onto the
-// one core registry (TARGET_ARCHITECTURE §18). Names, labels and buckets are
-// V1's; the worker-side copies died with apps/worker (M9-003).
+// The queue-side collectors, moved from apps/worker/src/metrics.ts onto the one
+// core registry (TARGET_ARCHITECTURE §18). Names, labels and buckets are V1's;
+// the worker-side copies died with apps/worker.
 //
 // Three deliberate differences from V1, all listed in
 // `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:
 //
-//  1. V1 registered the five `<queue>_*_count` gauges for TWO queues
-//     (`sessionsQueue`, `cronQueue`). V2 registers them for all seven, which
-//     ADR-018's continuity register asks for ("kept for the 7 BullMQ
-//     queues"). Ten new series appear; none of the existing ten changes.
-//  2. They register only where the role consumes (main.ts), because each
-//     gauge is one Redis round trip per scrape and ten api replicas exposing
-//     them would multiply that for no new information.
-//  3. A gauge whose Redis read throws is skipped rather than failing the whole
-//     scrape. V1 let it reject `registry.metrics()`, which turns one Redis
-//     blip into a 500 on /metrics and a gap in every panel; core's buffer
-//     gauges already swallow the same way (buffers/buffer.metrics.ts).
+// 1. V1 registered the five `<queue>_*_count` gauges for TWO queues
+// (`sessionsQueue`, `cronQueue`). V2 registers them for all seven, which
+// ADR-018's continuity register asks for ("kept for the 7 BullMQ queues"). Ten
+// new series appear; none of the existing ten changes. 2. They register only
+// where the role consumes (main.ts), because each gauge is one Redis round trip
+// per scrape and ten api replicas exposing them would multiply that for no new
+// information. 3. A gauge whose Redis read throws is skipped rather than
+// failing the whole scrape. V1 let it reject `registry.metrics`, which turns
+// one Redis blip into a 500 on /metrics and a gap in every panel; core's buffer
+// gauges already swallow the same way (buffers/buffer.metrics.ts).
 
 import type { Queue as BullQueue } from 'bullmq';
 import client from 'prom-client';
@@ -41,10 +40,10 @@ function metricPrefix(queueName: string): string {
 
 /**
  * FAILURE-ONLY, deliberately. V1 observed this exclusively in the workers'
- * `failed` listener (apps/worker/src/boot-workers.ts), so every percentile
- * ever computed from it is a percentile of failures. Success timings, if
- * wanted, get a NEW series name — emitting them here silently rewrites every
- * existing panel (ADR-018 risk 7).
+ * `failed` listener (apps/worker/src/boot-workers.ts), so every percentile ever
+ * computed from it is a percentile of failures. Success timings, if wanted, get
+ * a NEW series name — emitting them here silently rewrites every existing panel
+ * (ADR-018 risk 7).
  */
 export const jobDurationMs = new client.Histogram({
   name: 'job_duration_ms',

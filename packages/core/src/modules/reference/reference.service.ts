@@ -1,16 +1,15 @@
 // Moved from packages/db/src/services/reference.service.ts, plus the
 // query/mutation bodies packages/trpc/src/routers/reference.ts held inline
-// (M6-004, DELEGATE PATTERN: V1's router and this package's own
-// reference.rpc.ts shared one implementation, same as
-// conversation.service.ts since M5-006, until packages/trpc was retired at
-// M11-004).
+// (DELEGATE PATTERN: V1's router and this package's own reference.rpc.ts shared
+// one implementation, same as conversation.service.ts since M5-006, until
+// packages/trpc was retired at M11-004).
 //
-// M10-003: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`. The `loadDb()` / `loadDateService()` / `loadOrganizationService()`
-// lazy loaders are gone: nothing here value-imports `@openpanel/db` or this
-// package's own barrel any more (the Prisma row type below is `import type`,
-// erased at runtime), so there is no import-time client — and no pino-pretty
-// worker per test file — left to defer (docs/TECH_DEBT.md §4).
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`. The
+// `loadDb` / `loadDateService` / `loadOrganizationService` lazy loaders are
+// gone: nothing here value-imports `@openpanel/db` or this package's own barrel
+// any more (the Prisma row type below is `import type`, erased at runtime), so
+// there is no import-time client — and no pino-pretty worker per test file —
+// left to defer.
 
 import type { Reference } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';

@@ -1,10 +1,9 @@
 // Ported from apps/worker/src/jobs/cron.onboarding.ts + boot-cron.ts's
-// `onboarding` schedule (M6-003); the schedule moved onto the job at
-// ADR-021 (M10-007).
+// `onboarding` schedule; the schedule moved onto the job at ADR-021.
 //
-// `onboarding` is this module's fragment of the ONE `cron` queue's jobs,
-// spread into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
-// (apps/worker/src/boot-cron.ts) — same shape as organization.jobs.ts (M6-001).
+// `onboarding` is this module's fragment of the ONE `cron` queue's jobs, spread
+// into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
+// (apps/worker/src/boot-cron.ts) — same shape as organization.jobs.ts.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

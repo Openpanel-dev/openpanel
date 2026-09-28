@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 // The exports map is the only structural barrier between apps/start and a
-// service (ADR-008). Widening it is silent, so it is asserted here.
+// service. Widening it is silent, so it is asserted here.
 test('the curated barrel resolves', async () => {
   expect(await import('@openpanel/core')).toBeDefined();
 });

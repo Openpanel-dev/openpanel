@@ -4,8 +4,8 @@
  *
  * Ported from apps/api/src/hooks/subscription.hook.test.ts with M9-004, when
  * V1's `subscriptionHook` moved into the ingest module. Same three behaviours
- * matter: it gates on the wind-down STEP rather than the subscription state
- * (so an expired trial keeps ingesting until it has actually been warned), the
+ * matter: it gates on the wind-down STEP rather than the subscription state (so
+ * an expired trial keeps ingesting until it has actually been warned), the
  * caller answers 202 rather than a 4xx (the SDKs retry everything except 401
  * and 2xx), and it fails open. `SELF_HOSTED` is a `selfHosted` argument now —
  * core reads no environment — so V1's `vi.stubEnv` becomes a parameter.

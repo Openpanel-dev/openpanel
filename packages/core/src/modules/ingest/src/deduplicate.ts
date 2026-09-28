@@ -1,6 +1,6 @@
-// Ported from apps/api/src/utils/deduplicate.ts (M8-002). The web SDK can fire
-// the same event twice (pagehide + visibilitychange); a short-lived Redis lock
-// keyed on the whole payload collapses the pair.
+// Ported from apps/api/src/utils/deduplicate.ts. The web SDK can fire the same
+// event twice (pagehide + visibilitychange); a short-lived Redis lock keyed on
+// the whole payload collapses the pair.
 
 import { getLock } from '@openpanel/redis';
 import fastJsonStableHash from 'fast-json-stable-hash';

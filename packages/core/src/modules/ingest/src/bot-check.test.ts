@@ -1,6 +1,6 @@
 /**
- * Tests for checkIngestBot — the bot filter V1 runs as `isBotHook` on
- * ingestion (apps/api/src/hooks/is-bot.hook.test.ts, moved with M8-002).
+ * Tests for checkIngestBot — the bot filter V1 runs as `isBotHook` on ingestion
+ * (apps/api/src/hooks/is-bot.hook.test.ts, moved with M8-002).
  *
  * The key behaviour guarded here: requests authenticated with a client secret
  * (server-side SDKs) are never treated as bots, regardless of user agent. Bot
@@ -17,8 +17,8 @@ const createBotEvent = mock(
 
 let checkIngestBot: typeof import('../ingest.service').checkIngestBot;
 
-// M10-005: `checkIngestBot` takes `ServiceDeps` first and hands it to
-// `createBotEvent`, which is mocked below — nothing here reads a client.
+// `checkIngestBot` takes `ServiceDeps` first and hands it to `createBotEvent`,
+// which is mocked below — nothing here reads a client.
 const deps = {} as unknown as import('../../../services').ServiceDeps;
 
 // Spread the real modules and override by name: ingest.service re-exports

@@ -75,12 +75,12 @@ export class EventBuffer extends BaseBuffer {
 
   /**
    * The durability watermark. Every event gets a monotonically increasing
-   * sequence number in `add()`; `lastDurableSeq` is the highest sequence a
+   * sequence number in `add`; `lastDurableSeq` is the highest sequence a
    * COMPLETED rpush covered. A caller's events are in Redis once
    * `lastDurableSeq` reaches the sequence of its last event — whoever wrote
    * them. That is the question the Kafka batch handler and shutdown need
    * answered ("are my events in Redis?"), and it is not the same question as
-   * "did I start the write?" (M18-005, drill 03 re-run).
+   * "did I start the write?" (drill 03 re-run).
    */
   private lastQueuedSeq = 0;
   private lastDurableSeq = 0;
@@ -182,12 +182,12 @@ export class EventBuffer extends BaseBuffer {
    * The same flush, but it THROWS when the rpush did not land, and it does not
    * resolve until every event accepted before the call is in Redis.
    *
-   * `flush()` swallows a Redis failure on purpose. The two callers here have no
+   * `flush` swallows a Redis failure on purpose. The two callers here have no
    * next attempt: the Kafka batch handler is about to resolve offsets that
    * kafkajs commits as soon as it returns, and shutdown is about to exit. Both
    * must be able to SEE the failure and decline to commit — a redelivered
-   * duplicate is recoverable, a dropped `pendingEvents` array is not
-   * (M18-001, drill 03).
+   * duplicate is recoverable, a dropped `pendingEvents` array is not (drill
+   * 03).
    */
   public async flushPendingOrThrow(
     sinceSeq: number = this.droppedThroughSeq
@@ -198,7 +198,7 @@ export class EventBuffer extends BaseBuffer {
     // running or starts the one write still missing, and a write covers
     // everything pending when it starts. So a concurrent write that happens to
     // carry our events resolves us — losing the race to start a write is a
-    // SUCCESS, which is the whole correctness point (M18-005).
+    // SUCCESS, which is the whole correctness point.
     while (this.lastDurableSeq < target) {
       const inFlight = this.inFlightWrite;
 
@@ -226,27 +226,26 @@ export class EventBuffer extends BaseBuffer {
     // alone cannot say so: it moves on with the NEXT write, which carries none
     // of them. Without this a batch whose events were dropped by a micro-batch
     // timer it never awaited would be told they are safe, commit its offsets,
-    // and lose them for good (M18-007).
+    // and lose them for good.
     if (this.droppedThroughSeq > sinceSeq) {
       this.throwIfFailed(this.lastDropFailure);
     }
   }
 
   /**
-   * Buffer an event whose producer produces it AGAIN when this buffer reports
-   * a failed flush — today the Kafka consumer, whose batch is left
-   * uncommitted and redelivered (`modules/ingest/src/consumer.ts`).
+   * Buffer an event whose producer produces it AGAIN when this buffer reports a
+   * failed flush — today the Kafka consumer, whose batch is left uncommitted
+   * and redelivered (`modules/ingest/src/consumer.ts`).
    *
-   * Such an event is not re-queued by a failed write. Re-queueing it was
-   * right while the buffer owned the retry, and became harmful the moment
-   * Kafka took that ownership over (M18-001): the redelivery buffers a fresh
-   * copy, so the old one is a SECOND copy of one event, and every further
-   * redelivery adds another. Drill 02's re-run measured 4,759 ClickHouse rows
-   * for 230 events that way (M18-007).
+   * Such an event is not re-queued by a failed write. Re-queueing it was right
+   * while the buffer owned the retry, and became harmful the moment Kafka took
+   * that ownership over: the redelivery buffers a fresh copy, so the old one is
+   * a SECOND copy of one event, and every further redelivery adds another.
+   * Drill 02's re-run measured 4,759 ClickHouse rows for 230 events that way.
    *
-   * Producers Kafka does not redeliver — the session-end job, whose Redis
-   * `SET NX` claim makes a job retry a no-op — keep the safety net by using
-   * plain `add()`.
+   * Producers Kafka does not redeliver — the session-end job, whose Redis `SET
+   * NX` claim makes a job retry a no-op — keep the safety net by using plain
+   * `add`.
    */
   public addRedeliverable(event: IClickhouseEvent): void {
     this.redeliverableEvents.add(event);
@@ -282,7 +281,7 @@ export class EventBuffer extends BaseBuffer {
    * Redis?" cannot tell its own dropped events from another producer's, and a
    * failed write can drop events the caller never awaited. Opening the window
    * before the first event is buffered is what makes the answer that caller's
-   * own (M18-007).
+   * own.
    */
   public openDurabilityWindow(): () => Promise<void> {
     const sinceSeq = this.lastQueuedSeq;
@@ -346,11 +345,11 @@ export class EventBuffer extends BaseBuffer {
       }
 
       const results = await multi.exec();
-      // ioredis RESOLVES a MULTI whose individual commands failed, handing the
+      // Ioredis RESOLVES a MULTI whose individual commands failed, handing the
       // error back per entry — so a WRONGTYPE or an out-of-memory rpush would
       // otherwise read as a successful flush and the events would be dropped
-      // silently. The batch handler decides whether to resolve Kafka offsets
-      // on this answer, so it has to be the truth (M18-001).
+      // silently. The batch handler decides whether to resolve Kafka offsets on
+      // this answer, so it has to be the truth.
       if (results === null) {
         throw new Error('event buffer rpush transaction was aborted');
       }

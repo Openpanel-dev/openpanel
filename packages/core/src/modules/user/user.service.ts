@@ -1,7 +1,7 @@
-// Moved from packages/db/src/services/user.service.ts (M6-001).
+// Moved from packages/db/src/services/user.service.ts.
 //
-// M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone. Every caller — including
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// `loadDb` lazy loader is gone. Every caller — including
 // `onboarding.service.ts` and `auth.service.ts` — passes the `deps` it holds.
 
 import type { User } from '@openpanel/db/src/prisma-client';
