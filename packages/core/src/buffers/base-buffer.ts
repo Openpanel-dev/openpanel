@@ -34,7 +34,7 @@ export interface BufferDeps {
    * Asked before every flush. ADR-005's `ProducerHandle.bullQueues` escape
    * hatch, narrowed to the one thing the buffers ask BullMQ directly: pausing
    * `cron` from bull-board halts ALL buffer flushing, preserved deliberately
-   * (docs/ANSWERS.md §3: "known!").
+   * as an accepted trade-off.
    */
   isCronPaused(): Promise<boolean>;
   /**

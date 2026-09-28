@@ -161,8 +161,8 @@ function buildProducerHandle(): QueueProducerHandle {
 /**
  * A named child of the boot logger per buffer, plus the buffers' one direct
  * BullMQ read — ADR-005's `bullQueues` escape hatch. Pausing `cron` from
- * bull-board halts ALL buffer flushing, preserved deliberately (docs/ANSWERS.md
- * §3: "known!").
+ * bull-board halts ALL buffer flushing, preserved deliberately as an
+ * accepted trade-off.
  */
 function bufferDeps(producers: QueueProducerHandle): BufferDeps {
   const cron = findBullQueue(producers, CRON_QUEUE_NAME);

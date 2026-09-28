@@ -23,7 +23,7 @@ export const TOP_ENTRY_EVENTS = 3;
  * `arrayFilter` whose lambda indexed its own captured `groupArray`, which
  * ClickHouse re-materialises once per element: Theta(n^2) in the longest single
  * session's event count, fatal on a tenant with one very long session
- * (docs/ANALYTICS_PERFORMANCE.md section 6.1). `arrayCompact` is the built-in
+ * `arrayCompact` is the built-in
  * for exactly this and is linear; the result is byte-identical.
  */
 const DEDUPE_CONSECUTIVE = compiledText(

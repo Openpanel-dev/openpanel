@@ -3,9 +3,8 @@
 // LIVE route (DELEGATE PATTERN) and calls the same misc.service.ts functions
 // this file does.
 //
-// `GET /misc/og/clear` and `GET /misc/favicon/clear` are dropped, not ported
-// (ADR-015 entry #6: RULED + DEAD — `docs/ANSWERS.md` §1.4 confirms nothing
-// depends on them).
+// `GET /misc/og/clear` and `GET /misc/favicon/clear` are deliberately absent:
+// nothing depends on them.
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';

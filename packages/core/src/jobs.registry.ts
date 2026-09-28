@@ -67,7 +67,7 @@ const sessions = defineQueue('sessions', {
 
 // One queue, one worker at concurrency 1, every scheduled job in the system.
 // Pausing it from bull-board halts all buffer flushing — preserved deliberately
-// (docs/ANSWERS.md §3: "known!").
+// — an accepted trade-off.
 const cron = defineQueue('cron', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.cron },

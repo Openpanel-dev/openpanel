@@ -42,7 +42,7 @@ describe('ENABLED_QUEUES', () => {
     ]);
   });
 
-  it('parses the cloud split (docs/ANSWERS.md 1.3)', () => {
+  it('parses the cloud split', () => {
     expect(
       loadConfig({ ...base, ENABLED_QUEUES: 'events' }).ENABLED_QUEUES
     ).toEqual(['events']);

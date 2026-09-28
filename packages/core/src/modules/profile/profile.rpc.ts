@@ -26,7 +26,7 @@ const DEFAULT_LIST_TAKE = 50;
 /**
  * `list` and `powerUsers` had no date filter at all, so their cost grew with
  * the tenant's lifetime rather than with anything the caller chose
- * (`docs/ANALYTICS_PERFORMANCE.md` §6.8: 44.2 M rows read for one page of 50).
+ * (44.2 M rows read for one page of 50, measured).
  * Both now take the report vocabulary's window; this is the default when the
  * caller names none, and it is the range §6.8 itself uses to describe the
  * change ("a power user over 90 days is not the same set as over all time").

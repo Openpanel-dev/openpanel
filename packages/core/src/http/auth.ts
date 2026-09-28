@@ -20,7 +20,7 @@
 // exceptions swallowed => null (fail-closed). 6. `canWriteProject` = level in
 // {write, admin}; admin stays a superset. 7. 5-minute Redis cache + 60s
 // in-process LRU on both access lookups; removeMember/updateMemberAccess do not
-// clear them. Sessions survive revocation (docs/ANSWERS.md §3: acceptable). 8.
+// clear them. Sessions survive revocation, which is accepted. 8.
 // The nine cross-object binding checks in DISC-011 §4.4. 9. chartProcedure's
 // share branch overwrites the caller's projectId with the report's — explicit
 // in the builder, not an accident of spread order. 10.

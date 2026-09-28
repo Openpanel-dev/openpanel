@@ -312,8 +312,7 @@ const roleSchema = z.preprocess(
 
 /**
  * Same doctrine as ROLE: an unknown token fails boot loudly rather than leaving
- * a worker silently idle (V1 ignored it — boot-workers.ts:78-87 — which
- * docs/ANSWERS.md §1.3 rules must change). Unset means all of them.
+ * a worker silently idle. Unset means all of them.
  */
 const enabledQueuesSchema = z.preprocess(
   blankToUndefined,

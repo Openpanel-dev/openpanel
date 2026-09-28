@@ -146,7 +146,7 @@ const BUCKET_PROFILES_FETCH_CONCURRENCY = 4;
 /**
  * Cap on the ids one chart data point hands the drill-down modal. The bucket
  * query used to be unbounded, so a busy project's point returned a 31,447-id
- * tail (`docs/ANALYTICS_PERFORMANCE.md` section 6.7) that the modal renders
+ * tail that the modal renders
  * through a virtualizer and nobody scrolls to, after paying for every one of
  * them in `profiles FINAL` batches. Same number as FUNNEL_PROFILES_LIMIT: both
  * feed the same modal, so the two drill-downs should not disagree on depth.

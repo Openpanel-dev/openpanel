@@ -2,9 +2,8 @@
 // paths (DELEGATE PATTERN) and call the functions below verbatim — no new
 // behaviour.
 //
-// `GET/POST /misc/og/clear` and `/misc/favicon/clear` are NOT ported: ADR-015
-// entry #6 grades them RULED + DEAD (`docs/ANSWERS.md` §1.4 confirms no proxy
-// depends on them), so this wave is where V1 drops them too.
+// `GET/POST /misc/og/clear` and `/misc/favicon/clear` are deliberately absent:
+// nothing proxies them.
 //
 // The ClickHouse CLIENT is `deps.ch` — reads through ch-query.ts, the one write
 // through `deps.ch.insert` — so the `loadCh` lazy import of `@openpanel/db` is

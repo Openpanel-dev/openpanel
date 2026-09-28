@@ -80,6 +80,17 @@ gone). These are what was left, each re-checked against the tree on 2026-09-28:
   `apps/public/`". Widening the scan changes what that gate asserts, so it is a
   decision, not a fix.
 
+### Pre-existing, found while verifying (2026-09-28)
+
+- **The Bun pin has drifted.** `.bun-version` says `1.4.0` and
+  `apps/api/Dockerfile`'s `ARG BUN_VERSION` agrees, but this machine runs Bun
+  1.4.2, so `scripts/doctor.sh` reports a failure and
+  `apps/api/src/config/bun-version.test.ts`'s "doctor.sh passes" case is red.
+  Confirmed pre-existing by stashing the comment-cleanup diff and re-running:
+  same single failure. Either install 1.4.0 or bump `.bun-version` and the
+  Dockerfile `ARG` together — the test exists to stop those two drifting, and
+  right now it is the installed toolchain that has moved.
+
 ### Found while cleaning comments (2026-09-28)
 
 - **`notification.constants.ts` duplicates three schemas from
