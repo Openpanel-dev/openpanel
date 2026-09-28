@@ -196,7 +196,7 @@ export const importRouter = createTRPCRouter({
         // unreachable) and is what this guards against.
         await db.import.updateMany({
           where: { id: importRecord.id, status: 'pending' },
-          data: { status: 'failed' },
+          data: { status: 'failed', errorMessage: importRecord.errorMessage },
         });
         throw error;
       }

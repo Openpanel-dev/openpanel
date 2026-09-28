@@ -60,6 +60,7 @@ beforeEach(() => {
     id: IMPORT_ID,
     projectId: PROJECT_ID,
     status: 'failed',
+    errorMessage: 'Mixpanel rate limit exceeded',
   });
   importQueueMock.add.mockResolvedValue({ id: 'job-1' });
   dbMock.import.update.mockResolvedValue({ id: IMPORT_ID, jobId: 'job-1' });
@@ -103,7 +104,7 @@ describe('import.retry', () => {
     });
     expect(dbMock.import.updateMany).toHaveBeenNthCalledWith(2, {
       where: { id: IMPORT_ID, status: 'pending' },
-      data: { status: 'failed' },
+      data: { status: 'failed', errorMessage: 'Mixpanel rate limit exceeded' },
     });
     expect(dbMock.import.update).not.toHaveBeenCalled();
   });
