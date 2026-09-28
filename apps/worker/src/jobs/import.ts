@@ -68,6 +68,11 @@ function mergeProfileInto(
   });
 }
 
+/**
+ * BullMQ handler for one import: stage the source's events/profiles into
+ * ClickHouse, move them into production, build sessions, and clean up.
+ * Resumes from `currentStep` on retry where that step is resumable.
+ */
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
 

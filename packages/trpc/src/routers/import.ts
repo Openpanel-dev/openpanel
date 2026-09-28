@@ -148,6 +148,7 @@ export const importRouter = createTRPCRouter({
       });
     }),
 
+  /** Re-enqueue a failed import. Atomic failed->pending transition; see inline comments for why. */
   retry: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
