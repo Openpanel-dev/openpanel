@@ -148,6 +148,7 @@ export const importRouter = createTRPCRouter({
       });
     }),
 
+  /** Re-enqueue a failed import. Atomic failed->pending transition; see inline comments for why. */
   retry: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -163,26 +164,49 @@ export const importRouter = createTRPCRouter({
         level: 'write',
       });
 
-      // Only allow retry for failed imports
-      if (importRecord.status !== 'failed') {
+      // Only allow retry for failed imports. Checked-then-enqueued atomically:
+      // two concurrent retry calls both reading status 'failed' before either
+      // writes would otherwise enqueue two jobs for the same importId, and
+      // the worker's success-path cleanup deletes staging rows by importId —
+      // one job finishing would delete rows the other has staged but not yet
+      // consumed.
+      const { count } = await db.import.updateMany({
+        where: { id: importRecord.id, status: 'failed' },
+        data: { status: 'pending', errorMessage: null },
+      });
+      if (count === 0) {
         throw new Error('Only failed imports can be retried');
       }
 
       // Add new job to queue
-      const job = await importQueue.add('import', {
-        type: 'import',
-        payload: {
-          importId: importRecord.id,
-        },
-      });
+      let job: Awaited<ReturnType<typeof importQueue.add>>;
+      try {
+        job = await importQueue.add('import', {
+          type: 'import',
+          payload: {
+            importId: importRecord.id,
+          },
+        });
+      } catch (error) {
+        // The status flip above already landed. If enqueueing rejects, revert
+        // it so the import isn't stuck in 'pending' forever with no job and
+        // no way to retry again -- 'pending' isn't one of the statuses retry
+        // accepts. This can't distinguish "definitely never enqueued" from
+        // "enqueued but the acknowledgement was lost"; the former is the
+        // overwhelmingly likely failure (add() rejects outright when Redis is
+        // unreachable) and is what this guards against.
+        await db.import.updateMany({
+          where: { id: importRecord.id, status: 'pending' },
+          data: { status: 'failed', errorMessage: importRecord.errorMessage },
+        });
+        throw error;
+      }
 
       // Update import record
       return db.import.update({
         where: { id: importRecord.id },
         data: {
           jobId: job.id,
-          status: 'pending',
-          errorMessage: null,
         },
       });
     }),

@@ -177,17 +177,32 @@ export async function insertProfilesBatch(
  * Delete all staging data for an import. Used to get a clean slate on retry
  * when the failure happened before moving data to production.
  */
-export async function cleanupStagingData(importId: string): Promise<void> {
+export async function cleanupStagingData(
+  importId: string,
+  options?: {
+    /**
+     * Block until ClickHouse has finished the mutation. Required before
+     * re-staging the same import, so a restarted run cannot mix its rows with
+     * the previous attempt's. Not required when tidying up after success,
+     * where waiting on a multi-minute mutation risks a client timeout that
+     * would fail an import which has already done all of its work.
+     */
+    wait?: boolean;
+  }
+): Promise<void> {
+  const wait = options?.wait ?? true;
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String}`,
     query_params: { importId },
-    clickhouse_settings: {
-      wait_end_of_query: 1,
-      mutations_sync: '2',
-      send_progress_in_http_headers: 1,
-      http_headers_progress_interval_ms: '50000',
-    },
+    clickhouse_settings: wait
+      ? {
+          wait_end_of_query: 1,
+          mutations_sync: '2',
+          send_progress_in_http_headers: 1,
+          http_headers_progress_interval_ms: '50000',
+        }
+      : { mutations_sync: '0' },
   });
 }
 
