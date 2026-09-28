@@ -92,6 +92,11 @@ export function sanitizeUrlQuery(url: string): string {
   return `${url.slice(0, queryIndex)}?${sanitized}`;
 }
 
+/**
+ * Recursively replace sensitive values (by key) and URL query secrets with
+ * `[REDACTED]`. Bails out to `[REDACTED]` wholesale past MAX_REDACT_DEPTH
+ * rather than passing a deep object through unchecked.
+ */
 export function redactSensitive(value: unknown, depth = 0): unknown {
   if (value instanceof Error) {
     return {
@@ -168,6 +173,7 @@ function withRedactedChildBindings(logger: ILogger): ILogger {
   return logger;
 }
 
+/** Build the app's pino logger, wired for redaction, pretty-printing (dev) or OTLP export (prod). */
 export function createLogger({ name }: { name: string }): ILogger {
   const service = getServiceName(name);
 
