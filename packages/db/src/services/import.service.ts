@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { ILogger } from '@openpanel/logger';
 import {
   ch,
@@ -20,71 +19,94 @@ export interface ImportStageResult {
 const SESSION_GAP_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Generate gap-based session IDs for events that have none.
- * Streams events from staging (sorted by device_id, created_at), assigns a new
- * session when gap > 30 min, re-inserts with session_id, then deletes old rows.
+ * Generate gap-based session IDs for staged events that have none.
+ *
+ * Runs entirely inside ClickHouse. Each device's events are walked in time
+ * order and a new session starts whenever the gap since the previous event
+ * exceeds SESSION_GAP_MS; rows are re-inserted carrying the new session_id and
+ * the originals are then deleted.
+ *
+ * This used to stream every staged row out to the application, assign ids in
+ * JavaScript and write them all back. That is an O(n) round trip over the whole
+ * import — at tens of millions of rows it holds a single HTTP request open for
+ * many minutes and fails on the client's request timeout, even though the
+ * server-side work would have completed.
  */
 export async function generateGapBasedSessionIds(
   importId: string
 ): Promise<void> {
-  let currentDeviceId = '';
-  let currentSessionId = '';
-  let currentLastTime = 0;
-  let currentCounter = -1;
-  const BATCH_SIZE = 5000;
-  const batch: IClickhouseEvent[] = [];
+  // Columns carried across verbatim. `session_id` is recomputed below and
+  // `imported_at_meta` is left to its column default.
+  const CARRIED_COLUMNS = `id, name, sdk_name, sdk_version, device_id, profile_id,
+    project_id, path, origin, referrer, referrer_name, referrer_type,
+    duration, properties, created_at, country, city, region,
+    longitude, latitude, os, os_version, browser, browser_version,
+    device, brand, model, imported_at, import_id, import_status`;
 
-  const result = await ch.query({
+  // Same rule as the row-by-row version it replaces: walk each device's events
+  // in time order and start a new session whenever the gap since the previous
+  // event exceeds SESSION_GAP_MS. The session id is
+  // md5(`${device_id}-${counter}`), counting from 0 per device, so ids stay
+  // identical to the ones produced before.
+  //
+  // `lagInFrame` needs the explicit frame — the default window frame would
+  // otherwise look at the whole partition rather than the preceding row.
+  //
+  // Every `ORDER BY created_at` also carries `, id`: two events at the same
+  // millisecond otherwise let ClickHouse pick a different tie order at each
+  // of the three nested windows, so a row `lagInFrame`/`row_number` place one
+  // way could land elsewhere in the outer `sum` -- splitting or merging a
+  // session inconsistently within a single run, not just between reruns.
+  await ch.command({
     query: `
-      SELECT id, name, sdk_name, sdk_version, device_id, profile_id, project_id,
-        session_id, path, origin, referrer, referrer_name, referrer_type,
-        duration, properties, created_at, country, city, region,
-        longitude, latitude, os, os_version, browser, browser_version,
-        device, brand, model, imported_at
-      FROM ${TABLE_NAMES.events_imports}
-      WHERE import_id = {importId:String}
-        AND session_id = ''
-        AND device != 'server'
-      ORDER BY device_id, created_at
+      INSERT INTO ${TABLE_NAMES.events_imports} (${CARRIED_COLUMNS}, session_id)
+      SELECT
+        ${CARRIED_COLUMNS},
+        lower(hex(MD5(concat(device_id, '-', toString(session_index))))) AS session_id
+      FROM (
+        SELECT
+          ${CARRIED_COLUMNS},
+          sum(is_session_start) OVER (
+            PARTITION BY device_id ORDER BY created_at, id
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) - 1 AS session_index
+        FROM (
+          SELECT
+            ${CARRIED_COLUMNS},
+            -- lagInFrame returns the current row's own value on the first row
+            -- of a partition rather than NULL, so a device's first event is
+            -- identified by position instead of by a null previous timestamp.
+            if(
+              row_in_device = 1
+                OR dateDiff('millisecond', previous_created_at, created_at) > {gapMs:UInt64},
+              1,
+              0
+            ) AS is_session_start
+          FROM (
+            SELECT
+              ${CARRIED_COLUMNS},
+              lagInFrame(created_at) OVER (
+                PARTITION BY device_id ORDER BY created_at, id
+                ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+              ) AS previous_created_at,
+              row_number() OVER (
+                PARTITION BY device_id ORDER BY created_at, id
+              ) AS row_in_device
+            FROM ${TABLE_NAMES.events_imports}
+            WHERE import_id = {importId:String}
+              AND session_id = ''
+              AND device != 'server'
+          )
+        )
+      )
     `,
-    query_params: { importId },
-    format: 'JSONEachRow',
+    query_params: { importId, gapMs: SESSION_GAP_MS },
+    clickhouse_settings: {
+      wait_end_of_query: 1,
+      send_progress_in_http_headers: 1,
+      http_headers_progress_interval_ms: '50000',
+    },
   });
-
-  const stream = result.stream();
-  for await (const rows of stream) {
-    for (const row of rows) {
-      const event = row.json() as IClickhouseEvent;
-      const time = new Date(event.created_at).getTime();
-
-      if (event.device_id !== currentDeviceId) {
-        currentDeviceId = event.device_id;
-        currentSessionId = '';
-        currentLastTime = 0;
-        currentCounter = -1;
-      }
-
-      if (!currentSessionId || time - currentLastTime > SESSION_GAP_MS) {
-        currentCounter++;
-        currentSessionId = createHash('md5')
-          .update(`${event.device_id}-${currentCounter}`)
-          .digest('hex')
-          .toLowerCase();
-      }
-      currentLastTime = time;
-      event.session_id = currentSessionId;
-
-      batch.push(event);
-      if (batch.length >= BATCH_SIZE) {
-        await insertImportBatch(batch, importId);
-        batch.length = 0;
-      }
-    }
-  }
-
-  if (batch.length > 0) {
-    await insertImportBatch(batch, importId);
-  }
 
   const mutationTable = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
