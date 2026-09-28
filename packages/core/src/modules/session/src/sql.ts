@@ -133,8 +133,8 @@ function sessionListWindow(query: SessionListQuery): SqlFragment {
       )}`;
 }
 
-// No `FINAL`: it read every column of the whole window and blocked read-in-order
-// (chatpaper 1.1 s → 0.15 s, M38-002 / M39-004, see sql.proof.md). A +1 whose
+// No `FINAL`: it reads every column of the whole window and blocks
+// read-in-order (measured 1.1 s → 0.15 s on a large project). A +1 whose
 // `(id, version)` has a −1 is a pending collapse, which `FINAL` would have
 // removed. Plain `sign = 1` alone returns those stale rows, and `LIMIT 1 BY id`
 // drops the orphan +1 duplicates `FINAL` keeps. `GLOBAL` builds the −1 set once

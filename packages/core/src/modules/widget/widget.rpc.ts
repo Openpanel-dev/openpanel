@@ -1,36 +1,15 @@
-// Ported from packages/trpc/src/routers/widget.ts (M7-006, ADR-008's module
-// map: widget is R only — its zod schemas (zWidgetType/zWidgetOptions) are
-// chart/report vocabulary owned by ./report/report.constants.ts, so this
-// module carries no `widget.constants.ts` of its own).
+// Widgets are read-only chart embeds. Their zod schemas (`zWidgetType` /
+// `zWidgetOptions`) are chart/report vocabulary and live in
+// ./report/report.constants.ts, so this module carries no constants file of
+// its own, and there is no widget.service.ts — the queries are small enough to
+// stay in the procedures.
 //
-// V1's `protectedProcedure`/`publicProcedure` split lands in core with auth
-// (rpc/base.ts), so `get`/`toggle`/`updateOptions` do their own "is anyone
-// logged in" check and `counter`/`badge`/`realtimeData` stay open, matching
-// V1's split exactly. There is no `widget.service.ts` (same shape as
-// email.rpc.ts's "R + C only" module): V1's own router keeps its own
-// ClickHouse/Postgres calls rather than delegating to a shared service —
-// the one genuinely shared piece is the report module's widget zod schemas.
+// `get`/`toggle`/`updateOptions` require a login; `counter`/`badge`/
+// `realtimeData` are deliberately open, because a widget is embedded on a
+// public page.
 //
-// M10-009: Postgres and ClickHouse come from `ctx` (`ctx.db` / `ctx.ch`), so
-// the requestId minted at the edge reaches the query (ADR-018); the `loadDb`/
-// `loadChClient` lazy loaders are gone, and M15-202 made `getCache` a plain
-// static import too (ADR-022 R6) — the spelling subscription.service.ts,
-// modules/ingest/src/client-auth.ts and modules/mcp/src/auth.ts already use.
-//
-// M12-008: the five ClickHouse statements moved off clix onto the ADR-013
-// `sql` tag. The conversion changes how values reach the server and nothing
-// else — each statement renders byte-identically to the clix output it
-// replaces, with `projectId` bound as a `{pN:String}` param and the two
-// `LIMIT`s as `{pN:UInt64}`. The `now() - INTERVAL ...` windows were
-// `clix.exp()` raw expressions and stay raw SQL text, parentheses included
-// (clix wrapped an Expression comparand in `(...)`, query-builder.ts:134).
-// clix sent its constructor timezone as `clickhouse_settings.session_timezone`
-// (`:562`); every statement here was built with the project's timezone, so
-// `chQuery` is given the same value. The V1-vs-V2 result-set proof is
-// `widget.sql.proof.md` beside this file.
-//
-// `sql` is a value import and stays one: it is a compile-time template tag
-// holding no client and no request scope (see ch-query.ts).
+// Every statement is built with the project's timezone, so `chQuery` is given
+// the same value as `clickhouse_settings.session_timezone`.
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getCache } from '@openpanel/redis';

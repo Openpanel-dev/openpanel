@@ -1,16 +1,5 @@
-// Ported from packages/db/src/services/group.service.ts plus the query bodies
-// of packages/trpc/src/routers/group.ts (M7-002). The db file is now a
-// re-export shim over this one, so @openpanel/db importers (the assistant/mcp
-// tools, apps/api's insights controller) keep working while V1 runs
-// (DELEGATE PATTERN); the trpc router delegates its handler bodies here.
-//
-// Every query is a `sql` fragment (src/sql.ts), converted one at a time
-// with a result-set proof each, per ADR-013.
-//
-// M10-005: every function takes `ServiceDeps` and reaches ClickHouse as
-// `deps.ch` — reads through ch-query.ts, the one write (`writeGroupToCh`)
-// through `deps.ch.insert`. The `loadChClient` lazy loader is gone
-// (docs/TECH_DEBT.md §2, §4).
+// Every query is a `sql` fragment (src/sql.ts), per ADR-013. The one write
+// (`writeGroupToCh`) goes through `deps.ch.insert`.
 
 import { toDots } from '@openpanel/shared';
 import { chQuery } from '../../ch-query';

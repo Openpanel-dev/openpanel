@@ -1,11 +1,10 @@
 /**
  * SQL-shape tests for every `overview.sql.ts` builder. Same strategy as
- * chart/funnel/retention/sankey's own `*.sql.test.ts` (M7-003/004): render
- * the statement, then run `EXPLAIN <sql>` with its bound params against the
- * isolated `openpanel_test` ClickHouse (pinned by test/preload.ts). EXPLAIN
- * parses and resolves columns without executing, catching the two bugs this
- * module actually shipped during conversion — see overview.sql.proof.md —
- * without needing seeded rows.
+ * chart/funnel/retention/sankey's own `*.sql.test.ts`: render the statement,
+ * then run `EXPLAIN <sql>` with its bound params against the isolated
+ * `openpanel_test` ClickHouse (pinned by test/preload.ts). EXPLAIN parses and
+ * resolves columns without executing, so a column typo is caught with no
+ * seeded rows.
  */
 
 import { beforeAll, describe, expect, it } from 'bun:test';

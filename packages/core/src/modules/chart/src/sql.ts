@@ -1,27 +1,17 @@
 // Every ClickHouse query the chart module runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/chart.service.ts
-// (`getChartSql`, `getAggregateChartSql`) and packages/trpc/src/routers/
-// chart.ts (M7-003): the SQL text is V1's, with every chart-level value —
-// project id, event name, dates, timezone, cohort ids and names, limits —
-// bound as a `{pN:Type}` parameter instead of an escaped literal. Each
-// builder's result set was diffed against V1's on the local prod-copy; the
-// statements, params, row counts and timings are in sql.proof.md.
+// (ADR-013).
 //
-// The field resolver and filter compiler still render text (see compiled.ts);
-// their output is spliced, everything else is bound. Dates bind as V1's own
-// strings: a String param in a DateTime position is parsed exactly like the
-// literal it replaces.
+// The field resolver and filter compiler render text (see compiled.ts); their
+// output is spliced, everything else is bound. Dates bind as strings: a String
+// param in a DateTime position is parsed exactly like the literal it replaces.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles`, `groups` and
-// `cohort_members` are Distributed on Cloud. The cohort CTEs, the profile,
-// group and cohort LEFT ANY JOINs and any `IN (SELECT ...)` a filter compiles
-// keep V1's exact shape and run under the client's
-// `distributed_product_mode: 'allow'` as before.
+// Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
+// Distributed on Cloud. The cohort CTEs, the profile / group / cohort
+// LEFT ANY JOINs and any `IN (SELECT ...)` a filter compiles run under the
+// client's `distributed_product_mode: 'allow'`.
 //
 // The keyed part records below are a local, function-scoped builder (ADR-013
-// R5): V1 assigned and re-assigned `sb.select.count`, `sb.where.property`,
-// ... by key, and a keyed record keeps that exact clause order — which is
-// what makes the proof diff a pure literal→param diff.
+// R5): assigning clauses by key keeps a stable clause order.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {

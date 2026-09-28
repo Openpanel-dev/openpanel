@@ -17,8 +17,7 @@
 // finished string. The assertions themselves are unchanged in what they
 // claim, except the one about quotes in a user-controlled property key: a
 // quote no longer needs escaping because the key is not in the SQL text at
-// all, so that test asserts the binding instead. Listed in
-// ../cohort.sql.proof.md.
+// all, so that test asserts the binding instead.
 //
 // V1's `PROFILE_COHORT_QUERY_SETTINGS` test used `vi.resetModules()` +
 // `vi.stubEnv()` to re-import the module under different env vars — the

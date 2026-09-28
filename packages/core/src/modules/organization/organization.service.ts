@@ -1,39 +1,10 @@
-// Moved from packages/db/src/services/organization.service.ts +
-// packages/db/src/services/delete.service.ts (M6-001, folded together per the
-// module map: "delete.service in organization"). The mutation bodies inline
-// in packages/trpc/src/routers/organization.ts (update/delete/cancelDeletion/
-// inviteUser/revokeInvite/removeMember/updateMemberAccess) moved here too, so
-// V1's router and core's own organization.rpc.ts shared one implementation
-// (DELEGATE PATTERN) until packages/trpc was retired. packages/db carries no
-// re-export shim for this file — its services/ directory holds only
-// access.service.ts today. `getSettingsForProject` is instead value-imported
-// directly by ten sibling packages/core modules; that's the tree-wide R3
-// sibling-access gap the composition-root fix wave tracks, not something
-// local to this file. packages/db lost delete.service.ts entirely — nothing
-// outside the `delete` cron job (now here) reached it through
-// @openpanel/db's barrel.
+// Organizations, their projects, the invite/member mutations, and the
+// deletion cron that reaps organizations left without an admin.
 //
-// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
-// as `deps.db` and ClickHouse as `deps.ch` (through core's own `chQuery`), so
-// the requestId minted at the edge reaches the query (ADR-018,
-// docs/TECH_DEBT.md §4). The two `cacheable` wrappers are `cacheablePerDeps`
-// (M15-004): `cacheable` keys on the call's ARGUMENTS
-// (packages/redis/cachable.ts), so the caller's deps travel beside the key
-// rather than inside it and the Redis key stays byte-identical.
-//
-// M12-006 also made `shared/access-lookups.ts` a static import: that file
-// value-imports only zod-free leaves (`@openpanel/redis`, a Prisma TYPE) and
-// reaches Postgres through `context.ts`'s `unscopedDb()` (its bare signature
-// is pinned by a protected wire contract), so it has no static edge back here.
-//
-// M12-006 converted all five ClickHouse statements here onto the ADR-013 `sql`
-// tag: the four billing counters and `deleteFromClickhouse`'s project filter
-// bind every value as a `{pN:Type}` param, and the statements are written out
-// in full instead of assembled by `createSqlBuilder`'s record-of-strings.
-// `sqlstring` and `createSqlBuilder` are both gone from this module. The
-// `sql` tag is a value import of `@openpanel/db` and stays one: it is a
-// compile-time template tag holding no client (see ch-query.ts). The
-// V1-vs-V2 result-set proof is `organization.sql.proof.md` beside this file.
+// The two `cacheable` wrappers are `cacheablePerDeps`: `cacheable` keys on the
+// call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps have to
+// travel beside the key rather than inside it, or the Redis key would change
+// per request.
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {

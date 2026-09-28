@@ -1,26 +1,19 @@
 // Every ClickHouse statement the funnel service runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/funnel.service.ts and
-// the `getFunnelProfiles` body in packages/trpc/src/routers/chart.ts (M7-004):
-// the SQL text is V1's clix output, with the project id, event names, dates,
-// the funnel window, the target level and the clicked breakdown values bound
-// as `{pN:Type}` parameters instead of `sqlstring`-escaped literals. Result-set
-// proof: funnel.sql.proof.md.
+// (ADR-013).
 //
-// The chart and the profile list are built from ONE base (V1's
-// `buildFunnelBase`): a breakdown expression only works if the join it
+// The chart and the profile list are built from ONE base: a breakdown expression only works if the join it
 // references was added, and the joins depend on the breakdowns, so building
 // the selects in one place and the joins in another is exactly the bug that
 // made funnel "View Users" return "No users found" for profile-property and
 // cohort breakdowns.
 //
-// The field resolver and filter compiler still render text (see compiled.ts);
-// their output — filter clauses, breakdown expressions, the profile CTE
-// columns and the cohort joins — is spliced, everything else is bound.
+// The field resolver and filter compiler render text (see compiled.ts); their
+// output — filter clauses, breakdown expressions, the profile CTE columns and
+// the cohort joins — is spliced, everything else is bound.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles`, `groups` and
-// `cohort_members` are Distributed on Cloud. Every join keeps V1's exact shape
-// and runs under the client's `distributed_product_mode: 'allow'` as before;
-// no `IN (subquery)` is introduced or removed.
+// Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
+// Distributed on Cloud. Every join runs under the client's
+// `distributed_product_mode: 'allow'`; no `IN (subquery)` is involved.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {

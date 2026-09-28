@@ -1,12 +1,9 @@
-// SQL-shape tests for the profile metrics query. Ported from
-// packages/db/src/services/profile-metrics-sql.test.ts (M7-002) — minus its
-// itCH ClickHouse-reachability EXPLAIN check, for the reason
-// cohort-sql.test.ts's header gives (a sibling file's client mock applies
-// process-wide). The rendered statement was EXPLAINed and result-diffed
-// against V1 on the local prod-copy by hand instead — see the EXPLAIN section
-// and the profileMetricsQuery case in profile.sql.proof.md. V1's
-// "escapes the identifiers" test becomes "binds the identifiers": the `sql`
-// tag never interpolates, so the hostile value can only appear in the params.
+// SQL-shape tests for the profile metrics query. No ClickHouse-reachability
+// EXPLAIN check here, for the reason cohort-sql.test.ts's header gives: a
+// sibling file's client mock applies process-wide.
+//
+// "binds the identifiers" rather than "escapes" them — the `sql` tag never
+// interpolates, so a hostile value can only ever appear in the params.
 
 import { describe, expect, test } from 'bun:test';
 import { profileMetricsQuery } from './sql';

@@ -1,34 +1,10 @@
-// Moved from packages/db/src/services/cohort.service.ts (M5-003). The
-// producer wrapper (`enqueueCohortCompute`) moves here too — db cannot hold
-// producers (ADR-007's discovery: "packages/db/src/services/cohort.service.ts:12
-// imports cohortComputeQueue from @openpanel/queue" was flagged as reaching
-// back into infrastructure it should not know about; @openpanel/queue itself
-// was deleted at M11-004). packages/db lost this file entirely: nothing
-// outside the now-deleted trpc/worker and this module's own tests reached it
-// through @openpanel/db's barrel.
+// Cohort definitions, membership computation and the compute enqueue.
 //
-// M12-004 converted every ClickHouse statement here onto the ADR-013 `sql`
-// tag: values bind as `{pN:Type}` params, identifiers go through `sql.id`,
-// structure composes with `sql.join`. `sqlstring` is gone from this module.
-// The proof (V1 vs V2 result sets, per branch, against local ClickHouse) is
-// `cohort.sql.proof.md` beside this file. Table names are
-// a local literal map (`TABLE`, below), not @openpanel/db's `TABLE_NAMES`: the
-// latter lives in the same module as `ch`/`chQuery` (clickhouse/client.ts,
-// which constructs a real pino logger at import time — the exact cost the lazy
-// loads elsewhere in this file exist to defer), and this module's SQL builders
-// are pure sync functions the P2 SQL-shape tests call with no ClickHouse
-// connection at all.
-//
-// V1's trpc router (packages/trpc/src/routers/cohort.ts) and worker cron job
-// (apps/worker/src/jobs/cron.cohort-refresh.ts) used to stay live (DELEGATE
-// PATTERN) and enqueue by calling @openpanel/queue's cohortComputeQueue
-// directly, same as gsc's V1 router/worker did for gscQueue (M5-002) —
-// @openpanel/queue itself imported @openpanel/core for its logger, so core
-// could not import @openpanel/queue back without a real package cycle. Both
-// delegates are gone now (apps/worker at P9, packages/trpc/packages/queue at
-// M11-004). `CohortService.enqueueCompute` (below) is the canonical,
-// ctx.queues-based wrapper for callers that already have a Ctx (this
-// module's own rpc mutations and its cron fragment).
+// Table names are a local literal map (`TABLE`, below) rather than
+// @openpanel/db's `TABLE_NAMES`: that lives in the same module as `ch` /
+// `chQuery` (clickhouse/client.ts), which constructs a real pino logger at
+// import time, and this module's SQL builders are pure sync functions the
+// shape tests call with no ClickHouse connection at all.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';

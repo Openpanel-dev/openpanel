@@ -1,8 +1,3 @@
-// Ported from packages/db/src/services/conversion.service.ts (M7-004). The
-// statement is a `sql` fragment from src/conversion.sql.ts, proven
-// byte-equivalent to V1 in src/conversion.sql.proof.md; V1's
-// conversion.service is a re-export shim onto this module (DELEGATE PATTERN).
-
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';

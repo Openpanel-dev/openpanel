@@ -1,8 +1,3 @@
-// Ported from packages/db/src/services/retention.service.ts (M7-004). Every
-// ClickHouse statement is a `sql` fragment from src/retention.sql.ts, proven
-// byte-equivalent to V1 in src/retention.sql.proof.md; V1's retention.service
-// is a re-export shim onto this module (DELEGATE PATTERN).
-//
 // The cohort matrix here is the single source of truth for retention cohorts:
 // it powers the dashboard retention chart (via the tRPC `cohort` procedure) as
 // well as the MCP / agent / REST retention endpoints.

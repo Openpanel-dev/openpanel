@@ -1,20 +1,6 @@
-// Ported from packages/db/src/services/profile.service.ts, the query bodies of
-// packages/trpc/src/routers/profile.ts and apps/api/src/controllers/
-// profile.controller.ts (M7-002). The db file is now a re-export shim over
-// this one, so @openpanel/db importers (packages/trpc, the assistant/mcp
-// tools, apps/api's controllers, notification.service, the buffers' types)
-// keep working while V1 runs (DELEGATE PATTERN).
-//
-// Every query is a `sql` fragment (src/sql.ts), converted one at a
-// time with a result-set proof each, per ADR-013. `buildFilterWhere` is NOT
-// converted here: it is the shared filter compiler, out of this task's scope;
-// src/filter-clauses.ts is the one bridge.
-//
-// M10-005: every function that touches ClickHouse or the profile buffer takes
-// `ServiceDeps` and reaches them as `deps.ch` (through ch-query.ts) and
-// `deps.buffers.profile`. The `loadChClient` / `loadProfileBuffer` lazy
-// loaders are gone (docs/TECH_DEBT.md §2, §4), and M15-202 made the last one
-// — the shared filter compiler — a plain static sibling import (ADR-022 R6).
+// Every query is a `sql` fragment (src/sql.ts), per ADR-013. The exception is
+// `buildFilterWhere`, the shared filter compiler; src/filter-clauses.ts is the
+// bridge to it.
 
 import { strip, toObject } from '@openpanel/shared';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';

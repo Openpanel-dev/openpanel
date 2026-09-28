@@ -1,11 +1,7 @@
 // Every ClickHouse query the group module runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/group.service.ts and
-// packages/trpc/src/routers/group.ts (M7-002): the SQL text is V1's, with every
-// value bound as a `{pN:Type}` parameter instead of an escaped literal. Each
-// builder's result set was diffed against V1's on the local prod-copy; the
-// statements, params, row counts and timings are in sql.proof.md.
+// (ADR-013).
 //
-// Cluster note (docs/ENVIRONMENT.md): `groups`, `profiles` and `events` are
+// Cluster note: `groups`, `profiles` and `events` are
 // Distributed on Cloud. No query here carries an `IN (subquery)`; the `IN`
 // lists bind as `Array(String)` params, which is a literal list to the planner.
 

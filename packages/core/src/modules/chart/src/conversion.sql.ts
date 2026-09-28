@@ -1,19 +1,12 @@
-// The conversion statement as a pure `sql` fragment (ADR-013). Converted 1:1
-// from packages/db/src/services/conversion.service.ts (M7-004): the SQL text
-// is V1's clix output, with the project id, event names, dates, the funnel
-// window and the interval bucket bound as `{pN:Type}` parameters instead of
-// inlined literals. Result-set proof: conversion.sql.proof.md.
+// The conversion statement as a pure `sql` fragment (ADR-013).
 //
-// The field resolver and both filter compilers return fragments (M12-002,
-// M12-003); their output — breakdown expressions, per-step filter clauses and
+// The field resolver and both filter compilers return fragments; their output — breakdown expressions, per-step filter clauses and
 // the cohort joins — is interpolated directly. `compiledText` is left with the
 // `b_<index>` aliases this file generates itself.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles` and `groups` are
-// Distributed on Cloud. The profile / group / cohort joins keep V1's exact
-// LEFT ANY JOIN shape and run under the client's
-// `distributed_product_mode: 'allow'` as before; no `IN (subquery)` is
-// introduced or removed.
+// Cluster note: `events`, `profiles` and `groups` are Distributed on Cloud.
+// The profile / group / cohort joins are LEFT ANY JOIN and run under the
+// client's `distributed_product_mode: 'allow'`; no `IN (subquery)` is involved.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IInterval } from '../../report/report.constants';

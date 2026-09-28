@@ -1,21 +1,11 @@
-// Ported from packages/db/src/services/session.service.ts (M7-001); that file
-// and its re-export shim are gone (M9-CLEANUP-001), so this is the only
-// session read path.
+// The session read path. Every query is a `sql` fragment (src/sql.ts), per
+// ADR-013; `buildFilterWhere` is the shared filter compiler and
+// src/filter-clauses.ts is the bridge to it.
 //
-// Every query here is a `sql` fragment (src/sql.ts) — the module's
-// queries are converted, one at a time with a result-set proof each, per
-// ADR-013. `buildFilterWhere` is NOT converted here: it is the shared filter
-// compiler, out of this task's scope; src/filter-clauses.ts is the one bridge.
-//
-// M10-009: the ClickHouse client is `deps.ch`, reached through core's own
-// `chQuery` (ch-query.ts), so the requestId minted at the edge reaches
-// every query here (ADR-018, docs/TECH_DEBT.md §4). `getSessionsCountCached`
-// is `cacheablePerDeps` (M15-004): `cacheable` keys on the call's ARGUMENTS
-// (packages/redis/cachable.ts), so the caller's deps travel beside the key
-// rather than inside it, and the Redis key stays byte-identical. The one
-// remaining `load*` function is an intra-package lazy import, kept lazy for a
-// cycle, not for a client — the date helpers left that set in M15-010, because
-// @openpanel/shared sits below this package and cannot cycle back into it.
+// `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the
+// call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps have to
+// travel beside the key rather than inside it, or the Redis key would change
+// per request.
 
 import { getSafeJson, resolveDateRange } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';

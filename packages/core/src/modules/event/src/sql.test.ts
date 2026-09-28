@@ -1,8 +1,8 @@
 // Shape tests for the event module's fragments: every user value binds as a
 // `{pN:Type}` parameter (nothing is interpolated), the optional clauses and
 // joins toggle exactly on V1's conditions, and `sql.id` refuses anything off
-// the column whitelists. Result-set equivalence against V1 is not tested here
-// (these run offline); it is recorded per query in sql.proof.md.
+// the column whitelists. These run offline, so they assert the rendered
+// statement and its params, never a result set.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';

@@ -1,8 +1,3 @@
-// Ported from packages/db/src/services/sankey.service.ts (M7-004). Every
-// ClickHouse statement is a `sql` fragment from src/sankey.sql.ts, proven
-// byte-equivalent to V1 in src/sankey.sql.proof.md; V1's sankey.service is a
-// re-export shim onto this module (DELEGATE PATTERN).
-
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -140,8 +135,8 @@ function toSankeyEvent(
  * `getSankey` itself: §12 fix 9 bounds that procedure specifically, because it
  * is the range picker that offers `12m`/`lastYear`. The REST
  * `/insights/:projectId/user_flow` route, the MCP `get_user_flow` tool and the
- * assistant tool take caller-supplied dates and are outside fix 9's endpoint
- * list; see sankey.sql.proof.md for that residual.
+ * assistant tool take caller-supplied dates, so they are not covered by the
+ * range picker's cap.
  */
 export function assertSankeyWindowIsAnswerable(
   startDate: string,

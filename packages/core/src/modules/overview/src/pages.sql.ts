@@ -1,9 +1,5 @@
 // Every ClickHouse query PagesService/getPageConversionsCore runs, as pure
-// `sql` fragments (ADR-013). Converted 1:1 from
-// packages/db/src/services/pages.service.ts: the SQL text is V1's, with every
-// value bound as a `{pN:Type}` parameter instead of clix's inline
-// interpolation or (for `getPageConversionsCore`) `sqlstring.escape`. Result
-// sets diffed against V1's on the local prod-copy — see pages.sql.proof.md.
+// `sql` fragments (ADR-013).
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -112,7 +108,7 @@ export interface PageTimeseriesQueryInput {
   /**
    * Keep only the `n` busiest pages in each date bucket. Omitted means
    * unbounded, which is one row per (origin, path, bucket) and on a project
-   * with per-user URL segments is millions of rows — see pages.sql.proof.md.
+   * with per-user URL segments is millions of rows.
    * `origin`/`path` break the ranking's ties so the truncated set is stable
    * between calls; without them ClickHouse returns a different top-n on every
    * run (measured, M31-002).

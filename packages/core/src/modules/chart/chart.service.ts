@@ -1,19 +1,6 @@
-// Ported from packages/db/src/services/chart.service.ts, packages/db/src/
-// engine/* and the handler bodies of packages/trpc/src/routers/chart.ts
-// (M7-003). Every ClickHouse statement this module runs is a `sql` fragment
-// from src/sql.ts, proven byte-equivalent to V1 in src/sql.proof.md; V1's
-// chart.service and engine are re-export shims onto this module and its
-// router delegates here (DELEGATE PATTERN).
-//
-// The funnel, conversion, sankey and retention statements this module
-// dispatches to live in the sibling `*.service.ts` files of this module
-// (M7-004).
-//
-// M10-003: every function takes `ServiceDeps` and reaches ClickHouse and
-// Postgres as `deps.ch` / `deps.db`. The `load*` lazy loaders are gone, and
-// so is the `@openpanel/core` self-barrel hop this file used to make for the
-// report module's `mergeGlobalFilters` / `onlyReportEvents` — those are
-// imported straight from `../report/src/series` (docs/TECH_DEBT.md §2, §4).
+// Every ClickHouse statement this module runs is a `sql` fragment from
+// src/sql.ts. Funnel, conversion, sankey and retention are dispatched to the
+// sibling `*.service.ts` files.
 // The one thing still value-imported from `@openpanel/db` under `./src/` is
 // ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
 // compile-time template tag, no client and no request scope.

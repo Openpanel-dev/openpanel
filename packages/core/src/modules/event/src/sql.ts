@@ -1,15 +1,11 @@
 // Every ClickHouse query the event module runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/event.service.ts and
-// packages/trpc/src/routers/event.ts (M7-002): the SQL text is V1's, with
-// every value bound as a `{pN:Type}` parameter instead of an escaped literal.
-// Each builder's result set was diffed against V1's on the local prod-copy;
-// the statements, params, row counts and timings are in sql.proof.md.
+// (ADR-013).
 //
-// Dates bind as V1's own `YYYY-MM-DD HH:mm:ss` strings on purpose: a String
-// param in a DateTime64 position is parsed exactly like the literal it
-// replaces, so the result sets cannot drift by a millisecond truncation.
+// Dates bind as `YYYY-MM-DD HH:mm:ss` strings on purpose: a String param in a
+// DateTime64 position is parsed exactly like the literal it replaces, so the
+// result sets cannot drift by a millisecond truncation.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles`, `groups` and
+// Cluster note: `events`, `profiles`, `groups` and
 // `cohort_members` are Distributed on Cloud. The identity-stitching and cohort
 // `IN (SELECT ...)` subqueries, the profile/group LEFT ANY JOINs and any
 // `IN (SELECT ...)` a filter compiles keep V1's exact shape and run under the

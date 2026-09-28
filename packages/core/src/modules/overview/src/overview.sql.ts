@@ -1,13 +1,8 @@
 // Every ClickHouse query OverviewService runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/overview.service.ts
-// (clix): the SQL text is V1's, with every value — project id, dates,
-// timezone, event/column names, limits — bound as a `{pN:Type}` parameter
-// instead of an escaped literal or clix's inline string interpolation. Each
-// builder's result set was diffed against V1's on the local prod-copy; the
-// statements, params, row counts and timings are in overview.sql.proof.md.
+// (ADR-013).
 //
-// Both filter compilers and the field resolver return fragments now (M12-002,
-// M12-003) and are interpolated directly. `compiledText` is left with one job
+// Both filter compilers and the field resolver return fragments and are
+// interpolated directly. `compiledText` is left with one job
 // here: the `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is
 // SQL syntax, not a value.
 //

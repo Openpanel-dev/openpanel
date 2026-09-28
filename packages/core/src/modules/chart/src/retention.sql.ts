@@ -1,17 +1,12 @@
 // Every ClickHouse query the retention service runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/retention.service.ts
-// (M7-004): the SQL text is V1's, with project id, event names, dates, the
-// interval unit and the column count bound as `{pN:Type}` parameters instead
-// of `sqlstring`-escaped literals. Result-set proofs against the local
-// prod-copy are in retention.sql.proof.md.
+// (ADR-013).
 //
-// The filter compiler still renders text (see compiled.ts); its output is the
-// only thing spliced into the cohort statement.
+// The filter compiler renders text (see compiled.ts); its output is the only
+// thing spliced into the cohort statement.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `dau_mv` and `cohort_events_mv`
-// are Distributed on Cloud. None of these statements contains an
-// `IN (subquery)` — the cohort matrix is a CTE self-join, exactly V1's shape —
-// so no `IN` / `GLOBAL IN` decision is made or unmade here.
+// Cluster note: `events`, `dau_mv` and `cohort_events_mv` are Distributed on
+// Cloud. None of these statements contains an `IN (subquery)` — the cohort
+// matrix is a CTE self-join — so no `IN` / `GLOBAL IN` decision arises.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';

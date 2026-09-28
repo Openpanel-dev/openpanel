@@ -1,40 +1,11 @@
-// Two halves ported from different V1 places, both landing here (module map:
-// realtime owns "R,H,S"):
+// The realtime queries plus the `/live` websocket glue:
+// `getActiveVisitorCount` and the four `subscribeToPublishedEvent` calls,
+// filtered by projectId.
 //
-//  1. The six ClickHouse queries, moved from
-//     packages/trpc/src/routers/realtime.ts (M6-007). V1's trpc router stays
-//     the LIVE route (DELEGATE PATTERN, ONE shared tRPC instance) and now
-//     delegates its handler bodies onto the functions below, exported through
-//     `@openpanel/core`'s barrel, same as notification.ts/reference.ts.
-//
-//  2. The `/live` websocket glue, ported FRESH from
-//     apps/api/src/controllers/live.controller.ts's business logic —
-//     `getActiveVisitorCount` and the four `subscribeToPublishedEvent` calls,
-//     filtered by projectId where V1 filters inline in the callback. V1's
-//     Fastify `@fastify/websocket` controller is LEFT UNTOUCHED: its socket
-//     type (the `ws` package's `WebSocket`) has nothing in common with
-//     Elysia/Bun's `ElysiaWS`, so there is no shim to delegate through, and
-//     touching the golden-harness-critical V1 ws stack for a few lines of
-//     framework glue is the risk this port avoids (task M6-007 notes).
-//     `subscribeToPublishedEvent` itself is already framework-agnostic
-//     (`@openpanel/redis`, plain callback), so both stacks call the exact
-//     same Redis subscription underneath.
-//
-// M10-005: every query function takes `ServiceDeps`. The ClickHouse CLIENT is
-// `deps.ch` — reads through ch-query.ts — and the event buffer is
-// `deps.buffers.event`, so the `loadChClient` / `loadEventBuffer` lazy imports
-// of @openpanel/db are gone and the requestId reaches the query (ADR-018 R1,
-// docs/TECH_DEBT.md §2, §4).
-//
-// M12-005 converted all ten ClickHouse statements here onto the ADR-013 `sql`
-// tag: every value binds as a `{pN:Type}` param, table names go through
-// `sql.id`, and the location filters compose as fragments instead of escaped
-// text. `sqlstring`, `clix` and the `loadChHelpers()` lazy hop into
-// `@openpanel/db` are all gone — `TABLE_NAMES` and the date helpers come from
-// core's own pure copies (shared/ch-tables.ts, shared/ch-dates.ts), which is
-// what lets the import be static without constructing a ClickHouse client or a
-// pino transport at module load. The V1-vs-V2 result-set proof is
-// `realtime.sql.proof.md` beside this file.
+// `TABLE_NAMES` and the date helpers come from core's own pure copies
+// (shared/ch-tables.ts, shared/ch-dates.ts) rather than @openpanel/db, which
+// is what lets the import stay static: db's clickhouse/client.ts constructs a
+// real client and a pino transport at module load.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {

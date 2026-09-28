@@ -1,24 +1,6 @@
-// Moved from packages/db/src/services/project.service.ts (M6-002, module
-// map: project owns "R,H,S,C"). packages/db keeps a re-export shim: its own
-// access.service.ts and notification.service.ts still reach `getProjectById`
-// / `getProjectByIdCached` through the same relative path, and
-// apps/api/src/utils/auth.ts reaches them through @openpanel/db's barrel;
-// auth.service.ts's permission ladder (M10-002) reaches a project through
-// `shared/access-lookups.ts`, which has no `ServiceDeps` of its own to carry
-// (M15-005: it reads Postgres from `context.ts`'s `unscopedDb()` instead).
-//
-// M10-004: every function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb()` lazy loader is gone. M15-005: `getProjectByIdCached`
-// is a module-scope `cacheablePerDb` for the same reason `getClientByIdCached`
-// is in client.service.ts — see that file's header.
-//
-// M12-006 converted this module's two ClickHouse statements
-// (`getProjectEventsCount` / `getLastEventPerProject`) onto the ADR-013 `sql`
-// tag: every value binds as a `{pN:Type}` param, so `sqlstring` and `clix` are
-// both gone. The CLIENT is `deps.ch` either way, through core's own `chQuery`
-// (ch-query.ts) — M10-009 dropped the `compatChHelpers()` hop these two
-// used to make. The V1-vs-V2 result-set proof is `project.sql.proof.md` beside
-// this file.
+// `getProjectByIdCached` is a module-scope `cacheablePerDb` for the same
+// reason `getClientByIdCached` is in client.service.ts — see that file's
+// header.
 
 import crypto from 'node:crypto';
 import { sql } from '@openpanel/db/src/clickhouse/sql';

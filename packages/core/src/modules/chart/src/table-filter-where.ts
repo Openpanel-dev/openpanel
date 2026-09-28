@@ -1,16 +1,12 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
-// Moved from packages/db/src/services/filter-where.service.ts (M8-005), then
-// converted onto the `sql` tag (M12-003). V1's filter compiler for the
-// sessions/profiles/events tables — distinct from `./filter-where.ts`'s
-// `getEventFiltersWhereClause` (event-property filters), which converted in
-// M12-002. Every VALUE binds as a `{name:Type}` param; every identifier goes
-// through `sql.id` or a static fragment. Result-set proof:
-// field-resolution.sql.proof.md.
+// The filter compiler for the sessions/profiles/events tables — distinct from
+// `./filter-where.ts`'s `getEventFiltersWhereClause`, which compiles
+// event-property filters. Every VALUE binds as a `{name:Type}` param; every
+// identifier goes through `sql.id` or a static fragment.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events`, `profiles`, `groups` and
-// `cohort_members` are Distributed on Cloud. The cohort / profile / group /
-// performed_event subselects keep V1's plain `IN`; no `IN` was converted to
-// `GLOBAL IN` or back.
+// Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
+// Distributed on Cloud. The cohort / profile / group / performed_event
+// subselects use plain `IN`.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {

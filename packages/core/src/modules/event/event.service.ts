@@ -1,31 +1,6 @@
-// Ported from packages/db/src/services/event.service.ts and the query bodies
-// of packages/trpc/src/routers/event.ts (M7-002). The db file is now a
-// re-export shim over this one, so @openpanel/db importers (packages/trpc,
-// apps/api's export controller and bot hook, the buffers' types,
-// notification.service, the mcp/assistant tools) keep working while V1 runs
-// (DELEGATE PATTERN).
-//
-// Every query is a `sql` fragment (src/sql.ts), converted one at a time
-// with a result-set proof each, per ADR-013. The two filter compilers
-// (`getEventFiltersWhereClause`, `buildFilterWhere`) are NOT converted here —
-// they are shared and out of this task's scope; src/filter-clauses.ts is the
-// one bridge.
-//
-// Not ported: V1's `EventService.query` / `EventService.getList` (a clix
-// builder over events + profiles + sessions) — nothing in the repo calls
-// them; `eventService.getById` is `getEventById` below. `GetEventListOptions.
-// custom(sb)` — its only caller (event.conversions) is the typed
-// `conversionNames` option instead, since there is no builder to hand out.
-//
-// M10-005: every function that touches a database takes `ServiceDeps` and
-// reaches Postgres as `deps.db`, ClickHouse as `deps.ch` (through
-// ch-query.ts) and the event/bot buffers as `deps.buffers.*`. The
-// `loadDb` / `loadChClient` / `loadDbBuffers` lazy loaders are gone, and so
-// are the two `import('@openpanel/core')` self-barrel hops this file made for
-// `resolveDateRange` — imported straight from `shared/`
-// (docs/TECH_DEBT.md §2, §4). M15-202 removed the last three lazy loaders
-// here: the filter compiler and `getCache` are plain static imports, and the
-// session lookup arrives through the composition root's thunk (ADR-022 R3).
+// The event read path. Every query is a `sql` fragment (src/sql.ts), per
+// ADR-013; the two filter compilers (`getEventFiltersWhereClause`,
+// `buildFilterWhere`) are shared, and src/filter-clauses.ts is the bridge.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';

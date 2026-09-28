@@ -7,8 +7,8 @@
 // clix always sent `session_timezone` (query-builder.ts:562) and defaulted it
 // to `'UTC'` (`:696`), so `chQuery` sends the same value.
 //
-// Nine of the ten statements are BROKEN AND WERE ALWAYS BROKEN — see
-// `legacy-scan.sql.proof.md`. clix's `having(column, operator, value)` escapes
+// Nine of the ten statements are BROKEN AND WERE ALWAYS BROKEN. clix's
+// `having(column, operator, value)` escaped
 // its comparand as a VALUE, so every `'<column> * <n>'` threshold below reaches
 // ClickHouse as a quoted string and the comparison fails with TYPE_MISMATCH;
 // three more read columns (`is_new`, `is_returning`, `event_name`, `status`)

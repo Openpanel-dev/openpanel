@@ -1,19 +1,13 @@
 // Every ClickHouse statement the sankey (user-flow) service runs, as pure
-// `sql` fragments (ADR-013). Converted 1:1 from
-// packages/db/src/services/sankey.service.ts (M7-004): the SQL text is V1's
-// clix output, with the project id, event names, dates, the step count and the
-// top-entry event list bound as `{pN:Type}` parameters instead of hand-escaped
-// literals. Result-set proof: sankey.sql.proof.md.
+// `sql` fragments (ADR-013).
 //
-// The filter compiler still renders text (see compiled.ts); only its output is
+// The filter compiler renders text (see compiled.ts); only its output is
 // spliced.
 //
-// Cluster note (docs/ENVIRONMENT.md): `events` is Distributed on Cloud, and the
+// Cluster note: `events` is Distributed on Cloud, and the
 // `session_id IN (SELECT session_id FROM start_event_sessions)` HAVING clauses
-// are plain `IN (subquery)` over a CTE — V1's exact shape, ported verbatim. No
-// `IN` is converted to or from `GLOBAL IN` here; whether these should be
-// `GLOBAL IN` on a cluster is a pre-existing question this conversion neither
-// answers nor changes.
+// are plain `IN (subquery)` over a CTE. Whether these should be `GLOBAL IN` on
+// a cluster is an open question.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { compiledText } from './compiled';

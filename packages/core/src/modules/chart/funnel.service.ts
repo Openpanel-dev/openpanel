@@ -1,8 +1,3 @@
-// Ported from packages/db/src/services/funnel.service.ts (M7-004). Every
-// ClickHouse statement is a `sql` fragment from src/funnel.sql.ts, proven
-// byte-equivalent to V1 in src/funnel.sql.proof.md; V1's funnel.service is a
-// re-export shim onto this module (DELEGATE PATTERN).
-
 import { ifNaN } from '@openpanel/shared';
 import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';

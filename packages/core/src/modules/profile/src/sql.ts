@@ -1,17 +1,10 @@
 // Every ClickHouse query the profile module runs, as pure `sql` fragments
-// (ADR-013). Converted 1:1 from packages/db/src/services/profile.service.ts
-// and packages/trpc/src/routers/profile.ts (M7-002): the SQL text is V1's,
-// with every value bound as a `{pN:Type}` parameter instead of an escaped
-// literal. Each builder's result set was diffed against V1's on the local
-// prod-copy; the statements, params, row counts and timings are in
-// profile.sql.proof.md.
+// (ADR-013).
 //
-// Cluster note (docs/ENVIRONMENT.md): `profiles`, `events` and `sessions` are
-// Distributed on Cloud. `findProfilesQuery`'s three `IN (SELECT ...)`
-// subqueries and any a filter compiles to keep V1's exact shape and run under
-// the client's `distributed_product_mode: 'allow'` as before — converting a
-// query is not the place to change its cluster semantics. Every `IN` list
-// binds as `Array(String)`, a literal list to the planner.
+// Cluster note: `profiles`, `events` and `sessions` are Distributed on Cloud.
+// `findProfilesQuery`'s three `IN (SELECT ...)` subqueries, and any a filter
+// compiles to, run under the client's `distributed_product_mode: 'allow'`.
+// Every `IN` list binds as `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
