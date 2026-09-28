@@ -430,27 +430,30 @@ describe('mixpanel', () => {
       expect(bodies).toHaveLength(2);
     });
 
-    it('stops after a full page when Mixpanel returns no session_id', async () => {
-      const bodies: string[] = [];
-      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
-        bodies.push(String(init?.body));
-        return Promise.resolve(
+    it('throws when a full page has neither session_id nor total', async () => {
+      // With neither signal there is nothing to check completeness against --
+      // silently stopping here would be indistinguishable from truncating a
+      // genuinely incomplete import.
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
           engagePage({
             page: 0,
             page_size: 5000,
             results: profiles(5000, 0),
           })
-        );
-      });
+        )
+      );
 
       const provider = makeProvider();
-      const seen: string[] = [];
-      for await (const profile of provider.streamProfiles()) {
-        seen.push(String(profile.$distinct_id));
-      }
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
 
-      expect(seen).toHaveLength(5000);
-      expect(bodies).toHaveLength(1);
+      await expect(drain()).rejects.toThrow(
+        /without a session_id or total/
+      );
     });
 
     it('throws instead of silently truncating when total shows more profiles remain', async () => {

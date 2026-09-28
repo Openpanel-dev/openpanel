@@ -427,6 +427,14 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       }
       // Without a session id Mixpanel would reject the next page anyway.
       if (!sessionId) {
+        // No total either means no signal at all that this is really the end
+        // -- assertNoProfilesRemain can't tell us anything without it, so
+        // don't let a full page fall through to the "stop" path unchecked.
+        if (typeof data.total !== 'number') {
+          throw new Error(
+            `Mixpanel Engage returned a full page without a session_id or total (project ${projectId})`
+          );
+        }
         assertNoProfilesRemain('returned a full page without a session_id');
         this.logger?.warn(
           { page, projectId },
