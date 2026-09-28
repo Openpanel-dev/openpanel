@@ -178,12 +178,28 @@ export const importRouter = createTRPCRouter({
       }
 
       // Add new job to queue
-      const job = await importQueue.add('import', {
-        type: 'import',
-        payload: {
-          importId: importRecord.id,
-        },
-      });
+      let job: Awaited<ReturnType<typeof importQueue.add>>;
+      try {
+        job = await importQueue.add('import', {
+          type: 'import',
+          payload: {
+            importId: importRecord.id,
+          },
+        });
+      } catch (error) {
+        // The status flip above already landed. If enqueueing rejects, revert
+        // it so the import isn't stuck in 'pending' forever with no job and
+        // no way to retry again -- 'pending' isn't one of the statuses retry
+        // accepts. This can't distinguish "definitely never enqueued" from
+        // "enqueued but the acknowledgement was lost"; the former is the
+        // overwhelmingly likely failure (add() rejects outright when Redis is
+        // unreachable) and is what this guards against.
+        await db.import.updateMany({
+          where: { id: importRecord.id, status: 'pending' },
+          data: { status: 'failed' },
+        });
+        throw error;
+      }
 
       // Update import record
       return db.import.update({

@@ -88,4 +88,23 @@ describe('import.retry', () => {
     );
     expect(importQueueMock.add).not.toHaveBeenCalled();
   });
+
+  it('reverts to failed instead of leaving the import stuck in pending when enqueueing fails', async () => {
+    dbMock.import.updateMany.mockResolvedValue({ count: 1 });
+    importQueueMock.add.mockRejectedValue(new Error('redis unavailable'));
+
+    await expect(caller().retry({ id: IMPORT_ID })).rejects.toThrow(
+      'redis unavailable'
+    );
+
+    expect(dbMock.import.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: IMPORT_ID, status: 'failed' },
+      data: { status: 'pending', errorMessage: null },
+    });
+    expect(dbMock.import.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: IMPORT_ID, status: 'pending' },
+      data: { status: 'failed' },
+    });
+    expect(dbMock.import.update).not.toHaveBeenCalled();
+  });
 });
