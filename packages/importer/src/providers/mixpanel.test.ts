@@ -1,5 +1,5 @@
 import { omit } from 'ramda';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MixpanelProvider } from './mixpanel';
 
 describe('mixpanel', () => {
@@ -336,5 +336,373 @@ describe('mixpanel', () => {
 
     // Undefined defaults to 'us' without throwing
     expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();
+  });
+
+  describe('project timezone', () => {
+    const providerFor = (timezone?: string) =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-12-31',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+        timezone,
+      });
+
+    const eventAt = (time: number, timezone?: string) =>
+      providerFor(timezone).transformEvent({
+        event: 'custom_event',
+        properties: { time, distinct_id: 'u1', $device_id: 'd1', mp_lib: 'web' },
+      }).created_at;
+
+    it('leaves timestamps alone when no timezone is configured', () => {
+      expect(eventAt(1_746_097_970)).toBe('2025-05-01 11:12:50');
+      expect(eventAt(1_746_097_970, 'UTC')).toBe('2025-05-01 11:12:50');
+    });
+
+    it('converts project-local event times to UTC', () => {
+      // Asia/Riyadh is UTC+3 year round, no DST.
+      expect(eventAt(1_746_097_970, 'Asia/Riyadh')).toBe('2025-05-01 08:12:50');
+    });
+
+    it('resolves the offset per instant, so DST is handled', () => {
+      // Both are 12:00 on the project's wall clock. Europe/Stockholm is UTC+2
+      // in July and UTC+1 in January, so they land an hour apart in UTC — a
+      // fixed offset would get one of them wrong.
+      expect(eventAt(1_751_371_200, 'Europe/Stockholm')).toBe(
+        '2025-07-01 10:00:00'
+      );
+      expect(eventAt(1_735_732_800, 'Europe/Stockholm')).toBe(
+        '2025-01-01 11:00:00'
+      );
+    });
+
+    it('converts profile timestamps too', () => {
+      const profile = providerFor('Asia/Riyadh').transformProfile({
+        $distinct_id: 'u1',
+        $properties: {
+          $created: '2025-02-03T09:15:00',
+          $last_seen: '2025-05-20T18:42:11',
+        },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 06:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 15:42:11');
+    });
+
+    it('falls back to the raw timestamp on an unknown timezone', () => {
+      expect(eventAt(1_746_097_970, 'Not/AZone')).toBe('2025-05-01 11:12:50');
+    });
+  });
+
+  describe('transformProfile', () => {
+    const makeProvider = () =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-06-30',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+      });
+
+    it('uses $created and $last_seen rather than the import wall clock', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-1',
+        $properties: {
+          $created: '2025-02-03T09:15:00',
+          $last_seen: '2025-05-20T18:42:11',
+          $email: 'a@example.com',
+        },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:11');
+      expect(profile.created_at).not.toBe(profile.last_seen_at);
+    });
+
+    it('falls back to $last_seen when $created is absent', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-2',
+        $properties: { $last_seen: '2025-05-20T18:42:11' },
+      });
+
+      expect(profile.created_at).toBe('2025-05-20 18:42:11');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:11');
+    });
+
+    it('falls back to $created when $last_seen is absent', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-3',
+        $properties: { $created: '2025-02-03T09:15:00' },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-02-03 09:15:00');
+    });
+
+    it('dates from the import window, never now, when both are absent', () => {
+      const before = new Date();
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-4',
+        $properties: { $email: 'b@example.com' },
+      });
+
+      expect(profile.created_at).toBe('2025-01-01 00:00:00');
+      expect(profile.last_seen_at).toBe('2025-01-01 00:00:00');
+      // The regression being guarded: import wall-clock time leaking in.
+      expect(profile.created_at.startsWith(String(before.getFullYear()))).toBe(
+        false
+      );
+    });
+
+    it('ignores unparseable timestamps instead of writing Invalid Date', () => {
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-5',
+        $properties: { $created: 'not-a-date', $last_seen: '' },
+      });
+
+      expect(profile.created_at).toBe('2025-01-01 00:00:00');
+      expect(profile.last_seen_at).toBe('2025-01-01 00:00:00');
+    });
+
+    it('pins minute-precision timestamps to UTC too', () => {
+      // Mixpanel doesn't always include seconds. Without matching this form,
+      // it falls through to `new Date()` unmodified, which reads an
+      // offset-free string as local time and makes the result depend on the
+      // worker's TZ.
+      const profile = makeProvider().transformProfile({
+        $distinct_id: 'user-6',
+        $properties: { $created: '2025-02-03T09:15', $last_seen: '2025-05-20 18:42' },
+      });
+
+      expect(profile.created_at).toBe('2025-02-03 09:15:00');
+      expect(profile.last_seen_at).toBe('2025-05-20 18:42:00');
+    });
+  });
+
+  describe('streamProfiles', () => {
+    const makeProvider = () =>
+      new MixpanelProvider('pid', {
+        from: '2025-01-01',
+        to: '2025-01-02',
+        serviceAccount: 'sa',
+        serviceSecret: 'ss',
+        projectId: '123',
+        provider: 'mixpanel',
+        type: 'api',
+        mapScreenViewProperty: undefined,
+      });
+
+    const engagePage = (
+      body: Record<string, unknown>
+    ): Response =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+    const profiles = (count: number, offset: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        $distinct_id: `user-${offset + i}`,
+        $properties: { $email: `user-${offset + i}@example.com` },
+      }));
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('replays session_id on pages after the first', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        return Promise.resolve(
+          engagePage({
+            page,
+            page_size: 5000,
+            session_id: 'sess-abc',
+            total: 7000,
+            results: page === 0 ? profiles(5000, 0) : profiles(2000, 5000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(7000);
+      expect(bodies).toHaveLength(2);
+
+      const first = new URLSearchParams(bodies[0]);
+      expect(first.get('page')).toBe('0');
+      expect(first.get('session_id')).toBeNull();
+
+      const second = new URLSearchParams(bodies[1]);
+      expect(second.get('page')).toBe('1');
+      expect(second.get('session_id')).toBe('sess-abc');
+    });
+
+    it('paginates on the page_size Mixpanel reports, not the one requested', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        return Promise.resolve(
+          engagePage({
+            page,
+            // Mixpanel caps the page below the 5000 we ask for.
+            page_size: 1000,
+            session_id: 'sess-abc',
+            total: 1500,
+            results: page === 0 ? profiles(1000, 0) : profiles(500, 1000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(1500);
+      expect(bodies).toHaveLength(2);
+    });
+
+    it('throws when a full page has neither session_id nor total', async () => {
+      // With neither signal there is nothing to check completeness against --
+      // silently stopping here would be indistinguishable from truncating a
+      // genuinely incomplete import.
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            results: profiles(5000, 0),
+          })
+        )
+      );
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(
+        /without a session_id or total/
+      );
+    });
+
+    it('throws instead of silently truncating when total shows more profiles remain', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            total: 7000,
+            results: profiles(5000, 0),
+          })
+        )
+      );
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/2000 of 7000 profiles remain/);
+    });
+
+    it('does not throw when a full page coincidentally exhausts total', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        return Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            total: 5000,
+            results: profiles(5000, 0),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const seen: string[] = [];
+      for await (const profile of provider.streamProfiles()) {
+        seen.push(String(profile.$distinct_id));
+      }
+
+      expect(seen).toHaveLength(5000);
+      expect(bodies).toHaveLength(1);
+    });
+
+    it('throws on a short page too when total shows more profiles remain', async () => {
+      // Mixpanel documents page_size as a cap, not a guarantee -- a page
+      // smaller than page_size is not necessarily the last one.
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            session_id: 'sess-abc',
+            total: 7000,
+            results: profiles(3000, 0),
+          })
+        )
+      );
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/4000 of 7000 profiles remain/);
+    });
+
+    it('does not keep paging with a stale session_id once a later page omits it', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        // Page 0 opens a session; page 1 is a full page that (for whatever
+        // reason) comes back without one. `?? sessionId` would carry sess-abc
+        // forward and request page 2 with an id Mixpanel no longer honours.
+        return Promise.resolve(
+          engagePage({
+            page,
+            page_size: 5000,
+            session_id: page === 0 ? 'sess-abc' : undefined,
+            total: 12_000,
+            results: profiles(5000, page * 5000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/2000 of 12000 profiles remain/);
+      expect(bodies).toHaveLength(2);
+    });
   });
 });

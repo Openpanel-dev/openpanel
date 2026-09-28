@@ -27,6 +27,101 @@ export const zMixpanelRawProfile = z.object({
 });
 export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
 
+/**
+ * `2025-05-20T18:42:11` / `2025-05-20 18:42:11` / `2025-05-20T18:42` — no
+ * trailing offset. Seconds are optional: Mixpanel sends minute-precision
+ * timestamps too, and without this they'd fall through unnormalized to
+ * `new Date()`, which reads an offset-free string as local time.
+ */
+const NAIVE_TIMESTAMP_RE =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/u;
+
+/**
+ * How far `timeZone` is ahead of UTC at a given instant, in ms. DST-aware:
+ * the offset is resolved at that instant, not assumed constant.
+ */
+function timeZoneOffsetMs(instantMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(instantMs));
+
+  const at = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? '0');
+
+  const asUtc = Date.UTC(
+    at('year'),
+    at('month') - 1,
+    at('day'),
+    at('hour'),
+    at('minute'),
+    at('second')
+  );
+  return asUtc - Math.floor(instantMs / 1000) * 1000;
+}
+
+/**
+ * Mixpanel reports timestamps as a wall clock in the project's timezone. Read
+ * naively they look like UTC, which shifts every row by the project's offset.
+ * Convert that wall clock to the real UTC instant.
+ *
+ * Two passes: the offset depends on the instant we're solving for, so guess,
+ * correct, and re-resolve. That settles DST correctly everywhere except the
+ * ambiguous hour of a backward transition, where the earlier instant wins.
+ */
+export function projectTimeToUtc(
+  wallClockMs: number,
+  timeZone: string | undefined
+): number {
+  if (!timeZone || timeZone === 'UTC') {
+    return wallClockMs;
+  }
+  try {
+    let utcMs = wallClockMs - timeZoneOffsetMs(wallClockMs, timeZone);
+    utcMs = wallClockMs - timeZoneOffsetMs(utcMs, timeZone);
+    return utcMs;
+  } catch {
+    // An unknown IANA name shouldn't fail the whole import.
+    return wallClockMs;
+  }
+}
+
+/**
+ * Parse a Mixpanel profile timestamp ($created / $last_seen). Returns undefined
+ * for anything missing or unparseable, so callers can pick their own fallback
+ * rather than silently getting an Invalid Date.
+ *
+ * Mixpanel sends these without a timezone offset, and `new Date()` reads such
+ * strings as *local* time — which would make every imported profile's dates
+ * depend on the worker container's TZ. Pin them to UTC so the import is
+ * reproducible wherever it runs.
+ */
+function parseMixpanelDate(
+  value: unknown,
+  timeZone?: string
+): Date | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  const raw = String(value).trim();
+  const isNaive = NAIVE_TIMESTAMP_RE.test(raw);
+  const date = new Date(isNaive ? `${raw.replace(' ', 'T')}Z` : raw);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  // Only a naive timestamp is a project-local wall clock; one that carried its
+  // own offset is already an absolute instant.
+  return isNaive
+    ? new Date(projectTimeToUtc(date.getTime(), timeZone))
+    : date;
+}
+
 class MixpanelRateLimitError extends Error {
   readonly retryAfterMs?: number;
 
@@ -322,12 +417,18 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
   /**
    * Stream user profiles from Mixpanel Engage API.
-   * Paginates with page/page_size (5k per page) and yields each profile.
+   *
+   * Engage pagination is session based: page 0 opens a snapshot and returns its
+   * `session_id`, and every later page has to replay that id or Mixpanel answers
+   * 400 "must have session_id when requesting page > 0".
    */
   async *streamProfiles(): AsyncGenerator<MixpanelRawProfile, void, unknown> {
     const { serviceAccount, serviceSecret, projectId } = this.config;
-    const pageSize = 5000;
+    const requestedPageSize = 5000;
+    let pageSize = requestedPageSize;
+    let sessionId: string | undefined;
     let page = 0;
+    let receivedCount = 0;
 
     while (true) {
       await this.waitForRateLimit();
@@ -335,8 +436,11 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       const url = `${this.residencyUrls.apiBase}/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
       const body = new URLSearchParams({
         page: String(page),
-        page_size: String(pageSize),
+        page_size: String(requestedPageSize),
       });
+      if (sessionId) {
+        body.set('session_id', sessionId);
+      }
 
       this.logger?.info(
         { page, page_size: pageSize, projectId },
@@ -371,11 +475,22 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
       const data = (await response.json()) as {
         results?: Array<{ $distinct_id: string | number; $properties?: Record<string, unknown> }>;
+        session_id?: string;
         page?: number;
+        page_size?: number;
         total?: number;
       };
 
+      // Not `?? sessionId`: a later page that omits session_id has to clear
+      // it, or the stop-on-missing-session guard below never fires and we
+      // keep paging with a session id Mixpanel no longer recognizes.
+      sessionId = data.session_id;
+      // Mixpanel may hand back a smaller page than we asked for; the size it
+      // reports is the one its own paging follows.
+      pageSize = data.page_size ?? pageSize;
+
       const results = data.results ?? [];
+      receivedCount += results.length;
       for (const row of results) {
         const parsed = zMixpanelRawProfile.safeParse(row);
         if (parsed.success) {
@@ -388,7 +503,38 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         }
       }
 
+      // `total` tells us whether a page that looks like the end actually is
+      // one, or just happens to land on a boundary. Mixpanel treats page_size
+      // as a cap, not a guarantee -- a short page is not necessarily the last
+      // one -- so this has to run before *either* break below, not only the
+      // missing-session-id one.
+      const assertNoProfilesRemain = (reason: string) => {
+        if (typeof data.total === 'number' && receivedCount < data.total) {
+          throw new Error(
+            `Mixpanel Engage ${reason}, but ${data.total - receivedCount} of ${data.total} profiles remain unfetched (project ${projectId})`
+          );
+        }
+      };
+
       if (results.length < pageSize) {
+        assertNoProfilesRemain('returned a short page');
+        break;
+      }
+      // Without a session id Mixpanel would reject the next page anyway.
+      if (!sessionId) {
+        // No total either means no signal at all that this is really the end
+        // -- assertNoProfilesRemain can't tell us anything without it, so
+        // don't let a full page fall through to the "stop" path unchecked.
+        if (typeof data.total !== 'number') {
+          throw new Error(
+            `Mixpanel Engage returned a full page without a session_id or total (project ${projectId})`
+          );
+        }
+        assertNoProfilesRemain('returned a full page without a session_id');
+        this.logger?.warn(
+          { page, projectId },
+          'Mixpanel Engage returned a full page without a session_id; stopping profile pagination',
+        );
         break;
       }
       page++;
@@ -403,9 +549,29 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     const props = (parsed.$properties || {}) as Record<string, unknown>;
 
     const id = String(parsed.$distinct_id).replace(/^\$device:/, '');
-    const createdAt = props.$created
-      ? formatClickhouseDate(new Date(String(props.$created)))
-      : formatClickhouseDate(new Date());
+
+    // Mixpanel's reserved profile properties: $created is when the profile was
+    // first created, $last_seen its most recent activity. Neither is guaranteed
+    // to be present, so fall back to each other before the import window.
+    //
+    // Never fall back to Date.now(): that stamps every profile with the import's
+    // wall clock, and since profiles is ReplacingMergeTree(last_seen_at) it also
+    // hands the bad row the highest possible version, so a corrected re-import
+    // silently loses to it.
+    const { timezone } = this.config;
+    const created = parseMixpanelDate(props.$created, timezone);
+    const lastSeen = parseMixpanelDate(props.$last_seen, timezone);
+
+    if (!(created || lastSeen)) {
+      this.logger?.warn(
+        { id },
+        'Mixpanel profile has neither $created nor $last_seen; dating it from the import window start',
+      );
+    }
+
+    const fallback = new Date(this.config.from);
+    const createdAt = formatClickhouseDate(created ?? lastSeen ?? fallback);
+    const lastSeenAt = formatClickhouseDate(lastSeen ?? created ?? fallback);
 
     const properties: Record<string, string> = {};
     const stripPrefix = /^\$/;
@@ -424,7 +590,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       avatar: String(props.$avatar ?? props.$image ?? ''),
       properties,
       created_at: createdAt,
-      last_seen_at: createdAt,
+      last_seen_at: lastSeenAt,
       is_external: true,
       groups: [],
     };
@@ -543,7 +709,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       project_id: projectId,
       session_id: '', // Will be generated in SQL after import
       properties: toDots(properties), // Flatten nested objects/arrays to Map(String, String)
-      created_at: formatClickhouseDate(new Date(props.time * 1000)),
+      created_at: formatClickhouseDate(
+        new Date(projectTimeToUtc(props.time * 1000, this.config.timezone))
+      ),
       country,
       city,
       region,
