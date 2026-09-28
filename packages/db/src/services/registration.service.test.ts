@@ -50,9 +50,23 @@ describe('getIsRegistrationAllowed', () => {
   it('allows a new user holding a valid invite when registration is disabled', async () => {
     process.env.ALLOW_REGISTRATION = 'false';
     process.env.ALLOW_INVITATION = 'true';
-    mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
+    mockInviteFindUnique.mockResolvedValue({
+      id: 'invite-1',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
 
     await expect(getIsRegistrationAllowed('invite-1')).resolves.toBe(true);
+  });
+
+  it('blocks an expired invite when registration is disabled', async () => {
+    process.env.ALLOW_REGISTRATION = 'false';
+    process.env.ALLOW_INVITATION = 'true';
+    mockInviteFindUnique.mockResolvedValue({
+      id: 'invite-1',
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+
+    await expect(getIsRegistrationAllowed('invite-1')).resolves.toBe(false);
   });
 
   it('blocks an unknown invite id', async () => {

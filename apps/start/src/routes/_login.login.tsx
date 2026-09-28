@@ -25,15 +25,15 @@ export const Route = createFileRoute('/_login/login')({
     ],
   }),
   validateSearch,
-  loader: async ({ context, location }) => {
-    const search = validateSearch.safeParse(location.search);
+  loaderDeps: ({ search }) => ({ inviteId: search.inviteId }),
+  loader: async ({ context, deps }) => {
     const [, isRegistrationAllowed] = await Promise.all([
       context.queryClient.ensureQueryData(
         context.trpc.auth.providers.queryOptions()
       ),
       context.queryClient.ensureQueryData(
         context.trpc.auth.isRegistrationAllowed.queryOptions({
-          inviteId: search.success ? search.data.inviteId : undefined,
+          inviteId: deps.inviteId,
         })
       ),
     ]);

@@ -27,21 +27,21 @@ export const Route = createFileRoute('/_public/onboarding')({
   },
   component: Component,
   validateSearch,
-  loader: async ({ context, location }) => {
+  loaderDeps: ({ search }) => ({ inviteId: search.inviteId }),
+  loader: async ({ context, deps }) => {
     await context.queryClient.ensureQueryData(
       context.trpc.auth.providers.queryOptions()
     );
-    const search = validateSearch.safeParse(location.search);
-    if (search.success && search.data.inviteId) {
+    if (deps.inviteId) {
       await context.queryClient.prefetchQuery(
         context.trpc.organization.getInvite.queryOptions({
-          inviteId: search.data.inviteId,
+          inviteId: deps.inviteId,
         })
       );
     }
     return context.queryClient.ensureQueryData(
       context.trpc.auth.isRegistrationAllowed.queryOptions({
-        inviteId: search.success ? search.data.inviteId : undefined,
+        inviteId: deps.inviteId,
       })
     );
   },
@@ -79,7 +79,7 @@ function Component() {
           </h1>
           <p className="text-muted-foreground">
             {inviteId
-              ? 'This invitation no longer exists, has already been used, or invitations are disabled on this instance. Ask an administrator for help.'
+              ? 'This invitation has expired, no longer exists, has already been used, or invitations are disabled on this instance. Ask an administrator for help.'
               : "New accounts can't be created on this instance. Ask an administrator to invite you."}
           </p>
           <p className="mt-3 text-muted-foreground">
