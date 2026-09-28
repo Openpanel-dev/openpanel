@@ -20,7 +20,14 @@ export function inviteErrorMessage(
   if (!code) {
     return null;
   }
-  return INVITE_ERROR_MESSAGES[code] ?? 'We could not apply your invitation.';
+  // `code` comes from a URL query param, so it can be any string an attacker
+  // chooses -- including an inherited Object.prototype member name like
+  // 'toString'. A plain index would return that function instead of falling
+  // back, and React would then render it as the error message.
+  if (Object.hasOwn(INVITE_ERROR_MESSAGES, code)) {
+    return INVITE_ERROR_MESSAGES[code];
+  }
+  return 'We could not apply your invitation.';
 }
 
 /**
