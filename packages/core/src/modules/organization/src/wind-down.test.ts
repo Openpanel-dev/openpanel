@@ -1,4 +1,3 @@
-//
 // Prisma, the event counts, the last-event lookup, the highlight builder and
 // the email transport are injected stubs — these assert the job's decisions
 // (who enters, which step fires, what gets written), not any real persistence.

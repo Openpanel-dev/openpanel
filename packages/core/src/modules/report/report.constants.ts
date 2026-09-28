@@ -1,4 +1,3 @@
-//
 // `getDefaultIntervalByDates` is REWRITTEN from date-fns
 // (differenceInDays/isSameDay) to plain Date math per the module map. Every
 // process that constructs these Dates runs under TZ=UTC (ADR-012: "this ADR

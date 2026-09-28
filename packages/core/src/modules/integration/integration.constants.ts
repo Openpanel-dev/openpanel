@@ -1,4 +1,3 @@
-//
 // `zSlackAuthResponse` does NOT move here even though it is zod-only and would
 // pass `constants-stay-isomorphic`: it is Slack's OAuth token-exchange wire
 // contract, not integration config a form validates against — nothing in

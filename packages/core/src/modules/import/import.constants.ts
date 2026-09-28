@@ -1,4 +1,3 @@
-//
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 
 import { z } from 'zod';

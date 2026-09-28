@@ -1,4 +1,3 @@
-//
 // `insightsProject` is this module's own queue (`insights` in the registry —
 // ADR-005's registry key). `insightsDaily` / `insightCleanup` / `weeklyDigest`
 // are cron fragments, spread into the ONE `cron` queue by jobs.registry.ts.

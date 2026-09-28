@@ -1,4 +1,3 @@
-//
 // Db/ch access is LAZY (`load*` below), not a static top-level import — see
 // gsc.service.ts's header for the full reasoning (jobs.registry.ts and
 // services.ts pull this module into the eager barrel chain nearly every core

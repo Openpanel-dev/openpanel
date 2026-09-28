@@ -1,4 +1,3 @@
-//
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` / `loadIdService` lazy loaders are gone, so this module
 // value-imports neither `@openpanel/db` nor its own package barrel — the Prisma

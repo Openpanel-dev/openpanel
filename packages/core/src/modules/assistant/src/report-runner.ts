@@ -1,4 +1,3 @@
-//
 // Explicitly defers unifying MCP's tool definitions with assistant's, so
 // `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
 // dispatch — reaching into another module's tool tree is not the fix.

@@ -1,4 +1,3 @@
-//
 // `cohortCompute` is this module's own queue — registry key `cohortCompute`
 // EXACTLY (ADR-005's acceptance note: no env rename, so
 // COHORTCOMPUTE_CONCURRENCY keeps working). `cohortRefresh` is a cron fragment,

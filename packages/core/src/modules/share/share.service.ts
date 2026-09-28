@@ -1,4 +1,3 @@
-//
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` / `loadAccessService` / `loadDashboardService` /
 // `loadReportsService` lazy loaders are gone, so this module value-imports

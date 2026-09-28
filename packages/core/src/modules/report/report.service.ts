@@ -1,4 +1,3 @@
-//
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`;
 // `loadDb` and the `@openpanel/core` self-barrel import are gone — the Prisma
 // row types below are `import type`, erased at runtime.

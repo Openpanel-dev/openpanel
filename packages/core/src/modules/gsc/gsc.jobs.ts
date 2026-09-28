@@ -1,4 +1,3 @@
-//
 // `gscProjectSync` / `gscProjectBackfill` are this module's own queue (`gsc` in
 // the registry — ADR-005's registry key). `gscSync` is a cron fragment, spread
 // into the ONE `cron` queue by jobs.registry.ts. Scheduler id and cadence are

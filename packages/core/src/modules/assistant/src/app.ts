@@ -1,4 +1,3 @@
-//
 // The app is BUILT from the `deps` `assistant.routes.ts` already holds, not
 // constructed at module scope (R15). Importing this file now opens nothing — no
 // provider client, no agent, no conversation store — and every tool handler

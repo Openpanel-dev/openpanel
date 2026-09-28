@@ -1,4 +1,3 @@
-//
 // `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
 // here and spread into jobs.registry.ts, same shape as organization.jobs.ts's
 // `delete`. Its `cron` is explicitly `null` (ADR-021's on-demand state, not

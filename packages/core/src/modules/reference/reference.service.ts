@@ -1,4 +1,3 @@
-//
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`. The
 // `loadDb` / `loadDateService` / `loadOrganizationService` lazy loaders are
 // gone: nothing here value-imports `@openpanel/db` or this package's own barrel

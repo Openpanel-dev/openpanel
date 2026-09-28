@@ -1,4 +1,3 @@
-//
 // Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
 // (`SessionEndDeps`): M10-006 moved the binding into `session.jobs.ts`, where
 // the job's `ctx` supplies every client, so the requestId that opened the

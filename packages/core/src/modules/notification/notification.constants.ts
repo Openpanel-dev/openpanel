@@ -1,4 +1,3 @@
-//
 // `zChartEvent`/`zChartEventFilter` are chart/report vocabulary that has not
 // moved to core yet (ADR-008's "report" module is a later wave), so per
 // `constants-stay-isomorphic` (zod, another `*.constants.ts`, or type-only —

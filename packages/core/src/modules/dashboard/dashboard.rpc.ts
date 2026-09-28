@@ -1,9 +1,7 @@
-//
-// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
-// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
-// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
-// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
-// another id needs its own.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. The explicit checks in the handlers below stay: `enforceAccess`
+// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
+// from another id needs its own.
 //
 // The dashboardId-keyed procedures are invisible to `enforceAccess`; their
 // in-handler `requireProjectAccess` through `ctx.services.auth` is the only

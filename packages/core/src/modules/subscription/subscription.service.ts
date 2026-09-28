@@ -1,4 +1,3 @@
-//
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
 // do: every mutating procedure in this module gates on it first, before

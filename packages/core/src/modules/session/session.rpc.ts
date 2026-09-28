@@ -1,9 +1,7 @@
-//
-// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
-// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
-// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
-// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
-// another id needs its own.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. The explicit checks in the handlers below stay: `enforceAccess`
+// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
+// from another id needs its own.
 //
 // V1's file also exported `encodeCursor` / `decodeCursor`; nothing imports them
 // and `shared/pagination.ts` already has the generic pair, so they were not

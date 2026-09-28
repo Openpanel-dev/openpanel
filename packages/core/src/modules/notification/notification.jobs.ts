@@ -1,4 +1,3 @@
-//
 // `sendNotification` is this module's own queue (`notification` in the registry
 // — ADR-005's registry key). legacyCompat.notification already discriminates on
 // this exact job name (jobs/compat.ts), so this pins the two in agreement. No

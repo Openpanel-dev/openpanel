@@ -1,4 +1,3 @@
-//
 // Keys must match the template `category` in @openpanel/email. Each entry's
 // label + description drive the account email-preferences toggles.
 export const emailCategories = {

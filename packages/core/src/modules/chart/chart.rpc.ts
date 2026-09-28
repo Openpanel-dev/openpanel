@@ -1,4 +1,3 @@
-//
 // The seven member-only procedures are back on `protectedProcedure`, so
 // `enforceAccess` reads the top-level `projectId` before the input is parsed,
 // exactly as V1 does.

@@ -1,9 +1,7 @@
-//
-// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
-// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
-// V1 does. The explicit checks in the handlers below stay: `enforceAccess` only
-// sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved from
-// another id needs its own.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. The explicit checks in the handlers below stay: `enforceAccess`
+// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
+// from another id needs its own.
 //
 // `list`/`rules` have no access check here either — same gap V1's router has
 // (ported verbatim, not fixed; see notification.service.ts's header for why
