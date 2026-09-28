@@ -17,13 +17,13 @@ this file: the webhook template sandbox escape, the share-password cookie bypass
 unsubscribe-token default secret, the email fallback log, and the migration banner.
 
 A third pass (2026-09-23) triaged the list against the no-breaking-change rule below and
-closed four more: **H1** (`8149f200`), **H3** (`565cca66`), **H9** (`6e8e3eb8`) and **L1**
-(`092b240e`). With L1 gone `bun test --isolate` in `packages/core` is green: 1797 pass,
-12 skip, 0 fail. H8a followed (`60d96d8d`).
+closed four more: **H1** (`7b254dc9`), **H3** (`e37d15cc`), **H9** (`ebc68650`) and **L1**
+(`7e7eb4ef`). With L1 gone `bun test --isolate` in `packages/core` is green: 1797 pass,
+12 skip, 0 fail. H8a followed (`908bf0d1`).
 
-The fourth pass then fixed, in order: **M1** (`08eaec41`), **H8b + the rest of H8a**
-(`d98a3c14`), **H8c** (`9718c5bf`), **H8e** (`695fc8ce`), **H6** (`352b204e`) and **M2**
-(`c968481d`). **H8 is now closed apart from H8d, which is deferred.** Core suite 1810 pass,
+The fourth pass then fixed, in order: **M1** (`048177e9`), **H8b + the rest of H8a**
+(`3304948b`), **H8c** (`23dfd554`), **H8e** (`d0c64225`), **H6** (`aeaccdf6`) and **M2**
+(`91cb6b0d`). **H8 is now closed apart from H8d, which is deferred.** Core suite 1810 pass,
 12 skip, 0 fail.
 
 A fourth pass (2026-09-27) re-investigated the open entries against the running databases
@@ -83,7 +83,7 @@ the entry text is kept for context.
 | **M12** | restrict CORS on `/mcp` | `http/cors.ts` documents the open scope as deliberate V1 parity, and a browser MCP client would break. Fix only the two header bugs (`allow-headers: undefined`, `expose-headers` echoing every request header name) and leave the origin policy alone |
 | **M13** | 400 on `/export` `limit=0\|-5`, `includes=bogus` | clamp, do not reject. M13's tRPC half (`overview.*` filter validation, a `profile.list` take cap) is dashboard-only and safe to make strict |
 
-**H8a was a judgement call and the owner took it (2026-09-23): fixed in `60d96d8d`.**
+**H8a was a judgement call and the owner took it (2026-09-23): fixed in `908bf0d1`.**
 A bare `YYYY-MM-DD` end bound now names the whole day, as it already did on the
 dashboard path. MCP numbers change, by design — `get_analytics_overview` for
 acme-web August went from 276535 sessions to 283780, which is the ClickHouse count.
@@ -112,7 +112,7 @@ misleading feature; **low** = cosmetic.
 
 ## High
 
-### H1. Secrets logged: `console.log('ENVS', process.env)` on SSR — FIXED (`8149f200`)
+### H1. Secrets logged: `console.log('ENVS', process.env)` on SSR — FIXED (`7b254dc9`)
 - **Symptom**: every dashboard SSR render prints the whole process env (`POLAR_WEBHOOK_SECRET`,
   DB URLs, …) into the web process log; plus `baseUrl` logged three times per page load in the
   browser console and `tabId` logs on three tab routes.
@@ -133,7 +133,7 @@ misleading feature; **low** = cosmetic.
   overview/report charts) for the share case.
 - **Verify**: anonymous call → 401; share page still shows reference markers.
 
-### H3. Client secret hashes returned to the browser and the management API — FIXED (`565cca66`)
+### H3. Client secret hashes returned to the browser and the management API — FIXED (`e37d15cc`)
 - **Symptom**: `client.list`, `project.getProjectWithClients` and `GET /manage/clients` (list and
   by id) include `secret` (the scrypt/argon2 hash) for every client.
 - **Files**: `packages/core/src/modules/client/client.rpc.ts` (`list`),
@@ -145,7 +145,7 @@ misleading feature; **low** = cosmetic.
 - **Verify**: none of the three responses contain a `secret` key; `apps/start` client settings
   table still renders (it never used the hash).
 
-### H4. No rate limiting on login and MCP auth; user enumeration — FIXED (`2318f3c3`, `1b514e07`)
+### H4. No rate limiting on login and MCP auth; user enumeration — FIXED (`5583e782`, `d84d1d48`)
 > **Wider than written: the rewrite has no rate limiter at all. See the ground rule.**
 - **Symptom**: 30 wrong passwords to `auth.signInEmail` in 13 s all get 401; 20 wrong MCP tokens in
   1 s each run a hash verify; unknown email → 404 "User does not exists" vs 401 for a wrong
@@ -159,7 +159,7 @@ misleading feature; **low** = cosmetic.
   results briefly); return the same 401 message for unknown email and wrong password.
 - **Verify**: 11th attempt in a minute → 429; unknown email and wrong password give identical bodies.
 
-### H5. Malformed request bodies crash routes (500) and legacy `/event` stores nameless events — FIXED (`f55b91b1`)
+### H5. Malformed request bodies crash routes (500) and legacy `/event` stores nameless events — FIXED (`f577ad85`)
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom** (all with a valid write client, `content-type: application/json`):
   `POST /profile` empty body → 500 `payload.properties`; `POST /profile/increment` `{}`/`"x"`/empty
@@ -180,7 +180,7 @@ misleading feature; **low** = cosmetic.
   configured maximum with a 413 instead of a raw KafkaJS 500.
 - **Verify**: each case above → 400/413 with a message; `SELECT count() FROM events WHERE name=''` stays 0.
 
-### H6. Client-controlled timestamps and device ids accepted unbounded — FIXED (`352b204e`)
+### H6. Client-controlled timestamps and device ids accepted unbounded — FIXED (`aeaccdf6`)
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `__timestamp: 12345` → `created_at = 1970-01-01`; `"2020-01-01T…"` stored as-is;
   every date-filled series (e.g. `/insights/:id/active_users`, `WITH FILL`) then starts in 1970.
@@ -214,19 +214,19 @@ The QA run observed the state inside the one-hour window before the sweep. The o
 worth noting is that the sweep is hourly rather than immediate.
 
 ### H8. MCP data-correctness bugs
-- **a. `endDate` exclusive — FIXED (`60d96d8d`)** — every `zDateRange` tool drops the whole last day
+- **a. `endDate` exclusive — FIXED (`908bf0d1`)** — every `zDateRange` tool drops the whole last day
   (`startDate=endDate` → zeros; the default range excludes today). Files:
   `packages/core/src/modules/mcp/src/tools/shared.ts:80-89` (bare `YYYY-MM-DD`),
   `packages/core/src/modules/overview/src/overview.sql.ts:118-124`, `pages.sql.ts:16-22`
   (`BETWEEN … AND toDateTime('<end> 00:00:00')`). Fix: `< end + 1 day`. Verify against
   ClickHouse: `get_analytics_overview` Aug 1–31 on acme-web → 283780 sessions (inclusive), not 276535.
-- **b. `query_sessions` unordered — FIXED (`d98a3c14`)** — `queryEventsQuery` got its
+- **b. `query_sessions` unordered — FIXED (`3304948b`)** — `queryEventsQuery` got its
   `ORDER BY created_at DESC` from `f37bb130` and is fine today
   (`packages/core/src/modules/event/src/sql.ts:384-393`, with a comment explaining why).
   Only `packages/core/src/modules/session/src/sql.ts:315` `querySessionsQuery` still has a
   bare `LIMIT` while the response claims "created_at desc". Verified: asking for the 5 newest
   sessions returns rows from 26 Aug, four seconds apart. Fix: one line, that file only.
-- **c. `get_rolling_active_users` returns future dates — FIXED (`9718c5bf`)** — `date + n` ARRAY JOIN with no
+- **c. `get_rolling_active_users` returns future dates — FIXED (`23dfd554`)** — `date + n` ARRAY JOIN with no
   `WHERE date <= today()`. File: `packages/core/src/modules/chart/src/retention.sql.ts:107-127`.
 - **d. `get_page_conversions` empty when users identify at conversion — DEFERRED by the
   owner 2026-09-27; diagnosis below is settled, do not re-derive it.** The join at
@@ -242,7 +242,7 @@ worth noting is that the sweep is hourly rather than immediate.
   rows where the current join returns 0 (acme-web / `signup_completed` / Aug 1-8), and gives
   the same attribution the backfill would. It is deferred because it narrows attribution to a
   single session and makes the tool's `windowHours` parameter close to meaningless.
-- **e. Descriptions — FIXED (`695fc8ce`)** — three, and one was worse than reported.
+- **e. Descriptions — FIXED (`d0c64225`)** — three, and one was worse than reported.
   `get_retention_cohort` says "retained per following week" but computes on-or-after, because
   `retention.service.ts:256` defaults `criteria` to `'on_or_after'` which `retention.sql.ts:44-47`
   compiles to `>=`. `get_profile_metrics` has a not-found guard at `profile-metrics.ts:28` that
@@ -254,7 +254,7 @@ worth noting is that the sweep is hourly rather than immediate.
   `reset_dashboard_layout`, `delete_dashboard`, `delete_report`, `duplicate_report`).
   "Read-only" is the more important error of the two.
 
-### H9. Mobile Events page crashes — FIXED (`6e8e3eb8`)
+### H9. Mobile Events page crashes — FIXED (`ebc68650`)
 - **Symptom**: `/acme/acme-web/events` at 390 px → "Something went wrong";
   `Element type is invalid … EventIcon`.
 - **Files**: `apps/start/src/components/events/event-icon.tsx:224`
@@ -263,7 +263,7 @@ worth noting is that the sweep is hourly rather than immediate.
 - **Fix**: `?? EventIconMapper.BotIcon` fallback after the lookup.
 - **Verify**: Playwright at 390 px, events list renders for all four projects.
 
-### H10. Hydration mismatches on every data page — MOSTLY FIXED (`5a118cfa`)
+### H10. Hydration mismatches on every data page — MOSTLY FIXED (`1d92441a`)
 React discards the SSR tree ("tree will be regenerated on the client") or logs attribute mismatches on 158/168 loads:
 - `apps/start/src/components/widget-table.tsx:121-123` — class name from `Math.random()`, used
   both as a `className` at `:163` and inside injected `<style>` text at `:141-154`, so the CSS
@@ -305,7 +305,7 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
   matches the warning. **Needs a console run to confirm.**
 - **Verify**: `browser_console_messages` on overview, realtime, events, session and profile detail show no hydration errors.
 
-### H11. Server errors rendered as empty states; stalled loads — FIXED (`8bd2bb5f`) except the stalled-loads half
+### H11. Server errors rendered as empty states; stalled loads — FIXED (`ce090a6e`) except the stalled-loads half
 - **Symptom**: a 500 from `profile.list` renders "No profiles — you haven't identified any
   profiles yet"; overview cards show 0 and the map "Error loading map" on 500; the crawl saw
   ~12 % of loads stuck on skeletons with data queries never resolving (blank sidebar, no
@@ -337,7 +337,7 @@ React discards the SSR tree ("tree will be regenerated on the client") or logs a
 - **The "~12 % stuck on skeletons" half is unsized.** No evidence found either way; it needs a
   warm-server re-run, as the entry itself suggests. Treat it as a separate item.
 
-### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks) — SYSTEMIC HALF FIXED (`baebfcb0`)
+### H12. 500 instead of 400/404 for bad ids and inputs (raw Prisma/ClickHouse text leaks) — SYSTEMIC HALF FIXED (`047ce12a`)
 **No error-mapping work has landed.** The earlier "partly fixed (`f3e9ae4e`)" note overstated
 things: that commit was a SQL-allowlist security port, and the `profile.values` 400 was an
 incidental side effect of allowlisting a column name, not a deliberate error mapping.
@@ -395,7 +395,7 @@ are already fixed.
   matching `/export`. The tRPC `errorFormatter` should also drop `stack` outside development.
 - **Verify**: the list above returns 400/404 with a short message; `bun test` in the touched modules.
 
-### H13. Slow `chart.chart` with breakdowns over long ranges — FIXED (`ae3665cf`); was never a SQL problem
+### H13. Slow `chart.chart` with breakdowns over long ranges — FIXED (`e826a05a`); was never a SQL problem
 - **Symptom**: 12 months / day with three breakdowns (`path`, `country`, `device`) takes 14 s
   alone and 30 s under load (hits the deadline yet still returns 200).
 - **The original diagnosis in this entry was wrong.** There is no missing `LIMIT` problem and
@@ -442,7 +442,7 @@ are already fixed.
 
 ## Medium
 
-### M1. Event picker counts are meaningless — FIXED (`08eaec41`)
+### M1. Event picker counts are meaningless — FIXED (`048177e9`)
 - **Symptom**: report builder shows "Any events 676" and "52" next to every event (real 30-day
   counts are 39,202 … 3,097).
 - **Files**: `packages/core/src/modules/chart/src/sql.ts:610` (`count(name)` over
@@ -456,7 +456,7 @@ are already fixed.
 - **Verify**: picker count for `cta_clicked` on acme-web equals `SELECT count() FROM events
   WHERE project_id='acme-web' AND name='cta_clicked'` (95,582).
 
-### M2. Pages table: hidden session counts and near-zero durations — FIXED (`c968481d`), except the acme-app bounce-rate note
+### M2. Pages table: hidden session counts and near-zero durations — FIXED (`91cb6b0d`), except the acme-app bounce-rate note
 - **Symptom**: Sessions column shows `—` for every row when no previous-period value exists
   (the real count, e.g. 152,116, is hidden); `avg_duration` is 0.1–0.24 (renders "0s") while
   sessions average 61 s; acme-app pages show Bounce 0 % / 0s on every row.
@@ -654,7 +654,7 @@ are already fixed.
 
 ---
 
-### L1. `test/midnight-window.test.ts` rots with the calendar — FIXED (`092b240e`)
+### L1. `test/midnight-window.test.ts` rots with the calendar — FIXED (`7e7eb4ef`)
 - **Symptom**: three failures in `bun test --isolate` (`pass with the wall clock at
   2026-09-16T00:0*`). The suite pins the JS clock to a hardcoded `2026-09-16` and re-runs the
   mcp/chart fixture suites inside it, but `inactiveDays` and the last-seen buckets compare

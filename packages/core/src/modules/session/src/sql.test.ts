@@ -247,7 +247,7 @@ describe('querySessionsQuery', () => {
 
   // `query_sessions` is reached from MCP with bare `YYYY-MM-DD`, which bound
   // straight through as midnight and dropped the whole last day — 7,245
-  // sessions on the seeded 31 Aug (ISSUES.md H8a, missed in 60d96d8d).
+  // sessions on the seeded 31 Aug (ISSUES.md H8a, missed in 908bf0d1).
   test('widens a bare end date to the end of that day', () => {
     const { query_params } = querySessionsQuery({
       projectId: PROJECT_ID,

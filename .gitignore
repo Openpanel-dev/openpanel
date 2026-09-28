@@ -203,6 +203,9 @@ apps/start/e2e/.auth/
 # playwright output
 apps/start/test-results/
 apps/start/playwright-report/
+# Playwright MCP scratch: console logs, page snapshots and screenshots, written
+# at the repo root by the MCP server rather than under apps/start.
+.playwright-mcp/
 
 # SQL dumps the ClickHouse code-migration runner writes next to each migration
 packages/db/src/code-migrations/*.sql
