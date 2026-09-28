@@ -195,7 +195,7 @@ function buildDeps(): AppDeps {
     // deviation), so these are references to those, not new connections: one
     // Prisma client, one round-robin ClickHouse client and the cache Redis,
     // handed down so a service reaches them through its request-scoped `Ctx`
-    // instead of importing them (TECH_DEBT §4).
+    // instead of importing them.
     db,
     // Prisma's two JSON sentinels, so the four modules that write a nullable
     // `Json?` column read them off the scope instead of importing the client.

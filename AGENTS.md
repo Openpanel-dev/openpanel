@@ -166,7 +166,9 @@ disable rules to make a check pass. Generated and vendored files are excluded in
   `<name>.constants.ts`.
 - Names reveal purpose; no abbreviations unless universal.
 - Comments say *why*, briefly. Never narrate what the code does. If a function needs
-  a comment to explain what it does, split it.
+  a comment to explain what it does, split it. A comment that restates a rule from
+  this file, cites a document the repo does not contain, records where the code used
+  to live, or refers to V1 carries no knowledge — see `.claude/skills/clean-code`.
 - Single responsibility, early returns, no nested ternaries, extract conditions into
   named booleans.
 - DRY at the narrowest level that fits: the module first, `packages/core/src/shared/`
@@ -188,7 +190,3 @@ verified, with a message that says what and why. Never push, never add
 remotes, never rewrite history that is not yours. `WORKTREE.md`, `.seed.json` and
 `.worktree-*` are gitignored — keep them that way.
 
-## Ralph
-
-If `/home/deploy/rewrite-openpanel` exists you are the autonomous rewrite loop:
-`CLAUDE.ralph.md` overrides this file.

@@ -8,7 +8,7 @@
 // swaps an already-loaded module's exports in place, so a consumer that
 // imported before the mock call still sees it — measured on Bun 1.4.0, and the
 // subscribe assertions go red if it ever stops. That leaves this module with no
-// deferred loads at all (docs/TECH_DEBT.md's no-lazy-loaders ruling).
+// deferred loads at all.
 //
 // Every assertion below is the one it was before the deps switch: the same
 // project scoping, the same 30-minute window, the same filter/limit wiring, the

@@ -3,13 +3,8 @@
 // bodies they validate (project.service.ts's
 // createProjectForOrganization/updateProjectForOrganization).
 //
-// The project filter/edit schemas below moved from
-// packages/validation/src/index.ts (same module map row). `zChartEvent` is
-// imported by name, not re-exported: `zProjectFilterEvent` extends it as a
-// bound identifier.
-//
-// Isomorphic by the AGENTS.md rule: zod, another *.constants.ts, and nothing
-// else.
+// `zChartEvent` is imported by name, not re-exported: `zProjectFilterEvent`
+// extends it as a bound identifier.
 
 import { z } from 'zod';
 import { zChartEvent } from '../report/report.constants';

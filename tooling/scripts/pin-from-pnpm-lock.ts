@@ -33,8 +33,7 @@
  * commit that is supposed to prove nothing moved. Rewriting the specifier
  * fields is the mechanical, resolution-preserving half of what that install
  * would do; `pnpm install --frozen-lockfile` then verifies the result is
- * consistent. The full measurement is in docs/BUN_INSTALL_RECIPE.md § Why the
- * lock is edited, not refreshed.
+ * consistent.
  *
  * Edits are surgical — only the value on a matched line is replaced — so key
  * order, indentation and every comment survive byte-for-byte, and nothing is

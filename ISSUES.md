@@ -58,6 +58,41 @@ bug.** Core suite 1830 pass, 12 skip, 0 fail.
   realtime empty states.
 - **Test debt** — untouched.
 
+### Carried over from `docs/TECH_DEBT.md` (deleted 2026-09-28)
+
+That file was a dated log of work that landed, not a to-do list. Four of its
+"known debt" items had already been fixed by the time it was read (the tracked
+`package-lock.json`, the inert `rolldown` override, the unused `jiti`
+devDependencies, and `verification/golden/queue-keys/`, whose directory is
+gone). These are what was left, each re-checked against the tree on 2026-09-28:
+
+- **`tooling/gates/conformance/rules.test.ts` runs in no suite.** The root
+  `test` script is core + db + api + seed + start + `vitest run`; `tooling/` is
+  in neither list, so the conformance gate's own regression tests only run by
+  hand (`cd tooling/gates/conformance && bun test` → 19 pass, 0 fail). Wiring
+  it in is one entry in the root `package.json`.
+- **The conformance R14 residue scan does not reach `packages/`.**
+  `tooling/gates/conformance/cli.ts` builds `residueFiles` from `packages/core`,
+  `apps/api` and `apps/start` only, so the one surviving `NEXT_PUBLIC_`
+  reference outside `apps/public` —
+  `packages/payments/src/polar.ts:63`'s `process.env.NEXT_PUBLIC_DASHBOARD_URL`
+  — is invisible to the rule whose label says "elsewhere outside
+  `apps/public/`". Widening the scan changes what that gate asserts, so it is a
+  decision, not a fix.
+
+### Found while cleaning comments (2026-09-28)
+
+- **`notification.constants.ts` duplicates three schemas from
+  `report.constants.ts`.** `zChartEvent`, `zChartEventFilter` and
+  `zChartEventSegment` are local copies whose operator and value-type enums are
+  inlined as literal tuples rather than derived from `operators` /
+  `filterValueTypes`. Verified on 2026-09-28: both enum sets are identical
+  (15 operators, 5 value types) and `report.constants.ts` does not import
+  `notification.constants.ts`, so there is no cycle — the copies can be
+  collapsed onto the report module's. The file's own TODO asked for exactly
+  this once `report.constants.ts` existed, which it now does. Left as a
+  refactor rather than done inside a comment pass.
+
 Everything else below is still open.
 
 ---

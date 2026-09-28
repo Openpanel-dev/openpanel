@@ -3,8 +3,6 @@
 // lives here and `zInviteUser` embeds it without a cross-file constants import.
 // @openpanel/db's `code-migrations/constants.ts` keeps its own frozen copy of
 // the schema (Carl's rulings) — it is not a consumer.
-//
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
 
 import { z } from 'zod';
 

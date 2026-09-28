@@ -1,6 +1,3 @@
-// Plain TypeScript, no zod — isomorphic by the AGENTS.md rule, which constrains
-// a constants file's imports, and this file has none.
-
 // The two list procedures' page bounds. Vocabulary, not implementation: the
 // dashboard pages that call `insight.list` / `insight.listAll` size their own
 // requests against the same numbers the procedure enforces.

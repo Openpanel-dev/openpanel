@@ -21,7 +21,7 @@
 // `mock.module` calls still sees them; the "not called" and "called with"
 // assertions on every mock below are what would go red if that ever stopped
 // holding. The deferred loads this file used to need are gone with the module's
-// own (docs/TECH_DEBT.md's no-lazy-loaders ruling).
+// own.
 
 import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { getSuperJson } from '@openpanel/shared';

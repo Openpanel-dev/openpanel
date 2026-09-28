@@ -156,7 +156,7 @@ function trimmedComparand(value: unknown): string {
 // One event-property filter. Values bind; the property key is a Map key, so it
 // binds as a value too. An `IN`/`NOT IN` list becomes one `Array(String)`
 // param — V1's `IN ()` on an empty list and `IN {p:Array(String)}` on an empty
-// array both match nothing (SQL_MIGRATION_RECIPE idioms 9/10).
+// array both match nothing.
 function eventPropertyCondition(filter: IChartEventFilter): SqlFragment {
   const propertyKey = sql.string(filter.name.replace('properties.', ''));
   const { value, operator } = filter;

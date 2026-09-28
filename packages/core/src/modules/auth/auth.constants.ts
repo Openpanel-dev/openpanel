@@ -1,9 +1,3 @@
-// `zProvider` is new here — it validated `signInOAuth`'s input inline in
-// packages/trpc/src/routers/auth.ts and was never exported, but it is
-// vocabulary the same way the rest of this file is.
-//
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
-
 import { z } from 'zod';
 
 export const zProvider = z.enum(['email', 'google', 'github']);

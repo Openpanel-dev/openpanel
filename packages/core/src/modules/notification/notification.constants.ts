@@ -1,15 +1,8 @@
-// `zChartEvent`/`zChartEventFilter` are chart/report vocabulary that has not
-// moved to core yet (ADR-008's "report" module is a later wave), so per
-// `constants-stay-isomorphic` (zod, another `*.constants.ts`, or type-only —
-// nothing else) they cannot be value-imported from packages/validation here.
-// Diverged local copy instead, same treatment
-// as./modules/cohort/cohort.constants.ts's zChartEventFilter since M5-003 —
-// including inlining `operators`/`chartSegments`/`filterValueTypes` as literal
-// key tuples rather than importing them from packages/constants. TODO(report
-// module): once report.constants.ts exists, delete this duplicate and import
-// zChartEvent from there instead.
-//
-// Isomorphic by the AGENTS.md rule otherwise: zod and nothing else.
+// `zChartEvent` / `zChartEventFilter` / `zChartEventSegment` are diverged local
+// copies of report.constants.ts's, with the operator and value-type enums
+// inlined as literal tuples instead of derived from `operators` /
+// `filterValueTypes`. The enum sets are identical, so the copies can be
+// collapsed onto report.constants.ts — see ISSUES.md.
 
 import { z } from 'zod';
 

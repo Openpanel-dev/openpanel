@@ -1,7 +1,5 @@
 // ADR-008 records two diverged `zCreateReference` copies in V1 as one of the
 // two drift bugs the dissolution exists to prevent; this is now the only one.
-//
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
 
 import { z } from 'zod';
 

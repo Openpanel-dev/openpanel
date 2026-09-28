@@ -1,10 +1,3 @@
-// Isomorphic by the AGENTS.md rule: zod, another `*.constants.ts`, or nothing.
-// `zChartEventFilter` used to be a diverged local copy here (TODO(P7) in
-// M5-003) to dodge a TDZ from importing it through packages/validation's barrel
-// before that barrel finished initializing; now that it lives in
-// report.constants.ts — an isomorphic, cycle-free sibling — importing it
-// directly is safe, and the duplicate is gone.
-
 import { z } from 'zod';
 import { zChartEventFilter } from '../report/report.constants';
 

@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
 /**
- *
- * Isomorphic by the AGENTS.md rule: zod and nothing else.
- *
  * The full `ChatApp` type (Better Agent's inferred app type) lives in
  * `./src/app.ts` — it's `ReturnType<typeof createChatApp>` and inherently bound
  * to the server-side agent definition, so it stays out of this constants file

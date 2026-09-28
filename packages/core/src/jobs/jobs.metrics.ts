@@ -2,8 +2,8 @@
 // core registry (TARGET_ARCHITECTURE §18). Names, labels and buckets are V1's;
 // the worker-side copies died with apps/worker.
 //
-// Three deliberate differences from V1, all listed in
-// `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:
+// Three deliberate differences from the metric set this replaces, written up
+// for dashboard owners in `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:
 //
 // 1. V1 registered the five `<queue>_*_count` gauges for TWO queues
 // (`sessionsQueue`, `cronQueue`). V2 registers them for all seven, which

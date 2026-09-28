@@ -223,10 +223,9 @@ $ curl -s http://127.0.0.1:3333/healthz/ready
 replacement) was also exercised directly and shut down cleanly on `SIGTERM`
 ("Graceful shutdown completed").
 
-## M10-008: closure-scoped install (TECH_DEBT §5d)
+## Closure-scoped install
 
-TECH_DEBT §5d, sourced from M9-006's own "real lever left on the table" note,
-claimed the `prod-deps` stage's workspace-root `pnpm install --frozen-lockfile
+An earlier note claimed the `prod-deps` stage's workspace-root `pnpm install --frozen-lockfile
 --prod` installed all 23 workspace projects' production dependencies —
 `next`, `react-email`, `@polar-sh/sdk`, `effect`, `mathjs`, ~1.1GB total —
 because it runs at the repo root regardless of which `package.json` files were
@@ -238,7 +237,7 @@ selectively `COPY`'d.
 and `apps/public` are never copied in, so pnpm's workspace glob simply cannot
 see them, confirmed via `Scope: all 14 workspace projects` in the install log
 and by reproducing the exact stage in a scratch directory). Every package named
-in TECH_DEBT §5d is a genuine transitive **production** dependency already
+in that note is a genuine transitive **production** dependency already
 inside `@openpanel/api`'s real closure, not workspace leakage:
 
 | Package | `pnpm why` chain |
@@ -311,13 +310,10 @@ snapshotter reports compressed content size, per M9-006); uncompressed via
 **Verdict: no measurable size change (−4,372 bytes, noise).** This is the
 correct, honestly-reported result given the `pnpm why` findings above — the
 image was already scoped to `@openpanel/api`'s real closure before this task,
-so there was no apps/start/apps/public dependency bloat to remove. TECH_DEBT
-§5d's premise was wrong; this task's value is making the closure boundary an
+so there was no apps/start/apps/public dependency bloat to remove. That
+premise was wrong; this task's value is making the closure boundary an
 explicit property of the install command instead of an implicit consequence of
 the manifest list, which is a correctness/robustness improvement, not a size
-one. `docs/TECH_DEBT.md` §5d should be corrected to reflect this the next time
-it's touched — not done here, out of this task's scope (register the finding,
-don't edit the register's narrative text as a side effect of closing it).
 
 ### Boot proof (2026-09-06, this attempt, against `openpanel-v2:closure`)
 
@@ -416,5 +412,4 @@ Full run, 2026-09-07: **PASSED in 3m16s**, `/login` 152348 bytes, both container
 logs clean, 7.8G free after the final prune.
 
 **Sizes and the one known break** (the shipped compose templates' `prisma
-migrate deploy` line, pre-existing): `docs/TECH_DEBT.md` → *M13-003 image
 sizes*.

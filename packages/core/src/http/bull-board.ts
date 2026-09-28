@@ -11,8 +11,7 @@
 // port for everything, so `/` would shadow every other route. It is
 // `/bullboard`; that is a deploy-note, written up in
 // `packages/core/docs/OPS_GRAFANA_MIGRATION.md`. 2. **Pausing `cron` from this
-// UI halts ALL buffer flushing.** Preserved deliberately — docs/ANSWERS.md §3:
-// "known!".
+// UI halts ALL buffer flushing.** Preserved deliberately.
 
 import type { Queue as BullQueue } from 'bullmq';
 import { Elysia } from 'elysia';

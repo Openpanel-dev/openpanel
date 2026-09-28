@@ -7,8 +7,6 @@
 // and the only inputs this function ever receives are date-only strings
 // (midnight boundaries), where date-fns's exact-duration-vs-calendar-day nuance
 // cannot diverge from a plain ms division anyway.
-//
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
 
 import { z } from 'zod';
 

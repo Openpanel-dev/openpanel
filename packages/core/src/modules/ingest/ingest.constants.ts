@@ -1,9 +1,6 @@
 // The ingestion wire contract (ADR-008's module map: ingest owns "C"). All
 // three enforce the same thing (what a caller may name an event and what a
-// track body may contain), so they are one file here. packages/validation and
-// packages/constants re-export this; the SDK deep-import retarget is P11.
-//
-// Isomorphic by rule: zod, another *.constants.ts, or nothing.
+// track body may contain), so they are one file here.
 
 import { z } from 'zod';
 
