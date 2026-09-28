@@ -218,6 +218,7 @@ export const authRouter = createTRPCRouter({
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       return session;
     }),
+  /** Email/password sign-in. Returns a TOTP challenge, or consumes a pending invite and signs the user in. */
   signInEmail: publicProcedure
     .use(
       rateLimitMiddleware({
@@ -306,6 +307,7 @@ export const authRouter = createTRPCRouter({
       };
     }),
 
+  /** Completes a signInEmail TOTP challenge and consumes any invite carried over from it. */
   signInTotp: publicProcedure
     .use(
       rateLimitMiddleware({

@@ -22,6 +22,7 @@ export const Route = createFileRoute('/_login/verify')({
   }),
 });
 
+/** Two-factor challenge: a 6-digit TOTP code or a one-time recovery code. */
 function VerifyPage() {
   const trpc = useTRPC();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');

@@ -14,6 +14,7 @@ const INVITE_ERROR_MESSAGES: Record<string, string> = {
     'Invitations are disabled on this instance, so it could not be applied.',
 };
 
+/** Look up the display message for an invite-error code, or null if there is none. */
 export function inviteErrorMessage(
   code: string | undefined | null
 ): string | null {

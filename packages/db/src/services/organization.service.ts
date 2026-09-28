@@ -156,10 +156,16 @@ export class InviteError extends Error {
   }
 }
 
+/** Extract the failure code from an InviteError, or null for any other error. */
 export function getInviteFailureCode(error: unknown): InviteFailureCode | null {
   return error instanceof InviteError ? error.code : null;
 }
 
+/**
+ * Consume an invite: grant the user membership and any project access it
+ * carries. Throws InviteError (never a plain Error) so callers on the
+ * sign-in path can tell an expected failure from an unexpected one.
+ */
 export async function connectUserToOrganization({
   user,
   inviteId,

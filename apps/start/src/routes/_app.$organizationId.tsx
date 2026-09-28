@@ -90,6 +90,7 @@ export const Route = createFileRoute('/_app/$organizationId')({
   ),
 });
 
+/** An org-level notice banner (subscription state, invite errors); hidden on the billing page. */
 function Alert({
   title,
   description,
@@ -117,6 +118,7 @@ function Alert({
   );
 }
 
+/** The org layout shell: subscription/invite banners, the org's Outlet, and cross-sell prompts. */
 function Component() {
   const { organizationId } = Route.useParams();
   const { inviteError } = Route.useSearch();

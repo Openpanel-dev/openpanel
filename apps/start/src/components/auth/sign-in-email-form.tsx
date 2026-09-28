@@ -13,6 +13,7 @@ import { Button } from '../ui/button';
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
 
+/** Email/password sign-in form; forwards to the TOTP challenge or the dashboard. */
 export function SignInEmailForm({
   isLastUsed,
   inviteId,

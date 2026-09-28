@@ -73,7 +73,11 @@ function dashboardRedirect(inviteError: string | null): string {
   return url.toString();
 }
 
-// Shared utility functions
+/**
+ * Log in an existing OAuth account. If an invite is pending, tries to consume
+ * it and carries any failure through to the dashboard redirect rather than
+ * dropping it.
+ */
 async function handleExistingUser({
   account,
   oauthUser,
@@ -132,6 +136,11 @@ async function handleExistingUser({
   return reply.redirect(dashboardRedirect(inviteError));
 }
 
+/**
+ * Create a user from a first-time OAuth sign-in. If an invite is pending,
+ * tries to consume it and carries any failure through to the dashboard
+ * redirect rather than dropping it.
+ */
 async function handleNewUser({
   oauthUser,
   providerName,

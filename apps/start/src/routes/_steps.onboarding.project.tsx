@@ -67,6 +67,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 
 type IForm = z.infer<typeof zOnboardingProject>;
 
+/** The project-creation step of onboarding: create a new workspace or join an existing one. */
 function Component() {
   const { inviteError } = Route.useSearch();
   const inviteMessage = onboardingInviteErrorMessage(inviteError);

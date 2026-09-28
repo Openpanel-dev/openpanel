@@ -68,6 +68,7 @@ export const Route = createFileRoute('/')({
   pendingComponent: FullPageLoadingState,
 });
 
+/** The root page for a signed-in user with more than one organization: pick one to enter. */
 function LandingPage() {
   const trpc = useTRPC();
   const logout = useLogout();

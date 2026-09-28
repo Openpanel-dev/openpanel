@@ -189,6 +189,7 @@ export const organizationRouter = createTRPCRouter({
       return true;
     }),
 
+  /** Invite a user to the organization by email, expiring per getInviteExpiryDays(). */
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
