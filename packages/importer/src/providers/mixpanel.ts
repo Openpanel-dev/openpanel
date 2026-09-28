@@ -386,7 +386,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         total?: number;
       };
 
-      sessionId = data.session_id ?? sessionId;
+      // Not `?? sessionId`: a later page that omits session_id has to clear
+      // it, or the stop-on-missing-session guard below never fires and we
+      // keep paging with a session id Mixpanel no longer recognizes.
+      sessionId = data.session_id;
       // Mixpanel may hand back a smaller page than we asked for; the size it
       // reports is the one its own paging follows.
       pageSize = data.page_size ?? pageSize;
@@ -405,18 +408,26 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         }
       }
 
-      if (results.length < pageSize) {
-        break;
-      }
-      // Without a session id Mixpanel would reject the next page anyway. `total`
-      // tells us whether that actually truncates the import or just happens to
-      // land on a page boundary.
-      if (!sessionId) {
+      // `total` tells us whether a page that looks like the end actually is
+      // one, or just happens to land on a boundary. Mixpanel treats page_size
+      // as a cap, not a guarantee -- a short page is not necessarily the last
+      // one -- so this has to run before *either* break below, not only the
+      // missing-session-id one.
+      const assertNoProfilesRemain = (reason: string) => {
         if (typeof data.total === 'number' && receivedCount < data.total) {
           throw new Error(
-            `Mixpanel Engage returned a full page without a session_id, but ${data.total - receivedCount} of ${data.total} profiles remain unfetched (project ${projectId})`
+            `Mixpanel Engage ${reason}, but ${data.total - receivedCount} of ${data.total} profiles remain unfetched (project ${projectId})`
           );
         }
+      };
+
+      if (results.length < pageSize) {
+        assertNoProfilesRemain('returned a short page');
+        break;
+      }
+      // Without a session id Mixpanel would reject the next page anyway.
+      if (!sessionId) {
+        assertNoProfilesRemain('returned a full page without a session_id');
         this.logger?.warn(
           { page, projectId },
           'Mixpanel Engage returned a full page without a session_id; stopping profile pagination',

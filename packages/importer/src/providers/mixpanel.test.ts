@@ -498,5 +498,60 @@ describe('mixpanel', () => {
       expect(seen).toHaveLength(5000);
       expect(bodies).toHaveLength(1);
     });
+
+    it('throws on a short page too when total shows more profiles remain', async () => {
+      // Mixpanel documents page_size as a cap, not a guarantee -- a page
+      // smaller than page_size is not necessarily the last one.
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(
+          engagePage({
+            page: 0,
+            page_size: 5000,
+            session_id: 'sess-abc',
+            total: 7000,
+            results: profiles(3000, 0),
+          })
+        )
+      );
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/4000 of 7000 profiles remain/);
+    });
+
+    it('does not keep paging with a stale session_id once a later page omits it', async () => {
+      const bodies: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+        bodies.push(String(init?.body));
+        const page = bodies.length - 1;
+        // Page 0 opens a session; page 1 is a full page that (for whatever
+        // reason) comes back without one. `?? sessionId` would carry sess-abc
+        // forward and request page 2 with an id Mixpanel no longer honours.
+        return Promise.resolve(
+          engagePage({
+            page,
+            page_size: 5000,
+            session_id: page === 0 ? 'sess-abc' : undefined,
+            total: 12_000,
+            results: profiles(5000, page * 5000),
+          })
+        );
+      });
+
+      const provider = makeProvider();
+      const drain = async () => {
+        for await (const _profile of provider.streamProfiles()) {
+          // draining the generator
+        }
+      };
+
+      await expect(drain()).rejects.toThrow(/2000 of 12000 profiles remain/);
+      expect(bodies).toHaveLength(2);
+    });
   });
 });
