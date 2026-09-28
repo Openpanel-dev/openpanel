@@ -68,6 +68,34 @@ export abstract class BaseImportProvider<
   }
 
   /**
+   * How many days each export request should cover.
+   *
+   * One day per chunk is a safe default for dense projects, but it is also the
+   * only thing deciding how many sequential requests an import makes: a
+   * nine-month range becomes 270-odd round trips, one after another, whatever
+   * the volume per day. For sparse or historical backfills that is most of the
+   * wall-clock time and nowhere near any provider rate limit.
+   *
+   * Raise it with IMPORT_CHUNK_SIZE_DAYS. Clamped to 1..31 -- beyond that the
+   * per-request payload starts risking provider-side timeouts, which is the
+   * failure chunking exists to avoid in the first place.
+   */
+  protected getChunkSizeDays(): number {
+    const raw = process.env.IMPORT_CHUNK_SIZE_DAYS;
+    if (!raw) {
+      return 1;
+    }
+    // Number.parseInt would accept a numeric prefix ("7days" -> 7, "7.5" -> 7)
+    // and silently chunk at the wrong size instead of falling back. Number()
+    // rejects trailing garbage, so validate the whole string through it.
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed)) {
+      return 1;
+    }
+    return Math.min(31, Math.max(1, parsed));
+  }
+
+  /**
    * Utility: Split a date range into chunks to avoid timeout issues with large imports
    * Returns array of [from, to] date pairs in YYYY-MM-DD format
    *
@@ -98,9 +126,13 @@ export abstract class BaseImportProvider<
     while (cursor <= endDate) {
       const chunkStart = cursor.toISOString().split('T')[0]!;
 
-      // Calculate chunk end: move forward by (chunkSizeDays - 1) to get the last day of the chunk
+      // Calculate chunk end: move forward by (chunkSizeDays - 1) to get the last day of the chunk.
+      // UTC arithmetic throughout: `from`/`to` parse as UTC midnight and format
+      // back via toISOString (UTC). Advancing with local-time setDate/getDate
+      // in between drifts by the host's UTC offset -- worth a full day across
+      // a DST transition -- and can make consecutive chunks overlap.
       const chunkEndDate = new Date(cursor);
-      chunkEndDate.setDate(chunkEndDate.getDate() + (chunkSizeDays - 1));
+      chunkEndDate.setUTCDate(chunkEndDate.getUTCDate() + (chunkSizeDays - 1));
 
       // Don't go past the end date
       const chunkEnd =
@@ -111,7 +143,7 @@ export abstract class BaseImportProvider<
       chunks.push([chunkStart, chunkEnd]);
 
       // Move cursor to the next chunk start (after the current chunk)
-      cursor.setDate(cursor.getDate() + chunkSizeDays);
+      cursor.setUTCDate(cursor.getUTCDate() + chunkSizeDays);
 
       if (cursor > endDate) break;
     }
