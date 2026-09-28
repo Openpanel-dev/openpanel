@@ -1,5 +1,3 @@
-// Ported from packages/db/src/services/funnel.service.test.ts (main #497).
-// toSeries is pure — it only reshapes rows — so nothing here touches a client.
 import { describe, expect, it } from 'bun:test';
 import { toSeries } from './funnel.service';
 

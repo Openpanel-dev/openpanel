@@ -1,6 +1,5 @@
-// Ported from apps/worker/src/jobs/cron.session-vacuum.test.ts. The daily
-// backstop for sessions whose cleanup leaked: a lingering blob → id-gated
-// cleanup; a missing blob → ZREM the orphan.
+// The daily backstop for sessions whose cleanup leaked: a lingering blob →
+// id-gated cleanup; a missing blob → ZREM the orphan.
 
 import { describe, expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';

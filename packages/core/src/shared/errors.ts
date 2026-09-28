@@ -1,6 +1,6 @@
-// Ported from apps/api/src/utils/errors.ts. Transport-agnostic: HTTP, jobs
-// and the Kafka consumer all throw and normalize through this, not through
-// an rpc/-specific error type (see rpc/errors.ts for the TRPCError family).
+// Ported from apps/api/src/utils/errors.ts. Transport-agnostic: HTTP, jobs and
+// the Kafka consumer all throw and normalize through this, not through an
+// rpc/-specific error type (see rpc/errors.ts for the TRPCError family).
 
 import { classifyDriverError } from './driver-errors';
 

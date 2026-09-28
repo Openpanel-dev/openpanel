@@ -1,10 +1,8 @@
 // Onboarding email cron: the sequential drip driven by the
-// `organization.onboarding` pointer. Moved from
-// apps/worker/src/jobs/cron.onboarding.test.ts — db, the organization module's
-// event-count lookup, and email are mocked; asserts template selection, day
-// gating, early completion on active subs, and usage personalization.
-// `mock.module` is not hoisted, so the subject is imported inside `beforeAll` —
-// see AGENTS.md.
+// `organization.onboarding` pointer. Db, the organization module's event-count
+// lookup, and email are mocked; asserts template selection, day gating, early
+// completion on active subs, and usage personalization. `mock.module` is not
+// hoisted, so the subject is imported inside `beforeAll` — see AGENTS.md.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';

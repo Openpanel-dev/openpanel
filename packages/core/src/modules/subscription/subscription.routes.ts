@@ -1,6 +1,4 @@
-// The Polar webhook, `POST /webhook/polar`. Ported from V1's
-// apps/api/src/controllers/webhook.controller.ts's `polarWebhook`, which
-// doesn't exist in this tree — this route is the only caller of
+// The Polar webhook, `POST /webhook/polar`. This route is the only caller of
 // subscription.service.ts's `handlePolarWebhookEvent`.
 //
 // RAW BYTES, deliberately: `validatePolarEvent` verifies Polar's signature over

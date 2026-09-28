@@ -1,4 +1,3 @@
-// Ported from packages/trpc/src/routers/email.ts.
 //
 // Deliberately R + C only (no `email.service.ts`): the three procedures' bodies
 // are three small `db.emailUnsubscribe` calls, inlined here the same way

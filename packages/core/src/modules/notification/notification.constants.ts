@@ -1,9 +1,3 @@
-// Moved from packages/validation/src/index.ts (ADR-008's module map:
-// notification owns "C"). packages/validation/src/index.ts becomes a re-export
-// shim of this file (same shape as./onboarding.constants.ts since M6-003), so
-// packages/trpc's notification router and apps/start's notification rule form
-// keep resolving these symbols through packages/validation's existing barrel
-// unchanged.
 //
 // `zChartEvent`/`zChartEventFilter` are chart/report vocabulary that has not
 // moved to core yet (ADR-008's "report" module is a later wave), so per

@@ -1,7 +1,6 @@
-// Ported from apps/worker/src/jobs/cron.wind-down.ts (the wave that deletes
-// apps/worker). ADR-005's acceptance note gives `windDown` to the organization
-// module. Behaviour is V1's, verbatim; only the wiring changed — Prisma, the
-// two ClickHouse counts, the last-event lookup, the plan pricer, the highlight
+// ADR-005's acceptance note gives `windDown` to the organization module.
+// Behaviour is V1's, verbatim; only the wiring changed — Prisma, the two
+// ClickHouse counts, the last-event lookup, the plan pricer, the highlight
 // builder and `sendEmail` all arrive as injected deps (`WindDownDeps`), the
 // same idiom the session lifecycle uses (modules/session/src/runtime.ts).
 // `organization.jobs.ts` binds them off the job's ctx; tests hand in stubs, so

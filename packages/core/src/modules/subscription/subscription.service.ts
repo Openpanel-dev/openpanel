@@ -1,8 +1,3 @@
-// Ported from V1's packages/trpc/src/routers/subscription.ts (checkout,
-// products, usage, cancel/pause/resume, save-discount, portal) and from
-// apps/api/src/controllers/webhook.controller.ts's `polarWebhook` — neither
-// exists in this tree; every caller reaches these functions through this file
-// directly (subscription.rpc.ts, subscription.routes.ts).
 //
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks

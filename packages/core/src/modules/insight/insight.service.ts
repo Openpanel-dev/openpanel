@@ -1,6 +1,4 @@
-// Moved from packages/db/src/services/insights* + referrer-spikes.service.ts
-// (the AI engine module). ADR-007: "Moves to core: src/services/** (33 services
-// + insights/)".
+// ADR-007: "Moves to core: src/services/** (33 services + insights/)".
 //
 // Plain exported functions, not only methods on `createInsightService`'s
 // container — the same shape as modules/auth/auth.service.ts, because V1's

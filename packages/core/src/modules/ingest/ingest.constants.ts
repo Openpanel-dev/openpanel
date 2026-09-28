@@ -1,10 +1,7 @@
-// The ingestion wire contract (ADR-008's module map: ingest owns "C"). Moved
-// from packages/validation/src/track.validation.ts,
-// packages/validation/src/event-blocklist.ts and packages/constants'
-// RESERVED_EVENT_NAMES — all three enforce the same thing (what a caller may
-// name an event and what a track body may contain), so they are one file here.
-// packages/validation and packages/constants re-export this; the SDK
-// deep-import retarget is P11.
+// The ingestion wire contract (ADR-008's module map: ingest owns "C"). All
+// three enforce the same thing (what a caller may name an event and what a
+// track body may contain), so they are one file here. packages/validation and
+// packages/constants re-export this; the SDK deep-import retarget is P11.
 //
 // Isomorphic by rule: zod, another *.constants.ts, or nothing.
 

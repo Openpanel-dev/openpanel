@@ -1,9 +1,7 @@
-// Every ClickHouse query the session module runs, as pure `sql` fragments.
-// Converted 1:1 from packages/db/src/services/session.service.ts and
-// apps/worker/src/jobs/events.create-session-end.ts: the SQL text is V1's, with
-// every value bound as a `{pN:Type}` parameter instead of an escaped literal,
-// and each conversion was proven byte-equivalent against the local prod-copy
-// (see the task report).
+// Every ClickHouse query the session module runs, as pure `sql` fragments. The
+// SQL text is V1's, with every value bound as a `{pN:Type}` parameter instead
+// of an escaped literal, and each conversion was proven byte-equivalent against
+// the local prod-copy (see the task report).
 //
 // Dates bind as V1's own `YYYY-MM-DD HH:mm:ss` strings on purpose: a String
 // param in a DateTime64 position is parsed exactly like the literal it

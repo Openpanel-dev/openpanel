@@ -1,13 +1,12 @@
 /**
  * SQL-syntax tests for the overview module's `getRawWhereClause` (the UTM
- * remapping). Moved from packages/db/src/services/overview-sql.test.ts
- * alongside its subject, which moved to core in M7-005 — same pattern as the
- * chart cases moving to chart.sql.test.ts with theirs. M12-002 put
- * `getRawWhereClause` on the `sql` tag, so these assertions read the rendered
- * statement AND its bound params instead of one escaped string; the rest of the
- * overview module's queries already run through overview.sql.ts, covered by
- * overview.sql.test.ts. M10-005 turned it from a class method into a module
- * function — it never needed a client, being pure fragment building.
+ * remapping). Same pattern as the chart cases moving to chart.sql.test.ts with
+ * theirs. M12-002 put `getRawWhereClause` on the `sql` tag, so these assertions
+ * read the rendered statement AND its bound params instead of one escaped
+ * string; the rest of the overview module's queries already run through
+ * overview.sql.ts, covered by overview.sql.test.ts. M10-005 turned it from a
+ * class method into a module function — it never needed a client, being pure
+ * fragment building.
  *
  * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local
  * ClickHouse instance. EXPLAIN parses the query, resolves columns, and builds

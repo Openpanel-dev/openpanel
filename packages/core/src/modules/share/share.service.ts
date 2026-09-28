@@ -1,9 +1,3 @@
-// Moved from packages/db/src/services/share.service.ts, plus the query/mutation
-// bodies packages/trpc/src/routers/share.ts held inline (DELEGATE PATTERN: V1's
-// router and this package's own share.rpc.ts share one implementation, same as
-// organization.service.ts since M6-001). packages/db keeps a re-export shim:
-// auth.service.ts's signInToShare and packages/trpc's chart/overview routers
-// still reach validateShareAccess/validateOverviewShareAccess through it.
 //
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` / `loadAccessService` / `loadDashboardService` /

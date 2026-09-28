@@ -1,4 +1,3 @@
-// Ported from V1's client router.
 //
 // Every procedure is on its V1 twin's builder. `protectedProcedure` runs
 // `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as

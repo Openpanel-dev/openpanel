@@ -1,6 +1,4 @@
-// Kubernetes liveness and readiness. Ported from V1's
-// controllers/healthcheck.controller.ts `liveness`/`readiness` and
-// apps/worker/src/index.ts's two probes, which agreed on both bodies.
+// Kubernetes liveness and readiness.
 //
 // `/healthcheck` — the deep db/ch/redis probe — landed at M9-004, when
 // `AppDeps` started carrying the real clients; before that, porting it would

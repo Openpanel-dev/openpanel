@@ -1,8 +1,7 @@
-// Unit tests for the sequence runner. Moved from
-// apps/worker/src/jobs/lib/email-sequence.test.ts. `sendEmail` is mocked, so
-// these assert decisions — which step fires, whether the pointer moves, whether
-// side effects run — rather than delivery. `mock.module` is not hoisted, so the
-// subject is imported inside `beforeAll` — see AGENTS.md.
+// Unit tests for the sequence runner. `sendEmail` is mocked, so these assert
+// decisions — which step fires, whether the pointer moves, whether side effects
+// run — rather than delivery. `mock.module` is not hoisted, so the subject is
+// imported inside `beforeAll` — see AGENTS.md.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';

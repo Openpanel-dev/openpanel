@@ -1,8 +1,4 @@
-// Ported from apps/worker/src/jobs/sessions.ts (+
-// events.create-session-end.ts), cron.session-reaper.ts and
-// cron.session-vacuum.ts; `flushSessions` and `flushReplay`
-// (apps/worker/src/jobs/cron.ts) join them here at M8-004. Schedules moved onto
-// the jobs at ADR-021.
+// Schedules moved onto the jobs at ADR-021.
 //
 // `sessions` is this module's own queue — registry key and Redis name
 // `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1, all

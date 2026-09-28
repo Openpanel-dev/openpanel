@@ -1,8 +1,3 @@
-// Moved from packages/constants/index.ts (ADR-008's module map: project owns
-// "C"). packages/constants/index.ts becomes a re-export shim of
-// `ProjectTypeNames` (same shape as
-// packages/validation/src/import.validation.ts since M5-004), so existing
-// packages/constants importers keep resolving it unchanged.
 // `zCreateProject`/`zUpdateProject` are the /manage REST body schemas
 // (apps/api/src/controllers/manage.controller.ts), moved here with the CRUD
 // bodies they validate (project.service.ts's

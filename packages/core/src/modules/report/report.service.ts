@@ -1,7 +1,3 @@
-// Ported from V1's packages/db/src/services/reports.service.ts, plus the
-// create/update/move/delete/duplicate/layout mutation bodies V1's
-// packages/trpc/src/routers/report.ts held inline (ADR-008's module map: report
-// owns "R,S,C") — neither package exists in this tree.
 //
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`;
 // `loadDb` and the `@openpanel/core` self-barrel import are gone — the Prisma

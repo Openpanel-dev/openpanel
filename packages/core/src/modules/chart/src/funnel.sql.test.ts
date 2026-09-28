@@ -1,6 +1,5 @@
 /**
- * SQL-shape tests for the funnel statements. Ported from
- * packages/db/src/services/funnel-sql.test.ts.
+ * SQL-shape tests for the funnel statements.
  *
  * Strategy, same as sql.test.ts: render the statement, then run `EXPLAIN <sql>`
  * with its bound params against the isolated `openpanel_test` ClickHouse

@@ -1,7 +1,5 @@
 /**
- * SQL-shape tests for the chart statements. Ported from
- * packages/db/src/services/chart-sql.test.ts; the overview `getRawWhereClause`
- * cases stayed there with their subject.
+ * SQL-shape tests for the chart statements.
  *
  * Strategy: render the statement, then run `EXPLAIN <sql>` with its bound
  * params against the isolated `openpanel_test` ClickHouse (pinned by

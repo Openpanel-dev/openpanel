@@ -24,10 +24,9 @@ export type {
   UserAgentInfo,
   UserAgentResult,
 } from '@openpanel/shared/server';
-// Dissolved from packages/common/server — a still-live V1 package (db, queue,
-// apps/worker) reaches these the same way apps/api and core itself do, until
-// its own module lands. mcp reaches it as an internal relative import now that
-// it lives inside core.
+// A still-live V1 package (db, queue, apps/worker) reaches these the same way
+// apps/api and core itself do, until its own module lands. mcp reaches it as an
+// internal relative import now that it lives inside core.
 export {
   assertPublicHostname,
   assertPublicUrl,
@@ -129,21 +128,19 @@ export {
 // exported: a caller that can reach it can start a second collector graph
 // somewhere other than a module, which is the thing §18 forbids.
 export { registerDefaultMetrics } from './metrics';
-// Moved from apps/api/src/agents/* +
-// packages/trpc/src/agents/filter-command.ts. M15-003: the chat app, the run
-// context and the filter command all take the API's `deps` now, so the barrel
-// carries the factory and the types only — `assistant.routes.ts` and
-// `overview.rpc.ts` reach them through `ctx.services.assistant`. `ChatApp` is
-// the one type past `AppRouter` that crosses into apps/start
-// (`src/agents/client.ts`); it stays a TYPE, so no value of this module reaches
-// a browser bundle.
+// M15-003: the chat app, the run context and the filter command all take the
+// API's `deps` now, so the barrel carries the factory and the types only —
+// `assistant.routes.ts` and `overview.rpc.ts` reach them through
+// `ctx.services.assistant`. `ChatApp` is the one type past `AppRouter` that
+// crosses into apps/start (`src/agents/client.ts`); it stays a TYPE, so no
+// value of this module reaches a browser bundle.
 export type { ChatApp } from './modules/assistant/assistant.service';
 export { createAssistantService } from './modules/assistant/assistant.service';
-// Dissolved from @openpanel/auth — apps/api's OAuth callbacks call these
-// directly; V1's now-deleted @openpanel/trpc auth/share/user/gsc routers did
-// too, the same way they reached the other dissolved leaf packages here.
-// `hashPassword` is renamed on the way out: `@openpanel/shared/server` already
-// owns that name for the (unrelated) scrypt hash client secrets use.
+// apps/api's OAuth callbacks call these directly; V1's now-deleted
+// @openpanel/trpc auth/share/user/gsc routers did too, the same way they
+// reached the other dissolved leaf packages here. `hashPassword` is renamed on
+// the way out: `@openpanel/shared/server` already owns that name for the
+// (unrelated) scrypt hash client secrets use.
 //
 // The sign-up/sign-in/TOTP/reset-password/share/OAuth-callback half joined it
 // here — V1's now-deleted packages/trpc auth router and
@@ -161,12 +158,10 @@ export {
 } from './modules/auth/auth.service';
 export type { AccessLookups } from './modules/auth/src/access';
 export { createAccessChecks } from './modules/auth/src/access';
-// Moved from packages/db/src/services/auth-session.service.ts — the
-// Postgres-backed login session CRUD. packages/db keeps a re-export shim
+// The Postgres-backed login session CRUD. packages/db keeps a re-export shim
 // (existing `@openpanel/db` importers, apps/api's app.ts).
 export { validateSessionToken } from './modules/auth/src/login-session';
 export { getIsRegistrationAllowed } from './modules/auth/src/registration';
-// Dissolved from @openpanel/db's services/chart.service.ts and engine/ —
 // packages/trpc's chart router, apps/api's export controller, V1's
 // funnel/conversion/sankey/retention/overview services and the mcp/assistant
 // tools reach the engine and the field/filter compilers here.
@@ -188,51 +183,44 @@ export {
   normalizeEventField,
   profilePropertiesCteSelect,
 } from './modules/chart/chart.service';
-// Dissolved from @openpanel/db's services/funnel.service.ts — packages/db's
-// reports.service, apps/api's insights controller and the mcp/assistant tools
-// call these. packages/db/src/services/funnel.service.ts stays a re-export
-// shim.
+// packages/db's reports.service, apps/api's insights controller and the
+// mcp/assistant tools call these. packages/db/src/services/funnel.service.ts
+// stays a re-export shim.
 export { toSeries } from './modules/chart/funnel.service';
-// Dissolved from @openpanel/db's services/retention.service.ts — apps/api's
-// insights controller and the mcp/assistant tools call these.
+// apps/api's insights controller and the mcp/assistant tools call these.
 // packages/db/src/services/retention.service.ts stays a re-export shim.
 export type { IRetentionCohortRow } from './modules/chart/retention.service';
 export { processCohortData } from './modules/chart/retention.service';
-// Dissolved from @openpanel/db's services/sankey.service.ts — apps/api's
-// insights controller and the mcp/assistant tools call these.
+// apps/api's insights controller and the mcp/assistant tools call these.
 // packages/db/src/services/sankey.service.ts stays a re-export shim.
 export { getRawWhereClause } from './modules/chart/sankey.service';
-// Moved from packages/db/src/services/filter-where.service.ts — the
-// sessions/profiles/events-table filter compiler, distinct from
+// The sessions/profiles/events-table filter compiler, distinct from
 // `getEventFiltersWhereClause` above. packages/db/src/services/
 // filter-where.service.ts stays a re-export shim.
 export type { FilterTableContext } from './modules/chart/src/table-filter-where';
 export { buildFilterWhere } from './modules/chart/src/table-filter-where';
-// Dissolved from @openpanel/db's services/clients.service.ts — packages/trpc's
-// client router, apps/api's manage controller and mcp/utils auth call these
-// directly, the same way V1 reaches every other dissolved service here.
-// packages/db/src/services/clients.service.ts stays a re-export shim.
+// packages/trpc's client router, apps/api's manage controller and mcp/utils
+// auth call these directly, the same way V1 reaches every other dissolved
+// service here. packages/db/src/services/clients.service.ts stays a re-export
+// shim.
 export type { IPublicClient } from './modules/client/client.service';
 export {
   createClientService,
   // apps/api's session e2e clears one client's cache between runs.
   getClientByIdCached,
 } from './modules/client/client.service';
-// Dissolved from @openpanel/db's services/cohort.service.ts — packages/trpc's
-// cohort router and apps/worker's cohort job files call these directly, the
-// same way V1 reaches every other dissolved service here. Nothing else in the
-// tree reached cohort.service.ts through @openpanel/db's barrel, so packages/db
-// loses the file entirely rather than keeping a re-export shim (unlike
-// gsc.ts/gsc.service.ts). Moved from @openpanel/db's
-// services/conversation.service.ts — packages/trpc's conversation router,
+// packages/trpc's cohort router and apps/worker's cohort job files call these
+// directly, the same way V1 reaches every other dissolved service here. Nothing
+// else in the tree reached cohort.service.ts through @openpanel/db's barrel, so
+// packages/db loses the file entirely rather than keeping a re-export shim
+// (unlike gsc.ts/gsc.service.ts). packages/trpc's conversation router,
 // apps/api's live chat route and this package's own assistant.routes.ts stub
 // call these directly. packages/db keeps a re-export shim (unlike cohort): both
 // non-trpc call sites still reach it through `@openpanel/db`'s barrel.
 export { createConversationService } from './modules/conversation/conversation.service';
-// Dissolved from @openpanel/db's services/dashboard.service.ts, plus V1's
-// dashboard router mutation bodies — packages/trpc's dashboard router,
-// apps/api's insights controller and the mcp/assistant tools call these.
-// packages/db/src/services/dashboard.service.ts stays a re-export shim.
+// packages/trpc's dashboard router, apps/api's insights controller and the
+// mcp/assistant tools call these. packages/db/src/services/dashboard.service.ts
+// stays a re-export shim.
 export type {
   IServiceDashboard,
   IServiceDashboards,
@@ -243,22 +231,14 @@ export type {
 // packages/constants (ADR-008's module map: email owns "C"); packages/constants
 // keeps a re-export shim.
 export { emailCategories } from './modules/email/email.constants';
-// Moved from apps/worker/src/jobs/lib/email-sequence.ts — shared by the
-// onboarding module and, since M9-003, the organization module's wind-down
-// track.
+// Shared by the onboarding module and, since M9-003, the organization module's
+// wind-down track.
 export type {
   SequenceStep,
   SequenceSubject,
 } from './modules/email/src/sequence';
 export { runSequence, step } from './modules/email/src/sequence';
-// Dissolved from @openpanel/db's services/event.service.ts, profile.service.ts
-// and group.service.ts, plus the query/mutation bodies packages/trpc's
-// event/profile/group routers held inline and apps/api's profile controller
-// (ADR-008's module map: event "R,S", profile "R,H,S", group "R,S,C") —
-// packages/trpc's routers, apps/api's export controller, is-bot hook and
-// profile controller, apps/worker's incoming-event job and the assistant/mcp
-// tools call these directly, the same way V1 reaches every other dissolved
-// service here. `packages/db`'s re-export shims for these three files are gone
+// `packages/db`'s re-export shims for these three files are gone
 // (M9-CLEANUP-001) — every caller now imports this barrel directly.
 // `profileSearchSql` (cohort.service's one addition atop the shim) died with
 // M12-003: its only caller now composes a `sql` fragment and uses
@@ -275,7 +255,6 @@ export {
   transformSessionToEvent,
 } from './modules/event/event.service';
 export type { IServiceGroup } from './modules/group/group.service';
-// Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts —
 // apps/worker's gsc job file, apps/api's gsc OAuth callback controller and
 // packages/trpc's gsc router call these directly, the same way V1 reaches every
 // other dissolved service here. packages/db/src/gsc.ts and
@@ -283,15 +262,13 @@ export type { IServiceGroup } from './modules/group/group.service';
 // and the assistant's SEO tools still reach via `@openpanel/db`.
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setShuttingDown } from './modules/health/src/shutdown';
-// Dissolved from @openpanel/db's services/import.service.ts + apps/worker's job
-// file + apps/api's /import controller — apps/worker's import job file and
-// apps/api's import controller call these directly, the same way V1 reaches
-// every other dissolved service here.
+// apps/worker's import job file and apps/api's import controller call these
+// directly, the same way V1 reaches every other dissolved service here.
 // packages/db/src/services/import.service.ts is deleted outright: nothing else
-// reached it through @openpanel/db's barrel (same as cohort).
-// The ingestion pipeline. apps/api's /track controller, its three route hooks
-// and the legacy /event controller are thin delegates over these — the same
-// functions core's own `ingestRoutes` calls.
+// reached it through @openpanel/db's barrel (same as cohort). The ingestion
+// pipeline. apps/api's /track controller, its three route hooks and the legacy
+// /event controller are thin delegates over these — the same functions core's
+// own `ingestRoutes` calls.
 export type {
   BotMatch,
   IncomingEventPayload,
@@ -358,11 +335,6 @@ export {
   sampleConsumerGroupLag,
 } from './modules/ingest/src/kafka';
 export { explainInsight } from './modules/insight/insight.service';
-// Moved from packages/trpc/src/routers/integration.ts, plus the Slack OAuth
-// callback business logic out of apps/api/src/controllers/webhook.controller.ts
-// (ADR-008's module map: integration owns "S"+"C") — packages/trpc's
-// integration router and apps/api's webhook controller call these directly, the
-// same way V1 reaches every other dissolved service here.
 // Slack's OAuth token-exchange wire contract — not integration config (stays
 // out of the `*.constants` subpath, see
 // modules/integration/src/slack-contract.ts's header), but apps/api's webhook
@@ -375,7 +347,6 @@ export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
 // shell reaches MCP the one way it ever did — `rest.routes.ts`'s
 // `.use(mcpRoutes(deps))` and `ctx.services.mcp`.
 export type { McpAuthContext } from './modules/mcp/mcp.service';
-// Ported from apps/api's misc controller + apps/worker's cron.ping.ts —
 // apps/api's misc controller and the worker's ping cron job call these
 // directly, the same way V1 reaches every other dissolved service here. `GET
 // /misc/og/clear` and `/misc/favicon/clear` are NOT ported (ADR-015 entry #6:
@@ -391,8 +362,7 @@ export {
   notificationTemplateEvent,
   notificationTemplateFunnel,
 } from './modules/notification/notification.service';
-// Dissolved from @openpanel/db's services/notification.service.ts ("rules +
-// dispatch stay together"). `createNotification` / `triggerNotification` /
+// `createNotification` / `triggerNotification` /
 // `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
 // the BullMQ-producer orchestration around a rule match — came home from
 // @openpanel/queue at M11-003 and now live in this module's own
@@ -405,14 +375,6 @@ export { checkNotificationRulesForEvent } from './modules/notification/src/notif
 // job called these directly, the same way V1 reached every other dissolved
 // service here.
 export { createOnboardingService } from './modules/onboarding/onboarding.service';
-// Dissolved from @openpanel/db's services/organization.service.ts +
-// services/delete.service.ts (folded together per the module map) —
-// packages/trpc's organization router, apps/worker's delete cron job and
-// packages/db's own engine/analytics services (`getSettingsForProject`) call
-// these directly, the same way V1 reaches every other dissolved service here.
-// packages/db/src/services/organization.service.ts stays a re-export shim
-// (unlike delete.service.ts, which packages/db loses entirely — nothing but the
-// worker's cron job reached it through @openpanel/db's barrel).
 export type {
   IServiceMember,
   IServiceOrganization,
@@ -421,11 +383,10 @@ export {
   createOrganizationService,
   getOrganizationByProjectIdCached,
 } from './modules/organization/organization.service';
-// Dissolved from @openpanel/db's services/overview.service.ts +
-// pages.service.ts — packages/trpc's overview/event routers, apps/api's
-// insights controller, apps/worker's win-back job and the mcp/assistant tools
-// call these directly. packages/db/src/services/ overview.service.ts and
-// pages.service.ts stay re-export shims.
+// packages/trpc's overview/event routers, apps/api's insights controller,
+// apps/worker's win-back job and the mcp/assistant tools call these directly.
+// packages/db/src/services/ overview.service.ts and pages.service.ts stay
+// re-export shims.
 export type { IGetTopGenericInput } from './modules/overview/overview.service';
 export type {
   AdjustProfilePropertyResult,
@@ -435,11 +396,10 @@ export type {
   IServiceProfile,
   ProfileRequestContext,
 } from './modules/profile/profile.service';
-// Dissolved from @openpanel/db's services/project.service.ts — packages/trpc's
-// project router, apps/api's manage controller and several core modules'
-// `src/access.ts` call these directly, the same way V1 reaches every other
-// dissolved service here. packages/db/src/services/ project.service.ts stays a
-// re-export shim.
+// packages/trpc's project router, apps/api's manage controller and several core
+// modules' `src/access.ts` call these directly, the same way V1 reaches every
+// other dissolved service here. packages/db/src/services/ project.service.ts
+// stays a re-export shim.
 export type {
   IServiceProject,
   IServiceProjectWithClients,
@@ -450,20 +410,12 @@ export { createProjectService } from './modules/project/project.service';
 // every other dissolved service here. The `/live` websocket glue in the same
 // file stays internal to core/realtime.routes.ts; V1's own Fastify `/live`
 // controller is untouched (see realtime.service.ts's header) so nothing else
-// needs it from this barrel.
-// Moved from packages/db/src/services/reference.service.ts, plus the
-// query/mutation bodies packages/trpc/src/routers/reference.ts held inline —
-// packages/trpc's reference router calls these directly, the same way V1
-// reaches every other dissolved service here. packages/db keeps a re-export
-// shim.
+// needs it from this barrel. packages/trpc's reference router calls these
+// directly, the same way V1 reaches every other dissolved service here.
+// packages/db keeps a re-export shim.
 export type { IServiceReference } from './modules/reference/reference.service';
 export { createReferenceService } from './modules/reference/reference.service';
-// Moved from packages/constants/index.ts and packages/validation/src/index.ts
-// (ADR-008's module map: report owns "C" for the chart/report/widget
-// vocabulary) — apps/start's report builder and the assistant/mcp tools reach
-// the vocabulary directly through @openpanel/core here, same shape as
-// `emailCategories`/`ProjectTypeNames` below. Both origin packages stay
-// re-export shims.
+// Both origin packages stay re-export shims.
 export {
   alphabetIds,
   chartColors,
@@ -489,10 +441,9 @@ export {
   zCriteria,
   zReportInput,
 } from './modules/report/report.constants';
-// Dissolved from @openpanel/db's services/reports.service.ts, plus V1's report
-// router mutation bodies — packages/trpc's report router, apps/api's insights
-// controller and the mcp/assistant tools call these.
-// packages/db/src/services/reports.service.ts stays a re-export shim.
+// packages/trpc's report router, apps/api's insights controller and the
+// mcp/assistant tools call these. packages/db/src/services/reports.service.ts
+// stays a re-export shim.
 export type { IServiceReport } from './modules/report/report.service';
 export { transformReport } from './modules/report/report.service';
 export {
@@ -503,30 +454,21 @@ export {
   mergeGlobalFilters,
   onlyReportEvents,
 } from './modules/report/src/series';
-// Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts — `main.ts` calls
-// `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s cron handler
-// and everything else reach `rotateSalt`/`getSalts` through
+// `main.ts` calls `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s
+// cron handler and everything else reach `rotateSalt`/`getSalts` through
 // `ctx.services.salt`.
 export {
   createInitialSalts,
   createSaltService,
 } from './modules/salt/salt.service';
-// Dissolved from @openpanel/db's services/session.service.ts and
-// session-context.ts (now shared/als-session.ts), plus apps/worker's
-// session-end job, reaper and vacuum (ADR-008's module map: session owns
-// "R,S,J") — packages/trpc's session router, the assistant/mcp tools and
-// apps/worker's thin delegates call these directly, the same way V1 reaches
-// every other dissolved service here. `packages/db`'s re-export shims for both
-// files are gone (M9-CLEANUP-001). The `sessions` queue's own job and the
-// reaper/vacuum cron fragments are registered in jobs.registry.ts, not
-// exported.
+// `packages/db`'s re-export shims for both files are gone (M9-CLEANUP-001). The
+// `sessions` queue's own job and the reaper/vacuum cron fragments are
+// registered in jobs.registry.ts, not exported.
 export type {
   IClickhouseSession,
   IServiceSession,
 } from './modules/session/session.service';
 export { SESSION_DISTINCT_FIELDS } from './modules/session/session.service';
-// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service —
 // apps/worker's insight job files and packages/trpc's insight router call these
 // directly, the same way V1 reaches every other dissolved service here.
 export type { SessionMetricsRedis } from './modules/session/src/session.metrics';
@@ -539,34 +481,21 @@ export {
 } from './modules/session/src/session-end';
 export { reapIdleSessions } from './modules/session/src/session-reaper';
 export { vacuumStaleSessions } from './modules/session/src/session-vacuum';
-// Moved from packages/db/src/services/share.service.ts, plus the query/mutation
-// bodies packages/trpc/src/routers/share.ts held inline (ADR-008's module map:
-// share owns "C") — packages/trpc's share router calls these directly, the same
-// way V1 reaches every other dissolved service here. packages/db keeps a
-// re-export shim: auth.service.ts's signInToShare and packages/trpc's
-// chart/overview routers still reach
-// validateShareAccess/validateOverviewShareAccess through it.
 export {
   zShareDashboard,
   zShareOverview,
   zShareReport,
 } from './modules/share/share.constants';
 export { createShareService } from './modules/share/share.service';
-// Moved from packages/trpc/src/routers/subscription.ts, plus the Polar webhook
-// business logic out of apps/api/src/controllers/webhook.controller.ts
-// (ADR-008's module map: subscription owns "S"+"C") — packages/trpc's
-// subscription router and apps/api's webhook controller call these directly,
-// the same way V1 reaches every other dissolved service here.
 export { toSubscriptionDiscount } from './modules/subscription/subscription.service';
 // New module — apps/api's tools controller calls these directly, the same way
 // V1 reaches every other dissolved service here.
 export { runIpLookup } from './modules/tools/src/ip-lookup';
 export type { SiteCheckResult } from './modules/tools/src/site-checker';
 export { runSiteCheck } from './modules/tools/src/site-checker';
-// Dissolved from @openpanel/db's services/user.service.ts — packages/trpc's
-// auth/onboarding routers call `getUserById`/ `getUserAccount` directly through
-// @openpanel/db's re-export shim, the same way they reach every other dissolved
-// service here.
+// packages/trpc's auth/onboarding routers call `getUserById`/ `getUserAccount`
+// directly through @openpanel/db's re-export shim, the same way they reach
+// every other dissolved service here.
 export { createUserService } from './modules/user/user.service';
 export type { ILogger } from './pino-logger';
 export {

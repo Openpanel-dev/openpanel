@@ -3,10 +3,9 @@
  * resolved once its message has been handled, dead-lettered, or deliberately
  * skipped — never merely because it failed.
  *
- * Ported from apps/worker/src/jobs/events.kafka-consumer.test.ts with the
- * assertions unchanged. The batch handler is exercised directly with injected
- * dependencies; the broker, the metrics registry and `incomingEvent` are all
- * out of the picture — which is why no `mock.module` appears here.
+ * The batch handler is exercised directly with injected dependencies; the
+ * broker, the metrics registry and `incomingEvent` are all out of the picture —
+ * which is why no `mock.module` appears here.
  */
 
 import { describe, expect, mock, test } from 'bun:test';

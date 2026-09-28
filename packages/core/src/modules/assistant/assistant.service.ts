@@ -1,8 +1,5 @@
-// Moved from V1's agents directory (the Better Agent chat app + its tools,
-// prompt and Prisma persistence) and V1's tRPC filter-command agent (ADR-007's
-// module map: assistant owns "S"). The bulk of the logic lives under./src —
-// this file is the module's public entry point, the same shape as
-// insight.service.ts drawing from insight/src/*.
+// The bulk of the logic lives under./src — this file is the module's public
+// entry point, the same shape as insight.service.ts drawing from insight/src/*.
 //
 // Every export takes `deps`. `./src/app.ts` and `./src/filter-command.ts`
 // construct nothing at import time any more, so the three lazy loaders that

@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/cohort.compute.ts + cron.cohort-refresh.ts;
-// the schedule moved onto the job at ADR-021.
 //
 // `cohortCompute` is this module's own queue — registry key `cohortCompute`
 // EXACTLY (ADR-005's acceptance note: no env rename, so

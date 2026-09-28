@@ -1,5 +1,3 @@
-// Moved from packages/validation/src/index.ts (ADR-008's module map:
-// organization owns "C" for the member/invite/organization vocabulary).
 // `zProjectAccessGrant` is a per-project grant but every consumer is
 // organization-shaped (organization.rpc.ts's invite/access mutations), so it
 // lives here and `zInviteUser` embeds it without a cross-file constants import.

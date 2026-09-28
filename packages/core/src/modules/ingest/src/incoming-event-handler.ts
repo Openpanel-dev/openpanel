@@ -1,6 +1,5 @@
-// Ported from apps/worker/src/jobs/events.incoming-event.ts: the Kafka
-// consumer's per-message handler — the step that turns one topic payload into
-// session lifecycle decisions and ClickHouse rows.
+// The Kafka consumer's per-message handler — the step that turns one topic
+// payload into session lifecycle decisions and ClickHouse rows.
 //
 // Everything that touches Redis, Postgres, ClickHouse or a queue is INJECTED
 // (`IncomingEventDeps`), the way session-end.ts does it, so the tests drive the

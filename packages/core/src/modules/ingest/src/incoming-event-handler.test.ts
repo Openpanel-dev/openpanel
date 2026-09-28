@@ -1,6 +1,5 @@
-// Ported from apps/worker/src/jobs/events.incoming-events.test.ts with every
-// assertion unchanged. What changed is the seam: V1 reached the session buffer,
-// `createEvent` and the sessions queue through `vi.mock('@openpanel/db')` /
+// What changed is the seam: V1 reached the session buffer, `createEvent` and
+// the sessions queue through `vi.mock('@openpanel/db')` /
 // `vi.mock('@openpanel/queue')`; here they are recording doubles handed in as
 // `IncomingEventDeps`, so the assertions are on calls the code under test
 // actually made and no `mock.module` is needed.

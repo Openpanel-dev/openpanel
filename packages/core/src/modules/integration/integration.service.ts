@@ -1,7 +1,5 @@
-// Moved from packages/trpc/src/routers/integration.ts (ADR-008's module map:
-// integration owns "S"+"C"). V1's router stays the LIVE route (DELEGATE
-// PATTERN) and delegates every handler body to these functions, same as
-// notification's router does.
+// V1's router stays the LIVE route (DELEGATE PATTERN) and delegates every
+// handler body to these functions, same as notification's router does.
 //
 // Authorization here is data-dependent — an update must authorize against the
 // EXISTING row's scope, not the attacker-controlled input — so, unlike the

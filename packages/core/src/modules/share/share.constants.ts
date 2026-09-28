@@ -1,8 +1,3 @@
-// Moved from packages/validation/src/index.ts (ADR-008's module map: share owns
-// "C"). packages/validation re-exports these for existing packages/validation
-// importers — same shape as packages/validation/src/index.ts's onboarding/auth
-// re-exports since M6-003.
-
 import { z } from 'zod';
 
 export const zShareOverview = z.object({

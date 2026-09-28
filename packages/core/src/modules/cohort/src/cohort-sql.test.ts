@@ -1,5 +1,4 @@
-// SQL-shape tests for property-based cohort queries. Ported from
-// packages/db/src/services/cohort-property-sql.test.ts — minus its itCH
+// SQL-shape tests for property-based cohort queries. Minus its itCH
 // ClickHouse-reachability EXPLAIN check: `mock.module` substitutions apply
 // process-wide, not per file, so a sibling file's
 // `@openpanel/db/src/clickhouse/client` mock (cohort.service.test.ts) can

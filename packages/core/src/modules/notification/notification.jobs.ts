@@ -1,4 +1,3 @@
-// Ported from apps/worker/src/jobs/notification.ts.
 //
 // `sendNotification` is this module's own queue (`notification` in the registry
 // — ADR-005's registry key). legacyCompat.notification already discriminates on

@@ -1,7 +1,6 @@
-// Moved from packages/db/src/services/notification.service.ts (ADR-008's module
-// map: "rules + dispatch stay together"). The delivery body moves here too,
-// from apps/worker/src/jobs/notification.ts (DELEGATE PATTERN: that file
-// becomes a thin wrapper calling `deliverNotification`).
+// The delivery body moves here too, from apps/worker/src/jobs/notification.ts
+// (DELEGATE PATTERN: that file becomes a thin wrapper calling
+// `deliverNotification`).
 //
 // `createNotification` / `triggerNotification` /
 // `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —

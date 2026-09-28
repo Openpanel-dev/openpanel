@@ -1,6 +1,5 @@
-// Slug-based primary-id generation for project/dashboard/organization rows.
-// Moved from packages/db/src/services/id.service.ts — a sibling of
-// shared/access-lookups.ts: needs @openpanel/db, so it stays out of
+// Slug-based primary-id generation for project/dashboard/organization rows. A
+// sibling of shared/access-lookups.ts: needs @openpanel/db, so it stays out of
 // shared/id.ts (the database-free id helpers).
 //
 // Postgres comes from the caller's scope (`deps.db`), not a lazy

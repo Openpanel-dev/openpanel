@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/cron.salt.ts + boot-cron.ts's `salt`
-// schedule; the schedule moved onto the job at ADR-021.
 //
 // `salt` is this module's fragment of the ONE `cron` queue's jobs, spread into
 // jobs.registry.ts. Its schedule is now derived straight from `cron` below — id

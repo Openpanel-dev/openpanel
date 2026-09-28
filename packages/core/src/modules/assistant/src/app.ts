@@ -1,4 +1,3 @@
-// Moved from V1's agents/app.ts (ADR-007's module map: assistant owns "S").
 //
 // The app is BUILT from the `deps` `assistant.routes.ts` already holds, not
 // constructed at module scope (R15). Importing this file now opens nothing — no

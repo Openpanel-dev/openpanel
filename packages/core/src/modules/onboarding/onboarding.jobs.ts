@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/cron.onboarding.ts + boot-cron.ts's
-// `onboarding` schedule; the schedule moved onto the job at ADR-021.
 //
 // `onboarding` is this module's fragment of the ONE `cron` queue's jobs, spread
 // into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged

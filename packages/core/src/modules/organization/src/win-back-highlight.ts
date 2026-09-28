@@ -1,10 +1,8 @@
-// Ported from apps/worker/src/jobs/lib/win-back-highlight.ts (the wave that
-// deletes apps/worker). Behaviour is V1's, verbatim; only the wiring changed —
-// the two stats lookups and the AI call arrive as injected deps
-// (`WinBackHighlightDeps`) instead of static imports, the same idiom the
-// session lifecycle uses (modules/session/src/runtime.ts):
-// `organization.jobs.ts` binds them off the job's ctx, and tests hand in stubs,
-// so no `mock.module` is needed anywhere.
+// Behaviour is V1's, verbatim; only the wiring changed — the two stats lookups
+// and the AI call arrive as injected deps (`WinBackHighlightDeps`) instead of
+// static imports, the same idiom the session lifecycle uses
+// (modules/session/src/runtime.ts): `organization.jobs.ts` binds them off the
+// job's ctx, and tests hand in stubs, so no `mock.module` is needed anywhere.
 
 import { format, subDays } from 'date-fns';
 import type { Logger } from '../../../logger';

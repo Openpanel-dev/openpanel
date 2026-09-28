@@ -1,4 +1,3 @@
-// Moved from packages/db/src/services/user.service.ts.
 //
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` lazy loader is gone. Every caller — including

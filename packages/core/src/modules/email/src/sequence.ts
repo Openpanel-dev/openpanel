@@ -1,6 +1,5 @@
-// Moved from apps/worker/src/jobs/lib/email-sequence.ts, and out of `shared/`
-// at M15-009: it sends email, so it sits in the module that owns email, not in
-// the layer below every transport. Its two callers — the onboarding drip
+// It sends email, so it sits in the module that owns email, not in the layer
+// below every transport. Its two callers — the onboarding drip
 // (modules/onboarding) and the wind-down track
 // (modules/organization/src/wind-down.ts) — reach it sideways, module to
 // module.

@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/gsc.ts + boot-cron.ts's gscSync schedule;
-// the schedule moved onto the job at ADR-021.
 //
 // `gscProjectSync` / `gscProjectBackfill` are this module's own queue (`gsc` in
 // the registry — ADR-005's registry key). `gscSync` is a cron fragment, spread

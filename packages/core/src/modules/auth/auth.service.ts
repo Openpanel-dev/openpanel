@@ -1,7 +1,6 @@
-// Moved from @openpanel/auth: token issuance/hashing, argon2 password hashing,
-// TOTP, the OAuth clients and cookie helpers. The Prisma-touching half —
-// creating, validating and invalidating a `sessions` row — moved here too
-// (`./src/login-session.ts`).
+// Token issuance/hashing, argon2 password hashing, TOTP, the OAuth clients and
+// cookie helpers. The Prisma-touching half — creating, validating and
+// invalidating a `sessions` row — moved here too (`./src/login-session.ts`).
 //
 // The permission ladder (`modules/auth/src/access.ts`) is bound to its real
 // lookups exactly here, once, instead of once per module in a

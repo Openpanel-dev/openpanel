@@ -1,6 +1,3 @@
-// Moved from packages/validation/src/index.ts (ADR-008's module map: onboarding
-// owns "C"). packages/validation/src/index.ts becomes a re-export shim for this
-// symbol (same shape as./cohort.validation.ts since M5-003).
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

@@ -1,6 +1,3 @@
-// Ported from packages/validation/src/cohort.validation.test.ts (main #470,
-// #472).
-
 import { describe, expect, test } from 'bun:test';
 import { zAbsoluteTimeframe, zFrequency } from './cohort.constants';
 

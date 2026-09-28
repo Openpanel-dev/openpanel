@@ -1,4 +1,3 @@
-// Ported from packages/trpc/src/routers/overview.ts.
 //
 // `overviewProcedure` is V1's own builder — `publicProcedure` plus one
 // middleware that resolves share-or-membership off the raw

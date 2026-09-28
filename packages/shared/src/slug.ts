@@ -1,4 +1,3 @@
-// Moved from packages/common/src/slug.ts, then to @openpanel/shared —
 // apps/start carried a verbatim copy of it, which is deleted. Not to be
 // confused with core's slug-id.ts, which calls this.
 import _slugify from 'slugify';

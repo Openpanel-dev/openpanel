@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/cron.session-vacuum.ts.
-
 import type { Logger } from '../../../logger';
 import { PROJECTS_SET_KEY, wallclockSetKey } from './keys';
 import type { SessionRuntime } from './runtime';

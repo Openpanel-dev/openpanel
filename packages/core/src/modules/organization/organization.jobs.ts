@@ -1,7 +1,4 @@
-// Ported from apps/worker/src/jobs/cron.delete.ts + boot-cron.ts's `delete`
-// schedule; `windDown` joined it at M9-003, the wave that deletes apps/worker
-// (ADR-005's acceptance note gives it to this module). The schedules moved onto
-// the jobs at ADR-021.
+// The schedules moved onto the jobs at ADR-021.
 //
 // `delete` is this module's fragment of the ONE `cron` queue's jobs, spread
 // into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged

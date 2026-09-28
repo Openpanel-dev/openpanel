@@ -1,7 +1,5 @@
-// Ported from apps/worker/src/jobs/cron.flush-exports.ts + boot-cron.ts's
-// `flushExports` schedule (the wave that deletes apps/worker). ADR-005's
-// acceptance note gives `flushExports` to this module; the schedule moved onto
-// the job at ADR-021.
+// ADR-005's acceptance note gives `flushExports` to this module; the schedule
+// moved onto the job at ADR-021.
 //
 // `flushExports` is this module's fragment of the ONE `cron` queue's jobs,
 // spread into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged.

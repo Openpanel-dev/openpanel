@@ -1,5 +1,3 @@
-// Moved from packages/db/src/services/salt.service.ts +
-// apps/worker/src/jobs/cron.salt.ts.
 //
 // Reaches Postgres as `deps.db`, no `@openpanel/db` import left. `main.ts`
 // passes its own `deps` to `createInitialSalts` at boot; `salt.jobs.ts`'s

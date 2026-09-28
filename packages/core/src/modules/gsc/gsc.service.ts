@@ -1,5 +1,4 @@
-// Moved from packages/db/src/gsc.ts + packages/db/src/services/gsc.service.ts —
-// the GSC OAuth token lifecycle, the Search Console API client, ClickHouse
+// The GSC OAuth token lifecycle, the Search Console API client, ClickHouse
 // read/write, the AI-tool wrapper functions and the
 // gscProjectSync/gscProjectBackfill job bodies. packages/db/src/gsc.ts and
 // packages/db/src/services/gsc.service.ts become re-export shims of this file

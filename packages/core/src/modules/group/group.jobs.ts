@@ -1,7 +1,4 @@
-// Ported from apps/worker/src/jobs/cron.ts's `flushGroups` case +
-// boot-cron.ts's `flush`/`flushGroups` schedule; the schedule moved onto the
-// job at ADR-021. The group buffer (Redis → ClickHouse `groups`) is this
-// module's domain.
+// The group buffer (Redis → ClickHouse `groups`) is this module's domain.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

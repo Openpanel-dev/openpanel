@@ -1,5 +1,3 @@
-// Moved from packages/common/src/math.ts and
-// packages/common/src/get-previous-metric.ts (ADR-007 shared/ layout).
 // `isFloat` does NOT come along: no importer, anywhere.
 //
 // `getPreviousMetric` left with the report vocabulary it returns — it is

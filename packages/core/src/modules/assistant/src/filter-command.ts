@@ -1,6 +1,5 @@
-// Moved from V1's tRPC filter-command agent. The one caller is
-// `overview.rpc.ts`'s `runFilterCommand` procedure, which reaches it through
-// `ctx.services.assistant`.
+// The one caller is `overview.rpc.ts`'s `runFilterCommand` procedure, which
+// reaches it through `ctx.services.assistant`.
 //
 // The agent app and its five tools are BUILT from the `deps` that procedure
 // already holds (R15) — importing this file constructs nothing, and the tool

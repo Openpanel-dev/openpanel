@@ -1,8 +1,4 @@
 // Proof that a viewer entered the password of a password-protected share.
-//
-// Ported from packages/common/server/share-access.ts (main #510), with one
-// change the layering forces: nothing in core reads `process.env` (R7), so the
-// secret arrives as an argument instead of being read from COOKIE_SECRET here.
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 

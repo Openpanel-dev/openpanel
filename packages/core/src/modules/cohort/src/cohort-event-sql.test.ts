@@ -1,10 +1,5 @@
-// SQL-shape tests for event-based cohort criteria. Ported from
-// packages/db/src/services/cohort.service.test.ts (main #470, #472): the
-// timeframe and project id are bound as `{pN:String}` params here rather than
-// escaped into the text, so the hostile-value assertions check the binding —
-// the value is absent from the rendered SQL and present, verbatim, in the
-// params. The "never did this event" assertions are unchanged in what they
-// claim.
+// SQL-shape tests for event-based cohort criteria. The "never did this event"
+// assertions are unchanged in what they claim.
 
 import { describe, expect, test } from 'bun:test';
 import type {

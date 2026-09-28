@@ -1,5 +1,4 @@
-// Moved from @openpanel/db's src/exports/ — object-store export batch creation,
-// used by the flushExports cron job.
+// Object-store export batch creation, used by the flushExports cron job.
 
 export {
   createBatch,

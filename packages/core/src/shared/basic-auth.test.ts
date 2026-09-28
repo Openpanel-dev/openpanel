@@ -1,4 +1,3 @@
-// Ported from apps/worker/src/utils/basic-auth.test.ts (main #511).
 import { describe, expect, it } from 'bun:test';
 import { basicAuthChallenge, matchesBasicAuth } from './basic-auth';
 

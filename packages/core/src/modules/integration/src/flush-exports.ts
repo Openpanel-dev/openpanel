@@ -1,8 +1,7 @@
-// Ported from apps/worker/src/jobs/cron.flush-exports.ts (the wave that deletes
-// apps/worker). ADR-005's acceptance note gives `flushExports` to the
-// integration module. Behaviour is V1's, verbatim; Prisma, the ClickHouse
-// client and the object-store adapter factory arrive as injected deps so the
-// orchestration is testable without `mock.module` (same idiom as
+// ADR-005's acceptance note gives `flushExports` to the integration module.
+// Behaviour is V1's, verbatim; Prisma, the ClickHouse client and the
+// object-store adapter factory arrive as injected deps so the orchestration is
+// testable without `mock.module` (same idiom as
 // modules/session/src/runtime.ts).
 //
 // The window query is a MOVE, not an ADR-013 conversion: it already binds every

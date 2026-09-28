@@ -1,6 +1,3 @@
-// Ported from apps/worker/src/jobs/insights.ts, insights-enrich.ts,
-// cron.insight-cleanup.ts and cron.weekly-digest.ts; the schedules moved onto
-// the jobs at ADR-021.
 //
 // `insightsProject` is this module's own queue (`insights` in the registry —
 // ADR-005's registry key). `insightsDaily` / `insightCleanup` / `weeklyDigest`

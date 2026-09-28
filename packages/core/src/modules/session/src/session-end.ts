@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/events.create-session-end.ts and
-// utils/session-handler.ts.
 //
 // Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
 // (`SessionEndDeps`): M10-006 moved the binding into `session.jobs.ts`, where

@@ -475,7 +475,7 @@ export async function getSettingsForProject(
   };
 }
 
-// --- Moved from packages/db/src/services/delete.service.ts ---
+// -- Moved from packages/db/src/services/delete.service.ts ---
 
 export async function deleteOrganization(
   deps: ServiceDeps,
@@ -619,7 +619,7 @@ export async function runDeleteCron(
   };
 }
 
-// --- Moved from packages/trpc/src/routers/organization.ts's inline bodies ---
+// -- Moved from packages/trpc/src/routers/organization.ts's inline bodies ---
 
 export async function updateOrganization(
   deps: ServiceDeps,

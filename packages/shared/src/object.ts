@@ -1,6 +1,5 @@
-// Moved from packages/common/src/object.ts (ADR-007 shared/ layout). `toDots`
-// is the ClickHouse property flattener — its invalid-surrogate strip is
-// load-bearing on the insert path.
+// `toDots` is the ClickHouse property flattener — its invalid-surrogate strip
+// is load-bearing on the insert path.
 import { anyPass, assocPath, isEmpty, isNil, reject } from 'ramda';
 
 function isValidJsonString(value: string): boolean {

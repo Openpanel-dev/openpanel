@@ -1,6 +1,5 @@
-// Moved from V1's clients service (module map: client owns "R,H,S" — no
-// constants file, per the module map). Client CRUD lives only here now; no
-// packages/db re-export shim exists in this tree.
+// Client CRUD lives only here now; no packages/db re-export shim exists in this
+// tree.
 //
 // The /manage REST CRUD bodies (client.routes.ts's listClients/getClient/
 // createClient/updateClient/deleteClient) call the same

@@ -1,14 +1,11 @@
 // Turns an archetype's shape (hourly curve, weekday curve) into visitor counts
 // per day and per hour. Ported from openpanel-mock's opmock/internal/traffic.
 //
-// The daily multiplier is a product of:
-//   trend    slow growth/decline, anchored so "today" == 1.0
-//   walk     a mean-reverting random walk across days (weeks drift)
-//   weekday  the archetype's day-of-week curve
-//   noise    small independent per-day jitter
-//   anomaly  rare spike or dip days
-// Everything is a pure function of (seed, key, day), so seeding twice gives
-// the same curve.
+// The daily multiplier is a product of: trend slow growth/decline, anchored so
+// "today" == 1.0 walk a mean-reverting random walk across days (weeks drift)
+// weekday the archetype's day-of-week curve noise small independent per-day
+// jitter anomaly rare spike or dip days Everything is a pure function of (seed,
+// key, day), so seeding twice gives the same curve.
 
 import { Rng } from './rng';
 

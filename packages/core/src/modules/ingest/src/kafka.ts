@@ -1,6 +1,4 @@
-// Moved from packages/queue/src/kafka.ts, byte-for-byte apart from the three
-// repointed imports and the de-duplicated `DeadLetterMessage` below. What kept
-// it out of core was the import direction, not the code: it lived in
+// What kept it out of core was the import direction, not the code: it lived in
 // @openpanel/queue, a package that imports @openpanel/core for its logger, so
 // core could not import it back. Moving the file takes it out of that cycle —
 // `createLogger` is a sibling now, and both the producer and the consumer sit

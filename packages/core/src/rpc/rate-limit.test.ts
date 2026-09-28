@@ -1,7 +1,3 @@
-// Ported from packages/trpc/src/rate-limit.test.ts (V1), plus a check that
-// every auth procedure V1 throttled is still throttled here — the wrappers
-// were dropped once already (ISSUES.md H4).
-
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { __testing } from './rate-limit';

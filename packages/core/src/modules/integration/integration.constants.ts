@@ -1,9 +1,3 @@
-// Moved from packages/validation/src/integrations.ts (ADR-008's module map:
-// integration owns "C"). packages/validation/src/index.ts becomes a re-export
-// shim of this file (same shape as./notification.constants.ts since M6-005), so
-// packages/trpc's integration router and apps/start's integration forms keep
-// resolving these symbols through packages/validation's existing barrel
-// unchanged.
 //
 // `zSlackAuthResponse` does NOT move here even though it is zod-only and would
 // pass `constants-stay-isomorphic`: it is Slack's OAuth token-exchange wire

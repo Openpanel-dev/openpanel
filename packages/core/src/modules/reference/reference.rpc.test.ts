@@ -30,10 +30,6 @@ async function anonCaller() {
   return referenceRouter.createCaller(trpcCtx);
 }
 
-// Ported from packages/trpc/src/routers/reference.test.ts (main #511).
-// getChartReferences is public so a share page can annotate its charts, so
-// the guard inside the handler is the only thing standing between an
-// anonymous caller and another tenant's annotations (GHSA-vrrm-p9p4-2gfg).
 const CHART_INPUT = { projectId: 'proj_1', range: '30d' as const };
 const ANNOTATIONS = [{ title: 'Deploy v2' }];
 

@@ -1,8 +1,3 @@
-// Ported from V1's packages/constants + packages/validation (ADR-008's module
-// map: report owns "C" for the chart/report/widget vocabulary) — neither
-// package exists in this tree; every importer here (the chart engine,
-// apps/start's report builder) reaches these symbols through this file
-// directly.
 //
 // `getDefaultIntervalByDates` is REWRITTEN from date-fns
 // (differenceInDays/isSameDay) to plain Date math per the module map. Every

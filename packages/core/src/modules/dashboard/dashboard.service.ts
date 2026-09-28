@@ -1,6 +1,3 @@
-// Moved from packages/db/src/services/dashboard.service.ts, plus the
-// create/update/delete mutation bodies packages/trpc/src/routers/dashboard.ts
-// held inline (ADR-008's module map: dashboard owns "R,S").
 //
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` / `loadIdService` lazy loaders are gone, so this module

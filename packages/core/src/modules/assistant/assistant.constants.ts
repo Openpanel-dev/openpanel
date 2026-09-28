@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
 /**
- * Moved from the V1 validation package (ADR-008's module map: assistant owns
- * "C"). apps/start reaches these symbols through the
- * `@openpanel/core/modules/assistant/assistant.constants` subpath —
- * `src/agents/models.ts`, `src/contexts/page-context.tsx` and
- * `src/components/chat/tool-handlers.ts`.
  *
  * Isomorphic by the AGENTS.md rule: zod and nothing else.
  *

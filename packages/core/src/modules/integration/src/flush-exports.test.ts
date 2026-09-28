@@ -1,7 +1,6 @@
-// Moved from apps/worker/src/jobs/cron.flush-exports.test.ts, plus the
-// orchestration half V1 never covered: `runFlushExportsCron` now takes injected
-// deps, so the fan-out, the watermark advance and the manifest-last upload
-// order can be asserted with no infrastructure at all.
+// `runFlushExportsCron` now takes injected deps, so the fan-out, the watermark
+// advance and the manifest-last upload order can be asserted with no
+// infrastructure at all.
 
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';

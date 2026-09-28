@@ -13,8 +13,6 @@
  * top-level column.
  *
  * All five errors logged in HyperDX 2026-05-14 → 2026-05-17 are covered here.
- *
- * Ported from packages/db/src/services/chart-field-resolution.test.ts.
  */
 import { describe, expect, it } from 'bun:test';
 import { isKnownEventField, normalizeEventField } from './field-resolution';

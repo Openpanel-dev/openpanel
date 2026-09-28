@@ -1,8 +1,7 @@
-// Ported from apps/worker/src/jobs/cron.data-health.ts (the wave that deletes
-// apps/worker). ADR-005's acceptance note gives `dataHealth` to the misc
-// module. Behaviour is V1's, verbatim; Prisma, the last-event lookup and
-// `sendEmail` arrive as injected deps so the job is testable without
-// `mock.module`. `misc.jobs.ts` binds them off the job's ctx.
+// ADR-005's acceptance note gives `dataHealth` to the misc module. Behaviour is
+// V1's, verbatim; Prisma, the last-event lookup and `sendEmail` arrive as
+// injected deps so the job is testable without `mock.module`. `misc.jobs.ts`
+// binds them off the job's ctx.
 
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';

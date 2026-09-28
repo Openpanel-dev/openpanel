@@ -1,5 +1,3 @@
-// Ported from packages/common's try-catch.ts, unchanged.
-
 export type TryCatchResult<T, E = Error> =
   | { ok: true; data: T; error: null }
   | { ok: false; data: null; error: E };

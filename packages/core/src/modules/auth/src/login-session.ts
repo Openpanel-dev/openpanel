@@ -1,6 +1,6 @@
-// Moved from packages/db/src/services/auth-session.service.ts. Postgres-backed
-// login sessions (a `sessions` row keyed by the hash of a browser's cookie).
-// Not to be confused with session.service.ts's ClickHouse visitor sessions.
+// Postgres-backed login sessions (a `sessions` row keyed by the hash of a
+// browser's cookie). Not to be confused with session.service.ts's ClickHouse
+// visitor sessions.
 //
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // `loadDb` lazy loader is gone. `http/session.ts`'s `resolveSession` already

@@ -1,9 +1,5 @@
 // HTTP Basic auth for operator-only surfaces. Browsers prompt for the
 // credentials, so such a surface needs no UI of its own.
-//
-// Ported from apps/worker/src/utils/basic-auth.ts (main #511) as a plain
-// predicate: express middleware has no home here, and the caller decides what
-// a refusal looks like on its transport.
 
 import { timingSafeEqual } from 'node:crypto';
 

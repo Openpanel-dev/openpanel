@@ -1,4 +1,3 @@
-// Ported from apps/worker/src/jobs/import.ts.
 //
 // `import` is this module's own queue AND its only job — the registry key, the
 // Redis name and the BullMQ job name are all `import` (legacyCompat.import

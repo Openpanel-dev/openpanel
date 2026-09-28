@@ -1,5 +1,4 @@
-// Ported from packages/db/src/services/pages.service.ts. The ClickHouse queries
-// moved to src/pages.sql.ts.
+// The ClickHouse queries moved to src/pages.sql.ts.
 //
 // `PagesService` is no longer a class and there is no `pagesService` module
 // singleton. It is registered as its OWN service (`services.pages`) rather than

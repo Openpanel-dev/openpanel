@@ -1,7 +1,6 @@
-// Ported from apps/api/src/controllers/misc.controller.ts +
-// apps/worker/src/jobs/cron.ping.ts. V1's Fastify controller and the worker's
-// `cron.ping.ts` stay the LIVE code paths (DELEGATE PATTERN) and call the
-// functions below verbatim — no new behaviour.
+// V1's Fastify controller and the worker's `cron.ping.ts` stay the LIVE code
+// paths (DELEGATE PATTERN) and call the functions below verbatim — no new
+// behaviour.
 //
 // `GET/POST /misc/og/clear` and `/misc/favicon/clear` are NOT ported: ADR-015
 // entry #6 grades them RULED + DEAD (`docs/ANSWERS.md` §1.4 confirms no proxy

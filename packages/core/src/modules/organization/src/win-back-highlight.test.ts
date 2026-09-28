@@ -1,7 +1,6 @@
-// Moved from apps/worker/src/jobs/lib/win-back-highlight.test.ts. Asserts the
-// gating and fallback decisions, which are the point of the module: a highlight
-// is a bonus, never a reason an email fails or embarrasses us with tiny
-// numbers. The stats lookups and the AI call are injected stubs — no
+// Asserts the gating and fallback decisions, which are the point of the module:
+// a highlight is a bonus, never a reason an email fails or embarrasses us with
+// tiny numbers. The stats lookups and the AI call are injected stubs — no
 // `mock.module`, so every assertion is on a call the code under test made.
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test';

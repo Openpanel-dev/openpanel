@@ -1,4 +1,3 @@
-// Ported from packages/trpc/src/routers/chart.ts.
 //
 // The seven member-only procedures are back on `protectedProcedure`, so
 // `enforceAccess` reads the top-level `projectId` before the input is parsed,

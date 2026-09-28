@@ -1,9 +1,3 @@
-// Moved from packages/validation/src/cohort.validation.ts (ADR-008's module
-// map: cohort owns "C"). packages/validation/src/cohort.validation.ts becomes a
-// re-export shim of this file's `./modules/cohort/cohort.constants` subpath
-// (same shape as packages/db/src/gsc.ts since M5-002), so apps/start and
-// packages/db/src/types.ts keep resolving these symbols through
-// packages/validation's existing barrel unchanged.
 //
 // Isomorphic by the AGENTS.md rule: zod, another `*.constants.ts`, or nothing.
 // `zChartEventFilter` used to be a diverged local copy here (TODO(P7) in

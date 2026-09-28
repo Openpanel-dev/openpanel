@@ -1,10 +1,3 @@
-// Moved from packages/db/src/services/import.service.ts (the ClickHouse
-// staging/session pipeline) + apps/worker/src/jobs/import.ts (the job body and
-// provider dispatch) + apps/api/src/controllers/import.controller.ts (the
-// /import/events bulk-insert path) — M5-004, ADR-008's module map: import owns
-// "S". packages/db/src/services/import.service.ts is deleted outright: nothing
-// outside the worker job file it moves with reached it through @openpanel/db's
-// barrel (same as cohort.service.ts).
 //
 // Db/ch access is LAZY (`load*` below), not a static top-level import — see
 // gsc.service.ts's header for the full reasoning (jobs.registry.ts and

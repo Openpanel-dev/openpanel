@@ -1,6 +1,3 @@
-// Ported from packages/validation/src/integrations.test.ts (vitest -> bun:test
-// per the module map).
-
 import { describe, expect, it } from 'bun:test';
 import {
   isKind,

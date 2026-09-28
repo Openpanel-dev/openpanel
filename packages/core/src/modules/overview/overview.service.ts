@@ -1,5 +1,4 @@
-// Ported from packages/db/src/services/overview.service.ts. The ClickHouse
-// queries moved to src/overview.sql.ts.
+// The ClickHouse queries moved to src/overview.sql.ts.
 //
 // `OverviewService` is no longer a class and there is no `overviewService`
 // module singleton. Every method is a module-scope function taking

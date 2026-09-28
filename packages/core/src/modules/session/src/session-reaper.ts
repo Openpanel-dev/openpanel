@@ -1,5 +1,3 @@
-// Ported from apps/worker/src/jobs/cron.session-reaper.ts.
-
 import type { Logger } from '../../../logger';
 import type { IServiceCreateEventPayload } from '../../event/event.service';
 import type { IClickhouseSession } from '../session.service';

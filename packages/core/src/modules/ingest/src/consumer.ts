@@ -1,9 +1,9 @@
-// Ported from apps/worker/src/jobs/events.kafka-consumer.ts. The delivery
-// contract is ADR-004's and is unchanged line for line: per-key serial groups,
-// the ascending contiguous-prefix offset walk, at-least-once, bounded
-// in-consumer retry, and a dead-letter on exhaustion. Only the dead-letter
-// DESTINATION and its failure behaviour changed: the record goes to a capped
-// Redis list, and the event is dropped whether or not that write lands.
+// The delivery contract is ADR-004's and is unchanged line for line: per-key
+// serial groups, the ascending contiguous-prefix offset walk, at-least-once,
+// bounded in-consumer retry, and a dead-letter on exhaustion. Only the
+// dead-letter DESTINATION and its failure behaviour changed: the record goes to
+// a capped Redis list, and the event is dropped whether or not that write
+// lands.
 //
 // The kafkajs client, the topic/consumer-group names, the DLQ producer and the
 // retry bounds are all INJECTED, and stay so now that they live one directory

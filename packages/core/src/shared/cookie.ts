@@ -1,6 +1,5 @@
-// Ported from packages/validation's ISetCookie, unchanged shape. This is
-// the transport-agnostic type HttpCtx.setCookie exposes to every module, so
-// a module depends on this instead of Elysia's cookie type directly.
+// This is the transport-agnostic type HttpCtx.setCookie exposes to every
+// module, so a module depends on this instead of Elysia's cookie type directly.
 
 export interface CookieOptions {
   maxAge?: number;

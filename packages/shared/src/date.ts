@@ -1,6 +1,5 @@
-// Generic date helpers (ADR-007 shared/ layout: "date"). Moved from
-// packages/db/src/services/date.service.ts — pure Date/Luxon math, no
-// ClickHouse or Postgres access.
+// Generic date helpers (ADR-007 shared/ layout: "date"). Pure Date/Luxon math,
+// no ClickHouse or Postgres access.
 //
 // `DateTime` and `getTime` moved here from packages/common/src/date.ts, which
 // was the workspace's only luxon declaration. This file is now the one place
