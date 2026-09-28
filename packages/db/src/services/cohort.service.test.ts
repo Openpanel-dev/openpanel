@@ -172,6 +172,56 @@ describe('buildEventCriteriaQuery zero frequency', () => {
     );
   });
 
+  it('expands a wildcard property key the picker stores', () => {
+    const sql = buildEventCriteriaQuery(
+      PROJECT_ID,
+      frequencyCriteria({ operator: 'gte', count: 1 }, [
+        {
+          name: 'properties.products.*.name',
+          operator: 'contains',
+          value: ['iPhone'],
+        },
+      ])
+    );
+
+    expect(sql).toContain("property_key LIKE 'products.%.name'");
+    expect(sql).toContain("property_value LIKE '%iPhone%'");
+    expect(sql).not.toContain("property_key = 'products.*.name'");
+  });
+
+  it('applies startsWith to the value of a wildcard key', () => {
+    const sql = buildEventCriteriaQuery(
+      PROJECT_ID,
+      frequencyCriteria({ operator: 'gte', count: 1 }, [
+        {
+          name: 'properties.products.*.name',
+          operator: 'startsWith',
+          value: ['Apple'],
+        },
+      ])
+    );
+
+    expect(sql).toContain("property_key LIKE 'products.%.name'");
+    expect(sql).toContain("property_value LIKE 'Apple%'");
+    expect(sql).not.toContain("property_value IN ('Apple')");
+  });
+
+  it('keeps a quote inside a wildcard property key', () => {
+    const sql = buildEventCriteriaQuery(
+      PROJECT_ID,
+      frequencyCriteria({ operator: 'gte', count: 1 }, [
+        {
+          name: "properties.pro'ducts.*.name",
+          operator: 'contains',
+          value: ['iPhone'],
+        },
+      ])
+    );
+
+    expect(sql).toContain("property_key LIKE 'pro\\'ducts.%.name'");
+    expect(skeleton(sql)).not.toMatch(/UNION|--/);
+  });
+
   it('excludes on the matching property row when the criterion has property filters', () => {
     const sql = buildEventCriteriaQuery(
       PROJECT_ID,

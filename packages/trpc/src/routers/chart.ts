@@ -28,6 +28,7 @@ import {
   profileJoinColumns,
   sankeyService,
   TABLE_NAMES,
+  transformPropertyKey,
   type IServiceProfile,
   validateShareAccess,
 } from '@openpanel/db';
@@ -404,7 +405,13 @@ export const chartRouter = createTRPCRouter({
           }>(['distinct property_value', 'max(created_at) as created_at'])
           .from(TABLE_NAMES.event_property_values_mv)
           .where('project_id', '=', projectId)
-          .where('property_key', '=', property.replace(/^properties\./, ''))
+          .where(
+            'property_key',
+            property.includes('*') ? 'LIKE' : '=',
+            property.includes('*')
+              ? transformPropertyKey(property)
+              : property.replace(/^properties\./, ''),
+          )
           .groupBy(['property_value'])
           // Recency + key tie-break for a stable list under the cap — same
           // rationale as the key picker above.
