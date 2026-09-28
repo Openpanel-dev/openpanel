@@ -11,8 +11,6 @@
  * without realising those live in the `properties` map on the events table; - a
  * saved report referenced a custom property (`temple_name`) as if it were a
  * top-level column.
- *
- * All five errors logged in HyperDX 2026-05-14 → 2026-05-17 are covered here.
  */
 import { describe, expect, it } from 'bun:test';
 import { isKnownEventField, normalizeEventField } from './field-resolution';
@@ -87,12 +85,11 @@ describe('isKnownEventField', () => {
   });
 
   it('rejects unknown identifiers — these used to leak into SQL', () => {
-    // HyperDX regression: psycalc-app funnel emitted `cohort as b_0` even
-    // though the funnel doesn't support all-cohorts. The funnel-side filter
-    // is what blocks it now; this asserts the breakdown-name check itself
-    // still distinguishes properties (`properties.foo`) from raw identifiers
-    // by accepting both — the funnel/chart drop logic relies on the cohort
-    // case being valid at this layer.
+    // This check must still distinguish properties (`properties.foo`) from
+    // raw identifiers by accepting both — the funnel/chart drop logic relies
+    // on the cohort case being valid at this layer, even though a funnel
+    // itself doesn't support all-cohorts (blocked by the funnel-side filter,
+    // not here).
     expect(isKnownEventField('temple_name')).toBe(false);
     expect(isKnownEventField('totally_made_up_column')).toBe(false);
     expect(isKnownEventField('')).toBe(false);

@@ -37,10 +37,8 @@ const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
 const REALTIME_TOP_LIST_LIMIT = 10;
 
 const EVENTS_TABLE = sql.id(TABLE_NAMES.events);
-/** `clix.exp('now() - INTERVAL 30 MINUTE')`, parenthesised as clix rendered it. */
 const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
 
-// Helper to find widget by projectId and type
 async function findWidgetByType(
   db: Ctx['db'],
   projectId: string,
@@ -103,7 +101,6 @@ async function findPublicCounterWidgetOrThrow(db: Ctx['db'], shareId: string) {
 }
 
 export const widgetRouter = createTRPCRouter({
-  // Get widget by projectId and type (returns null if not found or not public)
   get: protectedProcedure
     .input(z.object({ projectId: z.string(), type: zWidgetType }))
     .query(async ({ input, ctx }) => {
@@ -120,7 +117,6 @@ export const widgetRouter = createTRPCRouter({
       return widget;
     }),
 
-  // Toggle widget public status (creates if doesn't exist)
   toggle: protectedProcedure
     .input(
       z.object({
@@ -145,7 +141,6 @@ export const widgetRouter = createTRPCRouter({
       });
     }),
 
-  // Update widget options (for realtime widget)
   updateOptions: protectedProcedure
     .input(
       z.object({
@@ -189,7 +184,6 @@ export const widgetRouter = createTRPCRouter({
       const { projectId } = widget;
       const { timezone } = await getSettingsForProject(ctx, projectId);
 
-      // Cache for 5 minutes since this queries 30 days of data
       const cacheKey = `widget:badge:${projectId}`;
       const visitors = await getCache(
         cacheKey,
@@ -214,7 +208,6 @@ export const widgetRouter = createTRPCRouter({
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db;
-      // Validate ShareWidget exists and is public
       const widget = await db.shareWidget.findUnique({
         where: {
           id: input.shareId,
@@ -241,13 +234,11 @@ export const widgetRouter = createTRPCRouter({
 
       const { timezone } = await getSettingsForProject(ctx, projectId);
 
-      // Always fetch live count and histogram
       const settings = { session_timezone: timezone };
       const totalSessionsStatement = sql`SELECT uniq(session_id) as total_sessions FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW}`;
 
       const minuteCountsStatement = sql`SELECT toStartOfMinute(created_at) as minute, uniq(session_id) as session_count, uniq(profile_id) as visitor_count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} GROUP BY minute ORDER BY minute ASC WITH FILL FROM toStartOfMinute(now() - INTERVAL 30 MINUTE) TO toStartOfMinute(now()) STEP INTERVAL 1 MINUTE`;
 
-      // Conditionally fetch countries
       const countriesQueryPromise = options.countries
         ? chQuery<{ country: string; count: number }>(
             ctx,
@@ -256,7 +247,6 @@ export const widgetRouter = createTRPCRouter({
           )
         : Promise.resolve<Array<{ country: string; count: number }>>([]);
 
-      // Conditionally fetch referrers
       const referrersQueryPromise = options.referrers
         ? chQuery<{ referrer: string; count: number }>(
             ctx,
@@ -265,7 +255,6 @@ export const widgetRouter = createTRPCRouter({
           )
         : Promise.resolve<Array<{ referrer: string; count: number }>>([]);
 
-      // Conditionally fetch paths
       const pathsQueryPromise = options.paths
         ? chQuery<{ path: string; count: number }>(
             ctx,

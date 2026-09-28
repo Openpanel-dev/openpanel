@@ -1,15 +1,10 @@
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
 // do: every mutating procedure in this module gates on it first, before
-// touching Polar. `requireOrganizationAdmin` comes from auth.service.ts's
-// single, lazily-memoized `getAccessChecks` — independent of `ServiceDeps`, so
-// it needs no change here.
+// touching Polar.
 //
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb`/`loadPrisma` lazy loaders are gone. M15-202: `Prisma.DbNull` (the
-// JSON-column null sentinel) arrives as `deps.prisma` — the app shell puts the
-// two sentinels on `AppDeps` — rather than through a lazy import back into
-// `context.ts`.
+// `Prisma.DbNull` (the JSON-column null sentinel) arrives as `deps.prisma`
+// rather than an import, keeping this module's only dependency `ServiceDeps`.
 
 import {
   applySubscriptionDiscount,
@@ -349,12 +344,10 @@ export async function portal(
 }
 
 // - Polar webhook --------------------------------------------------------
-// Ported from V1's apps/api/src/controllers/webhook.controller.ts's
-// `polarWebhook` + its private helpers; that controller doesn't exist in this
-// tree — this module's own `/webhook/polar` route (subscription.routes.ts) is
-// the only caller. `validatePolarEvent` verifies the signature over the RAW
-// body bytes; any body parsing before this call breaks that verification, which
-// is why the route reads `await request.text` rather than a parsed JSON body.
+// This module's own `/webhook/polar` route (subscription.routes.ts) is the
+// only caller. `validatePolarEvent` verifies the signature over the RAW body
+// bytes; any body parsing before this call breaks that verification, which is
+// why the route reads `await request.text()` rather than a parsed JSON body.
 
 type PolarEvent = ReturnType<typeof validatePolarEvent>;
 type PolarSubscriptionData = Extract<
@@ -459,11 +452,10 @@ async function clearOrganizationCache(
 }
 
 /**
- * Syncs the full Polar subscription state onto the organization. Used for every
- * `subscription.*` event (created, active, updated, canceled, revoked,
- * past_due, uncanceled) since they all carry the same Subscription object and
- * `status` drives the rest. This covers new subscriptions, cancellations,
- * reactivations, plan changes and payment-state changes in one place.
+ * Syncs the full Polar subscription state onto the organization. Every
+ * `subscription.*` event carries the same Subscription object and `status`
+ * drives the rest, so one function handles new subscriptions, cancellations,
+ * reactivations, plan changes and payment-state changes.
  */
 async function syncSubscriptionToOrg(
   deps: ServiceDeps,
@@ -632,8 +624,7 @@ async function syncSubscriptionToOrg(
  * Handles one verified Polar webhook event. `rawBody`/`headers` MUST be the
  * unparsed request bytes — `validatePolarEvent` verifies the signature over
  * them, and any body parsing upstream (JSON, form, anything) breaks that
- * verification. `apps/api`'s Fastify controller (via `fastify-raw-body`) and
- * this module's own Elysia route (via `request.text()`) both preserve this.
+ * verification.
  */
 export async function handlePolarWebhookEvent(
   deps: ServiceDeps,
@@ -756,9 +747,6 @@ async function dispatchPolarWebhookEvent(
       );
       return;
     }
-    // All subscription lifecycle events carry the same Subscription object;
-    // sync them through a single path (new subs, cancellations, revokes,
-    // reactivations, plan changes, payment-state changes).
     // Pause/resume transitions arrive via `subscription.updated` (the SDK's
     // webhook union has no dedicated paused/reactivated payloads yet) and are
     // reflected in `status` / `pauseAtPeriodEnd` / `resumesAt` below.

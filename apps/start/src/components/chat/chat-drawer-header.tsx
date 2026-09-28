@@ -146,7 +146,6 @@ function InlineDeleteButton({ onConfirm }: { onConfirm: () => void }) {
     }
   };
 
-  // Cleanup on unmount.
   useEffect(() => clearTimer, []);
 
   const handleClick = (e: React.MouseEvent) => {

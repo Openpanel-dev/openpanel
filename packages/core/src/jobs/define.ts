@@ -119,11 +119,10 @@ export type PayloadOf<TJob> = TJob extends { payload: infer TSchema }
   : never;
 
 /**
- * Translates one V1 job's raw data into the (job name, payload) pair V2 speaks.
- *
- * Returns `undefined` for a shape it does not recognise, which `resolveJob`
- * turns into a throw. The BullMQ job *name* on the wire is not authoritative —
- * V1 dispatched on `data.type`, and `sessions` is named `'session'` while its
+ * Translates one legacy-shaped job's raw data into the (job name, payload)
+ * pair this queue speaks. Returns `undefined` for a shape it does not
+ * recognise, which `resolveJob` turns into a throw. The BullMQ job *name* on
+ * the wire is not authoritative — `sessions` is named `'session'` while its
  * type is `'createSessionEnd'` — so the hook decides the name too.
  */
 export type CompatHook = (
@@ -136,7 +135,7 @@ export interface QueueDefinition<
   name: string;
   defaults?: QueueDefaults;
   worker?: WorkerSettings;
-  /** Deletable once no legacy-shaped job can still be replayed — see ADR-005 risk 1. */
+  /** Deletable once no legacy-shaped job can still be replayed. */
   compat?: CompatHook;
   jobs: { [K in keyof TJobs]: TJobs[K] & JobBinding };
 }
@@ -186,7 +185,7 @@ export function defineJob<
  *
  * `TJobs`'s bound depends on `TName`: on the `cron` queue every job must carry
  * a `cron` field (a schedule, or `null` for on-demand) — the three-state rule
- * ADR-021 requires enforced at the type level, not by a registry test.
+ * enforced at the type level, not by a registry test.
  */
 export function defineQueue<
   TName extends string,

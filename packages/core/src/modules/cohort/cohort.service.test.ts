@@ -1,8 +1,6 @@
-// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` ARE
-// the fakes below — the two `@openpanel/db` module mocks this file used to
-// install (and had to carefully restore, because `mock.module` has no per-file
-// scope without `--isolate`) are gone. The one module still mocked is core's
-// own `ch-query`, which is what the subject now calls.
+// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch`
+// ARE the fakes below. The one module still mocked is core's own
+// `ch-query`, which is what the subject calls.
 //
 // The pure SQL-shape builders (buildEventCriteriaQuery,
 // buildPropertyBasedCohortQuery, deriveCohortQuerySettings) have their own

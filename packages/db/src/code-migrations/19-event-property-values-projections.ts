@@ -103,7 +103,7 @@ const PROJECTIONS = [
 //
 // `CREATE ... ON CLUSTER` propagates the initiator's uuid, so the inner
 // table has the same name on every node and a single ON CLUSTER ALTER
-// reaches all of them (verified on our deployment: 4 hosts, one uuid).
+// reaches all of them.
 async function resolveStorageTable(isClustered: boolean): Promise<string> {
   const view = isClustered ? `${MV}_replicated` : MV;
   const res = await chMigrationClient.query({

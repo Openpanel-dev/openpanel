@@ -86,8 +86,8 @@ function buildInsightReport(insight: Insight): IReportInput | null {
 }
 
 /**
- * Phase 5: the insight detail sheet — the full insight, its primary metric, a
- * trend chart, and the on-demand AI "why" explanation. Opened via
+ * The insight detail sheet — the full insight, its primary metric, a trend
+ * chart, and the on-demand AI "why" explanation. Opened via
  * `pushModal('InsightDetails', { insight })`; the explanation is fetched once
  * on open.
  */
@@ -101,7 +101,6 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
     })
   );
 
-  // Fetch the explanation once when the sheet opens.
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
     mutation.mutate({ insightId: insight.id });

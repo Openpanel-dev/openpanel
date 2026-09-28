@@ -2,10 +2,8 @@
 // The typed-cast half of `buildFilterWhere` (./table-filter-where.ts) and of
 // `./filter-where.ts` (the event-property compiler).
 //
-// Both filter compilers call the same pair now: `castFragment` and
-// `buildTypedClauseFragment` bind every value as a `{name:Type}` param. The
-// sqlstring-escaped text twins (`castSql` / `buildTypedClause`) died with
-// `table-filter-where.ts`'s conversion in M12-003.
+// Both filter compilers call the same pair: `castFragment` and
+// `buildTypedClauseFragment` bind every value as a `{name:Type}` param.
 
 import {
   type SqlFragment,
@@ -77,10 +75,10 @@ export function castFragment(
 }
 
 /**
- * Bind one filter value the way `sqlstring.escape` rendered it: a string is a
- * quoted literal, a number a numeric literal, a boolean `true`/`false`, and
- * `null` the SQL keyword NULL — which only `Nullable` reproduces, since a
- * `String` param bound to null arrives as the empty string.
+ * Bind one filter value as its own typed SQL param: a string is a quoted
+ * literal, a number a numeric literal, a boolean `true`/`false`, and `null`
+ * the SQL keyword NULL — which only `Nullable` reproduces, since a `String`
+ * param bound to null arrives as the empty string.
  */
 function typedValueParam(value: IChartEventFilterValue): SqlSlot {
   if (value === null) {

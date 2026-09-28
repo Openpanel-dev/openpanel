@@ -174,17 +174,10 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   /**
-   * Ingest one event into the session lifecycle.
-   *
-   * Reads the device's current session (if any), decides whether the event
-   * extends it, opens a brand-new one, or boundaries (gap > 30min) → close
-   * the old session and start a fresh one. Writes the updated session blob,
-   * updates the wall-clock index, and queues CollapsingMergeTree rows for
-   * ClickHouse.
-   *
-   * Returns the action taken so the caller can drive session_start /
-   * session_end event emission. `session_start` / `session_end` events
-   * themselves are skipped — they are derived signals, not session activity.
+   * Ingest one event into the session lifecycle. Returns the action taken so
+   * the caller can drive session_start / session_end event emission —
+   * `session_start` / `session_end` events themselves are skipped here, since
+   * they are derived signals, not session activity.
    */
   async ingest(
     payload: IServiceCreateEventPayload

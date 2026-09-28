@@ -1,10 +1,3 @@
-// What kept it out of core was the import direction, not the code: it lived in
-// @openpanel/queue, a package that imports @openpanel/core for its logger, so
-// core could not import it back. Moving the file takes it out of that cycle —
-// `createLogger` is a sibling now, and both the producer and the consumer sit
-// in the module that owns the transport (ADR-004: Kafka is the sole events
-// transport — no topic, group or envelope changes with the move).
-//
 // NOTHING here constructs a Kafka client at import time: `getKafka` is lazy and
 // only `assertKafkaConfigured` reads the broker list eagerly, so core stays
 // importable with no broker and `bun test` still runs offline.
@@ -20,7 +13,7 @@ import {
 import type { CoreConfig, KafkaConfig } from '../../../config';
 import { createLogger, type ILogger } from '../../../pino-logger';
 // One definition, not two: the consumer already declares the dead-letter
-// message shape it hands to this producer, and both files are now siblings.
+// message shape it hands to this producer.
 import type { DeadLetterMessage } from './consumer';
 import type { IncomingEventPayload } from './incoming-event';
 import {
@@ -107,10 +100,11 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
       // Stays 1 (not 5) to avoid in-flight reordering after a transient broker
       // hiccup: with idempotency on and low retries, reordered batches trip
       // OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
-      // ADR-023 measured raising it at +2-3% and rejected it; batching is what
-      // amortises the round-trip. KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it
-      // for a measurement run — read docs/KAFKA_PRODUCER_OPTIONS.md first: it
-      // is coupled to the retry policy.
+      // Raising it gained only a couple percent of throughput and was
+      // rejected; batching is what amortises the round-trip.
+      // KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it for a measurement run —
+      // read docs/KAFKA_PRODUCER_OPTIONS.md first: it is coupled to the retry
+      // policy.
       maxInFlightRequests: tuning.maxInFlight,
       allowAutoTopicCreation: true,
       retry: {

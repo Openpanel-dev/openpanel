@@ -60,7 +60,6 @@ interface VirtualRowProps {
   isResizingRef: React.MutableRefObject<boolean>;
   resizingColumnId: string | null;
   setResizingColumnId: (id: string | null) => void;
-  // Horizontal virtualization props
   leftPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
   scrollableColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
   rightPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
@@ -167,13 +166,11 @@ const VirtualRow = function VirtualRow({
         minWidth: 'fit-content',
       }}
     >
-      {/* Left Pinned Columns */}
       {leftPinnedColumns.map((column) => {
         const header = headers.find((h) => h.column.id === column.id);
         return renderCell(column, header);
       })}
 
-      {/* Scrollable Columns (Virtualized) */}
       <div
         style={{
           position: 'relative',
@@ -209,7 +206,6 @@ const VirtualRow = function VirtualRow({
         })}
       </div>
 
-      {/* Right Pinned Columns */}
       {rightPinnedColumns.map((column) => {
         const header = headers.find((h) => h.column.id === column.id);
         return renderCell(column, header);
@@ -241,7 +237,6 @@ export function ReportTable({
     short: true,
   });
 
-  // Transform data to hierarchical groups or flat rows
   const {
     groups: hierarchicalGroups,
     rows: flatRows,
@@ -266,7 +261,6 @@ export function ReportTable({
     };
   }, [data, breakdowns, grouped]);
 
-  // Convert hierarchical groups to expandable rows (for TanStack Table's expanding feature)
   const expandableRows = useMemo(() => {
     if (!(grouped && hierarchicalGroups) || hierarchicalGroups.length === 0) {
       return null;
@@ -278,23 +272,18 @@ export function ReportTable({
     );
   }, [grouped, hierarchicalGroups, breakdownPropertyNames.length]);
 
-  // Use expandable rows if available, otherwise use flat rows
   const rows = expandableRows ?? flatRows ?? [];
 
-  // Filter rows based on global search and apply sorting
   const filteredRows = useMemo(() => {
     let result = rows;
 
-    // Apply search filter
     if (globalFilter.trim()) {
       const searchLower = globalFilter.toLowerCase();
       result = rows.filter((row) => {
-        // Search in serie name
         if (row.serieName.toLowerCase().includes(searchLower)) {
           return true;
         }
 
-        // Search in breakdown values
         if (
           row.breakdownValues.some((val) =>
             val?.toLowerCase().includes(searchLower)
@@ -303,7 +292,6 @@ export function ReportTable({
           return true;
         }
 
-        // Search in metric values
         const metrics = ['count', 'sum', 'average', 'min', 'max'] as const;
         if (
           metrics.some((metric) =>
@@ -313,7 +301,6 @@ export function ReportTable({
           return true;
         }
 
-        // Search in date values
         if (
           Object.values(row.dateValues).some((val) =>
             String(val).toLowerCase().includes(searchLower)
@@ -326,16 +313,13 @@ export function ReportTable({
       });
     }
 
-    // Apply sorting - if grouped, always sort groups by highest count, then sort within each group
     if (grouped && result.length > 0) {
       const groupedRows = result as ExpandableTableRow[] | GroupedTableRow[];
 
-      // Sort function based on current sort state
       const sortFn = (
         a: ExpandableTableRow | GroupedTableRow | TableRow,
         b: ExpandableTableRow | GroupedTableRow | TableRow
       ) => {
-        // If no sorting is selected, return 0 (no change)
         if (sorting.length === 0) {
           return 0;
         }
@@ -372,7 +356,6 @@ export function ReportTable({
             continue;
           }
 
-          // Handle null/undefined values
           if (aValue == null && bValue == null) {
             continue;
           }
@@ -383,7 +366,6 @@ export function ReportTable({
             return -1;
           }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
             if (comparison !== 0) {
@@ -401,14 +383,11 @@ export function ReportTable({
         return 0;
       };
 
-      // For expandable rows, we need to sort recursively
       function sortExpandableRows(
         rows: ExpandableTableRow[],
         isTopLevel = true
       ): ExpandableTableRow[] {
-        // Sort rows: groups by count first (only at top level), then apply user sort
         const sorted = [...rows].sort((a, b) => {
-          // At top level, sort groups by count first
           if (isTopLevel) {
             const aIsGroupHeader = 'isGroupHeader' in a && a.isGroupHeader;
             const bIsGroupHeader = 'isGroupHeader' in b && b.isGroupHeader;
@@ -422,18 +401,16 @@ export function ReportTable({
                 const aCount = a.count ?? 0;
                 const bCount = b.count ?? 0;
                 if (aCount !== bCount) {
-                  return bCount - aCount; // Highest first
+                  return bCount - aCount;
                 }
                 // If counts are equal, fall through to user sort
               }
             }
           }
 
-          // Apply user's sort criteria (for all rows, including within groups)
           return sortFn(a, b);
         });
 
-        // Sort subRows recursively (within each group) - these are NOT top level
         return sorted.map((row) => {
           if ('subRows' in row && row.subRows) {
             return {
@@ -448,7 +425,6 @@ export function ReportTable({
       return sortExpandableRows(groupedRows as ExpandableTableRow[]);
     }
 
-    // For flat mode, apply sorting
     if (!grouped && result.length > 0 && sorting.length > 0) {
       return [...result].sort((a, b) => {
         for (const sort of sorting) {
@@ -475,7 +451,6 @@ export function ReportTable({
             continue;
           }
 
-          // Handle null/undefined values
           if (aValue == null && bValue == null) {
             continue;
           }
@@ -486,7 +461,6 @@ export function ReportTable({
             return -1;
           }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
             if (comparison !== 0) {
@@ -508,7 +482,6 @@ export function ReportTable({
     return result;
   }, [rows, globalFilter, grouped, sorting]);
 
-  // Calculate min/max values for color visualization
   const { metricRanges, dateRanges } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
       count: {
@@ -532,7 +505,6 @@ export function ReportTable({
       };
     });
 
-    // Helper function to flatten expandable rows and get only individual rows
     function getIndividualRows(
       rows: (ExpandableTableRow | TableRow)[]
     ): TableRow[] {
@@ -543,11 +515,9 @@ export function ReportTable({
         const isSummary = 'isSummaryRow' in row && row.isSummaryRow === true;
 
         if (!(isGroupHeader || isSummary)) {
-          // It's an individual row - add it
           individualRows.push(row as TableRow);
         }
 
-        // Always recursively process subRows if they exist (regardless of whether this is a group header)
         if ('subRows' in row && row.subRows && Array.isArray(row.subRows)) {
           individualRows.push(...getIndividualRows(row.subRows));
         }
@@ -555,12 +525,10 @@ export function ReportTable({
       return individualRows;
     }
 
-    // Get only individual rows from all rows to ensure consistent ranges
     const individualRows = getIndividualRows(rows);
     const isSingleSeries = individualRows.length === 1;
 
     if (isSingleSeries) {
-      // For single series, calculate ranges from date values
       const singleRow = individualRows[0]!;
       const allDateValues = dates.map(
         (date) => singleRow.dateValues[date] ?? 0
@@ -568,7 +536,6 @@ export function ReportTable({
       const dateMin = Math.min(...allDateValues);
       const dateMax = Math.max(...allDateValues);
 
-      // For date columns, use the range across all dates
       dates.forEach((date) => {
         dateRanges[date] = {
           min: dateMin,
@@ -576,50 +543,41 @@ export function ReportTable({
         };
       });
 
-      // For metric columns, use date values to create meaningful ranges
-      // This ensures we can still show color variation even with one series
       metricRanges.count = { min: dateMin, max: dateMax };
       metricRanges.sum = { min: dateMin, max: dateMax };
       metricRanges.average = { min: dateMin, max: dateMax };
       metricRanges.min = { min: dateMin, max: dateMax };
       metricRanges.max = { min: dateMin, max: dateMax };
+    } else if (individualRows.length === 0) {
     } else {
-      // Multiple series: calculate ranges across individual rows only
-      if (individualRows.length === 0) {
-        // No individual rows found - this shouldn't happen, but handle gracefully
-      } else {
-        individualRows.forEach((row) => {
-          // Calculate metric ranges
-          Object.keys(metricRanges).forEach((key) => {
-            const value = row[key as keyof typeof row] as number;
-            if (typeof value === 'number' && !Number.isNaN(value)) {
-              metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
-              metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
-            }
-          });
-
-          // Calculate date ranges
-          dates.forEach((date) => {
-            const value = row.dateValues[date] ?? 0;
-            if (!dateRanges[date]) {
-              dateRanges[date] = {
-                min: Number.POSITIVE_INFINITY,
-                max: Number.NEGATIVE_INFINITY,
-              };
-            }
-            if (typeof value === 'number' && !Number.isNaN(value)) {
-              dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
-              dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
-            }
-          });
+      individualRows.forEach((row) => {
+        Object.keys(metricRanges).forEach((key) => {
+          const value = row[key as keyof typeof row] as number;
+          if (typeof value === 'number' && !Number.isNaN(value)) {
+            metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
+            metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
+          }
         });
-      }
+
+        dates.forEach((date) => {
+          const value = row.dateValues[date] ?? 0;
+          if (!dateRanges[date]) {
+            dateRanges[date] = {
+              min: Number.POSITIVE_INFINITY,
+              max: Number.NEGATIVE_INFINITY,
+            };
+          }
+          if (typeof value === 'number' && !Number.isNaN(value)) {
+            dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
+            dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+          }
+        });
+      });
     }
 
     return { metricRanges, dateRanges };
   }, [rows, dates]);
 
-  // Helper to get background color style and opacity for a value
   // Returns both style and opacity (for text color calculation) to avoid parsing
   const getCellBackgroundStyle = (
     value: number,
@@ -631,7 +589,6 @@ export function ReportTable({
       return { style: {}, opacity: 0 };
     }
 
-    // If min equals max (e.g. single row or all values same), show moderate opacity
     let opacity: number;
     if (max === min) {
       opacity = 0.5;
@@ -652,7 +609,6 @@ export function ReportTable({
     };
   };
 
-  // Normalize visibleSeries to string array
   const visibleSeriesIds = useMemo(() => {
     if (visibleSeries.length === 0) {
       return [];
@@ -663,17 +619,14 @@ export function ReportTable({
     return (visibleSeries as IChartData['series']).map((s) => s.id);
   }, [visibleSeries]);
 
-  // Create a hash of visibleSeriesIds to track checkbox state changes
   const visibleSeriesIdsHash = useMemo(() => {
     return visibleSeriesIds.sort().join(',');
   }, [visibleSeriesIds]);
 
-  // Get serie index for color
   const getSerieIndex = (serieId: string): number => {
     return data.series.findIndex((s) => s.id === serieId);
   };
 
-  // Toggle serie visibility
   const toggleSerieVisibility = (serieId: string) => {
     setVisibleSeries((prev) => {
       if (prev.includes(serieId)) {
@@ -683,19 +636,13 @@ export function ReportTable({
     });
   };
 
-  // Toggle group collapse (now handled by TanStack Table's expanding feature)
-  // This is kept for backward compatibility with header click handlers
   const toggleGroupCollapse = (groupKey: string) => {
-    // This will be handled by TanStack Table's row expansion
-    // We can find the row by groupKey and toggle it
     // For now, this is a no-op as TanStack Table handles it
   };
 
-  // Define columns
   const columns = useMemo<ColumnDef<TableRow | GroupedTableRow>[]>(() => {
     const cols: ColumnDef<TableRow | GroupedTableRow>[] = [];
 
-    // Serie name column (pinned left) with checkbox
     cols.push({
       id: 'serie-name',
       header: 'Serie',
@@ -724,7 +671,6 @@ export function ReportTable({
           original.groupKey &&
           !original.isSummaryRow
         ) {
-          // Find all rows in this group from the current rows array
           const groupRows = rows.filter(
             (r): r is GroupedTableRow =>
               'groupKey' in r &&
@@ -735,7 +681,6 @@ export function ReportTable({
           if (groupRows.length > 0) {
             const firstRowInGroup = groupRows[0]!;
 
-            // Check if this is the first row in the group
             if (firstRowInGroup.id === original.id) {
               isFirstRowInGroup = true;
             } else {
@@ -781,7 +726,6 @@ export function ReportTable({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  // Toggle expanded state manually
                   setExpanded((prev) => {
                     const newExpanded: ExpandedState =
                       typeof prev === 'object' ? { ...prev } : {};
@@ -804,7 +748,6 @@ export function ReportTable({
       },
     });
 
-    // Breakdown columns (pinned left, collapsible)
     breakdownPropertyNames.forEach((propertyName, index) => {
       const isLastBreakdown = index === breakdownPropertyNames.length - 1;
       const isCollapsible = grouped && !isLastBreakdown;
@@ -827,7 +770,6 @@ export function ReportTable({
             return propertyName;
           }
 
-          // Find all rows at this breakdown level that can be expanded
           const rowsAtLevel: string[] = [];
           if (grouped && expandableRows) {
             function collectRowIdsAtLevel(
@@ -843,7 +785,6 @@ export function ReportTable({
                 ) {
                   rowsAtLevel.push(row.id);
                 }
-                // Recurse into subRows if we haven't reached target level yet
                 if (currentLevel < targetLevel && row.subRows) {
                   collectRowIdsAtLevel(
                     row.subRows,
@@ -856,7 +797,6 @@ export function ReportTable({
             collectRowIdsAtLevel(expandableRows, index);
           }
 
-          // Check if all groups at this level are expanded
           const allExpanded =
             rowsAtLevel.length > 0 &&
             rowsAtLevel.every(
@@ -870,7 +810,6 @@ export function ReportTable({
                 if (!grouped) {
                   return;
                 }
-                // Toggle all groups at this breakdown level
                 setExpanded((prev) => {
                   const newExpanded: ExpandedState =
                     typeof prev === 'object' ? { ...prev } : {};
@@ -969,7 +908,6 @@ export function ReportTable({
       });
     });
 
-    // Metric columns
     const metrics = [
       { key: 'count', label: 'Unique' },
       { key: 'sum', label: 'Sum' },
@@ -996,7 +934,6 @@ export function ReportTable({
           const isIndividualRow = !(isSummary || isGroupHeader);
           const range = metricRanges[metric.key];
 
-          // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
           const hasValidRange =
             range &&
@@ -1024,7 +961,6 @@ export function ReportTable({
       });
     });
 
-    // Date columns
     dates.forEach((date) => {
       cols.push({
         id: `date-${date}`,
@@ -1040,7 +976,6 @@ export function ReportTable({
             row.original.isGroupHeader === true;
           const isIndividualRow = !(isSummary || isGroupHeader);
           const range = dateRanges[date];
-          // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
           const hasValidRange =
             range &&
@@ -1086,15 +1021,13 @@ export function ReportTable({
     data,
   ]);
 
-  // Create a hash of column IDs to track when columns change
   const columnsHash = useMemo(() => {
     return columns.map((col) => col.id).join(',');
   }, [columns]);
 
-  // Memoize table options to ensure table updates when filteredRows changes
   const tableOptions = useMemo(
     () => ({
-      data: filteredRows, // This is already sorted in filteredRows
+      data: filteredRows,
       columns,
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: grouped ? getExpandedRowModel() : undefined,
@@ -1131,9 +1064,9 @@ export function ReportTable({
       onSortingChange: setSorting,
       onColumnSizingChange: setColumnSizing,
       onExpandedChange: grouped ? setExpanded : undefined,
-      globalFilterFn: () => true, // We handle filtering manually
-      manualSorting: true, // We handle sorting manually for both modes
-      manualFiltering: true, // We handle filtering manually
+      globalFilterFn: () => true,
+      manualSorting: true,
+      manualFiltering: true,
     }),
     [
       filteredRows,
@@ -1151,7 +1084,6 @@ export function ReportTable({
 
   const table = useReactTable(tableOptions);
 
-  // Virtualization setup
   useEffect(() => {
     const updateScrollMargin = throttle(() => {
       if (parentRef.current) {
@@ -1169,7 +1101,6 @@ export function ReportTable({
     };
   }, []);
 
-  // Handle global mouseup to reset resize flag
   useEffect(() => {
     const handleMouseUp = () => {
       if (isResizingRef.current) {
@@ -1190,7 +1121,6 @@ export function ReportTable({
     };
   }, []);
 
-  // Get the row model to use (expanded when grouped, regular otherwise)
   // Always call the table helpers so React Table can manage its own memoization
   const rowModelToUse = grouped
     ? table.getExpandedRowModel()
@@ -1205,12 +1135,10 @@ export function ReportTable({
 
   const virtualRows = virtualizer.getVirtualItems();
 
-  // Get visible columns in order
   const headerColumns = table
     .getAllLeafColumns()
     .filter((col) => table.getState().columnVisibility[col.id] !== false);
 
-  // Separate columns into pinned and scrollable
   const leftPinnedColumns = headerColumns.filter(
     (col) => col.columnDef.meta?.pinned === 'left'
   );
@@ -1221,7 +1149,6 @@ export function ReportTable({
     (col) => !col.columnDef.meta?.pinned
   );
 
-  // Calculate widths for virtualization
   const leftPinnedWidth = useMemo(
     () => leftPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
     [leftPinnedColumns, columnSizing]
@@ -1235,7 +1162,6 @@ export function ReportTable({
     [scrollableColumns, columnSizing]
   );
 
-  // Horizontal virtualization for scrollable columns
   // Only virtualize if we have enough columns to benefit from it
   const shouldVirtualizeHorizontal = scrollableColumns.length > 10;
 
@@ -1248,7 +1174,6 @@ export function ReportTable({
     overscan: shouldVirtualizeHorizontal ? 5 : scrollableColumns.length,
   });
 
-  // Get virtual columns - if not virtualizing, return all columns
   const virtualColumns = shouldVirtualizeHorizontal
     ? horizontalVirtualizer.getVirtualItems()
     : scrollableColumns.map((col, index) => ({
@@ -1262,7 +1187,6 @@ export function ReportTable({
         lane: 0,
       }));
 
-  // Pre-compute grid template columns string and headers
   const { gridTemplateColumns, headers } = useMemo(() => {
     const headerGroups = table.getHeaderGroups();
     const firstGroupHeaders = headerGroups[0]?.headers ?? [];
@@ -1273,7 +1197,6 @@ export function ReportTable({
     };
   }, [table, columnSizing, columnsHash]);
 
-  // Pre-compute pinning styles for all columns
   const pinningStylesMap = useMemo(() => {
     const stylesMap = new Map<string, React.CSSProperties>();
     const headerGroups = table.getHeaderGroups();
@@ -1319,7 +1242,6 @@ export function ReportTable({
     return stylesMap;
   }, [table, leftPinnedColumns, rightPinnedColumns, columnSizing, columnsHash]);
 
-  // Helper to get pinning styles (for backward compatibility with header)
   const getPinningStyles = (
     column: ReturnType<typeof table.getColumn> | undefined
   ) => {
@@ -1361,7 +1283,6 @@ export function ReportTable({
             minWidth: 'fit-content',
           }}
         >
-          {/* Header */}
           <div
             className="sticky top-0 z-20 border-b bg-card"
             style={{
@@ -1373,7 +1294,6 @@ export function ReportTable({
               minWidth: 'fit-content',
             }}
           >
-            {/* Left Pinned Columns */}
             {leftPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
               if (!header) {
@@ -1489,7 +1409,6 @@ export function ReportTable({
               );
             })}
 
-            {/* Scrollable Columns (Virtualized) */}
             <div
               style={{
                 position: 'relative',
@@ -1580,7 +1499,6 @@ export function ReportTable({
               })}
             </div>
 
-            {/* Right Pinned Columns */}
             {rightPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
               if (!header) {
@@ -1662,7 +1580,6 @@ export function ReportTable({
             })}
           </div>
 
-          {/* Virtualized Body */}
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,

@@ -362,9 +362,9 @@ export async function getSessionReplayChunksFrom(
   );
 
   // `chunkIndex` is the row's position, not `row.chunk_index`, and `hasMore`
-  // counts rows the JSON filter may drop — so an unparseable chunk rewinds the
-  // client (docs/review/session.md, "not covered by any rule" #5). Correcting
-  // either changes what the endpoint returns, so it is reported, not fixed.
+  // counts rows the JSON filter may drop — so an unparseable chunk rewinds
+  // the client. Correcting either changes what the endpoint returns, so it
+  // is reported, not fixed.
   return {
     data: rows
       .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
@@ -480,10 +480,8 @@ export function createSessionService(
   _services: () => Services
 ) {
   /**
-   * Enqueue one `session_end` job, idempotent on the closed session's id.
-   * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
-   * @openpanel/queue producer (utils/session-handler.ts) because core could
-   * not import @openpanel/queue back (see cohort.service.ts's header).
+   * Enqueue one `session_end` job, idempotent on the closed session's id,
+   * through the ctx.queues-based producer.
    */
   async function enqueueSessionEnd(
     input: EnqueueSessionEndInput

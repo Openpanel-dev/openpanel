@@ -5,7 +5,7 @@
  * all-cohorts paths run against seeded `cohort_members` + a Postgres cohort.
  *
  * Fixture (test/fixtures.ts, seeded per suite under its own project id so it
- * can run concurrently with V1's suites, with the clock pinned to
+ * can run concurrently with other suites, with the clock pinned to
  * test/fixture-clock.ts's 12:00 UTC anchor): Alice — 3 events 2 days ago
  * (Chrome, page_view /home); Charlie — 5 events 5 days ago (Firefox,
  * screen_view + page_view /shop, purchase 9900); Bob — no events. This suite
@@ -205,7 +205,7 @@ describe('executeChart', () => {
     // Alice is outside the cohort, Charlie inside — both rows must survive.
     expect(single.metrics.sum).toBe(2);
     expect(single.series).toHaveLength(2);
-    // All-cohorts is an INNER JOIN on membership (V1): non-members drop out.
+    // All-cohorts is an INNER JOIN on membership: non-members drop out.
     expect(all.series.map((serie) => [serie.names, serie.metrics.sum])).toEqual(
       [[['page_view', COHORT_NAME], 1]]
     );

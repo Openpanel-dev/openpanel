@@ -7,16 +7,13 @@
 // procedure here reaches it through `ctx.services.auth`.
 //
 // CRUD (list/get/create/update/delete) reads/writes Prisma's `cohort` table
-// directly, matching V1's router — cohort.service.ts owns only the
-// compute-heavy and ClickHouse-touching operations, same split as V1.
+// directly — cohort.service.ts owns only the compute-heavy and
+// ClickHouse-touching operations.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { getSettingsForProject } from '../organization/organization.service';
-// The canonical zChartEventFilter, not cohort.constants.ts's private
-// TDZ-workaround copy — matches V1's router, which imports it from
-// packages/validation's barrel rather than from cohort.validation.ts.
 import { zChartEventFilter, zRange } from '../report/report.constants';
 import { getChartStartEndDate } from '../report/src/chart-dates';
 import {
@@ -108,10 +105,9 @@ export const cohortRouter = createTRPCRouter({
       return cohort;
     }),
 
-  // No project-access check here, matching V1 (packages/trpc/src/routers/
-  // cohort.ts) exactly — protectedProcedure's session check is the only gate
-  // today. Preserved as found: ADR-011 invariant 1 forbids deleting an
-  // in-handler check, and this router does not serve live traffic yet.
+  // No project-access check here — protectedProcedure's session check is the
+  // only gate today. Preserved as found rather than silently added or
+  // removed; this router does not yet serve live traffic.
   create: protectedProcedure
     .input(zCohortInput)
     .mutation(async ({ input, ctx }) => {

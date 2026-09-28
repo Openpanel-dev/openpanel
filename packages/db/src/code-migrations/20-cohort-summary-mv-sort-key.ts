@@ -15,11 +15,9 @@ import { type CodeMigrationEnv, getIsCluster, writeSqlDump } from './helpers';
  * property, then GROUP BY profile_id — they never filter profile_id. With
  * profile_id second, the usable key prefix ends at project_id, so every
  * criterion reads the project's entire slice of the MV however narrow the
- * criterion is. Cohorts run one such query per criterion, on a schedule.
- *
- * Measured on a ~100M-row summary MV: a criterion that can only prune on
- * project_id reads 103,985,861 rows (10.9s); the same criterion with name
- * and event_date in the key prefix reads 115,141 rows (0.11s).
+ * criterion is (measured on a ~100M-row MV: ~900x fewer rows read, 10.9s ->
+ * 0.11s, with name and event_date in the key prefix). Cohorts run one such
+ * query per criterion, on a schedule.
  *
  * A sort key cannot be altered in place, so this creates replacement MVs
  * keyed for the consumer:

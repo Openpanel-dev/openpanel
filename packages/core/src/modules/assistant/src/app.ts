@@ -1,5 +1,5 @@
-// The app is BUILT from the `deps` `assistant.routes.ts` already holds, not
-// constructed at module scope (R15). Importing this file now opens nothing — no
+// The app is built from the `deps` `assistant.routes.ts` already holds, not
+// constructed at module scope. Importing this file opens nothing — no
 // provider client, no agent, no conversation store — and every tool handler
 // closes over the same `deps`, which is what `@better-agent/core`'s
 // context-free tool-handler signature ruled out doing as an argument.

@@ -46,19 +46,16 @@ export const TABLE_NAMES = {
 };
 
 /**
- * The table a mutation must target: `<name>_replicated ON CLUSTER '{cluster}'`
- * when clustered, the plain name otherwise.
+ * The mutation target as a SQL fragment: `<name>_replicated ON CLUSTER
+ * '{cluster}'` when clustered, the plain name otherwise. Clustered mode =
+ * production (not self-hosted); non-clustered = self-hosted. The verdict is
+ * `config.clickhouseClustered`, resolved once by the config loader from
+ * CLICKHOUSE_CLUSTER and SELF_HOSTED.
  *
- * Clustered mode = production (not self-hosted); non-clustered = self-hosted.
- * The verdict is `config.clickhouseClustered`, resolved once by the config
- * loader from CLICKHOUSE_CLUSTER and SELF_HOSTED.
- */
-/**
- * The mutation target as a SQL fragment. Built here rather than fed through
- * `sql.id` because the clustered form is not an identifier: the `ON CLUSTER`
- * clause is literal template text, and `'{cluster}'` is a ClickHouse *macro*,
- * not a `{name:Type}` placeholder — it carries no type suffix, so parameter
- * substitution leaves it alone.
+ * Built here rather than fed through `sql.id` because the clustered form is
+ * not an identifier: the `ON CLUSTER` clause is literal template text, and
+ * `'{cluster}'` is a ClickHouse *macro*, not a `{name:Type}` placeholder — it
+ * carries no type suffix, so parameter substitution leaves it alone.
  */
 export function replicatedTarget(
   clustered: boolean,

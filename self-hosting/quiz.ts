@@ -105,10 +105,8 @@ function removeServiceFromDockerCompose(serviceName: string) {
   const dockerComposePath = path.resolve(__dirname, 'docker-compose.yml');
   const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
 
-  // Parse the YAML file
   const dockerCompose = yaml.load(dockerComposeContent) as DockerComposeFile;
 
-  // Remove the service
   if (dockerCompose.services[serviceName]) {
     delete dockerCompose.services[serviceName];
     console.log(`Service '${serviceName}' has been removed.`);
@@ -117,7 +115,6 @@ function removeServiceFromDockerCompose(serviceName: string) {
     // return;
   }
 
-  // filter depends_on
   Object.keys(dockerCompose.services).forEach((service) => {
     const serviceConfig = dockerCompose.services[service];
     if (serviceConfig?.depends_on) {
@@ -135,7 +132,6 @@ function removeServiceFromDockerCompose(serviceName: string) {
     }
   });
 
-  // filter volumes
   Object.keys(dockerCompose.volumes ?? {}).forEach((volume) => {
     if (dockerCompose.volumes && volume.startsWith(serviceName)) {
       delete dockerCompose.volumes[volume];
@@ -146,7 +142,6 @@ function removeServiceFromDockerCompose(serviceName: string) {
     delete dockerCompose.volumes;
   }
 
-  // Convert the object back to YAML
   const newYaml = yaml.dump(dockerCompose, {
     lineWidth: -1,
   });

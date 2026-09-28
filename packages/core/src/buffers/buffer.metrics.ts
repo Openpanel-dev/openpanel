@@ -1,8 +1,7 @@
-// The twelve `buffer_*` series, moved verbatim from apps/worker/src/metrics.ts
-// (TARGET_ARCHITECTURE §18: names and labels reproduced exactly). Registered
-// per boot rather than per import, because the buffers themselves are per boot
-// — and only where a role consumes queues, since the LLEN gauges cost one
-// Redis round trip per buffer per scrape.
+// The twelve `buffer_*` series (names and labels reproduced exactly).
+// Registered per boot rather than per import, because the buffers themselves
+// are per boot — and only where a role consumes queues, since the LLEN
+// gauges cost one Redis round trip per buffer per scrape.
 
 import client from 'prom-client';
 import { registry } from '../metrics';
@@ -24,8 +23,8 @@ const ADD_DURATION_BUCKETS_MS = [
 ];
 
 /**
- * Registration order is V1's, because it is the order the series appear in the
- * `/metrics` body.
+ * Registration order matches the order the series appear in the `/metrics`
+ * body.
  */
 function allBuffers(buffers: Buffers) {
   return [
@@ -43,9 +42,6 @@ function allBuffers(buffers: Buffers) {
  * Registers the buffer metrics and installs the flush/add observers on the
  * given buffers. Call once per process: prom-client throws on a duplicate
  * series name, and each buffer holds exactly one observer slot.
- *
- * `register` defaults to the one core registry; V1's worker passes its own
- * dying registry so its `/metrics` body is unchanged (M8-001 delegation).
  */
 export function registerBufferMetrics(
   buffers: Buffers,

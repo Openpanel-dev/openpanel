@@ -1,26 +1,16 @@
-// Realtime.service.ts takes `ServiceDeps` now, so the event buffer and the
-// ClickHouse client are HANDED IN (`deps.buffers.event`, `deps.ch`) rather than
-// mocked onto a module specifier.
+// The event buffer and the ClickHouse client are HANDED IN
+// (`deps.buffers.event`, `deps.ch`) rather than mocked onto a module
+// specifier.
 //
-// The subject and the real-module snapshot are STATIC imports.
-// `@openpanel/redis` is a static import in the subject too (the R6 fix removed
-// the `loadRedis` lazy hop) — Bun's `mock.module` still applies because it
-// swaps an already-loaded module's exports in place, so a consumer that
-// imported before the mock call still sees it — measured on Bun 1.4.0, and the
-// subscribe assertions go red if it ever stops. That leaves this module with no
-// deferred loads at all.
+// The subject and the real-module snapshot are STATIC imports. Bun's
+// `mock.module` still applies because it swaps an already-loaded module's
+// exports in place, so a consumer that imported before the mock call still
+// sees it — the subscribe assertions go red if it ever stops.
 //
-// Every assertion below is the one it was before the deps switch: the same
-// project scoping, the same 30-minute window, the same filter/limit wiring, the
-// same subscribe/unsubscribe behaviour.
-//
-// Scope: the "/live websocket glue" (new logic this wave adds) plus one
-// representative ClickHouse query (`getRealtimeActiveSessions`) proving the
-// deps + filter/limit wiring. The other five queries are a verbatim port of
-// packages/trpc/src/routers/realtime.ts's SQL — mechanical, not new behaviour —
-// and are exercised end-to-end by realtime.rpc.test.ts's
-// unauthenticated-boundary tests plus this repo's local ClickHouse run (see the
-// task summary for the executed query + row count).
+// Scope: the /live websocket glue plus one representative ClickHouse query
+// (`getRealtimeActiveSessions`) proving the deps + filter/limit wiring. The
+// other five queries are exercised end-to-end by realtime.rpc.test.ts's
+// unauthenticated-boundary tests and this repo's local ClickHouse run.
 
 import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
 import * as actualRedis from '@openpanel/redis';
@@ -155,7 +145,7 @@ test('subscribeToProjectNotifications subscribes on notification:created and fil
   expect(onNotification).toHaveBeenCalledTimes(1);
 });
 
-// / F2: the `organization:subscription_updated` channel is instance-wide.
+// The `organization:subscription_updated` channel is instance-wide.
 // Unfiltered, a subscriber saw the `organizationId` of every organization whose
 // subscription changed — including ones it is not a member of. This test is red
 // without the filter.

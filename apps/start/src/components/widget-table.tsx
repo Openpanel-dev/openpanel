@@ -71,7 +71,6 @@ export const WidgetTableHead = ({
  * Priority 10 = hidden first (lowest priority)
  */
 function getResponsiveClass(priority: ColumnPriority): string {
-  // Priority 1 = always visible (no hiding)
   if (priority === 1) {
     return '';
   }
@@ -89,10 +88,7 @@ function getResponsiveStyle(
   }
 
   const minWidth = (priority - 1) * 100 + 100;
-  return {
-    // Use CSS custom property for container query
-    // Will be handled by inline style with container query
-  } as React.CSSProperties;
+  return {} as React.CSSProperties;
 }
 
 /**
@@ -126,7 +122,6 @@ export function WidgetTable<T>({
   const reactId = React.useId();
   const containerId = `widget-table-${reactId.replace(/:/g, '')}`;
 
-  // Generate CSS for container queries
   const containerQueryStyles = React.useMemo(() => {
     const styles: string[] = [];
 
@@ -188,7 +183,6 @@ export function WidgetTable<T>({
               dataAttrs['data-min-width'] = String(column.responsive.minWidth);
             }
 
-            // Use column.key if available, otherwise try to extract string from name, fallback to index
             const columnKey =
               column.key ??
               (typeof column.name === 'string'
@@ -249,7 +243,6 @@ export function WidgetTable<T>({
                     );
                   }
 
-                  // Use column.key if available, otherwise try to extract string from name, fallback to index
                   const columnKey =
                     column.key ??
                     (typeof column.name === 'string'

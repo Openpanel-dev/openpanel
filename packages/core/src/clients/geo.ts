@@ -1,8 +1,6 @@
-// Ported from @openpanel/geo (dissolved into core — M4-004).
-//
 // The one client with no `ProviderError`: there is no third party on the other
 // end. Both lookups read a bundled MaxMind `.mmdb`, so an IP the database does
-// not carry is a missing thing and comes back as the default value (R9), and a
+// not carry is a missing thing and comes back as the default value, and a
 // database that will not load fails identically on every retry.
 // `ingest.service.ts` therefore has no failure to classify — it reads a value,
 // never a throw.
@@ -20,12 +18,12 @@ const __dirname = dirname(__filename);
 
 // Resolve a bundled `.mmdb` file, trying the bundled-dist layout first and the
 // local package layout second (mirrors how the file ships via `pnpm codegen`).
-// apps/api's V1 build still bundles every `@openpanel/*` package into one file
+// apps/api's build still bundles every `@openpanel/*` package into one file
 // (tsdown `noExternal`), so `import.meta.url` there resolves to
 // `apps/api/dist/index.js` regardless of this file's nesting under
 // `src/clients/` — three levels up from dist is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
-  // From api or worker dist bundle
+  // From the api dist bundle
   const dbPath = path.join(__dirname, `../../../packages/core/${filename}`);
   // From local package (e.g. running core's own tests, unbundled)
   const dbPathLocal = path.join(__dirname, `../../${filename}`);

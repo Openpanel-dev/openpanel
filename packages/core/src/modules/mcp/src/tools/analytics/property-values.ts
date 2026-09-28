@@ -17,14 +17,10 @@ const MAX_PROPERTY_LIMIT = 500;
 const DEFAULT_VALUE_LIMIT = 50;
 const MAX_VALUE_LIMIT = 500;
 /** Raw (property_key, name) pairs scanned before `compactPropertyKeys` ranks
- *  them — V1's `.limit(500)`. */
+ *  them. */
 const PROPERTY_KEY_SCAN_LIMIT = 500;
-/** Raw MV rows scanned before de-duplication — V1's `.limit(2000)`. */
+/** Raw MV rows scanned before de-duplication. */
 const PROPERTY_VALUE_SCAN_LIMIT = 2000;
-// clix built both statements below with no timezone argument, and
-// `clix(client)` defaults to `'UTC'` (query-builder.ts:696-697), sending it as
-// `clickhouse_settings.session_timezone` on every `execute()` (:562). Both
-// keep sending it so their result sets stay identical.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 /**

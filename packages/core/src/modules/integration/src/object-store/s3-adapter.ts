@@ -1,4 +1,3 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Agent as HttpAgent } from 'node:http';
 import { Agent as HttpsAgent } from 'node:https';
 import type { LookupFunction } from 'node:net';
@@ -27,7 +26,7 @@ import type {
   IUploadResult,
 } from './types';
 
-/** ADR-022 R19: every failure that leaves this adapter is classified as this. */
+/** Every failure that leaves this adapter is classified under this provider name. */
 const S3_PROVIDER = 's3';
 
 // An endpoint the SSRF guard refuses is refused identically on every retry.
@@ -50,12 +49,7 @@ function pinnedRequestHandler(address: string) {
   };
 }
 
-/**
- * S3 Adapter for uploading export batches to AWS S3 or S3-compatible storage
- * Supports two authentication modes:
- * - IAM role assumption (AWS best practice)
- * - Access keys (for R2, MinIO, DigitalOcean Spaces, etc.)
- */
+/** S3 adapter for uploading export batches to AWS S3 or S3-compatible storage. */
 export class S3Adapter implements IObjectStoreAdapter {
   private config: IS3ExportConfig;
   private clientPromise: Promise<S3Client> | null = null;
@@ -79,9 +73,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     }
   }
 
-  /**
-   * Get or create an S3 client based on auth mode
-   */
   private async getClient(): Promise<S3Client> {
     if (this.config.authMode === 'iam_role') {
       // Assumed-role clients talk to the default AWS endpoint (see
@@ -119,10 +110,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     return this.getClientWithAccessKeys(addresses?.[0]);
   }
 
-  /**
-   * Get or create an S3 client using static access keys
-   * For R2, MinIO, DigitalOcean Spaces, etc.
-   */
   private async getClientWithAccessKeys(
     pinnedAddress?: string
   ): Promise<S3Client> {
@@ -161,9 +148,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     return client;
   }
 
-  /**
-   * Get or create an S3 client with assumed role credentials
-   */
   private async getClientWithAssumedRole(): Promise<S3Client> {
     const now = Date.now();
 
@@ -176,9 +160,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     return this.clientPromise;
   }
 
-  /**
-   * Create an S3 client by assuming the customer's IAM role
-   */
   private async createClientWithAssumedRole(): Promise<S3Client> {
     if (this.config.authMode !== 'iam_role') {
       throw new Error(
@@ -212,7 +193,6 @@ export class S3Adapter implements IObjectStoreAdapter {
         throw new Error('Failed to assume role: no credentials returned');
       }
 
-      // Track when credentials expire
       this.clientExpiresAt =
         credentials.Expiration?.getTime() || Date.now() + 3600 * 1000;
 
@@ -235,9 +215,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     }
   }
 
-  /**
-   * Get encryption parameters based on config
-   */
   private getEncryptionParams(): Partial<PutObjectCommandInput> {
     const encryption = this.config.encryption || 'SSE-S3';
 
@@ -260,9 +237,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     }
   }
 
-  /**
-   * Upload a single file to S3
-   */
   async upload(options: IUploadOptions): Promise<IUploadResult> {
     const client = await this.getClient();
 
@@ -286,9 +260,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     };
   }
 
-  /**
-   * Upload multiple files to S3
-   */
   async uploadMany(
     options: Array<IUploadOptions>
   ): Promise<Array<IUploadResult | Error>> {
@@ -306,9 +277,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     });
   }
 
-  /**
-   * Test the connection to S3 bucket
-   */
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
       const client = await this.getClient();
@@ -353,9 +321,6 @@ export class S3Adapter implements IObjectStoreAdapter {
   }
 }
 
-/**
- * Create an S3 adapter from integration config
- */
 export function createS3Adapter(
   config: IS3ExportConfig,
   coreConfig: CoreConfig

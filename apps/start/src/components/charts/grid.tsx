@@ -60,13 +60,9 @@ export function Grid({
   const { xScale, yScale, innerWidth, innerHeight, orientation, barScale } =
     useChartStable();
 
-  // For bar charts, determine which scale to use for grid lines
-  // Horizontal bar charts: vertical grid should use yScale (value scale)
-  // Vertical bar charts: horizontal grid uses yScale (value scale)
+  // Bar charts swap axes: for a horizontal bar chart the vertical grid needs
+  // the value scale (yScale), not the category scale.
   const isHorizontalBarChart = orientation === 'horizontal' && barScale;
-
-  // For vertical grid lines in horizontal bar charts, use yScale (the value scale)
-  // For time-based charts, use xScale
   const columnScale = isHorizontalBarChart ? yScale : xScale;
   const uniqueId = useId();
 
@@ -80,7 +76,6 @@ export function Grid({
 
   return (
     <g className="chart-grid">
-      {/* Gradient mask for horizontal grid lines - fades at left/right */}
       {horizontal && fadeHorizontal && (
         <defs>
           <linearGradient id={hGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
@@ -104,7 +99,6 @@ export function Grid({
         </defs>
       )}
 
-      {/* Gradient mask for vertical grid lines - fades at top/bottom */}
       {vertical && fadeVertical && (
         <defs>
           <linearGradient id={vGradientId} x1="0%" x2="0%" y1="0%" y2="100%">

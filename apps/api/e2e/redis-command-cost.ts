@@ -5,7 +5,7 @@
  * ingest path now runs under, including the event buffer's writes and reads.
  * Picking it needs the cost of the heaviest honest command, not a guess: if the
  * deadline is anywhere near a busy flush, a healthy server starts looking like
- * a down one and M18-001's shutdown path starts refusing to commit offsets it
+ * a down one and the shutdown path starts refusing to commit offsets it
  * should have committed.
  *
  * Measures the four shapes the cache client actually issues, worst first: -

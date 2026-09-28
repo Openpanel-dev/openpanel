@@ -83,9 +83,8 @@ export function Area({
   // Stable slice only: hover state lives inside `<SeriesHoverDim>` and
   // `<SeriesHighlightLayer>` so this component (and its expensive
   // <SeriesDashTailOverlay> child) does not re-render on cursor motion.
-  // The reveal-clip is now a single shared clipPath at the chart-shell
-  // level (`time-series-chart-shell.tsx`); we no longer render a per-area
-  // `<ChartRevealClip>` or read `revealEpoch` here.
+  // The reveal-clip is a single shared clipPath at the chart-shell level
+  // (`time-series-chart-shell.tsx`).
   const {
     data,
     renderData,
@@ -100,7 +99,6 @@ export function Area({
   const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${showLine}`;
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, pathMetricsKey);
 
-  // Unique IDs for this area
   const uniqueId = useId();
   const gradientId = `area-gradient-${dataKey}-${uniqueId}`;
   const strokeGradientId = `area-stroke-gradient-${dataKey}-${uniqueId}`;
@@ -150,7 +148,6 @@ export function Area({
       />
 
       <SeriesHoverDim dimOpacity={0.6} enabled={showHighlight}>
-        {/* Area fill */}
         {showAreaFill ? (
           <g
             mask={
@@ -170,7 +167,6 @@ export function Area({
           </g>
         ) : null}
 
-        {/* Stroke line on top of area */}
         {showLine ? (
           <>
             <LinePath

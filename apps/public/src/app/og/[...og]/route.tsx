@@ -5,7 +5,6 @@ import { getFeatureData } from '@/lib/features';
 import { url as baseUrl } from '@/lib/layout.shared';
 import { articleSource, guideSource, pageSource, source } from '@/lib/source';
 
-// Truncate text helper
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -195,19 +194,15 @@ export async function GET(
   try {
     const { og } = await params;
 
-    // Get OG data based on segments
     const { title, description } = await getOgData(og);
 
-    // Truncate title and description
     const truncatedTitle = truncateText(title, 100);
     const truncatedDescription = description
       ? truncateText(description, 200)
       : undefined;
 
-    // Get background image URL
     const backgroundImageUrl = baseUrl('/ogimage-empty.png');
 
-    // Fetch Geist font files from CDN (cache fonts for better performance)
     const [geistRegular, geistBold] = await Promise.all([
       fetch(
         'https://cdn.jsdelivr.net/npm/geist@1.5.1/dist/fonts/geist-sans/Geist-Regular.ttf'
@@ -229,7 +224,6 @@ export async function GET(
           display: 'flex',
         }}
       >
-        {/* Title and Description at bottom left */}
         <div
           style={{
             bottom: '55px',
@@ -240,7 +234,6 @@ export async function GET(
             marginTop: 'auto',
           }}
         >
-          {/* Title */}
           <div
             style={{
               fontSize: truncatedTitle.length > 40 ? '56px' : '72px',
@@ -254,7 +247,6 @@ export async function GET(
             {truncatedTitle}
           </div>
 
-          {/* Description */}
           {truncatedDescription ? (
             <div
               style={{

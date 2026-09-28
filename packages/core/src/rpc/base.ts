@@ -4,9 +4,6 @@
 // The tRPC context IS the Elysia-derived `HttpCtx`: `makeTrpcContext` adds the
 // tRPC-specific bits and overrides exactly one field. There is no `req`/`res`
 // here — a procedure reads `ctx.headers`, `ctx.ip`, `ctx.logger`.
-//
-// `transformer`, `errorFormatter` and `Meta` are verbatim from
-// packages/trpc/src/trpc.ts:44-67; error semantics are unchanged by decision.
 
 import { initTRPC, TRPCError } from '@trpc/server';
 import { has } from 'ramda';
@@ -38,10 +35,10 @@ export interface Meta {
  * two RPC-only fields.
  *
  * `session` is the one field this OVERRIDES. On an HTTP route it is the lazy,
- * memoized resolver, so a public route pays nothing; on an RPC call it is the
- * resolved value, because V1 resolved it in a Fastify `onRequest` hook for
- * every /trpc request and 134 procedure call sites read it as one. Resolving
- * in the context builder is also what lets `onError` log it without awaiting.
+ * memoized resolver, so a public route pays nothing; on an RPC call it is
+ * resolved eagerly, since every procedure reads `ctx.session.userId` directly.
+ * Resolving in the context builder is also what lets `onError` log it without
+ * awaiting.
  *
  * It is not merely convenience: a middleware that *changed* `session`'s type
  * would make every standalone middleware (`cacheMiddleware`,
@@ -54,8 +51,7 @@ export interface TrpcContext extends Omit<HttpCtx, 'session'> {
    * The connection's peer address — the one address a client cannot forge, and
    * therefore the rate limiter's last-resort fallback when no trusted header is
    * present. It is NOT `ctx.ip`: that is the *attribution* ip, which prefers
-   * client-forwarded headers and would give every request its own bucket
-   * (ADR-002 "behaviour that must be preserved explicitly" 2).
+   * client-forwarded headers and would give every request its own bucket.
    *
    * `undefined` where the transport does not expose it. Elysia's
    * `server.requestIP` is not plumbed through `HttpCtx` yet, so the fetch mount
@@ -111,9 +107,9 @@ const stopWhenCancelled = t.middleware(async ({ ctx, next }) => {
 
 /**
  * The bare procedure. It authenticates NOTHING. Use one of the three builders
- * below unless a procedure's V1 twin was written on `procedure` itself — the
- * only ones are the share-aware `chartProcedure`/`overviewProcedure` bases,
- * and those are `publicProcedure` plus their own middleware.
+ * below unless a procedure needs to be built directly on `procedure` itself —
+ * the only ones are the share-aware `chartProcedure`/`overviewProcedure`
+ * bases, and those are `publicProcedure` plus their own middleware.
  */
 /**
  * Turns a driver failure caused by the CALLER into the status it deserves.
@@ -124,8 +120,8 @@ const stopWhenCancelled = t.middleware(async ({ ctx, next }) => {
  * SQL. Anything `classifyDriverError` does not recognise is rethrown
  * untouched and stays a 500, because a query bug is not the caller's mistake.
  *
- * This sits on `procedure` itself, which every builder derives from, so all
- * 177 procedures are covered by one `.use()`.
+ * This sits on `procedure` itself, which every builder derives from, so it
+ * covers every procedure with one `.use()`.
  */
 const mapDriverErrors = t.middleware(async ({ next }) => {
   const result = await next();
@@ -147,28 +143,24 @@ export const procedure = t.procedure
   .use(mapDriverErrors);
 
 // --------------------------------------------------------------------------
-// The procedure stack, ported from packages/trpc/src/trpc.ts:35-155.
+// The procedure stack. It is a middleware stack rather than per-handler code
+// because:
 //
-// Is this code's law; invariants 1-13 are binding. Three properties of the port
-// are load-bearing and are the reason it is a middleware stack rather than
-// per-handler code:
+// Authentication runs before input parsing: tRPC runs `.use` middleware ahead
+// of the `.input` parser, so an anonymous caller gets UNAUTHORIZED whatever it
+// sends. Doing the same check inside a handler would let the caller learn the
+// input shape first.
 //
-// 1. AUTHENTICATION RUNS BEFORE INPUT PARSING. tRPC runs `.use` middleware
-// ahead of the `.input` parser, so an anonymous caller gets UNAUTHORIZED
-// whatever it sends. Doing the same check inside a handler inverts that: the
-// caller learns the input shape first, and 176 procedures changed answer from
-// 401 to 400 when core mounted the bare `procedure`. 2. THE CHECK CANNOT BE
-// FORGOTTEN. It is a property of the builder, not of a line a port might drop.
-// Three procedures (`client.list`, `subscription.getCurrent`,
-// `subscription.usage`) had no check at all while this stack was missing. 3.
-// `enforceAccess` READS THE RAW, PRE-ZOD INPUT (ADR-011 invariant 2) and only
-// its TOP-LEVEL `projectId` / `organizationId`. A procedure that resolves the
-// project from a reportId/dashboardId is invisible to it and keeps its
-// in-handler check — ADR-011 counts 58 of those, and a redundant check is
-// harmless where a missing one is not.
+// The check is a property of the builder, not a line a handler might forget
+// to call.
 //
-// The lookups arrive through `ctx.services.auth` (M10-002 bound the ladder
-// there, once, in auth.service.ts); core reaches no database directly.
+// `enforceAccess` reads the raw, pre-Zod input and only its top-level
+// `projectId` / `organizationId`. A procedure that resolves the project from
+// a reportId/dashboardId instead is invisible to it and keeps its own
+// in-handler check — redundant there is harmless, missing is not.
+//
+// The lookups arrive through `ctx.services.auth`; core reaches no database
+// directly.
 // ---------------------------------------------------------------------------
 
 const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
@@ -179,18 +171,15 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 
   try {
     // Narrowed, not merely copied: the spread of the checked union member is
-    // what gives every handler below a `session.userId` of type `string`, so a
-    // procedure reads it instead of re-deriving it through a per-file
-    // `requireLogin` (ADR-022 R10 — 38 of those, deleted at M15-007).
+    // what gives every handler below a `session.userId` of type `string`.
     return next({
       ctx: {
         session: { ...session },
       },
     });
   } catch (error) {
-    // V1 wrote this to `console.error`; core has a request-scoped logger on
-    // the context and CLAUDE.md bans `console` in shipped code. Same branch,
-    // same outcome, same (misspelled, kept) message.
+    // Logged via the request-scoped logger, not console (CLAUDE.md bans
+    // console in shipped code). The misspelled message is kept as-is.
     ctx.logger.error({ err: error }, 'Failes to get user');
     throw new TRPCError({
       code: 'UNAUTHORIZED',
@@ -246,7 +235,6 @@ const enforceAccess = t.middleware(
 const loggerMiddleware = t.middleware(
   async ({ ctx, next, getRawInput, path, input, type }) => {
     const rawInput = await getRawInput();
-    // Only log mutations
     if (type === 'mutation') {
       ctx.logger.info(
         {
@@ -293,17 +281,13 @@ export const protectedProcedureWithoutAccess = procedure
   .use(loggerMiddleware)
   .use(sessionScopeMiddleware);
 
-// V1 delayed every non-production request by up to 200ms so a developer felt
-// the latency a user does. Preserved, with the flag injected: core reads no
-// process.env.
+// Delays every non-production request by up to 200ms so a developer feels
+// the latency a user does.
 const ARTIFICIAL_LATENCY_SPREAD_MS = 500;
 const ARTIFICIAL_LATENCY_MAX_MS = 200;
 
 export interface TrpcContextOptions {
-  /**
-   * V1's `COOKIE_OPTIONS`. Deployment-derived (it reads `DASHBOARD_URL`), so
-   * it is injected rather than imported: core reads no environment.
-   */
+  /** Deployment-derived (reads `DASHBOARD_URL`), so it is injected rather than imported. */
   cookieOptions: CookieOptions;
   /** `NODE_ENV !== 'production'` at the call site. */
   simulateLatency?: boolean;
@@ -322,7 +306,7 @@ export interface TrpcContextOptions {
  *
  * Cookies go out through the fetch adapter's `resHeaders`, not through Elysia:
  * the handler returns a `Response` the framework did not build, so the cookie
- * proxy is not a guaranteed path out (ADR-009 constraint 1).
+ * proxy is not a guaranteed path out.
  */
 export async function makeTrpcContext(
   ctx: HttpCtx,
@@ -346,8 +330,8 @@ export async function makeTrpcContext(
     value: string,
     cookie: CookieOptions = {}
   ): void => {
-    // V1's precedence, exactly: only `maxAge` and `signed` are caller-
-    // controlled, everything else comes from COOKIE_OPTIONS spread last.
+    // Only `maxAge` and `signed` are caller-controlled; everything else
+    // comes from COOKIE_OPTIONS, spread last.
     const merged: CookieOptions = {
       maxAge: cookie.maxAge,
       signed: cookie.signed,
@@ -382,8 +366,8 @@ export async function makeTrpcContext(
     // Resolved once here, shadowing HttpCtx's resolver. One HTTP request is
     // one `createContext` call, so a batched request still costs one lookup.
     // `HttpCtx.session()` answers `null` for "nobody is signed in" (see
-    // http/session.ts); V1's routers read `ctx.session.userId`, so the empty
-    // shape — not `null` — is what a procedure must see.
+    // http/session.ts); procedures read `ctx.session.userId` directly, so the
+    // empty shape — not `null` — is what a procedure must see.
     session: {
       value: (await ctx.session()) ?? EMPTY_SESSION,
       enumerable: true,
@@ -428,10 +412,9 @@ export interface RpcCache {
 export interface CacheMiddlewareDeps {
   cache: RpcCache;
   /**
-   * V1 wrote the cache everywhere but only *served* from it in production
-   * (`NODE_ENV === 'production'`), so a developer never debugged a stale
-   * answer. Preserved as a flag — a thunk because V1 read the env on every
-   * request, not once when the router module loaded.
+   * Only *served* from cache in production (`NODE_ENV === 'production'`), so
+   * a developer never debugs a stale answer. A thunk, not a boolean, because
+   * it must be read per request rather than once when the router loads.
    */
   serveFromCache: boolean | (() => boolean);
 }
@@ -503,10 +486,10 @@ export interface RateLimitOptions {
  * both are boot-scope concerns, and injecting it is what lets a procedure be
  * tested without one.
  *
- * The fingerprint is derived from `headers` and `remoteAddress`. `ip` is in the
- * signature because ADR-009 names it, but a limiter must never key on it: it is
- * the attribution address, which prefers client-forwarded headers and would
- * give every request its own bucket (ADR-002 preserved-behaviour 2).
+ * The fingerprint is derived from `headers` and `remoteAddress`, not `ip`: a
+ * limiter must never key on `ip`, since it is the attribution address, which
+ * prefers client-forwarded headers and would give every request its own
+ * bucket.
  */
 export type EnforceRateLimit = (
   args: RateLimitOptions & {

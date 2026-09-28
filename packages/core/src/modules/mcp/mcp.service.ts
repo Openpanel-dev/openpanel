@@ -1,22 +1,15 @@
-// Stateless-POST MCP transport (ADR-015 entry 2). V1 kept a Redis session store
-// (`mcp:session:<uuid>`, 30-min TTL) and a `Mcp-Session-Id` header that could
-// stand in for the token on every request after the first — both removed here,
-// along with GET/SSE (already an unconditional 405 — deletes nothing that ever
-// worked) and DELETE. Every POST authenticates from scratch and gets its own
-// ephemeral McpServer; nothing survives between requests, so there is no
-// session to store, touch or close, and no cross-instance stickiness
-// requirement.
+// Stateless-POST MCP transport. Every POST authenticates from scratch and
+// gets its own ephemeral McpServer; nothing survives between requests, so
+// there is no session to store, touch or close, and no cross-instance
+// stickiness requirement. GET/SSE and DELETE are not supported.
 //
-// MCP is the one module the wave map allows to change its endpoint surface —
-// every other module in this wave preserves its V1 contract byte-for-byte.
-//
-// MCP is NOT a separate process and has no dependency builder of its own.
-// `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route already
-// holds the API's connections; this factory closes over them and hands them to
-// `createMcpServer` per request (R15, Carl's ruling). The
-// `@modelcontextprotocol/sdk` tool-handler signature has no context parameter,
-// which is a CLOSURE problem — solved by building the server where `deps` is in
-// hand — not a context problem.
+// MCP is not a separate process and has no dependency builder of its own.
+// `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route
+// already holds the API's connections; this factory closes over them and
+// hands them to `createMcpServer` per request. The
+// `@modelcontextprotocol/sdk` tool-handler signature has no context
+// parameter, which is a CLOSURE problem — solved by building the server
+// where `deps` is in hand — not a context problem.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import {
@@ -81,9 +74,7 @@ function invalidRequest(body: unknown, message: string): McpHttpResult {
  *
  * Auth failures resolve to a 401 result rather than throwing, so the caller
  * (an HTTP framework's route handler) needs only one catch block for
- * everything else — matching the DELEGATE PATTERN's V1 controllers, which
- * keep framework-specific concerns (rate limiting, generic 500s) and hand
- * the protocol to this function.
+ * everything else.
  */
 export async function handleStatelessMcpRequest(
   deps: ServiceDeps,
@@ -135,12 +126,10 @@ export async function handleStatelessMcpRequest(
 }
 
 /**
- * Every request gets a fresh McpServer over an in-memory transport pair —
- * the ephemeral-server design already used to be per-session in V1; here it
- * is simply per-request, with nothing else changing. A real `initialize`
- * request completes the handshake directly; anything else fast-forwards a
- * synthetic handshake first, since a brand-new server has no other way to
- * reach its ready state.
+ * Every request gets a fresh McpServer over an in-memory transport pair. A
+ * real `initialize` request completes the handshake directly; anything else
+ * fast-forwards a synthetic handshake first, since a brand-new server has no
+ * other way to reach its ready state.
  */
 async function runOnEphemeralServer(
   tools: McpToolDeps,
@@ -261,8 +250,7 @@ function logToolResult(
 
 /**
  * The MCP tool tree reaches Postgres and ClickHouse through the `deps` this
- * factory closes over — there is no singleton and no "no context" path left.
- * `extractToken` is pure and stays a bare re-export.
+ * factory closes over. `extractToken` is pure and stays a bare re-export.
  */
 export function createMcpService(deps: ServiceDeps, services: () => Services) {
   return {

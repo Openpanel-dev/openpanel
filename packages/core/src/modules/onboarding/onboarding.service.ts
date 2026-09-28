@@ -1,14 +1,5 @@
-// New module: the onboarding-project mutation inline in
-// packages/trpc/src/routers/onboarding.ts, plus the onboarding email drip
-// inline in apps/worker/src/jobs/cron.onboarding.ts. Neither had a
-// packages/db/src/services/* home to move from — written directly here, same
-// shape as auth.service.ts's Prisma-touching half. DELEGATE PATTERN: V1's trpc
-// router and cron job, and this package's own
-// onboarding.rpc.ts/onboarding.jobs.ts, all call these same functions.
-//
 // Every exported function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb` lazy loader is gone, so the requestId minted at the
-// edge reaches the query.
+// `deps.db`, so the requestId minted at the edge reaches the query.
 
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
@@ -46,9 +37,9 @@ export async function canSkipOnboarding(
 
   // Sequential, not Promise.all: the early return below skips the
   // projectAccess query entirely for any user with a membership, which a
-  // parallel fetch would give up (docs/review/onboarding.md, "Not covered
-  // by any rule" #2). Changing this trades a real memberships-found saving
-  // for the all-false path's latency — a behavior change, out of scope here.
+  // parallel fetch would give up. Changing this trades a real
+  // memberships-found saving for the all-false path's latency — a behavior
+  // change, out of scope here.
   const db = deps.db;
   const members = await db.member.findMany({ where: { userId } });
   if (members.length > 0) {
@@ -178,15 +169,14 @@ export async function createOnboardingProject(
 }
 
 // -----------------------------------------------------------------------
-// The onboarding email drip cron (apps/worker/src/jobs/cron.onboarding.ts —
-// DELEGATE PATTERN). The `organization.onboarding` column stores the last
-// sent step, and step names are equal to template names for historical
-// reasons: in-flight orgs already hold those values. Renaming one strands
-// every org sitting on it (the runner completes them rather than replaying
-// the sequence, but they still stop early).
+// The onboarding email drip cron. The `organization.onboarding` column
+// stores the last sent step, and step names are equal to template names for
+// historical reasons: in-flight orgs already hold those values. Renaming one
+// strands every org sitting on it (the runner completes them rather than
+// replaying the sequence, but they still stop early).
 //
 // Stops at day 26 — what happens after the trial expires belongs to the
-// (not yet ported) wind-down cron, anchored on expiry rather than signup.
+// wind-down cron, anchored on expiry rather than signup.
 
 interface OnboardingUsage {
   eventsCount: number;

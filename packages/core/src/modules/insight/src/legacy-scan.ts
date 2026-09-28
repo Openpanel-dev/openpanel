@@ -1,20 +1,15 @@
-// The pre-engine insight detector, kept for V1 parity — no live callers today.
+// The pre-engine insight detector — no live callers today, kept only so the
+// defects below stay visible rather than silently dropped.
 //
-// The ten statements moved off clix onto the ADR-013 `sql` tag. The conversion
-// changes how values reach the server and nothing else: every statement below
-// renders byte-identically to the clix output it replaces, with the project id
-// and the computed window bound as `{pN:Type}` params. clix always sent
-// `session_timezone` (query-builder.ts:562) and defaulted it to `'UTC'`
-// (`:696`), so `chQuery` sends the same value.
+// Nine of the ten statements are BROKEN AND WERE ALWAYS BROKEN: most compare
+// a column against a quoted string literal threshold, so the comparison
+// fails with TYPE_MISMATCH; three more read columns (`is_new`,
+// `is_returning`, `event_name`, `status`) that no OpenPanel table has, and
+// one puts a window function in HAVING. The defects are reproduced verbatim,
+// not fixed — fixing behaviour is a product decision, and there is no
+// caller to serve it.
 //
-// Nine of the ten statements are BROKEN AND WERE ALWAYS BROKEN. clix's
-// `having(column, operator, value)` escaped its comparand as a VALUE, so every
-// `'<column> * <n>'` threshold below reaches ClickHouse as a quoted string and
-// the comparison fails with TYPE_MISMATCH; three more read columns (`is_new`,
-// `is_returning`, `event_name`, `status`) that no OpenPanel table has, and one
-// puts a window function in HAVING. The defects are reproduced verbatim, not
-// fixed: a conversion changes binding, not behaviour, and fixing them is a
-// product decision with no caller to serve.
+// Every statement sends `session_timezone`, defaulted to `'UTC'`.
 
 import {
   type SqlFragment,
@@ -24,7 +19,7 @@ import {
 import { type ChScope, chQuery } from '../../../ch-query';
 import { formatClickhouseDate } from '../../../shared/ch-dates';
 
-/** clix sent `session_timezone` on every `execute()`, defaulting to `'UTC'`. */
+/** Sent on every query; defaults to `'UTC'`. */
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -42,8 +37,8 @@ const EVENT_COMPLETION_WINDOW_DAYS = 60;
 
 const TOP_CONTENT_LIMIT = 1;
 
-// clix rendered each of these as a quoted STRING comparand, because they were
-// passed to `having()` as values. Kept exactly, defect included.
+// Rendered as a quoted STRING comparand — reaches ClickHouse as text, not a
+// numeric threshold. Kept exactly, defect included.
 const TRAFFIC_SPIKE_THRESHOLD = 'avg_previous_7_days * 2';
 const EVENT_SURGE_THRESHOLD = 'avg_previous_7_days * 1.3';
 const NEW_VISITOR_THRESHOLD = 'prev_month_visitors * 1.2';
@@ -147,7 +142,7 @@ interface EventCompletionResult {
   prev_month_count: number;
 }
 
-/** clix escaped a `Date` value to `'YYYY-MM-DD HH:mm:ss'` (query-builder.ts:286). */
+/** Formatted as `'YYYY-MM-DD HH:mm:ss'`. */
 function since(days: number): SqlParam {
   return sql.string(
     formatClickhouseDate(new Date(Date.now() - days * MS_PER_DAY))
@@ -155,7 +150,7 @@ function since(days: number): SqlParam {
 }
 
 /**
- * The pre-engine detector, kept for V1 parity — no live callers today.
+ * No live callers today; kept only so the defects above stay visible.
  *
  * The class is no longer exported; `createLegacyInsightsScanner(deps)` below is
  * the module's factory, so every service module in core is reached the same way
@@ -327,7 +322,6 @@ class LegacyInsightsScanner {
       ...geographicShifts,
       ...eventCompletions,
     ].sort((a, b) => {
-      // Sort by most recent data first
       const dateA = new Date(insightPeriod(a.data));
       const dateB = new Date(insightPeriod(b.data));
       return dateB.getTime() - dateA.getTime();

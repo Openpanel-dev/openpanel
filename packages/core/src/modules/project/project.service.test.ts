@@ -1,9 +1,8 @@
 // The subject is built by its factory over a fake `ServiceDeps`, so Postgres
 // needs no module mock at all — `deps.db` IS the fake below, same idiom as
 // reference.service.test.ts. `getProjectEventsCount` / `getLastEventPerProject`
-// (ClickHouse) stay a verbatim, still-lazy-loaded port with unchanged SQL
-// (ADR-013 converts them in P7) — executed against local ClickHouse for this
-// task's verification, not re-tested here.
+// (ClickHouse) stay a lazy-loaded, unmocked call — exercised against local
+// ClickHouse manually, not re-tested here.
 //
 // `createProjectForOrganization`/`updateProjectForOrganization` invalidate a
 // project's clients through `client.service.ts`'s module-scope
@@ -165,8 +164,8 @@ function cacheableStub(
 }
 // Each factory spreads a plain-object SNAPSHOT of the real module and is
 // restored in afterAll. `mock.module` has no per-file scope under bare `bun
-// test` (AGENTS.md), and a partial factory for `@openpanel/redis` deletes every
-// export it does not name for whichever file runs next.
+// test`, and a partial factory for `@openpanel/redis` deletes every export it
+// does not name for whichever file runs next.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,

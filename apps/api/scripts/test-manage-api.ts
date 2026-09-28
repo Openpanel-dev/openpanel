@@ -80,7 +80,6 @@ async function makeRequest(
 async function testProjects() {
   console.log('\n📁 Testing Projects endpoints...\n');
 
-  // Create project
   const createResult = await makeRequest('POST', '/manage/projects', {
     name: `Test Project ${Date.now()}`,
     domain: 'https://example.com',
@@ -110,7 +109,6 @@ async function testProjects() {
     }
   }
 
-  // List projects
   const listResult = await makeRequest('GET', '/manage/projects');
   results.push(listResult);
   console.log(
@@ -121,14 +119,12 @@ async function testProjects() {
   }
 
   if (projectId) {
-    // Get project
     const getResult = await makeRequest('GET', `/manage/projects/${projectId}`);
     results.push(getResult);
     console.log(
       `✓ GET /manage/projects/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update project
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/projects/${projectId}`,
@@ -159,7 +155,6 @@ async function testProjects() {
 async function testClients(projectId?: string) {
   console.log('\n🔑 Testing Clients endpoints...\n');
 
-  // Create client
   const createResult = await makeRequest('POST', '/manage/clients', {
     name: `Test Client ${Date.now()}`,
     projectId: projectId || undefined,
@@ -183,7 +178,6 @@ async function testClients(projectId?: string) {
     }
   }
 
-  // List clients
   const listResult = await makeRequest(
     'GET',
     projectId ? `/manage/clients?projectId=${projectId}` : '/manage/clients'
@@ -197,14 +191,12 @@ async function testClients(projectId?: string) {
   }
 
   if (clientId) {
-    // Get client
     const getResult = await makeRequest('GET', `/manage/clients/${clientId}`);
     results.push(getResult);
     console.log(
       `✓ GET /manage/clients/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update client
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/clients/${clientId}`,
@@ -217,7 +209,6 @@ async function testClients(projectId?: string) {
       `✓ PATCH /manage/clients/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
-    // Delete client
     const deleteResult = await makeRequest(
       'DELETE',
       `/manage/clients/${clientId}`
@@ -237,7 +228,6 @@ async function testReferences(projectId?: string) {
     return;
   }
 
-  // Create reference
   const createResult = await makeRequest('POST', '/manage/references', {
     projectId,
     title: `Test Reference ${Date.now()}`,
@@ -258,7 +248,6 @@ async function testReferences(projectId?: string) {
     console.log(`  Created reference: ${referenceId}`);
   }
 
-  // List references
   const listResult = await makeRequest(
     'GET',
     `/manage/references?projectId=${projectId}`
@@ -272,7 +261,6 @@ async function testReferences(projectId?: string) {
   }
 
   if (referenceId) {
-    // Get reference
     const getResult = await makeRequest(
       'GET',
       `/manage/references/${referenceId}`
@@ -282,7 +270,6 @@ async function testReferences(projectId?: string) {
       `✓ GET /manage/references/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update reference
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/references/${referenceId}`,
@@ -297,7 +284,6 @@ async function testReferences(projectId?: string) {
       `✓ PATCH /manage/references/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
-    // Delete reference
     const deleteResult = await makeRequest(
       'DELETE',
       `/manage/references/${referenceId}`
@@ -318,13 +304,11 @@ async function main() {
     // Test projects first (creates a project we can use for other tests)
     const { projectId } = await testProjects();
 
-    // Test clients
     await testClients(projectId);
 
     // Test references (requires a project)
     await testReferences(projectId);
 
-    // Summary
     console.log(`\n${'='.repeat(60)}`);
     console.log('📊 Test Summary\n');
     const successful = results.filter((r) => r.success).length;

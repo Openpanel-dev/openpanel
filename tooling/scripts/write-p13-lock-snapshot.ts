@@ -4,9 +4,9 @@
  *
  * The snapshot is the reference `tooling/gates/p13-drift.sh` compares an
  * installed tree against. It exists as a separate committed file because
- * M13-002 DELETES `pnpm-lock.yaml`: once the lock is gone there is nothing left
- * to say what pnpm had resolved, and "did the installer swap move anything?"
- * becomes unanswerable. This file outlives the lock.
+ * once the lock is gone there is nothing left to say what pnpm had
+ * resolved, and "did the installer swap move anything?" becomes
+ * unanswerable. This file outlives the lock.
  *
  * Shape: { "<importer path>": { "<dependency>": "<exact version>" } }
  *

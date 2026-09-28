@@ -36,7 +36,7 @@ const PERCENT = 100;
 const FIRST_STEP = 1;
 
 // `packages/core/src/index.ts` names this file as the schema's source; the
-// schema itself lives in chart.constants.ts (R8).
+// schema itself lives in chart.constants.ts.
 export { type IGetSankeyInput, zGetSankeyInput } from './chart.constants';
 
 export interface SankeyNode {
@@ -59,7 +59,7 @@ export interface SankeyResult {
   links: SankeyLink[];
 }
 
-/** Every node the builder emits carries all three; the public type keeps V1's optionals. */
+/** Every node the builder emits carries all three; the public type keeps them optional for other callers. */
 type ResolvedSankeyNode = SankeyNode & {
   percentage: number;
   value: number;
@@ -132,8 +132,8 @@ function toSankeyEvent(
  * malformed range is rejected.
  *
  * Applied by `getSankeyChart`, the `chart.sankey` entry point, and not by
- * `getSankey` itself: §12 fix 9 bounds that procedure specifically, because it
- * is the range picker that offers `12m`/`lastYear`. The REST
+ * `getSankey` itself: it bounds that procedure specifically, because it is
+ * the range picker that offers `12m`/`lastYear`. The REST
  * `/insights/:projectId/user_flow` route, the MCP `get_user_flow` tool and the
  * assistant tool take caller-supplied dates, so they are not covered by the
  * range picker's cap.

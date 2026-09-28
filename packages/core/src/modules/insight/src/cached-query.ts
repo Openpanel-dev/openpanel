@@ -1,25 +1,19 @@
-// The replacement for `cached-clix.ts` (ADR-013 decision 21).
+// The critical invariant: the `sql` tag renders `{pN:Type}` placeholders whose
+// names come from a per-render counter, so two statements that differ only in
+// their bound values render to the SAME text. The cache key must therefore
+// carry the params as well as the query text, or one project's window would
+// serve another's.
 //
-// The wrapper it replaces memoised `clix`'s `execute` on `sha256(query.toSQL +
-// '|' + timezone)` — safe only because clix inlined every value into the text
-// it hashed. The `sql` tag renders `{pN:Type}` placeholders whose names come
-// from a per-render counter, so two statements that differ only in their bound
-// values render to the SAME text: the key must carry the params as well, or one
-// project's window would serve another's.
-//
-// Everything else is deliberately unchanged from the clix wrapper: the `Map`
-// belongs to the caller (per module+window, never module-level — it is keyed by
-// nothing tenant-scoped), the timezone defaults to `'UTC'` exactly as
-// `clix(client, timezone)` did (query-builder.ts:696) and travels as
-// `session_timezone` in `clickhouse_settings` exactly as `.execute` sent it
-// (query-builder.ts:562).
+// The `Map` belongs to the caller (per module+window, never module-level — it
+// is keyed by nothing tenant-scoped); the timezone defaults to `'UTC'` and
+// travels as `session_timezone` in `clickhouse_settings`.
 
 import crypto from 'node:crypto';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { type ChScope, chQuery } from '../../../ch-query';
 
-/** clix's own default when a call site passed no timezone. */
+/** Default timezone when the caller specifies none. */
 const DEFAULT_SESSION_TIMEZONE = 'UTC';
 
 /** Runs one bound statement, memoised per module+window context. */

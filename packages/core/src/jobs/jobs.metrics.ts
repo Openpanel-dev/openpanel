@@ -1,20 +1,17 @@
-// The queue-side collectors, moved from apps/worker/src/metrics.ts onto the one
-// core registry (TARGET_ARCHITECTURE §18). Names, labels and buckets are V1's;
-// the worker-side copies died with apps/worker.
+// The queue-side collectors, on the one core registry.
 //
 // Three deliberate differences from the metric set this replaces, written up
 // for dashboard owners in `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:
 //
-// 1. V1 registered the five `<queue>_*_count` gauges for TWO queues
-// (`sessionsQueue`, `cronQueue`). V2 registers them for all seven, which
-// ADR-018's continuity register asks for ("kept for the 7 BullMQ queues"). Ten
-// new series appear; none of the existing ten changes. 2. They register only
-// where the role consumes (main.ts), because each gauge is one Redis round trip
-// per scrape and ten api replicas exposing them would multiply that for no new
-// information. 3. A gauge whose Redis read throws is skipped rather than
-// failing the whole scrape. V1 let it reject `registry.metrics`, which turns
-// one Redis blip into a 500 on /metrics and a gap in every panel; core's buffer
-// gauges already swallow the same way (buffers/buffer.metrics.ts).
+// 1. Registers the five `<queue>_*_count` gauges for all seven BullMQ
+// queues, not just two — ten new series appear; none of the existing ten
+// changes. 2. They register only where the role consumes (main.ts), because
+// each gauge is one Redis round trip per scrape and ten api replicas
+// exposing them would multiply that for no new information. 3. A gauge whose
+// Redis read throws is skipped rather than failing the whole scrape, so one
+// Redis blip does not turn into a 500 on /metrics and a gap in every panel;
+// core's buffer gauges already swallow the same way
+// (buffers/buffer.metrics.ts).
 
 import type { Queue as BullQueue } from 'bullmq';
 import client from 'prom-client';
@@ -26,9 +23,8 @@ const JOB_DURATION_BUCKETS_MS = [
 
 // A Redis queue key is not a legal prom-client metric name: `{cron}`'s braces
 // and a `QUEUE_NAMESPACE`'s `-` are both rejected by prom-client, which throws
-// at construction and takes boot down. V1 stripped the braces the same way
-// (apps/worker/src/metrics.ts); the `_` substitution is the namespace half,
-// and it changes nothing for a deployment that sets no namespace.
+// at construction and takes boot down. The `_` substitution is the namespace
+// half, and it changes nothing for a deployment that sets no namespace.
 const QUEUE_BRACES = /[{}]/g;
 const NON_METRIC_NAME_CHARS = /[^a-zA-Z0-9_]/g;
 
@@ -39,11 +35,9 @@ function metricPrefix(queueName: string): string {
 }
 
 /**
- * FAILURE-ONLY, deliberately. V1 observed this exclusively in the workers'
- * `failed` listener (apps/worker/src/boot-workers.ts), so every percentile ever
- * computed from it is a percentile of failures. Success timings, if wanted, get
- * a NEW series name — emitting them here silently rewrites every existing panel
- * (ADR-018 risk 7).
+ * FAILURE-ONLY, deliberately: every percentile ever computed from it is a
+ * percentile of failures. Success timings, if wanted, get a NEW series name —
+ * emitting them here silently rewrites every existing panel.
  */
 export const jobDurationMs = new client.Histogram({
   name: 'job_duration_ms',
@@ -96,8 +90,8 @@ const COUNTS: {
 ];
 
 /**
- * Five scrape-time gauges per queue, named from the queue's Redis key exactly
- * as V1 named them. Call once per process, only where the role consumes.
+ * Five scrape-time gauges per queue, named from the queue's Redis key. Call
+ * once per process, only where the role consumes.
  *
  * `register` defaults to the one core registry; it is a parameter so a test
  * can assert on an isolated one.

@@ -1,5 +1,3 @@
-// Ported verbatim from apps/api/src/utils/image-proxy.ts.
-//
 // These bytes come from a third-party server and are then served from the API
 // origin, which also serves the credentialed `/trpc` and `/oauth` endpoints.
 // Anything returned verbatim is therefore attacker-controlled content on a
@@ -34,7 +32,6 @@ export function normalizeContentType(raw: string | null): string {
   return (raw ?? '').split(';')[0]!.trim().toLowerCase();
 }
 
-/** Check if URL is an ICO file */
 export function isIcoFile(url: string, contentType?: string): boolean {
   return (
     url.toLowerCase().endsWith('.ico') ||
@@ -58,7 +55,6 @@ export function hasIcoMagicBytes(buffer: Buffer): boolean {
   );
 }
 
-/** Process image with Sharp (resize to 30x30 PNG) */
 export async function processImage(
   buffer: Buffer,
   originalUrl?: string,
@@ -93,7 +89,6 @@ export async function processImage(
   }
 }
 
-/** Process OG image with Sharp (resize to 300px width) */
 export async function processOgImage(
   buffer: Buffer,
   originalUrl?: string,

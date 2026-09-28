@@ -1,11 +1,3 @@
-// ADR-005's acceptance note gives `windDown` to the organization module.
-// Behaviour is V1's, verbatim; only the wiring changed — Prisma, the two
-// ClickHouse counts, the last-event lookup, the plan pricer, the highlight
-// builder and `sendEmail` all arrive as injected deps (`WindDownDeps`), the
-// same idiom the session lifecycle uses (modules/session/src/runtime.ts).
-// `organization.jobs.ts` binds them off the job's ctx; tests hand in stubs, so
-// no `mock.module` is needed.
-
 import { getRecommendedPlan } from '@openpanel/payments';
 import { addDays, format, subDays } from 'date-fns';
 import type { CoreConfig } from '../../../config';
@@ -55,7 +47,7 @@ function getMaxPerRun(config: CoreConfig): number {
   return config.query.windDownMaxPerRun ?? DEFAULT_MAX_PER_RUN;
 }
 
-/** The organization row shape this job reads — V1's `orgQuery` include. */
+/** The organization row shape this job reads. */
 export interface WindDownOrganization {
   id: string;
   subscriptionState: string;

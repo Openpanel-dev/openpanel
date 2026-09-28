@@ -55,8 +55,8 @@ beforeEach(() => {
 // its way out, which is the point of logging there.
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-// The claim ADR-002 and ADR-007 both rest on: thirty modules may each start
-// from `.use(requestContext(deps))` and one request still builds one Ctx.
+// One request builds exactly one Ctx no matter how many modules each start
+// from `.use(requestContext(deps))`.
 test('derives one ctx per request however many modules use the plugin', async () => {
   const { deps, scopeCalls, childCalls } = stubAppDeps();
   const seen: HttpCtx[] = [];

@@ -13,7 +13,6 @@ export function walkNode(
     return;
   }
 
-  // Handle arrays
   if (Array.isArray(node)) {
     for (const child of node) {
       walkNode(child, visitor, parent);
@@ -28,7 +27,6 @@ export function walkNode(
     visitor(nodeObj, parent);
   }
 
-  // Recursively walk all properties
   for (const key of Object.keys(nodeObj)) {
     const value = nodeObj[key];
     if (value && typeof value === 'object') {
@@ -50,7 +48,6 @@ export function collectDeclaredIdentifiers(ast: unknown): Set<string> {
       if (id.type === 'Identifier') {
         declared.add(id.name as string);
       }
-      // Handle destructuring patterns
       if (id.type === 'ObjectPattern') {
         collectPatternIdentifiers(id, declared);
       }
@@ -75,9 +72,6 @@ export function collectDeclaredIdentifiers(ast: unknown): Set<string> {
   return declared;
 }
 
-/**
- * Collect identifiers from destructuring patterns
- */
 function collectPatternIdentifiers(
   pattern: Record<string, unknown>,
   declared: Set<string>

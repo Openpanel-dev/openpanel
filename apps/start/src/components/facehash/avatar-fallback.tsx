@@ -44,9 +44,6 @@ export type AvatarFallbackProps = Omit<
   facehashProps?: Omit<FacehashProps, 'name'>;
 };
 
-/**
- * Extracts initials from a name string.
- */
 function getInitials(name: string): string {
   const parts = name.trim().split(WHITESPACE_REGEX);
   if (parts.length === 0) {

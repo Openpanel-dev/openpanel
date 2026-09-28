@@ -47,7 +47,7 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
   const { DbNull } = deps.prisma;
   return {
     // `cadence` isn't read — there is only one today ('daily') — but it stays
-    // on the signature because InsightStore's contract names it (V1 parity).
+    // on the signature because InsightStore's contract names it.
     async listProjectIdsForCadence(_cadence: Cadence): Promise<string[]> {
       const projects = await db.project.findMany({
         where: {
@@ -125,7 +125,6 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
         lastUpdatedAt: now,
       };
 
-      // Try to find existing insight first
       const existing = prev
         ? await db.projectInsight.findFirst({
             where: {
@@ -140,12 +139,11 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
 
       let insight: InsightRow;
       if (existing) {
-        // Update existing
         insight = await db.projectInsight.update({
           where: { id: existing.id },
           data: {
             ...baseData,
-            threadId: existing.threadId, // Preserve threadId
+            threadId: existing.threadId,
             // Materially-changed insights need re-enrichment; clearing enrichedAt
             // re-queues them for the AI pass. Keep the old score/summary as a
             // fallback until then (don't null those).
@@ -169,19 +167,17 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
         });
 
         if (closed) {
-          // Reopen and update
           insight = await db.projectInsight.update({
             where: { id: closed.id },
             data: {
               ...baseData,
               state: 'active',
-              threadId: closed.threadId, // Preserve threadId
+              threadId: closed.threadId,
               // Reopening is a material event — re-enrich it.
               enrichedAt: null,
             },
           });
         } else {
-          // Create new
           insight = await db.projectInsight.create({
             data: {
               ...baseData,
@@ -196,8 +192,8 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
 
     // projectId/moduleKey/dimensionKey/windowKind aren't persisted here — the
     // insight_events row is scoped by insightId alone, they're derivable from
-    // the parent (V1 parity) — but the engine passes them for identity/logging
-    // symmetry with the store's other methods, so they stay on the signature.
+    // the parent — but the engine passes them for identity/logging symmetry
+    // with the store's other methods, so they stay on the signature.
     async insertEvent({
       insightId,
       eventKind,

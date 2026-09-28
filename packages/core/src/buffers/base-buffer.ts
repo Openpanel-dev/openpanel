@@ -15,26 +15,18 @@ import type { ServiceDeps } from '../services';
 export interface BufferDeps {
   /**
    * Each buffer logs under its own name. Injected rather than built here so
-   * core instantiates no pino (ADR-007 layout) and a test hands in a silent
-   * stub instead of spawning one transport worker thread per buffer.
+   * core instantiates no pino and a test hands in a silent stub instead of
+   * spawning one transport worker thread per buffer.
    */
   createLogger(name: string): Logger;
   /**
-   * The boot scope's ClickHouse client — the same round-robin/retry proxy every
-   * service reaches as `deps.ch`. M10-009: the buffers used to lazily
-   * `import('@openpanel/db/src/clickhouse/client')` for it, which constructed a
-   * second client (and a second pino transport) outside any scope. M15-004 made
-   * it required: the one caller that had none
-   * (`apps/api/e2e/legacy-job-proof.ts`, a BullMQ-keys-only proof that never
-   * flushes to ClickHouse) already passes the field, so the unscoped fallback
-   * behind it had no live path left.
+   * The boot scope's ClickHouse client — the same round-robin/retry proxy
+   * every service reaches as `deps.ch`.
    */
   ch: ServiceDeps['ch'];
   /**
-   * Asked before every flush. ADR-005's `ProducerHandle.bullQueues` escape
-   * hatch, narrowed to the one thing the buffers ask BullMQ directly: pausing
-   * `cron` from bull-board halts ALL buffer flushing, preserved deliberately
-   * as an accepted trade-off.
+   * Asked before every flush. Pausing `cron` from bull-board halts ALL
+   * buffer flushing, preserved deliberately as an accepted trade-off.
    */
   isCronPaused(): Promise<boolean>;
   /**
@@ -327,8 +319,7 @@ export class BaseBuffer {
    * Ground-truth size of the buffer (LLEN of the Redis list). O(1). The
    * previous implementation kept a shadow counter to "avoid" LLEN — but
    * LLEN and GET are both O(1) single-roundtrip ops in Redis, so the
-   * counter was free complexity that silently drifted (see incident
-   * 2026-05-20). Always use this.
+   * counter was free complexity that silently drifted. Always use this.
    */
   async getBufferSize(): Promise<number> {
     return await getRedisCache().llen(this.getRedisListKey());

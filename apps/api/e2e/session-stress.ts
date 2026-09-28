@@ -6,14 +6,13 @@
  * session_end emitted, Redis cleaned, the session buffer empty — and reconciles
  * the ClickHouse counts. Exits 0 only when nothing is left open.
  *
- * Also instruments the run (BENCH-001): per-request /track latency
+ * Also instruments the run: per-request /track latency
  * (P50/P95/P99, emit phase only), RSS/CPU of the api + worker processes (>=1Hz,
  * peak + steady-state), Kafka consumer-group lag on the events topic (>=1Hz;
  * peak, lag at emit-end, seconds-to-zero after emit stops), and every BullMQ
  * queue depth + buffer pending count scraped off /metrics (>=1Hz; peak, depth
- * at emit-end, whether it returned to zero — M16-001). None of it changes what
- * the run asserts — see `check` calls below, unchanged from the un-instrumented
- * version.
+ * at emit-end, whether it returned to zero). None of it changes what
+ * the run asserts — see `check` calls below.
  *
  * `saturation-sweep.ts` drives this script across a ladder of offered loads;
  * see docs/BENCHMARK_HARNESS.md.
@@ -116,7 +115,7 @@ const RECONCILE_STABLE_SAMPLES = 3;
 // leave within milliseconds of the captured start.
 const RECONCILE_WINDOW_LEAD_MS = 2000;
 
-// >=1Hz per the acceptance criteria; 1000ms is the floor, not a target.
+// Sampling runs at >=1Hz; 1000ms is the floor, not a target.
 const SAMPLE_INTERVAL_MS = 1000;
 
 const E2E_RUNS = Number.parseInt(process.env.E2E_RUNS || '1', 10);
@@ -127,11 +126,10 @@ const E2E_RUNS = Number.parseInt(process.env.E2E_RUNS || '1', 10);
 const IS_REPEAT_CHILD = process.env.E2E_STRESS_CHILD === '1';
 const RESULT_MARKER = 'E2E_STRESS_RESULT ';
 
-// Control lever for BENCH-001's 10% rule: a run with this set skips the
-// process/lag monitors so their >=1Hz polling can be ruled in or out as the
-// cause of a throughput delta against the P1 baseline. Latency recording
-// stays on regardless — it wraps the request the run is already making, not
-// an added background poller.
+// Control lever: a run with this set skips the process/lag monitors so
+// their >=1Hz polling can be ruled in or out as the cause of a throughput
+// delta. Latency recording stays on regardless — it wraps the request the
+// run is already making, not an added background poller.
 const SAMPLING_ENABLED = process.env.E2E_NO_SAMPLING !== '1';
 
 type Session = { sessionId: string; deviceId: string };
@@ -158,7 +156,7 @@ export interface RunResult {
 }
 
 // Unique IP per session → unique device → unique session. Namespaced by runId
-// so reruns and the correctness harness (10.x) never collide.
+// so reruns and the correctness harness never collide.
 const ipForSession = (i: number) =>
   `100.${(runId >> 8) & 255}.${(i >> 8) & 255}.${i & 255}`;
 
@@ -178,7 +176,7 @@ const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
 
 function randomProps(ip: string): Record<string, unknown> {
   const props: Record<string, unknown> = { __ip: ip };
-  const n = Math.floor(Math.random() * 4); // 0–3 extra properties
+  const n = Math.floor(Math.random() * 4);
   for (let k = 0; k < n; k++) {
     props[`prop_${pick(WORDS)}`] =
       Math.random() < 0.5 ? pick(WORDS) : Math.floor(Math.random() * 1000);
@@ -221,7 +219,7 @@ async function emit(): Promise<{
     async (i) => {
       const ip = ipForSession(i);
       try {
-        const first = await sendSessionEvent(ip, i, 0); // entry is a screen_view
+        const first = await sendSessionEvent(ip, i, 0);
         for (let e = 1; e < EVENTS_PER_SESSION; e++) {
           await sendSessionEvent(ip, i, e);
         }
@@ -345,8 +343,8 @@ async function drain(sessions: Session[]) {
  *
  * Why the device: until the worker has persisted the session blob, the API
  * answers from a session id that is deterministic per SESSION_TIMEOUT_MS-wide
- * time bucket (apps/api/src/utils/ids.ts). At the harness's compressed 4s
- * window a bucket boundary falls inside the emit ramp, so an in-flight
+ * time bucket. At the harness's compressed 4s window a bucket boundary falls
+ * inside the emit ramp, so an in-flight
  * session's next event is told a different id — the row still lands, under a
  * session id the harness was never given. The device is the stable identity
  * for "what this run sent"; `since` keeps earlier runs' rows out, because a

@@ -5,14 +5,8 @@ import { generateSecureId } from '@openpanel/shared';
 import type { Logger } from '../../../../logger';
 import type { IExportEvent } from './export-event';
 
-/**
- * Supported export formats
- */
 export type ExportFormat = 'jsonl_gzip';
 
-/**
- * Batch metadata for tracking
- */
 export interface IBatchInfo {
   batchId: string;
   projectId: string;
@@ -22,30 +16,22 @@ export interface IBatchInfo {
   minEventTime: string;
   maxEventTime: string;
   createdAt: string;
-  // Partition info
   partitionDate: string; // YYYY-MM-DD
   partitionHour: string; // HH
 }
 
-/**
- * Created batch file info
- */
 export interface IBatchFile {
   filename: string;
   content: Buffer;
   contentType: string;
 }
 
-/**
- * Result of creating a batch
- */
 export interface IBatchResult {
   info: IBatchInfo;
   files: IBatchFile[];
 }
 
 /**
- * Generate the object path for a batch
  * Layout: {prefix}/project_id={projectId}/integration_id={integrationId}/dt=YYYY-MM-DD/hour=HH/batch_id={batchId}/
  */
 export function generateBatchPath(
@@ -68,9 +54,6 @@ export function generateBatchPath(
   ].join('/');
 }
 
-/**
- * Get file extension for format
- */
 export function getFileExtension(format: ExportFormat): string {
   switch (format) {
     case 'jsonl_gzip':
@@ -78,9 +61,6 @@ export function getFileExtension(format: ExportFormat): string {
   }
 }
 
-/**
- * Get content type for format
- */
 export function getContentType(format: ExportFormat): string {
   switch (format) {
     case 'jsonl_gzip':
@@ -115,16 +95,10 @@ function eventTimeRange(events: IExportEvent[]): {
   };
 }
 
-/**
- * Create JSONL content from events
- */
 function createJsonlContent(events: IExportEvent[]): string {
   return `${events.map((event) => JSON.stringify(event)).join('\n')}\n`;
 }
 
-/**
- * Gzip compress content
- */
 async function gzipCompress(content: string): Promise<Buffer> {
   const chunks: Buffer[] = [];
   const gzip = createGzip({ level: 6 });
@@ -139,9 +113,6 @@ async function gzipCompress(content: string): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-/**
- * Create a batch of events in the specified format
- */
 export async function createBatch(
   logger: Logger,
   projectId: string,

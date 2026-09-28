@@ -11,8 +11,8 @@ import type { Logger } from '../../../../logger';
 // Core's own date helper, not @openpanel/db's — importing
 // `@openpanel/db/src/clickhouse/client` constructs a ClickHouse client and a
 // pino-pretty transport at import time (fatal under bun:test's `--isolate`
-// worker threads, AGENTS.md's eager-barrel-chain hazard) and is a value import
-// of `@openpanel/db` from core. See shared/ch-dates.ts's header.
+// worker threads) and is a value import of `@openpanel/db` from core. See
+// shared/ch-dates.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,
@@ -158,7 +158,6 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       );
     }
 
-    // WHATWG -> Node stream
     const rawBody = Readable.fromWeb(res.body as any);
 
     // Detect gzip by peeking the first chunk's magic bytes (0x1f 0x8b) rather
@@ -200,7 +199,6 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
     }
     const body = Readable.from(sourceChunks());
 
-    // Build decode chain (gzip/brotli -> CSV parser)
     const decompress = isGzip
       ? createGunzip()
       : isBrotli
@@ -264,7 +262,6 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       )?.to || this.projectId;
 
     const rawEvent = zUmamiRawEvent.parse(_rawEvent);
-    // Extract device/profile ID - use visit_id as device_id, session_id for session tracking
     const deviceId =
       rawEvent.visit_id ||
       generateDeviceId({
@@ -275,32 +272,26 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       });
     const profileId = rawEvent.distinct_id || deviceId;
 
-    // Parse URL if available - use same logic as real-time events
     const url = rawEvent.url_path
       ? `https://${[rawEvent.hostname, rawEvent.url_path, rawEvent.url_query]
           .filter(Boolean)
           .join('')}`
       : '';
     const { path, query, origin } = parsePath(url);
-    // Extract referrer information - use same logic as real-time events
     const referrerUrl = rawEvent.referrer_domain
       ? `https://${rawEvent.referrer_domain}${rawEvent.referrer_path || ''}`
       : '';
 
-    // Check if referrer is from same domain (like real-time events do)
     const referrer = isSameDomain(referrerUrl, url)
       ? null
       : parseReferrer(referrerUrl);
 
-    // Check for UTM referrer in query params (like real-time events do)
     const utmReferrer = getReferrerWithQuery(query);
 
-    // Extract location data
     const country = rawEvent.country || '';
     const city = rawEvent.city || '';
     const region = rawEvent.region || '';
 
-    // Extract browser/device info
     const browser = rawEvent.browser || '';
     const browserVersion = ''; // Not available in Umami CSV
     const os = rawEvent.os || '';
@@ -315,7 +306,6 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       properties.__query = query;
     }
 
-    // Add useful properties from Umami data
     if (rawEvent.page_title) {
       properties.__title = rawEvent.page_title;
     }

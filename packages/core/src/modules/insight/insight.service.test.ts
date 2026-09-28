@@ -164,7 +164,7 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
   expect(second).toEqual(first);
 
   // The cache it read and wrote is the one the scope handed it, not a
-  // module-level `getRedisCache()` connection nobody closes (R16).
+  // module-level `getRedisCache()` connection nobody closes.
   expect(redis.setex).toHaveBeenCalledTimes(1);
   expect(redis.get).toHaveBeenCalledTimes(2);
 });

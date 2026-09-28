@@ -1,9 +1,9 @@
 // Every ClickHouse statement this module runs is a `sql` fragment from
 // src/sql.ts. Funnel, conversion, sankey and retention are dispatched to the
 // sibling `*.service.ts` files. The one thing still value-imported from
-// `@openpanel/db` under `./src/` is ADR-013's `sql` tag, which ADR-007 keeps in
-// `packages/db` by name: a compile-time template tag, no client and no request
-// scope.
+// `@openpanel/db` under `./src/` is the `sql` tag, which stays in
+// `packages/db` by name: a compile-time template tag, no client and no
+// request scope.
 
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
@@ -112,7 +112,7 @@ export {
 } from './src/sql';
 // Types only: `packages/core/src/index.ts` re-exports these two. The four
 // statement functions beside them had no consumer through this file — the
-// engine and the sibling services import ./src/statement directly (R13).
+// engine and the sibling services import ./src/statement directly.
 export type {
   AggregateChartSqlInput,
   ChartSqlInput,
@@ -640,7 +640,7 @@ export interface ChartBucketProfilesRequest {
   breakdowns?: Record<string, string>;
 }
 
-/** Profiles behind one data point of a time-series chart (V1 `getProfiles`). */
+/** Profiles behind one data point of a time-series chart. */
 export async function getChartBucketProfiles(
   deps: ServiceDeps,
   input: ChartBucketProfilesRequest
@@ -739,12 +739,11 @@ export async function getFunnelStepProfiles(
 // --- service -----------------------------------------------------------------
 
 // The funnel, conversion, sankey and retention services live in this module's
-// own sibling files, not in modules of their own (ADR-007 gives one service per
-// module), so they FOLD INTO `chart` rather than becoming four more `Services`
-// members: chart.service.ts is already the dispatcher every caller goes through
-// (`getFunnelChart` / `getConversionChart` / `getSankeyChart` /
-// `getRetentionChart`), and a `Services` key per file would name four things
-// that are not modules.
+// own sibling files rather than in modules of their own, so they FOLD INTO
+// `chart` rather than becoming four more `Services` members: chart.service.ts
+// is already the dispatcher every caller goes through (`getFunnelChart` /
+// `getConversionChart` / `getSankeyChart` / `getRetentionChart`), and a
+// `Services` key per file would name four things that are not modules.
 
 export function createChartService(
   deps: ServiceDeps,

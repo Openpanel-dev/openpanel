@@ -154,7 +154,6 @@ function formatPillDate(
       if (spanHours <= 25) {
         return `${pad(date.getHours())}:00`;
       }
-      // Otherwise include the date
       return `${dayMonth} ${pad(date.getHours())}:00`;
 
     case 'day':

@@ -19,13 +19,11 @@ export async function hashPassword(
   keyLength = 32
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    // generate random 16 bytes long salt - recommended by NodeJS Docs
     const salt = generateSalt();
     scrypt(password, salt, keyLength, (err, derivedKey) => {
       if (err) {
         reject(err);
       }
-      // derivedKey is of type Buffer
       resolve(`${salt}.${derivedKey.toString('hex')}`);
     });
   });
@@ -50,7 +48,6 @@ export async function verifyPassword(
       if (err) {
         reject(err);
       }
-      // compare the new supplied password with the hashed password using timeSafeEqual
       resolve(
         timingSafeEqual(new Uint8Array(hashKeyBuff), new Uint8Array(derivedKey))
       );

@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 /**
  * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
- * `@openpanel/core/encryption.ts`, duplicated because this package is
+ * `@openpanel/shared/server/encryption.ts`, duplicated because this file is
  * bundled for the browser and must not pull in the node-only crypto module.
  *
  * Credentials are WRITE-ONLY: the API redacts them on read, so a client never
@@ -169,7 +169,6 @@ export const zEmailConfig = z.object({
 });
 export type IEmailConfig = z.infer<typeof zEmailConfig>;
 
-// S3 Export Integration Config - Base fields shared by both auth modes
 const zS3ExportConfigBase = z.object({
   type: z.literal('s3_export'),
   bucket: z.string().min(1, 'Bucket name is required'),
@@ -179,7 +178,6 @@ const zS3ExportConfigBase = z.object({
   // Only jsonl_gzip is implemented; adding a format here without a
   // `createBatch` branch persists a config whose exports can never run.
   format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
-  // Optional encryption settings (S3-side encryption)
   encryption: z.enum(['SSE-S3', 'SSE-KMS', 'none']).default('SSE-S3'),
   kmsKeyId: z.string().optional(),
 });
@@ -199,23 +197,19 @@ const zS3AuthAccessKey = z.object({
   secretAccessKey: zWriteOnlySecret('Secret Access Key'),
 });
 
-// S3 config with IAM role auth
 export const zS3ExportConfigIamRole = zS3ExportConfigBase.merge(zS3AuthIamRole);
 export type IS3ExportConfigIamRole = z.infer<typeof zS3ExportConfigIamRole>;
 
-// S3 config with access key auth
 export const zS3ExportConfigAccessKey =
   zS3ExportConfigBase.merge(zS3AuthAccessKey);
 export type IS3ExportConfigAccessKey = z.infer<typeof zS3ExportConfigAccessKey>;
 
-// Combined discriminated union
 export const zS3ExportConfig = z.discriminatedUnion('authMode', [
   zS3ExportConfigIamRole,
   zS3ExportConfigAccessKey,
 ]);
 export type IS3ExportConfig = z.infer<typeof zS3ExportConfig>;
 
-// GCS Export Integration Config
 export const zGCSExportConfig = z.object({
   type: z.literal('gcs_export'),
   bucket: z.string().min(1, 'Bucket name is required'),

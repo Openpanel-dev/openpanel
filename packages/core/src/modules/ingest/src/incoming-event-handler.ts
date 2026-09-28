@@ -66,14 +66,10 @@ export interface IncomingEventSessions {
   ): Promise<SessionIngestResult | null>;
 }
 
-/**
- * Injected so V1's worker keeps incrementing its own registry's counters
- * while core's registry owns the V2 ones (ingest.metrics.ts).
- */
 export interface IncomingEventMetrics {
   sessionStarted(kind: 'new' | 'boundary'): void;
   sessionEndEnqueued(source: 'boundary'): void;
-  /** One event whose producer-minted id had already been seen (M21-001). */
+  /** One event whose producer-minted id had already been seen. */
   duplicateMarked(): void;
 }
 
@@ -107,11 +103,10 @@ export interface IncomingEventDeps {
 
 /**
  * The one lookup a work scope cannot supply, resolved once at the composition
- * root (`apps/api`'s main.ts) rather than per message.
- *
- * Removed the other two: `getProjectByIdCached` is now a module-scope
- * `cacheablePerDb` keyed on the Postgres client, so the message's own scope
- * reaches the same process-lived cache ingest, http and mcp read.
+ * root (`apps/api`'s main.ts) rather than per message. `getProjectByIdCached`
+ * is a module-scope `cacheablePerDb` keyed on the Postgres client, so the
+ * message's own scope reaches the same process-lived cache ingest, http and
+ * mcp read.
  */
 export interface IncomingEventBindings {
   /**
@@ -126,10 +121,8 @@ export interface IncomingEventBindings {
   ): Promise<unknown>;
   /**
    * `@openpanel/redis`'s `createDuplicateEventMarker`, already bound to the TTL
-   * `apps/api` parsed. Injected rather than built here because the TTL is
-   * configuration and `packages/core` reads no environment, and because
-   * building it once at the composition root keeps the key prefix and the TTL
-   * out of the per-message path.
+   * `apps/api` parsed. Injected rather than built here so the key prefix and
+   * TTL stay out of the per-message path.
    */
   markDuplicateEvent(eventId: string): Promise<boolean>;
 }
@@ -253,17 +246,15 @@ const parseRevenue = (revenue: unknown): number | undefined => {
  * loss, and whether the events table ever gets dedupe is not decided here.
  *
  * It replaces the offset watermark, which could not see a duplicate across a
- * rebalance, an eviction, a durability redelivery or a restart — drill 08
- * measured 161 real duplicates and 0 of them flagged. It catches redeliveries
- * of the SAME id: crash, eviction, durability redelivery. It does NOT catch
- * drill 06's lost ACK, where the SDK re-sends and the producer mints a fresh
- * id per request; SDK-supplied ids are what closes that, later.
+ * rebalance, an eviction, a durability redelivery or a restart. It catches
+ * redeliveries of the SAME id: crash, eviction, durability redelivery. It
+ * does NOT catch a lost ACK, where the SDK re-sends and the producer mints a
+ * fresh id per request; SDK-supplied ids are what closes that, later.
  *
  * FAILS OPEN, AND NEVER REJECTS. Redis being away is exactly when redeliveries
  * happen, so an observability counter must not be the thing that delays or
- * loses an event — and a handler blocked on Redis is how drill 02's consumer
- * was evicted past its session timeout, which is the one reassignment M19
- * measured costing duplicate rows.
+ * loses an event — a handler blocked on Redis risks being evicted past its
+ * session timeout, which itself causes duplicate rows.
  */
 function startDuplicateMark(
   eventId: string | undefined,
@@ -302,8 +293,7 @@ export async function incomingEvent(
   meta?: IncomingEventDelivery
 ) {
   // `requestId` rides in on `deps.logger`, which the consumer scopes to this
-  // envelope's id (ADR-018 R1 renames V1's `reqId`); only the delivery
-  // coordinates are per-message news.
+  // envelope's id; only the delivery coordinates are per-message news.
   const logger = meta
     ? deps.logger.child({
         kafkaPartition: meta.partition,
@@ -462,7 +452,7 @@ async function ingestIncomingEvent(
   // The single source of truth for session lifecycle. Reads the current
   // session, decides extend/new/boundary, writes back. The returned
   // `current` is the canonical session — use its referrer fields for
-  // inheritance, just like the previous behavior.
+  // inheritance.
   const session = await deps.sessions.ingest(baseEvent);
 
   if (session?.kind === 'boundary') {

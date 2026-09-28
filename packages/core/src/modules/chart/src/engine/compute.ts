@@ -67,8 +67,8 @@ export function compute(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
 
-      // Calculate total_count for the formula using the same formula applied to input series' total_count values
-      // total_count is constant across all dates for a breakdown group, so compute it once
+      // total_count is constant across all dates for a breakdown group, so
+      // it's computed once here rather than per date.
       const totalCountScope: Record<string, number> = {};
       definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
         const readableId = alphabetIds[depIndex];
@@ -76,10 +76,8 @@ export function compute(
           return;
         }
 
-        // Find the series for this dependency in the current breakdown group
         const depSeries = seriesByIndex.get(depIndex);
         if (depSeries) {
-          // Get total_count from any data point (it's the same for all dates)
           const totalCount = depSeries.data.find(
             (d) => d.total_count != null
           )?.total_count;
@@ -104,7 +102,6 @@ export function compute(
         }
       });
 
-      // Evaluate formula for total_count
       const totalCountResult = evaluateFormula(
         formula.formula,
         totalCountScope
@@ -112,7 +109,6 @@ export function compute(
       const formulaTotalCount =
         totalCountResult === undefined ? undefined : round(totalCountResult, 2);
 
-      // Calculate formula for each date
       const formulaData = sortedDates.map((date) => {
         const scope: Record<string, number> = {};
 
@@ -122,7 +118,6 @@ export function compute(
             return;
           }
 
-          // Find the series for this dependency in the current breakdown group
           const depSeries = seriesByIndex.get(depIndex);
           if (depSeries) {
             const dataPoint = depSeries.data.find((d) => d.date === date);

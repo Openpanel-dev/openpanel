@@ -1,7 +1,6 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`;
-// `loadDb` and the `@openpanel/core` self-barrel import are gone — the Prisma
-// row types below are `import type`, erased at runtime.
-// `onlyReportEvents`/`mergeGlobalFilters` moved to./src/series.ts — see that
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
+// Prisma row types below are `import type`, erased at runtime.
+// `onlyReportEvents`/`mergeGlobalFilters` live in ./src/series.ts — see that
 // file for why.
 
 import type {
@@ -142,8 +141,7 @@ export async function getReportById(deps: ServiceDeps, id: string) {
 }
 
 /** Unscoped lookup for mutation handlers that only receive a report id and
- *  need its `projectId`/`dashboardId` to run the access check — same shape as
- *  V1's inline `db.report.findUniqueOrThrow`. */
+ *  need its `projectId`/`dashboardId` to run the access check. */
 export async function getReportByIdOrThrow(deps: ServiceDeps, id: string) {
   return deps.db.report.findUniqueOrThrow({ where: { id } });
 }
@@ -234,10 +232,9 @@ export async function getReportDataCore(
 }
 
 // -----------------------------------------------------------------------
-// Mutations — moved from packages/trpc/src/routers/report.ts's handler
-// bodies. Each takes the resource already fetched by report.rpc.ts for the
-// access check, so the ported router does exactly one extra Prisma round
-// trip fewer than re-fetching, matching V1's query count.
+// Mutations. Each takes the resource already fetched by report.rpc.ts for the
+// access check, so this does exactly one fewer Prisma round trip than
+// re-fetching.
 
 type IReportInputForWrite = Omit<IReport, 'projectId'>;
 
@@ -403,7 +400,6 @@ export async function updateReportLayout(
   const db = deps.db;
   const { reportId, layout } = input;
 
-  // Upsert the layout (create if doesn't exist, update if it does)
   return db.reportLayout.upsert({
     where: {
       reportId,

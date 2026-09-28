@@ -1,17 +1,12 @@
 /**
  * The ingest consumer's dead-letter destination: a capped Redis list.
  *
- * Carl, 2026-09-14: *"For now, we can just store errors in redis and drop the
- * event, push it to a redis list and only keep the last N events."*
- *
- * It replaces `produceDeadLetterEvent`, which produced to
- * `${KAFKA_EVENTS_TOPIC}-dlq` — a topic nothing in the tree ever creates. Drill
- * 08 measured that produce failing 1,592 times with 0 successes (`Number of
- * partitions is invalid`), and the failure left the offset unresolved, which is
- * the unbounded handler-error redelivery loop drill 02's re-run 2 measured at
- * 78-79 laps per message. The Kafka producer is still exported from
- * `@openpanel/core`, and the consumer's `sendToDeadLetter` seam is unchanged,
- * so swapping back is one line in `apps/api`'s wiring.
+ * It replaces `produceDeadLetterEvent`, which produced to a Kafka DLQ topic
+ * that was never created — that failure left the offset unresolved, which
+ * caused an unbounded handler-error redelivery loop (dozens of laps per
+ * message). The Kafka producer is still exported from `@openpanel/core`, and
+ * the consumer's `sendToDeadLetter` seam is unchanged, so swapping back is
+ * one line in `apps/api`'s wiring.
  *
  * THE RECORD IS A DEBUGGING SAMPLE, NOT A RECOVERY MECHANISM. The list keeps
  * the last N and nothing more; the event itself is gone from the pipeline. The
@@ -19,11 +14,11 @@
  * `_dead_letter_failed_total`, because a capped list makes 50,000 drops look
  * exactly like 12.
  *
- * Why here and not in `packages/core`'s ingest module: the whole of it is Redis
- * mechanics — one MULTI, one LPUSH, one LTRIM — and core's only export door is
- * its barrel, which M20-001's scope does not cover. The input type is
- * structural, so `DeadLetterMessage` (kafkajs `Buffer`s and `IHeaders`)
- * satisfies it without this package depending on kafkajs or on core.
+ * Why here and not in `packages/core`'s ingest module: the whole of it is
+ * Redis mechanics — one MULTI, one LPUSH, one LTRIM — and core's only export
+ * door is its barrel. The input type is structural, so `DeadLetterMessage`
+ * (kafkajs `Buffer`s and `IHeaders`) satisfies it without this package
+ * depending on kafkajs or on core.
  */
 
 /** The one list. Not configurable: an operator has to be able to find it. */

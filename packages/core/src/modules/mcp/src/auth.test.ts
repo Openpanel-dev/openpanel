@@ -4,24 +4,12 @@ const mockGetClientByIdCached = mock();
 const mockVerifyPassword = mock();
 const mockGetCache = mock();
 const noopLogger = {
-  fatal: () => {
-    // no-op
-  },
-  error: () => {
-    // no-op
-  },
-  warn: () => {
-    // no-op
-  },
-  info: () => {
-    // no-op
-  },
-  debug: () => {
-    // no-op
-  },
-  trace: () => {
-    // no-op
-  },
+  fatal: () => {},
+  error: () => {},
+  warn: () => {},
+  info: () => {},
+  debug: () => {},
+  trace: () => {},
   child: () => noopLogger,
 };
 

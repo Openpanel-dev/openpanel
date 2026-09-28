@@ -1,24 +1,14 @@
 /**
- * The ADR-022 conformance checks.
+ * Conformance checks, run against already-parsed sources.
  *
- * Every check is a pure function over already-parsed sources, so the gate's own
- * tests can run it against a fixture string. That is not decoration: the two
- * miscount traps in docs/CONFORMANCE_GATE_SPEC.md can only be proven covered by
- * feeding a check a source that contains them.
- *
- * Where a grep would lie, the check walks the TypeScript AST:
- *
- * R3 a factory signature can span lines, so the argument list is not on the
- * `export function` line. `rg 'create[A-Za-z]+Service\(deps'` saw 28 of 36 on
- * 2026-09-08. R5 `ReturnType<typeof create` appears once in services.ts and the
- * match is a COMMENT (services.ts:154) explaining the circularity rule. The
- * pattern is applied in code zero times. R6 `createServices(` in a comment or a
- * string is not a call site. R7 `rg 'process\.env\.'` both over- and
- * under-counts: rpc/base.ts:246 is a comment saying core reads no process.env,
- * and get-client-ip.ts:83 is a real read written `process.env?.` that the
- * pattern misses. R15 `new Redis(` inside a factory body is exactly what core
- * is supposed to do; at module scope it is the violation. Only scope tells them
- * apart.
+ * Every check is a pure function, so it can run against a fixture string in
+ * this gate's own tests. Where a grep would lie, the check walks the
+ * TypeScript AST instead: a factory signature can span lines (R3);
+ * `ReturnType<typeof create` can appear inside a comment, not just in code
+ * (R5); `createServices(` can appear in a comment or a string, not just as a
+ * call (R6); `process.env` has a bracketed form a dotted-form grep misses
+ * (R7); `new Redis(` is correct inside a factory body and a violation at
+ * module scope, and only scope tells them apart (R15).
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -208,12 +198,8 @@ const isReturnTypeOfFactory = (type: ts.TypeNode | undefined): boolean => {
 
 /**
  * R5b — every member of the `Services` interface is typed
- * `ReturnType<typeof createXService>`, IN CODE.
- *
- * The trap: `rg -o 'ReturnType<typeof create' packages/core/src/services.ts`
- * returns 1, and that match is the comment at services.ts:154 explaining why
- * `ReturnType<typeof createServices>` is circular. The AST never sees a comment,
- * so this counts 0 today, which is the true number.
+ * `ReturnType<typeof createXService>`, IN CODE — a comment using the same
+ * text does not count.
  */
 export function checkServicesMembers(sources: ParsedSource[]): Metric {
   const offenders: Offender[] = [];
@@ -250,7 +236,7 @@ export function checkServicesMembers(sources: ParsedSource[]): Metric {
 
   return {
     label: `Services members typed ReturnType<typeof createXService> in code (not comments) — ${conforming} of ${members}`,
-    // The metric ADR-022's baseline states is the number of CONFORMING members;
+    // This metric reports the number of CONFORMING members, not offenders;
     // the assert target is that every member conforms.
     count: offenders.length,
     target: 0,
@@ -305,13 +291,12 @@ const allowedAssetLoader = (
 /**
  * R6b — no `load*` dependency loaders.
  *
- * The carve-out is the explicit ASSET_LOADER_ALLOWLIST, not a pattern: a loader
- * that reads a MaxMind database or a cursor row is loading DATA, and ADR-022
- * allows it. A loader that lazily imports a sibling service or a db/ch/redis
- * handle the caller already holds is the defect. Since nothing in the source
- * text reliably separates the two, the gate refuses to guess — a new loader has
- * to be added to the allowlist by hand, with a reason, in a diff a reviewer
- * reads.
+ * The carve-out is the explicit ASSET_LOADER_ALLOWLIST, not a pattern: a
+ * loader that reads a MaxMind database or a cursor row loads DATA, which is
+ * allowed. A loader that lazily imports a sibling service or a db/ch/redis
+ * handle the caller already holds is the defect. Nothing in the source text
+ * reliably separates the two, so a new loader must be added to the allowlist
+ * by hand, with a reason, in a diff a reviewer reads.
  */
 export function checkDependencyLoaders(sources: ParsedSource[]): Metric {
   const offenders: Offender[] = [];
@@ -504,10 +489,8 @@ export function checkResidue(files: ResidueScanInput[]): Metric[] {
       }
     }
 
-    // ADR-022's baseline states NEXT_PUBLIC_ for packages/core/src on its own
-    // (10 across 10 files); the rest of the tree is a second, wider metric.
-    // Both are asserted, so splitting them costs nothing and keeps the baseline
-    // number reproducible line-for-line.
+    // Core and the rest of the tree are asserted as two separate metrics,
+    // not one, so each stays independently reproducible.
     if (pattern.source.includes(NEXT_PUBLIC_PREFIX)) {
       const inCore = offenders.filter((offender) =>
         offender.file.startsWith(`${CORE_SOURCE_ROOT}/`)
@@ -548,10 +531,9 @@ export function checkResidue(files: ResidueScanInput[]): Metric[] {
  * The name a `new` expression actually constructs, however it is qualified.
  *
  * `new GitHub(...)` is an identifier; `new Arctic.Google(...)` is a property
- * access, and an `ts.isIdentifier` guard cannot see it at all — the checker
- * would walk straight past a namespace-imported client
- * (CONFORMANCE_PLAN.md §1l). Both spellings construct the same thing, so both
- * resolve to the rightmost name here.
+ * access that a plain `ts.isIdentifier` guard would miss entirely, walking
+ * straight past a namespace-imported client. Both resolve to the rightmost
+ * name here.
  */
 function constructedName(expression: ts.Expression): string | undefined {
   if (ts.isIdentifier(expression)) {
@@ -631,9 +613,8 @@ const utilKey = (path: string): string | undefined => {
 /**
  * R21 — nothing is copied between packages to dodge a dependency edge.
  *
- * The count is duplicate COPIES, not colliding names: one file per group is the
- * canonical one and the rest are the copies to delete. ADR-022's expected end
- * state says "5 duplicate util copies deleted", which is this number.
+ * The count is duplicate COPIES, not colliding names: one file per group is
+ * the canonical one and the rest are copies to delete.
  */
 export function checkDuplicateUtilities(paths: string[]): Metric {
   const groups = new Map<string, string[]>();

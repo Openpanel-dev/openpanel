@@ -4,10 +4,6 @@
  * window; a lingering (past-window) blob must NOT be reused — see the guard in
  * device-id.ts. Override device ids resolve through the same path with a single
  * read.
- *
- * Moved from apps/api/src/utils/ids.test.ts with M8-002. The buffer is now an
- * argument, so the stub replaces V1's spy on the module singleton — same
- * assertions, and no Redis either way.
  */
 
 import { afterEach, describe, expect, it, mock } from 'bun:test';

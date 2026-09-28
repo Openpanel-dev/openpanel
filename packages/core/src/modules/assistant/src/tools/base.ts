@@ -40,8 +40,7 @@ import {
 /** Series label for `get_rolling_active_users`' chart — always daily uniques. */
 const DAILY_ACTIVE_USERS_SERIES_LABEL = 'Daily active users';
 
-// Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
-// rather than import from a module.
+// Helper, not vocabulary — copied locally rather than imported from a module.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {

@@ -1,10 +1,8 @@
 // Concrete pino implementation. `../logger.ts` is the structural interface
 // every module and service codes against; this file is what actually
-// instantiates pino, and it is deliberately the only place in core that imports
-// it (ADR-007 layout: "pino instantiated in apps/api" — apps/api builds its
-// named logger by calling `createLogger` from here rather than owning a copy).
-//
-// Ported from @openpanel/logger, unchanged (dissolved into core — M4-003).
+// instantiates pino, and it is deliberately the only place in core that
+// imports it — apps/api builds its named logger by calling `createLogger`
+// from here rather than owning a copy.
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
@@ -78,8 +76,7 @@ export function getServiceName(config: CoreConfig, name: string): string {
 // @openpanel/core, e.g. apps/api/src/main.ts's own `createLogger` call)
 // and crashes the process instead of the log line — deterministic on this
 // box, not a flake. Node has no such issue, so this only turns pretty
-// printing off for the Bun-booted V2 API; every Node-booted process
-// (V1 api/worker) is unaffected.
+// printing off when booted under Bun.
 const isBun = !!process.versions.bun;
 
 export function createLogger({

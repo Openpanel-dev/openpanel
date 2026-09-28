@@ -1,31 +1,20 @@
-// Ported from apps/api/src/routes/track.router.ts + track.controller.ts. V1's
-// Fastify router stays the LIVE route (DELEGATE PATTERN) and its controller and
-// hooks delegate into ingest.service.ts — the same functions this file calls.
+// THE HOOK ORDER IS THE CONTRACT: duplicate -> clientAuth -> isBot ->
+// subscription. It holds by lifecycle phase rather than by registration order
+// — verified against Elysia 1.4.30, where a route declaring all three runs
+// `derive -> transform -> macro resolve -> beforeHandle`. So the duplicate
+// check is a `transform`, `clientAuth` is the macro, and the bot check is a
+// `beforeHandle`, which is what lets it read `client.secretVerified` after
+// the macro resolves the principal.
 //
-// THE HOOK ORDER IS THE CONTRACT (ADR-002 "behaviour that must be preserved
-// explicitly" 5): duplicate -> clientAuth -> isBot. Here it holds by lifecycle
-// phase rather than by registration luck — measured on Elysia 1.4.30, a route
-// declaring all three runs `derive -> transform -> macro resolve ->
-// beforeHandle`. So the duplicate check is a `transform` (V1's
-// `preValidation`), `clientAuth` is the macro, and the bot check is a
-// `beforeHandle`, which is what lets it read `client.secretVerified` the way
-// V1's `isBotHook` reads the `req.clientSecretAuth` side channel
-// `validateSdkRequest` sets.
+// Both routes carry the duplicate check because the guard wrapping them below
+// is scoped to both, so `GET /track/device-id` goes through it too.
 //
-// Both routes carry the whole chain because V1's `fastify.addHook` calls are
-// plugin-scoped, so `GET /track/device-id` goes through it too.
-//
-// Mounted this surface and closed the two gaps its header used to record. V1's
-// `subscriptionHook` (the wind-down gate) is now the last link in the chain —
-// `duplicate -> clientAuth -> isBot -> subscription`, V1's registration order
-// exactly — with `selfHosted` read off `AppDeps.config` instead of
-// `process.env`. And `POST /event`, the legacy compat route ADR-015 entry 1 was
-// reversed to KEEP, is here beside `/track`: same hook chain plus the
-// per-client usage counter the deferred removal decision needs, recorded after
-// authentication (so a label can only ever be a client id that exists) and
-// before the hooks that can short-circuit (so a client whose events are dropped
-// as bot/wind-down traffic still counts as a client that would break if
-// `/event` disappeared).
+// `POST /event` — a legacy compat route kept because production still posts
+// to it — sits beside `/track` with the same hook chain, plus a per-client
+// usage counter recorded after authentication (so a label can only ever be a
+// client id that exists) and before the hooks that can short-circuit (so a
+// client whose events are dropped as bot/wind-down traffic still counts as
+// one that would break if `/event` disappeared).
 
 import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
@@ -51,7 +40,7 @@ import { produceIncomingEvent } from './src/kafka';
 const TAGS = ['Track'];
 const LEGACY_EVENT_TAGS = ['Event'];
 const DUPLICATE_BODY = 'Duplicate event';
-/** V1 answers 202 with `{blocked:true}` rather than 402/403 — see
+/** Wind-down answers 202 with `{blocked:true}` rather than 402/403 — see
  *  `isIngestionWoundDown`. */
 const WIND_DOWN_STATUS = 202;
 const ACCEPTED_STATUS = 202;
@@ -88,9 +77,8 @@ function refuseOversizedBody({
   });
 }
 
-// V1's error handler turns each thrown HttpError into this body; core has no
-// such handler, so the mapping is explicit and the codes and messages are
-// V1's.
+// There is no thrown-HttpError handler here, so the outcome-to-response
+// mapping is explicit.
 function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
   switch (outcome.status) {
     case 'ok':
@@ -130,9 +118,8 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
   }
 }
 
-// V1's `isBotHook`: a `preHandler` registered after `clientHook`, so it can
-// read the `clientSecretAuth` side channel. Here it is a route-level
-// `beforeHandle`, which runs after the macro resolved the principal.
+// A route-level `beforeHandle`, which runs after the macro resolved the
+// principal, so it can read `client.secretVerified`.
 async function botGuard({
   body,
   client,
@@ -155,7 +142,7 @@ async function botGuard({
   }
 }
 
-/** V1's `subscriptionHook`, the last `preHandler` on both ingest routers. */
+/** The wind-down gate: the last `beforeHandle` on both ingest routers. */
 function windDownGuard(deps: AppDeps) {
   return async ({
     client,
@@ -184,11 +171,10 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
 
   return app.guard(
     {
-      // V1's `duplicateHook`, registered on `preValidation` so it answers
-      // before the client is ever authenticated. A guard hook runs ahead of
-      // the `clientAuth` macro's resolve and is scoped to the two routes
-      // below — measured on Elysia 1.4.30:
-      // derive -> guard beforeHandle -> macro resolve -> route beforeHandle.
+      // Answers before the client is ever authenticated. A guard hook runs
+      // ahead of the `clientAuth` macro's resolve and is scoped to the two
+      // routes below: derive -> guard beforeHandle -> macro resolve -> route
+      // beforeHandle.
       async beforeHandle({ body, ctx, request, status }) {
         if (
           await isDuplicateIngestRequest({
@@ -304,8 +290,8 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
           },
           {
             clientAuth: { ingest: validateIngestRequest },
-            // V1's own order: the usage metric is a `preHandler` registered
-            // after `clientHook` and before `isBotHook`/`subscriptionHook`.
+            // Recorded after `clientAuth` resolves the client and before the
+            // hooks that can short-circuit, so a dropped event still counts.
             beforeHandle: [
               ({ client }: { client: { id: string } }) => {
                 recordLegacyEventRequest(client.id);

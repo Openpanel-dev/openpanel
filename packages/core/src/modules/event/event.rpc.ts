@@ -3,13 +3,8 @@
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
 //
-// `bots` was V1's only `publicProcedure` here (anonymous callers were let in
-// when a share-overview row existed); ADR-011 makes it protected.
-//
 // `pages` / `pagesTimeseries` / `previousPages` / `pageTimeseries` read the
-// overview module's pages service; since M10-005 that is `ctx.services.pages`,
-// so the three-way lazy `import('@openpanel/core')` hop this file used to make
-// for it is gone.
+// overview module's pages service via `ctx.services.pages`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

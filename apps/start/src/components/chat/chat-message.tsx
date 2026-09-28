@@ -32,7 +32,6 @@ export function ChatMessage({
 }) {
   const isUser = message.role === 'user';
 
-  // Index tool results by callId so we can attach them to their call.
   const resultByCallId = new Map<
     string,
     { result?: unknown; status: string }

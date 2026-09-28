@@ -84,7 +84,7 @@ export { createCtx, extendCtx } from './context';
 export { BULL_BOARD_BASE_PATH, bullBoardRoutes } from './http/bull-board';
 export { requestContext, requestLogging } from './http/context';
 // The root chain `main.ts` hangs every surface on. Both take their
-// deployment-derived values as arguments — core reads no environment.
+// deployment-derived values as arguments.
 export { corsDelegator } from './http/cors';
 export { errorHandler } from './http/errors';
 // The two runtime seams over the registry. `main.ts` builds producers in every
@@ -120,7 +120,7 @@ export {
 } from './logger';
 // The one registry's own boot-time registrars. `registry` itself is NOT
 // exported: a caller that can reach it can start a second collector graph
-// somewhere other than a module, which is the thing §18 forbids.
+// outside a module.
 export { registerDefaultMetrics } from './metrics';
 // The chat app, the run context and the filter command take the API's `deps`,
 // so the barrel carries the factory and the types only; `assistant.routes.ts`
@@ -188,8 +188,8 @@ export type {
 // calls, small enough to live inline in `email.rpc.ts` rather than a dedicated
 // `email.service.ts` — see that file's header.
 export { emailCategories } from './modules/email/email.constants';
-// Shared by the onboarding module and, since M9-003, the organization module's
-// wind-down track.
+// Shared by the onboarding module and the organization module's wind-down
+// track.
 export type {
   SequenceStep,
   SequenceSubject,
@@ -230,9 +230,7 @@ export {
   validateIngestRequest,
 } from './modules/ingest/ingest.service';
 // The Kafka consumer and its per-message handler, which take the kafkajs
-// client, the topic/group names and the retry bounds as arguments — the
-// injection seam that used to cross a package boundary and now just crosses two
-// files.
+// client, the topic/group names and the retry bounds as arguments.
 export type {
   DeadLetterMessage,
   EventsBatchHandlerDeps,
@@ -278,8 +276,7 @@ export { explainInsight } from './modules/insight/insight.service';
 // Slack's OAuth token-exchange wire contract — not integration config (stays
 // out of the `*.constants` subpath, see
 // modules/integration/src/slack-contract.ts's header), but apps/api's webhook
-// controller still needs it to validate Slack's `oauth.v2.access` response, the
-// same way it reaches slackInstaller above.
+// controller still needs it to validate Slack's `oauth.v2.access` response.
 export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
 // Stateless-only, so there is no SessionManager to manage. The barrel carries
 // the factory and the two types; `handleStatelessMcpRequest` needs the API's
@@ -457,6 +454,6 @@ export {
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
-// Below the transports since M15-007: `rpc/base.ts` needs the empty shape and
-// may not deep-import a module to get it.
+// Below the transports: `rpc/base.ts` needs the empty shape and may not
+// deep-import a module to get it.
 export { EMPTY_SESSION } from './shared/session';

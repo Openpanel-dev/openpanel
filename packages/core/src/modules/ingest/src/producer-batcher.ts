@@ -1,6 +1,6 @@
-// Option 2 of the produce-path options: amortise the produce round-trip by
-// accumulating messages and sending them as ONE `send` carrying MANY messages,
-// instead of one awaited `send` per /track request.
+// Amortises the produce round-trip: accumulates messages and sends them as
+// ONE `send` carrying MANY messages, instead of one awaited `send` per
+// /track request.
 //
 // It is OFF unless the config loader says otherwise — see `producer-tuning.ts`.
 //

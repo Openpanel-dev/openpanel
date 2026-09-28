@@ -55,8 +55,7 @@ export {
 } from './event.constants';
 
 const EVENT_METAS_CACHE_SECONDS = 60 * 5;
-// V1's `cacheable(getEventMetas, ...)` derived this from the function's own
-// name; naming it keeps the Redis key `cachable:getEventMetas:<projectId>`.
+// Named explicitly so the Redis key stays `cachable:getEventMetas:<projectId>`.
 const EVENT_METAS_CACHE_NAME = 'getEventMetas';
 const TOP_EVENT_NAMES_CACHE_SECONDS = 60 * 10;
 const EVENT_LIST_DEFAULT_LOOKBACK_DAYS = 0.5;
@@ -72,8 +71,8 @@ const PROFILE_FILTER_PREFIX = 'profile.';
 const GROUP_FILTER_PREFIX = 'group.';
 const LOCALHOST_ORIGIN_MARKER = 'localhost:';
 
-// clix always sent `session_timezone: 'UTC'`; the queries converted from clix
-// keep sending it so their result sets stay identical.
+// Always sent as `session_timezone: 'UTC'` to keep these queries' result
+// sets consistent.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 const QUERY_EVENTS_FILTER_TARGET = {
@@ -546,13 +545,10 @@ export async function createEvent(
     // `isFromEvent=true` activates profile-buffer's cache shortcut: if the
     // profile is in the 1h Redis cache (i.e. recently flushed), the add is
     // skipped. Trade-off: profile.last_seen_at granularity is capped at the
-    // cache TTL (~1h) rather than per-session. We accept this because
-    // (a) profile-buffer was the leading indicator in the 2026-05-20 buildup
-    //     and was processing ~2 writes per session per anonymous user;
-    // (b) the bulk of those writes carried no new information (anonymous
-    //     profile data is event-derived and stable across a session);
-    // (c) recency queries should derive from event timestamps, not from
-    //     profile.last_seen_at.
+    // cache TTL (~1h) rather than per-session. Accepted because (a) the bulk
+    // of those writes carry no new information (anonymous profile data is
+    // event-derived and stable across a session), and (b) recency queries
+    // should derive from event timestamps, not from profile.last_seen_at.
     if (payload.name === 'session_start' || payload.name === 'session_end') {
       promises.push(upsertProfile(deps, profile, true));
     }
@@ -583,7 +579,7 @@ export interface GetEventListOptions {
   dateIntervalInDays?: number;
 }
 
-/** V1's default projection, merged under whatever the caller asks for. */
+/** Default projection, merged under whatever the caller asks for. */
 const DEFAULT_EVENT_LIST_SELECT: EventListSelect = {
   id: true,
   name: true,
@@ -600,7 +596,6 @@ const DEFAULT_EVENT_LIST_SELECT: EventListSelect = {
   browser: true,
 };
 
-// V1 emitted these in this order, `created_at` and `project_id` always first.
 const SELECT_TO_COLUMN: readonly [keyof EventListSelect, EventListColumn][] = [
   ['id', 'id'],
   ['name', 'name'],
@@ -742,7 +737,6 @@ export async function getEventList(
     meta: select.meta ?? true,
   });
 
-  // If we dont get any events, try without the cursor window
   if (data.length === 0 && hasLookback && lookbackDays < maxLookbackDays) {
     return getEventList(deps, {
       ...options,
@@ -836,7 +830,6 @@ export async function getTopPages(
   );
 }
 
-/** V1's `eventService.getById`. */
 export async function getEventById(
   deps: ServiceDeps,
   {
@@ -1038,8 +1031,6 @@ export async function queryEventsCore(
   );
 }
 
-// ---- packages/trpc/src/routers/event.ts bodies
-
 export interface UpdateEventMetaInput {
   projectId: string;
   name: string;
@@ -1065,9 +1056,9 @@ export async function updateEventMeta(
   });
 }
 
-/** The session half arrives through the composition root's thunk (ADR-022 R3):
- *  `session.service` → `session-end` → this module is a static chain, so an
- *  import back would be a plain cycle evaluated in the wrong order. */
+/** The session half arrives through the composition root's thunk:
+ *  `session.service` → `session-end` → this module is a static import chain,
+ *  so an import back would be a cycle evaluated in the wrong order. */
 export async function getEventDetails(
   deps: ServiceDeps,
   services: () => Services,

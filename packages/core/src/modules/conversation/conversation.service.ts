@@ -1,5 +1,4 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` lazy loader is gone.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`.
 
 import type {
   ChatMessage,
@@ -32,8 +31,7 @@ async function getConversationByIdImpl(
 }
 
 // Overloaded so a caller's static type matches what it actually asked for,
-// instead of the three-way union every call used to get regardless of
-// `options` (docs/review/conversation.md, "Not covered by any rule" #4).
+// instead of a three-way union regardless of `options`.
 export function getConversationById(
   deps: ServiceDeps,
   id: string,

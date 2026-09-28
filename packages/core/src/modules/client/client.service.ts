@@ -1,21 +1,17 @@
-// Client CRUD lives only here now; no packages/db re-export shim exists in this
-// tree.
-//
 // The /manage REST CRUD bodies (client.routes.ts's listClients/getClient/
 // createClient/updateClient/deleteClient) call the same
 // create/update/delete/list functions the tRPC router (client.rpc.ts) does.
 //
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` lazy loader is gone. No dependency on project.service.ts here (the
-// reverse direction exists, for cache invalidation) — project-ownership checks
-// below query `db.project` directly.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`. No
+// dependency on project.service.ts here (the reverse direction exists, for
+// cache invalidation) — project-ownership checks below query `db.project`
+// directly.
 //
 // `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on the
 // Postgres client rather than on the scope. Its L1 LRU has to survive across
 // calls to be worth anything, and the ingest hot path
-// (`ingest/src/client-auth.ts`, `http/client-auth.ts`) now passes the scope it
-// holds instead of reading a boot-scoped singleton through the deleted compat
-// seam. One instance per process to read, one to invalidate.
+// (`ingest/src/client-auth.ts`, `http/client-auth.ts`) passes the scope it
+// holds on each call. One instance per process to read, one to invalidate.
 
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
@@ -68,7 +64,7 @@ export async function getClientsByOrganizationId(
   });
 }
 
-/** trpc client.list — no access check of its own, ported verbatim. */
+/** No access check of its own; callers must authorize before calling. */
 export async function getClientsByProjectId(
   deps: ServiceDeps,
   projectId: string

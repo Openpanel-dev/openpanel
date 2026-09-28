@@ -345,10 +345,6 @@ function validateCall(
   return undefined;
 }
 
-/**
- * Validates that a JavaScript function is safe to execute
- * by checking the AST for allowed operations only (allowlist approach)
- */
 export function validate(code: string): {
   valid: boolean;
   error?: string;
@@ -368,7 +364,6 @@ export function validate(code: string): {
       return { valid: false, error: rootError };
     }
 
-    // Collect all declared identifiers (variables, parameters)
     const declaredIdentifiers = collectDeclaredIdentifiers(ast);
     const rootArrow = (
       ((ast.program as unknown as Node).body as Node[])[0]! as Node
@@ -377,7 +372,6 @@ export function validate(code: string): {
     let validationError: string | undefined;
 
     walkNode(ast, (node, parent) => {
-      // Skip if we already found an error
       if (validationError) {
         return;
       }
@@ -418,7 +412,6 @@ export function validate(code: string): {
         return;
       }
 
-      // Check identifiers that reference globals
       if (type === 'Identifier') {
         const name = node.name as string;
 
@@ -428,12 +421,10 @@ export function validate(code: string): {
           return;
         }
 
-        // Skip if it's a property key (not a value reference)
         if (isPropertyKey(node, parent)) {
           return;
         }
 
-        // Skip if it's a declared local variable/parameter
         if (declaredIdentifiers.has(name)) {
           return;
         }
@@ -500,7 +491,6 @@ export function validate(code: string): {
         return;
       }
 
-      // Check 'new' expressions - only allow new Date()
       if (type === 'NewExpression') {
         const callee = node.callee as Node;
 

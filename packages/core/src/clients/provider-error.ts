@@ -1,4 +1,4 @@
-// / A4: the one failure type every outbound client raises.
+// The one failure type every outbound client raises.
 //
 // A client classifies ONCE, at the edge where it still holds the provider's own
 // status code; a handler then reads `retryable` instead of re-deriving it from
@@ -111,9 +111,9 @@ export function providerErrorFrom(
 }
 
 /**
- * Run one outbound call and classify whatever it throws. This is the "classify
- * once" of R19: every `catch` upstream of it can read `retryable` instead of
- * inspecting an SDK-specific error shape.
+ * Run one outbound call and classify whatever it throws. Every `catch`
+ * upstream of it can then read `retryable` instead of inspecting an
+ * SDK-specific error shape.
  */
 export async function callProvider<T>(
   provider: string,

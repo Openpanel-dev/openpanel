@@ -1,13 +1,13 @@
 /**
- * F1: one subscriber leaving must not silence the others.
+ * One subscriber leaving must not silence the others.
  *
  * `subscribeToPublishedEvent` hands every caller the SAME ioredis connection
- * (`getRedisSub`, a process-wide singleton), so before this the unsubscribe it
- * returned took the channel away from the whole process. M23-003 measured it on
- * the `/live` sockets: close one, every other open socket received nothing for
- * 30 s. What is pinned here is the reference count — and, just as important,
- * that the LAST listener leaving still sends a real UNSUBSCRIBE, so the fix
- * cannot degrade into "never unsubscribe".
+ * (`getRedisSub`, a process-wide singleton), so the unsubscribe it returns
+ * must not take the channel away from the whole process — on the `/live`
+ * sockets, closing one used to leave every other open socket receiving
+ * nothing for 30s. What is pinned here is the reference count — and, just as
+ * important, that the LAST listener leaving still sends a real UNSUBSCRIBE,
+ * so the fix cannot degrade into "never unsubscribe".
  *
  * No real Redis: a stand-in for the shared connection that records the wire
  * commands and can push a `message` event, which is the entire surface the

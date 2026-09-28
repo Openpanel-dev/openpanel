@@ -404,9 +404,7 @@ const projectAccess = {
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
 // Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` ARE
-// the fakes below — the two `@openpanel/db` module mocks this file used to
-// install are gone, and with them the process-wide leak they had to be restored
-// from. `connectUserToOrganization` reaches `shared/access-lookups.ts`
+// the fakes below. `connectUserToOrganization` reaches `shared/access-lookups.ts`
 // (cacheable, on the unscoped db), which is why the `@openpanel/redis` stand-in
 // below stays.
 const chCommand = mock(async () => undefined);
@@ -447,11 +445,9 @@ function cacheableStub(
     set: () => async () => 'OK' as const,
   });
 }
-// Spread the real module for the same reason the clickhouse/client mock above
-// does: `mock.module` replaces this specifier process-wide. Surfaced by M8-001,
-// which put `createBuffers` on core's barrel — event-buffer.ts value-imports
-// `publishEvent` from here, so a partial factory turns this file's own barrel
-// import into a SyntaxError.
+// Spread the real module: `mock.module` replaces this specifier process-wide,
+// and `event-buffer.ts` value-imports `publishEvent` from here, so a partial
+// factory turns this file's own barrel import into a SyntaxError.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
@@ -469,10 +465,9 @@ afterAll(() => {
 
 // Mocks core's own clients/email.ts wrapper, not @openpanel/email itself:
 // that package statically imports @openpanel/db's full barrel (Resend/SMTP
-// setup aside), which is exactly the eager side-effecting chain
-// organization.service.ts's own lazy `load*` helpers exist to avoid — see
-// this file's header. mcp.service.test.ts mocks the same relative depth for
-// the same reason.
+// setup aside), an eager side-effecting chain this test avoids by mocking
+// at this depth. mcp.service.test.ts mocks the same relative depth for the
+// same reason.
 const sentEmails: { templateKey: string; to: string; data: unknown }[] = [];
 mock.module('../../clients/email', () => ({
   sendEmail: async (

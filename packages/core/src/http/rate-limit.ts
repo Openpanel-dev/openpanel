@@ -1,10 +1,6 @@
-// The HTTP limiter, ported from apps/api/src/utils/rate-limiter.ts (V1),
-// which used @fastify/rate-limit. Deliberately simpler than the tRPC one in
-// rpc/rate-limit.ts: a fixed window with no escalation, because that is what
-// V1 ran and what docs/api-reference/rate-limits.mdx publishes.
-//
-// The rewrite shipped without it, so the limits that page advertises were not
-// enforced anywhere (ISSUES.md H4).
+// The HTTP limiter. Deliberately simpler than the tRPC one in
+// rpc/rate-limit.ts: a fixed window with no escalation, matching what
+// docs/api-reference/rate-limits.mdx publishes (ISSUES.md H4).
 
 import { getRedisCache } from '@openpanel/redis';
 import { Elysia } from 'elysia';
@@ -17,7 +13,7 @@ const TOO_MANY_REQUESTS = 429;
 const KEY_MISSING = -2;
 const KEY_WITHOUT_EXPIRY = -1;
 
-/** V1's body, byte for byte. */
+/** Exact response body, matching what api-reference/rate-limits.mdx documents. */
 const TOO_MANY_REQUESTS_BODY = {
   statusCode: TOO_MANY_REQUESTS,
   error: 'Too Many Requests',
@@ -25,7 +21,7 @@ const TOO_MANY_REQUESTS_BODY = {
 } as const;
 
 /**
- * As in V1: the API client if there is one, otherwise the TRUSTED ip.
+ * The API client if there is one, otherwise the TRUSTED ip.
  * `x-client-ip` and `x-forwarded-for` are caller-set, so keying on the
  * attribution address would hand out a fresh bucket per request.
  */
@@ -45,14 +41,14 @@ export interface HttpRateLimit {
   /** Requests allowed per window. */
   max: number;
   windowMs: number;
-  /** Groups every route under one bucket, as V1's per-router plugin did. */
+  /** Groups every route under one bucket. */
   scope: string;
 }
 
 /**
  * `true` when the caller is over its limit and the request must be refused.
  * A Redis failure allows the request: this guards a documented quota, not a
- * credential, and V1 behaved the same way.
+ * credential.
  */
 export async function isRateLimited(
   { max, windowMs, scope }: HttpRateLimit,
@@ -86,9 +82,8 @@ export async function isRateLimited(
 }
 
 /**
- * V1's limits, router for router (apps/api/src/routes/*.router.ts). The first
- * matching prefix wins, so order matters only where one prefix contains
- * another — none do today.
+ * The first matching prefix wins, so order matters only where one prefix
+ * contains another — none do today.
  *
  * `/export`, `/insights` and `/manage` are what
  * docs/api-reference/rate-limits.mdx publishes. `/track`, `/profile` and
@@ -109,8 +104,8 @@ export function limitFor(pathname: string): HttpRateLimit | undefined {
 
 /**
  * Mounted once per route surface rather than per module, so a new `/manage`
- * route cannot quietly arrive without a limit. V1 registered the plugin per
- * router; the prefix table above is that same mapping in one place.
+ * route cannot quietly arrive without a limit. The prefix table above is
+ * that mapping in one place.
  */
 export function httpRateLimit(deps: AppDeps) {
   return new Elysia({ name: 'core/http/rate-limit' })

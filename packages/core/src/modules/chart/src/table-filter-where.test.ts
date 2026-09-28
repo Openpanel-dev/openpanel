@@ -1,10 +1,10 @@
 /**
  * Unit tests for `buildFilterWhere`.
  *
- * No ClickHouse needed. Since M12-003 the compiler returns bound
- * `SqlFragment`s, so each clause is rendered through `toStatement` and its
- * params substituted back in: what the assertions say is unchanged, a value
- * that used to appear as an escaped literal now appears in `query_params`. The
+ * No ClickHouse needed. The compiler returns bound `SqlFragment`s, so each
+ * clause is rendered through `toStatement` and its params substituted back
+ * in: what the assertions say is unchanged, a value that used to appear as
+ * an escaped literal now appears in `query_params`. The
  * interesting part is the `profile.*` branch: the field name arrives from the
  * caller (saved report, URL state, raw API call) and used to be concatenated
  * into the SQL text as-is, so a name that was not a column produced whatever

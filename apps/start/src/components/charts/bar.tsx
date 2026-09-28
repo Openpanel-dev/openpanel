@@ -157,17 +157,15 @@ const BarInner = memo(function BarInner({
     revealEpoch = 0,
   } = useChart();
 
-  // Calculate stagger delay automatically if not provided
   // Total animation duration is ~1200ms, with 40% for stagger spread and 60% for bar animation
   const totalAnimDuration = animationDuration || 1100;
-  const staggerSpread = totalAnimDuration * 0.4; // 40% of time for stagger spread
+  const staggerSpread = totalAnimDuration * 0.4;
   const calculatedStaggerDelay =
     staggerDelay ?? (data.length > 1 ? staggerSpread / 1000 / data.length : 0);
   const uniqueId = useId();
 
   const isHorizontal = orientation === 'horizontal';
 
-  // Find the index of this bar series among all bar series
   const seriesIndex = useMemo(() => {
     const idx = lines.findIndex((l) => l.dataKey === dataKey);
     return idx >= 0 ? idx : 0;
@@ -176,21 +174,17 @@ const BarInner = memo(function BarInner({
   const seriesCount = lines.length;
   const isLastSeries = seriesIndex === seriesCount - 1;
 
-  // Calculate the width for each bar within a group (for non-stacked)
   const barWidth = useMemo(() => {
     if (!bandWidth || seriesCount === 0) {
       return 0;
     }
     if (stacked) {
-      // Stacked bars use full band width
       return bandWidth;
     }
-    // Leave a gap between grouped bars (controlled by groupGap prop)
     const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
     return (bandWidth - effectiveGroupGap * (seriesCount - 1)) / seriesCount;
   }, [bandWidth, seriesCount, stacked, groupGap]);
 
-  // Calculate corner radius based on lineCap
   const cornerRadius = useMemo(() => {
     if (typeof lineCap === 'number') {
       return lineCap;
@@ -227,7 +221,6 @@ const BarInner = memo(function BarInner({
             const offset = stackOffsets.get(i)?.get(dataKey) ?? 0;
             x = yScale(offset) ?? 0;
             barW = valuePos - x;
-            // Apply stack gap for horizontal: shift right and reduce width
             const gapOffset = seriesIndex * stackGap;
             x += gapOffset;
             if (!isLastSeries && stackGap > 0) {
@@ -235,7 +228,6 @@ const BarInner = memo(function BarInner({
             }
           } else {
             x = 0;
-            // For grouped bars, offset y position
             const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
             y = bandPos + seriesIndex * (barWidth + effectiveGroupGap);
           }
@@ -252,7 +244,6 @@ const BarInner = memo(function BarInner({
           if (stacked && stackOffsets) {
             const offset = stackOffsets.get(i)?.get(dataKey) ?? 0;
             const offsetY = yScale(offset) ?? innerHeight;
-            // Apply stack gap: shift up and reduce height
             const gapOffset = seriesIndex * stackGap;
             y = offsetY - barHeight - gapOffset;
             // Reduce height slightly for non-last bars to create visual gap
@@ -261,7 +252,6 @@ const BarInner = memo(function BarInner({
             }
           } else {
             y = valuePos;
-            // For grouped bars, offset x position
             const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
             x = bandPos + seriesIndex * (barWidth + effectiveGroupGap);
           }

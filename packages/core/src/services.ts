@@ -1,7 +1,3 @@
-// The composition root (ADR-007 build step 4). `auth` is the first module to
-// land here; the Ctx <-> Services circularity was proven compiling before it
-// with an empty interface.
-
 import type { Ctx } from './context';
 import { createAssistantService } from './modules/assistant/assistant.service';
 import { createAuthService } from './modules/auth/auth.service';
@@ -107,10 +103,9 @@ export interface Services {
   mcp: ReturnType<typeof createMcpService>;
 }
 
-// Stays a hoisted `function` declaration, not a `const` arrow: the one static
-// ESM cycle that ran through it died with the compat seam at M15-005, but a
-// `const` here would still put any future cycle in a temporal dead zone that no
-// typecheck reports and that fails at process boot.
+// Stays a hoisted `function` declaration, not a `const` arrow: a `const`
+// here would put any future ESM cycle through this file in a temporal dead
+// zone that no typecheck reports and that fails at process boot.
 export function createServices(deps: ServiceDeps): Services {
   // The thunk is captured, not copied, so two services may call each other
   // without a cycle: `container` is assigned before any thunk body can run,

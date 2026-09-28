@@ -15,11 +15,7 @@
  * string to SQL text is {@link SqlBuilder.id}, which validates and throws.
  *
  * Placeholder names are assigned at render time from a single counter, so
- * fragments nest and repeat without colliding (R2).
- *
- * Exported from the package barrel. It could not be during the clix coexistence
- * window — `query-builder.ts` exported its own `SqlParam` type and `export *`
- * from both was ambiguous — and that file is now deleted.
+ * fragments nest and repeat without colliding.
  *
  * `packages/core` still imports this module by its deep path rather than
  * through the barrel: the barrel also re-exports `clickhouse/client.ts` and
@@ -251,7 +247,7 @@ interface SqlBuilder {
    * Inline a validated identifier as SQL text, for the positions where
    * `{name:Identifier}` does not work. Throws on anything that is not a bare
    * (optionally once-qualified) identifier — it never falls back to
-   * interpolating the input (R3). Pass `allowed` wherever the call site has a
+   * interpolating the input. Pass `allowed` wherever the call site has a
    * closed column set.
    */
   id(name: string, allowed?: readonly string[]): SqlFragment;

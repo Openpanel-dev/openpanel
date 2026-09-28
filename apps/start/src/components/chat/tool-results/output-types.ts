@@ -1,8 +1,8 @@
 /**
  * Frontend-side TypeScript types for the chat tool outputs we render
- * with custom UIs. These mirror what the matching backend tool returns
- * — see `apps/api/src/chat/tools/*.ts`. The renderers narrow `unknown`
- * via the type guards below before reading any field.
+ * with custom UIs. These mirror what the matching backend tool returns.
+ * The renderers narrow `unknown` via the type guards below before
+ * reading any field.
  *
  * If the backend changes a tool's return shape, the matching renderer
  * will fall back to a "no data" card rather than crashing — that's why

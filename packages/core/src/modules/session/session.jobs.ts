@@ -1,12 +1,10 @@
-// Schedules moved onto the jobs at ADR-021.
-//
 // `sessions` is this module's own queue — registry key and Redis name
-// `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1, all
-// V1's (jobs.registry.ts). Its wire payload is `{ event, snapshot }`, which is
-// what `legacyCompat.sessions` maps V1's `{type:'createSessionEnd', payload,
-// snapshot}` onto. `flushSessions` / `flushReplay` / `sessionReaper` /
-// `sessionVacuum` are cron fragments, spread into the ONE `cron` queue by
-// jobs.registry.ts, ids and cadences unchanged (apps/worker/src/boot-cron.ts).
+// `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1
+// (jobs.registry.ts). Its wire payload is `{ event, snapshot }`, which is
+// what `legacyCompat.sessions` maps the legacy `{type:'createSessionEnd',
+// payload, snapshot}` shape onto. `flushSessions` / `flushReplay` /
+// `sessionReaper` / `sessionVacuum` are cron fragments, spread into the ONE
+// `cron` queue by jobs.registry.ts, ids and cadences unchanged.
 //
 // Every handler reads its clients off `ctx` — the buffers and the Redis
 // connection main.ts built once, and the ClickHouse client the job's own
@@ -41,9 +39,8 @@ const SESSION_VACUUM_CRON = '0 4 * * *';
 const FLUSH_SESSIONS_INTERVAL_MS = 10_000;
 const FLUSH_REPLAY_INTERVAL_MS = 10_000;
 
-// Wire-shape check only — V1 never validated it either (see
-// jobs/compat.test.ts), and tightening it now would reject payloads the running
-// system accepts.
+// Wire-shape check only — tightening it now would reject payloads the
+// running system currently accepts (see jobs/compat.test.ts).
 //
 // The schema's INPUT is what the producer holds (`SessionEndJobData`, a real
 // `Date` on `event.createdAt`) and its OUTPUT is what a handler is actually
@@ -70,10 +67,9 @@ const sessionEndPayload = z
 /**
  * The session-end job's dependencies, bound to the run's own ctx.
  *
- * Two lookups stay dynamic, both for the same reason now that
- * notification-dispatch.ts has moved into core: keeping notification.service.ts
- * — and the dispatch module built on it — out of jobs.registry.ts's eager
- * import graph, which every core test file walks.
+ * Two lookups stay dynamic to keep `notification.service.ts` — and the
+ * dispatch module built on it — out of jobs.registry.ts's eager import
+ * graph, which every core test file walks.
  */
 async function sessionEndDeps(
   ctx: Ctx,

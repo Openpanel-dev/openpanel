@@ -1,14 +1,11 @@
-// The querystring pre-pass, ported from
-// apps/api/src/utils/parse-zod-query-string.ts ("behaviour that must be
-// re-implemented deliberately": the `parseQueryString` pre-pass as an Elysia
+// The querystring pre-pass: the `parseQueryString` pre-pass as an Elysia
 // lifecycle hook running BEFORE schema validation on `/export` and
-// `/insights`).
+// `/insights`.
 //
-// It exists because ~31 query schemas on those two surfaces are written against
-// already-coerced values — `z.number`, `z.boolean`, `z.array(...)` — while a
-// querystring only ever carries strings. V1 coerced in a Fastify
-// `preValidation` hook; rewriting those schemas with `z.coerce` instead would
-// change the contract, which is why the ADR names the hook.
+// It exists because ~31 query schemas on those two surfaces are written
+// against already-coerced values — `z.number`, `z.boolean`, `z.array(...)` —
+// while a querystring only ever carries strings. Rewriting those schemas with
+// `z.coerce` instead would change the contract.
 //
 // `transform` is Elysia's pre-validation phase, and the hook MUTATES `query` in
 // place: reassigning the destructured binding would not reach the object the
@@ -49,7 +46,7 @@ export function parseQueryString(
 }
 
 /** The `transform` hook itself. Registered LOCAL on the two route surfaces
- *  that had it in V1 — never globally, or `/track` and `/manage` would start
+ *  that need it — never globally, or `/track` and `/manage` would start
  *  coercing values their handlers read as strings. */
 export function parseQueryStringTransform({
   query,

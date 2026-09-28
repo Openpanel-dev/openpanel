@@ -1,14 +1,11 @@
 // Kubernetes liveness and readiness.
 //
-// `/healthcheck` — the deep db/ch/redis probe — landed at M9-004, when
-// `AppDeps` started carrying the real clients; before that, porting it would
-// have been a fake check rather than a deferred one. `/healthz/ready` never
-// waited for them: its two inputs are the shutdown flag and the events-consumer
-// heartbeat, both real from P9, and a readiness probe that ignores a draining
-// process is the one that actually loses requests.
+// `/healthcheck` — the deep db/ch/redis probe — needs `AppDeps` carrying the
+// real clients. `/healthz/ready` never waits for them: its two inputs are the
+// shutdown flag and the events-consumer heartbeat, and a readiness probe that
+// ignores a draining process is the one that actually loses requests.
 //
-// `GET /` lands here too: V1 served it from the public-API scope
-// (apps/api/src/app.ts:400), hidden from the OpenAPI document like the probes,
+// `GET /` lands here too, hidden from the OpenAPI document like the probes,
 // and self-hosters use it as a "is this thing on" check.
 
 import { tryCatch } from '@openpanel/shared';
@@ -21,10 +18,10 @@ import { currentReadiness } from './src/readiness';
 // with `io: 'output'`, which is what zod 4's native Standard Schema JSON
 // conversion does by default for the `response` slot — no `mapJsonSchema`
 // override needed, and none is added, because that hook gets no `io` argument
-// and would collapse the input/output split the ADR requires.
+// and would collapse the input/output split this schema relies on.
 const healthLiveResponseSchema = z.object({ live: z.literal(true) });
 
-// V1's two readiness bodies, verbatim: `{ready:true}` at 200, and
+// Two readiness bodies: `{ready:true}` at 200, and
 // `{ready:false, reason, idleMs?, thresholdMs?}` at 503.
 const healthReadyResponseSchema = z.object({
   ready: z.boolean(),
@@ -45,7 +42,6 @@ const healthCheckResponseSchema = z.object({
 const SERVICE_UNAVAILABLE = 503;
 const OK = 200;
 
-/** V1's `GET /` body, byte-for-byte (apps/api/src/app.ts:401-404). */
 const ROOT_BODY = {
   status: 'ok',
   message: 'Successfully running OpenPanel.dev API',
@@ -56,11 +52,8 @@ const rootResponseSchema = z.object({
   message: z.literal(ROOT_BODY.message),
 });
 
-// Hidden from the OpenAPI document — ported from V1's `schema: { hide: true }`
-// on `/healthz/live`, `/healthz/ready` and `/healthcheck`
-// (healthcheck.controller.ts): liveness probes are not part of the public API
-// contract. See verification/golden/openapi's migrated-route gate, which pins
-// `/healthz` to an empty `paths` object against V1's golden document.
+// Hidden from the OpenAPI document: liveness probes are not part of the
+// public API contract.
 export const healthRoutes = defineRoutes((app) =>
   app
     .get('/healthz/live', () => ({ live: true as const }), {

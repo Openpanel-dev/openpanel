@@ -34,7 +34,6 @@ type InitialState = IReport & {
   globalFilters: IChartEventFilter[];
 };
 
-// First approach: define the initial state using that type
 const initialState: InitialState = {
   ready: false,
   dirty: false,
@@ -217,7 +216,6 @@ export const reportSlice = createSlice({
         state.metric = 'count';
       }
 
-      // Initialize sankey options if switching to sankey
       if (action.payload === 'sankey' && !state.options) {
         state.options = {
           type: 'sankey',
@@ -428,7 +426,6 @@ export const reportSlice = createSlice({
   },
 });
 
-// Action creators are generated for each case reducer function
 export const {
   reset,
   ready,

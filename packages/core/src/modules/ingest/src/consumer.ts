@@ -1,14 +1,11 @@
-// The delivery contract is ADR-004's and is unchanged line for line: per-key
-// serial groups, the ascending contiguous-prefix offset walk, at-least-once,
-// bounded in-consumer retry, and a dead-letter on exhaustion. Only the
-// dead-letter DESTINATION and its failure behaviour changed: the record goes to
-// a capped Redis list, and the event is dropped whether or not that write
-// lands.
+// Delivery contract: per-key serial groups, the ascending contiguous-prefix
+// offset walk, at-least-once, bounded in-consumer retry, and a dead-letter on
+// exhaustion. The dead-letter destination is a capped Redis list, and the
+// event is dropped whether or not that write lands.
 //
 // The kafkajs client, the topic/consumer-group names, the DLQ producer and the
-// retry bounds are all INJECTED, and stay so now that they live one directory
-// away in./kafka.ts: injection is what keeps those names byte-identical,
-// because this file never spells one.
+// retry bounds are all injected — this file never spells any of them, which is
+// what keeps them testable without a broker.
 
 import type {
   Consumer,
@@ -23,9 +20,8 @@ export interface KafkaConsumerHandle {
    * Stop fetching, then wait for the in-flight `eachBatch` to finish. Split out
    * from `stop` so a graceful shutdown has a point where nothing new can enter
    * the event buffer but the consumer has not been torn down yet — that is
-   * where shutdown flushes whatever was buffered OUTSIDE a Kafka batch (drill
-   * 03). Events buffered inside one are already durable: see
-   * `flushBufferedEvents` below.
+   * where shutdown flushes whatever was buffered OUTSIDE a Kafka batch. Events
+   * buffered inside one are already durable.
    */
   stopConsuming: () => Promise<void>;
   /** Disconnect. Safe to call after `stopConsuming`, and without it. */
@@ -47,10 +43,10 @@ const RETRY_BACKOFF_FACTOR = 2;
  * failure — the consumer's own retry convention — but it is capped HERE rather
  * than at `maxRetryMs`, which is sized for a flaky handler (1s by default) and
  * not for a dependency that is down. Without any cap a failed flush redelivers
- * in ~90ms and spins: drill 02's re-run measured ~162 laps per message in one
- * 96s outage, hammering Redis and Kafka at the worst possible moment. 5s keeps
- * a ~15s outage to single-digit redeliveries and stays well below the 30s
- * session timeout, so waiting cannot cost the consumer its group membership.
+ * in ~90ms and spins, hammering Redis and Kafka at the worst possible moment.
+ * 5s keeps a ~15s outage to single-digit redeliveries and stays well below the
+ * 30s session timeout, so waiting cannot cost the consumer its group
+ * membership.
  */
 const DURABILITY_RETRY_MAX_MS = 5000;
 
@@ -63,10 +59,9 @@ export type DeadLetterReason = 'parse_error' | 'handler_error';
  *
  * Two implementations satisfy this, and the seam exists so the choice is one
  * line in `apps/api`'s wiring: `@openpanel/redis`'s `createDeadLetterRecorder`
- * (the capped list, in use since M20-001) and./kafka.ts's
- * `produceDeadLetterEvent` (the DLQ topic, kept because Carl's decision was
- * explicitly "for now"; a DLQ message produced from these bytes is replayable
- * onto the events topic unchanged).
+ * (the capped list) and `./kafka.ts`'s `produceDeadLetterEvent` (the DLQ
+ * topic, kept as an explicit "for now" choice; a DLQ message produced from
+ * these bytes is replayable onto the events topic unchanged).
  */
 export interface DeadLetterMessage {
   key: Buffer | null;
@@ -116,12 +111,12 @@ export interface EventsBatchHandlerDeps {
    * (`autoCommit` defaults to true and this consumer does not turn it off) —
    * not at `consumer.stop`.
    *
-   * The gate MUST reject when the events THIS batch buffered are not in Redis:
-   * drill 03 lost 2 of 44,075 events on a graceful restart because the offsets
-   * of events that existed only in the event buffer's in-process array were
-   * committed anyway. The window is what makes "this batch's" answerable at
-   * all, now that a failed write drops the events it knows the broker will
-   * redeliver instead of keeping them.
+   * The gate MUST reject when the events THIS batch buffered are not in
+   * Redis: a graceful restart previously lost events whose offsets were
+   * committed even though the events existed only in the event buffer's
+   * in-process array. The window is what makes "this batch's events are
+   * durable" answerable at all, now that a failed write drops the events
+   * instead of keeping them for the broker to redeliver.
    */
   openDurabilityWindow: () => () => Promise<void>;
   logger: ConsumerLogger;
@@ -157,10 +152,10 @@ export interface EventsBatchHandler {
  *
  * Delivery contract: at-least-once. An offset is resolved only once its message
  * has been handled, dead-lettered, or deliberately skipped — never merely
- * because it failed. Since M20-001 a dead-letter always counts as finished,
- * because the message is dropped either way; the one place an unresolved offset
- * is still correct is a failed DURABILITY flush, which leaves the whole batch
- * for redelivery.
+ * because it failed. A dead-letter always counts as finished, because the
+ * message is dropped either way; the one place an unresolved offset is still
+ * correct is a failed DURABILITY flush, which leaves the whole batch for
+ * redelivery.
  */
 export function createEventsBatchHandler(
   deps: EventsBatchHandlerDeps
@@ -170,16 +165,13 @@ export function createEventsBatchHandler(
   /**
    * Park the message and DROP it. The drop is unconditional: whether the record
    * was stored or not, this message's offset is resolved by the caller and the
-   * event is gone from the pipeline (gate M20).
+   * event is gone from the pipeline.
    *
    * There is deliberately no retry, no backoff and no unresolved offset here.
    * The dead-letter destination is Redis, and Redis being unavailable is
    * exactly when handlers fail — so a failed write that held the offset back
-   * would rebuild the very redelivery loop this replaced (drill 02's re-run 2:
-   * 78-79 laps per message at ~0.62 s, no backoff; drill 08: 1,592 failed
-   * dead-letters, 0 successes). Same lesson as M18-007's `pendingEvents`
-   * re-queue: once something else owns the outcome, the safety net underneath
-   * it is the bug.
+   * would rebuild the redelivery loop this replaced: once something else owns
+   * the outcome, a safety net underneath it is the bug.
    *
    * The two counters are what carry the volume, since a capped list makes
    * 50,000 drops look like 12: `deadLettered` = recorded and dropped,
@@ -485,8 +477,8 @@ export async function startKafkaEventsConsumer(
   consumer.on(consumer.events.HEARTBEAT, deps.batch.onActivity);
 
   // ---- Lifecycle / rebalance ("re-election") visibility ----
-  // We had no logging for partition reassignment before; without it a rebalance
-  // storm (a common source of at-least-once duplicates) is invisible.
+  // Without this logging, a rebalance storm (a common source of
+  // at-least-once duplicates) would be invisible.
   consumer.on(consumer.events.GROUP_JOIN, ({ payload }) => {
     // A new assignment means partitions may have moved between members, so a
     // consecutive-failure count carried over from the old one would pick the

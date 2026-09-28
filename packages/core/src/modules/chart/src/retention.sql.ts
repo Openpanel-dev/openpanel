@@ -41,8 +41,8 @@ const COUNT_CRITERIA: Record<IRetentionCriteria, string> = {
 };
 
 /**
- * Without both dates the statement reads the project's whole lifetime, as V1
- * did: the MCP tools pass none and their contracts rely on it.
+ * Without both dates the statement reads the project's whole lifetime: the
+ * MCP tools pass none and their contracts rely on it.
  */
 export interface RetentionSeriesQueryInput {
   projectId: string;
@@ -63,8 +63,8 @@ function createdAtWithin({
 
 /**
  * Week-over-week active-user retention, one row per week, within the window
- * when one is given (Group C fix 8); a week whose following week falls
- * outside it reports zero retained users.
+ * when one is given; a week whose following week falls outside it reports
+ * zero retained users.
  */
 export function retentionSeriesQuery(
   input: RetentionSeriesQueryInput
@@ -127,8 +127,8 @@ export function rollingActiveUsersQuery(
 }
 
 /**
- * Days-since-last-seen distribution over identified profiles; with a window, a
- * profile last seen before it is no longer counted (fix 8).
+ * Days-since-last-seen distribution over identified profiles; with a window,
+ * a profile last seen before it is no longer counted.
  */
 export function retentionLastSeenSeriesQuery(
   input: RetentionSeriesQueryInput
@@ -166,7 +166,7 @@ export interface RetentionCohortQueryInput {
   filters: IChartEventFilter[];
 }
 
-/** V1's `name = …` / `name IN (…)`; `sql.empty` means "any event". */
+/** `name = …` / `name IN (…)`; `sql.empty` means "any event". */
 function eventNameWhere(events: string[] | undefined): SqlFragment {
   if (!events || events.length === 0) {
     return sql.empty;
@@ -178,7 +178,7 @@ function eventNameWhere(events: string[] | undefined): SqlFragment {
 }
 
 /**
- * The cohort retention matrix (V1 `getRetentionCohort`'s five-CTE query).
+ * The cohort retention matrix: a five-CTE query.
  *
  * Source table is a closed two-way choice, not a caller input: cohort
  * membership filters stay on the skinny `cohort_events_mv`, anything reading a

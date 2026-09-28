@@ -5,9 +5,6 @@ export type FaceProps = {
   style?: React.CSSProperties;
 };
 
-/**
- * Round eyes face - simple circular eyes
- */
 export const RoundFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
     aria-hidden="true"
@@ -21,9 +18,6 @@ export const RoundFace: React.FC<FaceProps> = ({ className, style }) => (
   </svg>
 );
 
-/**
- * Cross eyes face - X-shaped eyes
- */
 export const CrossFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
     aria-hidden="true"
@@ -47,9 +41,6 @@ export const CrossFace: React.FC<FaceProps> = ({ className, style }) => (
   </svg>
 );
 
-/**
- * Line eyes face - horizontal line eyes
- */
 export const LineFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
     aria-hidden="true"
@@ -79,9 +70,6 @@ export const LineFace: React.FC<FaceProps> = ({ className, style }) => (
   </svg>
 );
 
-/**
- * Curved eyes face - sleepy/happy curved eyes
- */
 export const CurvedFace: React.FC<FaceProps> = ({ className, style }) => (
   <svg
     aria-hidden="true"
@@ -107,9 +95,6 @@ export const CurvedFace: React.FC<FaceProps> = ({ className, style }) => (
   </svg>
 );
 
-/**
- * All available face components
- */
 export const FACES = [RoundFace, CrossFace, LineFace, CurvedFace] as const;
 
 export type FaceComponent = (typeof FACES)[number];

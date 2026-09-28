@@ -1,10 +1,9 @@
 /**
  * Assembles every ADR-022 check into one report and decides --assert.
  *
- * Output contract (docs/CONFORMANCE_GATE_SPEC.md, "Output shape"): one block
- * per rule, offenders as `file:line`, a TOTAL line per rule and one overall,
- * stable ordering and no timestamps in the body — so the fix wave proves a rule
- * reached zero by diffing two reports.
+ * Output contract: one block per rule, offenders as `file:line`, a TOTAL
+ * line per rule and one overall, stable ordering and no timestamps in the
+ * body — so a change can be verified by diffing two reports.
  */
 
 import { readFileSync } from 'node:fs';
@@ -63,8 +62,8 @@ const START_SOURCE_ROOT = 'apps/start/src';
 const MODULES_ROOT = `${CORE_SOURCE_ROOT}/modules`;
 const CONFIG_ENV_FILE = `${API_SOURCE_ROOT}/config/env.ts`;
 // Static `from '../v1-compat'` and dynamic `await import('../v1-compat')` alike:
-// 34 of today's importers reach it through a lazy import, which is the R6 defect
-// itself and would be missed by a `from` pattern.
+// a lazy import is still an R6 defect and would be missed by a `from`-only
+// pattern.
 const V1_COMPAT_IMPORT = /['"][^'"]*\/v1-compat['"]/;
 const RULE_ID_WIDTH = 4;
 const SEPARATOR_WIDTH = 80;
@@ -335,8 +334,8 @@ function buildRules(tree: Tree): RuleBlock[] {
   const v1Compat = tree.core.find(
     (source) => source.path === CORE_V1_COMPAT_FILE
   );
-  // Tests count: ADR-022's "69 importers" is what fix-wave step 2 has to move,
-  // and a test importing v1-compat is as much a caller as a service is.
+  // Tests count too: a test importing v1-compat is as much a caller as a
+  // service is.
   const v1CompatImporters = tree.allCoreText.filter(
     ({ path, text }) =>
       path !== CORE_V1_COMPAT_FILE && V1_COMPAT_IMPORT.test(text)
@@ -519,9 +518,9 @@ function buildRules(tree: Tree): RuleBlock[] {
             tree
           )
         ),
-        // The two slices ADR-022's baseline table states (7 and 8). They are
-        // VIEWS of the rules above, not extra violations, so they carry no
-        // target: asserting on them would count the same edges twice.
+        // These two slices are VIEWS of the rules above, not extra
+        // violations, so they carry no target: asserting on them would count
+        // the same edges twice.
         asView(
           cruiserMetric(
             'ADR-022 baseline slice: shared/ -> above it',
@@ -602,10 +601,10 @@ function metricIsAboveTarget(metric: Metric): boolean {
 }
 
 /**
- * The headline numbers, up top, so the ADR-022 baseline table can be checked
- * against this run without scrolling 700 lines. Each entry names the rule and
- * the metric it comes from; the numbers themselves come from the same Metric
- * objects the blocks below print, never from a second measurement.
+ * The headline numbers, up top, so results can be checked at a glance without
+ * scrolling 700 lines. Each entry names the rule and the metric it comes
+ * from; the numbers themselves come from the same Metric objects the blocks
+ * below print, never from a second measurement.
  */
 const BASELINE_METRICS: readonly {
   rule: string;

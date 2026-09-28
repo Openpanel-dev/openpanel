@@ -1,6 +1,4 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved out
-// of `clients/integrations/` by M15-008: this module is its only consumer
-// (ADR-022 A2). Cred to (@c_alares)
+// Credit to (@c_alares):
 // https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
 import * as Slack from '@slack/bolt';
@@ -46,9 +44,8 @@ export function slackInstaller(config: CoreConfig): InstallProvider {
 }
 
 /**
- * `null` when this deployment has no Slack app configured — ADR-022 R9: a
- * missing thing is null, not an error. The caller decides what an absent
- * install flow means for its own surface.
+ * `null` when this deployment has no Slack app configured. The caller
+ * decides what an absent install flow means for its own surface.
  */
 export const getSlackInstallUrl = ({
   config,

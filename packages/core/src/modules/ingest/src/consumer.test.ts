@@ -322,8 +322,8 @@ describe('handler failure', () => {
 
     await handler.eachBatch(payload);
 
-    // Dropped WITHOUT being recorded — and still acked. Holding the offset back
-    // here is what rebuilt the redelivery loop (gate M20).
+    // Dropped WITHOUT being recorded — and still acked. Holding the offset
+    // back here is what rebuilds the redelivery loop.
     expect(metrics.deadLetterFailed).toHaveBeenCalledWith(String(PARTITION));
     expect(metrics.deadLettered).not.toHaveBeenCalled();
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
@@ -372,8 +372,8 @@ describe('unparseable messages', () => {
 
 /**
  * Deleted the offset watermark, whose only outputs were the `reprocessed`
- * counter and a warn line — drill 08 measured 161 real duplicates and 0 of
- * those lines, because `resetWatermarks` fired on GROUP_JOIN and a failed
+ * counter and a warn line — live duplicates occurred but none of those lines
+ * fired, because `resetWatermarks` fired on GROUP_JOIN and a failed
  * durability flush never advanced it.
  *
  * These are the regression tests for the half of that claim that matters: the
@@ -440,15 +440,16 @@ describe('a redelivery after the watermark was deleted', () => {
 });
 
 /**
- * The regression test for drill 03's loss.
+ * The regression test for a real data-loss incident: a graceful restart lost
+ * 2 of 44,075 events.
  *
  * The event a handler accepted lives in an in-process array until the buffer
  * pushes it to Redis, and kafkajs commits whatever `resolveOffset` marked the
  * moment `eachBatch` returns — `autoCommit` is on and this consumer never turns
  * it off, so `consumer.stop` is NOT the commit point. Resolving an offset for
- * an event that is still only in memory is exactly how a graceful restart lost
- * 2 of 44,075 events: the offsets were committed, the process exited, and
- * nothing was redelivered.
+ * an event that is still only in memory is exactly how those events were
+ * lost: the offsets were committed, the process exited, and nothing was
+ * redelivered.
  *
  * `resolveOffset` is therefore the commit in these tests. It is the only thing
  * that decides what gets committed.
@@ -563,10 +564,10 @@ describe('durability before commit', () => {
   });
 
   test('a failed flush resolves NOTHING, so a redelivery is guaranteed', async () => {
-    // Asserted directly rather than left to the drill. With the re-queue gone
-    // the only thing standing between a failed flush and a lost batch is that
-    // its offsets are never resolved — every message, not just the tail, and
-    // regardless of how many of them the handlers finished.
+    // Asserted directly: with the re-queue gone, the only thing standing
+    // between a failed flush and a lost batch is that its offsets are never
+    // resolved — every message, not just the tail, and regardless of how
+    // many of them the handlers finished.
     const { deps, handleEvent } = makeDeps({
       flushBufferedEvents: mock(() =>
         Promise.reject(new Error('redis is unreachable'))
@@ -588,7 +589,7 @@ describe('durability before commit', () => {
   test('backs off before the redelivery, and the wait grows and then caps', async () => {
     // Observable as a growing delay, not as a fixed attempt count: the point
     // is that a ~15s outage costs single-digit redeliveries instead of the
-    // ~162 laps drill 02's re-run measured at ~90ms each.
+    // ~162 laps an unbacked retry loop would cost at ~90ms each.
     const OUTAGE_LAPS = 8;
     const { deps, sleep } = makeDeps({
       flushBufferedEvents: mock(() =>
@@ -661,9 +662,9 @@ describe('durability before commit', () => {
   });
 
   test('flushes what a shutdown-truncated batch handled, before resolving it', async () => {
-    // Drill 03's shape: SIGTERM lands mid-batch, `isRunning` goes false, and
-    // the handler resolves only the prefix it finished. That prefix must be
-    // durable too — it is the window the graceful restart used to lose.
+    // SIGTERM lands mid-batch, `isRunning` goes false, and the handler
+    // resolves only the prefix it finished. That prefix must be durable too —
+    // it is the window a graceful restart used to lose.
     let handled = 0;
     const flushBufferedEvents = mock(async () => undefined);
     const { deps } = makeDeps({
@@ -778,9 +779,9 @@ describe('dead letter to a capped redis list', () => {
   });
 
   test('a DEAD REDIS still resolves the offset and records nothing', async () => {
-    // Drill 02's scenario exactly: the dependency that fails the handler is
-    // the dependency the dead letter is written to. If this offset is left
-    // unresolved the redelivery loop is back, in a new place.
+    // The dependency that fails the handler is the same dependency the dead
+    // letter is written to. If this offset is left unresolved the
+    // redelivery loop is back, in a new place.
     const { deps, handleEvent, metrics, redis } = makeRecordingDeps(
       new Error(
         "Stream isn't writeable and enableOfflineQueue options is false"
@@ -803,7 +804,7 @@ describe('dead letter to a capped redis list', () => {
   });
 
   test('a per-command error inside the MULTI counts as not recorded', async () => {
-    // WRONGTYPE is drill 08's own fault shape, and a MULTI reports it in
+    // WRONGTYPE is a real Redis fault shape, and a MULTI reports it in
     // `exec()`'s results rather than by rejecting.
     const redis = fakeRedis();
     const wrongType: [Error | null, unknown] = [

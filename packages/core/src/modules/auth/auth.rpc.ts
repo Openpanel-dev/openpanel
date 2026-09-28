@@ -3,10 +3,9 @@
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
 //
-// V1's `rateLimitMiddleware` wrappers are mounted below through
-// `createRateLimitMiddleware` (rpc/base.ts) with V1's own limits, procedure for
-// procedure. Blocks are keyed per procedure and per trusted IP, and escalate on
-// repeat offence — see rpc/rate-limit.ts.
+// Rate limits are mounted below through `createRateLimitMiddleware`
+// (rpc/base.ts), procedure for procedure. Blocks are keyed per procedure and
+// per trusted IP, and escalate on repeat offence — see rpc/rate-limit.ts.
 //
 // This module has no queue/cron of its own, so there is no `ctx.services.auth`
 // entry here — same shape as `user`/`project`.

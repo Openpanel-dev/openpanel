@@ -1,22 +1,20 @@
 import { afterAll, describe, expect, it } from 'bun:test';
 
-// The buffers take the boot scope's client as `BufferDeps.ch` now, so the
-// `loadClickHouse` seam this file used to call through is gone. What it proves
-// is unchanged — the round-robin/retry client the buffers are handed (`ch` /
-// `chQuery`, `@openpanel/db`'s exports) must survive a dead node — so the
-// subject is imported directly here. This is a test file, which
-// `core-uses-ctx-not-db-internals` exempts.
+// This is a test file, which the `core-uses-ctx-not-db-internals` lint rule
+// exempts: the round-robin/retry client the buffers are handed (`ch` /
+// `chQuery`, `@openpanel/db`'s exports) must survive a dead node, so the
+// subject is imported directly here rather than through `BufferDeps.ch`.
 function loadClickHouse() {
   return import('@openpanel/db/src/clickhouse/client');
 }
 
 /**
- * / M8-006: the deliberate ECONNREFUSED to a dead ClickHouse node must be
- * caught and retried (sin-binning) on the client the buffers are handed as
+ * The deliberate ECONNREFUSED to a dead ClickHouse node must be caught and
+ * retried (sin-binning) on the client the buffers are handed as
  * `BufferDeps.ch`, exactly as packages/db's
  * `sql.round-robin.clickhouse.test.ts` proves for `chQuery`/`chQueryWithMeta`
- * directly. That file is NOT touched here; this extends the same proof onto the
- * path M8-001 moved: `ch.insert` reached via the core buffer seam.
+ * directly. That file is NOT touched here; this extends the same proof onto
+ * `ch.insert` reached via the core buffer seam.
  *
  * Setup mirrors that file exactly: a two-node `CLICKHOUSE_URL` whose first node
  * (port 1, privileged and unbindable without root) is reliably refused. The
@@ -67,14 +65,13 @@ async function deadNodeIsRefused(): Promise<boolean> {
 const clickhouseReachable = await bootstrapTestDatabase();
 const failoverIsReal = await deadNodeIsRefused();
 
-// bare `bun test` (the configured verifier — AGENTS.md) shares one process
-// and one `process.env` across every file in the run, unlike vitest's
-// per-file env reset. Whichever file first calls `loadClickHouse()` pins
-// `@openpanel/db/src/clickhouse/client`'s picker for the rest of the run
-// regardless of env set here, but OTHER files that read `CLICKHOUSE_URL`
-// directly (e.g. test fixtures building their own throwaway client) are not
-// protected by that — an unrestored mutation here leaks into them. Snapshot
-// and restore, exactly like `mock.module` must be (AGENTS.md).
+// `bun test` shares one process and one `process.env` across every file in
+// the run, unlike vitest's per-file env reset. Whichever file first calls
+// `loadClickHouse()` pins `@openpanel/db/src/clickhouse/client`'s picker for
+// the rest of the run regardless of env set here, but OTHER files that read
+// `CLICKHOUSE_URL` directly (e.g. test fixtures building their own throwaway
+// client) are not protected by that — an unrestored mutation here leaks into
+// them. Snapshot and restore, exactly like `mock.module` must be.
 const originalClickhouseEnv = {
   CLICKHOUSE_URL: process.env.CLICKHOUSE_URL,
   CLICKHOUSE_REQUEST_TIMEOUT_MS: process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS,

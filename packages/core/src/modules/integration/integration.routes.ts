@@ -1,15 +1,6 @@
-// The Slack OAuth callback, `GET /webhook/slack`. V1's Fastify controller
-// (apps/api/src/controllers/webhook.controller.ts's `slackWebhook`) stays the
-// LIVE route (DELEGATE PATTERN) and delegates its token-exchange/ upsert logic
-// to integration.service.ts's `completeSlackOAuthCallback` — the same function
-// this route calls, same shape as gsc.routes.ts / auth.routes.ts.
-//
-// NAMED GAP, same as those two: this route is not yet reachable — main.ts does
-// not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8). V1's
-// controller also renders an HTML error page from a local `error.html` file on
-// failure; this route redirects to `/login?error=...` instead (same
-// simplification gsc.routes.ts/auth.routes.ts already made for their own OAuth
-// callbacks) since it serves no traffic yet.
+// The Slack OAuth callback, `GET /webhook/slack`. Delegates token-exchange
+// and upsert logic to integration.service.ts's `completeSlackOAuthCallback`,
+// same shape as gsc.routes.ts / auth.routes.ts's OAuth callbacks.
 
 import { redirect } from 'elysia';
 import { z } from 'zod';

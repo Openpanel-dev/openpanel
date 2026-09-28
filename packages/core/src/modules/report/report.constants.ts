@@ -1,12 +1,10 @@
-// `getDefaultIntervalByDates` is REWRITTEN from date-fns
-// (differenceInDays/isSameDay) to plain Date math per the module map. Every
-// process that constructs these Dates runs under TZ=UTC (ADR-012: "this ADR
-// makes that line load-bearing rather than incidental"), so Date's local
+// `getDefaultIntervalByDates` uses plain Date math instead of date-fns. Every
+// process that constructs these Dates runs under TZ=UTC, so Date's local
 // getters (getFullYear/getMonth/getDate) already read UTC — the helpers below
-// reproduce date-fns's local-calendar semantics exactly under that invariant,
-// and the only inputs this function ever receives are date-only strings
-// (midnight boundaries), where date-fns's exact-duration-vs-calendar-day nuance
-// cannot diverge from a plain ms division anyway.
+// reproduce date-fns's local-calendar semantics under that invariant. The
+// only inputs this function ever receives are date-only strings (midnight
+// boundaries), where date-fns's exact-duration-vs-calendar-day nuance cannot
+// diverge from a plain ms division anyway.
 
 import { z } from 'zod';
 
@@ -133,9 +131,9 @@ export const operatorsShort: Record<keyof typeof operators, string> = {
 
 // Cast type a filter value/column should be coerced to before comparing.
 // `string` (the default) keeps raw text comparison; the others wrap both sides
-// of the comparison in the matching ClickHouse cast (see packages/db
-// filter-cast.ts) so e.g. a date property compares as a date instead of
-// crashing `toFloat64('2019-01-01')`.
+// of the comparison in the matching ClickHouse cast (see chart/src/filter-cast.ts)
+// so e.g. a date property compares as a date instead of crashing
+// `toFloat64('2019-01-01')`.
 export const filterValueTypes = {
   string: 'Text',
   number: 'Number',
@@ -638,11 +636,10 @@ export const chartColors = [
  */
 const CHART_FORMULA_PATTERN = /^[A-Za-z0-9_ .,+\-*/()%^]*$/;
 
-// Helper, not vocabulary — ADR-008 rules this the one genuine exception to the
-// module-export rule: every consumer copies these 4 lines locally instead of
-// importing them (apps/start/src/utils/object-to-zod-enums.ts is the frontend's
-// copy). Kept private here for report.constants.ts's own use building the enums
-// below.
+// Helper, not vocabulary: every consumer copies these 4 lines locally instead
+// of importing them (apps/start/src/utils/object-to-zod-enums.ts is the
+// frontend's copy). Kept private here, for this file's own use building the
+// enums below.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {
@@ -757,7 +754,6 @@ export const zChartFormula = z.object({
     ),
 });
 
-// Event with type field for discriminated union
 export const zChartEventWithType = zChartEvent.extend({
   type: z.literal('event'),
 });
@@ -792,7 +788,6 @@ export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zCriteria = z.enum(['on_or_after', 'on']);
 
-// Report Options - Discriminated union based on chart type
 export const zFunnelOptions = z.object({
   type: z.literal('funnel'),
   funnelGroup: z.string().optional(),
@@ -945,28 +940,18 @@ export const zReport = zReportInput.extend({
 export const zChartInput = zReportInput;
 
 // --------------------------------------------------------------------------
-// Inferred report/chart types, moved from
-// packages/validation/src/types.validation.ts (ADR-008's module map: report
-// owns "C" for the chart/report/widget vocabulary). They land beside the
-// schemas they infer from, which is what removes that file's `import type { … }
-// from './index'` back-edge. `IChartEvents` and `ISetCookie` do NOT come along:
-// the first is a dead alias with no importers, the second is
-// already../../shared/cookie.ts. `UnionOmit` has no owning module — it is kept
-// here, with the report types it is only ever applied to (apps/start's
-// reportSlice), until M11-007 gives apps/start its own copy.
+// `UnionOmit` has no owning module; it is kept here, with the report types it
+// is only ever applied to (apps/start's reportSlice).
 // ---------------------------------------------------------------------------
 
 export type UnionOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>
   : never;
 
-// For saved reports - complete report with required display fields
 export type IReport = z.infer<typeof zReport>;
 
-// For API/engine use - flexible input
 export type IReportInput = z.infer<typeof zReportInput>;
 
-// With resolved dates (engine internal)
 export interface IReportInputWithDates extends IReportInput {
   startDate: string;
   endDate: string;

@@ -24,7 +24,6 @@ function optional(
   return condition ? fragment() : sql.empty;
 }
 
-/** V1's `WHERE project_id = .. AND deleted = 0 [AND type = ..] [AND (name|id ILIKE ..)]`. */
 function liveGroupsCondition(query: {
   projectId: string;
   type?: string;
@@ -168,8 +167,6 @@ export function groupMemberProfilesQuery(
     OFFSET ${sql.uint64(query.offset)}
   `;
 }
-
-// ---- packages/trpc/src/routers/group.ts's inline queries
 
 export function groupEventMetricsQuery(query: {
   projectId: string;

@@ -51,16 +51,13 @@ function transformBots(bots: any[]): any[] {
     const hasRegexChars = regexSpecialChars.test(regex);
 
     if (hasRegexChars) {
-      // Keep as regex
       return { regex, ...rest };
     }
-    // Convert to includes
     return { includes: regex, ...rest };
   });
 }
 
 async function main() {
-  // Get document, or throw exception on error
   try {
     const data = await fetch(
       'https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/bots.yml'

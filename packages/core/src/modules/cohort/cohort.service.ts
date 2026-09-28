@@ -67,15 +67,10 @@ export function cohortMaterializeLimit(config: CoreConfig): number {
 // by default, which is how these queries OOM'd instead of spilling). When only
 // the limit is set — or the pair is inverted — the threshold derives as
 // limit/3. Spilling early costs little: the volume spilled is set by the data,
-// not the threshold (measured on 8.3M profiles, ~281MB spilled whether the
-// threshold was 300, 512 or 768MB, at 6.9s/6.7s/6.0s, while peak memory climbed
-// 410/695/893MiB).
+// not the threshold.
 //
 // A standalone function of its two parsed inputs (not a module-level read), so
-// a test can exercise every branch by calling it directly — bun:test shares one
-// module registry per file even under --isolate, so vitest's
-// vi.resetModules-per-case porting has no equivalent (see AGENTS.md; this was
-// the one vi.resetModules site in the suite, ADR-010's tail table).
+// a test can exercise every branch by calling it directly.
 export function deriveCohortQuerySettings({
   memoryLimitBytes,
   spillBytes: spillBytesParsed,
@@ -112,8 +107,7 @@ export function profileCohortQuerySettings(
 }
 
 // The column is a parameter rather than a post-hoc `.replace('created_at',
-// 'event_date')` on finished text: V1 rewrote the clause that way at all four
-// call sites below, and a fragment has no text to rewrite.
+// 'event_date')` on finished text — a fragment has no text to rewrite.
 function buildTimeConstraint(
   timeframe: Timeframe,
   column: SqlFragment
@@ -148,15 +142,14 @@ function getFrequencyOperator(frequency: Frequency): SqlFragment {
   }
 }
 
-/** The trimmed string form V1 escaped for every filter comparand. */
+/** The trimmed string form used for every filter comparand. */
 function trimmedComparand(value: unknown): string {
   return String(value).trim();
 }
 
 // One event-property filter. Values bind; the property key is a Map key, so it
 // binds as a value too. An `IN`/`NOT IN` list becomes one `Array(String)`
-// param — V1's `IN ()` on an empty list and `IN {p:Array(String)}` on an empty
-// array both match nothing.
+// param; an empty list matches nothing.
 function eventPropertyCondition(filter: IChartEventFilter): SqlFragment {
   const propertyKey = sql.string(filter.name.replace('properties.', ''));
   const { value, operator } = filter;
@@ -350,10 +343,7 @@ function normalizeProfileColumn(name: string): string {
 // column, qualified with the table name. Cohort definitions come from the API,
 // so both halves are user-controlled: the Map key is a *value* and binds as
 // one, and the plain column goes through `sql.id`, which throws rather than
-// inlining anything that is not a bare (once-qualified) identifier. V1 inlined
-// it verbatim — the one input class whose behaviour changes is a non-identifier
-// column name, which V1 turned into a ClickHouse `UNKNOWN_IDENTIFIER` and V2
-// rejects before the round trip.
+// inlining anything that is not a bare (once-qualified) identifier.
 function profileColumnAccess(normalizedName: string): SqlFragment {
   if (normalizedName.startsWith('profiles.properties.')) {
     const propKey = normalizedName.replace('profiles.properties.', '');
@@ -374,10 +364,9 @@ function buildProfileCohortHavingClause(
   // a hash of every referenced column — makes all aggregates pick their
   // value from the same winning row, deterministically. The hash (rather
   // than the raw value tuple) keeps the per-group comparison state at a
-  // fixed 8 bytes: measured on 8.8M profiles, the raw-tuple key cost ~40%
-  // extra query time while the hashed key is free. A wrong tie-break would
-  // need a version tie AND a 64-bit collision between different rows — and
-  // even then every aggregate in the query still elects the same row.
+  // fixed 8 bytes, cheaper than comparing the raw tuple. A wrong tie-break
+  // would need a version tie AND a 64-bit collision between different rows —
+  // and even then every aggregate in the query still elects the same row.
   const referencedColumns = Array.from(
     new Set(properties.map((f) => normalizeProfileColumn(f.name)))
   ).map(profileColumnAccess);
@@ -421,8 +410,7 @@ export function buildPropertyBasedCohortQuery(
 }
 
 // `INTERSECT` / `UNION DISTINCT` are not `sql.join` separators (that set is
-// closed on purpose), so the criteria fold left — the same associativity
-// `queries.join(' INTERSECT ')` produced.
+// closed on purpose), so the criteria fold left.
 function combineCriteriaQueries(
   queries: SqlFragment[],
   operator: 'and' | 'or'
@@ -932,8 +920,6 @@ export async function listCohortMemberProfiles(
     ? sql`AND ${sql.join(extraConditions, ' AND ')}`
     : sql.empty;
 
-  // Converted with `buildFilterWhere`, which now returns fragments. V1's plain
-  // `IN (subquery)` on the Distributed `cohort_members` is kept as written.
   const rows = await chQuery<{ id: string; total_count: number }>(
     deps,
     sql`
@@ -1003,8 +989,8 @@ export function cohortMemberEventsQuery(
   window: CohortActivityWindow,
   limit: number
 ): SqlFragment {
-  // V1's plain `IN (subquery)` on the Distributed `cohort_members` is kept as
-  // written — a conversion changes the binding of values and nothing about the
+  // This plain `IN (subquery)` on `cohort_members` is left as-is — changing
+  // how the subquery binds its values would not change anything about
   // distribution semantics.
   return sql`
     SELECT name, count() AS count
@@ -1038,7 +1024,6 @@ export async function getCohortEventsPerDay(
   cohortId: string,
   days = 30
 ): Promise<{ date: string; count: number }[]> {
-  // `IN (subquery)` on the Distributed `cohort_members`: kept as V1 wrote it.
   const lookbackDays = sql.uint64(days);
   const rows = await chQuery<{ date: string; count: number }>(
     deps,
@@ -1071,7 +1056,6 @@ export function cohortMemberRoutesQuery(
   window: CohortActivityWindow,
   limit: number
 ): SqlFragment {
-  // `IN (subquery)` on the Distributed `cohort_members`: kept as V1 wrote it.
   return sql`
     SELECT path, count() AS count
     FROM ${sql.id(TABLE.events)}
@@ -1121,8 +1105,7 @@ export function createCohortService(
    * the completed record is still there, and the record is never collected
    * because nothing gets added. `deduplicationId`, in contrast, is released by
    * `moveToFinished` on both completion and terminal failure, so it only
-   * collapses a compute that is genuinely still in flight (ADR-005: "cohort
-   * must NOT be normalised onto jobId").
+   * collapses a compute that is genuinely still in flight.
    */
   async function enqueueCompute(cohortId: string): Promise<void> {
     await deps.queues.cohortCompute.cohortCompute.add(

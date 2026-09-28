@@ -1,13 +1,7 @@
 /**
- * Tests for the legacy `POST /event` compat route (ADR-015 entry 1, reversed:
- * the route is KEPT, produces to Kafka exactly like /track, and is measured per
- * client so the deferred removal decision has data).
- *
- * Ported from apps/api/src/controllers/event.controller.test.ts with M9-004,
- * when the controller and its usage hook moved into this module. The producer
- * is an argument now, so V1's `vi.mock` of @openpanel/queue becomes a plain
- * stub, and the counter lives on core's one registry rather than prom-client's
- * global one — same assertions.
+ * Tests for the legacy `POST /event` compat route: the route is KEPT,
+ * produces to Kafka exactly like /track, and is measured per client so a
+ * future removal decision has data.
  *
  * The `mixan-*` header fallback moved with the validator itself — see
  * `src/client-auth.test.ts`.

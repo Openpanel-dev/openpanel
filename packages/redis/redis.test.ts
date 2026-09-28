@@ -1,14 +1,14 @@
 /**
  * The CACHE client must reject promptly when Redis is unreachable.
  *
- * Drill 02 (rev e004e199) measured `/track` blocking 9,427 / 12,039 / 41,978 ms
- * on a stopped Redis, with 10 of 20 requests never answered inside 30 s,
- * because the command was queued and waited out ioredis's 20-attempt reconnect
- * cycle. These tests pin the three properties that fixed it, and the one that
- * must NOT change (the queue client).
+ * Without this, `/track` could block for tens of seconds on a stopped Redis
+ * (some requests never answering at all) because the command was queued and
+ * waited out ioredis's 20-attempt reconnect cycle. These tests pin the three
+ * properties that fixed it, and the one that must NOT change (the queue
+ * client).
  *
- * No real Redis: an unreachable port covers "never connected", and a fake RESP
- * server covers "connected, then gone".
+ * No real Redis: an unreachable port covers "never connected", and a fake
+ * RESP server covers "connected, then gone".
  */
 
 import net from 'node:net';

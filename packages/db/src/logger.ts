@@ -1,11 +1,11 @@
-// Self-contained pino instantiation. packages/db is a leaf "stays" package
-// (TARGET_ARCHITECTURE §7) and must not reach into @openpanel/core just to
-// build a logger — that direction is backwards, since core itself depends on
-// db. This is the same implementation @openpanel/core/clients/logger.ts carries
-// (both descend from the pre-dissolve @openpanel/logger package) — duplicated
-// here deliberately rather than shared, because there is no home narrower than
-// "the package itself" that both can reach without reintroducing the db <->
-// core cycle this file exists to remove.
+// Self-contained pino instantiation. packages/db is a leaf package and must
+// not reach into @openpanel/core just to build a logger — that direction is
+// backwards, since core itself depends on db.
+//
+// This is the same implementation @openpanel/core's `src/pino-logger.ts`
+// carries, duplicated here deliberately rather than shared: there is no home
+// narrower than "the package itself" that both can reach without
+// reintroducing the db <-> core cycle this file exists to avoid.
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
@@ -15,7 +15,7 @@ export type ILogger = PinoLogger;
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 const silent = process.env.LOG_SILENT === 'true';
 
-// Exactly one shipping path at a time (see logging-capture-plan.md):
+// Exactly one shipping path at a time:
 // - 'otlp': pino ships via the HyperDX transport (requires HYPERDX_API_KEY).
 // - 'stdout': pino writes JSON to stdout; an external collector ships it.
 const logExporter =
@@ -91,9 +91,9 @@ function getServiceName(name: string): string {
     .join('-');
 }
 
-// Same Bun/pino-pretty incompatibility as @openpanel/core/clients/logger.ts's
-// `isBun` guard — see its comment. Kept in sync by hand, like the rest of
-// this file.
+// Same Bun/pino-pretty incompatibility as @openpanel/core's
+// `src/pino-logger.ts`'s `isBun` guard — see its comment. Kept in sync by
+// hand, like the rest of this file.
 const isBun = !!process.versions.bun;
 
 export function createLogger({ name }: { name: string }): ILogger {

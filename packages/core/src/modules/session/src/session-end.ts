@@ -1,7 +1,7 @@
 // Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
-// (`SessionEndDeps`): M10-006 moved the binding into `session.jobs.ts`, where
-// the job's `ctx` supplies every client, so the requestId that opened the
-// session still labels the rows this close writes.
+// (`SessionEndDeps`), bound in `session.jobs.ts` from the job's own `ctx`, so
+// the requestId that opened the session still labels the rows this close
+// writes.
 
 import type { CoreConfig } from '../../../config';
 import type { EnqueueOptions } from '../../../jobs/define';

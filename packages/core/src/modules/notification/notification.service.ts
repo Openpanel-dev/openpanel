@@ -1,13 +1,9 @@
-// The delivery body moves here too, from apps/worker/src/jobs/notification.ts
-// (DELEGATE PATTERN: that file becomes a thin wrapper calling
-// `deliverNotification`).
-//
 // `createNotification` / `triggerNotification` /
 // `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
-// the BullMQ-producer orchestration around a rule match — live in this module's
-// own `src/notification-dispatch.ts` since M11-003, built on the rule matching,
-// templates, cache and constants exported below. They are a separate file only
-// so the enqueue side is not dragged into every import of this one.
+// the BullMQ-producer orchestration around a rule match — live in this
+// module's own `src/notification-dispatch.ts`, built on the rule matching,
+// templates, cache and constants exported below. They are a separate file
+// only so the enqueue side is not dragged into every import of this one.
 //
 // Postgres is `deps.db` and `Prisma.DbNull` is `deps.prisma.DbNull`: nothing
 // here imports @openpanel/db as a value, which is what keeps constructing a
@@ -73,7 +69,7 @@ export type INotificationPayload =
 // `getNotificationRulesByProjectId` is `cacheablePerDeps` — `cacheable` keys on
 // the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps
 // travel beside the key rather than inside it and the Redis key stays
-// byte-identical. Every function in this file now reads `deps.db`.
+// byte-identical. Every function in this file reads `deps.db`.
 
 // -- Rule cache --------------------------------------------------------
 
@@ -330,10 +326,9 @@ export async function deliverNotification(
   // Returning rather than throwing here (and in the missing-config branch
   // below) resolves `notificationQueueJobs.sendNotification`'s promise
   // normally, so BullMQ records the job as completed instead of failed —
-  // the delivery is silently dropped. Left as-is: no test exercises either
-  // branch today, and flipping the job outcome from success to failure is a
-  // behavior change out of this task's scope (docs/review/notification.md,
-  // "Not covered by any rule" #1).
+  // the delivery is silently dropped. Left as-is deliberately: flipping the
+  // job outcome from success to failure is a behavior change, and no test
+  // exercises either branch today.
   if (
     !isValidPayload<INotificationPayload>(
       payload,
@@ -521,10 +516,7 @@ export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
 // This wraps only `dispatch` (what notification.jobs.ts needs). Every other
 // function above and in ./src/notification-dispatch.ts is called directly —
 // by notification.rpc.ts, by session/ingest as siblings, and by index.ts's
-// barrel — not through ctx.services.notification. Consolidating that would
-// mean changing those other modules' call sites, out of this task's scope
-// (docs/review/notification.md, "Not covered by any rule" #2; the same
-// shape misc.md's MiscService finding describes for that module).
+// barrel — not through ctx.services.notification.
 export function createNotificationService(
   deps: ServiceDeps,
   _services: () => Services

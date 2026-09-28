@@ -1,12 +1,10 @@
-// ADR-005's acceptance note gives `flushExports` to the integration module.
-// Behaviour is V1's, verbatim; Prisma, the ClickHouse client and the
-// object-store adapter factory arrive as injected deps so the orchestration is
-// testable without `mock.module` (same idiom as
-// modules/session/src/runtime.ts).
+// Prisma, the ClickHouse client and the object-store adapter factory arrive
+// as injected deps so the orchestration is testable without `mock.module`
+// (same idiom as modules/session/src/runtime.ts).
 //
-// The window query is a MOVE, not an ADR-013 conversion: it already binds every
-// value through ClickHouse's own `{name:Type}` params, and converting it to the
-// `sql` tag would change the emitted statement. Kept byte-identical.
+// The window query already binds every value through ClickHouse's own
+// `{name:Type}` params; converting it to the `sql` tag would change the
+// emitted statement, so it stays byte-identical.
 
 import { DateTime } from '@openpanel/shared';
 import { isProviderError } from '../../../clients/provider-error';
@@ -122,9 +120,9 @@ const formatCh = (date: Date): string =>
 /**
  * Drain new ClickHouse events into each configured object-store export.
  *
- * The Redis buffer + per-event hook are gone: ClickHouse is the single source of
- * truth, so this job windows the events table by `inserted_at` and uploads
- * batched files. Export never touches the ingestion path.
+ * ClickHouse is the single source of truth: this job windows the events
+ * table by `inserted_at` and uploads batched files. Export never touches the
+ * ingestion path.
  */
 export async function runFlushExportsCron(
   deps: FlushExportsDeps

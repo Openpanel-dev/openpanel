@@ -1,10 +1,9 @@
 /**
  * RSS/CPU sampling for an arbitrary local process.
  *
- * Prefers the pid file `verification/harness` (the controller's V1 boot
- * script) writes per role — `$V1_HARNESS_RUN_DIR/<label>.pid`, default
- * `/tmp/openpanel-v1-harness` — since that's the exact process the
- * verification stack boots. Falls back to resolving the pid from the TCP
+ * Prefers the pid file written per role at `$V1_HARNESS_RUN_DIR/<label>.pid`
+ * (default `/tmp/openpanel-v1-harness`), since that's the exact process a
+ * harness-managed run boots. Falls back to resolving the pid from the TCP
  * listen socket on the role's port for any other way of starting the stack
  * (e.g. `pnpm dev`), where no pid file exists.
  *
@@ -33,7 +32,7 @@ async function isAlive(pid: number): Promise<boolean> {
   );
 }
 
-/** Resolve the pid `verification/harness` recorded for `label` ('api' | 'worker'), if live. */
+/** Resolve the pid recorded for `label` ('api' | 'worker') in the harness pid file, if live. */
 async function resolvePidFromHarnessFile(
   label: string
 ): Promise<number | null> {

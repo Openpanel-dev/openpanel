@@ -21,14 +21,8 @@ export interface ChartClickMenuItem {
 
 interface ChartClickMenuProps {
   children: React.ReactNode;
-  /**
-   * Function that receives the click event and clicked data, returns menu items
-   * This allows conditional menu items based on what was clicked
-   */
+  /** Returns menu items for the clicked data, so items can be conditional on it. */
   getMenuItems: (e: any, clickedData: any) => ChartClickMenuItem[];
-  /**
-   * Optional callback when menu closes
-   */
   onClose?: () => void;
 }
 
@@ -37,10 +31,6 @@ export interface ChartClickMenuHandle {
   getContainerElement: () => HTMLDivElement | null;
 }
 
-/**
- * Reusable component for handling chart clicks and showing a dropdown menu
- * Wraps the chart and handles click position tracking and dropdown positioning
- */
 export const ChartClickMenu = forwardRef<
   ChartClickMenuHandle,
   ChartClickMenuProps
@@ -58,11 +48,9 @@ export const ChartClickMenu = forwardRef<
     if (e?.activePayload?.[0] && containerRef.current) {
       const payload = e.activePayload[0].payload;
 
-      // Calculate click position relative to chart container
       const containerRect = containerRef.current.getBoundingClientRect();
 
-      // Try to get viewport coordinates from the event
-      // Recharts passes nativeEvent with clientX/clientY (viewport coordinates)
+      // Recharts passes nativeEvent with clientX/clientY (viewport coordinates).
       let clientX = 0;
       let clientY = 0;
 
@@ -86,14 +74,13 @@ export const ChartClickMenu = forwardRef<
           clientX = svgRect.left + (e.activeCoordinate.x ?? 0);
           clientY = svgRect.top + (e.activeCoordinate.y ?? 0);
         } else {
-          // If no SVG found, use container position + activeCoordinate
           clientX = containerRect.left + (e.activeCoordinate.x ?? 0);
           clientY = containerRect.top + (e.activeCoordinate.y ?? 0);
         }
       }
 
       setClickedData(payload);
-      setClickEvent(e); // Store the full event
+      setClickEvent(e);
       setClickPosition({
         x: clientX - containerRect.left,
         y: clientY - containerRect.top,
@@ -131,7 +118,6 @@ export const ChartClickMenu = forwardRef<
     [onClose]
   );
 
-  // Expose methods via ref (for advanced use cases)
   useImperativeHandle(
     ref,
     () => ({
@@ -143,15 +129,12 @@ export const ChartClickMenu = forwardRef<
     []
   );
 
-  // Clone children and add onClick handler to chart components
   const chartWithClickHandler = React.useMemo(() => {
     const addClickHandler = (node: React.ReactNode): React.ReactNode => {
-      // Handle null, undefined, strings, numbers
       if (!React.isValidElement(node)) {
         return node;
       }
 
-      // Check if this is a chart component
       const componentName =
         (node.type as any)?.displayName || (node.type as any)?.name;
       const isChartComponent =
@@ -168,12 +151,10 @@ export const ChartClickMenu = forwardRef<
           return children;
         }
 
-        // Handle arrays
         if (Array.isArray(children)) {
           return children.map(addClickHandler);
         }
 
-        // Handle React fragments
         if (
           React.isValidElement(children) &&
           children.type === React.Fragment
@@ -186,7 +167,6 @@ export const ChartClickMenu = forwardRef<
           });
         }
 
-        // Recursively process single child
         return addClickHandler(children);
       };
 
@@ -202,14 +182,12 @@ export const ChartClickMenu = forwardRef<
             children: processChildren(element.props.children),
           });
         }
-        // For chart components, add onClick directly
         return React.cloneElement(element, {
           onClick: handleChartClick,
           children: processChildren(element.props.children),
         });
       }
 
-      // Recursively process children for non-chart components
       if (element.props.children != null) {
         return React.cloneElement(element, {
           children: processChildren(element.props.children),
@@ -219,7 +197,6 @@ export const ChartClickMenu = forwardRef<
       return node;
     };
 
-    // Handle multiple children (array) or single child
     if (Array.isArray(children)) {
       return children.map(addClickHandler);
     }

@@ -33,8 +33,7 @@ export function RealtimeLiveHistogram({
   );
 
   const chartData = liveData?.minuteCounts ?? [];
-  // Calculate total unique visitors (sum of unique visitors per minute)
-  // Note: This is an approximation - ideally we'd want unique visitors across all minutes
+  // Approximation: totalSessions, not unique visitors across the window.
   const totalVisitors = liveData?.totalSessions ?? 0;
 
   if (isLoading) {

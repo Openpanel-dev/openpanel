@@ -80,7 +80,7 @@ export class EventBuffer extends BaseBuffer {
    * `lastDurableSeq` reaches the sequence of its last event — whoever wrote
    * them. That is the question the Kafka batch handler and shutdown need
    * answered ("are my events in Redis?"), and it is not the same question as
-   * "did I start the write?" (drill 03 re-run).
+   * "did I start the write?".
    */
   private lastQueuedSeq = 0;
   private lastDurableSeq = 0;
@@ -186,8 +186,7 @@ export class EventBuffer extends BaseBuffer {
    * next attempt: the Kafka batch handler is about to resolve offsets that
    * kafkajs commits as soon as it returns, and shutdown is about to exit. Both
    * must be able to SEE the failure and decline to commit — a redelivered
-   * duplicate is recoverable, a dropped `pendingEvents` array is not (drill
-   * 03).
+   * duplicate is recoverable, a dropped `pendingEvents` array is not.
    */
   public async flushPendingOrThrow(
     sinceSeq: number = this.droppedThroughSeq
@@ -240,8 +239,8 @@ export class EventBuffer extends BaseBuffer {
    * Such an event is not re-queued by a failed write. Re-queueing it was right
    * while the buffer owned the retry, and became harmful the moment Kafka took
    * that ownership over: the redelivery buffers a fresh copy, so the old one is
-   * a SECOND copy of one event, and every further redelivery adds another.
-   * Drill 02's re-run measured 4,759 ClickHouse rows for 230 events that way.
+   * a SECOND copy of one event, and every further redelivery adds another
+   * (a real run once saw 4,759 ClickHouse rows for 230 events this way).
    *
    * Producers Kafka does not redeliver — the session-end job, whose Redis `SET
    * NX` claim makes a job retry a no-op — keep the safety net by using plain
@@ -427,21 +426,11 @@ export class EventBuffer extends BaseBuffer {
       return;
     }
 
-    // We don't need to JSON.parse the events at all — they're already
-    // valid JSONEachRow lines (one stringified event per Redis entry).
-    // The client's custom `json.stringify` (set in CLICKHOUSE_OPTIONS)
-    // passes strings through unchanged, so the bytes go straight from
-    // Redis → CH HTTP body. This skips:
-    //   - JSON.parse × N (50–300ms for N=100k)
-    //   - The @clickhouse/client's internal JSON.stringify × N (same)
-    //   - All the intermediate object allocations (saves ~200MB heap)
-    //
-    // We still need `project_id` per row for the per-project pub/sub.
-    // extractProjectId() does an indexOf-based fast path that's ~50×
-    // faster than JSON.parse, and falls back to a real parse on the
-    // rare line where `project_id` appears more than once (e.g. a
-    // user-supplied `properties.project_id`) — so the count is always
-    // attributed to the top-level field, never a nested one.
+    // The queued lines are already valid JSONEachRow (one stringified event
+    // per Redis entry), and the client's custom `json.stringify`
+    // (CLICKHOUSE_OPTIONS) passes strings through unchanged — so skipping
+    // JSON.parse here sends the bytes straight from Redis to the CH HTTP
+    // body, with no parse, no re-stringify and no intermediate allocations.
     const countByProject = new Map<string, number>();
     const yieldEvery = this.getYieldInterval(queueEvents.length, {
       min: 1000,

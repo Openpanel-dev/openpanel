@@ -1,15 +1,12 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
-// V1's chart field resolution, moved verbatim from
-// packages/db/src/services/chart.service.ts: how a report's field name
-// (`referrerName`, `utm_source`, `properties.x.*`, `profile.email`,
-// `group.name`, `cohort:<id>`, `has_profile`) becomes a ClickHouse expression,
-// plus the profile-CTE narrowing helpers.
+// Chart field resolution: how a report's field name (`referrerName`,
+// `utm_source`, `properties.x.*`, `profile.email`, `group.name`,
+// `cohort:<id>`, `has_profile`) becomes a ClickHouse expression, plus the
+// profile-CTE narrowing helpers.
 //
-// Converted every resolver onto the `sql` tag: each one returns a `SqlFragment`
-// whose values — cohort ids, cohort labels, project ids and the
-// `properties[...]` map keys — bind as `{pN:Type}` params, and whose
-// identifiers go through `sql.id`. Callers interpolate the fragment directly;
-// nothing wraps it in `compiledText` any more.
+// Each resolver returns a `SqlFragment` whose values — cohort ids, cohort
+// labels, project ids and the `properties[...]` map keys — bind as
+// `{pN:Type}` params, and whose identifiers go through `sql.id`.
 //
 // The one piece of text this file still builds is the backtick-quoted CTE alias
 // `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`), which is
@@ -260,8 +257,8 @@ export function cohortBreakdownLabelExpr(
 
 /**
  * The membership subselect both filter compilers use for `inCohort` /
- * `notInCohort`. V1 wrote a plain `IN (subquery)` here; ADR-013 conversions
- * never change `IN` / `GLOBAL IN` in either direction.
+ * `notInCohort`. Uses a plain `IN (subquery)`, not `GLOBAL IN` — preserved
+ * deliberately as an accepted trade-off, not an oversight.
  */
 export function buildCohortMembersSubselect(
   cohortIds: string[],
@@ -290,9 +287,9 @@ export function buildAllCohortsLabelExpr(
 
 /**
  * Cohort IDs that need a `cohort_<id>` JOIN alias to be wired up by the
- * caller. After filter SQL became self-contained, only cohort *breakdowns*
- * require the JOIN — they reference `cohort_<id>.profile_id` in their
- * SELECT expression via `getSelectPropertyKey`.
+ * caller. Only cohort *breakdowns* require the JOIN — they reference
+ * `cohort_<id>.profile_id` in their SELECT expression via
+ * `getSelectPropertyKey`. Filter SQL is self-contained and doesn't need it.
  */
 export function collectBreakdownCohortIds(
   breakdowns: IChartBreakdown[]
@@ -395,11 +392,11 @@ function matchPropertyMapPrefix(property: string): string | undefined {
 
 /**
  * True when `getSelectPropertyKey` renders an ARRAY expression rather than a
- * scalar. V1 decided this by testing the rendered TEXT for a `%`, which is
- * reachable two ways: the wildcard branch emits `transformPropertyKey`'s
- * pattern, and a NON-wildcard key containing a literal `%` also matched. Both
- * are reproduced here — including the second, which is a V1 defect
- * (`properties.a%b` is treated as an array and fails at ClickHouse).
+ * scalar, decided by testing the rendered TEXT for a `%`. That's reachable
+ * two ways: the wildcard branch emits `transformPropertyKey`'s pattern, and a
+ * NON-wildcard key containing a literal `%` also matches — a known defect
+ * (`properties.a%b` is treated as an array and fails at ClickHouse), kept for
+ * behavioral parity.
  */
 export function isWildcardPropertyKey(rawProperty: string): boolean {
   const property = normalizeEventField(rawProperty);
@@ -532,8 +529,8 @@ export function profilePropertiesCteSelect(
 
 /**
  * The top-level profiles columns a chart's `profile.*` references read —
- * `id` always (the join key), then `properties` / the scalar columns V1's
- * `getProfileFields` recognised, in first-seen order.
+ * `id` always (the join key), then `properties` / the recognized scalar
+ * columns, in first-seen order.
  */
 export function collectProfileCteFields(refs: { name: string }[]): string[] {
   const fields = new Set<string>(['id']);

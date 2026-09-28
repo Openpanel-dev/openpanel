@@ -15,16 +15,12 @@ export interface IManifest {
   max_event_time: string;
   schema_version: number;
   created_at: string;
-  // Partition info for easy discovery
   partition_date: string; // YYYY-MM-DD
   partition_hour: string; // HH
 }
 
 const CURRENT_SCHEMA_VERSION = 1;
 
-/**
- * Create a manifest for a batch
- */
 export function createManifest(
   batchInfo: IBatchInfo,
   fileNames: string[]
@@ -45,26 +41,14 @@ export function createManifest(
   };
 }
 
-/**
- * Serialize manifest to JSON
- */
 export function serializeManifest(manifest: IManifest): string {
   return JSON.stringify(manifest, null, 2);
 }
 
-/**
- * Parse a manifest from JSON
- */
 export function parseManifest(json: string): IManifest {
   return JSON.parse(json) as IManifest;
 }
 
-/**
- * Manifest filename (always the same)
- */
 export const MANIFEST_FILENAME = 'manifest.json';
 
-/**
- * Manifest content type
- */
 export const MANIFEST_CONTENT_TYPE = 'application/json';

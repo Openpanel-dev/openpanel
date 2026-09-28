@@ -1,4 +1,3 @@
-// src/polar.ts
 import { Polar } from '@polar-sh/sdk';
 
 export {

@@ -1,17 +1,11 @@
-// V1's Fastify controller and the worker's `cron.ping.ts` stay the LIVE code
-// paths (DELEGATE PATTERN) and call the functions below verbatim — no new
-// behaviour.
-//
 // `GET/POST /misc/og/clear` and `/misc/favicon/clear` are deliberately absent:
 // nothing proxies them.
 //
-// The ClickHouse CLIENT is `deps.ch` — reads through ch-query.ts, the one write
-// through `deps.ch.insert` — so the `loadCh` lazy import of `@openpanel/db` is
-// gone. M15-005 dropped the last hop too: these three statements are raw
-// strings, not `sql` fragments, so they still need `TABLE_NAMES` /
-// `formatClickhouseDate`, and core owns its own parity-tested copies of both
-// (shared/ch-tables.ts, shared/ch-dates.ts, guarded by their `.parity.test.ts`
-// siblings). Converting the STATEMENTS is ADR-013's P7 work, not this wave's.
+// The ClickHouse CLIENT is `deps.ch` — reads through ch-query.ts, the one
+// write through `deps.ch.insert`. These three statements are raw strings, not
+// `sql` fragments, so they still need `TABLE_NAMES` / `formatClickhouseDate`,
+// and core owns its own parity-tested copies of both (shared/ch-tables.ts,
+// shared/ch-dates.ts, guarded by their `.parity.test.ts` siblings).
 //
 // `getCache` is a plain static import. It was lazy to survive core tests that
 // partially mock `@openpanel/redis` without a `getCache` export; those mocks
@@ -94,8 +88,7 @@ function validateUrl(raw?: string): URL | null {
   }
 }
 
-// Unlike `loadCache` above, this reaches the redis singleton directly rather
-// than through `deps`/`ctx` — a known R6 gap (docs/review/misc.md), left as
+// Reaches the redis singleton directly rather than through `deps`/`ctx`:
 // nothing calling these two functions today holds a `deps`/`ctx` to thread.
 async function getFromCacheBinary(
   key: string
@@ -254,8 +247,6 @@ export async function getFavicon(
 
     let { buffer, contentType } = await fetchImage(imageUrl, logger);
 
-    // If the direct favicon fetch failed and it's not from DuckDuckGo's
-    // service, try DuckDuckGo's favicon service as a fallback
     if (buffer.length === 0 && !imageUrl.hostname.includes('duckduckgo.com')) {
       const duckduckgoUrl = new URL(
         `https://icons.duckduckgo.com/ip3/${url.hostname}.ico`
@@ -457,9 +448,8 @@ export async function getGeoReport(
 
 /**
  * The outbound half of "ping": a self-hosted instance's own cron job,
- * reporting its event count back to `api.openpanel.dev/misc/ping` (the H
- * route above, on OUR side). Ported verbatim from
- * apps/worker/src/jobs/cron.ping.ts.
+ * reporting its event count back to `api.openpanel.dev/misc/ping` (the
+ * route above, on OUR side).
  */
 export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
   if (deps.config.pingDisabled) {

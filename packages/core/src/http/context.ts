@@ -21,7 +21,6 @@ import type { CookieJar, CookieOptions } from '../shared/cookie';
 import { clientIpHook, requestIdHook, timestampHook } from './hooks';
 import { resolveSession } from './session';
 
-/** Ported from V1's requestLoggingHook (apps/api/src/hooks/request-logging.hook.ts). */
 const UNLOGGED_PATH_PREFIXES = [
   '/healthcheck',
   '/healthz',
@@ -29,7 +28,7 @@ const UNLOGGED_PATH_PREFIXES = [
   '/misc',
 ];
 const UNLOGGED_METHODS = ['OPTIONS'];
-/** A write keeps running to completion without its client, as it always did. */
+/** A write keeps running to completion without its client. */
 const CANCELLABLE_METHODS = new Set(['GET', 'HEAD']);
 const LOGGED_INGEST_HEADERS = [
   'openpanel-client-id',
@@ -81,16 +80,15 @@ export function requestContext(deps: AppDeps) {
 
 export interface RequestLoggingOptions {
   /**
-   * V1 read `ENABLE_VERBOSE_LOGGING` here; core reads no environment, so the
-   * parsed client-id list arrives from `apps/api`'s config.
+   * Core reads no environment; the parsed client-id list arrives from
+   * `apps/api`'s config instead.
    */
   verboseClientIds?: string[];
 }
 
 /**
- * V1's `onResponse` requestLoggingHook. One `info` line per request, named
- * `request done` — the `requestId` field rides in from the child logger,
- * replacing V1's `reqId`.
+ * One `info` line per request, named `request done` — the `requestId`
+ * field rides in from the child logger.
  */
 export function requestLogging(
   deps: AppDeps,
@@ -140,8 +138,6 @@ export function requestLogging(
             method: request.method,
             elapsed,
             headers: pickHeaders(request.headers, LOGGED_INGEST_HEADERS),
-            // V1 logs the whole /track body here; ADR-018 R6's budget for it is
-            // P9's call, not this port's.
             body: path.startsWith('/track') ? body : undefined,
             clientIp: verbose ? ctx.ip : '',
             clientIpHeader: verbose ? clientIpHeader : '',
@@ -175,8 +171,9 @@ function wrapCookies(cookie: ElysiaCookies): CookieJar {
 }
 
 // `signed` is deliberately not forwarded: Elysia signs by app-level
-// `cookie: { secrets, sign: [...] }` config, not per write, so app.ts lists
-// the signed names (P3). Everything else maps one-to-one.
+// `cookie: { secrets, sign: [...] }` config, not per write, so
+// apps/api/src/main.ts lists the signed names. Everything else maps
+// one-to-one.
 function writeCookie(
   cookie: ElysiaCookies,
   name: string,

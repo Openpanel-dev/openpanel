@@ -1,8 +1,5 @@
-// The schedules moved onto the jobs at ADR-021.
-//
 // `delete` is this module's fragment of the ONE `cron` queue's jobs, spread
-// into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
-// (apps/worker/src/boot-cron.ts).
+// into jobs.registry.ts.
 
 import { z } from 'zod';
 import type { Ctx } from '../../context';
@@ -18,7 +15,7 @@ import {
   type WindDownDeps,
 } from './src/wind-down';
 
-/** Hourly — V1's cadence (apps/worker/src/boot-cron.ts). */
+/** Hourly. */
 const WIND_DOWN_CRON = '0 * * * *';
 
 /** This module's fragment of the `cron` queue's jobs. */
@@ -48,9 +45,7 @@ export const organizationCronJobs = {
  * Two reaches stay dynamic. The sibling service's two ClickHouse counts are not
  * on `OrganizationService`, and `src/win-back-pitch.ts` pulls the agent runtime
  * — a static edge from here would drag either into jobs.registry.ts's eager
- * import graph, which every core test file walks. M15-119 (R11) ruled this the
- * ADR-022 "legitimate lazy asset load" exception, not the sibling- service
- * defect R6 forbids: kept as is.
+ * import graph, which every core test file walks.
  */
 async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
   const [

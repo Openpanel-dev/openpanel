@@ -1,17 +1,15 @@
-// Every ClickHouse query the session module runs, as pure `sql` fragments. The
-// SQL text is V1's, with every value bound as a `{pN:Type}` parameter instead
-// of an escaped literal, and each conversion was proven byte-equivalent against
-// the local prod-copy (see the task report).
+// Every ClickHouse query the session module runs, as pure `sql` fragments,
+// with every value bound as a `{pN:Type}` parameter instead of an escaped
+// literal.
 //
-// Dates bind as V1's own `YYYY-MM-DD HH:mm:ss` strings on purpose: a String
-// param in a DateTime64 position is parsed exactly like the literal it
-// replaces, so the result sets cannot drift by a millisecond truncation.
+// Dates bind as `YYYY-MM-DD HH:mm:ss` strings on purpose: a String param in
+// a DateTime64 position is parsed exactly like the literal it replaces, so
+// the result sets cannot drift by a millisecond truncation.
 //
 // Cluster note: `sessions` and `session_replay_chunks` are Distributed on
 // Cloud. The has_replay LEFT JOIN subquery and any `IN (SELECT...)` a filter
-// compiles to keep V1's exact shape and run under the client's
-// `distributed_product_mode: 'allow'` as before — converting a query is not the
-// place to change its cluster semantics.
+// compiles to run under the client's `distributed_product_mode: 'allow'` —
+// changing that shape changes the query's cluster semantics.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -94,7 +92,7 @@ export interface SessionListQuery {
   filterClauses?: CompiledFilterClauses;
 }
 
-/** V1 only skips the lookback window when a page is bounded by explicit dates. */
+/** Skips the lookback window only when a page is bounded by explicit dates. */
 export function hasSessionListLookback(query: {
   cursor?: Date;
   startDate?: Date;
@@ -269,7 +267,7 @@ export function sessionHasReplayQuery(query: {
   `;
 }
 
-/** The equality filters `querySessionsCore` accepts, in V1's clause order. */
+/** The equality filters `querySessionsCore` accepts. */
 const QUERY_SESSIONS_EQUALITY_COLUMNS = [
   ['profileId', 'profile_id'],
   ['referrer', 'referrer'],
@@ -298,7 +296,7 @@ export interface QuerySessionsQuery
 /**
  * Without an explicit order ClickHouse returns whatever it reads first, so a
  * bare LIMIT hands back the oldest sessions in the window while the MCP tool
- * labels them `created_at desc`. The events twin took the same fix in #476.
+ * labels them `created_at desc`.
  */
 export function querySessionsQuery(query: QuerySessionsQuery): SqlFragment {
   const equalities = QUERY_SESSIONS_EQUALITY_COLUMNS.filter(

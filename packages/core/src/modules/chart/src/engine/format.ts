@@ -48,28 +48,23 @@ export function format(
       : concreteSeries;
 
   const series = visibleConcreteSeries.map((cs) => {
-    // Find definition for this series
     const definition = definitions[cs.definitionIndex];
     const alphaId = includeAlphaIds
       ? alphabetIds[cs.definitionIndex]
       : undefined;
 
-    // Build display name with optional alpha ID
     let displayName: string[];
 
-    // Replace the first name (which is the event name) with the display name if it exists
     const names = cs.name.slice(0);
     if (cs.definition.displayName) {
       names.splice(0, 1, cs.definition.displayName);
     }
-    // Add the alpha ID to the first name if it exists
     if (alphaId) {
       displayName = [`(${alphaId}) ${names[0]}`, ...names.slice(1)];
     } else {
       displayName = names;
     }
 
-    // Calculate metrics for this series
     const counts = cs.data.map((d) => d.count);
     const metrics = {
       sum: sum(counts),
@@ -79,13 +74,11 @@ export function format(
       count: cs.data.find((item) => !!item.total_count)?.total_count,
     };
 
-    // Build event object for compatibility
     const eventName =
       definition?.type === 'formula'
         ? definition.displayName || definition.formula || 'Formula'
         : definition?.name || cs.context.event || 'unknown';
 
-    // Find matching previous series
     const previousSerie = previousSeries?.find(
       (ps) =>
         ps.definitionIndex === cs.definitionIndex &&
@@ -152,7 +145,6 @@ export function format(
     };
   });
 
-  // Sort series by sum (biggest first)
   series.sort((a, b) => b.metrics.sum - a.metrics.sum);
 
   // Calculate global metrics (excluding hidden series)

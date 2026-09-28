@@ -1,5 +1,3 @@
-// Reaches Postgres as `deps.db`; the `loadDb` lazy loader is gone.
-
 import type { ServiceDeps } from '../../../services';
 
 /** Only Postgres — narrowed so any of this module's several callers, none of

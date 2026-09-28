@@ -1,30 +1,22 @@
-// The sole `process.env` READER on the V2 boot path, and since M15-006 that is
-// true rather than aspirational: `packages/core` reads none, so every variable
-// core used to read itself is parsed here and travels down as `AppDeps.config`
-// (`CoreConfig`). The one other `process.env` touch on the path is `main.ts`'s
-// `process.env.TZ = 'UTC'` write, which sets the process's timezone rather than
-// reading configuration. `packages/db` and `packages/redis` keep reading their
-// own connection env until they grow factories — an accepted pragmatic
-// deviation (ADR-007 §7).
+// The sole `process.env` reader on the boot path: `packages/core` reads none,
+// so every variable it needs is parsed here and travels down as
+// `AppDeps.config` (`CoreConfig`). `packages/db` and `packages/redis` still
+// read their own connection env directly — an accepted pragmatic deviation.
 //
-// The shape is ADR-022 R17's, in this order: 1. one zod object over the raw
-// environment; 2. every cross-field invariant as a `.superRefine` BEFORE the
-// transform, so a contradiction is named at boot rather than discovered at
-// runtime; 3. one `.transform` that computes every derived value — URLs,
-// namespaces, IS_PRODUCTION, the listen address, the concurrency map — so
-// nothing downstream re-derives one; 4. `loadConfig(source = process.env)`, so
-// a test hands in a minimal object.
+// Every cross-field invariant runs as a `.superRefine` BEFORE the `.transform`,
+// so a contradiction is named at boot rather than discovered at runtime.
+// `loadConfig(source = process.env)` takes the environment as a parameter so a
+// test can hand in a minimal object.
 //
 // A blank `KEY=` is absent everywhere: `blankToUndefined` runs in front of
 // every field, so `.default` fires on an empty value exactly as it does on an
 // unset one.
 //
 // Invalid config fails boot loudly, with every issue reported at once — never a
-// fail-fast on the first bad var. Two classes, deliberately different: -
-// boot-critical values (roles, queues, Kafka wiring) FAIL; - tuning knobs
+// fail-fast on the first bad var. Two classes, deliberately different:
+// boot-critical values (roles, queues, Kafka wiring) FAIL; tuning knobs
 // (batch sizes, limits, TTLs) fall back to the module's own documented default
-// on a malformed value, which is what the modules did when they parsed these
-// themselves.
+// on a malformed value.
 
 import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
@@ -42,7 +34,6 @@ const PRODUCTION = 'production';
 const DEVELOPMENT = 'development';
 /** pino's own service-name suffix when NODE_ENV is unset. */
 const DEFAULT_SERVICE_ENVIRONMENT = 'dev';
-/** V1's worker deadline (apps/worker/src/boot-workers.ts). */
 const DEFAULT_SHUTDOWN_FORCE_EXIT_MS = 20_000;
 
 const DEFAULT_KAFKA_CLIENT_ID = 'openpanel';
@@ -62,23 +53,23 @@ const DEFAULT_KAFKA_PRODUCER_RETRIES = 2;
 const DEFAULT_KAFKA_PRODUCER_INITIAL_RETRY_MS = 100;
 const DEFAULT_KAFKA_PRODUCER_MAX_RETRY_MS = 1000;
 /**
- * One produce round-trip at a time. ADR-023 rejects raising this: measured at
- * +2-3%, i.e. noise, for a documented reordering hazard.
+ * One produce round-trip at a time — raising this trades a documented
+ * reordering hazard for a throughput gain that measured as noise (2-3%).
  */
 const DEFAULT_KAFKA_PRODUCER_MAX_IN_FLIGHT = 1;
-/** Messages per `send()`. ADR-023: batching on; the win is flat above 25. */
+/** Messages per `send()`; batching's throughput win is flat above this size. */
 const DEFAULT_KAFKA_PRODUCER_BATCH_SIZE = 25;
 /**
- * A partial batch's maximum wait. The linger is added to the request's own
- * response time, so ADR-023 takes 5 ms (82% of the available gain) over the 25
- * ms that would roughly double a quiet install's ingest latency.
+ * A partial batch's maximum wait, added to the request's own response time —
+ * kept small because a larger linger would roughly double ingest latency on a
+ * quiet install.
  */
 const DEFAULT_KAFKA_PRODUCER_BATCH_LINGER_MS = 5;
 const DEFAULT_KAFKA_HANDLER_MAX_ATTEMPTS = 3;
 /**
- * How many dead-lettered events the capped Redis list keeps. A debugging
- * sample, not a recovery mechanism — the volume is in
- * `kafka_events_dead_lettered_total`. Carl's "only keep the last N events".
+ * How many dead-lettered events the capped Redis list keeps — a debugging
+ * sample, not a recovery mechanism; the real volume is in the
+ * `kafka_events_dead_lettered_total` metric.
  */
 const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
@@ -86,26 +77,22 @@ const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
 
 /**
- * How long a duplicate marker outlives its event. It only has to outlive the
- * REPLAY window, not the data: drill 08's eviction rejoin — the one
- * reassignment that costs duplicate rows — was 3,094 ms, and drill 06's
- * lost-ACK replay landed ~30 s after the produce. Two minutes is ~40x the first
- * and 4x the second, and covers a process restart resuming from its last
- * committed offset.
+ * How long a duplicate marker outlives its event — it only needs to outlive
+ * the replay window, not the data. Two minutes gives comfortable margin over
+ * observed redelivery windows (a consumer-eviction rejoin lands in seconds; a
+ * lost-ACK replay lands ~30s out) and covers a process restart resuming from
+ * its last committed offset.
  *
- * It is the knob that decides the key count, which is `events/s x TTL`: at the
- * 5,000 events/s the scaling requirement targets that is 600,000 live markers.
- * Measured on this box's Redis 2026-09-14 — 200,000 real markers cost 137.6
- * bytes each including the expires dict — so ~79 MB. Longer is only worth
- * buying if a redelivery window longer than this is ever observed.
+ * It also sets the live key count (`events/s x TTL`), so raising it is a
+ * direct Redis-memory cost, not a free knob.
  */
 const DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS = 120_000;
 
 /**
- * The Kafka events consumer's token. Renamed from `events_kafka` — there is one
- * events transport now, so there is one token for it (ADR-004 rec 5/6). Carl
- * updates the cloud env at cutover, which is why the old spelling gets its own
- * message below rather than being aliased.
+ * The Kafka events consumer's token. Renamed from `events_kafka` — there is
+ * one events transport now, so there is one token for it. The old spelling
+ * gets its own error message below (`RENAMED_QUEUE_TOKENS`) rather than being
+ * silently aliased, since a deployment's env is updated at its own pace.
  */
 export const KAFKA_QUEUE_TOKEN = 'events';
 
@@ -122,17 +109,17 @@ const RENAMED_QUEUE_TOKENS: Record<string, string> = {
   events_kafka: KAFKA_QUEUE_TOKEN,
 };
 
-/** V1's `getConcurrencyFor` key derivation, verbatim — `cohortCompute` keeps
- * Reading `COHORTCOMPUTE_CONCURRENCY` (ADR-005 acceptance note: no rename). */
+/** Uppercases and strips non-alphanumerics to build the env key, so
+ *  `cohortCompute` deliberately keeps reading `COHORTCOMPUTE_CONCURRENCY`
+ *  rather than a hyphenated or underscored variant. */
 const NON_ENV_KEY_CHARS = /[^A-Z0-9]/g;
 
 export function concurrencyEnvKey(queueName: string): string {
   return `${queueName.toUpperCase().replace(NON_ENV_KEY_CHARS, '_')}_CONCURRENCY`;
 }
 
-// An unset or blank var falls through to the default, matching the
-// `value?.trim() || fallback` idiom the ported reads used before this file
-// existed — `.default()` alone only fires on `undefined`, not `""`.
+// An unset or blank var falls through to the default — `.default()` alone
+// only fires on `undefined`, not `""`.
 function blankToUndefined(value: unknown): unknown {
   if (typeof value !== 'string') {
     return value;
@@ -158,7 +145,7 @@ const optionalString = z.preprocess(blankToUndefined, z.string().optional());
 const stringWithDefault = (fallback: string) =>
   z.preprocess(blankToUndefined, z.string().default(fallback));
 
-/** `KEY=true` or `KEY=1`. The two spellings V1 accepted interchangeably. */
+/** `KEY=true` or `KEY=1` are both accepted as on. */
 const trueOrOneSchema = z.preprocess(
   blankToUndefined,
   z
@@ -215,7 +202,7 @@ const kafkaSaslMechanismSchema = z.preprocess(
     .transform((value) => value as KafkaSaslMechanism | undefined)
 );
 
-/** Any defined value means on — V1's spelling for DISABLE_WORKERS. */
+/** Any defined value means on. */
 const definedIsTrueSchema = z.preprocess(
   blankToUndefined,
   z
@@ -253,8 +240,7 @@ const onUnlessZeroSchema = z.preprocess(
 /**
  * A tuning knob: a positive integer, or `undefined` when unset OR malformed.
  * Malformed keeps the module's own default rather than failing boot — `-1`,
- * `0` and `5000junk` all land on `undefined`, which is what the hand-rolled
- * `parsePositiveInt` guards in `cohort.service.ts` and `lookback.ts` did.
+ * `0` and `5000junk` all land on `undefined`.
  */
 const optionalPositiveInt = z.preprocess(
   blankToUndefined,
@@ -288,9 +274,8 @@ const tokenList = z.preprocess(
 );
 
 /**
- * Same doctrine as `ENABLED_QUEUES` (apps/worker/src/boot-workers.ts's
- * `assertKnownQueue`): a stale or mistyped value fails boot loudly, naming
- * both the offending value and the accepted set.
+ * Same doctrine as `ENABLED_QUEUES` below: a stale or mistyped value fails
+ * boot loudly, naming both the offending value and the accepted set.
  */
 const roleSchema = z.preprocess(
   blankToUndefined,
@@ -343,8 +328,8 @@ const enabledQueuesSchema = z.preprocess(
     )
 );
 
-/** One `<QUEUE>_CONCURRENCY` slot per registry queue. V1 ignored a
- *  non-numeric or non-positive value and kept the default; so does this. */
+/** One `<QUEUE>_CONCURRENCY` slot per registry queue. A non-numeric or
+ *  non-positive value is ignored and the default kept. */
 const concurrencyShape = Object.fromEntries(
   Object.keys(queues).map((name) => [
     concurrencyEnvKey(name),
@@ -364,21 +349,16 @@ const rawSchema = z.object({
     z.coerce.number().int().min(0).default(DEFAULT_API_PORT)
   ),
   /**
-   * Left UNSET means Bun's own default, `0.0.0.0`.
-   *
-   * Deliberate deviation from V1, which defaulted to `localhost` outside
-   * production (apps/api/src/index.ts): `Bun.serve({hostname:'localhost'})`
-   * binds `::1` ONLY, so a dev box's `127.0.0.1` request is refused. Making
-   * the loopback-only bind explicit rather than the accidental default is
-   * what keeps `bun run src/main.ts` reachable the way `node dist/index.js`
-   * was.
+   * Left UNSET means Bun's own default, `0.0.0.0`. `localhost` is deliberately
+   * not the default: `Bun.serve({hostname:'localhost'})` binds `::1` ONLY, so
+   * a dev box's `127.0.0.1` request would be refused.
    */
   API_HOST: optionalString,
   /**
-   * One truthiness rule for the whole tree. Core used to read this three
-   * different ways — `=== 'true'`, `'true' || '1'`, and any truthy string — so
-   * a `SELF_HOSTED=1` deployment got the SSRF guard dropped but kept the
-   * cloud-only cron jobs. `true` or `1`, everywhere.
+   * One truthiness rule for the whole tree — `true` or `1`, everywhere.
+   * Reading this inconsistently across call sites is how a `SELF_HOSTED=1`
+   * deployment could get the SSRF guard dropped while keeping the
+   * cloud-only cron jobs.
    */
   SELF_HOSTED: trueOrOneSchema,
   SHUTDOWN_FORCE_EXIT_MS: z.preprocess(
@@ -388,12 +368,9 @@ const rawSchema = z.object({
 
   // --- queues ---
   /**
-   * Redis Cluster hash-tags every queue key (`cron` -> `{cron}`). Read here
-   * because `main.ts` hands it to `createProducers`, and it decides a Redis
-   * key name: set it on a deployment whose queues already exist unbraced and
-   * every one of them is orphaned. V1 read it as a bare truthy check
-   * (`packages/queue/src/queues.ts` `getQueueName`); a blank value is unset,
-   * exactly as before.
+   * Redis Cluster hash-tags every queue key (`cron` -> `{cron}`). It decides a
+   * Redis key name: set it on a deployment whose queues already exist
+   * unbraced and every one of them is orphaned.
    */
   QUEUE_CLUSTER: definedIsTrueSchema,
   /**
@@ -411,16 +388,13 @@ const rawSchema = z.object({
 
   // --- HTTP surface ---
   /**
-   * The CORS delegator's allowlist (apps/api/src/app.ts:107-110): the
-   * dashboard's own origin plus any extra comma-separated ones. Read once at
-   * boot, exactly as V1 did — changing an origin has always needed a restart.
+   * The CORS delegator's allowlist: the dashboard's own origin plus any extra
+   * comma-separated ones. Read once at boot — changing an origin needs a
+   * restart.
    */
   DASHBOARD_URL: optionalString,
   API_CORS_ORIGINS: optionalString,
-  /**
-   * Signs the three GSC OAuth cookies. Always set in a real deployment; an
-   * unset value degrades to V1's `?? ''`.
-   */
+  /** Signs the three GSC OAuth cookies. Always set in a real deployment. */
   COOKIE_SECRET: z.preprocess(
     blankToUndefined,
     z.string().optional().default('')
@@ -428,7 +402,7 @@ const rawSchema = z.object({
   /** Set on the demo deployment only. `validateSessionToken` short-circuits on
    *  it, and `enforceAccess` bans mutations for it. */
   DEMO_USER_ID: optionalString,
-  /** V1's `requestLoggingHook`: the client ids whose requests log ip/UA. */
+  /** The client ids whose requests log ip/UA. */
   ENABLE_VERBOSE_LOGGING: optionalString,
 
   // --- logging ---
@@ -771,7 +745,7 @@ function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
     brokers: raw.KAFKA_BROKERS,
     eventsTopic: raw.KAFKA_EVENTS_TOPIC,
     // Same broker as the events topic, so a poison message is retained and
-    // countable instead of dropped (ADR-004 delivery semantics).
+    // countable instead of dropped.
     eventsDlqTopic:
       raw.KAFKA_EVENTS_DLQ_TOPIC ?? `${raw.KAFKA_EVENTS_TOPIC}-dlq`,
     consumerGroup: raw.KAFKA_CONSUMER_GROUP,

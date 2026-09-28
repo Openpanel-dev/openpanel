@@ -19,12 +19,12 @@ export type SankeyMode = 'after' | 'before' | 'between';
 export const TOP_ENTRY_EVENTS = 3;
 
 /**
- * Consecutive-repeat dedup, shared by every mode. V1 spelled it as an
- * `arrayFilter` whose lambda indexed its own captured `groupArray`, which
- * ClickHouse re-materialises once per element: Theta(n^2) in the longest single
- * session's event count, fatal on a tenant with one very long session
- * `arrayCompact` is the built-in
- * for exactly this and is linear; the result is byte-identical.
+ * Consecutive-repeat dedup, shared by every mode. An `arrayFilter` whose
+ * lambda indexes its own captured `groupArray` is Theta(n^2) in the longest
+ * session's event count — ClickHouse re-materialises the array once per
+ * element, which is fatal for a tenant with one very long session.
+ * `arrayCompact` is the built-in for exactly this and is linear; the result
+ * is byte-identical.
  */
 const DEDUPE_CONSECUTIVE = compiledText(
   'arrayCompact(groupArray(event_name)) as events_deduped'
@@ -74,8 +74,8 @@ function dateRange(input: SankeyPathsInput): SqlFragment {
 }
 
 /**
- * V1 `buildEventNameFilter`: an include list wins over an exclude list, and it
- * always carries the start/end events so the flow's anchors survive it.
+ * An include list wins over an exclude list, and it always carries the
+ * start/end events so the flow's anchors survive it.
  */
 function eventNameFilter(input: SankeyPathsInput): SqlFragment {
   if (input.include && input.include.length > 0) {
@@ -104,7 +104,7 @@ function sessionEventCte(
 }
 
 interface ModeConfig {
-  /** `null` when the mode has no session restriction (V1's `1 = 1`). */
+  /** `null` when the mode has no session restriction (rendered as `1 = 1`). */
   sessionFilter: SqlFragment | null;
   eventsSlice: SqlFragment;
 }
@@ -148,8 +148,8 @@ function modeConfig(input: SankeyPathsInput): ModeConfig {
 }
 
 /**
- * V1's `sessionPathsQuery`: one row per session carrying its deduped, sliced
- * event path and that path's entry event.
+ * One row per session carrying its deduped, sliced event path and that
+ * path's entry event.
  */
 export function sankeySessionPathsQuery(input: SankeyPathsInput): SqlFragment {
   const { sessionFilter, eventsSlice } = modeConfig(input);

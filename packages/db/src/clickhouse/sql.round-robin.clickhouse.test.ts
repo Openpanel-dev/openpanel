@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
- * R1, the half the round-trip suite cannot reach: bound params must travel
+ * The half the round-trip suite cannot reach: bound params must travel
  * through `withRetry` / round-robin, so a parameterised read keeps the failover
  * behaviour `chQueryWithMeta` already had for raw text.
  *

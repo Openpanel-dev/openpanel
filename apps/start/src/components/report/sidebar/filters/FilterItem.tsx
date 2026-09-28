@@ -23,7 +23,8 @@ import { usePropertyValues } from '@/hooks/use-property-values';
 import { useDispatch } from '@/redux';
 
 // Client-side sanity check: can this raw value possibly match the chosen cast
-// type? Mirrors the SQL casts in packages/db filter-cast.ts. Returns an error
+// type? Mirrors the SQL casts in
+// packages/core/src/modules/chart/src/filter-cast.ts. Returns an error
 // message to show inline, or undefined when valid (or empty / untyped).
 function validateFilterValue(
   value: string,

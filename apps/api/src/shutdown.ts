@@ -2,9 +2,9 @@
 // thing a test can assert rather than a property of how a `Promise.all` was
 // typed.
 //
-// Drill 03 (`verification/drills/03-restart-in-flight.md`) measured a SIGTERM
-// restart permanently losing 2 of 44,075 accepted events while both SIGKILL
-// arms lost none. Graceful shutdown lost them BECAUSE it was graceful: the
+// A SIGTERM restart once permanently lost accepted events (2 of 44,075)
+// while a SIGKILL restart lost none. Graceful shutdown lost them BECAUSE
+// it was graceful: the
 // event buffer's in-process `pendingEvents` array was never flushed to Redis,
 // and the offsets for those events had already been committed, so nothing was
 // redelivered. A crash commits nothing, so Kafka replays the same window.
@@ -25,8 +25,8 @@
 export const SHUTDOWN_EXIT_OK = 0;
 /**
  * Something failed. Exiting non-zero without committing is deliberately the
- * crash shape, which drill 03 proved is the safe one: Kafka redelivers and a
- * duplicate is recoverable where a loss is not.
+ * crash shape — the safe one: Kafka redelivers and a duplicate is
+ * recoverable where a loss is not.
  */
 export const SHUTDOWN_EXIT_FAILED = 1;
 

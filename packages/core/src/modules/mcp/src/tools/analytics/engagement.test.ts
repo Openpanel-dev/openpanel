@@ -14,8 +14,7 @@ const mockGetRetentionLastSeenSeries = mock();
 
 // Mocked at the specifier the source imports resolve to — a whole-barrel
 // replacement would drop every other export those modules carry for any
-// other file sharing this process (bun:test only isolates modules per file
-// under `--isolate`; see AGENTS.md). Restored in `afterAll` from a
+// other file sharing this process. Restored in `afterAll` from a
 // plain-object snapshot taken BEFORE the first `mock.module` call: restoring
 // via the live `await import(...)` binding is a no-op once mocked.
 const actualRetention = await import('../../../../chart/retention.service');
@@ -70,8 +69,8 @@ const noopLogger = {
   child: () => noopLogger,
 };
 
-// Helper: directly invoke the bucketing logic by importing it through a minimal mock server
-// We test the bucketing by calling the tool handler directly via a test double McpServer.
+// Minimal test double for McpServer — captures the registered tool's
+// handler so it can be invoked directly.
 function makeServer() {
   let handler: ((input: unknown) => Promise<unknown>) | null = null;
   return {

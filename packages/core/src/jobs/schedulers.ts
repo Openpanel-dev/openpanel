@@ -1,13 +1,12 @@
-// Ports apps/worker/src/boot-cron.ts onto BullMQ's job-scheduler API. Upsert is
-// keyed on job name — the V1 scheduler id — which is what makes it idempotent
-// across replicas: two processes upserting the same id with the same repeat
-// options at boot converge on one scheduler, with no locking of our own needed.
+// Upsert is keyed on job name, which is what makes it idempotent across
+// replicas: two processes upserting the same id with the same repeat
+// options at boot converge on one scheduler, with no locking of our own
+// needed.
 //
-// The scheduler list is no longer a second, hand-maintained registry — it is
-// derived from the `cron` queue's own jobs, so a job and its schedule cannot
-// drift apart. `schedulersFromRegistry` takes the registry's `cron` queue as
-// data; the registry itself calls it and exports the result as
-// `CRON_SCHEDULES`, so this file imports nothing above it.
+// The scheduler list is derived from the `cron` queue's own jobs, so a job
+// and its schedule cannot drift apart. `schedulersFromRegistry` takes the
+// registry's `cron` queue as data; the registry itself calls it and exports
+// the result as `CRON_SCHEDULES`, so this file imports nothing above it.
 
 import type { Logger } from '../logger';
 import type { AnyJob, QueueDefinition, RepeatSchedule } from './define';
@@ -16,7 +15,7 @@ import { wrap } from './envelope';
 export type { RepeatSchedule } from './define';
 
 export interface SchedulerDefinition {
-  /** V1 scheduler id: the job-scheduler key, and — via BullMQ's own default
+  /** The job-scheduler key, and — via BullMQ's own default
    *  (`jobName ?? jobSchedulerId`) — the job name each run dispatches on. */
   id: string;
   schedule: RepeatSchedule;
@@ -83,9 +82,8 @@ export function schedulersFromRegistry(
   return schedulers.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// V1 gated this on `SELF_HOSTED && NODE_ENV === 'production'`
-// (apps/worker/src/boot-cron.ts:133). `misc.jobs.ts`'s `ping` job declares
-// `cron: null` for exactly this reason — it is never in `CRON_SCHEDULES`.
+// `misc.jobs.ts`'s `ping` job declares `cron: null` for exactly this
+// reason — it is never in `CRON_SCHEDULES`.
 export const PING_SCHEDULE: SchedulerDefinition = {
   id: 'ping',
   schedule: { pattern: '0 0 * * *' },
@@ -193,9 +191,7 @@ function upsert(
   scheduler: SchedulerDefinition
 ): Promise<unknown> {
   // Envelope-shaped for every scheduler-created job — these are freshly
-  // enqueued, never a replay of a V1-shaped job, so there is nothing for the
-  // `cron` compat hook to do here (ADR-005: new data only, old shape read back
-  // through `resolveJob`).
+  // enqueued, so there is nothing for the `cron` compat hook to do here.
   return queue.upsertJobScheduler(scheduler.id, scheduler.schedule, {
     data: wrap(null, {}),
   });
@@ -226,7 +222,8 @@ async function removeConflictingJobs(
         }
       }
     } catch {
-      // Ignored during cleanup — V1's behaviour (boot-cron.ts:24-26).
+      // Ignored during cleanup — a failure here should not block the retry
+      // that follows.
     }
   }
 }

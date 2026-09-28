@@ -45,17 +45,7 @@ export interface ComputeResult {
   extra?: Record<string, unknown>; // share delta pp, rank, sparkline, etc.
 }
 
-// Types imported from ../insight.constants:
-// - InsightMetricKey
-// - InsightMetricEntry
-// - InsightDimension
-// - InsightPayload
-
-/**
- * Render should be deterministic and safe to call multiple times.
- * Returns the shape that matches ProjectInsight create input.
- * The payload contains all metric data and display metadata.
- */
+/** Render should be deterministic and safe to call multiple times. */
 export interface RenderedCard {
   title: string;
   summary?: string;

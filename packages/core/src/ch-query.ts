@@ -1,24 +1,18 @@
 // Core's ClickHouse read path, bound to the scope's client.
 //
-// The six modules on the runtime path used to reach ClickHouse through `await
-// import('@openpanel/db/src/clickhouse/client')` and call that package's
-// `chQuery`. That client has no request scope, so the requestId minted at the
-// edge stopped there. These two functions are `chQuery` / `chQueryWithMeta`
-// over `deps.ch` — the same round-robin/retry proxy `main.ts` builds and hands
-// to every scope — and `deps.logger`, so the `query info` line carries the
-// request's id.
+// `chQuery` / `chQueryWithMeta` wrap `deps.ch` — the same round-robin/retry
+// proxy `main.ts` builds and hands to every scope — and log through
+// `deps.logger`, so the `query info` line carries the request's id.
 //
-// Behaviour is @openpanel/db's, unchanged: `deps.ch.query` IS `withRetry
-// (client => client.query(...))`, the same transport, and the Int-meta coercion
-// below is the same one — ClickHouse's JSON format returns every Int*/UInt*
-// column as a string, so a caller's `count: number` only holds if it is parsed
-// back out here. The one field that cannot survive the move is `host`: the
-// retry proxy does not report which replica served the query.
-// chart/src/run-query.ts made the same trade.
+// `deps.ch.query` IS `withRetry(client => client.query(...))`. The Int-meta
+// coercion below exists because ClickHouse's JSON format returns every
+// Int*/UInt* column as a string, so a caller's `count: number` only holds if
+// it is parsed back out here. The one field that cannot survive the retry
+// proxy is `host`: it does not report which replica served the query.
+// chart/src/run-query.ts makes the same trade.
 //
-// `@openpanel/db/src/clickhouse/sql` is a value import and stays one: ADR-013
-// puts the `sql` tag in packages/db by name, and it is a compile-time template
-// tag with no client and no request scope.
+// `@openpanel/db/src/clickhouse/sql` is a value import and stays one: it is a
+// compile-time template tag with no client and no request scope.
 
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import {
@@ -31,7 +25,7 @@ import type { ServiceDeps } from './services';
  *  buffers, whose `BufferDeps` is not a `ServiceDeps`, can call them too. */
 export type ChScope = Pick<ServiceDeps, 'ch' | 'logger'>;
 
-/** A raw statement or an ADR-013 fragment carrying its own bound params. */
+/** A raw statement or a SqlFragment carrying its own bound params. */
 export type ChQueryInput = string | SqlFragment;
 
 const NEWLINES = /\n/g;

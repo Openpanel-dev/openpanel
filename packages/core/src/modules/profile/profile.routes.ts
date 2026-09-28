@@ -1,18 +1,10 @@
-// Ported from apps/api/src/routes/profile.router.ts +
-// apps/api/src/controllers/profile.controller.ts. V1's Fastify controller stays
-// the LIVE route (DELEGATE PATTERN) and delegates its bodies to
-// profile.service.ts's `identifyProfile` / `adjustProfileProperty` — the same
-// functions these routes call. Status codes and text bodies (`202` + profile
-// id, `400 'No projectId'`, `404 'Not found'`, `400 'Not number'`) match V1's
-// `reply.status(..).send(..)` byte for byte.
+// `clientAuth: { ingest: ... }` enforces the SDK credential rules. Bot
+// filtering and subscription-limit checks for this router live in the
+// ingest module, not this one.
 //
-// `ingest` is V1's `clientHook` (the SDK credential rules); V1's `isBotHook`
-// and `subscriptionHook` on this router live in the ingest module, not this
-// one.
-//
-// V1 has no request-body schema for these routes (ADR-003: "/profile, /import,
-// /event and /tools have no request schemas today, and adding them would be a
-// behaviour change"), so the bodies are typed but not shape-validated.
+// /profile has no request-body schema, so `payload` below is typed but not
+// shape-validated at the boundary — unlike /profile/increment and
+// /profile/decrement, which validate via `zAdjustProperty`.
 
 import { parseUserAgent } from '@openpanel/shared/server';
 import { z } from 'zod';

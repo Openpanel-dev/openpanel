@@ -63,7 +63,7 @@ async function readObject(bucket: string, key: string): Promise<Buffer> {
 
 // GCS_API_ENDPOINT and ENCRYPTION_KEY arrive as config, not as env. The
 // endpoint is set by the emulator block's `beforeAll` and left unset for the
-// validation-only tests above it, exactly as the env write it replaces did.
+// validation-only tests above it.
 let emulatorEndpoint: string | undefined;
 
 function coreConfig(

@@ -1,11 +1,9 @@
-// Ported from @openpanel/ai (dissolved into core — M4-005).
-//
-// Phase 5 — the "why". Given an insight plus a deterministic decomposition of
-// the change (current vs baseline breakdowns across referrer/country/device/
-// utm) and any nearby references, produce an honest explanation: which
-// sub-segment drove the delta, and which off-platform event (reference) might
-// correlate. It explains the *internal decomposition*, not invented external
-// causes. The caller gathers the data (DB/CH); this module just narrates.
+// Given an insight plus a deterministic decomposition of the change (current
+// vs baseline breakdowns across referrer/country/device/utm) and any nearby
+// references, produce an honest explanation: which sub-segment drove the
+// delta, and which off-platform event (reference) might correlate. It
+// explains the *internal decomposition*, not invented external causes. The
+// caller gathers the data (DB/CH); this module just narrates.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';

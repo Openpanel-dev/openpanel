@@ -433,10 +433,10 @@ export async function getFunnelProfileIds(
 }
 
 /**
- * `ctx.services.chart`'s funnel half, as its own module factory (ADR-007: "each
- * service is `createXService(deps)`"). `createChartService` composes this
- * rather than re-binding these functions itself, so the chart module keeps one
- * registry key while every `*.service.ts` file exposes its own factory.
+ * `ctx.services.chart`'s funnel half, as its own module factory.
+ * `createChartService` composes this rather than re-binding these functions
+ * itself, so the chart module keeps one registry key while this file exposes
+ * its own factory.
  */
 export function createFunnelService(
   deps: ServiceDeps,

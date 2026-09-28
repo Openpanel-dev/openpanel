@@ -1,6 +1,6 @@
 /**
- * The batching accumulator's correctness contract (M16-002 deliverable 2b).
- * Batching exists to amortise the produce round-trip, and it is only adoptable
+ * The batching accumulator's correctness contract. Batching exists to
+ * amortise the produce round-trip, and it is only adoptable
  * if it changes nothing a caller can observe:
  *
  * (i) per-key ordering survives — same-key messages leave in produce order,

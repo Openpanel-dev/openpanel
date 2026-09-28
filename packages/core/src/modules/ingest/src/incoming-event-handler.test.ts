@@ -1,12 +1,9 @@
-// What changed is the seam: V1 reached the session buffer, `createEvent` and
-// the sessions queue through `vi.mock('@openpanel/db')` /
-// `vi.mock('@openpanel/queue')`; here they are recording doubles handed in as
-// `IncomingEventDeps`, so the assertions are on calls the code under test
-// actually made and no `mock.module` is needed.
+// The session buffer, `createEvent` and the sessions queue are recording
+// doubles handed in as `IncomingEventDeps`, so the assertions are on calls
+// the code under test actually made and no `mock.module` is needed.
 //
-// The session_end enqueue is asserted through the real `sessionEndJobPayload` /
-// `sessionEndEnqueueOptions` — the same functions V1's producer
-// (`enqueueSessionEndV2`) calls — so the jobId and the `{payload, snapshot}`
+// The session_end enqueue is asserted through the real `sessionEndJobPayload`
+// / `sessionEndEnqueueOptions`, so the jobId and the `{payload, snapshot}`
 // mapping are still pinned here, not re-implemented by the test.
 
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
@@ -241,7 +238,7 @@ describe('incomingEvent', () => {
 
     expect(enqueueSessionEnd).toHaveBeenCalledTimes(1);
     const input = enqueueSessionEnd.mock.calls[0]![0];
-    // The wire payload V1's producer builds from this input, through the same
+    // The wire payload the producer builds from this input, through the same
     // core functions it calls.
     const { event, snapshot } = sessionEndJobPayload(input);
     expect(event.sessionId).toBe('old-session-id');
@@ -470,9 +467,9 @@ describe('incomingEvent', () => {
 });
 
 /**
- * M21-001. The marker replaces the offset watermark, which drill 08 showed
- * could not see any of the 161 duplicates it measured. MARK MEANS COUNT AND
- * LOG: every test below asserts the event was still INSERTED.
+ * The marker replaces the offset watermark, which cannot see every
+ * duplicate. MARK MEANS COUNT AND LOG: every test below asserts the event
+ * was still INSERTED.
  */
 describe('duplicate marker', () => {
   const TTL_MS = 120_000;
@@ -574,10 +571,10 @@ describe('duplicate marker', () => {
   });
 
   /**
-   * THE REGRESSION TEST THAT MATTERS. A blocking Redis call in this path is how
-   * drill 02's consumer was evicted past its 30 s session timeout, and M19
-   * proved an eviction is the only reassignment that costs duplicate rows.
-   * M18-003 removed that trigger; this must not put it back.
+   * THE REGRESSION TEST THAT MATTERS. A blocking Redis call in this path
+   * previously evicted the consumer past its 30s session timeout — an
+   * eviction is the only reassignment that costs duplicate rows. This must
+   * not happen again.
    */
   test('Redis unavailable: the event is processed normally and nothing throws', async () => {
     const { deps, createEvent, ingest, markDuplicate, duplicateMarked } = ctx;
@@ -608,7 +605,7 @@ describe('duplicate marker', () => {
     // marker is started BEFORE the handler's own Redis work and awaited AFTER
     // it, so a slow marker overlaps a slow session read instead of adding to
     // it. A serial check would give mark:start, mark:end, ingest:start — which
-    // is the shape that would put M18-003's eviction trigger back.
+    // is the shape that would put the eviction trigger back.
     const timeline: string[] = [];
     const slow = () => new Promise((resolve) => setTimeout(resolve, 20));
     const { deps, ingest, markDuplicate } = ctx;

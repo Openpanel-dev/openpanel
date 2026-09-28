@@ -9,7 +9,6 @@ import { ModalContent } from '@/modals/Modal/Container';
 
 const ROW_HEIGHT = 36;
 
-// Revenue pie chart component
 function RevenuePieChart({ percentage }: { percentage: number }) {
   const size = 16;
   const strokeWidth = 2;
@@ -45,7 +44,6 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
   );
 }
 
-// Base data type that all items must conform to
 export interface OverviewListItem {
   sessions: number;
   pageviews: number;
@@ -53,27 +51,19 @@ export interface OverviewListItem {
 }
 
 interface OverviewListModalProps<T extends OverviewListItem> {
-  /** Modal title */
   title: string;
-  /** Search placeholder text */
   searchPlaceholder?: string;
-  /** The data to display */
   data: T[];
-  /** Extract a unique key for each item */
   keyExtractor: (item: T) => string;
-  /** Filter function for search - receives item and lowercase search query */
+  /** Receives the item and the already-lowercased search query. */
   searchFilter: (item: T, query: string) => boolean;
-  /** Render the main content cell (first column) */
+  /** Renders the first column's content. */
   renderItem: (item: T) => React.ReactNode;
-  /** Optional footer content */
   footer?: React.ReactNode;
-  /** Optional header content (appears below title/search) */
+  /** Appears below the title/search area. */
   headerContent?: React.ReactNode;
-  /** Column name for the first column */
   columnName?: string;
-  /** Whether to show pageviews column */
   showPageviews?: boolean;
-  /** Whether to show sessions column */
   showSessions?: boolean;
 }
 
@@ -94,7 +84,6 @@ export function OverviewListModal<T extends OverviewListItem>({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const number = useNumber();
 
-  // Filter data based on search query
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) {
       return data;
@@ -103,7 +92,6 @@ export function OverviewListModal<T extends OverviewListItem>({
     return data.filter((item) => searchFilter(item, queryLower));
   }, [data, searchQuery, searchFilter]);
 
-  // Calculate totals and check for revenue
   const { maxSessions, totalRevenue, hasRevenue, hasPageviews } =
     useMemo(() => {
       const maxSessions = Math.max(
@@ -119,7 +107,6 @@ export function OverviewListModal<T extends OverviewListItem>({
       return { maxSessions, totalRevenue, hasRevenue, hasPageviews };
     }, [filteredData, showPageviews]);
 
-  // Virtual list setup
   const virtualizer = useVirtualizer({
     count: filteredData.length,
     getScrollElement: () => scrollAreaRef.current,
@@ -131,7 +118,6 @@ export function OverviewListModal<T extends OverviewListItem>({
 
   return (
     <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0 sm:max-w-2xl">
-      {/* Sticky Header */}
       <div className="flex-shrink-0 border-border border-b">
         <div className="p-6 pb-4">
           <DialogTitle className="mb-4 font-semibold text-lg">
@@ -150,7 +136,6 @@ export function OverviewListModal<T extends OverviewListItem>({
           {headerContent}
         </div>
 
-        {/* Column Headers */}
         <div
           className="grid bg-def-100 px-4 py-2 font-medium text-muted-foreground text-sm"
           style={{
@@ -165,7 +150,6 @@ export function OverviewListModal<T extends OverviewListItem>({
         </div>
       </div>
 
-      {/* Virtualized Scrollable Body */}
       <div
         className="min-h-0 flex-1 overflow-y-auto"
         ref={scrollAreaRef}
@@ -197,7 +181,6 @@ export function OverviewListModal<T extends OverviewListItem>({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                {/* Background bar */}
                 <div className="absolute inset-0 overflow-hidden">
                   <div
                     className="h-full bg-def-200 transition-colors group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900"
@@ -205,7 +188,6 @@ export function OverviewListModal<T extends OverviewListItem>({
                   />
                 </div>
 
-                {/* Row content */}
                 <div
                   className="relative grid h-full items-center border-border border-b px-4"
                   style={{
@@ -213,12 +195,10 @@ export function OverviewListModal<T extends OverviewListItem>({
                       `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
                   }}
                 >
-                  {/* Main content cell */}
                   <div className="min-w-0 truncate pr-2">
                     {renderItem(item)}
                   </div>
 
-                  {/* Revenue cell */}
                   {hasRevenue && (
                     <div className="flex items-center justify-end gap-2">
                       <span
@@ -235,14 +215,12 @@ export function OverviewListModal<T extends OverviewListItem>({
                     </div>
                   )}
 
-                  {/* Pageviews cell */}
                   {hasPageviews && (
                     <div className="text-right font-mono font-semibold text-sm">
                       {number.short(item.pageviews)}
                     </div>
                   )}
 
-                  {/* Sessions cell */}
                   {showSessions && (
                     <div className="text-right font-mono font-semibold text-sm">
                       {number.short(item.sessions)}
@@ -254,7 +232,6 @@ export function OverviewListModal<T extends OverviewListItem>({
           })}
         </div>
 
-        {/* Empty state */}
         {filteredData.length === 0 && (
           <div className="flex h-32 items-center justify-center text-muted-foreground">
             {searchQuery ? 'No results found' : 'No data available'}
@@ -262,7 +239,6 @@ export function OverviewListModal<T extends OverviewListItem>({
         )}
       </div>
 
-      {/* Fixed Footer */}
       {footer && (
         <div className="flex-shrink-0 border-border border-t p-4">{footer}</div>
       )}

@@ -1,7 +1,5 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005). Moved out
-// of `clients/integrations/` by M15-008: it dispatches to this module's own
-// transports, so leaving it below them would have made every one of those edges
-// point upward (A2).
+// This module dispatches to its own transports, so it lives above them in the
+// layer graph — placing it below would have made those imports point upward.
 
 import {
   type EncryptionKey,
@@ -62,9 +60,6 @@ export interface INotificationDeliverArgs<
  * integration adds one entry to SERVER_INTEGRATIONS — the `satisfies Record`
  * below forces an entry for every union member (a missing one is a compile
  * error, not a silent runtime gap).
- *
- * The notification capability is added in a later step (it needs the db payload
- * type + js-runtime); export-only for now.
  */
 export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   type: T;
@@ -72,7 +67,6 @@ export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   notification?: {
     deliver(args: INotificationDeliverArgs<T>): Promise<unknown> | unknown;
   };
-  // Object-store export sink.
   export?: {
     createAdapter(
       config: ConfigOf<T>,

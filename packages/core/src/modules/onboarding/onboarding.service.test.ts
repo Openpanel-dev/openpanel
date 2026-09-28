@@ -25,7 +25,7 @@ const getOrganizationEventsCount = mock(
 );
 // Spread a plain-object SNAPSHOT of the real module, not a partial factory:
 // `mock.module` replaces this specifier process-wide under bare `bun test`
-// (AGENTS.md), and since M10-009 every cross-module caller reaches
+// (AGENTS.md), and every cross-module caller reaches
 // `getSettingsForProject` / `getOrganizationByProjectIdCached` through this
 // deep path rather than the package barrel — a partial factory here silently
 // deleted them for every file that ran afterwards.

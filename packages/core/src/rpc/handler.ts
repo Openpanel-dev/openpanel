@@ -1,11 +1,6 @@
 // The tRPC mount: the official fetch adapter, one handler, one `onError`.
-//
-// Three of the four `onError` branches are V1's (apps/api/src/app.ts:175-206)
-// with one change and no others: the fields come from `ctx` and the `Request`,
-// because under a fetch adapter `req` is a `Request` and has neither `socket`
-// nor a logger. The messages, the levels, the payload keys and the
-// `organization.list` drop are unchanged. The fourth, `CLIENT_CLOSED_REQUEST`,
-// is M36-001's cancellation, which V1 did not have.
+// The `onError` fields come from `ctx` and the `Request`, because under a
+// fetch adapter `req` is a `Request` and has neither `socket` nor a logger.
 
 import type { AnyRouter, TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
@@ -113,9 +108,8 @@ export interface TrpcFetchHandlerOptions extends TrpcContextOptions {
 }
 
 /**
- * The handler `app.ts` hangs on `.all('/trpc/*')`. It returns a raw `Response`,
- * so `/trpc` sits outside Elysia's response lifecycle — as it sat outside
- * Fastify's in V1.
+ * The handler `app.ts` hangs on `.all('/trpc/*')`. It returns a raw
+ * `Response`, so `/trpc` sits outside Elysia's response lifecycle.
  */
 export function createTrpcFetchHandler(options: TrpcFetchHandlerOptions) {
   const {

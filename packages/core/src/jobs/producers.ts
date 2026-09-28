@@ -52,8 +52,8 @@ export interface CreateProducersOptions {
   /**
    * Where a queue's connection errors go. BullMQ re-emits ioredis errors on
    * every `Queue`, and an `'error'` event with no listener is an uncaught
-   * exception that kills the process — V1 lost the api roughly daily to idle
-   * ECONNRESETs before `guardQueue` was added (packages/queue/src/queues.ts).
+   * exception that kills the process — production lost the api roughly daily
+   * to idle ECONNRESETs before a listener was added here.
    * A listener is attached either way; this decides whether it says anything.
    */
   logger?: Logger;

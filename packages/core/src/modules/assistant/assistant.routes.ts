@@ -14,8 +14,7 @@
 //
 // This route is where `deps` lives, so everything below it reaches
 // Postgres/ClickHouse through `ctx` — the chat app, the conversation lookup and
-// the access check included. That is what removed the four lazy loaders this
-// file used to open with.
+// the access check included.
 
 import { defineRoutes } from '../../http/define';
 import { getProjectAccess } from '../../shared/access-lookups';

@@ -2,7 +2,7 @@ import type { TooltipData } from './chart-context';
 import type { ChartSelection } from './use-chart-interaction';
 
 // Pure geometry for the hover-highlight band, split out from the hook so it can
-// be unit-tested without React/motion (see __tests__).
+// be unit-tested without React/motion.
 //
 // The band is the pixel x-range one data point either side of the hovered point:
 //   [ xScale(t(idx-1)), xScale(t(idx+1)) ]

@@ -1,15 +1,13 @@
 /**
  * Queue + buffer sampling from the Prometheus scrape endpoint.
  *
- * Carl asked how ALL the queues are doing, not just Kafka. Everything needed
- * is already on `/metrics`: the BullMQ per-queue gauges and the buffer gauges
- * and histograms. Scraping is deliberate rather than reaching into Redis or
- * into the buffer objects — V1 and V2 both expose the same endpoint, so the
- * identical sampler works against either side when the V1 comparison is run.
+ * Everything needed is already on `/metrics`: the BullMQ per-queue gauges and
+ * the buffer gauges and histograms. Scraping is deliberate rather than
+ * reaching into Redis or into the buffer objects directly.
  *
- * Sampling costs the measured process a scrape per tick (~2,700 lines here).
- * `session-stress.ts` ties this to the same `E2E_NO_SAMPLING` lever as the
- * process/lag monitors so that cost can be ruled in or out.
+ * Sampling costs the measured process a scrape per tick. `session-stress.ts`
+ * ties this to the same `E2E_NO_SAMPLING` lever as the process/lag monitors
+ * so that cost can be ruled in or out.
  */
 
 const QUEUE_GAUGE =

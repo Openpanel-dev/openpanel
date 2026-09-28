@@ -1,5 +1,5 @@
 /**
- * `chart.sankey`'s window bound (M25 Group C fix 9, §12 fix 9).
+ * `chart.sankey`'s window bound.
  *
  * Both sankey statements scan every event in the range and hold one
  * `groupArray` per session, so the `12m`/`lastYear` the range picker offers
@@ -9,8 +9,7 @@
  * The bound belongs to the `chart.sankey` procedure specifically, so the
  * endpoint case below drives `getSankeyChart` rather than `getSankey`: the
  * REST, MCP and assistant surfaces reach `getSankey` through
- * `getUserFlowCore` with caller-supplied dates and are outside fix 9's
- * endpoint list.
+ * `getUserFlowCore` with caller-supplied dates and are outside this bound.
  */
 
 import { describe, expect, it } from 'bun:test';

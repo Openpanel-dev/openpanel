@@ -1,16 +1,10 @@
-// The ingestion pipeline. Ported from apps/api's track.controller.ts, its three
-// route hooks (duplicate / client / is-bot) and utils/ids.ts. V1's Fastify
-// controller and hooks stay the LIVE route (DELEGATE PATTERN) and call the
-// functions below; ingest.routes.ts is the V2 half over the same functions.
+// The ingestion pipeline for POST /track and POST /event.
 //
 // Nothing here throws for a caller error: each transport owns its own status
-// codes and bodies, so the pipeline returns a `TrackOutcome` and V1 maps it
-// back onto the exact `HttpError`s and replies it produced before.
+// codes and bodies, so the pipeline returns a `TrackOutcome` instead.
 //
-// The Kafka producer is INJECTED. Since M11-003 `produceIncomingEvent` is a
-// sibling (./src/kafka.ts), so the injection is no longer a package-cycle
-// workaround and no longer travels through `AppDeps` — it stays an argument
-// only so a test can assert on what was produced without a broker.
+// The Kafka producer is injected as an argument, not read from a module
+// singleton, so a test can assert on what was produced without a broker.
 
 import { generateId } from '@openpanel/shared';
 import { parseUserAgent } from '@openpanel/shared/server';
@@ -86,8 +80,8 @@ export type IngestBuffers = Pick<Buffers, 'session' | 'replay' | 'group'>;
 export interface IngestTransport {
   buffers: IngestBuffers;
   produceIncomingEvent: IncomingEventProducer;
-  /** M10-005: the profile writes below reach ClickHouse and the profile
-   *  buffer through the scope, not a module singleton. */
+  /** The profile writes below reach ClickHouse and the profile buffer
+   *  through the scope, not a module singleton. */
   deps: ServiceDeps;
 }
 
@@ -188,8 +182,6 @@ export function getTimestamp(
   const clientTimestamp = new Date(userDefinedTimestamp);
   const clientTimestampNumber = clientTimestamp.getTime();
 
-  // Use safeTimestamp if invalid, implausibly old, or more than 1 minute
-  // in the future
   if (
     Number.isNaN(clientTimestampNumber) ||
     clientTimestampNumber < EARLIEST_ACCEPTED_TIMESTAMP_MS ||
@@ -198,7 +190,6 @@ export function getTimestamp(
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
-  // isTimestampFromThePast is true only if timestamp is older than 15 minutes
   const isTimestampFromThePast =
     clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
 
@@ -229,7 +220,7 @@ export interface TrackRequest {
   clientIp: string;
   headers: IngestHeaders;
   clientSecretAuth: boolean;
-  /** The request-arrival timestamp (V1's `timestampHook`). */
+  /** The request-arrival timestamp. */
   timestamp: number | undefined;
   body: ITrackHandlerPayload;
 }
@@ -329,8 +320,6 @@ async function handleTrack(
     : deviceId;
   const promises: Promise<unknown>[] = [];
 
-  // If we have more than one property in the identity object, we should identify the user
-  // Otherwise its only a profileId and we should not identify the user
   if (context.identity && Object.keys(context.identity).length > 1) {
     promises.push(handleIdentify(transport.deps, context.identity, context));
   }
@@ -469,8 +458,8 @@ async function handleAssignGroup(
   });
 }
 
-/** `POST /track`. The dispatch order is V1's, including that an unknown type
- *  still resolves geo/device before it is refused. */
+/** `POST /track`. An unknown type still resolves geo/device before it is
+ *  refused. */
 export async function ingestTrack(
   request: TrackRequest,
   transport: IngestTransport
@@ -555,10 +544,7 @@ export async function ingestTrack(
 }
 
 /**
- * V1's `subscriptionHook` (apps/api/src/hooks/subscription.hook.ts), ported
- * for both ingestion routes.
- *
- * Two things worth knowing about the shape of this, both V1's:
+ * Two things worth knowing about the shape of this:
  *
  * It gates on `windDownStep`, not on `subscriptionState`. Every expired trial
  * is already in `trial_expired`, so gating on the state would block thousands
@@ -567,9 +553,6 @@ export async function ingestTrack(
  * It answers 202, not 402 or 403 (the caller does; this returns the verdict).
  * The SDKs treat only 401 and 2xx as terminal, so a "correct" status code
  * would multiply traffic from exactly the clients we are trying to quiet down.
- *
- * `selfHosted` arrives from `AppDeps.config` — V1 read `process.env` here and
- * core reads none.
  */
 const WIND_DOWN_BLOCKED_STEPS = new Set(['blocked', 'final_warning']);
 
@@ -625,15 +608,13 @@ export async function isIngestionWoundDown(
 }
 
 /**
- * `POST /event` — the legacy compat route (ADR-015 entry 1, REVERSED: kept, not
- * deleted, because production still has projects posting to it). Ported from
- * apps/api/src/controllers/event.controller.ts.
+ * `POST /event` — the legacy compat route, kept because production still has
+ * projects posting to it.
  *
  * It is NOT `ingestTrack` with a different body: the legacy payload carries a
  * client-supplied ISO `timestamp`, has no `type` discriminator, no schema, and
- * no identify/increment/replay branches — so it builds its own queue payload
- * exactly as V1's controller did, minting the event id at the producer like
- * `/track` does.
+ * no identify/increment/replay branches, so it builds its own queue payload
+ * and mints the event id at the producer like `/track` does.
  */
 export type LegacyEventOutcome =
   | { status: 'ok' }
@@ -645,7 +626,7 @@ export async function ingestLegacyEvent(
     clientIp: string;
     headers: IngestHeaders;
     clientSecretAuth: boolean;
-    /** The request-arrival timestamp (V1's `timestampHook`). */
+    /** The request-arrival timestamp. */
     timestamp: number | undefined;
     body: DeprecatedPostEventPayload | null | undefined;
   },
@@ -656,17 +637,17 @@ export async function ingestLegacyEvent(
     return { status: 'missing-project-id' };
   }
 
-  // An event with no name is not an event. V1 answered 202 and wrote a row with
-  // `name = ''`, which then shows up in every picker and breakdown. The status
-  // stays 202 — this route has no body schema and the HTTP contract must not
-  // change — but nothing is written.
+  // An event with no name is not an event. Writing one with `name = ''` shows
+  // up in every picker and breakdown. The status stays 202 — this route has
+  // no body schema and the HTTP contract must not change — but nothing is
+  // written.
   const name = (request.body as { name?: unknown } | null | undefined)?.name;
   if (typeof name !== 'string' || name.trim() === '') {
     return { status: 'ok' };
   }
 
-  // The cast is V1's own call (event.controller.ts:26): `/event` has no body
-  // schema, so `getTimestamp` reads `properties` off whatever arrived.
+  // `/event` has no body schema, so `getTimestamp` reads `properties` off
+  // whatever arrived.
   const { timestamp, isTimestampFromThePast } = getTimestamp(
     request.timestamp,
     request.body as ITrackHandlerPayload['payload']
@@ -824,7 +805,7 @@ export async function fetchDeviceIdentity(
   };
 }
 
-/** The `duplicateHook`: the web SDK can fire the same event twice. */
+/** The web SDK can fire the same event twice; this catches the duplicate. */
 export async function isDuplicateIngestRequest(request: {
   method: string;
   clientIp: string | undefined;
@@ -868,8 +849,8 @@ function isTrackBody(request: {
 export type BotVerdict = { name: string; type: string } | null;
 
 /**
- * The `isBotHook`. Requests authenticated with a client secret come from
- * server-side SDKs (node, php, go, rust, java, python, …). That auth is a far
+ * Requests authenticated with a client secret come from server-side SDKs
+ * (node, php, go, rust, java, python, …). That auth is a far
  * stronger signal of legitimate first-party traffic than the user agent, so
  * never treat them as bots — bot detection is for public/frontend
  * (origin-authenticated) traffic.

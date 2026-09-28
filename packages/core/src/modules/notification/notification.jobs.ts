@@ -1,7 +1,7 @@
-// `sendNotification` is this module's own queue (`notification` in the registry
-// — ADR-005's registry key). legacyCompat.notification already discriminates on
-// this exact job name (jobs/compat.ts), so this pins the two in agreement. No
-// cron fragment — notifications are always triggered by a rule match, never
+// `sendNotification` is this module's own queue (`notification` in the
+// registry). legacyCompat.notification already discriminates on this exact
+// job name (jobs/compat.ts), so this pins the two in agreement. No cron
+// fragment — notifications are always triggered by a rule match, never
 // scheduled.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
@@ -10,10 +10,9 @@ import { isProviderError } from '../../clients/provider-error';
 import { defineJob } from '../../jobs/define';
 
 // A loose mirror of `Prisma.NotificationUncheckedCreateInput` — the payload
-// is a Prisma create input on the wire (packages/queue/src/queues.ts's
-// `NotificationQueuePayload`), and BullMQ stores job data as JSON, so this
-// only needs to survive that round-trip, not model every Prisma input
-// variant.
+// is a Prisma create input on the wire, and BullMQ stores job data as JSON,
+// so this only needs to survive that round-trip, not model every Prisma
+// input variant.
 const notificationPayload = z.object({
   id: z.string().optional(),
   projectId: z.string(),
@@ -34,7 +33,7 @@ export const notificationQueueJobs = {
       try {
         // `payload.notification` round-tripped through BullMQ's JSON storage
         // and the loose wire schema above — the real shape is Prisma's create
-        // input, exactly what a V1 producer put on the queue.
+        // input.
         await ctx.services.notification.dispatch(
           payload.notification as Prisma.NotificationUncheckedCreateInput
         );

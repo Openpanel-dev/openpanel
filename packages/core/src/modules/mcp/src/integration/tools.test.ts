@@ -2,11 +2,11 @@
  * Integration tests for MCP tools against a real ClickHouse instance.
  *
  * `bunfig.toml`'s preload pins CLICKHOUSE_URL/DATABASE_URL to the isolated
- * `openpanel_test` databases (never production, never V1's own dev DB) —
- * bun:test has no vitest-style globalSetup, so this suite bootstraps and
- * seeds its own fixture (test/fixtures.ts, the same helper V1's
- * apps/api/src/routes/insights.router.test.ts uses) in beforeAll/afterAll,
- * under its own project/org id so it can run concurrently with that suite.
+ * `openpanel_test` databases (never production) — bun:test has no
+ * vitest-style globalSetup, so this suite bootstraps and seeds its own
+ * fixture (test/fixtures.ts) in beforeAll/afterAll, under its own
+ * project/org id so it can run concurrently with other suites using the
+ * same fixture helper.
  *
  * Fixture data (test/fixtures.ts's FIXTURE), seeded and queried with the clock
  * pinned to test/fixture-clock.ts's 12:00 UTC anchor so "5 days ago" is one
@@ -21,11 +21,8 @@
  * ClickHouse fixture.
  *
  * The fixture import reaches SEVEN levels up, out of this package and into the
- * repository root's `test/fixtures.ts`. That is deliberate and it is the one
- * exception to `packages/core/test/preload.ts`'s "core does not import from the
- * V1 root test directory" — which is a statement about `preload.ts` keeping
- * `test/databases.ts` in step by hand, not a rule this suite breaks silently.
- * Copying the seeder here would fork the schema the golden harness seeds from.
+ * repository root's `test/fixtures.ts`. That is deliberate: copying the
+ * seeder here would fork the schema the golden harness seeds from.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';

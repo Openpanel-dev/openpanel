@@ -1,5 +1,3 @@
-// Ported from @openpanel/ai (dissolved into core — M4-005).
-//
 // Wind-down win-back pitch: one short OpenAI call that turns a lapsed trial's
 // recent stats into a two-sentence selling argument for the wind-down emails.
 // Same one-shot structured-output pattern as narrative.ts — and like the

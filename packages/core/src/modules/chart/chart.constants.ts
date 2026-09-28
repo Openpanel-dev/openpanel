@@ -1,16 +1,14 @@
 // The chart module's isomorphic surface: limits, zod schemas and the column
-// allow-lists shared by more than one file here. Imports zod and sibling
-// `*.constants.ts` only — anything needing `sql`, `deps` or a ClickHouse type
-// belongs in a service or a `src/` file.
+// allow-lists shared by more than one file here.
 
 import { z } from 'zod';
 import { zChartEvent } from '../report/report.constants';
 
 /**
  * Window the REST retention routes (`/insights/:projectId/retention`,
- * `/engagement`) read when the caller names none; M31-003's default for the
- * same fix, wider than engagement's 60-day churn bucket. Not applied to callers
- * of the service that pass no dates: those still read all time.
+ * `/engagement`) read when the caller names none, wider than engagement's
+ * 60-day churn bucket. Not applied to callers of the service that pass no
+ * dates: those still read all time.
  */
 export const RETENTION_SERIES_DEFAULT_RANGE = '3m';
 
@@ -21,13 +19,11 @@ export const DEFAULT_SANKEY_STEPS = 5;
  * Longest window `chart.sankey` will answer, in days.
  *
  * Both of its statements scan every event in the range and hold one
- * `groupArray` per session, so cost is linear in the window and `steps` bounds
- * the answer rather than the work. Measured on the local production copy
- * (2026-09-16, `bayse`, mode `after`, 3 steps, `use_query_condition_cache=0`),
- * per statement: 871 ms / 515 MiB at 7 days, 2,361 ms / 1,329 MiB at 30,
- * 3,832 ms / 2,060 MiB at 56 - about 60 ms and 31 MiB per day. The range
- * picker offers `12m` and `lastYear`, which extrapolates to ~22 s and
- * ~11.8 GiB per statement, twice per call: past what a node can answer at all.
+ * `groupArray` per session, so cost is linear in the window and `steps`
+ * bounds the answer rather than the work (~60ms and ~31MiB per day,
+ * measured on the local production copy). The range picker's `12m` and
+ * `lastYear` options would extrapolate to ~22s and ~11.8GiB per statement,
+ * twice per call — past what a node can answer at all.
  *
  * 93 is the widest span the picker's `3m` option can produce - the 92-day
  * June-August quarter plus the half-open end-of-day boundary
@@ -61,10 +57,10 @@ export type IGetSankeyInput = z.infer<typeof zGetSankeyInput> & {
 };
 
 /**
- * Top-level `profiles` columns a `profile.<field>` reference may resolve to,
- * in V1's order. Both halves of the chart path read this one list: the SELECT
- * side (`getProfilePropertySelect`, src/field-resolution.ts) and the filter
- * side (`profileColumnSql`, src/table-filter-where.ts). Anything outside it is
+ * Top-level `profiles` columns a `profile.<field>` reference may resolve to.
+ * Both halves of the chart path read this one list: the SELECT side
+ * (`getProfilePropertySelect`, src/field-resolution.ts) and the filter side
+ * (`profileColumnSql`, src/table-filter-where.ts). Anything outside it is
  * not a column name and must never reach the SQL text.
  */
 export const PROFILE_SELECT_COLUMNS = [

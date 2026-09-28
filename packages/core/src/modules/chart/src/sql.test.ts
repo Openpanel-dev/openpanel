@@ -9,8 +9,8 @@
  * check, so it is covered by a plain string assertion instead.
  *
  * Text assertions look at the rendered `query`; chart-level values are
- * `{pN:Type}` placeholders there, filter/breakdown expressions are the verbatim
- * V1 text (see field-resolution.ts's header).
+ * `{pN:Type}` placeholders there, filter/breakdown expressions are inlined
+ * verbatim (see field-resolution.ts's header).
  *
  * The statements' only Postgres read (the project's cohorts, for the
  * all-cohorts breakdown) is stubbed to "no cohorts": that is the precondition
@@ -68,10 +68,10 @@ interface Rendered {
   sql: string;
   params: Record<string, unknown>;
   /**
-   * `sql` with every `{pN:Type}` substituted back to the literal V1 emitted.
-   * Since M12-003 the field resolver binds `properties[<key>]` keys too, so an
-   * assertion about the SHAPE of a map access reads this; an assertion about
-   * what is bound reads `sql`/`params`.
+   * `sql` with every `{pN:Type}` substituted back to the literal value. The
+   * field resolver binds `properties[<key>]` keys too, so an assertion about
+   * the SHAPE of a map access reads this; an assertion about what is bound
+   * reads `sql`/`params`.
    */
   text: string;
 }
@@ -334,9 +334,9 @@ describe('getChartSql', () => {
     await explain(rendered);
   });
 
-  // Regressions from HyperDX 2026-05-14 → 2026-05-17 ClickHouse error log.
-  // Saved reports / older clients send field names that don't match the events
-  // schema; the chart service used to inline them verbatim, crashing parse.
+  // Saved reports / older clients can send field names that don't match the
+  // events schema; the chart service used to inline them verbatim, crashing
+  // parse.
   it('normalizes camelCase filter alias (referrerName → referrer_name)', async () => {
     const rendered = await getChartSql({
       event: event({

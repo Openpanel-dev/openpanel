@@ -6,13 +6,6 @@
 // lookups exactly here, once, instead of once per module in a
 // `modules/*/src/access.ts` copy — see `getAccessChecks` below for the binding
 // itself.
-//
-// Every module in this wave, INCLUDING auth's own remaining lazy imports, moves
-// to `ServiceDeps`. `signUpWithEmail`/`signInWithEmail`/TOTP/
-// password-reset/OAuth-callback all take `deps` now and reach Postgres as
-// `deps.db`; `./src/login-session.ts` and `./src/registration.ts` do the same
-// and are plain static imports here (neither cycles back to this file).
-// `auth.rpc.ts` already carries a `Ctx` and passes it straight through.
 
 import { z } from 'zod';
 import type { CoreConfig } from '../../config';
@@ -101,8 +94,7 @@ let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
  * is built on the first actual check. An earlier attempt bound it at module
  * scope and hung `bun test` for 30 minutes.
  *
- * Still a `Promise` because the contract is awaited at every call site and was
- * what each module's own access file used to resolve lazily.
+ * Still a `Promise` because the contract is awaited at every call site.
  *
  * `integration.service.ts` and `subscription.service.ts` import this directly
  * instead of going through `ctx.services.auth`: both are called with a bare
@@ -142,8 +134,7 @@ export function resetAccessChecksForTests(): void {
  * nothing here. This is for the paths the builder cannot decide: the
  * share-aware `chartProcedure` / `overviewProcedure`, which are public because
  * a valid share link is an alternative to being signed in, and only demand a
- * user when no share was presented. Until M15-007 it was copied, unexported,
- * into 28 `*.rpc.ts` files.
+ * user when no share was presented.
  */
 export function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -153,8 +144,7 @@ export function requireLogin(userId: string | null | undefined): string {
 }
 
 /**
- * Registered in `services.ts`. Ignores BOTH arguments, and takes them only
- * because ADR-022 R3 keeps the composition root a flat list: every member here
+ * Registered in `services.ts`. Ignores BOTH arguments: every member here
  * is either pure, reads its own env, or — for the access checks — reaches the
  * shared, memoized `getAccessChecks` above, whose lookups are `cacheable`
  * (their key is derived from the call's arguments, so they cannot take a
@@ -271,13 +261,8 @@ export function createAuthService(
 }
 
 // ---------------------------------------------------------------------- The
-// Prisma-touching half: sign-up/sign-in, TOTP challenges, password reset, share
-// unlock and the github/google OAuth callback. This is the logic
-// packages/trpc/src/routers/auth.ts and
-// apps/api/src/controllers/oauth-callback.controller.tsx held inline — neither
-// ever had a `packages/db/src/services/*` home to move from, unlike every other
-// M5/M6 module, so it is written directly here (DELEGATE PATTERN: both V1's
-// trpc router and this package's own auth.rpc.ts call these same functions).
+// Prisma-touching half: sign-up/sign-in, TOTP challenges, password reset,
+// share unlock and the github/google OAuth callback.
 //
 // Session/registration access is `deps.db`, via static imports of
 // `./src/login-session` and `./src/registration` — neither cycles back to this
@@ -317,7 +302,6 @@ import { getIsRegistrationAllowed } from './src/registration';
 const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
 const INVITE_COOKIE = 'inviteId';
-// V1's reset-password token: 10 minutes.
 const RESET_PASSWORD_TTL_MS = 1000 * 60 * 10;
 
 export type AuthProvider = 'email' | 'google' | 'github';
@@ -508,9 +492,9 @@ export async function signInWithEmail(
     throw new TRPCNotFoundError('User does not exists');
   }
 
-  // If the password starts with $argon2 we use the new password hashing,
-  // otherwise it's legacy from Clerk which used bcrypt (ADR-011: no legacy
-  // branch — those rows are nulled, so this is now just a generic reject).
+  // If the password starts with $argon2 we use the new password hashing;
+  // any other value is a legacy bcrypt row (from Clerk) that has been
+  // nulled, so this is now just a generic reject.
   if (!user.account.password?.startsWith('$argon2')) {
     throw new TRPCAccessError('Reset your password, old password has expired');
   }
@@ -873,10 +857,9 @@ export interface SignInShareInput {
   shareType?: 'overview' | 'dashboard' | 'report';
 }
 
-/** Share's three lookups arrive through the composition root's thunk
+/** Share's three lookups arrive through the composition root's thunk.
  * Not a dynamic import: `share.service.ts` statically imports this file's
  * `hashPassword`, so a static edge back would be a real cycle. */
-/** A week, as V1's `maxAge` was. */
 const SHARE_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export async function signInToShare(
@@ -930,11 +913,10 @@ export async function signInToShare(
 }
 
 // -----------------------------------------------------------------------
-// The github/google OAuth callback (apps/api's /oauth/{github,google}/callback
-// — DELEGATE PATTERN, same shape as gsc.service.ts#completeGscOAuthCallback).
-// State/query parsing and cookie reads stay in each transport (Fastify's
-// controller, this package's own auth.routes.ts): only the token exchange,
-// user lookup/creation and session issuance live here.
+// The github/google OAuth callback (apps/api's /oauth/{github,google}/callback,
+// same shape as gsc.service.ts#completeGscOAuthCallback). State/query parsing
+// and cookie reads stay in each transport: only the token exchange, user
+// lookup/creation and session issuance live here.
 
 export interface OAuthUser {
   id: string;
@@ -944,8 +926,8 @@ export interface OAuthUser {
 }
 
 /** Raised for every *expected* failure — the caller shows `.message` verbatim
- *  in the `/login?error=` redirect, same as V1's `LogError`. Anything else
- *  thrown is an unexpected bug and the caller shows a generic message. */
+ *  in the `/login?error=` redirect. Anything else thrown is an unexpected bug
+ *  and the caller shows a generic message. */
 export class OAuthCallbackError extends Error {
   constructor(
     message: string,
@@ -1059,9 +1041,8 @@ export async function fetchGoogleOAuthUser(
 }
 
 /**
- * Checked by the caller BEFORE exchanging `code` for tokens — same ordering
- * as V1's `validateOAuthCallback`, so a forged `state` never costs an IdP
- * round-trip.
+ * Checked by the caller BEFORE exchanging `code` for tokens, so a forged
+ * `state` never costs an IdP round-trip.
  */
 export function assertOAuthState(
   provider: 'github' | 'google',

@@ -22,30 +22,16 @@ import { type CodeMigrationEnv, getIsCluster } from './helpers';
  * here: `id` is not in the sort key, so one session's rows can legitimately
  * sit in different granules.
  *
- * That expansion is also what caps the win. Measured on the restored
- * production copy, busiest anchor project (`chatpaper`, 6,224,393 session
- * rows, 736 candidate granules across 9 parts), five sessions x three runs:
- *
- *   without the index   3,124-3,431 ms   6,224,393 rows   1.44 GB read
- *   with the index        170-342 ms   294,885-524,267 rows   70-124 MB read
- *
- * 13x, not the ~90x the granule counts suggest: the bloom filter selects
- * 5-10 of 736 granules, PrimaryKeyExpand widens that back to 26-45 because
- * each selected granule drags its whole primary-key range through all 9
- * parts. `event.details` is the same query plus a 11-22 ms events lookup, so
- * it moves with it (3,140 ms -> ~250 ms).
+ * That expansion also caps the win: each selected granule drags its whole
+ * primary-key range through every part, so the observed speedup (~13x on a
+ * 6.2M-row project) is well short of the ~90x the raw granule count suggests.
  *
  * ADD INDEX is metadata-only and covers newly written parts; MATERIALIZE
  * INDEX backfills the existing ones. The mutation is asynchronous (this
- * migration does not block on it) and idempotent, reads only the `id` column
- * and writes small .idx files — it does not rewrite table data. Progress:
+ * migration does not block on it), idempotent, reads only the `id` column and
+ * writes small .idx files — it does not rewrite table data. Progress:
  *
  *   SELECT * FROM system.mutations WHERE command LIKE '%idx_id%';
- *
- * Cost of the backfill, measured over 29,401,478 rows in 14 parts: the ALTER
- * returns in under 50 ms and the mutation completed 1.1-1.2 s later on four
- * consecutive runs (1122 / 1161 / 1172 / 1176 ms from submit to is_done). It
- * only reads `id`, so it is bounded by one column, not by the table.
  *
  * ROLLBACK. The index is droppable and nothing reads it explicitly, so
  * reverting is a single statement — `down()` below, or by hand:
@@ -55,12 +41,10 @@ import { type CodeMigrationEnv, getIsCluster } from './helpers';
  *   Clustered:
  *     ALTER TABLE sessions_replicated ON CLUSTER '{cluster}' DROP INDEX IF EXISTS idx_id;
  *
- * DROP INDEX removes the .idx files from every part (0.5-0.9 s here, also
- * measured), so nothing has to be re-materialised to undo it. Re-applying
- * afterwards means running this migration again, i.e. ADD INDEX followed by
- * MATERIALIZE INDEX — the two statements below, in that order. Queries keep
- * answering correctly with or without the index; only the row count they
- * scan changes.
+ * Re-applying afterwards means running this migration again, i.e. ADD INDEX
+ * followed by MATERIALIZE INDEX — the two statements below, in that order.
+ * Queries keep answering correctly with or without the index; only the row
+ * count they scan changes.
  */
 
 const INDEX_NAME = 'idx_id';
@@ -69,17 +53,15 @@ const INDEX_NAME = 'idx_id';
  * 0.01 to match `events.idx_profile_id`, the existing index over the same
  * shape of column (a high-cardinality opaque id).
  *
- * Size: 35.20 MiB over 29,401,478 rows, measured on the restored production
- * copy after this migration ran — ~9.8 KiB per 8192-row granule, against a
- * ~4 MiB estimate that scaled `events.idx_profile_id` (40.95 MiB / 321 M
- * rows) by row count. `id` is unique per row, so every granule's filter is
- * saturated; `profile_id` repeats heavily inside a granule. A bloom filter's
- * size follows granule count, not the rows behind it.
+ * `id` is unique per row, so every granule's bloom filter is saturated,
+ * unlike `profile_id` which repeats heavily inside a granule — a bloom
+ * filter's size follows granule count, not the rows behind it, so this index
+ * (35 MiB over 29.4M rows) comes out larger than a row-count-scaled estimate
+ * from `events.idx_profile_id` would suggest.
  *
- * Tightening the rate does not pay for itself: 0.001 costs 52.79 MiB for
- * 73-179 ms, 0.0001 costs 66.87 MiB for 75-128 ms, and even a
- * false-positive-free index still reads 90,106 rows per lookup because
- * PrimaryKeyExpand walks one true granule through all 9 parts.
+ * Tightening the rate does not pay for itself: it costs tens of MiB more for
+ * a marginal drop in read time, and even a false-positive-free index still
+ * pays PrimaryKeyExpand's cost of walking one true granule through every part.
  */
 const FALSE_POSITIVE_RATE = 0.01;
 const GRANULARITY = 1;

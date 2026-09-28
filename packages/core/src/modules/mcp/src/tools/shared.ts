@@ -10,8 +10,7 @@ import type { McpAuthContext } from '../auth';
  * `@modelcontextprotocol/sdk`'s tool-handler signature has no context
  * parameter, so the API's connections cannot be threaded through it as an
  * argument. They are captured in a CLOSURE instead, when the per-request server
- * is built from the `deps` the route already holds (R15, Carl's ruling:
- * `createMcpServer(deps)`).
+ * is built from the `deps` the route already holds.
  */
 export interface McpToolDeps {
   /** The API's connections. Postgres and ClickHouse are reached from here. */
@@ -81,9 +80,6 @@ export const zDateRange = {
     ),
 };
 
-/**
- * Resolve a date range, defaulting to the last 30 days if not provided.
- */
 export function resolveDateRange(
   startDate?: string,
   endDate?: string

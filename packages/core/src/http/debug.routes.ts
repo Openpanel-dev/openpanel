@@ -1,23 +1,17 @@
-// V1's `apps/worker/src/boot-debug.ts`, ported onto Elysia and onto the ONE
-// port. Local-only: `main.ts` mounts this surface only outside production AND
-// only in a consuming role — the same two facts that were true of V1, where the
-// routes lived in the worker behind `NODE_ENV !== 'production'`. They are what
-// keeps an unauthenticated "run any cron job now" endpoint off a production
-// box.
+// Local-only: `main.ts` mounts this surface only outside production AND only
+// in a consuming role. Those two facts are what keep an unauthenticated "run
+// any cron job now" endpoint off a production box.
 //
-// Three things changed on the way over, all deliberate:
+// The job list is the `cron` queue's own `jobs`, not a hand-written array of
+// cron type strings — the array could drift from the registry; the registry
+// cannot drift from itself. The queue arrives as an argument (`rest.routes.ts`
+// binds it) because transport may not import a registry.
 //
-// * The job list is the `cron` queue's own `jobs`, not a hand-written array of
-// the 20 `CronQueueType` strings. The array could drift from the registry; the
-// registry cannot drift from itself. The queue arrives as an argument —
-// `rest.routes.ts` binds it — because transport may not import a registry. * A
-// trigger runs through `runJob` with V1's `{ type }` data — the same entry
-// point the real worker uses, compat hook included — so what this exercises is
-// the production path and not a second dispatcher. *
-// `/debug/insights/:projectId?inline=1` summarises with the insight service's
-// own `listAllInsights` instead of V1's ad-hoc `projectInsight.groupBy`,
-// because core reaches Postgres through its services, not through a Prisma
-// client of its own.
+// A trigger runs through `runJob` with `{ type }` data — the same entry point
+// the real worker uses — so what this exercises is the production path, not a
+// second dispatcher. `/debug/insights/:projectId?inline=1` summarises with the
+// insight service's own `listAllInsights`, because core reaches Postgres
+// through its services, not through a Prisma client of its own.
 
 import { z } from 'zod';
 import type { AnyJob, QueueDefinition } from '../jobs/define';
@@ -44,8 +38,7 @@ function escapeHtml(value: string): string {
 }
 
 // Browsers send an explicit `text/html` accept header; curl sends the
-// wildcard, which falls through to JSON — V1's `req.accepts(['json','html'])`
-// ordering, kept.
+// wildcard, which falls through to JSON.
 function wantsHtml(headers: Headers): boolean {
   return (headers.get('accept') ?? '').includes('text/html');
 }
@@ -103,8 +96,7 @@ export const createDebugRoutes = (cronQueue: CronQueue) => {
             jobs,
           };
         },
-        // Hidden from the OpenAPI document, like every other ops-surface route:
-        // in V1 these lived on the worker's own server and were never in it.
+        // Hidden from the OpenAPI document, like every other ops-surface route.
         { detail: HIDDEN }
       )
       .all(
@@ -127,7 +119,6 @@ export const createDebugRoutes = (cronQueue: CronQueue) => {
           ctx.logger.info({ type }, 'Manually triggering cron job');
 
           try {
-            // V1's wire data, so this goes through the `cron` compat hook.
             await runJob(
               cronQueue,
               { name: type, data: { type }, attemptsMade: 0 },

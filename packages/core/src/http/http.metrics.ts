@@ -1,7 +1,6 @@
-// `fastify-metrics`'s two route series, re-created on Elysia
-// (TARGET_ARCHITECTURE §18 / ADR-018's metrics-continuity register: "kept, name
-// and labels reproduced exactly"). The plugin itself dies with Fastify
-// (ADR-002's deleted-plugin list), so these are ours now.
+// `fastify-metrics`'s two route series, re-created on Elysia so the metric
+// names, help text and labels are reproduced exactly. The plugin itself dies
+// with Fastify, so these are ours now.
 //
 // What "reproduced exactly" pins, from fastify-metrics 12.1.0's own source
 // (dist/fastify-metrics.js:181-210, 258-290):

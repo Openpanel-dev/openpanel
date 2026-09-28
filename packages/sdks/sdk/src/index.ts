@@ -1,15 +1,13 @@
-// Hand-duplicated on purpose, not imported: the wire contract's source of truth
-// is @openpanel/core/modules/ingest/ingest.constants.ts ("ingest owns C"), but
-// core's package.json exports map is deliberately narrow (no `./*` wildcard —
-// see packages/core/AGENTS.md) and rollup-plugin-dts (tsup's dts bundler)
-// cannot inline a type that resolves through that map's `*` pattern: it leaves
-// an unresolvable `@openpanel/core/...` reference in dist/index.d.ts, which
-// breaks for every consumer since core isn't published. A plain deep import
-// into any workspace-internal shim package hits the same wall one hop later,
-// since those packages now just re-export core's. Keeping a literal copy here
-// is what keeps this package's shipped.d.ts self-contained. The SDK wire
-// contract tests (verification/contracts/sdk) exercise both sides at runtime,
-// so a drift shows up as a behavioral failure even without a type-level check.
+// Hand-duplicated on purpose, not imported: the wire contract's source of
+// truth is @openpanel/core/modules/ingest/ingest.constants.ts, but core's
+// package.json exports map is deliberately narrow (no `./*` wildcard) and
+// rollup-plugin-dts (tsup's dts bundler) cannot inline a type that resolves
+// through that map's `*` pattern: it leaves an unresolvable
+// `@openpanel/core/...` reference in dist/index.d.ts, which breaks for every
+// consumer since core isn't published. A plain deep import into any
+// workspace-internal shim package hits the same wall one hop later, since
+// those packages now just re-export core's. Keeping a literal copy here is
+// what keeps this package's shipped .d.ts self-contained.
 import { Api } from './api';
 
 export type ProfileId = string | number;
@@ -137,10 +135,7 @@ export class OpenPanel {
     });
   }
 
-  // placeholder for future use
-  init() {
-    // empty
-  }
+  init() {}
 
   ready() {
     this.options.disabled = false;
@@ -284,9 +279,7 @@ export class OpenPanel {
   /**
    * @deprecated This method is deprecated and will be removed in a future version.
    */
-  alias(_payload: AliasPayload) {
-    // noop
-  }
+  alias(_payload: AliasPayload) {}
 
   increment(payload: IncrementPayload) {
     return this.send({

@@ -25,15 +25,13 @@ import { getClientByIdCached } from '../client/client.service';
 // `TABLE_NAMES` and the date helper are core's own copies
 // (shared/ch-tables.ts, shared/ch-dates.ts).
 //
-// clix sent `clickhouse_settings.session_timezone = 'UTC'` on every
-// `execute()` — `clix(client)` with no timezone argument defaults to it
-// (query-builder.ts:696-697, :562). `getLastEventPerProject` came off clix and
-// keeps sending it so its result set stays identical; `getProjectEventsCount`
-// was already a raw `chQuery` call, sent none, and still sends none.
+// `getLastEventPerProject` explicitly sends session_timezone=UTC so its
+// result set stays consistent; `getProjectEventsCount` is a raw `chQuery`
+// call and sends none.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end after tracking already stopped) — only real tracking activity
-// counts. V1 wrote this list inline in both statements.
+// counts.
 const NON_TRACKING_EVENT_NAMES = ['session_start', 'session_end'];
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
@@ -60,9 +58,8 @@ export async function getProjectById(deps: DbScope, id: string) {
 
 /**
  * L1 LRU (60s) + L2 Redis, one instance per Postgres client — the ingest
- * consumer, `/track` and mcp all read and invalidate the same one. The name is
- * EMPTY for the same reason `getClientByIdCached`'s is: the in-factory
- * `cacheable(...)` this replaces took an anonymous arrow, so the Redis key is
+ * consumer, `/track` and mcp all read and invalidate the same one. The name
+ * is EMPTY, same as `getClientByIdCached`'s, so the Redis key is
  * `cachable::<id>`.
  */
 export const getProjectByIdCached = cacheablePerDb(
@@ -287,7 +284,7 @@ export async function getProjectActivationStatus(
   };
 }
 
-// --- /manage REST CRUD (apps/api/src/controllers/manage.controller.ts) ---
+// --- /manage REST CRUD (project.routes.ts) ---
 
 export interface CreatedProjectClient {
   id: string;
@@ -322,9 +319,7 @@ export async function getProjectForOrganization(
   });
 }
 
-// Grace period between a scheduled deletion and the `delete` cron sweeping it
-// up — matches V1's `addHours(new Date(), 24)` (trpc) and the manage
-// controller's `Date.now() + 24 * 60 * 60 * 1000` (REST), same duration.
+// Grace period between a scheduled deletion and the `delete` cron sweeping it up.
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 
 export function createProjectService(

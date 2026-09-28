@@ -1,26 +1,20 @@
 // The GSC OAuth token lifecycle, the Search Console API client, ClickHouse
 // read/write, the AI-tool wrapper functions and the
-// gscProjectSync/gscProjectBackfill job bodies. packages/db/src/gsc.ts and
-// packages/db/src/services/gsc.service.ts become re-export shims of this file
-// (same shape as packages/db/src/encryption.ts since M4-006).
+// gscProjectSync/gscProjectBackfill job bodies.
 //
-// Every exported function takes `ServiceDeps` and reaches Postgres as `deps.db`
-// and ClickHouse as `deps.ch`; the `loadDb`/`loadChClient` lazy loaders are
-// gone, so the requestId minted at the edge reaches the query.
-// `getGscCannibalization` is `cacheablePerDeps`: `cacheable` keys on the call's
-// ARGUMENTS (packages/redis/cachable.ts), so the caller's deps travel beside
-// the key rather than inside it and the Redis key stays byte-identical.
+// Every exported function takes `ServiceDeps` and reaches Postgres as
+// `deps.db` and ClickHouse as `deps.ch`, so the requestId minted at the edge
+// reaches the query. `getGscCannibalization` is `cacheablePerDeps`:
+// `cacheable` keys on the call's ARGUMENTS, so the caller's deps travel
+// beside the key rather than inside it and the Redis key stays
+// byte-identical.
 //
-// DELIBERATE BEHAVIOUR CHANGE, recorded: the reads and the four sync inserts
-// used @openpanel/db's `originalCh` (the first configured node, no retry).
-// `deps.ch` is the round-robin/retry proxy every other core module already
-// uses, which also applies the shared INSERT_DEFAULT_SETTINGS
-// (`wait_end_of_query`, insert block size) to those inserts. Same rows, same
-// tables; strictly more failover.
+// `deps.ch` is the round-robin/retry proxy every other core module uses,
+// which also applies the shared INSERT_DEFAULT_SETTINGS
+// (`wait_end_of_query`, insert block size) to the four sync inserts here.
 //
-// ClickHouse queries here still go through raw SQL strings, not the `sql` tag:
-// ADR-013 converts the analytics read path one query per P7 task, and this
-// module's queries haven't been converted yet.
+// ClickHouse queries here still go through raw SQL strings, not the `sql`
+// tag — this module's queries haven't been converted yet.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { decrypt, encrypt } from '@openpanel/shared/server';
@@ -717,8 +711,7 @@ export async function getGscQueries(
 }
 
 // --------------------------------------------------------------------------
-// Connection CRUD — moved from packages/trpc/src/routers/gsc.ts's
-// getConnection/selectSite/disconnect handler bodies.
+// Connection CRUD.
 // ---------------------------------------------------------------------------
 
 export interface GscConnectionSummary {
@@ -778,9 +771,8 @@ export async function disconnectGscConnection(
 }
 
 // --------------------------------------------------------------------------
-// Dashboard aggregate queries — moved from packages/trpc/src/routers/gsc.ts.
-// The trpc router itself stays on V1 (DELEGATE PATTERN); this is its
-// date-resolution and search/AI-engine breakdown logic.
+// Dashboard aggregate queries — date resolution and search/AI-engine
+// breakdown logic.
 // ---------------------------------------------------------------------------
 
 export interface GscDateRangeInput {
@@ -1045,9 +1037,8 @@ export async function getGscPreviousOverview(
 }
 
 // ---------------------------------------------------------------------------
-// AI-tool wrappers — moved from packages/db/src/services/gsc.service.ts.
-// Consumed by apps/api's assistant SEO tools and the /insights REST surface
-// (both still reach @openpanel/db, which re-exports these unchanged).
+// AI-tool wrappers — consumed by apps/api's assistant SEO tools and the
+// /insights REST surface.
 // ---------------------------------------------------------------------------
 
 export interface GscQueryOpportunity {
@@ -1281,8 +1272,8 @@ export async function gscGetCannibalizationCore(
 }
 
 // --------------------------------------------------------------------------
-// Job bodies — moved from apps/worker/src/jobs/gsc.ts. Each fully owns its
-// status-update bookkeeping so the worker file is a bare dispatch.
+// Job bodies. Each fully owns its status-update bookkeeping so the worker
+// file is a bare dispatch.
 // ---------------------------------------------------------------------------
 
 /** The `gscSync` cron fan-out: every project with a connected GSC site. */
@@ -1369,7 +1360,6 @@ export async function runGscProjectBackfill(
     const startDate = new Date(endDate);
     startDate.setMonth(startDate.getMonth() - BACKFILL_MONTHS);
 
-    // Process in chunks to avoid timeouts and respect API limits
     let chunkEnd = new Date(endDate);
     while (chunkEnd > startDate) {
       const chunkStart = new Date(chunkEnd);
@@ -1419,10 +1409,8 @@ export async function runGscProjectBackfill(
 }
 
 // --------------------------------------------------------------------------
-// OAuth callback — moved from apps/api/src/controllers/gsc-oauth-callback.
-// controller.ts's business logic. Cookie reading/signing and the redirect stay
-// with each transport (Fastify today, Elysia's gsc.routes.ts once it is live) —
-// this is the part that is transport-agnostic.
+// OAuth callback business logic. Cookie reading/signing and the redirect
+// stay with the transport route; this is the transport-agnostic part.
 // ---------------------------------------------------------------------------
 
 export interface GscOAuthCallbackInput {
@@ -1527,7 +1515,7 @@ export function createGscService(deps: ServiceDeps, _services: () => Services) {
       getGscConnection(deps, projectId),
     listSites: (projectId: string): Promise<GscSite[]> =>
       listGscSites(deps, projectId),
-    /** Also enqueues the `gscProjectBackfill` job — same as V1's router. */
+    /** Also enqueues the `gscProjectBackfill` job. */
     selectSite: async (projectId: string, siteUrl: string): Promise<void> => {
       await selectGscSite(deps, projectId, siteUrl);
       await deps.queues.gsc.gscProjectBackfill.add({ projectId });

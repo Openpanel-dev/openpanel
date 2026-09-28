@@ -2,7 +2,7 @@
 // organization-shaped (organization.rpc.ts's invite/access mutations), so it
 // lives here and `zInviteUser` embeds it without a cross-file constants import.
 // @openpanel/db's `code-migrations/constants.ts` keeps its own frozen copy of
-// the schema (Carl's rulings) — it is not a consumer.
+// the schema — it is not a consumer.
 
 import { z } from 'zod';
 

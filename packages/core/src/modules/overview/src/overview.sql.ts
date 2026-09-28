@@ -5,12 +5,10 @@
 // `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is SQL
 // syntax, not a value.
 //
-// `toStartOf`/`toInterval`/`datetime` reproduce V1's `clix` static helpers
-// verbatim (query-builder.ts) rather than chart.sql.ts's own `intervalBucket`:
-// notably V1's overview never passed a timezone into `toStartOfWeek`/
-// `toStartOfMonth` — ClickHouse resolves those from the query's
-// `session_timezone` setting instead, which every statement here still sets
-// (see src/run-query.ts).
+// `toStartOf`/`toInterval`/`datetime` deliberately never pass a timezone
+// into `toStartOfWeek`/`toStartOfMonth` — ClickHouse resolves those from the
+// query's `session_timezone` setting instead, which every statement here
+// still sets (see src/run-query.ts).
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {
@@ -25,7 +23,7 @@ const ROLLUP_DATE_PREFIX = '1970-01-01';
 
 export type OverviewTable = 'events' | 'sessions';
 
-/** V1 `clix.toStartOf` — deliberately timezone-blind for week/month (see header). */
+/** Deliberately timezone-blind for week/month (see header). */
 export function toStartOf(node: string, interval: IInterval): SqlFragment {
   switch (interval) {
     case 'minute':
@@ -43,7 +41,6 @@ export function toStartOf(node: string, interval: IInterval): SqlFragment {
   }
 }
 
-/** V1 `clix.toInterval`. */
 function toIntervalStep(interval: IInterval): string {
   switch (interval) {
     case 'minute':
@@ -62,12 +59,11 @@ function toIntervalStep(interval: IInterval): string {
 }
 
 /**
- * `getFillConfig`: `WITH FILL` needs FROM/TO to actually evaluate to a
- * Date/DateTime constant, not a bare string — V1 got this from `clix`'s
- * `toStartOf`/`datetime` helpers, which return SQL *expressions*
- * (`toStartOfMonth(toDateTime(toDate('...')))`), never a plain literal.
- * `sql.date`/`sql.dateTime64` bind the boundary itself; the wrapping
- * functions around them reproduce that expression shape.
+ * `WITH FILL` needs FROM/TO to actually evaluate to a Date/DateTime
+ * constant, not a bare string. `sql.date`/`sql.dateTime64` bind the boundary
+ * itself; the wrapping functions around them produce the SQL *expression*
+ * shape ClickHouse needs (`toStartOfMonth(toDateTime(toDate('...')))`),
+ * never a plain literal.
  */
 function fillBoundaryParam(
   interval: IInterval,
@@ -82,7 +78,7 @@ function fillBoundaryParam(
     : sql.param('DateTime', toRangeBoundaryLiteral(value, boundary));
 }
 
-/** V1 always bucket-aligns FROM (via `toStartOf`) but leaves TO as-is. */
+/** Always bucket-aligns FROM (via `toStartOf`) but leaves TO as-is. */
 function fillFrom(interval: IInterval, startDate: string): SqlFragment {
   const boundary = fillBoundaryParam(interval, startDate, 'start');
   switch (interval) {
@@ -256,8 +252,8 @@ export function metricsWithPageFilterQuery(
 
   // `max(if(<rollup row>, x, NULL)) OVER ()` broadcasts the totals row's value
   // onto every daily row, and stays NULL when the aggregate produced no rollup
-  // row at all — which is the nullability the old scalar subqueries had, and
-  // which `getMetricsWithPageFilter` reads to tell "no data" from "zero".
+  // row at all — that nullability is what `getMetricsWithPageFilter` reads
+  // to tell "no data" from "zero".
   const overallOf = (column: string): SqlFragment =>
     sql`max(if(date = ${rollupDate}, ${sql.id(column)}, NULL)) OVER ()`;
 
@@ -377,13 +373,12 @@ export function distinctSessionsQuery(
 }
 
 /**
- * `withDistinctSessionsIfNeeded`: when the caller filtered by `path`, a
- * `sessions`-scoped query is redirected through the set of session ids that
- * actually match the page filter on `events`, instead of applying the
- * filters directly to `sessions` (which has no `path` column of its own).
- * Threaded as a WHERE clause, not appended after the finished query text —
- * V1's `.merge()` is equivalent to inserting one more AND'd condition, and
- * doing that after `LIMIT` is invalid SQL.
+ * When the caller filtered by `path`, a `sessions`-scoped query is
+ * redirected through the set of session ids that actually match the page
+ * filter on `events`, instead of applying the filters directly to
+ * `sessions` (which has no `path` column of its own). Threaded as a WHERE
+ * clause, not appended after the finished query text — appending after
+ * `LIMIT` would be invalid SQL.
  */
 function distinctSessionsCteHeader(cte: SqlFragment | null): SqlFragment {
   return cte ? sql`WITH distinct_sessions AS (${cte})` : sql.empty;
@@ -401,7 +396,7 @@ export interface TopEntryExitQueryInput {
   endDate: string;
   mode: 'entry' | 'exit';
   limit: number;
-  /** Mutually exclusive with `distinctSessionsCte`, exactly as V1's `withDistinctSessionsIfNeeded`. */
+  /** Mutually exclusive with `distinctSessionsCte`. */
   rawFilterWhere: SqlFragment | null;
   distinctSessionsCte: SqlFragment | null;
 }
@@ -437,7 +432,7 @@ export function topEntryExitQuery(input: TopEntryExitQueryInput): SqlFragment {
 // --- top generic (breakdown by a single dimension) ------------------------------
 
 /** `column`/`prefixColumn` are drawn from a closed zod enum upstream — bound
- * as identifiers here rather than trusted as pre-validated text (R3). */
+ * as identifiers here rather than trusted as pre-validated text. */
 const TOP_GENERIC_COLUMNS = [
   'referrer',
   'referrer_name',
@@ -467,7 +462,7 @@ export interface TopGenericQueryInput {
   column: string;
   prefixColumn: string | null;
   limit: number;
-  /** Mutually exclusive with `distinctSessionsCte`, exactly as V1's `withDistinctSessionsIfNeeded`. */
+  /** Mutually exclusive with `distinctSessionsCte`. */
   rawFilterWhere: SqlFragment | null;
   distinctSessionsCte: SqlFragment | null;
 }
@@ -534,7 +529,7 @@ export interface TopGenericSeriesTimeSeriesInput {
   interval: IInterval;
   column: string;
   prefixColumn: string | null;
-  /** Always applied — unlike the top-items query, V1 applies this unconditionally. */
+  /** Always applied, unlike the top-items query which applies it conditionally. */
   rawFilterWhere: SqlFragment | null;
   /** Additionally applied on top of `rawFilterWhere` when the caller has a page filter. */
   distinctSessionsCte: SqlFragment | null;
@@ -585,10 +580,10 @@ function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
 }
 
 /**
- * `arrayCompact` drops consecutive repeats in linear time. V1's `arrayFilter`
- * spelling was Theta(n^2) in the longest session's pageview count and could not
- * answer for a tenant with one very long session — the same defect, and the same
- * fix, as sankey.sql.ts's DEDUPE_CONSECUTIVE.
+ * `arrayCompact` drops consecutive repeats in linear time. An `arrayFilter`
+ * spelling is Theta(n^2) in the longest session's pageview count and could not
+ * answer for a tenant with one very long session — the same defect, and the
+ * same fix, as sankey.sql.ts's DEDUPE_CONSECUTIVE.
  */
 function pathsDedupedCte(
   input: OrderedEventsQueryInput,

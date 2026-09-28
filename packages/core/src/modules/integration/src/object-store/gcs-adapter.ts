@@ -1,4 +1,3 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Storage } from '@google-cloud/storage';
 import { decryptCredential } from '@openpanel/shared/server';
 import {
@@ -16,7 +15,7 @@ import type {
   IUploadResult,
 } from './types';
 
-/** ADR-022 R19: every failure that leaves this adapter is classified as this. */
+/** Every failure that leaves this adapter is classified under this provider name. */
 const GCS_PROVIDER = 'gcs';
 
 // A credential this adapter refuses is a refusal no retry can change.
@@ -25,10 +24,6 @@ const CREDENTIAL_REJECTED_RETRYABLE = false;
 /** Object written by `testConnection`; named so it is obvious in a bucket. */
 const CONNECTION_TEST_FILENAME = '.openpanel-connection-test';
 
-/**
- * GCS Adapter for uploading export batches to Google Cloud Storage
- * Uses service account credentials for authentication
- */
 export class GCSAdapter implements IObjectStoreAdapter {
   private config: IGCSExportConfig;
   private storage: Storage | null = null;
@@ -37,7 +32,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
     config: IGCSExportConfig,
     private readonly coreConfig: CoreConfig
   ) {
-    // Decrypt the service account key if encrypted
     this.config = {
       ...config,
       serviceAccountKey: decryptCredential(
@@ -47,9 +41,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
     };
   }
 
-  /**
-   * Get or create a GCS Storage client
-   */
   private getStorage(): Storage {
     if (this.storage) {
       return this.storage;
@@ -115,9 +106,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
     }
   }
 
-  /**
-   * Upload a single file to GCS
-   */
   async upload(options: IUploadOptions): Promise<IUploadResult> {
     const storage = this.getStorage();
     const bucket = storage.bucket(options.bucket);
@@ -150,9 +138,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
     };
   }
 
-  /**
-   * Upload multiple files to GCS
-   */
   async uploadMany(
     options: Array<IUploadOptions>
   ): Promise<Array<IUploadResult | Error>> {
@@ -171,8 +156,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
   }
 
   /**
-   * Test the connection by writing a probe object.
-   *
    * Deliberately not `bucket.exists()`: reading bucket metadata needs
    * `storage.buckets.get`, which the least-privilege grant for an export target
    * (roles/storage.objectCreator, roles/storage.objectAdmin) does NOT include.
@@ -217,9 +200,6 @@ export class GCSAdapter implements IObjectStoreAdapter {
   }
 }
 
-/**
- * Create a GCS adapter from integration config
- */
 export function createGCSAdapter(
   config: IGCSExportConfig,
   coreConfig: CoreConfig

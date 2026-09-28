@@ -22,7 +22,6 @@ const CONVERSION_RATE_DECIMALS = 2;
 const CONVERSION_GROUPS = ['session_id', 'profile_id'] as const;
 export type ConversionGroup = (typeof CONVERSION_GROUPS)[number];
 
-/** V1 `clix.toStartOf(created_at, interval)` — no timezone argument. */
 function intervalBucket(interval: IInterval): SqlFragment {
   switch (interval) {
     case 'minute':
@@ -86,7 +85,7 @@ function groupJoin(needed: boolean, projectId: string): SqlFragment {
     : sql.empty;
 }
 
-/** V1 `ConversionService.getConversion`: one windowFunnel scan per bucket. */
+/** One windowFunnel scan per bucket. */
 export function conversionQuery(input: ConversionQueryInput): SqlFragment {
   const {
     projectId,

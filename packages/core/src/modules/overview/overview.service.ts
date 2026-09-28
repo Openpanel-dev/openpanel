@@ -1,13 +1,6 @@
-// The ClickHouse queries moved to src/overview.sql.ts.
-//
-// `OverviewService` is no longer a class and there is no `overviewService`
-// module singleton. Every method is a module-scope function taking
-// `ServiceDeps` first and otherwise the same arguments, and
-// `createOverviewService(deps)` binds them under their old method names, so
-// `services.overview.getMetrics(input)` reads exactly as
-// `overviewService.getMetrics(input)` did. The caller-supplied
-// `constructor(client)` slot is gone with it: the client is `deps.ch`, which is
-// what puts the request's id on the query's log line.
+// The ClickHouse queries live in src/overview.sql.ts. Every function here
+// takes `ServiceDeps` first; the client is `deps.ch`, which is what puts the
+// request's id on the query's log line.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { average, sum } from '@openpanel/shared';
@@ -93,7 +86,6 @@ const UTM_COLUMNS = [
   'utm_content',
 ];
 
-// Types
 type MetricsRow = {
   bounce_rate: number;
   unique_visitors: number;
@@ -307,10 +299,10 @@ function getOverallRevenue(
 }
 
 /**
- * V1 `withDistinctSessionsIfNeeded`: a page (`path`) filter has no column on
- * `sessions`, so it's resolved against `events` first and the session ids
- * that match are intersected in. Returns the mutually-exclusive pair every
- * `sessions`-scoped query builder takes.
+ * A page (`path`) filter has no column on `sessions`, so it's resolved
+ * against `events` first and the session ids that match are intersected in.
+ * Returns the mutually-exclusive pair every `sessions`-scoped query builder
+ * takes.
  */
 function sessionsFilterMode(params: {
   filters: IChartEventFilter[];
@@ -748,9 +740,9 @@ export async function getTopGenericSeries(
     return { items: [] };
   }
 
-  // V1 always applies the sessions rawWhere here (unlike the top-items
-  // query above), additionally wrapping in distinct_sessions on a page
-  // filter — see overview.sql.ts's topGenericSeriesTimeSeriesQuery header.
+  // Unlike the top-items query above, the sessions rawWhere is applied here
+  // and additionally wrapped in distinct_sessions on a page filter — see
+  // overview.sql.ts's topGenericSeriesTimeSeriesQuery header.
   const timeSeriesSessionsFilter = isPageFilter(filters)
     ? distinctSessionsQuery({
         projectId,
@@ -852,11 +844,9 @@ export async function getUserJourney(
   }>;
   links: Array<{ source: string; target: string; value: number }>;
 }> {
-  // Config
-  const TOP_ENTRIES = 3; // Only show top 3 entry pages
-  const TOP_DESTINATIONS_PER_NODE = 3; // Top 3 destinations from each node
+  const TOP_ENTRIES = 3;
+  const TOP_DESTINATIONS_PER_NODE = 3;
 
-  // Color palette - each entry page gets a consistent color
   const COLORS = chartColors.map((color) => color.main);
 
   const rawFilterWhere = getRawWhereClause('events', filters);
@@ -890,9 +880,8 @@ export async function getUserJourney(
     return { nodes: [], links: [] };
   }
 
-  // Build the sankey progressively step by step. Start with entry nodes,
-  // then follow top destinations at each step. Node IDs combine path with
-  // step to prevent circular references.
+  // Node ids combine path with step, so a repeated path across steps
+  // doesn't collapse into one node.
   const nodes = new Map<
     string,
     { path: string; value: number; step: number; color: string }
@@ -971,7 +960,6 @@ export async function getUserJourney(
     }
   }
 
-  // Filter links by threshold (0.25% of total sessions)
   const MIN_LINK_PERCENT = 0.25;
   const minLinkValue = Math.ceil((totalSessions * MIN_LINK_PERCENT) / 100);
   const filteredLinks = links.filter((link) => link.value >= minLinkValue);
@@ -988,7 +976,6 @@ export async function getUserJourney(
     nodeValuesFromLinks.set(link.target, current + link.value);
   });
 
-  // For entry nodes (step 1), only keep them if they have outgoing links after filtering
   nodes.forEach((nodeData, nodeId) => {
     if (nodeData.step === 1) {
       const hasOutgoing = filteredLinks.some((l) => l.source === nodeId);
@@ -1155,7 +1142,7 @@ export async function getMapData(
     timezone
   );
 
-  // Placeholder lat/lng — geocoding is unresolved, same as V1.
+  // Placeholder lat/lng — geocoding is not implemented yet.
   return results.map((row) => ({
     country: row.country,
     region: row.region ?? undefined,
@@ -1166,7 +1153,7 @@ export async function getMapData(
   }));
 }
 
-/** The dashboard's live/30-minute-window widget — moved from packages/trpc's overview router (M7-005). */
+/** The dashboard's live/30-minute-window widget. */
 export async function getLiveData(
   deps: ServiceDeps,
   projectId: string

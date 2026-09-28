@@ -302,7 +302,7 @@ describe('handleStatelessMcpRequest — protocol', () => {
   });
 
   it('closes the ephemeral server — and with it the transport pair it opened', async () => {
-    // R16. `spyOn` calls through, so the close still really happens.
+    // `spyOn` calls through, so the close still really happens.
     const closeSpy = spyOn(McpServer.prototype, 'close');
     try {
       const res = await post(VALID_TOKEN, {

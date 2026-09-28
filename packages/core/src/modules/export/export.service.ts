@@ -1,16 +1,12 @@
 // The export module owns no data of its own — it is the public read API
-// (`/export` + `/insights`, 56 GET routes, TARGET_ARCHITECTURE §7). Every
-// handler in `export.routes.ts` is a thin delegate onto the overview/chart/
-// event/session/profile/group/gsc/report services already ported to core
-// (M7-001..006). This file holds only the plumbing every route shares —
-// resolving a project id and a date range — ported verbatim from
-// apps/api/src/controllers/{export,insights}.controller.ts. No new query logic:
-// every resolution here already existed in V1's controllers.
+// (`/export` + `/insights`). Every handler in `export.routes.ts` is a thin
+// delegate onto the overview/chart/event/session/profile/group/gsc/report
+// services. This file holds only the plumbing every route shares — resolving
+// a project id and a date range.
 //
-// `loadDb` and `loadCore` are gone. Postgres is `deps.db`, and the sibling
-// services these routes delegate to are imported by RELATIVE path — the hazard
-// the old `loadCore` guarded against was re-entering this package's own barrel
-// (`@openpanel/core`) mid-evaluation, which a relative import cannot do.
+// The sibling services these routes delegate to are imported by RELATIVE
+// path rather than through this package's own barrel (`@openpanel/core`), to
+// avoid re-entering it mid-evaluation, which a relative import cannot do.
 
 import { resolveDateRange } from '@openpanel/shared';
 import type { AuthenticatedClient } from '../../http/client-auth';
@@ -25,12 +21,11 @@ export type ProjectIdResolution =
   | { ok: false; status: 400 | 403 | 404; message: string };
 
 /**
- * `/export/*`'s own project-id resolution (apps/api's export.controller.ts
- * `getProjectId`): the project id travels in the QUERYSTRING
- * (`project_id`/`projectId`), not a path param, and a `read` client may pass
- * one as long as it matches their own — a different shape than `/insights`'s
- * path-param resolution below, so it stays its own function rather than
- * being folded into `resolveClientProjectId`.
+ * `/export/*`'s own project-id resolution: the project id travels in the
+ * QUERYSTRING (`project_id`/`projectId`), not a path param, and a `read`
+ * client may pass one as long as it matches their own — a different shape
+ * than `/insights`'s path-param resolution below, so it stays its own
+ * function rather than being folded into `resolveClientProjectId`.
  */
 export async function resolveExportProjectId(
   deps: ServiceDeps,
@@ -72,8 +67,7 @@ export async function resolveExportProjectId(
 
 /**
  * `/insights/:projectId/*`'s project-id resolution — `resolveClientProjectId`
- * is the single client->project resolution point (ADR-011 A-iii invariant 12),
- * already what apps/api's insights.controller.ts `getProjectId` calls.
+ * is the single client->project resolution point.
  */
 export async function resolveInsightsProjectId(
   deps: ServiceDeps,
@@ -89,8 +83,8 @@ export async function resolveInsightsProjectId(
 }
 
 /**
- * Ported verbatim from insights.controller.ts's `resolveDates`: a `range`
- * needs the project's timezone to resolve; an explicit `startDate` does not.
+ * A `range` needs the project's timezone to resolve; an explicit `startDate`
+ * does not.
  */
 export async function resolveInsightsDateRange(
   deps: ServiceDeps,
@@ -115,8 +109,7 @@ const DATE_ONLY_LENGTH = 10;
  * searchAnalytics API takes `YYYY-MM-DD`, so the datetime bounds the event and
  * session tables need are wrong for both: ClickHouse refuses
  * `'2026-08-07 00:00:00'` with "Cannot convert string ... to type Date", which
- * failed every /insights/:projectId/gsc/* route for a named `range`
- * (main a0e122e8).
+ * failed every /insights/:projectId/gsc/* route for a named `range`.
  */
 export async function resolveGscInsightsDateRange(
   deps: ServiceDeps,

@@ -36,8 +36,9 @@ export function wrap<TPayload>(
 }
 
 /**
- * Both keys, not just `payload`: five of the seven V1 shapes carry a `payload`
- * of their own, so `meta` is the half that tells an envelope from a legacy job.
+ * Both keys, not just `payload`: most legacy job shapes also carry a
+ * `payload` of their own, so `meta` is the half that tells an envelope from
+ * a legacy job.
  */
 export function isEnvelope(data: unknown): data is JobEnvelope {
   return (

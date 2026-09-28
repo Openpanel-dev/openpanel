@@ -4,7 +4,7 @@
  * call. They end up inside a ClickHouse Map access, so a key carrying a
  * quote must stay one value — otherwise it closes the literal and the rest
  * of the key is parsed as SQL, next to the `project_id` predicate that scopes
- * the query to one project (V1 #483).
+ * the query to one project.
  *
  * Here every key binds as a `{pN:String}` param, so the assertions are that
  * the rendered statement never carries the key's text, that the key comes

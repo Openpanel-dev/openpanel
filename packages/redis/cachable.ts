@@ -7,10 +7,9 @@ export const deleteCache = (key: string) => {
   return getRedisCache().del(key);
 };
 
-// Global LRU cache for getCache function
 const globalLruCache = new LRUCache<string, any>({
-  max: 5000, // Store up to 5000 entries
-  ttl: 1000 * 60, // 1 minutes default TTL
+  max: 5000,
+  ttl: 1000 * 60,
 });
 
 export async function getCache<T>(
@@ -19,7 +18,6 @@ export async function getCache<T>(
   fn: () => Promise<T>,
   useLruCache?: boolean
 ): Promise<T> {
-  // L1 Cache: Check global LRU cache first (in-memory, instant)
   if (useLruCache) {
     const lruHit = globalLruCache.get(key);
     if (lruHit !== undefined) {
@@ -27,37 +25,32 @@ export async function getCache<T>(
     }
   }
 
-  // L2 Cache: Check Redis cache (shared across instances)
   const hit = await getRedisCache().get(key);
   if (hit) {
     const parsed = parseCache(hit);
 
-    // Store in LRU cache for next time
     if (useLruCache) {
       globalLruCache.set(key, parsed, {
-        ttl: expireInSec * 1000, // Use the same TTL as Redis
+        ttl: expireInSec * 1000,
       });
     }
 
     return parsed;
   }
 
-  // Cache miss: Execute function
   const data = await fn();
 
-  // Store in both caches
   if (useLruCache) {
     globalLruCache.set(key, data, {
       ttl: expireInSec * 1000,
     });
   }
-  // Fire and forget Redis write for better performance
+  // Fire-and-forget: the caller does not wait on the Redis write.
   getRedisCache().setex(key, expireInSec, JSON.stringify(data));
 
   return data;
 }
 
-// Helper functions for managing global LRU cache
 export function clearGlobalLruCache(key?: string) {
   if (key) {
     return globalLruCache.delete(key);
@@ -105,7 +98,6 @@ function stringify(obj: unknown): string {
     return pairs.join(':');
   }
 
-  // Fallback for any other types
   return String(obj);
 }
 
@@ -114,12 +106,10 @@ export interface CacheableOptions {
 }
 
 function shouldCache(result: unknown, options: CacheableOptions = {}): boolean {
-  // Don't cache undefined or null
   if (result === undefined || result === null) {
     return false;
   }
 
-  // Don't cache empty strings
   if (typeof result === 'string') {
     return result.length > 0;
   }
@@ -128,12 +118,10 @@ function shouldCache(result: unknown, options: CacheableOptions = {}): boolean {
     return options.cacheEmptyArray ? true : result.length > 0;
   }
 
-  // Don't cache empty objects
   if (typeof result === 'object' && result !== null) {
     return Object.keys(result).length > 0;
   }
 
-  // Cache everything else (booleans, numbers, etc.)
   return true;
 }
 
@@ -153,7 +141,7 @@ const parseCache = (cached: string) => {
 };
 
 // L1 cache: short TTL to offload Redis; clear() invalidates Redis, other nodes may serve stale from LRU for up to this long
-const CACHEABLE_LRU_TTL_MS = 60 * 1000; // 60 seconds
+const CACHEABLE_LRU_TTL_MS = 60 * 1000;
 const CACHEABLE_LRU_MAX = 1000;
 
 // Overload 1: cacheable(fn, expireInSec, options?)
@@ -201,7 +189,6 @@ export function cacheable<T extends (...args: any) => any>(
   let expireInSec: number | null = null;
   let options: CacheableOptions = {};
 
-  // Parse parameters based on function signature
   if (typeof fnOrName === 'function') {
     // Overload 1: cacheable(fn, expireInSec, options?)
     expireInSec = typeof fnOrExpireInSec === 'number' ? fnOrExpireInSec : null;
@@ -256,7 +243,6 @@ export function cacheable<T extends (...args: any) => any>(
       }
     }
 
-    // Cache miss: execute function
     const result = await fn(...(args as any));
 
     if (shouldCache(result, options)) {

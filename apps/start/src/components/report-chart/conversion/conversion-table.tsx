@@ -33,7 +33,6 @@ export function ConversionTable({
     short: true,
   });
 
-  // Get all unique dates from the first series
   const dates = useMemo(
     () => data.current[0]?.data.map((item) => item.date) ?? [],
     [data.current]
@@ -42,7 +41,6 @@ export function ConversionTable({
   // Get all series (including non-visible ones for toggle functionality)
   const allSeries = data.current;
 
-  // Transform data to table rows with memoization
   const rows = useMemo(() => {
     return allSeries.map((serie) => {
       const dateValues: Record<string, number> = {};
@@ -84,7 +82,6 @@ export function ConversionTable({
     });
   }, [allSeries, dates, data.previous]);
 
-  // Calculate ranges for color visualization (memoized)
   const { metricRanges, dateRanges } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
       avgRate: {
@@ -110,7 +107,6 @@ export function ConversionTable({
     });
 
     rows.forEach((row) => {
-      // Metric ranges
       metricRanges.avgRate.min = Math.min(
         metricRanges.avgRate.min,
         row.avgRate
@@ -130,7 +126,6 @@ export function ConversionTable({
         row.conversions
       );
 
-      // Date ranges
       dates.forEach((date) => {
         const value = row.dateValues[date] ?? 0;
         dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
@@ -141,7 +136,6 @@ export function ConversionTable({
     return { metricRanges, dateRanges };
   }, [rows, dates]);
 
-  // Helper to get background color style
   const getCellBackgroundStyle = (
     value: number,
     min: number,
@@ -189,7 +183,6 @@ export function ConversionTable({
     if (globalFilter.trim()) {
       const searchLower = globalFilter.toLowerCase();
       result = rows.filter((row) => {
-        // Search in serie name
         if (
           row.serieName.some((name) =>
             name?.toLowerCase().includes(searchLower)
@@ -198,7 +191,6 @@ export function ConversionTable({
           return true;
         }
 
-        // Search in breakdown values
         if (
           row.breakdownValues.some((val) =>
             val?.toLowerCase().includes(searchLower)
@@ -207,7 +199,6 @@ export function ConversionTable({
           return true;
         }
 
-        // Search in metric values
         if (
           String(row.avgRate).toLowerCase().includes(searchLower) ||
           String(row.total).toLowerCase().includes(searchLower) ||
@@ -216,7 +207,6 @@ export function ConversionTable({
           return true;
         }
 
-        // Search in date values
         if (
           Object.values(row.dateValues).some((val) =>
             String(val).toLowerCase().includes(searchLower)
@@ -268,7 +258,6 @@ export function ConversionTable({
             return -1;
           }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
             if (comparison !== 0) {

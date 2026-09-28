@@ -347,11 +347,10 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     ]
   );
 
-  // Single shared reveal clip for every series. Replaces the per-<Line> /
-  // per-<Area> `<ChartRevealClip>` motion.rects: one motion-driven attribute
-  // animation instead of N, with all series referencing the same `<clipPath>`.
-  // The wipe semantics (left-to-right unveil of static path geometry) are
-  // identical to the previous per-series clips.
+  // Single shared reveal clip for every series: one motion-driven attribute
+  // animation instead of one per line/area, with all series referencing the
+  // same `<clipPath>`. The wipe is a left-to-right unveil of static path
+  // geometry.
   // animationDuration === 0 truly disables the reveal (no clipPath wrapper),
   // so consumers can opt out without having to also pass enterTransition.
   const showReveal =

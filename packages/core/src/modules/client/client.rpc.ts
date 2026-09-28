@@ -17,8 +17,8 @@ export const clientRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      // Ported verbatim: V1's `client.list` reads by projectId with no
-      // access check of its own (V1's client router).
+      // No access check beyond authentication: this reads any project's
+      // clients by projectId alone.
       return ctx.services.client.getClientsByProjectId(input.projectId);
     }),
 

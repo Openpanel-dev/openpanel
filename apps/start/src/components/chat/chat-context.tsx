@@ -209,7 +209,6 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
     setAgentNameState(defaultModelId);
   }, [agentName, defaultModelId, models]);
 
-  // Transient session state.
   const [streamingTitle, setStreamingTitle] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 

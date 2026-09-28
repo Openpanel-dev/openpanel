@@ -1,8 +1,3 @@
-// Isomorphic vocabulary for the event module. These are column whitelists, not
-// query logic — moved here from event.service.ts / src/sql.ts so a value-import
-// (mcp's property-values tool today; a future dashboard form tomorrow) has a
-// `*.constants.ts` to reach instead of a service or query-builder file.
-
 /**
  * Top-level filterable columns on the `events` table. These apply to
  * every event regardless of name and can be passed straight to
@@ -39,7 +34,7 @@ export const EVENT_COLUMNS = [
 
 export type IEventColumn = (typeof EVENT_COLUMNS)[number];
 
-/** Every column `getEventList` can project, in V1's select order. */
+/** Every column `getEventList` can project. */
 export const EVENT_LIST_COLUMNS = [
   'created_at',
   'project_id',
@@ -75,7 +70,7 @@ export const EVENT_LIST_COLUMNS = [
 
 export type EventListColumn = (typeof EVENT_LIST_COLUMNS)[number];
 
-/** The `= value` columns `queryEventsCore` accepts, in V1's clause order. */
+/** The `= value` columns `queryEventsCore` accepts. */
 export const QUERY_EVENTS_EQUALITY_COLUMNS = [
   'path',
   'referrer',

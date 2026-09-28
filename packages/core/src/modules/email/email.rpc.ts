@@ -1,9 +1,8 @@
 // Deliberately R + C only (no `email.service.ts`): the three procedures' bodies
 // are three small `db.emailUnsubscribe` calls, inlined here the same way
 // conversation.rpc.ts inlines its organization lookup. Sending/templates stay
-// in @openpanel/email (TARGET_ARCHITECTURE §7); core's `clients/email.ts`
-// already wraps that package for the one thing this module doesn't need —
-// sending.
+// in @openpanel/email; core's `clients/email.ts` already wraps that package
+// for the one thing this module doesn't need — sending.
 //
 // `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`

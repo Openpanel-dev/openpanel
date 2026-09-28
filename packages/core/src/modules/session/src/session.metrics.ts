@@ -1,20 +1,17 @@
-// The session lifecycle collectors, moved from apps/worker/src/metrics.ts onto
-// core's one registry. Names, labels and buckets are V1's; the worker-side
-// copies die with apps/worker (P9). The ingest-side `sessions_started_total`
-// lives with the ingest path (modules/ingest/src/ingest.metrics.ts); the three
-// at-scrape gauges joined this file at M9-002 — see
-// `registerSessionScrapeMetrics` at the bottom.
+// The session lifecycle collectors, on core's one registry. The ingest-side
+// `sessions_started_total` lives with the ingest path
+// (modules/ingest/src/ingest.metrics.ts); the three at-scrape gauges are
+// registered by `registerSessionScrapeMetrics` at the bottom of this file.
 
 import client from 'prom-client';
 import { registry } from '../../../metrics';
 
-// V1's key names, unchanged (apps/worker/src/metrics.ts).
+// Must match PROJECTS_SET_KEY in buffers/session-buffer.ts — same Redis key.
 const SESSION_PROJECTS_KEY = 'session:projects';
 
 /**
- * The slice of the cache client the gauges use. `multi` is V1's, and it is
- * batching rather than a transaction — the ADR-006 swap replaces it with
- * `Promise.all` over Bun's auto-pipelining when packages/redis moves.
+ * The slice of the cache client the gauges use. `multi` here is batching
+ * rather than a transaction.
  */
 export interface SessionMetricsRedis {
   smembers(key: string): Promise<string[]>;
@@ -96,12 +93,11 @@ export const sessionsVacuumed = new client.Counter({
 });
 
 /**
- * The three scrape-time session gauges, moved from apps/worker/src/metrics.ts.
+ * The three scrape-time session gauges.
  *
  * Registered by main.ts and ONLY where the role consumes queues: each scrape
  * costs one `ZCARD` and one `GET` per project, and ten api replicas exposing
- * them would multiply that Redis load for no new information
- * (TARGET_ARCHITECTURE §18).
+ * them would multiply that Redis load for no new information.
  *
  * The client is injected rather than imported so core does not open a Redis
  * connection at import time — `main.ts` hands in `getRedisCache`.

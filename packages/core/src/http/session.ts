@@ -2,13 +2,11 @@
 //
 // `HttpCtx.session` memoizes this call, so a request that asks twice pays once,
 // and the cookie is read through `HttpCtx` rather than through a plugin whose
-// registration order could put it after the guard that needs it (ADR-002
-// "behaviour that must be preserved explicitly" 1).
+// registration order could put it after the guard that needs it.
 //
-// Filled the body in, porting apps/api/src/app.ts's dashboard-scope `onRequest`
-// hook: decode, `runWithAlsSession`, validate, and V1's DEMO_USER_ID branch —
-// which lives inside `validateSessionToken` itself, so the no-cookie path still
-// goes through it rather than short-circuiting here.
+// The flow is: decode, `runWithAlsSession`, validate. The `DEMO_USER_ID`
+// branch lives inside `validateSessionToken` itself, so the no-cookie path
+// still goes through it rather than short-circuiting here.
 //
 // Both halves arrive as `ctx.services.auth`, not as a deep import of
 // `modules/auth/src/*`. The derive in `http/context.ts` builds the `Ctx` before
@@ -18,7 +16,7 @@
 //
 // `null` means "nobody is signed in", NOT `EMPTY_SESSION`: the `session` macro,
 // the bull-board guard and the four `/live` handlers all treat the resolved
-// value as truthy-means-authenticated. tRPC is the one caller that wants V1's
+// value as truthy-means-authenticated. tRPC is the one caller that wants the
 // empty shape instead, and `makeTrpcContext` maps `null` back to
 // `EMPTY_SESSION` there.
 
@@ -28,7 +26,7 @@ import type { CookieJar } from '../shared/cookie';
 
 export const SESSION_COOKIE_NAME = 'session';
 
-/** V1's ALS scope for the demo branch (apps/api/src/app.ts:163). */
+/** ALS scope for the demo branch. */
 const DEMO_ALS_SESSION_ID = '1';
 
 export async function resolveSession(
@@ -46,7 +44,7 @@ export async function resolveSession(
     );
     return result.userId === null ? null : result;
   } catch {
-    // V1 swallowed a malformed cookie into EMPTY_SESSION rather than a 500.
+    // A malformed cookie resolves to null (nobody signed in) rather than a 500.
     return null;
   }
 }

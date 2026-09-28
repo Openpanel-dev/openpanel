@@ -42,11 +42,10 @@ const EXCLUDED_BADGE_EVENT_NAMES = [
   'session_end',
 ];
 // clix built these queries with no timezone argument, and `clix(client)`
-// defaults to `'UTC'` (query-builder.ts:696), sending it as
-// `clickhouse_settings.session_timezone` on every `execute()`. The seven
-// statements that came off clix keep sending it so their result sets stay
-// identical; the three that were already raw `chQuery` calls sent no
-// `session_timezone` and still send none.
+// defaults to `'UTC'`, sending it as `clickhouse_settings.session_timezone`
+// on every `execute()`. The seven statements that came off clix keep sending
+// it so their result sets stay identical; the three that were already raw
+// `chQuery` calls sent no `session_timezone` and still send none.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 function since(): Date {
@@ -134,10 +133,8 @@ function adaptiveCluster(
 
 // --- location filters ------------------------------------------------------
 //
-// V1 built these as escaped SQL text and spliced them into five statements
-// (clix `.rawWhere()` four times, one raw template). They are fragments now,
-// so the same fragment object composes into every statement and each one
-// numbers its own params at `toStatement()`.
+// These are `SqlFragment`s, so the same fragment object composes into every
+// statement and each one numbers its own params at `toStatement()`.
 
 function coordinateTuples(locations: RealtimeLocation[]): SqlFragment[] {
   return locations
@@ -177,8 +174,8 @@ function buildRealtimeCountryFilter(
   return sql`coalesce(country, '') IN ${sql.array('String', countries)}`;
 }
 
-/** V1 de-duplicated the rendered `('<country>', '<city>')` text; the pair it
- *  rendered from is the same key, so this de-duplicates on the pair. */
+/** De-duplicates on the (country, city) pair rather than on the rendered
+ *  `('<country>', '<city>')` text, since the pair is the real key. */
 function cityTuples(locations: RealtimeLocation[]): SqlFragment[] {
   const seen = new Set<string>();
   const tuples: SqlFragment[] = [];
@@ -452,7 +449,7 @@ export function getActiveVisitorCount(
   return deps.buffers.event.getActiveVisitorCount(projectId);
 }
 
-/** V1: `wsVisitors` — re-count on every batch touching this project. */
+/** Re-counts on every batch touching this project. */
 export async function subscribeToVisitorActivity(
   projectId: string,
   onActivity: () => void
@@ -464,7 +461,7 @@ export async function subscribeToVisitorActivity(
   });
 }
 
-/** V1: `wsProjectEvents` — the batch's own count, not a re-query. */
+/** The batch's own count, not a re-query. */
 export async function subscribeToProjectEventBatches(
   projectId: string,
   onBatch: (event: IPublishChannels['events']['batch']) => void
@@ -476,7 +473,6 @@ export async function subscribeToProjectEventBatches(
   });
 }
 
-/** V1: `wsProjectNotifications`. */
 export async function subscribeToProjectNotifications(
   projectId: string,
   onNotification: (
@@ -495,14 +491,13 @@ export async function subscribeToProjectNotifications(
 }
 
 /**
- * V1: `wsOrganizationEvents`. Scoped to the single organization the caller's
- * membership was verified against, exactly as the three siblings above scope to
- * a verified `projectId`.
+ * Scoped to the single organization the caller's membership was verified
+ * against, exactly as the three siblings above scope to a verified
+ * `projectId`.
  *
  * The channel is instance-wide: without this filter every subscriber saw the
- * `organizationId` of every organization whose subscription changed, which is a
- * cross-tenant identifier leak (F2). V1 had no filter either — this is a
- * deliberate divergence, approved 2026-09-15.
+ * `organizationId` of every organization whose subscription changed, which is
+ * a cross-tenant identifier leak.
  */
 export async function subscribeToOrganizationSubscriptionUpdates(
   organizationId: string,

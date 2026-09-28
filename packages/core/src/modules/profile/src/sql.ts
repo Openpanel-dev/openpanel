@@ -171,11 +171,11 @@ export interface ProfileListQuery extends ProfileWindow {
 }
 
 /**
- * V1's `WHERE project_id =.. [AND search] [AND is_external =..] [AND filters]`,
- * plus the M31-003 window: V1 read every profile the project ever had, so the
- * cost grew with the tenant's lifetime rather than with anything the caller
- * asked for. `created_at` is the column the list already orders by, so the
- * bound and the order agree.
+ * `WHERE project_id =.. [AND search] [AND is_external =..] [AND filters]`,
+ * bounded to a window rather than reading every profile the project ever
+ * had — otherwise the cost grows with the tenant's lifetime rather than with
+ * anything the caller asked for. `created_at` is the column the list already
+ * orders by, so the bound and the order agree.
  */
 function profileListCondition(query: ProfileListQuery): SqlFragment {
   const search = profileSearchCondition(query.search);
@@ -205,8 +205,7 @@ export function profileListQuery(
 // `uniqExact`, not `count`: the page reads `profiles FINAL` so it sees one row
 // per id, while the count deliberately skips FINAL (it is the expensive half
 // on a large tenant). Counting rows therefore counted every unmerged
-// ReplacingMergeTree version and the total ran ahead of the list
-// (main 1f21214a).
+// ReplacingMergeTree version and the total ran ahead of the list.
 export function profileListCountQuery(query: ProfileListQuery): SqlFragment {
   return sql`
     SELECT uniqExact(id) as count
@@ -403,8 +402,8 @@ export const PROFILE_VALUE_COLUMNS = [
 const PROPERTIES_PREFIX = /^properties\./;
 
 /**
- * V1 interpolated `property` raw into the SELECT; a bare column now has to be
- * one of `PROFILE_VALUE_COLUMNS` (`sql.id` throws otherwise).
+ * A bare column has to be one of `PROFILE_VALUE_COLUMNS` (`sql.id` throws
+ * otherwise).
  */
 export function profileValuesQuery(query: {
   projectId: string;

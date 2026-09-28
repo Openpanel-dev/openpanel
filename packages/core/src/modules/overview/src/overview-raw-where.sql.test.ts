@@ -1,11 +1,11 @@
 /**
  * SQL-syntax tests for the overview module's `getRawWhereClause` (the UTM
- * remapping). Same pattern as the chart cases moving to chart.sql.test.ts with
- * theirs. M12-002 put `getRawWhereClause` on the `sql` tag, so these assertions
- * read the rendered statement AND its bound params instead of one escaped
- * string; the rest of the overview module's queries already run through
- * overview.sql.ts, covered by overview.sql.test.ts. M10-005 turned it from a
- * class method into a module function — it never needed a client, being pure
+ * remapping). Same pattern as the chart module's SQL-syntax tests.
+ * `getRawWhereClause` sits on the `sql` tag, so these assertions read the
+ * rendered statement AND its bound params instead of one escaped string; the
+ * rest of the overview module's queries already run through
+ * overview.sql.ts, covered by overview.sql.test.ts. It is a plain module
+ * function, not a class method — it never needed a client, being pure
  * fragment building.
  *
  * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local

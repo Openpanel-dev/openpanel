@@ -2,9 +2,9 @@ import { describe, expect, it } from 'bun:test';
 import { sql } from './sql';
 
 /**
- * The ADR-013 P2 round-trip: every param type the codebase uses, bound through
- * `chQuery` (so the `query_params` path is exercised through `withRetry` /
- * round-robin, R1) and read back off a real local ClickHouse.
+ * Every param type the codebase uses, bound through `chQuery` (so the
+ * `query_params` path is exercised through `withRetry` / round-robin) and
+ * read back off a real local ClickHouse.
  *
  * Payloads are hostile on purpose — single quote, double quote, backslash,
  * newline, tab, and a literal `{p1:String}` — because the escaping lives in the
@@ -249,10 +249,8 @@ describeAgainstClickhouse('param round-trip against local ClickHouse', () => {
 });
 
 /**
- * Identifier positional matrix — measured against ClickHouse 26.1.3.52 on
- * 2026-09-02. This is the split ADR-013 risk 3 says is unknown until P2 runs:
- * where `{x:Identifier}` works, and where a call site must use `sql.id()`
- * (validated inline text) instead.
+ * Identifier positional matrix: where `{x:Identifier}` works, and where a
+ * call site must use `sql.id()` (validated inline text) instead.
  *
  * | Position                                   | `{x:Identifier}` |
  * |--------------------------------------------|------------------|
@@ -270,10 +268,9 @@ describeAgainstClickhouse('param round-trip against local ClickHouse', () => {
  * | `'alias.column'` in ONE param              | FAILS — quoted whole |
  * | SETTINGS value (`session_timezone = {…}`)  | FAILS — syntax error, any type |
  *
- * Consequences for the P5-P8 conversions:
- *  - qualified names are two params, or one `sql.id('profiles.name')`;
- *  - a per-query `session_timezone` goes through `chQuery`'s
- *    `clickhouse_settings` argument, not through the SQL text.
+ * Consequences: a qualified name is two params, or one
+ * `sql.id('profiles.name')`; a per-query `session_timezone` goes through
+ * `chQuery`'s `clickhouse_settings` argument, not through the SQL text.
  */
 describeAgainstClickhouse('Identifier positional matrix', () => {
   const table = sql.identifier('events');
@@ -379,8 +376,8 @@ describeAgainstClickhouse('local builder fallback executes (R5)', () => {
   const PROFILE_COLUMNS = ['first_name', 'last_name'] as const;
 
   it('binds every value the imperative assembly produced', async () => {
-    // R5 permits local assembly; it does not permit unbound text. Hostile
-    // values go in as data and the server matches nothing.
+    // Local assembly is permitted; unbound text is not. Hostile values go in
+    // as data and the server matches nothing.
     const filters = [
       { column: 'first_name', value: HOSTILE },
       { column: 'last_name', value: "' OR 1=1 --" },

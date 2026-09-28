@@ -31,10 +31,10 @@ function searchClause(search: string | undefined): SqlFragment {
 }
 
 export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
-  // Titles come from the requested range, not V1's `now - 30 DAY`, which read a
-  // month of the widest Map column for any window and made the answer depend on
-  // the wall clock. A page titled only outside the range now resolves to ''
-  // (approved, Group C fix 8).
+  // Titles come from the requested range so the answer does not depend on the
+  // wall clock — reading a fixed lookback window off the widest Map column
+  // made the result vary by when the query ran. A page titled only outside
+  // the range resolves to ''.
   const titlesCte = sql`
     SELECT concat(origin, path) as page_key, anyLast(properties['__title']) as title
     FROM events

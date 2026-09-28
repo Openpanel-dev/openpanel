@@ -329,19 +329,14 @@ export function clusterCoordinates(
   const { zoom = 1, adaptiveRadius = true, viewport } = options;
   const detailLevel = getClusterDetailLevel(zoom);
 
-  // Calculate adaptive radius based on zoom level and coordinate density
   let adjustedRadius = radius;
 
   if (adaptiveRadius) {
-    // Much more aggressive clustering at lower zoom levels
-    // At zoom 1: use 3x larger radius for very aggressive clustering
-    // At zoom 2: use 2x radius
-    // At zoom 4: use 1x radius
-    // At zoom 8: use 0.2x radius for precision
+    // More aggressive clustering at lower zoom levels: the radius shrinks
+    // roughly with 4 / (zoom + 1), e.g. ~3x at zoom 1 down to ~0.2x by zoom 8.
     const zoomFactor = Math.max(0.1, 4 / (zoom + 1));
     adjustedRadius = radius * zoomFactor;
 
-    // Further adjust based on coordinate density if viewport is provided
     if (viewport && coordinates.length > 0) {
       const viewportCoords = coordinates.filter(
         (coord) =>
@@ -367,7 +362,6 @@ export function clusterCoordinates(
       }
     }
   } else {
-    // Simple zoom-based adjustment when adaptive is disabled
     adjustedRadius = radius * Math.max(0.5, 1 / Math.sqrt(zoom));
   }
 
@@ -415,7 +409,6 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
           },
         };
 
-        // Mark the initial coordinate as visited
         visited.add(originalIdx);
 
         // Iteratively expand the cluster to include nearby points
@@ -423,7 +416,6 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
         while (expandedInLastIteration) {
           expandedInLastIteration = false;
 
-          // For each existing cluster member, find nearby unvisited coordinates
           for (const member of [...cluster.members]) {
             coordinatesWithDensity.forEach(
               ({
@@ -459,7 +451,6 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
           }
         }
 
-        // Calculate the proper center for the cluster
         cluster.center = calculateClusterCenter(cluster.members);
         cluster.location = getLocationSummary(cluster.members);
 
@@ -474,7 +465,6 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
 // Note: Optimized clustering algorithm was removed temporarily
 // TODO: Re-implement optimized clustering after basic algorithm is working well
 
-// Utility function to get clustering statistics for debugging
 export function getClusteringStats(
   coordinates: Coordinate[],
   clusters: ReturnType<typeof clusterCoordinates>
@@ -505,7 +495,6 @@ function calculateClusterCenter(members: Coordinate[]): Coordinate {
     return { ...members[0]! };
   }
 
-  // Check if we need to handle longitude wrapping around the dateline
   const longitudes = members.map((m) => m.long);
   const minLong = Math.min(...longitudes);
   const maxLong = Math.max(...longitudes);
@@ -515,7 +504,6 @@ function calculateClusterCenter(members: Coordinate[]): Coordinate {
   let totalWeight = 0;
 
   if (maxLong - minLong > 180) {
-    // Handle dateline crossing
     let adjustedLongSum = 0;
     for (const member of members) {
       const weight = member.count ?? 1;
@@ -530,7 +518,6 @@ function calculateClusterCenter(members: Coordinate[]): Coordinate {
       avgLong -= 360;
     }
   } else {
-    // Normal case - no dateline crossing
     for (const member of members) {
       const weight = member.count ?? 1;
       avgLat += member.lat * weight;

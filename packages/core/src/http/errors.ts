@@ -1,16 +1,13 @@
-// The one error handler, ported from apps/api/src/app.ts:408-460 (ADR-002
-// "behaviour that must be preserved explicitly" 6: "the error handler's shape,
-// including the absence of a not-found handler").
+// The one error handler for the whole app.
 //
-// The body is V1's `{status, error, message}` — ADR-003 lists that shape under
-// "behaviour that must be re-implemented deliberately", because V1 produced it
-// as a side effect of the Fastify error handler and nothing reproduces it on
-// its own. Elysia's own `VALIDATION` failures are mapped onto it too, at 400:
-// that is the status V1's zod compilers threw with, and a caller that sends a
-// bad `/track` body must keep seeing 400 rather than Elysia's 422.
+// The response body is the `{status, error, message}` shape API consumers
+// already parse, so it is preserved deliberately rather than left to
+// whatever Elysia would produce on its own. Elysia's own `VALIDATION`
+// failures are mapped onto it too, at 400 — a caller sending a bad `/track`
+// body must keep seeing 400, not Elysia's own 422.
 //
-// There is deliberately NO not-found handler: V1 had none, so an unmatched
-// route keeps whatever the framework answers.
+// There is deliberately NO not-found handler: an unmatched route keeps
+// whatever the framework answers.
 
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
@@ -20,8 +17,6 @@ import { requestContext } from './context';
 const RATE_LIMITED_STATUS = 429;
 const SERVER_ERROR_STATUS = 500;
 
-/** V1's SKIP_LOG_ERRORS. `FST_ERR_CTP_INVALID_MEDIA_TYPE` is Fastify's and can
- *  no longer occur; it stays so the list is recognisably the same one. */
 const SKIP_LOG_ERROR_CODES = [
   'UNAUTHORIZED',
   'FORBIDDEN',
@@ -32,8 +27,9 @@ const SKIP_LOG_ERROR_CODES = [
 ];
 
 const VALIDATION_STATUS = 400;
-/** V1's zod compilers threw a plain `Error`, so `normalizeError` reported
- *  `Error` as the name and the body carried `"error":"Error"`. */
+/** The validation error name callers see is the literal string `'Error'` in
+ *  the response body — a stable part of the API contract regardless of what
+ *  actually threw. */
 const VALIDATION_ERROR_NAME = 'Error';
 
 /**
@@ -119,10 +115,10 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
 }
 
 /**
- * V1's validation message, `"<slot>/<path> <zod message>"` — produced by
- * `fastify-zod-openapi`'s compilers, and part of the response body on
- * `/export` and `/insights`. Elysia's own message is a multi-line JSON dump,
- * which is why this reads the structured error rather than reformatting it.
+ * Produces the `"<slot>/<path> <zod message>"` format that's part of the
+ * response body on `/export` and `/insights` — an established part of the API
+ * contract. Elysia's own message is a multi-line JSON dump, which is why this
+ * reads the structured error fields instead of reformatting it.
  */
 function validationMessage(error: unknown): string {
   // Measured on Elysia 1.4.30 with a zod (Standard Schema) validator: the

@@ -1,11 +1,9 @@
 /**
- * The regression test for drill 03's loss.
- *
- * Both halves matter and the happy path alone would not have caught the bug:
- * (a) the event buffer is flushed to Redis BEFORE the Kafka consumer is
- * stopped, and (b) a FAILED flush stops the sequence there — the consumer is
- * never stopped and the process exits non-zero, so Kafka redelivers instead of
- * dropping the events for good.
+ * Regression test: both halves below matter, and the happy path alone would
+ * not catch the bug — (a) the event buffer is flushed to Redis BEFORE the
+ * Kafka consumer is stopped, and (b) a FAILED flush stops the sequence
+ * there: the consumer is never stopped and the process exits non-zero, so
+ * Kafka redelivers instead of dropping the events for good.
  */
 
 import { describe, expect, it, mock } from 'bun:test';
@@ -77,9 +75,9 @@ describe('runShutdownSequence', () => {
   });
 
   it('lets in-flight handlers finish before it flushes', async () => {
-    // The shape drill 03 measured: a message is still being handled when the
-    // signal arrives. `stopConsuming` must not resolve until that handler has,
-    // and the flush must not start until `stopConsuming` has resolved.
+    // A message is still being handled when the shutdown signal arrives.
+    // `stopConsuming` must not resolve until that handler has, and the
+    // flush must not start until `stopConsuming` has resolved.
     const calls: string[] = [];
     let handlerFinished = false;
 

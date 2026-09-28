@@ -1,17 +1,14 @@
-// Bull-board, on the main port, behind the dashboard session guard (ADR-005
-// recommendation 6). What dies with it is `@bull-board/express` and the
-// worker's second express server — nothing named `@bull-board/fastify` ever
-// existed. `@bull-board/api` + `@bull-board/elysia` are both pinned exact 9.6.0
-// (ADR-017 register row 4 grants the bump+swap at P9).
+// Bull-board is mounted on the main port, behind the dashboard session
+// guard. This avoids `@bull-board/express` and a second express server —
+// nothing named `@bull-board/fastify` ever existed. `@bull-board/api` +
+// `@bull-board/elysia` are both pinned exact at 9.6.0.
 //
 // TWO things a reader must not mistake for accidents:
 //
-// 1. **The base path moved.** V1 served bull-board at `/` on the worker's own
-// express server (apps/worker/src/index.ts, `setBasePath('/')`). V2 has one
-// port for everything, so `/` would shadow every other route. It is
-// `/bullboard`; that is a deploy-note, written up in
-// `packages/core/docs/OPS_GRAFANA_MIGRATION.md`. 2. **Pausing `cron` from this
-// UI halts ALL buffer flushing.** Preserved deliberately.
+// 1. **The base path is `/bullboard`, not `/`.** One port serves everything
+// here, so `/` would shadow every other route; the deploy-note is
+// `packages/core/docs/OPS_GRAFANA_MIGRATION.md`. 2. **Pausing `cron` from
+// this UI halts ALL buffer flushing.** Preserved deliberately.
 
 import type { Queue as BullQueue } from 'bullmq';
 import { Elysia } from 'elysia';

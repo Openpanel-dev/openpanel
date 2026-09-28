@@ -2,11 +2,9 @@
 // `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
 // dispatch — reaching into another module's tool tree is not the fix.
 //
-// The result is a second copy of this dispatch logic, which is exactly the
-// "four independent wrapper layers over the same 34 *Core functions"
-// TARGET_ARCHITECTURE already records as accepted technical debt — this becomes
-// a third layer, not a new problem. Both copies call the same @openpanel/db
-// primitives and must be kept in sync by hand until that debt is paid down.
+// The result is a second copy of this dispatch logic, kept as an accepted
+// trade-off: both copies call the same @openpanel/db primitives and must be
+// kept in sync by hand.
 
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';

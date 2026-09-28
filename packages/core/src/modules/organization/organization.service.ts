@@ -36,11 +36,8 @@ export type IServiceMember = Prisma.MemberGetPayload<{
 }> & { access: ProjectAccess[] };
 export type IServiceProjectAccess = ProjectAccess;
 
-// Grace period between a scheduled deletion and the `delete` cron sweeping it
-// up — matches V1's `addHours(new Date(), 24)`.
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end long after tracking stopped), so they are not billable activity.
-// V1 wrote this list inline as SQL text in all four counters below.
 const NON_BILLABLE_EVENT_NAMES = ['session_start', 'session_end'];
 /** A module function's parameters with its leading `ServiceDeps` dropped. */
 type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
@@ -48,7 +45,6 @@ type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
   : never;
 
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
-// Invite link lifetime — matches V1's `addDays(new Date(), 3)`.
 const INVITE_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
 
 export async function getOrganizations(
@@ -363,10 +359,8 @@ export async function getOrganizationBillingEventsCountSerie(
     endDate: Date;
   }
 ): Promise<{ count: number; day: string }[]> {
-  // V1 built this through a `const interval = 'day'` that was never anything
-  // but 'day'; the fragment writes the bucket out instead of deriving four
-  // spellings of it. `day` is the SELECT alias, referenced by the WHERE and
-  // the WITH FILL exactly as V1 referenced it.
+  // `day` is the SELECT alias, referenced by both the WHERE clause and the
+  // WITH FILL below.
   const from = formatClickhouseDate(startDate, true);
   const to = formatClickhouseDate(endDate, true);
   const statement = sql`
@@ -404,7 +398,6 @@ export async function getOrganizationSubscriptionChartEndDate(
   if (!organization) {
     return null;
   }
-  // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
   if (
     organization.subscriptionChartEndDate &&
     new Date(endDate) > organization.subscriptionChartEndDate
@@ -474,8 +467,6 @@ export async function getSettingsForProject(
     ),
   };
 }
-
-// -- Moved from packages/db/src/services/delete.service.ts ---
 
 export async function deleteOrganization(
   deps: ServiceDeps,
@@ -559,11 +550,9 @@ export interface DeleteCronResult {
 }
 
 /**
- * The `delete` cron fragment's body — moved from
- * apps/worker/src/jobs/cron.delete.ts's `jobDelete`. Finds organizations
- * scheduled for deletion or orphaned (no admin member), and projects
- * individually scheduled for deletion, then sweeps both out of ClickHouse and
- * Postgres in one pass.
+ * Finds organizations scheduled for deletion or orphaned (no admin member),
+ * and projects individually scheduled for deletion, then sweeps both out of
+ * ClickHouse and Postgres in one pass.
  */
 export async function runDeleteCron(
   deps: ServiceDeps
@@ -571,8 +560,6 @@ export async function runDeleteCron(
   const db = deps.db;
   const now = new Date();
 
-  // Find orphaned organizations (no admin member)
-  // or organizations that are scheduled for deletion
   const organizations = await db.organization.findMany({
     where: {
       OR: [
@@ -589,7 +576,6 @@ export async function runDeleteCron(
       !(organization.hasSubscription && !organization.isWillBeCanceled)
   );
 
-  // Find projects that are scheduled for deletion
   const scheduledProjects = await db.project.findMany({
     where: { deleteAt: { lte: now } },
     select: { id: true },
@@ -618,8 +604,6 @@ export async function runDeleteCron(
     projects: projectIds.length,
   };
 }
-
-// -- Moved from packages/trpc/src/routers/organization.ts's inline bodies ---
 
 export async function updateOrganization(
   deps: ServiceDeps,

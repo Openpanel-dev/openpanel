@@ -87,9 +87,9 @@ export type CacheablePerDb<A extends unknown[], R> = ((
  * `cacheablePerDeps` for a cache that must be PROCESS-lived, not scope-lived.
  *
  * The three ingest-path caches (`getClientByIdCached`, `getProjectByIdCached`,
- * `getSalts`) used to live inside a factory that was only ever built once, in
- * the deleted V1 compat seam. Keying them on the scope like `cacheablePerDeps`
- * does would hand every request a fresh, empty L1 LRU and split `.clear()`
+ * `getSalts`) used to live inside a factory that was only ever built once.
+ * Keying them on the scope like `cacheablePerDeps` does would hand every
+ * request a fresh, empty L1 LRU and split `.clear()`
  * across as many instances as there are requests. Keying on `deps.db` — one
  * Postgres client per process — keeps one instance to read and one to
  * invalidate under any scope.

@@ -1,17 +1,13 @@
-// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
-// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
-// V1 does. `enforceAccess` reads the raw, pre-zod input and only a TOP-LEVEL
-// `projectId` — `list` and `rename` both take one, so their project access is
-// already enforced before the handler runs. `get` and `delete` take only `id`,
-// invisible to `enforceAccess`, so their ownership check stays in the handler.
-// `get` denies with NOT_FOUND rather than FORBIDDEN — the documented exception
-// the ADR-011 auth benchmark is built around (controller
-// verification/contracts/auth/README.md).
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. `enforceAccess` reads the raw, pre-zod input and only a
+// TOP-LEVEL `projectId` — `list` and `rename` both take one, so their project
+// access is already enforced before the handler runs. `get` and `delete` take
+// only `id`, invisible to `enforceAccess`, so their ownership check stays in
+// the handler. `get` denies with NOT_FOUND rather than FORBIDDEN — a
+// deliberate choice, not an oversight.
 //
-// `ctx.services.conversation` carries this module's factory.
-//
-// The per-project access ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
+// The per-project access ladder itself is bound once, in auth.service.ts;
+// every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

@@ -16,12 +16,9 @@ const dedentContent = (text: string): string => {
     return text;
   }
 
-  // Find the minimum indentation (excluding empty lines)
-  // We'll dedent code blocks too, so include them in the calculation
   let minIndent = Number.POSITIVE_INFINITY;
   for (const line of lines) {
     const trimmed = line.trim();
-    // Skip empty lines
     if (trimmed.length === 0) {
       continue;
     }
@@ -31,21 +28,16 @@ const dedentContent = (text: string): string => {
     }
   }
 
-  // If no indentation found, return as-is
   if (minIndent === Number.POSITIVE_INFINITY || minIndent === 0) {
     return text;
   }
 
-  // Remove the common indentation from all lines
   return lines
     .map((line) => {
-      // For lines shorter than minIndent, just return them as-is (preserves empty lines)
       if (line.length < minIndent) {
         return line;
       }
-      // Remove the common indentation
       const dedented = line.slice(minIndent);
-      // If the line was all whitespace, return empty string to preserve the line
       return line.trim().length === 0 ? '' : dedented;
     })
     .join('\n');
@@ -57,7 +49,6 @@ const transformMdxToReadme = (
 ): string => {
   let content = mdxContent;
 
-  // Load MDX component content files
   const commonSdkConfigPath = workspacePath(
     'apps/public/src/components/common-sdk-config.mdx'
   );
@@ -84,7 +75,6 @@ const transformMdxToReadme = (
     // Ignore if file doesn't exist
   }
 
-  // Extract title from frontmatter
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
   let title = packageName;
   let description = '';
@@ -100,12 +90,11 @@ const transformMdxToReadme = (
       description = descMatch[1].trim();
     }
 
-    // Remove frontmatter
     content = content.replace(/^---\n[\s\S]*?\n---\n/, '');
   }
 
-  // Replace MDX component references with their actual content
-  // This must happen before code block protection so component content is also protected
+  // Must run before code-block protection below, so injected component
+  // content is protected too.
   if (commonSdkConfigContent) {
     content = content.replace(
       /<CommonSdkConfig\s*\/>/g,
@@ -119,25 +108,17 @@ const transformMdxToReadme = (
     );
   }
 
-  // Protect code blocks from transformation
-  // Extract code blocks before any transformations to preserve their content
   const codeBlockPlaceholders: string[] = [];
-  // Match code blocks: ```language (optional) followed by content until closing ```
-  // Using [\s\S] to match across newlines, non-greedy to stop at first closing ```
   const codeBlockRegex = /```[\s\S]*?```/g;
 
-  // Extract and replace code blocks with placeholders
   content = content.replace(codeBlockRegex, (match) => {
     const placeholder = `__CODE_BLOCK_${codeBlockPlaceholders.length}__`;
     codeBlockPlaceholders.push(match);
     return placeholder;
   });
 
-  // Remove import statements (outside code blocks)
   content = content.replace(/^import\s+.*$/gm, '');
 
-  // Handle Tabs component specially - convert to markdown sections
-  // Extract tabs items from items prop
   const tabsItemsMatch = content.match(/<Tabs\s+items=\{([^}]+)\}>/);
   const tabsItems = tabsItemsMatch?.[1]
     ? tabsItemsMatch[1]
@@ -146,9 +127,7 @@ const transformMdxToReadme = (
         .map((item) => item.trim())
     : [];
 
-  // Replace Tabs/Tab structure with markdown sections
   if (tabsItems.length > 0) {
-    // Match each Tab and convert to a markdown section
     content = content.replace(
       /<Tab\s+value="([^"]+)">([\s\S]*?)<\/Tab>/g,
       (match, value, tabContent) => {
@@ -156,10 +135,8 @@ const transformMdxToReadme = (
         return `\n#### ${value}\n\n${dedented}\n\n`;
       }
     );
-    // Remove the Tabs wrapper
     content = content.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, '$1');
   } else {
-    // Fallback: if no items prop, just convert tabs to sections
     content = content.replace(
       /<Tab\s+value="([^"]+)">([\s\S]*?)<\/Tab>/g,
       (match, value, tabContent) => {
@@ -170,16 +147,11 @@ const transformMdxToReadme = (
     content = content.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, '$1');
   }
 
-  // Remove self-closing JSX components (like <CommonSdkConfig />, <WebSdkConfig />)
   content = content.replace(/<[A-Z][a-zA-Z]*[^>]*\/>/g, '');
 
-  // Remove JSX component tags but preserve content between opening/closing tags
-  // Handle nested components by recursively removing outer tags
-  // This regex matches opening tag, captures content (including nested tags), and closing tag
   let previousContent = '';
   while (content !== previousContent) {
     previousContent = content;
-    // Match JSX components with their content - handles one level of nesting
     content = content.replace(
       /<([A-Z][a-zA-Z]*)[^>]*>([\s\S]*?)<\/\1>/g,
       (match, tagName, innerContent) => {
@@ -188,24 +160,19 @@ const transformMdxToReadme = (
     );
   }
 
-  // Remove any remaining JSX tags (self-closing or unmatched)
   content = content.replace(/<\/?[A-Z][a-zA-Z]*[^>]*>/g, '');
 
-  // Restore code blocks
   codeBlockPlaceholders.forEach((codeBlock, index) => {
     content = content.replace(`__CODE_BLOCK_${index}__`, codeBlock);
   });
 
-  // Convert internal links (starting with /) to absolute URLs
   content = content.replace(
     /\[([^\]]+)\]\((\/[^)]+)\)/g,
     '[$1](https://openpanel.dev$2)'
   );
 
-  // Clean up extra blank lines
   content = content.replace(/\n{3,}/g, '\n\n').trim();
 
-  // Build the README header
   const docUrl = `https://openpanel.dev/docs/sdks/${packageName.replace('@openpanel/', '')}`;
   let readme = `# ${title}\n\n`;
 

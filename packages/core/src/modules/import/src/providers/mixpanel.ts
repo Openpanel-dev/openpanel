@@ -82,19 +82,16 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     const now = Date.now();
     const oneHourAgo = now - 60 * 60 * 1000;
 
-    // Prune timestamps older than 1 hour
     this.requestTimestamps = this.requestTimestamps.filter(
       (t) => t > oneHourAgo
     );
 
-    // Enforce per-second limit (3 QPS → min 334ms gap)
     const timeSinceLast = now - this.lastRequestTime;
     if (timeSinceLast < MixpanelProvider.MIN_REQUEST_INTERVAL_MS) {
       const delay = MixpanelProvider.MIN_REQUEST_INTERVAL_MS - timeSinceLast;
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
 
-    // Enforce hourly limit
     if (
       this.requestTimestamps.length >= MixpanelProvider.MAX_REQUESTS_PER_HOUR
     ) {
@@ -111,7 +108,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
           `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`
         );
         await new Promise((resolve) => setTimeout(resolve, waitMs));
-        // Prune again after waiting
         this.requestTimestamps = this.requestTimestamps.filter(
           (t) => t > Date.now() - 60 * 60 * 1000
         );
@@ -165,7 +161,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             chunkFrom,
             chunkTo
           );
-          break; // Success, move to next chunk
+          break;
         } catch (error) {
           retries++;
           const isRateLimit =
@@ -270,7 +266,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       throw new Error('No response body from Mixpanel API');
     }
 
-    // Stream the response line by line
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -285,7 +280,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // Process complete lines
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep the last incomplete line in buffer
 
@@ -304,7 +298,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         }
       }
 
-      // Process any remaining line in buffer
       if (buffer.trim()) {
         try {
           const event = JSON.parse(buffer);
@@ -321,10 +314,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     }
   }
 
-  /**
-   * Stream user profiles from Mixpanel Engage API.
-   * Paginates with page/page_size (5k per page) and yields each profile.
-   */
   async *streamProfiles(): AsyncGenerator<MixpanelRawProfile, void, unknown> {
     const { serviceAccount, serviceSecret, projectId } = this.config;
     const pageSize = 5000;
@@ -399,9 +388,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     }
   }
 
-  /**
-   * Map Mixpanel Engage profile to OpenPanel IClickhouseProfile.
-   */
   transformProfile(raw: MixpanelRawProfile): IClickhouseProfile {
     const parsed = zMixpanelRawProfile.parse(raw);
     const props = (parsed.$properties || {}) as Record<string, unknown>;
@@ -481,7 +467,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     // Check for UTM referrer in query params (web only)
     const utmReferrer = getReferrerWithQuery(query);
 
-    // Extract location data
     const country = props.$country || props.mp_country_code || '';
     const city = props.$city || '';
     const region = props.$region || '';
@@ -498,13 +483,11 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       eventName = 'screen_view';
     }
 
-    // Build properties object - strip Mixpanel-specific properties
     const properties = this.stripMixpanelProperties(props, query);
 
     if (props.$insert_id) {
       properties.__source_insert_id = String(props.$insert_id);
     }
-    // Add useful properties
     if (props.$screen_width && props.$screen_height) {
       properties.__screen = `${props.$screen_width}x${props.$screen_height}`;
     }
@@ -607,7 +590,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     uaInfo: UserAgentInfo,
     props: Record<string, any>
   ) {
-    // Normalize lib/os/browser data
     const lib = (mp_lib || '').toLowerCase();
     const os = String(props.$os || uaInfo.os || '').toLowerCase();
     const browser = String(
@@ -646,7 +628,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       return 'tablet';
     }
 
-    // Default to desktop
     return this.isServerEvent(mp_lib) ? 'server' : 'desktop';
   }
 
@@ -666,7 +647,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   }
 
   private parseServerDeviceInfo(props: Record<string, any>): UserAgentInfo {
-    // For mobile events, extract device information from Mixpanel properties
     const os = props.$os || props.os || '';
     const osVersion = props.$os_version || props.osVersion || '';
     const brand = props.$brand || props.phoneBrand || '';

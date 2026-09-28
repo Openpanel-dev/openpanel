@@ -1,14 +1,9 @@
-// `overviewProcedure` is V1's own builder — `publicProcedure` plus one
-// middleware that resolves share-or-membership off the raw
-// `projectId`/`shareId`, BEFORE the input parser. `runFilterCommand` is a
-// `protectedProcedure`, as in V1.
+// `overviewProcedure` is `publicProcedure` plus one middleware that resolves
+// share-or-membership off the raw `projectId`/`shareId`, BEFORE the input
+// parser.
 //
-// V1's per-range `cacheMiddleware` did NOT move with M11-001;
-// `createCacheMiddleware` in rpc/base.ts is the seam that will carry it.
-//
-// `liveData`'s ClickHouse queries used to live inline in packages/trpc's
-// router; they moved to `services.overview.getLiveData` (src/overview.sql.ts)
-// so every query this module runs goes through the same `sql` tag.
+// There is no per-range cache middleware yet; `createCacheMiddleware` in
+// rpc/base.ts is the seam that will carry it.
 
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { format } from 'date-fns';

@@ -30,8 +30,8 @@ export const DEFAULT_IP_HEADER_ORDER = [
 function isPublicIp(ip: string): boolean {
   // Handle IPv4-mapped IPv6 addresses (e.g., ::ffff:127.0.0.1)
   if (ip.startsWith('::ffff:')) {
-    const ipv4Part = ip.substring(7); // Extract IPv4 part after "::ffff:"
-    return isPublicIp(ipv4Part); // Recursively check the IPv4 address
+    const ipv4Part = ip.substring(7);
+    return isPublicIp(ipv4Part);
   }
 
   // IPv6 loopback
@@ -53,7 +53,6 @@ function isPublicIp(ip: string): boolean {
     return false;
   }
 
-  // IPv4 private ranges
   // 10.0.0.0/8
   if (ip.startsWith('10.')) {
     return false;
@@ -81,7 +80,6 @@ function isPublicIp(ip: string): boolean {
 }
 
 function isValidIp(ip: string): boolean {
-  // Basic IP validation
   const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
   return isPublicIp(ip) && (ipv4.test(ip) || ipv6.test(ip));
@@ -104,7 +102,6 @@ export function getClientIpFromHeaders(
   for (const headerName of headerOrder) {
     let value: string | null = null;
 
-    // Get header value
     if (headers instanceof Headers) {
       value = headers.get(headerName);
     } else {
@@ -120,7 +117,7 @@ export function getClientIpFromHeaders(
       continue;
     }
 
-    // Handle x-forwarded-for (comma separated)
+    // x-forwarded-for is comma separated; take the first entry.
     if (headerName === 'x-forwarded-for') {
       const firstIp = value.split(',')[0]?.trim();
       if (firstIp && isValidIp(firstIp)) {
@@ -134,9 +131,7 @@ export function getClientIpFromHeaders(
       if (ip && isValidIp(ip)) {
         return { ip, header: headerName };
       }
-    }
-    // Regular headers
-    else if (isValidIp(value)) {
+    } else if (isValidIp(value)) {
       return { ip: value, header: headerName };
     }
   }

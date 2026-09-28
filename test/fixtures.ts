@@ -229,8 +229,6 @@ async function insertFixtures(client: ChClient, projectId: string) {
     format: 'JSONEachRow',
   });
 
-  // Alice: session_start → page_view → session_end (2 days ago, spaced 2 min apart)
-  // Charlie: session_start → screen_view → page_view → purchase → session_end (5 days ago, spaced 5 min apart)
   // Events are spaced so windowFunnel strict_increase mode works correctly.
   await client.insert({
     table: 'events',

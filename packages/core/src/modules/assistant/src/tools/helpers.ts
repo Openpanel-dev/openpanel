@@ -99,29 +99,17 @@ export function truncateRows<T>(
 /**
  * Compact output from `listEventPropertiesCore` for consumption by the LLM.
  *
- * Two buckets come back:
+ * `columns` are top-level event columns, used bare in filters/breakdowns.
+ * `properties` are custom keys from the JSON `properties` map, used as
+ * `properties.<key>`.
  *
- *   - `columns`: top-level event columns (path, referrer, country, …).
- *     Apply to every event. Use the bare name in filters/breakdowns.
- *   - `properties`: custom keys from the JSON `properties` map. Use
- *     prefixed as `properties.<key>` in filters/breakdowns.
- *
- * The raw `properties` rows are ordered alphabetically and capped at 500.
- * That shape has three token-hungry problems when passed back:
- *
- *   1. Dotted sub-keys explode. A single property like `__query` or `data`
- *      with dynamic sub-paths surfaces as hundreds of rows
- *      (`__query.foo`, `__query.bar`, `__query.<uuid>`, …). They flood
- *      alphabetically-first — 300 of them before `country` appears.
- *   2. `event_name` is repeated on every row. When the caller passed an
- *      `eventName` filter it's a constant string; we only need it once.
- *   3. The full 500-row dump is rarely necessary — the model uses this
- *      list for filter/breakdown discovery, which is satisfied by the
- *      top ~50 distinct roots.
- *
- * This helper collapses dotted keys to their root segment, dedupes, orders
- * by frequency (how many original sub-keys fell under each root — a decent
- * "how prominent is this property" signal), and caps the list.
+ * The raw `properties` rows are ordered alphabetically and capped at 500,
+ * which is token-hungry: a property with dynamic sub-paths (`__query.foo`,
+ * `__query.<uuid>`, …) can flood the list with hundreds of rows before an
+ * unrelated property like `country` appears, and `event_name` repeats on
+ * every row even when it's a filter-supplied constant. This collapses
+ * dotted keys to their root, dedupes, orders by frequency, and caps the
+ * list to the ~50 roots the model needs for filter/breakdown discovery.
  */
 export function compactEventProperties(
   raw: {
@@ -233,9 +221,6 @@ export function pageContextFilters(
   );
 }
 
-/**
- * Compute the immediately-preceding period given a (start, end) range.
- */
 export function previousPeriod(startDate: string, endDate: string) {
   const start = new Date(startDate).getTime();
   const end = new Date(endDate).getTime();
@@ -249,9 +234,6 @@ export function previousPeriod(startDate: string, endDate: string) {
 /** Where a dev box's dashboard runs when DASHBOARD_URL is not set. */
 const DEFAULT_DASHBOARD_URL = 'http://localhost:3000';
 
-/**
- * Build a clickable dashboard URL for a tool result.
- */
 export function dashboardUrl(
   config: CoreConfig,
   organizationId: string,

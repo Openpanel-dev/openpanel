@@ -1,12 +1,9 @@
 // The vocabulary these one-shot migrations need, COPIED from packages/core
-// rather than imported from it.
-//
-// ADR-022, Carl's rulings: "I'd rather have code-migrations isolated from core,
-// so I'd rather duplicate code for this to be isolated." A migration reads rows
-// written by a past version of the app, so it must keep describing the shape
-// that existed when it was written — an import of the live
-// `report.constants.ts` would silently redefine what migration 7 and 9 mean the
-// next time someone edits a chart segment.
+// rather than imported from it. Code-migrations are deliberately isolated
+// from core: a migration reads rows written by a past version of the app, so
+// it must keep describing the shape that existed when it was written — an
+// import of the live `report.constants.ts` would silently redefine what
+// migration 7 and 9 mean the next time someone edits a chart segment.
 //
 // Sources at the time of the move (2026-09-11), for anyone diffing:
 // packages/core/src/modules/report/report.constants.ts (the chart types)

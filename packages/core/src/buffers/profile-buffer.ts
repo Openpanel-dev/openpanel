@@ -295,7 +295,6 @@ export class ProfileBuffer extends BaseBuffer {
 
     const uniqueProfiles = Array.from(mergedInBatch.values());
 
-    // Check Redis cache for all unique profiles in a single MGET
     const cacheKeys = uniqueProfiles.map((p) =>
       this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id })
     );

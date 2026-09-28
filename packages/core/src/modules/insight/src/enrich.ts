@@ -1,5 +1,3 @@
-// Ported from @openpanel/ai (dissolved into core — M4-005).
-//
 // Tier-1 insight enrichment: a one-shot OpenAI call that scores and summarizes
 // auto-detected analytics insights so the product can filter noise, select
 // email-worthy items, and flag chart-reference candidates. No persistence, no

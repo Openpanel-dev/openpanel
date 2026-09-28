@@ -1,17 +1,13 @@
-// The ingest tier of caller authentication (ADR-011 A-i's "ingest extension",
-// ported verbatim from apps/api/src/utils/auth.ts's `validateSdkRequest`).
-// apps/api's `clientHook` is a thin delegate over this; core's `clientAuth`
-// macro reaches it through http/client-auth.ts, which a route hands this
-// function to as `clientAuth: { ingest: validateIngestRequest }` (ADR-022 R22:
-// transport never deep-imports a module).
+// The ingest tier of caller authentication. Core's `clientAuth` macro reaches
+// it through http/client-auth.ts, which a route hands this function to as
+// `clientAuth: { ingest: validateIngestRequest }`.
 //
-// Everything here is behaviour V1 relies on and none of it is decoration: the
-// `ignoreCorsAndSecret` short-circuit, the unanchored wildcard origin regex,
-// CORS-before-secret ordering, the ip and profile_id project filters, the
-// `__revenue` gate, the body-field credential fallback, the `mixan-*` header
-// fallback (ADR-015 entry 5 is deferred, not taken) and the 5-minute verify
-// cache whose key holds base64(<plaintext secret>) — a recorded finding ADR-011
-// leaves to Carl, not to a port.
+// None of the behaviour below is decoration: the `ignoreCorsAndSecret`
+// short-circuit, the unanchored wildcard origin regex, CORS-before-secret
+// ordering, the ip and profile_id project filters, the `__revenue` gate, the
+// body-field credential fallback, the `mixan-*` header fallback, and the
+// 5-minute verify cache whose key holds base64(<plaintext secret>) are all
+// deliberate.
 
 import { getRedisCache } from '@openpanel/redis';
 import { path } from 'ramda';
@@ -60,10 +56,9 @@ export type IngestAuthOutcome =
       ok: true;
       client: IServiceClientWithProject;
       /**
-       * Whether the supplied client secret VERIFIED against the stored hash
-       * (main #481). The bot hook reads it as "this is a server-side SDK, never
-       * a bot", so it must not be true for any string a browser happens to send
-       * — the side channel survives as a field on the outcome (ADR-011 A-i).
+       * Whether the supplied client secret VERIFIED against the stored hash.
+       * The bot hook reads it as "this is a server-side SDK, never a bot", so
+       * it must not be true for any string a browser happens to send.
        */
       secretVerified: boolean;
     }
@@ -203,7 +198,6 @@ export async function validateIngestRequest({
     client.secret
   );
 
-  // Filter out blocked IPs
   const ipFilter = client.project.filters.filter(
     (filter): filter is IProjectFilterIp => filter.type === 'ip'
   );
@@ -214,7 +208,6 @@ export async function validateIngestRequest({
     );
   }
 
-  // Filter out blocked profile ids
   const profileFilter = client.project.filters.filter(
     (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id'
   );

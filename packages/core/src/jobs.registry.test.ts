@@ -2,9 +2,8 @@ import { expect, test } from 'bun:test';
 import { PING_SCHEDULE, schedulersFromRegistry } from './jobs/schedulers';
 import { queues } from './jobs.registry';
 
-// Byte-identity snapshot, mirroring
-// `verification/golden/queue-keys/scheduler-ids.json` — see
-// `jobs/schedulers.test.ts` for the matching id-level check.
+// Byte-identity snapshot — see `jobs/schedulers.test.ts` for the matching
+// id-level check.
 const GOLDEN_SCHEDULER_IDS = [
   'cohortRefresh',
   'dataHealth',
@@ -28,9 +27,8 @@ const GOLDEN_SCHEDULER_IDS = [
   'windDown',
 ].sort();
 
-// V1's `defaultJobOptions`, verbatim from packages/queue/src/queues.ts.
-// ADR-005's acceptance note: retry and retention values port as-is, defects
-// included — five queues that never retry, four with unbounded failed sets.
+// Retry and retention values kept as-is, defects included — five queues
+// that never retry, four with unbounded failed sets.
 const V1_DEFAULTS = {
   sessions: { removeOnComplete: true },
   cron: { removeOnComplete: 10 },
@@ -46,7 +44,6 @@ const V1_DEFAULTS = {
   },
 } as const;
 
-// apps/worker/src/boot-workers.ts:209-277 — `getConcurrencyFor(name, default)`.
 const V1_CONCURRENCY = {
   sessions: 1,
   cron: 1,
@@ -104,18 +101,11 @@ test('the insights queue carries the insight module job', () => {
   });
 });
 
-// The insight module's cron fragment (insight.jobs.ts), spread into the ONE
-// cron queue (ADR-005: "no cron module"). legacyCompat.cron maps a legacy job's
-// `type` straight onto its name, so these three ids double as job names. `ping`
-// (misc.jobs.ts) is the twentieth and only conditional one — its scheduler is
+// The insight module's cron fragment (insight.jobs.ts), spread into the one
+// cron queue. `ping` (misc.jobs.ts) is the only conditional scheduler — it's
 // added by `startSchedulers` only when SELF_HOSTED && production
-// (jobs/schedulers.ts's `PING_SCHEDULE`), but the job HANDLER is always
-// registered here so a scheduled run always has somewhere to land. `salt`
-// (salt.jobs.ts) and the six `flush*` jobs (event/profile/session/
-// group.jobs.ts) join the list at M8-004; `dataHealth` (misc.jobs.ts),
-// `windDown` (organization.jobs.ts) and `flushExports` (integration.jobs.ts) at
-// M9-003, which completes the set — all 20 V1 scheduler ids now have a handler
-// here.
+// (jobs/schedulers.ts's `PING_SCHEDULE`), but its job HANDLER is always
+// registered here so a scheduled run always has somewhere to land.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
@@ -187,8 +177,7 @@ test('the cron queue carries the cohort module cron fragment', () => {
   });
 });
 
-// The organization module's `delete` cron fragment (folded in from
-// packages/db/src/services/delete.service.ts).
+// The organization module's `delete` cron fragment.
 test('the cron queue carries the organization module cron fragment', () => {
   expect(queues.cron.jobs.delete).toMatchObject({
     queue: 'cron',
@@ -204,9 +193,9 @@ test('the cron queue carries the onboarding module cron fragment', () => {
   });
 });
 
-// The session module's own job (legacyCompat.sessions maps V1's
-// `createSessionEnd` onto this exact name) and its reaper/vacuum cron fragment
-// — the scheduler ids double as the job names.
+// The session module's own job (legacyCompat.sessions maps the legacy
+// `createSessionEnd` job onto this exact name) and its reaper/vacuum cron
+// fragment — the scheduler ids double as the job names.
 test('the sessions queue carries the session module job', () => {
   expect(Object.keys(queues.sessions.jobs)).toEqual(['session']);
   expect(queues.sessions.jobs.session).toMatchObject({
@@ -247,13 +236,11 @@ test('the notification queue carries the notification module job', () => {
   });
 });
 
-// Shrinks M9-001's bidirectional "every scheduler id has a handler, and vice
-// versa" test to this single derivation-vs-golden comparison: the join between
-// a cron job and its schedule is now enforced by the type system
-// (`defineQueue`'s overload for the `cron` queue requires every job on it to
-// declare `cron`, a schedule or explicit `null`), so the property that test
-// policed can no longer drift — it is true by construction, not by a test
-// walking both registries.
+// The join between a cron job and its schedule is enforced by the type
+// system (`defineQueue`'s overload for the `cron` queue requires every job
+// on it to declare `cron`, a schedule or explicit `null`), so this property
+// can no longer drift — it is true by construction, not by a test walking
+// both registries.
 test('the cron queue derives the golden 20 scheduler ids', () => {
   const derivedIds = [
     ...schedulersFromRegistry(queues.cron).map((s) => s.id),

@@ -191,7 +191,6 @@ export function MarkerGroup({
 
   return (
     <>
-      {/* Position group - no interaction */}
       <g transform={`translate(${x}, ${y})`}>
         {/* Vertical guide line - non-interactive, rendered first (behind marker) */}
         {showLine && lineHeight > 0 && (
@@ -221,7 +220,6 @@ export function MarkerGroup({
           />
         )}
 
-        {/* Interactive marker group */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Chart marker interaction */}
         <g
           onMouseEnter={handleMouseEnter}
@@ -249,7 +247,6 @@ export function MarkerGroup({
               y={-size}
             />
 
-            {/* Main marker */}
             <MarkerCircle
               borderColor={borderColor}
               borderWidth={borderWidth}
@@ -259,7 +256,6 @@ export function MarkerGroup({
               size={size}
             />
 
-            {/* Count badge */}
             <AnimatePresence>
               {hasMultiple && !shouldFan && (
                 <motion.g
@@ -292,7 +288,6 @@ export function MarkerGroup({
         </g>
       </g>
 
-      {/* Portal for fanned circles */}
       {containerRef?.current &&
         createPortal(
           // biome-ignore lint/a11y/noStaticElementInteractions: Marker hover portal

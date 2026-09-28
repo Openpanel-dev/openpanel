@@ -1,14 +1,16 @@
 /**
- * Acceptance proof: a LEGACY-shaped job already sitting in Redis is still
- * picked up and run by the V2 worker, with no drain and no rename. Plus the
- * other direction — a job the V2 producer enqueues carries the `{payload,
- * meta}` envelope and its `requestId` reaches the handler's logger.
+ * Acceptance proof: a job already sitting in Redis in the legacy shape is
+ * still picked up and run by the current worker, with no drain and no
+ * rename. Plus the other direction — a job the current producer enqueues
+ * carries the `{payload, meta}` envelope and its `requestId` reaches the
+ * handler's logger.
  *
  * What is real here: the registry (`queues`), every `compat` hook, every job
  * payload schema, `resolveJob`, BullMQ, and Redis. The legacy jobs are put in
- * Redis by `Queue.add(name, data)` with V1's exact data — byte-for-byte the
- * call `packages/queue`'s producers make — before any worker starts, so they
- * are genuinely waiting on the list when the worker connects.
+ * Redis by `Queue.add(name, data)` with the old producer's exact data —
+ * byte-for-byte the same call the previous producers made — before any
+ * worker starts, so they are genuinely waiting on the list when the worker
+ * connects.
  *
  * Two deliberate narrowings, both stated in the output:
  *
@@ -18,9 +20,9 @@
  * differs; the un-namespaced keys' byte-identity is pinned separately by
  * `packages/core/src/jobs/naming.test.ts`. 2. `cron` runs its REAL handlers
  * over the REAL boot buffers. The other six queues' handlers reach
- * `ctx.services`, which needs the db/ch clients `AppDeps` does not carry until
- * M9-002/M9-003, so for those six the handler body is a recorder — everything
- * up to and including the handler lookup is the real thing.
+ * `ctx.services`, which needs db/ch clients `AppDeps` does not carry, so for
+ * those six the handler body is a recorder — everything up to and including
+ * the handler lookup is the real thing.
  *
  * Run: `bash apps/api/e2e/legacy-job-proof.sh`
  */
@@ -53,18 +55,17 @@ type QueueKey = keyof Queues;
 
 interface LegacyCase {
   queue: QueueKey;
-  /** The BullMQ job name V1 put on the wire. */
+  /** The BullMQ job name the old producer put on the wire. */
   wireName: string;
-  /** V1's job data, verbatim (was packages/queue/src/queues.ts). */
+  /** The legacy producer's job data, verbatim. */
   data: unknown;
-  /** The V2 job the compat hook must resolve it to. */
+  /** The job the compat hook must resolve it to. */
   expectJob: string;
   expectPayload: unknown;
 }
 
-// One per queue. Every `data` below is a V1 payload type from
-// packages/queue/src/queues.ts; `undefined` fields are omitted because JSON
-// drops them, which is exactly what is in Redis today.
+// One per queue. `undefined` fields are omitted because JSON drops them,
+// which is exactly what is in Redis today.
 const LEGACY_CASES: LegacyCase[] = [
   {
     queue: 'cron',
@@ -147,8 +148,8 @@ const LEGACY_CASES: LegacyCase[] = [
     expectPayload: { projectId: 'proj_m9001' },
   },
   {
-    // The one V1 payload with no discriminant at all — a bare `{cohortId}`,
-    // which must NOT be mistaken for an envelope.
+    // The one payload shape with no discriminant at all — a bare
+    // `{cohortId}`, which must NOT be mistaken for an envelope.
     queue: 'cohortCompute',
     wireName: 'cohortCompute',
     data: { cohortId: 'coh_m9001' },
@@ -249,8 +250,8 @@ function delay(ms: number): Promise<void> {
 async function main() {
   const connections: Redis[] = [];
   const newConnection = () => {
-    // BullMQ requires `maxRetriesPerRequest: null`; V1's `getRedisQueue` sets
-    // the same three options.
+    // BullMQ requires `maxRetriesPerRequest: null`, plus these matching
+    // connection options.
     const client = new Redis(REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,

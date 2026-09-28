@@ -15,19 +15,10 @@ export abstract class BaseImportProvider<
     overrideFrom?: string
   ): AsyncGenerator<TRawEvent, void, unknown>;
 
-  /**
-   * Convert provider format → IClickhouseEvent
-   */
   abstract transformEvent(rawEvent: TRawEvent): IClickhouseEvent;
 
-  /**
-   * Validate raw event structure
-   */
   abstract validate(rawEvent: TRawEvent): boolean;
 
-  /**
-   * Returns how many events will be imported
-   */
   abstract getTotalEventsCount(): Promise<number>;
 
   /**
@@ -37,12 +28,11 @@ export abstract class BaseImportProvider<
    * If false, assumes the provider already generates session IDs during streaming
    */
   shouldGenerateSessionIds(): boolean {
-    return false; // Default: assume provider handles it
+    return false;
   }
 
   /**
-   * Utility: Split a date range into chunks to avoid timeout issues with large imports
-   * Returns array of [from, to] date pairs in YYYY-MM-DD format
+   * Utility: Split a date range into chunks to avoid timeout issues with large imports.
    *
    * @param from - Start date in YYYY-MM-DD format
    * @param to - End date in YYYY-MM-DD format
@@ -61,7 +51,6 @@ export abstract class BaseImportProvider<
     const endDate = new Date(to);
     const chunkSizeDays = options?.chunkSizeDays ?? 1;
 
-    // Handle case where from and to are the same date
     if (startDate.getTime() === endDate.getTime()) {
       return [[from, to]];
     }
@@ -75,7 +64,6 @@ export abstract class BaseImportProvider<
       const chunkEndDate = new Date(cursor);
       chunkEndDate.setDate(chunkEndDate.getDate() + (chunkSizeDays - 1));
 
-      // Don't go past the end date
       const chunkEnd =
         chunkEndDate > endDate
           ? endDate.toISOString().split('T')[0]!
@@ -83,7 +71,6 @@ export abstract class BaseImportProvider<
 
       chunks.push([chunkStart, chunkEnd]);
 
-      // Move cursor to the next chunk start (after the current chunk)
       cursor.setDate(cursor.getDate() + chunkSizeDays);
 
       if (cursor > endDate) {

@@ -1,9 +1,8 @@
 /**
  * How long does `/track` take when the Redis CACHE is unreachable?
  *
- * Drill 02 measured 9,427 / 12,039 / 41,978 ms and 10-of-20 no-answer. This
- * harness reproduces that measurement in-repo so the fix can be justified with
- * a before/after on the same box, and re-run by anyone.
+ * This harness reproduces that in-repo so a fix can be justified with a
+ * before/after on the same box, and re-run by anyone.
  *
  * It never touches the shared Redis server: the API under test is pointed at a
  * local TCP proxy which is then stopped (`refuse`, docker-stop shaped) or
@@ -31,7 +30,7 @@ const CORS_ORIGIN = 'https://e2e.test';
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36';
 
-/** What drill 02's ledger client waited before recording "no response". */
+/** How long the client waits before recording "no response". */
 const CLIENT_TIMEOUT_MS = Number(process.env.M18_CLIENT_TIMEOUT_MS ?? 30_000);
 const BOOT_TIMEOUT_MS = 60_000;
 const WARMUP_REQUESTS = 6;
@@ -207,9 +206,9 @@ interface Probe {
 }
 
 /**
- * A client that gives up after `CLIENT_TIMEOUT_MS`, the way drill 02's ledger
- * client did. An explicit controller rather than `AbortSignal.timeout`, which
- * does not interrupt an in-flight Bun fetch here.
+ * A client that gives up after `CLIENT_TIMEOUT_MS`. An explicit controller
+ * rather than `AbortSignal.timeout`, which does not interrupt an in-flight
+ * Bun fetch here.
  */
 async function timedFetch(url: string, init: RequestInit = {}): Promise<Probe> {
   const controller = new AbortController();

@@ -1,9 +1,9 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: operator switches are exhaustive by design */
-// V1's event filter compiler (`getEventFiltersWhereClause`), converted onto the
+// The event filter compiler (`getEventFiltersWhereClause`), built on the
 // `sql` tag: every VALUE binds as a `{name:Type}` param and every identifier
 // goes through `sql.id` or a static fragment. The column expression for a
 // `properties.*` / `group.*` filter comes from field-resolution.ts, which
-// returns a fragment of its own since M12-003 and is interpolated directly.
+// returns a fragment of its own and is interpolated directly.
 
 import {
   type SqlFragment,
@@ -31,24 +31,22 @@ import {
 
 export type FilterTableScope = 'events' | 'sessions';
 
-/** One clause per surviving filter, keyed `f<index>` as V1 keyed them. */
+/** One clause per surviving filter, keyed `f<index>`. */
 export type CompiledEventFilters = Record<string, SqlFragment>;
 
 // `sql.id`'s whitelist takes an array; the events branch has already rejected
 // anything outside the set by the time it gets here.
 const EVENT_COLUMN_ALLOWLIST = Array.from(EVENT_TOP_LEVEL_COLUMNS);
 
-/** V1 stringified and trimmed every untyped value before escaping it. */
 function filterValue(value: unknown) {
   return sql.string(String(value).trim());
 }
 
-/** V1's `(<a> OR <b>)` — the parenthesised disjunction. */
 function anyOf(clauses: SqlFragment[]): SqlFragment {
   return sql`(${sql.join(clauses, ' OR ')})`;
 }
 
-/** V1's `arrayExists(x -> <a> OR <b>, <haystack>)` — no outer parentheses. */
+/** No outer parentheses, unlike `anyOf` — `arrayExists` already wraps its predicate. */
 function anyItem(clauses: SqlFragment[], haystack: SqlSlot): SqlFragment {
   return sql`arrayExists(x -> ${sql.join(clauses, ' OR ')}, ${haystack})`;
 }

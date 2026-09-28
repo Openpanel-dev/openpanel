@@ -1,27 +1,10 @@
-// THE boot entrypoint (ADR-007 §7 "apps/api — three files"; TARGET_ARCHITECTURE
-// §7 main.ts boot order). Runs on Bun. M9-004 deleted the V1 Fastify boot
-// (`./index.ts` + `./app.ts`), so this file is the only way the API starts and
-// `app.ts`'s mounting half lives in `buildHttpApp` below.
+// The boot entrypoint. Runs on Bun; this is the only way the API starts, and
+// `buildHttpApp` below mounts the whole HTTP surface.
 //
-// THE ROLE TABLE (TARGET_ARCHITECTURE §7). One process, three shapes:
-//
-// | | api | worker | all | | ops HTTP + /metrics | x | x | x | | producers | x
-// | x | x | | BullMQ workers | | x | x | | schedulers (cron) | | x | x | |
-// Kafka ingest | | x | x | | initial salts | | x | x | | bull-board | | x | x |
-// | queue/buffer/session scrape gauges | | x | x | | redis keyspace-notify | x
-// | | x |
-//
-// An unknown ROLE fails boot loudly, naming the value — `config/env.ts`. Inside
-// a consuming role, ENABLED_QUEUES narrows *which* of the eight consumers start
+// An unknown ROLE fails boot loudly, naming the value — `config/env.ts`.
+// Inside a consuming role, ENABLED_QUEUES narrows *which* consumers start
 // (cloud runs 4 replicas on `events` and 6 on the rest), and an unknown token
 // there fails boot the same way.
-//
-// THE MOUNTED SURFACE. `AppDeps` now carries the real db, ClickHouse, Redis and
-// outbound clients, and `buildHttpApp` hangs all four V1 scopes on one
-// Bun.serve: the root chain (CORS -> requestId -> timestamp -> ip -> the error
-// handler, in V1's order), the ops surface, the public API, the dashboard
-// surface and `/trpc`. A role that only consumes serves none of the last three
-// — V1's worker never did either.
 
 // The only `process.env` touch outside config/env.ts, and a WRITE: it sets the
 // process timezone. Every value the app READS comes from `loadConfig` below.
@@ -97,7 +80,6 @@ const CRON_QUEUE_NAME = 'cron';
 // Used only to report a config error itself — the real level isn't known
 // until `config/env.ts` has validated `LOG_LEVEL`.
 const BOOTSTRAP_LOG_LEVEL = 'info';
-// V1's cron drain bound (apps/worker/src/boot-workers.ts `waitForQueueToEmpty`).
 const CRON_DRAIN_TIMEOUT_MS = 60_000;
 const CRON_DRAIN_POLL_MS = 500;
 const FATAL_EXIT_DELAY_MS = 1000;
@@ -133,21 +115,16 @@ const logger = pino({ name: 'api', level: config.LOG_LEVEL });
 
 /** ROLE=api produces and serves; it never consumes. */
 const roleConsumes = config.ROLE !== 'api';
-/** ROLE=worker consumes and never serves a URL surface, exactly as V1's
- *  worker did (it ran bull-board, /debug/cron and /metrics, nothing else). */
+/** Gates only the public API, dashboard and /trpc surfaces — bull-board,
+ *  /debug/cron and /metrics are gated separately by `roleConsumes`. */
 const roleServesHttp = config.ROLE !== 'worker';
 const workersEnabled = roleConsumes && !config.DISABLE_WORKERS;
 
 /**
- * All seven queues, envelope on, on the Redis keys V1 already uses — so a job
- * V1 enqueued before the cutover is read back by V2's `resolveJob` through that
- * queue's compat hook, with no drain and no rename.
- *
- * The connection is `packages/redis`'s dedicated queue client: a separate
- * client from cache/pub/sub with `maxRetriesPerRequest: null`, which is what
- * BullMQ requires and exactly what V1's `packages/queue` producers connect
- * through. It stays that package's singleton to close (ADR-007 §7's accepted
- * pragmatic deviation); `producers.close` closes the queues over it.
+ * The connection is `packages/redis`'s dedicated queue client: separate from
+ * cache/pub/sub, with `maxRetriesPerRequest: null`, which BullMQ requires. It
+ * stays that package's singleton to close; `producers.close` closes the
+ * queues over it.
  */
 function buildProducerHandle(): QueueProducerHandle {
   return createProducers(queues, {
@@ -160,9 +137,8 @@ function buildProducerHandle(): QueueProducerHandle {
 
 /**
  * A named child of the boot logger per buffer, plus the buffers' one direct
- * BullMQ read — ADR-005's `bullQueues` escape hatch. Pausing `cron` from
- * bull-board halts ALL buffer flushing, preserved deliberately as an
- * accepted trade-off.
+ * BullMQ read. Pausing `cron` from bull-board halts ALL buffer flushing —
+ * preserved deliberately as an accepted trade-off.
  */
 function bufferDeps(producers: QueueProducerHandle): BufferDeps {
   const cron = findBullQueue(producers, CRON_QUEUE_NAME);
@@ -190,12 +166,11 @@ function findBullQueue(producers: QueueProducerHandle, name: string) {
 function buildDeps(): AppDeps {
   const producers = buildProducerHandle();
   return {
-    // The four boot handles. `packages/db` and `packages/redis` still own their
-    // own singletons and read their own env (ADR-007 §7's accepted pragmatic
-    // deviation), so these are references to those, not new connections: one
-    // Prisma client, one round-robin ClickHouse client and the cache Redis,
-    // handed down so a service reaches them through its request-scoped `Ctx`
-    // instead of importing them.
+    // The four boot handles. `packages/db` and `packages/redis` still own
+    // their own singletons and read their own env, so these are references
+    // to those, not new connections: one Prisma client, one round-robin
+    // ClickHouse client and the cache Redis, handed down so a service reaches
+    // them through its request-scoped `Ctx` instead of importing them.
     db,
     // Prisma's two JSON sentinels, so the four modules that write a nullable
     // `Json?` column read them off the scope instead of importing the client.
@@ -213,9 +188,8 @@ function buildDeps(): AppDeps {
 /**
  * The queues this process consumes, `<QUEUE>_CONCURRENCY` applied.
  *
- * ENABLED_QUEUES is the same allowlist V1 read, and its `events` token selects
- * the Kafka consumer rather than a BullMQ queue — hence it is filtered out
- * here and asked about separately.
+ * ENABLED_QUEUES's `events` token selects the Kafka consumer rather than a
+ * BullMQ queue — hence it is filtered out here and asked about separately.
  */
 function consumedQueues(): Record<string, QueueDefinition> {
   const enabled = new Set(config.ENABLED_QUEUES);
@@ -277,21 +251,20 @@ async function startIngestConsumer(
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
         // MARKS a redelivery, never drops one — the event is inserted either
-        // way. The CACHE client, again, and for the same reason: a handler that
-        // blocks on Redis is what got drill 02's consumer evicted past its
-        // session timeout, and an eviction is the one reassignment M19 measured
-        // costing duplicate rows.
+        // way. The CACHE client, again, and for the same reason: a handler
+        // that blocks on Redis risks evicting the consumer past its session
+        // timeout, and an eviction is what causes duplicate rows.
         markDuplicateEvent: createDuplicateEventMarker({
           client: deps.redis,
           ttlMs: config.INGEST_DUPLICATE_MARKER_TTL_MS,
         }),
       }),
-      // A capped Redis list, and the event is DROPPED whether or not the record
-      // lands. The Kafka DLQ it replaced (`produceDeadLetterEvent`, still
-      // exported from core) produced to a topic nothing creates — 1,592
-      // failures, 0 successes in drill 08 — and every failure held the offset
-      // back, which was the redelivery loop. The CACHE client, not the queue
-      // client: only that one fails fast, and failing fast is the point here.
+      // A capped Redis list, and the event is DROPPED whether or not the
+      // record lands. The Kafka DLQ it replaced (`produceDeadLetterEvent`,
+      // still exported from core) produced to a topic nothing creates, and
+      // every failure held the offset back — a redelivery loop. The CACHE
+      // client, not the queue client: only that one fails fast, and failing
+      // fast is the point here.
       sendToDeadLetter: createDeadLetterRecorder({
         client: deps.redis,
         maxEntries: config.INGEST_DEAD_LETTER_MAX_ENTRIES,
@@ -312,10 +285,8 @@ async function startIngestConsumer(
 }
 
 /**
- * V1's shutdown drain (apps/worker/src/boot-workers.ts): let the cron queue
- * finish what it started before closing the workers, because a cron job cut in
- * half comes back as a stalled retry. One of ADR-005's four sanctioned
- * `bullQueues` call sites.
+ * Let the cron queue finish what it started before closing the workers,
+ * because a cron job cut in half comes back as a stalled retry.
  */
 async function waitForCronToDrain(producers: QueueProducerHandle) {
   const cron = findBullQueue(producers, CRON_QUEUE_NAME);
@@ -344,7 +315,7 @@ async function waitForCronToDrain(producers: QueueProducerHandle) {
 function registerConsumerMetrics(deps: AppDeps): void {
   // Scrape-time collectors register only where a role consumes: each is a
   // Redis round trip per scrape, and ten API replicas exposing them would
-  // multiply that for no new information (TARGET_ARCHITECTURE §18).
+  // multiply that for no new information.
   registerBufferMetrics(deps.buffers);
   registerQueueMetrics(deps.producers.bullQueues);
   registerSessionScrapeMetrics(
@@ -353,11 +324,10 @@ function registerConsumerMetrics(deps: AppDeps): void {
 }
 
 /**
- * The three cookies the GSC OAuth flow signs (gsc.rpc.ts's `signed: true`). V1
- * signed them through `@fastify/cookie`'s `secret`; Elysia takes the same list,
- * and `signCookie` below produces the identical `value.<b64 hmac>` form on the
- * tRPC side, which writes cookies through the fetch adapter's `resHeaders`
- * rather than through Elysia (ADR-009 constraint 1).
+ * The three cookies the GSC OAuth flow signs (gsc.rpc.ts's `signed: true`).
+ * `signCookie` below produces the same `value.<b64 hmac>` form on the tRPC
+ * side, which writes cookies through the fetch adapter's `resHeaders` rather
+ * than through Elysia.
  */
 const SIGNED_COOKIE_NAMES = [
   'gsc_oauth_state',
@@ -378,25 +348,18 @@ function signCookie(value: string): string {
 }
 
 /**
- * V1's `app.ts`, merged into the one entrypoint: the four Fastify scopes become
- * one Elysia tree.
+ * THE ROOT CHAIN ORDER IS THE CONTRACT: cors -> requestId -> timestamp -> ip,
+ * before every route-level hook. `requestLogging` brings `requestContext` —
+ * and therefore those three hooks — with it, and the error handler is
+ * registered on the same root so it covers every scope below.
  *
- * THE ROOT CHAIN ORDER IS THE CONTRACT (ADR-002 "behaviour that must be
- * preserved explicitly" 2): cors -> requestId -> timestamp -> ip, before every
- * route-level hook. `requestLogging` brings `requestContext` — and therefore
- * those three hooks — with it, and the error handler is registered on the same
- * root so it covers every scope below.
- *
- * `ROLE=worker` mounts NONE of the three URL surfaces: V1's worker served only
- * bull-board, the debug routes and `/metrics`, and a worker replica answering
- * `/track` would take traffic no load balancer routes to it.
+ * `ROLE=worker` mounts NONE of the three URL surfaces: a worker replica
+ * answering `/track` would take traffic no load balancer routes to it.
  */
 async function buildHttpApp(deps: AppDeps) {
   const app = new Elysia({
-    // Elysia throws on an empty `secrets`, where V1 passed `secret: ''` to
-    // @fastify/cookie and simply produced signatures nobody could rely on. A
-    // deployment without COOKIE_SECRET therefore gets unsigned cookies rather
-    // than a dead process — the same outcome V1 had, arrived at explicitly.
+    // Elysia throws on an empty `secrets`. A deployment without COOKIE_SECRET
+    // therefore gets unsigned cookies rather than a dead process.
     cookie: config.COOKIE_SECRET
       ? { secrets: config.COOKIE_SECRET, sign: SIGNED_COOKIE_NAMES }
       : {},
@@ -438,9 +401,9 @@ async function buildHttpApp(deps: AppDeps) {
   }
 
   // Local-only: trigger a cron job on demand instead of waiting for its
-  // schedule. Two conditions, both V1's: `NODE_ENV != production`, because it
-  // is an unauthenticated "run anything now" surface, and a consuming role,
-  // because in V1 these routes only ever existed on the worker.
+  // schedule. Gated by `NODE_ENV != production`, because it is an
+  // unauthenticated "run anything now" surface, and by a consuming role,
+  // since these routes only make sense there.
   if (roleConsumes && !config.core.isProduction) {
     app.use(debugRoutes(deps));
     logger.info('Debug routes enabled at /debug/cron');
@@ -460,10 +423,9 @@ async function buildHttpApp(deps: AppDeps) {
  *
  * Fatals are mirrored to the REAL stderr, bypassing the output interceptor:
  * the OTLP flush window is often lost on the way down, and `docker logs` must
- * always show why we died (V1 did this in both apps).
+ * always show why we died.
  *
- * Installed in every role. V1's api only did so in production and its worker
- * did so always; the merged process takes the worker's.
+ * Installed in every role, always.
  */
 function installFatalHandlers(): void {
   process.on('uncaughtException', (error) => {
@@ -488,7 +450,7 @@ async function main() {
   const role = config.ROLE;
   const deps = buildDeps();
 
-  // HTTP and default metrics register everywhere (TARGET_ARCHITECTURE §18).
+  // HTTP and default metrics register everywhere.
   registerDefaultMetrics();
   if (roleConsumes) {
     registerConsumerMetrics(deps);
@@ -505,7 +467,7 @@ async function main() {
       definitions,
       deps,
       // BullMQ duplicates this for each worker's blocking fetch; the queue
-      // client itself stays packages/redis's singleton, as in V1.
+      // client itself stays packages/redis's singleton.
       createConnection: () => getRedisQueue(),
       cluster: config.QUEUE_CLUSTER,
       namespace: config.QUEUE_NAMESPACE,
@@ -608,7 +570,7 @@ async function main() {
         role,
         port: config.API_PORT,
         hostname: config.listen.hostname ?? '0.0.0.0',
-        // Rule 5: the running Bun version, asserted against.bun-version by
+        // The running Bun version, asserted against .bun-version by
         // scripts/doctor.sh — logged so a wrong-runtime incident is one log
         // line away rather than an inference.
         bunVersion: Bun.version,
@@ -617,8 +579,7 @@ async function main() {
     );
   });
 
-  // V1's api did this and its worker did not — the expiry notifications only
-  // matter where something subscribes (apps/api/src/index.ts).
+  // The expiry notifications only matter where something subscribes.
   if (role !== 'worker') {
     try {
       await getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');

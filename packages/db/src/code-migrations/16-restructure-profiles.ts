@@ -161,7 +161,6 @@ export async function up(env: CodeMigrationEnv) {
          SETTINGS insert_distributed_sync = 1`
       );
 
-      // Stop once we've processed the month containing the oldest profile.
       if (
         lower.getFullYear() === startDate.getFullYear() &&
         lower.getMonth() === startDate.getMonth()

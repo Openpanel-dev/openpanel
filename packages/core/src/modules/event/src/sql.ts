@@ -7,10 +7,9 @@
 // Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
 // Distributed on Cloud. The identity-stitching and cohort `IN (SELECT...)`
 // subqueries, the profile/group LEFT ANY JOINs and any `IN (SELECT...)` a
-// filter compiles keep V1's exact shape and run under the client's
-// `distributed_product_mode: 'allow'` as before — converting a query is not the
-// place to change its cluster semantics. Every `IN` list binds as
-// `Array(String)`, a literal list to the planner.
+// filter compiles all run under the client's `distributed_product_mode:
+// 'allow'`. Every `IN` list binds as `Array(String)`, a literal list to the
+// planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {
@@ -88,7 +87,7 @@ export const NO_FILTER_JOINS: EventFilterJoins = {
   groups: false,
 };
 
-/** The joins the compiled filters need, with V1's leading space; empty = none. */
+/** The joins the compiled filters need; empty = none. */
 function filterJoins(projectId: string, joins: EventFilterJoins): SqlFragment {
   const parts: SqlFragment[] = [];
   if (joins.profileColumns.length > 0) {
@@ -118,7 +117,7 @@ export interface EventListQuery {
   projectId: string;
   columns: readonly EventListColumn[];
   take: number;
-  /** Numeric cursor pages: `OFFSET` only when non-zero, as V1. */
+  /** Numeric cursor pages: `OFFSET` only when non-zero. */
   offset?: number;
   /** Date cursor pages: strict upper bound plus the lookback window. */
   cursor?: Date;
@@ -133,11 +132,11 @@ export interface EventListQuery {
   events?: readonly string[];
   filterClauses: CompiledFilterClauses;
   joins: EventFilterJoins;
-  /** `event.conversions`' extra `name IN (..)`, appended after the filters as V1 did. */
+  /** `event.conversions`' extra `name IN (..)`, appended after the filters. */
   conversionNames?: readonly string[];
 }
 
-/** V1's `sb.where` in insertion order — the text has to match a cached V1 plan byte for byte. */
+/** Conditions in a fixed insertion order — the text has to match a cached query plan byte for byte. */
 function eventListConditions(query: EventListQuery): SqlFragment[] {
   const conditions: SqlFragment[] = [];
   const projectId = sql.string(query.projectId);
@@ -386,8 +385,6 @@ export function queryEventsQuery(query: QueryEventsQuery): SqlFragment {
     ' AND '
   )} ORDER BY created_at DESC LIMIT ${sql.uint64(query.limit)}`;
 }
-
-// ---- packages/trpc/src/routers/event.ts's inline queries
 
 export function botEventsQuery(query: {
   projectId: string;

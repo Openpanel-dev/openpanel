@@ -139,8 +139,7 @@ export function createEngine(args: {
           ) {
             continue;
           }
-          // Initialize cache for this module+window combination.
-          // Cache is automatically garbage collected when context goes out of scope.
+          // Garbage collected automatically when this context goes out of scope.
           const cache = new Map<string, unknown>();
           ctx = {
             projectId,

@@ -2,16 +2,10 @@
  * Shared utilities for insight modules
  */
 
-/**
- * Get UTC weekday (0 = Sunday, 6 = Saturday)
- */
 export function getWeekday(date: Date): number {
   return date.getUTCDay();
 }
 
-/**
- * Compute median of a sorted array of numbers
- */
 export function computeMedian(sortedValues: number[]): number {
   if (sortedValues.length === 0) {
     return 0;
@@ -31,7 +25,6 @@ interface DailyCountRow {
 
 /**
  * Compute weekday medians from daily breakdown data.
- * Groups by dimension, filters to matching weekday, computes median per dimension.
  *
  * @param data - Array of { date, dimension, cnt } rows
  * @param targetWeekday - Weekday to filter to (0-6)
@@ -43,7 +36,6 @@ export function computeWeekdayMedians<T extends DailyCountRow>(
   targetWeekday: number,
   getDimension: (row: T) => string
 ): Map<string, number> {
-  // Group by dimension, filtered to target weekday
   const byDimension = new Map<string, number[]>();
 
   for (const row of data) {
@@ -58,7 +50,6 @@ export function computeWeekdayMedians<T extends DailyCountRow>(
     byDimension.set(dim, values);
   }
 
-  // Compute median per dimension
   const result = new Map<string, number>();
   for (const [dim, values] of byDimension) {
     values.sort((a, b) => a - b);
@@ -68,9 +59,6 @@ export function computeWeekdayMedians<T extends DailyCountRow>(
   return result;
 }
 
-/**
- * Compute change percentage between current and compare values
- */
 export function computeChangePct(
   currentValue: number,
   compareValue: number
@@ -82,9 +70,6 @@ export function computeChangePct(
       : 0;
 }
 
-/**
- * Determine direction based on change percentage
- */
 export function computeDirection(
   changePct: number,
   threshold = 0.05
@@ -96,10 +81,7 @@ export function computeDirection(
       : 'flat';
 }
 
-/**
- * Get end of day timestamp (23:59:59.999) for a given date.
- * Used to ensure BETWEEN queries include the full day.
- */
+/** Used to ensure BETWEEN queries include the full day. */
 export function getEndOfDay(date: Date): Date {
   const end = new Date(date);
   end.setUTCHours(23, 59, 59, 999);
@@ -107,8 +89,7 @@ export function getEndOfDay(date: Date): Date {
 }
 
 /**
- * Build a lookup map from query results.
- * Aggregates counts by key, handling duplicate keys by summing values.
+ * Build a lookup map from query results, summing counts for duplicate keys.
  *
  * @param results - Array of result rows
  * @param getKey - Function to extract the key from each row
@@ -144,7 +125,6 @@ export function selectTopDimensions(
   baselineMap: Map<string, number>,
   maxDims: number
 ): string[] {
-  // Merge all dimensions from both maps
   const allDims = new Set<string>();
   for (const dim of currentMap.keys()) {
     allDims.add(dim);
@@ -153,7 +133,6 @@ export function selectTopDimensions(
     allDims.add(dim);
   }
 
-  // Rank by greatest(current, baseline)
   const ranked = Array.from(allDims)
     .map((dim) => ({
       dim,

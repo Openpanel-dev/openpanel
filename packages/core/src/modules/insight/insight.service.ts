@@ -1,23 +1,15 @@
-// ADR-007: "Moves to core: src/services/** (33 services + insights/)".
-//
 // Plain exported functions, not only methods on `createInsightService`'s
-// container — the same shape as modules/auth/auth.service.ts, because V1's
-// worker (apps/worker, no core Ctx today) and V1's trpc router both need a
-// direct call, not one that requires building a Ctx first.
+// container: a caller with no Ctx yet still needs a direct call.
 // `createInsightService` is the `ctx.services.insight` binding for code that
 // already has a Ctx.
 //
 // Every exported function takes `ServiceDeps` and reaches Postgres as `deps.db`
-// and ClickHouse as `deps.ch`; the `loadDb`/`loadCh` lazy loaders are gone, so
-// the requestId minted at the edge reaches the query. M15-202 removed the last
-// five `load*` functions here — engine, store, detection modules, referrer
-// spikes and the legacy detector are all plain static imports of this module's
-// own `src/`.
+// and ClickHouse as `deps.ch`, so the requestId minted at the edge reaches the
+// query.
 //
 // The engine and its five detection modules run on the `sql` tag;
 // `createEngine` therefore takes the scope's deps rather than a bare ClickHouse
-// client, so the requestId reaches every module statement. `legacy-scan.ts` is
-// the last clix holdout in this module.
+// client, so the requestId reaches every module statement.
 //
 // The explain cache runs on `deps.redis` — the app shell owns that connection's
 // lifecycle; this module never opens one of its own.
@@ -274,9 +266,8 @@ async function deleteInBatches(
 }
 
 /**
- * Keeps the insights tables bounded (they otherwise grow forever — see the
- * original packages/db/src/services/insights.service.ts header for the
- * retention rules). The `insightCleanup` cron job body.
+ * Keeps the insights tables bounded (they otherwise grow forever). The
+ * `insightCleanup` cron job body.
  */
 export async function cleanupStaleInsights(
   deps: ServiceDeps,
@@ -667,7 +658,7 @@ export async function getReferrerSpikes(
   return getReferrerSpikesQuery(deps, input);
 }
 
-/** Pre-engine detector, kept for parity with V1 — no live callers today. */
+/** Legacy pre-engine detector — no live callers today. */
 export async function scanLegacyInsights(
   deps: ServiceDeps,
   projectId: string

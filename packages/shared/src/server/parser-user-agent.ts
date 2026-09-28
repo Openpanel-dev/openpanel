@@ -157,7 +157,6 @@ function isKnownPhoneModel(model?: string): boolean {
 }
 
 const parse = (ua: string): UAParser.IResult => {
-  // Check cache first
   const cached = parseCache.get(ua);
   if (cached) {
     return cached;
@@ -166,8 +165,8 @@ const parse = (ua: string): UAParser.IResult => {
   const parser = new UAParser(ua);
   let res = parser.getResult();
 
-  // Some user agents are not detected correctly by ua-parser-js
-  // Doing some extra checks for ios
+  // Some user agents are not detected correctly by ua-parser-js; extra
+  // checks handle iOS.
   if (!(res.device.model || res.os.name)) {
     const iphone = isIphone(ua);
     if (iphone) {
@@ -203,8 +202,8 @@ const parse = (ua: string): UAParser.IResult => {
     }
   }
 
-  // Extract app-style UA info (e.g., "Model=Redmi Note 8 Pro; Manufacturer=Xiaomi")
-  // This handles UAs from mobile apps that include device info in a custom format
+  // Handles UAs from mobile apps that embed device info in a custom format
+  // (e.g. "Model=Redmi Note 8 Pro; Manufacturer=Xiaomi").
   const appInfo = extractAppStyleInfo(ua);
   if (appInfo.model || appInfo.manufacturer) {
     const model = res.device.model || appInfo.model;
@@ -221,7 +220,6 @@ const parse = (ua: string): UAParser.IResult => {
     };
   }
 
-  // If we still don't have a vendor, try to detect brand from UA or model
   if (!res.device.vendor && (res.device.model || res.os.name)) {
     const detectedBrand = detectBrand(ua, res.device.model);
     if (detectedBrand) {
@@ -235,7 +233,6 @@ const parse = (ua: string): UAParser.IResult => {
     }
   }
 
-  // Cache the result
   parseCache.set(ua, res);
   return res;
 };
@@ -317,7 +314,6 @@ function isServer(res: UAParser.IResult) {
     return true;
   }
 
-  // If all of these are undefined, we can consider it a server
   return (
     res.os.name === undefined &&
     res.browser.name === undefined &&
@@ -350,7 +346,6 @@ export function getDevice(ua: string, model?: string) {
     return 'mobile';
   }
 
-  // Check for mobile patterns
   const mobile1 = MOBILE_REGEX_1.test(ua);
   const mobile2 = MOBILE_REGEX_2.test(ua.slice(0, 4));
 
@@ -374,12 +369,10 @@ export function getDevice(ua: string, model?: string) {
   // For Android without explicit mobile/tablet indicators and no known model,
   // check if there's any brand/model info suggesting it's a phone
   if (isAndroid && !hasMobileKeyword && !isSamsungMobile && !isLGMobile) {
-    // Extract model from app-style UA if present
     const appInfo = extractAppStyleInfo(ua);
     if (appInfo.model && isKnownPhoneModel(appInfo.model)) {
       return 'mobile';
     }
-    // If we have a brand but no clear device type, assume mobile for Android
     const brand = detectBrand(ua, appInfo.model);
     if (brand) {
       return 'mobile';

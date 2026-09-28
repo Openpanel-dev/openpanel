@@ -93,7 +93,6 @@ export function getRetentionSeries(
 }
 
 // https://medium.com/@andre_bodro/how-to-fast-calculating-mau-in-clickhouse-fd793559b229
-// Rolling active users
 export function getRollingActiveUsers(
   deps: ServiceDeps,
   { projectId, days }: { projectId: string; days: number }

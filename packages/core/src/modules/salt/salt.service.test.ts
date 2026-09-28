@@ -2,8 +2,7 @@
 // mock at all — `deps.db` IS the fake below, same idiom as
 // reference.service.test.ts. `@openpanel/redis`'s `cacheable` is still stubbed
 // (module-level `getSalts` binds it at this file's first import), so
-// `rotateSalt`'s `getSalts.clear` never reaches a real Redis connection — same
-// reasoning as before this wave, just without the `@openpanel/db` mock.
+// `rotateSalt`'s `getSalts.clear` never reaches a real Redis connection.
 //
 // `getSalts` itself stays untested here: it is bare (no `deps` argument)
 // because ingest.service.ts's hot path calls it with none — see the module

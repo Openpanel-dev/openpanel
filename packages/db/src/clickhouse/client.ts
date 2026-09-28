@@ -92,11 +92,6 @@ export function isClickhouseClustered(): boolean {
   );
 }
 
-/**
- * Get the replicated table name for mutations
- * In clustered mode, returns table_name_replicated
- * In non-clustered mode, returns the original table name
- */
 export function getReplicatedTableName(tableName: string): string {
   if (isClickhouseClustered()) {
     return `${tableName}_replicated ON CLUSTER '{cluster}'`;
@@ -141,10 +136,10 @@ const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
     )
   : 50;
 
-// Per-request timeout. Was 300_000 (5 min) — way too long for fast failover
-// against a dead node, and after the Hetzner LB story we want stuck inserts
-// to fail and retry on a different node well before 5 min. 30s is enough for
-// any legitimate batch insert in this codebase. Bumpable via env if needed.
+// Per-request timeout, lowered from 300_000 (5 min) — too long for fast
+// failover against a dead node. Stuck inserts should fail and retry on a
+// different node well before 5 min. 30s is enough for any legitimate batch
+// insert in this codebase. Bumpable via env if needed.
 const requestTimeoutMs = process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS
   ? Math.max(
       1000,
@@ -192,8 +187,8 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
 // avoids putting an L4 LB on the hot path.
 //
 // Tests sometimes import this module without CLICKHOUSE_URL set; in that
-// case we fall back to a single client created the same way the old code
-// did (URL = undefined, delegated to the client library's own handling).
+// case we fall back to a single client (URL = undefined, delegated to the
+// client library's own handling).
 const rawClickhouseUrls = (process.env.CLICKHOUSE_URL ?? '')
   .split(',')
   .map((s) => s.trim())
@@ -241,9 +236,10 @@ logger.info(
   'ClickHouse clients initialized'
 );
 
-// Backwards-compat export. Some callers (notably gsc.ts) use `originalCh`
-// directly to bypass the retry/round-robin layer for one-off DDL or for
-// places where retry semantics aren't wanted. Points at the first node.
+// Backwards-compat export. Some callers (notably gsc.service.ts) use
+// `originalCh` directly to bypass the retry/round-robin layer for one-off
+// DDL or for places where retry semantics aren't wanted. Points at the
+// first node.
 export const originalCh = clients[0]!;
 
 const cleanQuery = (query?: string) =>

@@ -1,14 +1,10 @@
-// Db/ch access is LAZY (`load*` below), not a static top-level import — see
-// gsc.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches). The provider classes are behind a dynamic `import` for
-// the same reason: they eagerly import `formatClickhouseDate` from
-// @openpanel/db's clickhouse client, which constructs a real pino transport at
-// import time.
+// The provider classes are behind a dynamic `import`: they eagerly import
+// `formatClickhouseDate` from @openpanel/db's clickhouse client, which
+// constructs a real pino transport at import time. See gsc.service.ts's
+// header for the full reasoning.
 //
 // ClickHouse queries here still go through raw `ch`/`chQuery` calls, not the
-// `sql` tag: ADR-013 converts the analytics read path one query per P7 task,
-// and this module's queries haven't been converted yet.
+// `sql` tag — this module's queries haven't been converted yet.
 
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
@@ -41,8 +37,7 @@ function yieldToEventLoop(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// ClickHouse staging pipeline — moved from packages/db/src/services/
-// import.service.ts.
+// ClickHouse staging pipeline
 // ---------------------------------------------------------------------------
 
 export interface ImportStageResult {
@@ -51,9 +46,6 @@ export interface ImportStageResult {
   insertedEvents: number;
 }
 
-/**
- * Insert a batch of events into the imports staging table
- */
 export async function insertImportBatch(
   deps: ServiceDeps,
   events: IClickhouseEvent[],
@@ -86,10 +78,7 @@ export async function insertImportBatch(
   };
 }
 
-/**
- * Insert a batch of profiles into the production profiles table.
- * Used by Mixpanel (and other providers) to import user profiles during an import job.
- */
+/** Used by Mixpanel (and other providers) to import user profiles during an import job. */
 export async function insertProfilesBatch(
   deps: ServiceDeps,
   profiles: IClickhouseProfile[],
@@ -126,11 +115,6 @@ export async function insertProfilesBatch(
   return { inserted: normalized.length };
 }
 
-/**
- * Generate gap-based session IDs for events that have none.
- * Streams events from staging (sorted by device_id, created_at), assigns a new
- * session when gap > 30 min, re-inserts with session_id, then deletes old rows.
- */
 const SESSION_GAP_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function generateGapBasedSessionIds(
@@ -215,10 +199,7 @@ export async function generateGapBasedSessionIds(
   });
 }
 
-/**
- * Delete all staging data for an import. Used to get a clean slate on retry
- * when the failure happened before moving data to production.
- */
+/** Used to get a clean slate on retry when the failure happened before moving data to production. */
 export async function cleanupStagingData(
   deps: ServiceDeps,
   importId: string
@@ -262,12 +243,8 @@ export async function cleanupSessionStartEndEvents(
 }
 
 /**
- * Reconstruct sessions across ALL dates for the import.
- * Each session_id gets exactly one session_start and one session_end,
- * even if the session spans midnight.
- *
- * Batches by fetching distinct session_ids first, then running the
- * heavy aggregation only for that batch of IDs.
+ * Runs across ALL dates for the import, so each session_id gets exactly one
+ * session_start and one session_end even when the session spans midnight.
  */
 export async function createSessionsStartEndEvents(
   deps: ServiceDeps,
@@ -488,10 +465,6 @@ export async function createSessionsStartEndEvents(
   }
 }
 
-/**
- * Move events from staging to production events table.
- * Batched per-day using a simple date filter.
- */
 export async function moveImportsToProduction(
   deps: ServiceDeps,
   importId: string,
@@ -535,7 +508,6 @@ export async function moveImportsToProduction(
 }
 
 /**
- * Aggregate sessions from staging into the sessions table.
  * Runs across all dates so cross-midnight sessions become one row.
  * Batches by session_ids to bound ClickHouse memory.
  */
@@ -645,9 +617,6 @@ export async function backfillSessionsToProduction(
   }
 }
 
-/**
- * Get min/max created_at for an import's staging data.
- */
 export async function getImportDateBounds(
   deps: ServiceDeps,
   importId: string,
@@ -678,12 +647,10 @@ export async function getImportDateBounds(
 }
 
 /**
- * Reports progress on a running import. Wraps V1's `job.updateProgress` — a
- * BullMQ `Job` satisfies this structurally, so the V1 worker delegate passes
- * its real job straight through. Core's own job runner (import.jobs.ts) has
- * no BullMQ job object to hand over (`JobCtx.job` is the erased
- * `{id, attempt, queue, name}`, not the live BullMQ handle), so it falls back
- * to the no-op default.
+ * Reports progress on a running import. A BullMQ `Job` satisfies this
+ * structurally. Core's own job runner (import.jobs.ts) has no BullMQ job
+ * object to hand over (`JobCtx.job` is the erased `{id, attempt, queue,
+ * name}`, not the live BullMQ handle), so it falls back to the no-op default.
  */
 export interface ImportJobProgress {
   updateProgress(progress: Record<string, unknown>): unknown;
@@ -804,7 +771,7 @@ export async function updateImportStatus(
 }
 
 // ---------------------------------------------------------------------------
-// Provider dispatch + job body — moved from apps/worker/src/jobs/import.ts.
+// Provider dispatch + job body
 // ---------------------------------------------------------------------------
 
 /**
@@ -880,10 +847,9 @@ async function createImportProvider(
 }
 
 /**
- * The `import` queue job body. Ported verbatim from apps/worker/src/jobs/
- * import.ts's `importJob`, with the BullMQ `Job` split into `importId` +
- * `progress` (see `ImportJobProgress`'s header) so the same body serves V1's
- * worker delegate and core's own (not yet live) `import` queue worker.
+ * The `import` queue job body. Takes `importId` + `progress` rather than a
+ * BullMQ `Job` directly (see `ImportJobProgress`'s header) so it can run
+ * under either a real BullMQ job or core's own job runner.
  */
 export async function runImportJob(
   deps: ServiceDeps,
@@ -963,8 +929,8 @@ export async function runImportJob(
 
         const transformed = providerInstance.transformEvent(rawEvent);
 
-        // Session IDs for providers that need them (e.g. Mixpanel) are generated
-        // in generateGapBasedSessionIds after loading, using gap-based logic.
+        // Session IDs for providers that need them (e.g. Mixpanel) are
+        // generated in generateGapBasedSessionIds after loading.
         eventBatch.push(transformed);
 
         if (canProfileFromEvents) {
@@ -1185,10 +1151,9 @@ export async function runImportJob(
 }
 
 // ---------------------------------------------------------------------------
-// /import/events — moved from apps/api/src/controllers/import.controller.ts.
-// Bulk-inserts already-shaped events straight into production; unrelated to
-// the provider/staging pipeline above (no Import record, no ClickHouse
-// staging table).
+// /import/events — bulk-inserts already-shaped events straight into
+// production; unrelated to the provider/staging pipeline above (no Import
+// record, no ClickHouse staging table).
 // ---------------------------------------------------------------------------
 
 export interface InsertRawEventsResult {

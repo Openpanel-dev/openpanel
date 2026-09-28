@@ -309,7 +309,7 @@ function Chart({
       };
     }
 
-    // Pin revenue peak at ~60% of the primary metric's peak so bars stay
+    // Pin revenue peak at 40% of the primary metric's peak so bars stay
     // legible without overshadowing the line/area.
     const scale = (maxPrimary * 0.4) / maxRevenue;
     return {

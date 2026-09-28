@@ -69,7 +69,6 @@ const ProfileItem = ({ profile }: { profile: any }) => {
     </ProjectLink>
   );
 };
-// Shared profile list component
 function ProfileList({ profiles }: { profiles: any[] }) {
   const ITEM_HEIGHT = 74;
   const CONTAINER_PADDING = 20;
@@ -77,7 +76,6 @@ function ProfileList({ profiles }: { profiles: any[] }) {
   const { scrollAreaRef } = useScrollableModal();
   const [isScrollReady, setIsScrollReady] = useState(false);
 
-  // Check if scroll container is ready
   useEffect(() => {
     if (scrollAreaRef.current) {
       setIsScrollReady(true);
@@ -95,7 +93,6 @@ function ProfileList({ profiles }: { profiles: any[] }) {
     paddingEnd: CONTAINER_PADDING,
   });
 
-  // Re-measure when scroll container becomes available or profiles change
   useEffect(() => {
     if (isScrollReady && scrollAreaRef.current) {
       // Small delay to ensure DOM is ready
@@ -183,7 +180,6 @@ function ProfileListState({
   return <ProfileList profiles={query.data ?? []} />;
 }
 
-// Chart-specific props and component
 interface ChartUsersViewProps {
   chartData: IChartData;
   report: IReportInput;
@@ -204,7 +200,6 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
     [report.series, selectedSerieId]
   );
 
-  // Get all chart series that match the selected report serie
   const matchingChartSeries = useMemo(() => {
     if (!(selectedSerieId && chartData)) {
       return [];
@@ -315,7 +310,6 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
   );
 }
 
-// Funnel-specific props and component
 interface FunnelUsersViewProps {
   report: IReportInput;
   stepIndex: number;
@@ -416,7 +410,6 @@ function FunnelUsersView({
   );
 }
 
-// Union type for props
 type ViewChartUsersProps =
   | {
       type: 'chart';
@@ -431,7 +424,6 @@ type ViewChartUsersProps =
       breakdownValues?: string[];
     };
 
-// Main component that routes to the appropriate view
 export default function ViewChartUsers(props: ViewChartUsersProps) {
   if (props.type === 'funnel') {
     return (

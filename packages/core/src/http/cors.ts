@@ -1,31 +1,25 @@
-// The CORS delegator, ported from apps/api/src/app.ts:107-131 (ADR-002
-// "behaviour that must be preserved explicitly" 4).
+// The CORS delegator.
 //
 // Two halves, and BOTH are the contract:
 //
-// 1. `CORS_PRIVATE_PATHS` is V1's `corsPaths` allowlist verbatim. A request
-// under one of those prefixes is only allowed from a configured dashboard
-// origin; everything else — `/track`, `/export`, `/insights`, `/import`,
-// `/manage`, `/profile`, `/event`, `/tools` — is open to any origin. 2. The
-// quirk that `/gsc` and `/mcp` are dashboard-scope routes ABSENT from the list,
-// and therefore open. Ported, not fixed.
+// 1. `CORS_PRIVATE_PATHS` is the allowlist: a request under one of those
+// prefixes is only allowed from a configured dashboard origin; everything
+// else — `/track`, `/export`, `/insights`, `/import`, `/manage`, `/profile`,
+// `/event`, `/tools` — is open to any origin. 2. `/gsc` and `/mcp` are
+// dashboard-scope routes ABSENT from the list, and therefore open.
 //
-// The origins come from `apps/api`'s config, not from `process.env`: core reads
-// no environment.
+// The origins come from `apps/api`'s config, not from an environment read.
 //
-// ONE deliberate delta from V1, forced by the plugin substitution ADR-002
-// mandates (`@fastify/cors`'s per-request delegate -> `@elysiajs/cors`, whose
-// `credentials` and `maxAge` are static while only `origin` is per-request): on
-// an open path that DOES send an `Origin` header, V2 echoes that origin with
-// `vary: Origin` where V1 answered `*`, and carries
-// `access-control-allow-credentials: true`. Both forms permit exactly the same
-// set of cross-origin requests; a browser treats an echoed origin plus `Vary`
-// as it treats `*`. A request with no `Origin` header — every server-side SDK,
-// every golden replay — still gets `*`.
+// On an open path that DOES send an `Origin` header, that origin is echoed
+// back with `vary: Origin` and `access-control-allow-credentials: true`,
+// rather than answering `*`. A browser treats an echoed origin plus `Vary`
+// exactly as it treats `*`, so this permits the same set of cross-origin
+// requests. A request with no `Origin` header — every server-side SDK, every
+// golden replay — still gets `*`.
 
 import { cors } from '@elysiajs/cors';
 
-/** V1's `corsPaths` (apps/api/src/app.ts:111), byte-for-byte. */
+/** The allowlist of private-route prefixes. */
 export const CORS_PRIVATE_PATHS = [
   '/trpc',
   '/live',
@@ -35,7 +29,7 @@ export const CORS_PRIVATE_PATHS = [
   '/ai',
 ] as const;
 
-/** V1's `maxAge: 86_400 * 7` on the open paths. */
+/** Preflight cache duration for the open paths (7 days). */
 const CORS_MAX_AGE_SECONDS = 86_400 * 7;
 
 export interface CorsOptions {

@@ -84,9 +84,9 @@ interface Rendered {
   sql: string;
   params: Record<string, unknown>;
   /**
-   * `sql` with every placeholder substituted back to the literal V1 emitted.
-   * Since M12-003 the field resolver binds `properties[<key>]` keys and cohort
-   * labels too, so an assertion about the SHAPE of the expression reads this.
+   * `sql` with every placeholder substituted back to its literal value. The
+   * field resolver binds `properties[<key>]` keys and cohort labels too, so
+   * an assertion about the SHAPE of the expression reads this.
    */
   text: string;
 }

@@ -1,37 +1,28 @@
 // Where API/SDK credentials become a client principal.
 //
-// V1 has five near-identical validators — `validateSdkRequest`,
-// `validateExportRequest`, `validateImportRequest`, `validateManageRequest` and
-// the MCP copy — that differ only by the accepted `ClientType` set and by the
-// ingest extension. They collapse into this one function (ADR-011 A-i).
+// The ingest tier's rules live in `modules/ingest/src/client-auth.ts`; since
+// transport may not deep-import a module, the route that wants the ingest
+// tier hands its own validator down as `clientAuth: { ingest:
+// validateIngestRequest }`.
 //
-// Filled in the INGEST branch — `modules/ingest/src/client-auth.ts` holds V1's
-// `validateSdkRequest` verbatim, and this file adapts it onto the principal.
-// M15-009 inverted how it gets there: transport may not deep-import a module,
-// so the route that wants the ingest tier hands its own validator down as
-// `clientAuth: { ingest: validateIngestRequest }`.
-//
-// Filled in the `allow`-list tier, which is the one V1 spells three times
-// (`validateExportRequest`, `validateImportRequest`, `validateManageRequest`):
-// identical bodies differing only by the accepted `ClientType` set and by the
-// prefix on their error strings. `allow` carries that difference and the three
-// collapse into `authenticateAllowedClient` below. MCP is NOT here — it
-// authenticates its own `token` form inside `modules/mcp/src/auth.ts`, exactly
-// as V1's mcp router did.
+// The `allow`-list tier covers export, import and manage clients: identical
+// checks differing only by the accepted `ClientType` set and by the prefix on
+// their error strings, collapsed into `authenticateAllowedClient` below. MCP
+// is NOT here — it authenticates its own `token` form inside
+// `modules/mcp/src/auth.ts`.
 
 import type { DbScope } from '../cacheable-per-deps';
 import type { HttpCtx } from '../context';
 import { verifyClientSecret } from '../shared/client-secret';
 import { headerValue, type IngestHeaders } from '../shared/headers';
 
-/** V1 refuses a client id that is not a UUID before it ever queries
- *  (utils/auth.ts's three validators). Same regex, same order. */
+/** Refuses a client id that is not a UUID before it ever queries. */
 const CLIENT_ID_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CLIENT_ID_HEADER = 'openpanel-client-id';
 const CLIENT_SECRET_HEADER = 'openpanel-client-secret';
 
-/** Prisma's `ClientType` enum, by value. Moves to client.constants.ts in P7. */
+/** Prisma's `ClientType` enum, by value. */
 export type ClientType = 'read' | 'write' | 'root';
 
 export interface AuthenticatedClient {
@@ -44,17 +35,15 @@ export interface AuthenticatedClient {
   /**
    * Whether the supplied client secret VERIFIED against the stored hash.
    * `isBotHook` reads it as "this is a server-side SDK, never a bot", so it
-   * follows the verification result, not the presence of a secret string (main
-   * #481). The side-channel survives as a field on the principal (ADR-011 A-i).
+   * follows the verification result, not the presence of a secret string.
    */
   secretVerified: boolean;
 }
 
 /**
- * The surface's name in a refusal message. V1's three validators are the same
- * function with a different prefix — `Export: Invalid client secret` — and
- * those strings are the 401 BODY on `/export`, `/insights`, `/import` and
- * `/manage`, so they are a wire contract, not decoration.
+ * The surface's name in a refusal message — e.g. `Export: Invalid client
+ * secret`. These strings are the 401 BODY on `/export`, `/insights`,
+ * `/import` and `/manage`, so they are a wire contract, not decoration.
  */
 export type ClientAuthLabel = 'Export' | 'Import' | 'Manage';
 
@@ -85,9 +74,9 @@ export type ValidateIngestRequest = (args: {
 }) => Promise<IngestTierOutcome>;
 
 export interface ClientAuthOptions {
-  /** Which client types may pass. Omitted means any, as `validateSdkRequest`. */
+  /** Which client types may pass. Omitted means any. */
   allow?: ClientType[];
-  /** Which of V1's three validators this route was served by. */
+  /** Which allow-list surface this route is. */
   label?: ClientAuthLabel;
   /** The ingest extension described above, supplied by the ingest module. */
   ingest?: ValidateIngestRequest;
@@ -97,15 +86,15 @@ export interface ClientAuthOptions {
 
 /**
  * A refusal is returned, never thrown — same reason
- * `modules/ingest/src/client-auth.ts` gives, and it keeps the two 401 BODIES
- * V1 has (plain text on the ingest routes, `{error, message}` JSON on the
- * allow-list ones) a decision of the macro rather than of this function.
+ * `modules/ingest/src/client-auth.ts` gives, and it keeps the choice of 401
+ * body shape (plain text on the ingest routes, `{error, message}` JSON on
+ * the allow-list ones) a decision of the macro rather than of this function.
  */
 export type ClientAuthResult =
   | { ok: true; client: AuthenticatedClient }
   | { ok: false; ingest: boolean; message: string };
 
-/** What the ingest tier needs beyond the headers: V1 reads the attribution ip
+/** What the ingest tier needs beyond the headers: the attribution ip
  *  and the body (credential fallback, profile filter, `__revenue` gate). */
 export interface ClientAuthRequest {
   ip: string;
@@ -153,7 +142,7 @@ export async function authenticateClient(
   };
 }
 
-/** V1's per-validator "wrong type" message; every other refusal differs only
+/** The per-surface "wrong type" message; every other refusal differs only
  *  by the label prefix. */
 const FORBIDDEN_TYPE_MESSAGE: Record<ClientAuthLabel, string> = {
   Export: 'Export: Client is not allowed to export',
@@ -161,15 +150,15 @@ const FORBIDDEN_TYPE_MESSAGE: Record<ClientAuthLabel, string> = {
   Manage: 'Manage: Only root clients are allowed to manage resources',
 };
 
-/** V1 mapped a Prisma lookup failure onto its own message, unprefixed. */
+/** A Prisma lookup failure maps onto its own message, unprefixed. */
 const MALFORMED_CLIENT_ID_MESSAGE = 'Client ID seems to be malformed';
 const PRISMA_KNOWN_REQUEST_ERROR = 'PrismaClientKnownRequestError';
 const UNEXPECTED_MESSAGE = 'Unexpected error';
 
 /**
- * The `allow`-list tier: V1's `validateExportRequest` / `validateImportRequest`
- * / `validateManageRequest`, which differ only by the accepted `ClientType`
- * set and by the label their messages carry.
+ * The `allow`-list tier: covers export, import and manage clients, which
+ * differ only by the accepted `ClientType` set and by the label their
+ * messages carry.
  *
  * `secretVerified` is true on success by construction: this tier verifies the
  * secret, so reaching the return means one was presented and matched.

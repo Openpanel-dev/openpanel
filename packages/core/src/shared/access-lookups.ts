@@ -1,19 +1,14 @@
-// The concrete, Prisma-backed access lookups (moved from
-// packages/db/src/services/access.service.ts). Deliberately a sibling of
-// modules/auth/src/access.ts rather than living inside it: the ladder must stay
-// importable with no database (see its own header), while this file is the real
-// `@openpanel/db` binding ~28 modules' `src/access.ts` files supply to it. Same
-// shape as packages/trpc/src/access.ts's binding.
+// The concrete, Prisma-backed access lookups. Deliberately a sibling of
+// modules/auth/src/access.ts rather than living inside it: the ladder must
+// stay importable with no database (see its own header), while this file is
+// the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
+// to it.
 //
 // Postgres comes from `context.ts`'s `unscopedDb`. Two of the three lookups
 // here are `cacheable`, whose key is derived from the call's ARGUMENTS
 // (packages/redis/cachable.ts), so they cannot take a `ServiceDeps` leading
 // parameter at all; the third (`getClientAccess`) delegates to them and stays
-// symmetric. Their bare signature is also a protected wire contract —
-// `verification/contracts/auth/group-b-project-access.mts` imports them through
-// `packages/db/src/services/access.service.ts` with no app boot at all, so the
-// handle has to be one this file can resolve on its own. It is the same client
-// `ctx.db` is, not a second one.
+// symmetric. It is the same client `ctx.db` is, not a second one.
 //
 // `getProjectById` is spelled here rather than imported from
 // `project.service.ts`: `shared/` sits below `modules/` and the ladder reads
@@ -22,9 +17,9 @@
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 
-// Lazy, as the seam this replaces was: `context.ts` value-imports
-// `services.ts`, so a static import here would drag the whole 36-service graph
-// into the import graph of everything that reaches this file.
+// Lazy: `context.ts` value-imports `services.ts`, so a static import here
+// would drag the whole 36-service graph into the import graph of everything
+// that reaches this file.
 function unscopedDb() {
   return import('../context').then((m) => m.unscopedDb());
 }
@@ -78,7 +73,6 @@ export const getProjectAccess = cacheable(
     projectId: string;
   }): Promise<IProjectAccess | null> => {
     try {
-      // Check if user has access to the project
       const project = await getProjectById(projectId);
       if (!project?.organizationId) {
         return null;

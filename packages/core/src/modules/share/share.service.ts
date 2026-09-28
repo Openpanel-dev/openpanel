@@ -1,8 +1,3 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` / `loadAccessService` / `loadDashboardService` /
-// `loadReportsService` lazy loaders are gone, so this module value-imports
-// neither `@openpanel/db` nor its own package barrel.
-
 import ShortUniqueId from 'short-unique-id';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -24,9 +19,6 @@ const uid = new ShortUniqueId({ length: SHARE_ID_LENGTH });
 interface CookieReader {
   get(name: string): string | undefined;
 }
-
-// -----------------------------------------------------------------------
-// Raw lookups (ported verbatim from packages/db/src/services/share.service.ts).
 
 export async function getShareOverviewById(deps: ServiceDeps, id: string) {
   const db = deps.db;
@@ -263,8 +255,6 @@ export async function validateOverviewShareAccess(
 }
 
 // -----------------------------------------------------------------------
-// Router bodies (ported from packages/trpc/src/routers/share.ts).
-//
 // The `overview`/`dashboard`/`report` functions below are unauthenticated and
 // serve the public viewer, addressed only by `shareId`. They project an
 // explicit allow-list of columns and refuse to hand back any shared content

@@ -134,7 +134,6 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     };
   }, [dotColorProp, rowsRenderer, tooltipData, tooltipRows]);
 
-  // Resolve indicator color (static or from hovered point)
   const indicatorColor = useMemo(() => {
     if (indicatorColorProp == null) {
       return chartCssVars.crosshair;
@@ -147,16 +146,13 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     return indicatorColorProp;
   }, [indicatorColorProp, tooltipData]);
 
-  // Title from date or category
   const title = useMemo(() => {
     if (!tooltipData) {
       return undefined;
     }
-    // For bar charts (horizontal or vertical), use the category name
     if (barXAccessor) {
       return barXAccessor(tooltipData.point);
     }
-    // For line/area charts, use the date
     return weekdayDateFmt.format(xAccessor(tooltipData.point));
   }, [tooltipData, barXAccessor, xAccessor]);
 

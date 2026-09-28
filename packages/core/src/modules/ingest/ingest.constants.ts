@@ -1,6 +1,6 @@
-// The ingestion wire contract (ADR-008's module map: ingest owns "C"). All
-// three enforce the same thing (what a caller may name an event and what a
-// track body may contain), so they are one file here.
+// The ingestion wire contract. All three enforce the same thing (what a
+// caller may name an event and what a track body may contain), so they are
+// one file here.
 
 import { z } from 'zod';
 
@@ -108,23 +108,21 @@ const PATH_SCAN_PATTERNS = [
  * @returns true if the event name should be blocked, false otherwise
  */
 export function isBlockedEventName(name: string): boolean {
-  // Length check - attack payloads are often very long
+  // Attack payloads are often very long.
   if (name.length > MAX_EVENT_LENGTH) {
     return true;
   }
 
-  // Contains newlines (always suspicious for event names)
+  // Newlines are always suspicious for event names.
   if (name.includes('\n') || name.includes('\r')) {
     return true;
   }
 
-  // Substring blocklist (case-insensitive)
   const lower = name.toLowerCase();
   if (BLOCKED_SUBSTRINGS.some((blocked) => lower.includes(blocked))) {
     return true;
   }
 
-  // Path scanning patterns
   if (PATH_SCAN_PATTERNS.some((pattern) => pattern.test(name))) {
     return true;
   }

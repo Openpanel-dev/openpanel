@@ -49,23 +49,19 @@ export const insightRouter = createTRPCRouter({
         level: 'read',
       });
 
-      // Fetch more than needed to account for deduplication. AI
-      // relevanceScore leads (un-enriched insights sort last via
+      // AI relevanceScore leads (un-enriched insights sort last via
       // nulls:last), with the statistical impactScore as the tiebreaker.
       const allInsights = await ctx.services.insight.listInsights({
         projectId,
         limit: limit * LIST_DEDUPE_OVERFETCH,
       });
 
-      // WindowKind priority: yesterday (1) > rolling_7d (2) > rolling_30d (3)
       const windowKindPriority: Record<string, number> = {
         yesterday: 1,
         rolling_7d: 2,
         rolling_30d: 3,
       };
 
-      // Group by moduleKey + dimensionKey, keep only the highest-priority
-      // windowKind.
       const deduplicated = new Map<string, (typeof allInsights)[0]>();
       for (const insight of allInsights) {
         const key = `${insight.moduleKey}:${insight.dimensionKey}`;
@@ -113,10 +109,10 @@ export const insightRouter = createTRPCRouter({
       return ctx.services.insight.listAllInsights({ projectId, limit });
     }),
 
-  // Phase 5: the "why". Decompose the insight's change across referrer/
-  // country/device/utm (current vs baseline window), pull nearby references,
-  // and have the AI explain which sub-segment drove it. Cached per insight
-  // version so repeat clicks don't re-bill the LLM.
+  // Decompose the insight's change across referrer/country/device/utm
+  // (current vs baseline window), pull nearby references, and have the AI
+  // explain which sub-segment drove it. Cached per insight version so repeat
+  // clicks don't re-bill the LLM.
   explain: protectedProcedure
     .input(z.object({ insightId: z.string() }))
     .mutation(async ({ input: { insightId }, ctx }) => {

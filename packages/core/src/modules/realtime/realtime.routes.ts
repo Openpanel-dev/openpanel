@@ -1,28 +1,10 @@
-// The `/live` websocket surface, Elysia/Bun-native. Ported FRESH from
-// apps/api/src/controllers/live.controller.ts's business logic, NOT delegated:
-// V1's Fastify controller uses `@fastify/websocket`'s `WebSocket` (the `ws`
-// package, Node EventEmitter semantics), which shares nothing with Elysia's
-// `ElysiaWS`/Bun's native `ServerWebSocket` — there is no shim to delegate
-// through, and touching the golden-harness-critical V1 ws stack for a few lines
-// of framework glue is the risk this port avoids (task notes). V1's controller
-// and router are LEFT UNTOUCHED. The shared logic — `getActiveVisitorCount`,
-// the four `subscribeToPublishedEvent` calls — moved to realtime.service.ts's
-// "/live websocket glue" section; both stacks call the exact same Redis
-// subscription underneath.
-//
-// Http/auth.ts's invariant 10 (binding): `/live/visitors/:projectId` stays
-// unauthenticated; the other three keep session + access; all four keep
-// REJECT-AFTER-UPGRADE — the socket accepts the upgrade, then the open handler
-// sends a text frame and closes it, exactly like V1. This is why none of these
-// routes requests the `session` macro: that macro would 401 the HTTP upgrade
-// request itself, which is a different (V1-divergent) behaviour.
-//
-// NAMED GAP, same as every other H module this wave: not yet reachable. main.ts
-// does not mount `dashboardRoutes` until a real `AppDeps` exists (P3/P4/P8),
-// and `http/session.ts`'s `resolveSession` is still a P6 stub that always
-// resolves `null` — so today, the three session-gated routes close every
-// connection immediately after upgrade. That is the same gap http/auth.test.ts
-// already documents for every other session-macro route.
+// The `/live` websocket surface. `/live/visitors/:projectId` stays
+// unauthenticated by intent; the other three require a session plus
+// project/org access. All four use REJECT-AFTER-UPGRADE: the socket accepts
+// the upgrade, then the open handler sends a text frame and closes it. None
+// of these routes uses the `session` macro, because that macro would 401 the
+// HTTP upgrade request itself instead of letting the socket reject after
+// connecting.
 
 import { setSuperJson } from '@openpanel/shared';
 import { z } from 'zod';
@@ -73,7 +55,6 @@ function rejectNoAccess(ws: ClosableSocket) {
 
 export const realtimeRoutes = defineRoutes((app) =>
   app
-    // V1: wsVisitors. Unauthenticated by intent (ADR-011 invariant 10).
     .ws('/live/visitors/:projectId', {
       params: projectParams,
       async open(ws) {
@@ -93,7 +74,6 @@ export const realtimeRoutes = defineRoutes((app) =>
         forgetUnsubscribe(ws);
       },
     })
-    // V1: wsProjectEvents.
     .ws('/live/events/:projectId', {
       params: projectParams,
       async open(ws) {
@@ -124,7 +104,6 @@ export const realtimeRoutes = defineRoutes((app) =>
         forgetUnsubscribe(ws);
       },
     })
-    // V1: wsProjectNotifications.
     .ws('/live/notifications/:projectId', {
       params: projectParams,
       async open(ws) {
@@ -155,7 +134,6 @@ export const realtimeRoutes = defineRoutes((app) =>
         forgetUnsubscribe(ws);
       },
     })
-    // V1: wsOrganizationEvents.
     .ws('/live/organization/:organizationId', {
       params: organizationParams,
       async open(ws) {

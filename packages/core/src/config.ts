@@ -1,8 +1,8 @@
-// The shape of everything core needs from the environment (ADR-022 R7: only the
-// config loader reads `process.env`). `apps/api/src/config/env.ts` is that
-// loader; it parses, validates and derives, and hands the result down as
-// `AppDeps.config` / `Ctx.config`, so nothing below this file re-derives a
-// value or reaches for `process.env` again.
+// The shape of everything core needs from the environment; only the config
+// loader (`apps/api/src/config/env.ts`) reads `process.env` — it parses,
+// validates and derives, and hands the result down as `AppDeps.config` /
+// `Ctx.config`, so nothing below this file re-derives a value or reaches for
+// `process.env` again.
 //
 // Two conventions hold throughout: - `undefined` means "not set", never
 // "blank". A blank `KEY=` is absent. - a field that only ever had one spelling

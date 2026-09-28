@@ -2,7 +2,7 @@
 /**
  * TRPC routing golden — proves every procedure the mounted router declares is
  * reachable through the real HTTP lifecycle, and that the auth layer answers
- * identically before and after the M11-001 mount swap.
+ * identically before and after swapping the mount.
  *
  * Only 11 of 217 procedures have any end-to-end coverage and 22 of the 29
  * routers have none, so swapping `apps/api/src/main.ts`'s `appRouter` import
@@ -27,8 +27,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// `import.meta.dir` is the Bun idiom (ADR-019 row 6), but apps/api's tsconfig
-// carries no bun type declarations, so this file uses the portable form.
+// `import.meta.dir` is the Bun idiom, but apps/api's tsconfig carries no bun
+// type declarations, so this file uses the portable form.
 const REPO_ROOT = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',

@@ -2,9 +2,8 @@
  * Source collection and parsing for the conformance checks.
  *
  * Every check takes an array of `ParsedSource` rather than reading the disk
- * itself. That is what makes the checks testable against a fixture string —
- * which is the only way to prove the two miscount traps in
- * docs/CONFORMANCE_GATE_SPEC.md are actually covered.
+ * itself. That is what makes the checks testable against a fixture string,
+ * which is the only way to prove known miscount traps are actually covered.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';

@@ -177,7 +177,6 @@ export default function Billing({ organization }: Props) {
     }
   }, [success]);
 
-  // Clear query state when modal is closed
   useOnPushModal('BillingSuccess', (open) => {
     if (!open) {
       setSuccess(null);

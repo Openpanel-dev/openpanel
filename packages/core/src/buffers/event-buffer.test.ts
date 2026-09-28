@@ -58,7 +58,7 @@ beforeEach(async () => {
 
 // The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
 // every file in one process, and closing the singleton takes it away from the
-// files that run next (V1's vitest isolated per file, so it could).
+// files that run next.
 afterAll(() => {
   mock.module('../ch-query', () => realChQuery);
 });
@@ -335,10 +335,10 @@ describe('EventBuffer', () => {
     expect(await eventBuffer.getBufferSize()).toBe(5);
   });
 
-  // / drill 03: the shutdown path has to be able to SEE a failed rpush, because
-  // it decides whether to commit the Kafka offsets on the answer. `flush`
-  // deliberately swallows one (the micro-batch timer retries while the process
-  // lives); `flushPendingOrThrow` does not.
+  // The shutdown path has to be able to see a failed rpush, because it
+  // decides whether to commit the Kafka offsets on the answer. `flush`
+  // deliberately swallows one (the micro-batch timer retries while the
+  // process lives); `flushPendingOrThrow` does not.
   describe('flushPendingOrThrow', () => {
     // A failed flush re-queues its events AND arms the micro-batch timer, so
     // without this the retry lands in whichever test runs next.
@@ -428,15 +428,15 @@ describe('EventBuffer', () => {
     });
   });
 
-  // / drill 03 re-run: the gate has to answer "are my events in Redis?", not
-  // "did I start the write?". Answering the second question made 221 durability
-  // failures in 5.5 minutes on a HEALTHY stack and turned 16.9% of accepted
-  // events into duplicates, because a caller that lost the race to start a
-  // write was told its already-durable events were not durable.
+  // The gate has to answer "are my events in Redis?", not "did I start the
+  // write?". Answering the second question caused real durability failures
+  // on a healthy stack and turned accepted events into duplicates, because a
+  // caller that lost the race to start a write was told its already-durable
+  // events were not durable.
   describe('flushPendingOrThrow under concurrency', () => {
-    // 24 partitions is what drill 03 ran; the callers are its `eachBatch`
-    // handlers, and the background producer stands in for the HTTP path and
-    // the session-end job adding events underneath them.
+    // 24 mirrors the number of Kafka partitions; the callers stand in for its
+    // `eachBatch` handlers, and the background producer stands in for the
+    // HTTP path and the session-end job adding events underneath them.
     const CONCURRENT_CALLERS = 24;
     const ROUNDS_PER_CALLER = 25;
     const EVENTS_PER_ROUND = 5;
@@ -539,10 +539,10 @@ describe('EventBuffer', () => {
     });
   });
 
-  // / drill 02 re-run: a failed flush leaves the batch's Kafka offsets
-  // unresolved and the fail-fast cache client brings the redelivery back in
-  // ~90ms. Re-queueing the failed events then holds one copy per lap — 4,759
-  // ClickHouse rows for 230 events, measured.
+  // A failed flush leaves the batch's Kafka offsets unresolved and the
+  // fail-fast cache client brings the redelivery back quickly. Re-queueing
+  // the failed events then holds one copy per lap — a single outage can turn
+  // a handful of events into thousands of duplicate ClickHouse rows.
   describe('events a redelivery will produce again', () => {
     const REDELIVERY_LAPS = 5;
 

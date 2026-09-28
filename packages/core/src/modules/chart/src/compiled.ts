@@ -1,11 +1,10 @@
-// The ONE place the chart module splices pre-compiled SQL text, and the home
-// of V1's profile-property-ref rewrite.
+// The ONE place the chart module splices pre-compiled SQL text.
 //
 // Both filter compilers (./filter-where.ts, ./table-filter-where.ts) and the
-// field resolver (./field-resolution.ts) return `SqlFragment`s now, so nothing
-// crosses `compiledText` from them any more. What is left are the places the
-// chart builders splice a name they generated themselves — CTE names, `b_<n>`
-// / `label_<n>` aliases, a `toStartOf*` keyword, the backtick-quoted
+// field resolver (./field-resolution.ts) return `SqlFragment`s, so nothing
+// crosses `compiledText` from them. What is left are the places the chart
+// builders splice a name they generated themselves — CTE names, `b_<n>` /
+// `label_<n>` aliases, a `toStartOf*` keyword, the backtick-quoted
 // `profile.properties.<key>` CTE alias — none of which is a value and none of
 // which `sql.id` can express. It stays a named export in one file, not a
 // `sql.raw()`, so the census is a grep.
@@ -30,8 +29,8 @@ function narrowedProfileColumn(key: string): string {
 
 /**
  * Rewrite `profile.properties['<key>']` -> `` `profile.properties.<key>` ``
- * for the narrowed keys. V1 ran this over the finished query TEXT; it never
- * matched a value, because an escaped literal cannot contain `['`.
+ * for the narrowed keys. This never matches a value, because an escaped
+ * literal cannot contain `['`.
  */
 export function rewriteProfilePropertyRefs(
   sql: string,

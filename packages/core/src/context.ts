@@ -1,8 +1,7 @@
 // One boot scope, one work scope, one builder. HTTP routes, tRPC procedures,
 // job handlers and the Kafka consumer all extend the same `Ctx`, so a service
-// written once works under every transport and the requestId minted at the edge
-// reaches the query, the enqueue and the job that enqueue causes (ADR-007
-// decision 18).
+// written once works under every transport and the requestId minted at the
+// edge reaches the query, the enqueue and the job that enqueue causes.
 
 import type { Buffers } from './buffers/create-buffers';
 import { bindReadsToSignal } from './ch-abortable';
@@ -13,11 +12,10 @@ import type { SessionValidationResult } from './modules/auth/src/login-session';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
-// The four boot handles, landed at M9-004 when main.ts became the only
-// entrypoint and had to build a real `AppDeps` for the mounted route surfaces.
-// Each is a TYPE QUERY over the module that constructs the client, so the alias
-// cannot drift from what `main.ts` actually passes; all four are type-only, so
-// core still imports no database at runtime and `bun test` still runs offline.
+// The four boot handles. Each is a TYPE QUERY over the module that
+// constructs the client, so the alias cannot drift from what `main.ts`
+// actually passes; all four are type-only, so core still imports no database
+// at runtime and `bun test` still runs offline.
 export type Db = typeof import('@openpanel/db/src/prisma-client').db;
 export type ClickHouseClient =
   typeof import('@openpanel/db/src/clickhouse/client').ch;
@@ -42,9 +40,8 @@ export type PrismaNamespace =
  * Prisma's JSON sentinels (`DbNull`, `JsonNull`): frozen constants that write
  * an explicit SQL NULL — or a JSON `null` — onto a nullable `Json?` column.
  * They are values on the namespace, not a client, so nothing about them is
- * per-request — but they are still `@openpanel/db` VALUES, and the four modules
- * that write a `Json?` column each reached them through a lazy `load*` back
- * into this file. ADR-022 R6 has one answer for that: the scope carries it.
+ * per-request — but they are still `@openpanel/db` VALUES, so the scope
+ * carries them rather than each writer reaching the namespace directly:
  * `main.ts` reads the two off the namespace once and puts them on `AppDeps`;
  * every writer reads `deps.prisma.DbNull`. Two named fields, not the namespace
  * itself — nothing else on it belongs in a request scope, and `Prisma` is a
@@ -59,18 +56,15 @@ export interface PrismaSentinels {
  * The process's Postgres client, for the one path that cannot be handed a
  * scope: `shared/access-lookups.ts`. Its lookups are `cacheable` on their
  * ARGUMENTS, so they cannot take a leading `deps`, and their bare signature is
- * pinned by the protected wire contract
- * `verification/contracts/auth/group-b-project-access.mts`, which imports them
- * through `packages/db/src/services/access.service.ts` with no app boot at
- * all. It is the same client `main.ts` puts on `AppDeps.db`. Every other
- * caller in core reaches Postgres as `deps.db`.
+ * pinned by imports through `packages/db/src/services/access.service.ts` with
+ * no app boot at all. It is the same client `main.ts` puts on `AppDeps.db`.
+ * Every other caller in core reaches Postgres as `deps.db`.
  */
 export function unscopedDb(): Promise<Db> {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
 }
 
-// Landed at M8-001: built once by `createBuffers(deps)` in main.ts, never a
-// module singleton.
+// Built once by `createBuffers(deps)` in main.ts, never a module singleton.
 export type { Buffers } from './buffers/create-buffers';
 
 // The resolved session. `SessionValidationResult` is Prisma-shaped (Session +
@@ -83,8 +77,8 @@ export type { Buffers } from './buffers/create-buffers';
 export type Session = SessionValidationResult;
 
 // The parsed environment. `apps/api`'s config/env.ts is the sole reader of
-// process.env and core reads none (made true at M15-006), so the shape of what
-// core needs is declared in `./config.ts` and arrives here.
+// process.env and core reads none, so the shape of what core needs is
+// declared in `./config.ts` and arrives here.
 export type { CoreConfig } from './config';
 
 /** Boot scope. Built once in apps/api's main.ts, closed once in shutdown. */

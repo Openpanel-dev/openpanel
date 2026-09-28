@@ -2,13 +2,13 @@
 // spread into the queue that owns them; there is no auto-discovery, because
 // static composition is what keeps `QueueProducers` typed.
 //
-// Registry key === Redis name for all seven, `cohortCompute` included:
-// ADR-005's acceptance note refuses the rename, so `COHORTCOMPUTE_CONCURRENCY`
-// keeps working. `queueKey` decides what actually reaches Redis.
+// Registry key === Redis name for all seven, `cohortCompute` included: the key
+// is deliberately not renamed, so `COHORTCOMPUTE_CONCURRENCY` keeps working.
+// `queueKey` decides what actually reaches Redis.
 //
-// Retry and retention values are V1's, verbatim, defects included — five queues
-// that never retry, four whose failed sets are unbounded. Changing them is a
-// behaviour change and a separate decision (ADR-005 acceptance note).
+// Retry and retention values are preserved as-is, defects included — five
+// queues that never retry, four whose failed sets are unbounded. Changing
+// them is a behaviour change, not a cleanup, and is a separate decision.
 
 import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
@@ -44,8 +44,7 @@ const DAY_IN_SECONDS = 86_400;
 const COHORT_BACKOFF_MS = 5000;
 const COHORT_ATTEMPTS = 3;
 
-// Defaults from apps/worker/src/boot-workers.ts; `<KEY>_CONCURRENCY`
-// overrides one at boot.
+// `<KEY>_CONCURRENCY` overrides one of these at boot.
 const CONCURRENCY = {
   sessions: 1,
   cron: 1,
@@ -72,7 +71,8 @@ const cron = defineQueue('cron', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.cron },
   compat: legacyCompat.cron,
-  // Every module's cron fragment spreads in here (ADR-005: "no cron module").
+  // Every module's cron fragment spreads in here — there is no separate cron
+  // module.
   jobs: {
     ...saltCronJobs,
     ...eventCronJobs,
@@ -153,12 +153,11 @@ export const queues = {
 
 export type Queues = typeof queues;
 
-// V1's exact 19 always-on scheduler ids and cadences
-// (apps/worker/src/boot-cron.ts), derived from the `cron` queue's own jobs so a
-// job and its schedule cannot drift apart. It is computed HERE, in the
-// registry, and not in `jobs/schedulers.ts`: that file is transport
-// infrastructure and may not import a registry. `ping` is the 20th and is
-// conditional — see `PING_SCHEDULE` and `startSchedulers`.
+// Derived from the `cron` queue's own jobs so a job and its schedule cannot
+// drift apart. It is computed HERE, in the registry, and not in
+// `jobs/schedulers.ts`: that file is transport infrastructure and may not
+// import a registry. `ping` is conditional — see `PING_SCHEDULE` and
+// `startSchedulers`.
 export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
   schedulersFromRegistry(cron);
 

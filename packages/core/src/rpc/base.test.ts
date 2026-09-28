@@ -13,7 +13,7 @@ import {
 } from './base';
 import { createTrpcFetchHandler } from './handler';
 
-// V1's COOKIE_OPTIONS (packages/auth/constants.ts) with a domain filled in.
+// Base cookie options for these tests, with a domain filled in.
 const COOKIE_OPTIONS: CookieOptions = {
   domain: '.openpanel.dev',
   secure: true,
@@ -116,9 +116,8 @@ test('a signed cookie with no signer throws instead of going out unsigned', asyn
   expect(resHeaders.getSetCookie()).toHaveLength(0);
 });
 
-// V1 resolved the session in a Fastify onRequest hook, before any procedure
-// ran, and 134 call sites read `ctx.session` as a value. The context builder
-// resolves it once for the same reason - and it is what lets `onError` log the
+// The context builder resolves the session once, since every procedure reads
+// `ctx.session` as a plain value - and it is what lets `onError` log the
 // session without awaiting.
 test('the session is resolved once, before any procedure runs', async () => {
   const stub = stubHttpCtx();
@@ -132,12 +131,10 @@ test('the session is resolved once, before any procedure runs', async () => {
   expect(ctx.session).toEqual(TEST_SESSION);
 });
 
-// Flipped this from "inherited" to "flattened", because tRPC merges middleware
-// context with `{...ctx,...next.ctx}` — a spread, which copies own enumerable
-// properties ONLY. Under the prototype-chained shape every inherited field
-// vanished the first time a middleware called `next({ ctx })`, and the next
-// read was a TypeError inside a mutation (caught by the auth contract suite,
-// group c/d).
+// tRPC merges middleware context with `{...ctx, ...next.ctx}` — a spread,
+// which copies own enumerable properties ONLY. A prototype-chained context
+// would lose every inherited field the first time a middleware called
+// `next({ ctx })`, and the next read would be a TypeError inside a mutation.
 test('the HttpCtx is flattened onto own properties, and services stay lazy', async () => {
   const { ctx } = stubHttpCtx();
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {

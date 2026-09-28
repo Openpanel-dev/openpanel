@@ -3,9 +3,10 @@ import { type SqlFragment, SqlIdentifierError, sql, toStatement } from './sql';
 
 describe('sql tag — slot typing (R1)', () => {
   it('is a compile-time error to interpolate a bare value', () => {
-    // The whole safety property of ADR-013: a raw string or number can never
-    // reach the SQL text. If either of these ever stops erroring, injection has
-    // become writable again and `pnpm run typecheck` is the alarm.
+    // The whole point of this type constraint: a raw string or number can
+    // never reach the SQL text. If either of these ever stops erroring,
+    // injection has become writable again and `pnpm run typecheck` is the
+    // alarm.
     const path = "/blog' OR '1'='1";
     // @ts-expect-error — a bare string is not a SqlFragment | SqlParam
     const withString = sql`SELECT * FROM events WHERE path = ${path}`;
@@ -237,7 +238,7 @@ describe('injection (ported from query-builder.test.ts)', () => {
     const payload = '/blog/2024-03-17-supabase-activity-scheduler';
     const { query_params } = bind(payload);
 
-    // clix re-quoted any date-shaped substring in place; binding cannot.
+    // A date-shaped substring must not be re-quoted or altered; it binds as-is.
     expect(query_params.p1).toBe(payload);
   });
 
@@ -247,12 +248,6 @@ describe('injection (ported from query-builder.test.ts)', () => {
     expect(query).toBe('SELECT * FROM events WHERE e.path = {p1:String}');
     expect(query_params.p1).toBe('{p1:String}');
   });
-
-  // Completed the port: the four cases below were still only asserted against
-  // clix when query-builder.test.ts was deleted. Each keeps that test's
-  // payload; what changes is the mechanism the payload proves — clix asserted
-  // on the escaped literal it produced, the tag asserts the value never reaches
-  // the text at all.
 
   it('binds a plain ISO date string instead of quoting it', () => {
     const { query, query_params } =
@@ -273,9 +268,8 @@ describe('injection (ported from query-builder.test.ts)', () => {
   });
 
   it('keeps a toDateTime() wrapper as SQL text with the value bound', () => {
-    // clix.datetime(date, 'toDateTime') produced the call AND the quoted
-    // literal in one string. The wrapper is structure and stays raw; the
-    // value is a value and binds.
+    // The `toDateTime(...)` wrapper is SQL structure and stays raw; the
+    // value inside it is a value and binds.
     const { query, query_params } =
       sql`SELECT * FROM events WHERE e.created_at = toDateTime(${sql.string('2026-04-29 00:00:00')})`.toStatement();
 

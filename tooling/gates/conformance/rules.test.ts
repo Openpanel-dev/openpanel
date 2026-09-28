@@ -2,8 +2,7 @@
  * The gate's own tests.
  *
  * Two of them are mandatory, and they are the reason this gate parses TypeScript
- * instead of grepping. Both traps were measured against `packages/core/src` on
- * 2026-09-08 and both make a naive gate report the wrong number:
+ * instead of grepping. Both traps make a naive gate report the wrong number:
  *
  *   trap 1  `rg 'export function create[A-Za-z]+Service\(deps'` finds 28 of the
  *           36 factories, because eight signatures span lines.
@@ -238,9 +237,9 @@ const c = process.env['BRACKETED'];
 
 describe('R15 — the two constructor spellings modules/auth/src/oauth.ts uses', () => {
   // Both arctic clients, both correct: built per call, from config. The bug
-  // M15-202 fixed was the checker, not this file — `GitHub` was not in the
-  // constructor set and `Arctic.Google` is a property access an
-  // `ts.isIdentifier` guard cannot see at all (CONFORMANCE_PLAN.md §1l).
+  // this guards against was in the checker, not this file — `GitHub` was not
+  // in the constructor set and `Arctic.Google` is a property access an
+  // `ts.isIdentifier` guard cannot see at all.
   const oauthShape = `
 import * as Arctic from 'arctic';
 import { GitHub } from 'arctic';

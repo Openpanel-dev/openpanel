@@ -6,8 +6,7 @@
  * subscription state (so an expired trial keeps ingesting until it has actually
  * been warned), the caller answers 202 rather than a 4xx (the SDKs retry
  * everything except 401 and 2xx), and it fails open. `SELF_HOSTED` is a
- * `selfHosted` argument now — core reads no environment — so V1's `vi.stubEnv`
- * becomes a parameter.
+ * `selfHosted` argument now — core reads no environment.
  */
 
 import {

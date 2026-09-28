@@ -5,25 +5,21 @@
 // silently replace this file's "real" import too, making a reachability check
 // meaningless. No module in core's suite ports that pattern for the same
 // reason; the generated SQL was verified against local ClickHouse by hand
-// instead (see the M5-003 task summary).
+// instead.
 //
 // String assertions need no mocking at all: cohort.service.ts's db/ch access is
 // lazy, and buildPropertyBasedCohortQuery / deriveCohortQuerySettings touch
 // neither — see cohort.service.ts's header.
 //
-// The builders return `SqlFragment`s now, so every assertion below runs against
-// the RENDERED statement plus its bound params rather than a finished string.
-// The assertions themselves are unchanged in what they claim, except the one
-// about quotes in a user-controlled property key: a quote no longer needs
-// escaping because the key is not in the SQL text at all, so that test asserts
-// the binding instead.
+// The builders return `SqlFragment`s, so every assertion below runs against
+// the rendered statement plus its bound params rather than a finished
+// string. The property-key quoting test below asserts a binding, not
+// escaped text, because the key never appears in the SQL text at all.
 //
-// V1's `PROFILE_COHORT_QUERY_SETTINGS` test used `vi.resetModules` +
-// `vi.stubEnv` to re-import the module under different env vars — the suite's
-// only `vi.resetModules` site (ADR-010's tail table). bun:test shares one
-// module registry per file even under `--isolate`, so re-importing would not
-// re-evaluate a module-level const. `deriveCohortQuerySettings` exists so this
-// ports as direct calls instead.
+// bun:test shares one module registry per file even under `--isolate`, so
+// re-importing under different env vars would not re-evaluate a
+// module-level const. `deriveCohortQuerySettings` exists so the different
+// settings combinations below are exercised as direct calls instead.
 
 import { expect, test } from 'bun:test';
 import {
@@ -272,4 +268,4 @@ test('deriveCohortQuerySettings never derives a zero spill threshold (0 would DI
 });
 
 // A malformed COHORT_QUERY_* value is rejected by the config loader now, not
-// here — `apps/api/src/config/env.test.ts` owns that case since M15-006.
+// here — `apps/api/src/config/env.test.ts` owns that case.

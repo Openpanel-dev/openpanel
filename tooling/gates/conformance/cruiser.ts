@@ -1,13 +1,9 @@
 /**
  * R12 and R22 are delegated to dependency-cruiser, not reimplemented here.
  *
- * Made `dependency-cruiser` a declared root devDependency, verified that it
- * resolves its optional `typescript` peer (the 82-false-violation failure
- * ADR-022 made R22 conditional on), and landed the layer rules
- * in.dependency-cruiser.cjs. So this module runs the cruise and reports its
- * per-rule violation counts. ADR-022's layer-aware fallback in this gate is not
- * in play; a bare `../` depth grep is forbidden either way, because a module
- * importing `defineJob` at `../../jobs/define` is importing DOWNWARD.
+ * This module runs the cruise and reports its per-rule violation counts. A
+ * bare `../` depth grep is forbidden either way, because a module importing
+ * `defineJob` at `../../jobs/define` is importing DOWNWARD.
  *
  * If the cruise cannot run, that is a hard failure: a delegated check that
  * silently reports zero is worse than no check.

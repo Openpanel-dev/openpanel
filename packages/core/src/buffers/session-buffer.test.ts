@@ -75,8 +75,7 @@ beforeEach(async () => {
 
 // No `afterAll` on purpose: the shared `getRedisCache()` client must NOT be
 // quit, because bun runs every file in one process and closing the singleton
-// takes it away from the files that run next (V1's vitest isolated per file,
-// so it could).
+// takes it away from the files that run next.
 
 describe('SessionBuffer', () => {
   let sessionBuffer: SessionBuffer;

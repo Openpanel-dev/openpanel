@@ -47,7 +47,7 @@ export interface FilterTableContext {
   endDate?: Date;
 }
 
-/** One clause per surviving filter, keyed `f<index>` as V1 keyed them. */
+/** One clause per surviving filter, keyed `f<index>`. */
 export type CompiledTableFilters = Record<string, SqlFragment>;
 
 /** Sentinel sessions columns that the UI may filter on directly. */
@@ -136,7 +136,7 @@ function valueParam(value: IChartEventFilterValue) {
   return sql.string(value.trim());
 }
 
-/** V1's `trimVal` — what a LIKE pattern is built from. */
+/** What a LIKE pattern is built from. */
 function trimVal(value: IChartEventFilterValue): string {
   return typeof value === 'string' ? value.trim() : String(value);
 }
@@ -146,7 +146,7 @@ function valueArray(value: IChartEventFilterValue[]) {
   return sql.array('String', value.map(trimVal));
 }
 
-/** V1's `(<a> OR <b>)` / `(<a> AND <b>)` — the parenthesised join. */
+/** `(<a> OR <b>)` / `(<a> AND <b>)` — the parenthesised join. */
 function joined(clauses: SqlFragment[], separator: ' OR ' | ' AND ') {
   return sql`(${sql.join(clauses, separator)})`;
 }
@@ -173,7 +173,7 @@ function compileScalarClause(
   }
 
   const numeric = options.numeric === true;
-  // V1 wrapped BOTH sides in toFloat64 on a numeric column; the quoted
+  // Both sides are wrapped in toFloat64 on a numeric column; the quoted
   // comparand fed to toFloat64 is the behaviour, so the value stays a String.
   const left = numeric ? sql`toFloat64(${column})` : column;
   const right = (val: IChartEventFilterValue) =>

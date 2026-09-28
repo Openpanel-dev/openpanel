@@ -252,7 +252,6 @@ export function moveDataBetweenTables({
 }): string[] {
   const sqls: string[] = [];
 
-  // Build the SELECT clause
   const selectClause = columns && columns.length > 0 ? columns.join(', ') : '*';
 
   if (!batch) {
@@ -272,7 +271,7 @@ export function moveDataBetweenTables({
   let currentDate = endDate;
   const interval = batch.interval || 'day';
 
-  // Helper function to get the start of the week (Monday) for a given date
+  // Start of the week (Monday) for a given date
   const getWeekStart = (date: Date): Date => {
     const d = new Date(date);
     const day = d.getDay();
@@ -282,15 +281,12 @@ export function moveDataBetweenTables({
     return d;
   };
 
-  // Helper function to compare dates based on interval
   const shouldContinue = (
     current: Date,
     start: Date,
     intervalType: string
   ): boolean => {
     if (intervalType === 'month') {
-      // For months, compare by year and month
-      // Continue if current month is >= start month
       const currentYear = current.getFullYear();
       const currentMonth = current.getMonth();
       const startYear = start.getFullYear();
@@ -301,7 +297,6 @@ export function moveDataBetweenTables({
       );
     }
     if (intervalType === 'week') {
-      // For weeks, compare by week start dates
       const currentWeekStart = getWeekStart(current);
       const startWeekStart = getWeekStart(start);
       return currentWeekStart >= startWeekStart;
@@ -451,11 +446,9 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
     }
   };
 
-  // Create bound handler functions
   const handleSigterm = () => handleTermination('SIGTERM');
   const handleSigint = () => handleTermination('SIGINT');
 
-  // Register handlers
   process.on('SIGTERM', handleSigterm);
   process.on('SIGINT', handleSigint);
 
@@ -485,7 +478,7 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
             async function check() {
               if (checking) {
-                return; // Skip if already checking
+                return;
               }
               checking = true;
 
@@ -530,10 +523,9 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
                 checking = false;
               }
 
-              timer = setTimeout(check, 5000); // Schedule next check after current one completes
+              timer = setTimeout(check, 5000);
             }
 
-            // Start the first check after 5 seconds
             timer = setTimeout(check, 5000);
           }),
         ]);
@@ -567,14 +559,10 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
     throw e;
   } finally {
-    // Clean up event listeners. bun-types 1.4.0's `Process.off` override
-    // declares only its own "memoryPressure" overload and it wins over the
-    // @types/node Signals overload, so the cast is what keeps this compiling.
-    // M8-005 first hit this via `code-migrations/`, which pulled the file into
-    // core's bun-types-only compilation; M15-204 moved that directory into this
-    // package and the edge is gone, but `bun-types` leads packages/db's own
-    // `types` array too — verified 2026-09-11 by dropping the cast and running
-    // `tsc --noEmit` here (TS2345 on both lines).
+    // Clean up event listeners. bun-types' `Process.off` override declares
+    // only its own "memoryPressure" overload and wins over the @types/node
+    // Signals overload, so the cast is what keeps this compiling (dropping it
+    // produces TS2345 on both lines below).
     const emitter = process as unknown as EventEmitter;
     emitter.off('SIGTERM', handleSigterm);
     emitter.off('SIGINT', handleSigint);

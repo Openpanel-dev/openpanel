@@ -1,4 +1,3 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
 /**
  * Webhook delivery is reachable from two very different places:
  *
@@ -31,7 +30,7 @@ export interface WebhookResult {
   ok: boolean;
   status: number;
   /**
-   * R19, classified once here so no caller re-derives it: 429 and 5xx are worth
+   * Classified once here so no caller re-derives it: 429 and 5xx are worth
    * another delivery attempt, every other 4xx is the destination refusing this
    * exact request. A transport failure that produced no response (DNS, connect,
    * TLS, timeout) is retryable — nothing about the request was rejected.

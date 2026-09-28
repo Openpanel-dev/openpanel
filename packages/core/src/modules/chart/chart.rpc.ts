@@ -1,13 +1,12 @@
-// The seven member-only procedures are back on `protectedProcedure`, so
-// `enforceAccess` reads the top-level `projectId` before the input is parsed,
-// exactly as V1 does.
+// The seven member-only procedures use `protectedProcedure`, so
+// `enforceAccess` reads the top-level `projectId` before the input is parsed.
 //
-// `chartProcedure` (funnel, conversion, chart, aggregate, cohort) is V1's
+// `chartProcedure` (funnel, conversion, chart, aggregate, cohort) is the
 // share-aware builder: `publicProcedure` plus one middleware that admits an
 // anonymous caller holding a valid share — `shareId` + `id` resolve the saved
 // report, and the request renders that report (the caller may only move the
-// date window). The resolved report rides on `ctx.report`, as in V1, so a
-// handler cannot forget to resolve it.
+// date window). The resolved report rides on `ctx.report`, so a handler
+// cannot forget to resolve it.
 
 import { z } from 'zod';
 import {
@@ -74,9 +73,9 @@ async function resolveShare(
 }
 
 /**
- * V1's `chartProcedure`. The share/membership decision runs BEFORE the input
- * is parsed and puts the resolved report on the context, so a handler reads
- * `ctx.report` instead of re-deciding who may see it.
+ * The share/membership decision runs BEFORE the input is parsed and puts
+ * the resolved report on the context, so a handler reads `ctx.report`
+ * instead of re-deciding who may see it.
  */
 const chartProcedure = publicProcedure.use(
   async ({ ctx, next, getRawInput }) => {

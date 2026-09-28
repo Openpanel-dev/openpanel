@@ -76,8 +76,9 @@ export function startWorkers<TQueues extends QueueMap>({
       }),
     });
 
-    // Fires on the connection itself, not on any one job. V1 lost the api
-    // process roughly daily to unlistened ioredis ECONNRESETs re-emitted here.
+    // Fires on the connection itself, not on any one job — an unlistened
+    // 'error' event on this emitter crashes the process (ioredis ECONNRESET
+    // etc.), so it must always have a listener.
     worker.on('error', (error) => logger.error({ err: error }, 'worker error'));
 
     // A stall means the job was taken and then its lock lapsed: the process
@@ -92,9 +93,8 @@ export function startWorkers<TQueues extends QueueMap>({
         return;
       }
 
-      // FAILURE-ONLY, and the label is the Redis key, both V1's
-      // (apps/worker/src/boot-workers.ts's `failed` listener). See
-      // jobs.metrics.ts for why a success timing may not join this series.
+      // FAILURE-ONLY, and the label is the Redis key. See jobs.metrics.ts for
+      // why a success timing may not join this series.
       if (job.processedOn) {
         jobDurationMs.observe(
           { name: key, status: 'failed' },
@@ -142,8 +142,8 @@ export interface RunnableJob {
 
 /**
  * Exported for the worker tests, and it is what the `BullWorker` processor
- * above calls. Throws on a job it cannot resolve or does not declare — V1
- * completed those having done nothing (ADR-005 risk 2).
+ * above calls. Throws on a job it cannot resolve or does not declare, rather
+ * than completing it having done nothing.
  */
 export async function runJob(
   definition: QueueDefinition,
@@ -194,9 +194,8 @@ export async function runJob(
   }) => Promise<void>;
 
   // `debug`, not `info`: `sessions` runs one of these per session close.
-  // `legacy` is the cutover's own signal — while it is still ever true, a
-  // V1-shaped job is still being replayed and the compat hooks cannot go
-  // (ADR-005 risk 1).
+  // `legacy` tracks whether this job predates the envelope format — while it
+  // is ever true, the compat hooks that translate it cannot be removed.
   const legacy = !isEnvelope(job.data);
   logger.debug({ legacy }, 'job started');
   const startedAt = performance.now();

@@ -103,10 +103,9 @@ export function knownFunnelBreakdowns(
 }
 
 /**
- * V1 `getFunnelConditions`: one `<filters> AND events.name = <name>` per step.
- * Exported because each step's complete condition has to appear twice — inside
- * windowFunnel and in the row-level pre-filter — and funnel.sql.test.ts counts
- * exactly that.
+ * One `<filters> AND events.name = <name>` per step. Exported because each
+ * step's complete condition has to appear twice — inside windowFunnel and in
+ * the row-level pre-filter — and funnel.sql.test.ts counts exactly that.
  */
 export function funnelStepConditions(
   eventSeries: IChartEvent[],
@@ -182,8 +181,8 @@ function breakdownSelects(
 /**
  * The profiles columns this join may select, from the filter and breakdown
  * names the caller supplied. Both are user input, so both are matched against
- * the allowlist — V1 split the filter names raw and spliced the result
- * (main #512, GHSA-pc3q-gw7f-p2x2).
+ * the allowlist — unsanitized splicing of a filter name into SQL was a real
+ * vulnerability here (GHSA-pc3q-gw7f-p2x2).
  */
 export function profileJoinFields(
   profileFilters: string[],
@@ -222,7 +221,7 @@ function profileCteColumns(
   // Both the breakdown- and the filter-derived names are vetted above; the
   // allowlist here is the backstop that makes `sql.id` throw rather than
   // inline if either loop ever lets something else through (main #512,
-  // GHSA-pc3q-gw7f-p2x2). V1 spliced both unchecked.
+  // GHSA-pc3q-gw7f-p2x2).
   const columns: SqlFragment[] = Array.from(fields).map((field) =>
     sql.id(field, FUNNEL_JOIN_COLUMNS)
   );
@@ -239,7 +238,7 @@ function profileCteColumns(
   return columns;
 }
 
-/** V1 `getProfileFilters`: the `profile.`-prefixed filter names, unprefixed. */
+/** The `profile.`-prefixed filter names, unprefixed. */
 function profileFilterNames(eventSeries: IChartEvent[]): string[] {
   return eventSeries.flatMap(
     (event) =>
@@ -353,7 +352,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   };
 }
 
-/** V1 `FunnelService.getFunnel`: one row per (level, breakdown combination). */
+/** One row per (level, breakdown combination). */
 export function funnelChartQuery(base: FunnelBase): SqlFragment {
   const aliases = base.breakdowns.map((_, index) => compiledText(`b_${index}`));
   const select = sql.join([sql`level`, ...aliases, sql`count() as count`]);
@@ -387,7 +386,7 @@ function breakdownValueWhere(index: number, value: string): SqlFragment {
   return sql`${normalized} = ${sql.string(value)}`;
 }
 
-/** V1 `getFunnelProfiles`: the distinct profiles at (or dropping off at) a step. */
+/** The distinct profiles at (or dropping off at) a step. */
 export function funnelProfilesQuery(
   base: FunnelBase,
   input: FunnelProfilesInput
@@ -407,8 +406,8 @@ export function funnelProfilesQuery(
 }
 
 /**
- * Exported by V1 as `buildSessionsCte`; no in-repo caller. Reachable only
- * through `packages/core/src/index.ts`, which still publishes the wrapper.
+ * No in-repo caller. Reachable only through `packages/core/src/index.ts`,
+ * which still publishes the wrapper.
  */
 export function funnelSessionsQuery(input: {
   projectId: string;

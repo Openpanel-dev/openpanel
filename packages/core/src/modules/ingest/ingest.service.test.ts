@@ -8,10 +8,7 @@
  * goes to Kafka via the injected producer, with no branch and no fallback
  * queue.
  *
- * Moved from apps/api/src/controllers/track.controller.test.ts with M8-002. The
- * producer and the buffers are arguments now, so V1's `vi.mock` of
- * @openpanel/queue and its `vi.spyOn(replayBuffer)` become plain stubs — same
- * assertions. Geo/ASN and the salts are still module-level, so those keep a
+ * Geo/ASN and the salts are still module-level, so those keep a
  * `mock.module` (unhoisted, hence the `await import` in `beforeAll`).
  */
 

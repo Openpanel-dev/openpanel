@@ -18,7 +18,7 @@ import {
 } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../../../services';
 
-/** `timezone` travels as `session_timezone`, exactly as clix sent it. */
+/** `timezone` travels as ClickHouse's `session_timezone` setting. */
 export async function runQuery<T extends object>(
   deps: ServiceDeps,
   statement: SqlFragment,

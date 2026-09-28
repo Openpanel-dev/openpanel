@@ -1,4 +1,3 @@
-// Ported from packages/js-runtime/src/validate.test.ts (main #510, #511).
 import { describe, expect, it } from 'bun:test';
 import { execute, validate } from './index';
 
@@ -10,7 +9,6 @@ describe('validate', () => {
     });
 
     it('should reject function expression', () => {
-      // Function expressions are not allowed - only arrow functions
       const result = validate(
         '(function(payload) { return { event: payload.name }; })'
       );

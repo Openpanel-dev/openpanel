@@ -45,7 +45,7 @@ import { getEventFiltersWhereClause } from './filter-where';
 const EVENTS_ALIAS = 'e';
 const ALL_COHORTS_ALIAS = '_all_cohorts';
 // Cohort ids are Postgres uuids; they also name a CTE and a join alias, so
-// anything else is refused rather than inlined (V1 inlined it unchecked).
+// anything else is refused rather than inlined.
 const COHORT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 const MATH_FUNCTION_BY_SEGMENT: Record<string, string> = {
@@ -56,7 +56,7 @@ const MATH_FUNCTION_BY_SEGMENT: Record<string, string> = {
 };
 
 export const PROPERTY_VALUES_LIMIT = 100_000;
-/** `profiles` columns a `profile.<field>` reference may select (ADR-013 R3). */
+/** `profiles` columns a `profile.<field>` reference may select. */
 const PROFILE_COLUMNS = [
   'id',
   'is_external',
@@ -239,7 +239,7 @@ interface ChartBody {
 }
 
 /**
- * The CTEs, JOINs, WHERE and `label_0` both chart shapes share, in V1's
+ * The CTEs, JOINs, WHERE and `label_0` both chart shapes share, in a fixed
  * clause order: cohort CTEs/joins, filters + project + event name, group
  * ARRAY JOIN, profile CTE.
  */
@@ -385,7 +385,7 @@ function addBreakdownLabels(
 function countExpression(
   event: ChartQueryEvent,
   body: ChartBody,
-  /** V1's aggregate shape resolved the metric property against the project; the series shape did not. */
+  /** The aggregate shape resolves the metric property against the project; the series shape does not. */
   metricProjectId: string | undefined
 ): SqlFragment {
   if (event.segment === 'user') {
@@ -427,8 +427,7 @@ function countExpression(
 // with the events alias, so `e.properties` was out of scope in the outer
 // query and any chart combining this segment with a property breakdown failed
 // with UNKNOWN_IDENTIFIER. The subquery already does `SELECT * FROM events e`,
-// so every `e.`-qualified reference outside it resolves unchanged
-// (main a2cbf2e8).
+// so every `e.`-qualified reference outside it resolves unchanged.
 function oneEventPerUserFrom(body: ChartBody): SqlFragment {
   return sql`(
       SELECT DISTINCT ON (profile_id) * from ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} WHERE ${sql.join(clauses(body.where), ' AND ')}
@@ -492,7 +491,7 @@ function intervalBucket(
   }
 }
 
-/** V1 `getChartSql`: one series, bucketed by interval, with a windowed unique total. */
+/** One series, bucketed by interval, with a windowed unique total. */
 export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   const { event, interval, startDate, endDate, timezone } = input;
   const body = chartBody(input);
@@ -541,7 +540,7 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
 
 // --- aggregate chart --------------------------------------------------------
 
-/** V1 `getAggregateChartSql`: one row per breakdown combination over the whole range. */
+/** One row per breakdown combination over the whole range. */
 export function aggregateChartQuery(
   input: AggregateChartQueryInput
 ): SqlFragment {
@@ -564,7 +563,7 @@ export function aggregateChartQuery(
     // The filters were applied inside the subquery; re-emitting the outer
     // WHERE made it reference aliases the subquery dropped (a profile or
     // group filter, or the ARRAY JOIN's _group_id). Same shape as the series
-    // branch below (main a2cbf2e8).
+    // branch below.
     const from = oneEventPerUserFrom(body);
     return sql`${head} FROM ${from} ${groupByClause(groupBy)}`;
   }
@@ -579,7 +578,7 @@ export function aggregateChartQuery(
 /**
  * projectCard: three months of daily unique visitors + revenue, filled.
  * The timezone travels as `clickhouse_settings.session_timezone` (the caller
- * passes it) instead of V1's inline `SETTINGS` clause — same setting, same
+ * passes it) rather than an inline `SETTINGS` clause — same setting, same
  * query scope, and a bindable position.
  */
 export function projectCardChartQuery(projectId: string): SqlFragment {
@@ -652,7 +651,7 @@ export function groupPropertyValuesQuery(
 
 export interface ChartBucketProfilesInput {
   projectId: string;
-  /** Bucket start as V1's `YYYY-MM-DD HH:mm:ss` string. */
+  /** Bucket start as a `YYYY-MM-DD HH:mm:ss` string. */
   bucketDate: string;
   interval: IInterval;
   event: Pick<IChartEvent, 'name' | 'filters'>;
@@ -688,11 +687,11 @@ function profileFieldsToSelect(refs: string[]): SqlFragment[] {
       fields.push(field);
     }
   }
-  // V1 spliced these unchecked (trpc chart.ts:781).
+  // `sql.id` refuses any field not in PROFILE_COLUMNS rather than splicing it.
   return fields.map((field) => sql.id(field, PROFILE_COLUMNS));
 }
 
-/** Distinct profile ids behind one chart data point (V1 `getProfiles`). */
+/** Distinct profile ids behind one chart data point. */
 export function chartBucketProfilesQuery(
   input: ChartBucketProfilesInput
 ): SqlFragment {

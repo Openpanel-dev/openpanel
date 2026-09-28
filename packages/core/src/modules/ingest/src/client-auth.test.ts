@@ -1,17 +1,13 @@
 /**
- * Tests for validateIngestRequest — V1's `validateSdkRequest`, moved with
- * M8-002.
+ * Tests for validateIngestRequest.
  *
- * The `mixan-*` case comes from
- * apps/api/src/controllers/event.controller.test.ts: ADR-015 entry 5 is pending
- * the `/event` usage metric, so the legacy header fallback stays.
- * `secretVerified` is what V1 exposed as `request.clientSecretAuth` — the side
- * channel the bot check reads — and since main #481 it is true only when the
- * secret verified.
+ * The `mixan-*` case is a legacy header fallback, kept deliberately until a
+ * usage metric confirms `/event` callers have moved off it.
  *
- * The `secret verification` block guards main #481: `secretVerified` and
- * revenue ingestion follow whether the secret verified against the stored hash,
- * not whether a secret string was on the request.
+ * `secretVerified` is the side channel the bot check reads. The `secret
+ * verification` block guards main #481: `secretVerified` and revenue
+ * ingestion follow whether the secret verified against the stored hash, not
+ * whether a secret string was on the request.
  */
 
 import {

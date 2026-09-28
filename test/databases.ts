@@ -8,9 +8,9 @@
  * migration goldens are diffed against, and a lightweight delete against a
  * 318M-row table does not finish inside a test timeout.
  *
- * Every test connection string is derived from here — vitest.shared.ts pins
- * the worker env at these values and test/bootstrap-databases.ts creates and
- * migrates them. Nothing in test/ may hard-code a database name.
+ * Every test connection string is derived from here — test/bun-preload.ts
+ * pins the worker env at these values and test/bootstrap-databases.ts
+ * creates and migrates them. Nothing in test/ may hard-code a database name.
  */
 
 const POSTGRES_ORIGIN = 'postgresql://postgres:postgres@localhost:23432';

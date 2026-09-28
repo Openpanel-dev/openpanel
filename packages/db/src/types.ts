@@ -1,14 +1,7 @@
-// `IClickhouseEvent`/`IClickhouseBotEvent`/`IClickhouseProfile`/
-// `INotificationPayload` all moved to @openpanel/core (M9-CLEANUP-001,
-// packages/db's final-surface shrink) — the three local re-export shims that
-// used to bridge them are gone. This is the type-only `db -> core` back-edge
-// ADR-007 named and explicitly declined to resolve ("belongs to P8's db
-// slim-down"; three options, none picked). Taken here: option 3, "accept a
-// declared type-only devDependency edge" — `@openpanel/db` already depends on
-// `@openpanel/core` (these shims were the reason), the edge is `import type`
-// only so it creates no runtime cycle, and it is the same shape as this repo's
-// existing type-only `db -> queue` cycle. Revisit if a future task picks a
-// different one of the three named resolutions.
+// `@openpanel/db` takes a type-only `db -> core` dependency edge here,
+// accepted deliberately: `@openpanel/db` already depends on `@openpanel/core`,
+// the edge is `import type` only so it creates no runtime cycle, and it is
+// the same shape as this repo's existing type-only `db -> queue` cycle.
 import type {
   IClickhouseBotEvent,
   IClickhouseEvent,
@@ -69,7 +62,7 @@ declare global {
     };
     // Steps of the wind-down sequence, in order. The column stores the last
     // step whose email was sent; `blocked` and `final_warning` also mean
-    // ingestion is rejected. See apps/worker/src/jobs/cron.wind-down.ts.
+    // ingestion is rejected.
     type IPrismaWindDownStep =
       | 'expired_notice'
       | 'stopping_soon'

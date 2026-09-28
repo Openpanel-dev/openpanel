@@ -1,23 +1,10 @@
-// V1's router stays the LIVE route (DELEGATE PATTERN) and delegates every
-// handler body to these functions, same as notification's router does.
-//
 // Authorization here is data-dependent — an update must authorize against the
-// EXISTING row's scope, not the attacker-controlled input — so, unlike the
-// simple input-shape ladder checks project.rpc.ts/notification.rpc.ts do
-// themselves, the access assertions travel WITH the business logic, ported
-// verbatim from the router's own `assertProjectAccessAndGetOrg`/
-// `assertIntegrationAccess` helpers. Every exported function here is still
-// called directly by `packages/trpc`'s LIVE V1 router with nothing but a
-// `userId` (DELEGATE PATTERN), so these can't take a `ctx`/`deps` the way a
-// core-only module's checks would; `requireProjectAccess` /
-// `requireOrganizationAdmin` come from auth.service.ts's single,
-// lazily-memoized `getAccessChecks`; `getOrganizationAccess` is a raw lookup
-// (no ladder involved), reached directly from the sibling
-// `shared/access-lookups.ts`.
+// EXISTING row's scope, not the attacker-controlled input — so, unlike a
+// simple input-shape ladder check, the access assertions travel WITH the
+// business logic.
 //
 // Every exported function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`; the `loadDb` lazy loader is gone, so a requestId minted at the
-// edge reaches the query.
+// `deps.db`, so a requestId minted at the edge reaches the query.
 
 import { z } from 'zod';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
@@ -306,9 +293,8 @@ export async function createOrUpdateSlackIntegration(
       });
 
   // `getSlackInstallUrl` returns null when no Slack app is configured on this
-  // deployment (ADR-022 R9: the client reports a missing thing as null). The
-  // decision that a Slack integration is unusable without one is this
-  // service's, not the transport's.
+  // deployment. The decision that a Slack integration is unusable without one
+  // is this service's, not the transport's.
   const installUrl = await getSlackInstallUrl({
     config: deps.config,
     integrationId: res.id,
@@ -392,11 +378,9 @@ export async function deleteIntegration(
   return { id };
 }
 
-// - Slack OAuth callback ----------------------------------------------- Ported
-// from apps/api/src/controllers/webhook.controller.ts's `slackWebhook`. V1's
-// Fastify controller stays the LIVE route (DELEGATE PATTERN) and delegates the
-// token-exchange/upsert logic here, the same function this module's own
-// `/webhook/slack` route (integration.routes.ts) calls.
+// - Slack OAuth callback ---------------------------------------------------
+// The token-exchange/upsert logic behind this module's `/webhook/slack` route
+// (integration.routes.ts).
 
 const slackOAuthMetadataSchema = z.object({
   organizationId: z.string(),
@@ -448,7 +432,6 @@ export async function completeSlackOAuthCallback(
     throw new SlackOAuthCallbackError('Failed to parse slack auth response');
   }
 
-  // Send a notification first to confirm the connection
   await sendSlackNotification({
     fetcher: safeWebhookFetcher,
     webhookUrl: parsedJson.data.incoming_webhook.url,
@@ -485,8 +468,6 @@ type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
     ? (...args: A) => R
     : never;
 
-/** M10-009: this module had no factory at all — the one `*.service.ts` file
- * `services.ts` did not register. */
 export function createIntegrationService(
   deps: ServiceDeps,
   _services: () => Services

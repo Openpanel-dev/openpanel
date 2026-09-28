@@ -41,8 +41,7 @@ export { profileSearchCondition } from './src/sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;
-// V1's `cacheable(fn, ...)` derived these from the functions' own names;
-// naming them keeps the Redis keys `cachable:getProfiles:<args>` and
+// These names fix the Redis cache keys as `cachable:getProfiles:<args>` and
 // `cachable:getProfilePropertyKeys:<projectId>`.
 const PROFILES_CACHE_NAME = 'getProfiles';
 const PROPERTY_KEYS_CACHE_NAME = 'getProfilePropertyKeys';

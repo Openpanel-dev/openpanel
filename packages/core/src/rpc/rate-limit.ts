@@ -1,12 +1,9 @@
-// IP rate limiting with an exponentially growing lockout, ported from
-// packages/trpc/src/rate-limit.ts (V1). The rewrite already carried the seam
-// — `EnforceRateLimit` and `createRateLimitMiddleware` in rpc/base.ts — but
-// nothing implemented it, so the ten wrappers V1 had on its auth router were
-// not mounted and no limit existed anywhere (ISSUES.md H4).
+// IP rate limiting with an exponentially growing lockout. Implements the seam
+// declared in `rpc/base.ts` (`EnforceRateLimit`, `createRateLimitMiddleware`).
 //
-// The one structural change from V1: the enforcer takes headers, the socket
-// address and a logger rather than a FastifyRequest, which is what lets a
-// procedure be tested without a server.
+// The enforcer takes headers, the socket address and a logger rather than a
+// framework request object, which is what lets a procedure be tested without
+// a server.
 
 import { getRedisCache, LRUCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
@@ -61,7 +58,7 @@ const fallbackCounters = new LRUCache<string, number>({
 /**
  * The trusted-header defaults. A limiter must never key on the ATTRIBUTION
  * address: that one prefers client-forwarded headers, so every request would
- * get its own bucket (ADR-002 preserved-behaviour 2).
+ * get its own bucket.
  */
 const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
 

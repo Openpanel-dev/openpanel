@@ -26,10 +26,10 @@ const SAME_SITE_ATTRIBUTE = {
 /**
  * Serializes one `Set-Cookie` header value.
  *
- * Attribute order follows the `cookie` package V1 served these through
- * (@fastify/cookie), so a header produced here is byte-comparable with V1's.
- * `signed` is deliberately not emitted: it is not a cookie attribute, it is an
- * instruction to the caller's signer.
+ * Attribute order is fixed and deliberate, so a header produced here stays
+ * byte-comparable across implementations. `signed` is deliberately not
+ * emitted: it is not a cookie attribute, it is an instruction to the
+ * caller's signer.
  */
 export function serializeCookie(
   name: string,

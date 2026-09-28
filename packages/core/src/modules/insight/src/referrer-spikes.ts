@@ -1,11 +1,9 @@
-// The ClickHouse CLIENT is `deps.ch` (the boot scope's round-robin proxy), so
+// The ClickHouse client is `deps.ch` (the boot scope's round-robin proxy), so
 // the requestId minted at the edge reaches these queries. Table names and the
 // date helper are core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
 //
-// Converted these three queries off clix: `getRawWhereClause` now returns a
-// `SqlFragment` carrying bound params, and clix's `.execute` has no
-// `query_params` slot to carry them through. clix always sent
-// `session_timezone` (query-builder.ts:562) — `chQuery` gets the same value.
+// `getRawWhereClause` returns a `SqlFragment` carrying bound params;
+// `chQuery` always sends `session_timezone` in its settings.
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
@@ -80,7 +78,6 @@ export interface GetReferrerSpikesInput {
   timezone: string;
 }
 
-/** clix's `toStartOf` (query-builder.ts:717) — the timezone arg was unused. */
 function bucketStart(interval: IInterval): SqlFragment {
   switch (interval) {
     case 'minute':
@@ -107,7 +104,6 @@ function sessionWindow(
   return sql`project_id = ${sql.string(projectId)} AND created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})`;
 }
 
-/** `getRawWhereClause`'s output, already bound — clix appended it the same way. */
 function andFilters(where: SqlFragment | null): SqlFragment {
   return where ? sql` AND ${where}` : sql.empty;
 }
@@ -156,7 +152,6 @@ export async function getReferrerSpikes(
     ),
   ]);
 
-  // clix's `.transform({ date })` (query-builder.ts:546) ran per row.
   const spikeRows = spikeRowsRaw.map((row) => ({
     ...row,
     date: convertClickhouseDateToJs(row.date).toISOString(),

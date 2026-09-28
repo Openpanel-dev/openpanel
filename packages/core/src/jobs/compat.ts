@@ -1,13 +1,13 @@
-// The whole of the P9 cutover. There is no dual-write window, no drain and no
-// queue rename: a job enqueued by V1 is read back by V2 through these hooks. A
-// wrong one is silent job loss, which is why the tests next to this file were
-// written before it.
+// There is no dual-write window, no drain and no queue rename: a legacy job
+// already in the queue is read back through these hooks. A wrong one is
+// silent job loss, which is why the tests next to this file were written
+// before it.
 
 import type { CompatHook } from './define';
 import { isEnvelope, type JobMeta } from './envelope';
 
 export interface ResolvedJob {
-  /** The V2 job name — a key in the queue definition's `jobs`. */
+  /** The job name — a key in the queue definition's `jobs`. */
   job: string;
   payload: unknown;
   meta: JobMeta;
@@ -16,9 +16,8 @@ export interface ResolvedJob {
 const NO_META: JobMeta = {};
 
 /**
- * Envelope or legacy, one answer. Throws on anything neither path recognises:
- * V1's cron `switch` had no `default` and completed an unknown type having done
- * nothing, which is the failure mode this replaces (ADR-005 risk 2).
+ * Envelope or legacy, one answer. Throws on anything neither path recognises,
+ * rather than silently completing an unknown type having done nothing.
  */
 export function resolveJob(
   definition: { name: string; compat?: CompatHook },
@@ -57,9 +56,9 @@ function discriminatedByType(types: readonly string[]): CompatHook {
 }
 
 /**
- * One hook per queue, keyed by registry key. Each is deletable on its own — but
- * not until no legacy-shaped job can still be replayed, and four queues have no
- * `removeOnFail` at all, so their failed sets never lapse (ADR-005 risk 1).
+ * One hook per queue, keyed by registry key. Each is deletable on its own —
+ * but not until no legacy-shaped job can still be replayed, and four queues
+ * have no `removeOnFail` at all, so their failed sets never lapse.
  */
 export const legacyCompat = {
   // Job name `'session'`, payload type `'createSessionEnd'` — the one queue
@@ -88,7 +87,7 @@ export const legacyCompat = {
   insights: discriminatedByType(['insightsProject']),
   gsc: discriminatedByType(['gscProjectSync', 'gscProjectBackfill']),
 
-  // The only V1 payload with no discriminant at all.
+  // The only legacy payload with no discriminant at all.
   cohortCompute: ((data) => {
     const record = asRecord(data);
     return typeof record?.cohortId === 'string'
