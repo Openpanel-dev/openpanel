@@ -27,24 +27,30 @@ export const Route = createFileRoute('/_public/onboarding')({
   },
   component: Component,
   validateSearch,
-  loader: async ({ context, location }) => {
+  loaderDeps: ({ search }) => ({ inviteId: search.inviteId }),
+  loader: async ({ context, deps }) => {
     await context.queryClient.ensureQueryData(
       context.trpc.auth.providers.queryOptions()
     );
-    const search = validateSearch.safeParse(location.search);
-    if (search.success && search.data.inviteId) {
+    if (deps.inviteId) {
       await context.queryClient.prefetchQuery(
         context.trpc.organization.getInvite.queryOptions({
-          inviteId: search.data.inviteId,
+          inviteId: deps.inviteId,
         })
       );
     }
+    return context.queryClient.ensureQueryData(
+      context.trpc.auth.isRegistrationAllowed.queryOptions({
+        inviteId: deps.inviteId,
+      })
+    );
   },
   pendingComponent: FullPageLoadingState,
 });
 
 function Component() {
   const { inviteId } = Route.useSearch();
+  const isRegistrationAllowed = Route.useLoaderData();
   const trpc = useTRPC();
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
@@ -61,6 +67,32 @@ function Component() {
       }
     )
   );
+
+  if (!isRegistrationAllowed) {
+    return (
+      <div className="col w-full gap-8 py-4 text-left">
+        <div>
+          <h1 className="mb-2 font-bold text-3xl text-foreground">
+            {inviteId
+              ? 'Registration is unavailable'
+              : 'Registration is disabled'}
+          </h1>
+          <p className="text-muted-foreground">
+            {inviteId
+              ? 'This invitation has expired, no longer exists, has already been used, or invitations are disabled on this instance. Ask an administrator for help.'
+              : "New accounts can't be created on this instance. Ask an administrator to invite you."}
+          </p>
+          <p className="mt-3 text-muted-foreground">
+            Already have an account?{' '}
+            <a className="font-medium text-foreground underline" href="/login">
+              Sign in
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="col w-full gap-8 py-4 text-left">
       <div>

@@ -33,7 +33,10 @@ export async function getIsRegistrationAllowed(inviteId?: string | null) {
       },
     });
 
-    return !!invite;
+    // Expired invites are rejected later when the user is connected to the
+    // organization, so treat them as invalid here to avoid creating an
+    // account that cannot finish signing up.
+    return !!invite && invite.expiresAt >= new Date();
   }
 
   // 3. Otherwise, check if general registration is allowed
