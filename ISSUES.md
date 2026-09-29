@@ -40,22 +40,70 @@ The fourth pass then closed, in order: **M1**, **H8b + the rest of H8a**, **H8c*
 low-hanging batch, the seed conversions, and **H4** (both halves). **H7 is closed as not a
 bug.** Core suite 1830 pass, 12 skip, 0 fail.
 
-### Still open after the fourth pass
+### Fifth pass (2026-09-29): every M-entry and the Low section re-verified
+
+Four sub-agents re-checked the M-entries and the Low section against the running
+API, ClickHouse and Postgres rather than trusting the QA text. **A large part of
+this file was stale.** Per-entry verdicts are inline below; the summary:
+
+**Fixed during this pass** (`cd489afb`): the notification rule-cache ordering
+(M9), `/export/events` 500 on an unparseable date (M13), `subscription.getUsage`
+bucketing the whole term instead of the billing period (M5), both "Create
+report" links dropping the dashboard id (M3), and the combobox duplicate-key
+crash (M4).
+
+**Found already fixed, no work needed**: M5's events counter, M6's session
+Events row and the "Most visted" typo, M9's unknown-integration 500, M4's
+missing error toast, the cohort popover position, every Low copy string, the
+ipdata.co credit, the favicon `?url=` on origin-less rows, the seed's
+`event_meta` rows (10 present, matching `.seed.json`), and all six sanctioned
+API nits. `getLocale()` is pinned to `en-US` (`1d92441a`) — one agent reported
+it unfixed and was wrong; the file's own comment records the fix.
+
+**Confirmed NOT a bug**: M2's acme-app bounce rate — every acme-app session
+genuinely hits two or more screens, so 0 % is the seed's data, not a formatting
+fault (all 91,015 sessions have `is_bounce=false`, against acme-web's
+430,023 true). M12's origin echo, which `cors.ts` documents deliberately.
+
+### Still open
 
 - **H8d** — deferred by the owner; the diagnosis is settled above.
-- **H10** — the virtualized tables (also the oversized-container item in Low) and the
-  pie-label `key`, which needs a browser console to locate.
-- **H11** — the "~12 % stuck on skeletons" half, unsized; needs a warm-server re-run.
-- **H12** — the per-case validation tail: reversed date ranges outside ClickHouse,
-  `cursor:"garbage"`, negative `take`, regex `"(("`, `chart.funnel {series:[]}`,
-  `/webhook/slack`'s TypeError in a redirect URL, and rendering a 404 as a not-found page.
-  Re-run the procedure sweep and let the remaining 500s define the list.
+- **H10** — the virtualized tables (also the oversized-container item in Low)
+  and the pie-label `key`. Both re-confirmed still broken; the pie label needs a
+  browser to see the warning.
+- **H11** — the "~12 % stuck on skeletons" half. Still unsized; needs a warm
+  browser crawl, which no agent could do.
+- **H12** — the per-case validation tail; see M13, which overlaps it.
 - **H13** — the default series limit, deferred as a product decision.
-- **M3-M13** — not re-investigated beyond M1 and M2.
-- **Low** — the insights cron (not a bug, needs a product call), the cohort cap (needs a
-  migration), the trailing-slash router option, the 42-site `toLocaleString` sweep, the
-  36-route `head:` sweep, bundling the external logos, negative favicon caching, and the
-  realtime empty states.
+- **M6** — profile "Sessions 0" while a session exists. Real, and the cause is
+  now known: `profileMetricsQuery` counts `session_start` events by
+  `profile_id`, which is never backfilled when a device is later identified, so
+  the first session keeps its pre-identify id. This is the same identity-
+  stitching gap as H8d. Counting from the `sessions` table instead would fix
+  the number without touching ingest.
+- **M5** — the billing badge. `subscriptionStatus` is `active` while
+  `subscriptionProductId` is NULL, so the page shows "No active plan" beside
+  "renews on …". The seed creates exactly that state; Polar would not. Either
+  make the badge derive from `getSubscriptionStateMeta` or stop the seed
+  claiming an active subscription with no product. Same root cause as the
+  account page refusing deletion.
+- **M7, M8** — both re-confirmed broken and both small; see their entries.
+- **M11, M13** — a long tail of validation and response-shape defects, each
+  re-verified with live calls. None breaks the public contract to fix. The
+  highest-value ones left: `/track` returning a deviceId/sessionId it does not
+  store, `organization.getInvite` answering 200 for an unknown id,
+  `auth.signInOAuth` handing back a URL with an empty `client_id` when the
+  provider is unconfigured, and `profile.list` having no `take` cap.
+- **M12** — two header defects on `/mcp`: `Access-Control-Allow-Headers:
+  undefined` when a preflight asks for no headers, and
+  `Access-Control-Expose-Headers` echoing request header names. Both cosmetic.
+  **Not the one-liners they look like**: `@elysiajs/cors` takes
+  `true | string | string[]`, so replacing the echo means an explicit list, and
+  that TIGHTENS what a browser may send — which the ground rule forbids.
+- **Low** — the insights cron (product call), the cohort cap (migration), the
+  trailing-slash router option, the 36-route `head:` sweep, bundling the
+  external logos, negative favicon caching, the realtime empty states, and the
+  feedback popup overlap.
 - **Test debt** — untouched.
 
 ### Carried over from `docs/TECH_DEBT.md` (deleted 2026-09-28)
@@ -514,14 +562,24 @@ are already fixed.
 - **Verify**: "Last 3 months" shows numbers in the Sessions column; `/` on acme-web shows a
   duration in the same order as the session average.
 
-### M3. Dashboard "Create report" link loses the dashboard id
+### M3. Dashboard "Create report" link loses the dashboard id — FIXED (`cd489afb`)
+> Verified 2026-09-29: both LinkButtons (`:307`, `:372`) lacked `search`, while
+> `reports.tsx:19` and `save-report.tsx:40` already read the param. Both now pass it.
 - **Files**: `apps/start/src/routes/_app.$organizationId.$projectId.dashboards_.$dashboardId.tsx:306-312`
   (`LinkButton to='/$organizationId/$projectId/reports'` with no search param), report save
   dialog in `apps/start/src/modals/save-report.tsx` (or wherever `dashboardId` is preselected).
 - **Fix**: pass `search={{ dashboardId }}` and read it in the save dialog.
 - **Verify**: from a dashboard, Create report → Save → the dashboard is preselected.
 
-### M4. Cohort dialog event picker
+### M4. Cohort dialog event picker — PARTLY FIXED (`cd489afb`)
+> Verified 2026-09-29. **Fixed**: the duplicate-key crash — the "Pick '…'" entry is no
+> longer offered when the text matches an existing option. **Already fixed**: the missing
+> error toast (`add-cohort.tsx` wires `onError: handleError`) and the popover position
+> (`combobox-advanced.tsx:123` now uses `--radix-popover-trigger-width`). **Does not
+> reproduce**: the "only 12 events" cap — `chart.events` returns 44 for acme-shop with no
+> server LIMIT; the popover is virtualised and scrollable, it just has no "N more" hint.
+> **Still open**: the `*` first option (one-liner — pass `anyEvents:false` or label it "Any
+> event") and the compute banner, which needs a persisted `lastComputeError` field.
 - **Symptom**: typing a name that exactly matches an existing event logs 100+ "two children with
   the same key" errors (the "Pick '…'" custom option shares the key with the real option) and the
   click does not select; the unfiltered list shows only 12 events with no "more" hint; the first
@@ -536,7 +594,14 @@ are already fixed.
   (persist `lastComputeError`) so the banner can say "failed — retry".
 - **Verify**: type `signup_completed` exactly → no console errors, option selectable.
 
-### M5. Billing and account inconsistencies
+### M5. Billing and account inconsistencies — PARTLY FIXED (`cd489afb`)
+> Verified 2026-09-29. **Fixed**: the Weekly Events chart — `getUsage` bucketed
+> `subscriptionStartsAt`→`subscriptionEndsAt`, a ten-year span for the seeded org, giving
+> 3,650 daily rows and repeating week numbers. It now takes one interval from
+> `subscriptionStartsAt`, which is overwritten at each renewal. **Already fixed**: the
+> events counter — live `organization.list` shows a non-zero
+> `subscriptionPeriodEventsCount`, wired from `session.jobs.ts:113`. **Still open**: the
+> badge, below.
 - **Symptom**: "No active plan" badge beside "Your subscription renews on September 18th, 2036"
   (`subscriptionStatus = active`); Usage "Events count 0" for the period while events were
   ingested (`organizations.subscriptionPeriodEventsCount` never incremented by the rewrite's
@@ -549,7 +614,13 @@ are already fixed.
   buckets by date and format ISO week + year; cap or hide deltas on tiny bases.
 - **Verify**: `/acme/billing` shows one consistent state; counter grows after `bun run send journey`.
 
-### M6. Session and profile detail gaps
+### M6. Session and profile detail gaps — PARTLY STALE
+> Verified 2026-09-29. **Already fixed**: the session detail Events row
+> (`sessions_.$sessionId.tsx:246` passes `eventCount`; live `session.byId` returns it) and
+> the "Most visted pages" typo. **Not a backend bug**: the two profile charts — a direct
+> `chart.chart` call with the page's own report definition returns data; if the placeholder
+> persists it is `useInViewport` never flipping, which needs a browser. **Still open**: the
+> sessions count, see the summary above.
 - **Symptom**: session detail "Events" row is blank (screenshot `ui/29-session-detail.png`);
   profile detail shows "Sessions 0" while ClickHouse has 1 session (and the Sessions tab lists
   it); "Page views" and "Events per day" show the placeholder "Stay calm, its coming 🙄"
@@ -562,20 +633,32 @@ are already fixed.
 - **Fix**: pass the event count into the grid; align `profile.metrics` sessions with `session.list`;
   either wire the two charts to `event.pageTimeseries` or remove them until they work.
 
-### M7. AI filter command replaces filters and double-fetches
+### M7. AI filter command replaces filters and double-fetches — CONFIRMED STILL BROKEN
+> Verified live 2026-09-29: `overview.runFilterCommand` with an active `referrer_name`
+> filter returned only the new `device` filter. The merge is a prompt instruction
+> (`filter-command.ts:79`), not code. The double-fetch is two sequential `pushUrl` calls in
+> `overview-ai-command.tsx:43-64`.
 - **Symptom**: "last 30 days, mobile only" on the overview drops the existing referrer filter
   and commits range then filters separately, so every overview query runs twice.
 - **Files**: `apps/start/src/components/overview/overview-ai-command.tsx` (or the
   `runFilterCommand` consumer), overview search-param store.
 - **Fix**: merge with existing filters (or say it replaces them) and batch the URL update into one navigation.
 
-### M8. Raw errors on public routes
+### M8. Raw errors on public routes — CONFIRMED STILL BROKEN
+> Verified live 2026-09-29: all four routes render the raw `ZodError` issues array through
+> `__root.tsx:71`, which prints `error.message`. A route-level `errorComponent` on each,
+> or optional search params with a "missing share id" state, closes it.
 - `/widget/badge|counter|realtime` and `/unsubscribe` without params show raw zod JSON, in two
   different error UIs (`apps/start/src/routes/widget/*.tsx`, `unsubscribe.tsx`). Fix: validate
   search params in the loader and render a small "missing share id" page.
 - `/acme/does-not-exist` — see H12 (`__root.tsx:71`).
 
-### M9. Notification rule form validation
+### M9. Notification rule form validation — PARTLY FIXED (`cd489afb`)
+> Verified 2026-09-29. **Fixed**: the rule cache was cleared before the access check and
+> before the write; `deleteRule` never cleared it at all. **Already fixed**: the unknown
+> integration id — `notification.service.ts:434` validates ownership and answers 400, not
+> 500. **Still open**: the form UX; `zChartEvent.name` has no `.min(1)`, so an empty event
+> name passes the client resolver and only surfaces as a toast.
 - **Symptom**: submitting an empty form shows only an "Issues ⊘" marker on the name field, no
   message, nothing on event/integration; unknown integration id → `notification.createOrUpdateRule` 500.
 - **Files**: `apps/start/src/modals/add-notification-rule.tsx` (or equivalent),
@@ -593,7 +676,13 @@ are already fixed.
   `packages/core/src/modules/mcp/src/tools/dashboard-management.ts:320`.
 - **Fix**: `.trim().min(1).max(100)` on names; fall back to a generated id when the slug is empty.
 
-### M11. Ingest response/state mismatches
+### M11. Ingest response/state mismatches — CONFIRMED STILL BROKEN (all three)
+> Verified live 2026-09-29. The `isServer` branch
+> (`incoming-event-handler.ts:407-434`) falls back to `''` rather than the deviceId and
+> sessionId it already resolved and returned. The identify→increment race is the profile
+> buffer never writing its `profile-cache:*` key until flush — `add()` does not write it and
+> the public `setCache` is dead code. Non-finite properties are dropped by the Kafka JSON
+> round-trip, where `Infinity` becomes `null` and `toDots` skips nulls.
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - Server-side (`clientSecretAuth`, non-browser UA) `/track` returns a `deviceId`/`sessionId` but
   the stored row has empty device/session/profile (`ingest.service.ts:313-317`, `isServer` branch).
@@ -602,7 +691,15 @@ are already fixed.
   flushes (~6 s). Read the profile buffer before ClickHouse, or return 202 and apply after flush.
 - `__revenue` is only validated when `name === 'revenue'`; `1e400` properties are silently dropped.
 
-### M12. CORS on `/mcp` and `/gsc`
+### M12. CORS on `/mcp` and `/gsc` — NOT THE ONE-LINER IT LOOKS LIKE
+> Verified live 2026-09-29. The origin echo is deliberate and `cors.ts` documents it, so
+> that half is **not actionable** under the ground rule. The other two reproduce:
+> `Access-Control-Allow-Headers: undefined` when a preflight requests no headers, and
+> `Access-Control-Expose-Headers` echoing `host,user-agent,accept,origin,…`. Both are
+> cosmetic — an absent `Access-Control-Request-Headers` means the browser is asking for
+> nothing, and request header names expose no response header. **Fixing them means an
+> explicit list**, because `@elysiajs/cors` accepts only `true | string | string[]`, and an
+> explicit `allowedHeaders` TIGHTENS what a browser may send. Left alone deliberately.
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - **Symptom**: `OPTIONS /mcp` with `origin: https://evil.example` → `access-control-allow-origin`
   echoed with `allow-credentials: true`; preflight without request headers →
@@ -612,7 +709,23 @@ are already fixed.
 - **Fix**: `/mcp` needs no browser CORS at all (token auth) — restrict to no-credentials or a
   fixed origin list; `/gsc` should use the dashboard origin.
 
-### M13. Silent acceptance of bad input
+### M13. Silent acceptance of bad input — RE-VERIFIED BULLET BY BULLET (2026-09-29)
+> **Fixed** (`cd489afb`): `/export/events?start=garbage` — the entry said "silently
+> ignored"; it actually answered **HTTP 500 with a raw RangeError**, because
+> `new Date('garbage')` survives construction and throws only when formatted.
+> **Already fixed**: `/export/events?limit=0|-5`, clamped at `export.routes.ts:195`.
+> **Not actionable**: `includes=bogus`, whose silent ignore matches the ground rule.
+> **Still broken, each re-verified**: the `overview.*` `z.array(z.any())` filters;
+> `report.updateLayout` bounds; `organization.inviteUser` accepting an unknown project;
+> `organization.updateMemberAccess` for an unknown user; `organization.getInvite`
+> answering 200 `{isExpired: undefined}`; `user.update` empty names;
+> `email.updatePreferences` unknown categories; `import.create` provider mismatch;
+> `group.create` upserting silently; `profile.list` with no `take` cap;
+> `cohort.listProfiles` cross-org returning 200 empty (a status-code problem, **not** a
+> data leak — the query is scoped by the caller's own `project_id`);
+> `integration.testConnection` reporting success for webhooks without sending anything;
+> and `auth.signInOAuth` returning a URL with an empty `client_id` when the provider is
+> unconfigured. None of these is breaking to fix.
 > **Narrowed by the ground rule above — the Fix line below is breaking as written.**
 - `overview.*` filters are `z.array(z.any())`; unknown names/operators are dropped
   (`overview.service.ts:538` `WHITELISTED_FILTERS`), so a typo returns unfiltered totals —
@@ -631,6 +744,29 @@ are already fixed.
 ---
 
 ## Low / cosmetic
+
+> **Re-verified 2026-09-29.** Most of this section is done. **Already fixed and
+> confirmed absent from the repo**: "Pick atleast one event"; "Most visted pages"
+> (now "Most visited"); the three identically-titled "Event distribution" cards
+> (now four distinct titles); the MaxMind credit, which linked to ipdata.co and
+> now links to maxmind.com; the favicon `?url=` request on origin-less rows
+> (`pages/table/columns.tsx:46` skips the `<img>` and encodes the origin); the
+> cohort popover position; the seed's missing `event_meta` rows — Postgres holds
+> 10, exactly matching what `.seed.json` advertises; and every sanctioned API
+> nit (lowercase `bearer`, GET/DELETE `/mcp` → 405 with `Allow`, `NOT_FOUND` in
+> `SKIP_LOG_ERROR_CODES`, the NUL-byte `country`, `get_dashboard_urls` encoding,
+> and the hand-rolled `_replicated` fragment). The **locale** bullet is also
+> fixed — `getLocale()` returns `'en-US'` (`1d92441a`); the only
+> `navigator.language` left in the tree is the word inside that function's own
+> comment. The stack-trace-in-production bullet was never a bug.
+>
+> **Still open**: the `<title>` gaps, the trailing-slash router option, the
+> favicon negative cache (needs a new cache value shape), bundling the external
+> logos (licence decision), the realtime empty states and blank second card, the
+> feedback popup overlap, the virtualized container heights (same root cause as
+> H10), the truncated pie labels (deliberate `truncate(name, 20)`), the insights
+> cron (product call) and the cohort cap (migration).
+
 
 - **Copy**: "Pick atleast one event" (report builder empty state), "Most visted pages"
   (profile + cohort), three cards titled "Event distribution" on `/events/stats` with truncated
