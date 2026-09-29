@@ -1,14 +1,15 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig([
-  // Library build (npm package) — cjs + esm + dts
-  // Dynamic import('./replay') is preserved; the host app's bundler
-  // will code-split it into a separate chunk automatically.
+  // Library build (npm package) — cjs + esm + dts.
+  // Does not import `./replay`; consumers that want session replay import
+  // `@openpanel/web/replay` and pass `startReplayRecorder` as
+  // `sessionReplay.recorder`, so rrweb stays out of lean bundles.
   {
     entry: ['index.ts'],
     format: ['cjs', 'esm'],
     dts: true,
-    splitting: true,
+    splitting: false,
     sourcemap: false,
     clean: true,
     minify: true,
@@ -17,8 +18,6 @@ export default defineConfig([
   // __OPENPANEL_REPLAY_URL__ is injected at build time so the IIFE
   // knows to load the replay module from the CDN instead of a
   // relative import (which doesn't work in a standalone script).
-  // The replay module is excluded via an esbuild plugin so it is
-  // never bundled into op1.js — it will be loaded lazily via <script>.
   {
     entry: { 'src/tracker': 'src/tracker.ts' },
     format: ['iife'],
@@ -30,30 +29,9 @@ export default defineConfig([
         'https://openpanel.dev/op1-replay.js'
       ),
     },
-    esbuildPlugins: [
-      {
-        name: 'exclude-replay-from-iife',
-        setup(build) {
-          // Intercept any import that resolves to the replay module and
-          // return an empty object. The actual loading happens at runtime
-          // via a <script> tag (see loadReplayModule in index.ts).
-          build.onResolve(
-            { filter: /[/\\]replay([/\\]index)?(\.[jt]s)?$/ },
-            () => ({
-              path: 'replay-empty-stub',
-              namespace: 'replay-stub',
-            })
-          );
-          build.onLoad({ filter: /.*/, namespace: 'replay-stub' }, () => ({
-            contents: 'module.exports = {}',
-            loader: 'js',
-          }));
-        },
-      },
-    ],
   },
-  // Replay module — built as both ESM (npm) and IIFE (CDN).
-  // ESM  → consumed by the host-app's bundler via `import('./replay')`.
+  // Replay module — built as both ESM (npm subpath) and IIFE (CDN).
+  // ESM  → `@openpanel/web/replay`
   // IIFE → loaded at runtime via a classic <script> tag (no CORS issues).
   //        Exposes `window.__openpanel_replay`.
   // rrweb must be bundled in (noExternal) because browsers can't resolve
@@ -61,6 +39,7 @@ export default defineConfig([
   {
     entry: { 'src/replay': 'src/replay/index.ts' },
     format: ['esm', 'iife'],
+    dts: true,
     globalName: '__openpanel_replay',
     splitting: false,
     sourcemap: false,

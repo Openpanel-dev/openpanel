@@ -50,23 +50,26 @@ Add `sessionReplay` to your `init` call. The replay script loads automatically f
 
 ```ts title="op.ts"
 import { OpenPanel } from '@openpanel/web';
+import { startReplayRecorder } from '@openpanel/web/replay';
 
 const op = new OpenPanel({
   clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
   sessionReplay: {
     enabled: true,
+    recorder: startReplayRecorder,
   },
 });
 ```
 
-With the npm package, the replay module is a dynamic import code-split by your bundler. It is never included in your main bundle when session replay is disabled.
+Pass `recorder` from `@openpanel/web/replay` when enabling replay in the npm package. That keeps rrweb out of apps that never import the subpath. Script-tag installs still load `op1-replay.js` from the CDN automatically.
 
 ## Options
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | `boolean` | `false` | Enable session replay recording |
+| `recorder` | `function` | — | Required for the npm package: pass `startReplayRecorder` from `@openpanel/web/replay`. Not needed for script-tag installs |
 | `maskAllInputs` | `boolean` | `true` | Mask all input field values |
 | `maskAllText` | `boolean` | `true` | Mask all text content in the recording |
 | `unmaskTextSelector` | `string` | — | CSS selector for elements whose text should NOT be masked when `maskAllText` is true |
