@@ -75,12 +75,11 @@ fault (all 91,015 sessions have `is_bounce=false`, against acme-web's
   browser crawl, which no agent could do.
 - **H12** — the per-case validation tail; see M13, which overlaps it.
 - **H13** — the default series limit, deferred as a product decision.
-- **M6** — profile "Sessions 0" while a session exists. Real, and the cause is
-  now known: `profileMetricsQuery` counts `session_start` events by
-  `profile_id`, which is never backfilled when a device is later identified, so
-  the first session keeps its pre-identify id. This is the same identity-
-  stitching gap as H8d. Counting from the `sessions` table instead would fix
-  the number without touching ingest.
+- **M6** — the profile metrics tiles undercount. **Pre-existing, and identical
+  in V1** (`main:packages/db/src/services/profile.service.ts:65` has the same
+  `countIf(name = 'session_start') as sessions` over
+  `FROM events WHERE profile_id`), so this is parity, not a regression, and is
+  **deferred to its own piece of work after release** — see below.
 - **M5** — the billing badge. `subscriptionStatus` is `active` while
   `subscriptionProductId` is NULL, so the page shows "No active plan" beside
   "renews on …". The seed creates exactly that state; Polar would not. Either
@@ -614,13 +613,38 @@ are already fixed.
   buckets by date and format ISO week + year; cap or hide deltas on tiny bases.
 - **Verify**: `/acme/billing` shows one consistent state; counter grows after `bun run send journey`.
 
-### M6. Session and profile detail gaps — PARTLY STALE
+### M6. Session and profile detail gaps — PARTLY STALE; the metrics half is a V1 parity bug, deferred
 > Verified 2026-09-29. **Already fixed**: the session detail Events row
 > (`sessions_.$sessionId.tsx:246` passes `eventCount`; live `session.byId` returns it) and
 > the "Most visted pages" typo. **Not a backend bug**: the two profile charts — a direct
 > `chart.chart` call with the page's own report definition returns data; if the placeholder
 > persists it is `useInViewport` never flipping, which needs a browser. **Still open**: the
-> sessions count, see the summary above.
+> sessions count — which is bigger than the entry says and is **not new**.
+>
+> **Corrected diagnosis, 2026-09-29.** The symptom is not "Sessions 0"; it is
+> that every event-derived tile on `/{org}/{project}/profiles/{id}`
+> *undercounts* for a profile identified MID-session. `profileMetricsQuery`
+> (`profile/src/sql.ts:102`) computes all thirteen tiles from one scan of
+> `events WHERE profile_id = …`. Events keep whatever `profile_id` they carried
+> when written: the device hash while anonymous, the user id after `identify`.
+> Nothing rewrites the earlier rows. The `sessions` table IS backfilled, so the
+> profile's Sessions TAB and its Sessions TILE disagree on the same page.
+>
+> Measured on the seeded acme-web, 300 identified profiles: total events shown
+> 780 against 1,354 actual (**57.6 %**), page views 282 against 556
+> (**50.7 %**), sessions 449 against 849 (**52.9 %**). 83 of 83 profiles
+> understated. Revenue and Conversion Events are affected the same way; the
+> duration and bounce tiles are mostly right, because `session_end` fires after
+> identify. It does not reproduce on acme-saas, whose archetype identifies on
+> the first session. `get_profile_metrics` (MCP) shares the query.
+>
+> **V1 has exactly this bug** — same query, same table, same predicate. Not a
+> rewrite regression, so it is not a merge blocker. Two routes when it is
+> picked up: read-side (count sessions from the `sessions` table and resolve
+> the rest through that profile's session ids — this page only, no ingest
+> change) or write-side (backfill `profile_id` on identify, which is the
+> H8d/`EXPERIMENTAL_PROFILE_BACKFILL` work and fixes funnels, retention and
+> page conversions at the same time).
 - **Symptom**: session detail "Events" row is blank (screenshot `ui/29-session-detail.png`);
   profile detail shows "Sessions 0" while ClickHouse has 1 session (and the Sessions tab lists
   it); "Page views" and "Events per day" show the placeholder "Stay calm, its coming 🙄"
