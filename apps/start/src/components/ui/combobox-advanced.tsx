@@ -81,15 +81,7 @@ export function ComboboxAdvanced({
   };
 
   const data = React.useMemo(() => {
-    return [
-      ...(inputValue === ''
-        ? []
-        : [
-            {
-              value: inputValue,
-              label: `Pick '${inputValue}'`,
-            },
-          ]),
+    const known = [
       ...value.map((val) => {
         const item = items.find((item) => item.value === val);
         return item
@@ -98,7 +90,18 @@ export function ComboboxAdvanced({
       }),
       ...selectables,
     ].filter((item) => item.value);
-  }, [inputValue, selectables, items]);
+
+    // The "Pick '…'" entry is only offered for a value that is not already in
+    // the list. Offering it for an exact match gave two rows the same `value`,
+    // which is the list's React key, and the duplicate made the real row
+    // unselectable.
+    const isNewValue =
+      inputValue !== '' && !known.some((item) => item.value === inputValue);
+
+    return isNewValue
+      ? [{ value: inputValue, label: `Pick '${inputValue}'` }, ...known]
+      : known;
+  }, [inputValue, selectables, items, value]);
 
   const trigger = children ?? (
     <Button autoHeight className={className} size={size} variant={'outline'}>

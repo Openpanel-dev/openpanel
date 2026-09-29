@@ -169,6 +169,20 @@ const zExportCharts = zReport
     events: z.array(zExportChartSeriesItem).optional(),
   });
 
+/**
+ * An unparseable `start`/`end` is treated as absent, not as an Invalid Date.
+ * `new Date('garbage')` survives construction and only throws when something
+ * downstream formats it, which surfaced as a 500 carrying a raw RangeError on
+ * a documented public endpoint.
+ */
+function parseDateParam(value: string | undefined): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
 export const exportRoutes = defineRoutes((app) =>
   app
     // Query-string coercion, LOCAL to this surface (see http/query.ts).
@@ -199,8 +213,8 @@ export const exportRoutes = defineRoutes((app) =>
           events: (Array.isArray(event) ? event : [event]).filter(
             (s): s is string => typeof s === 'string'
           ),
-          startDate: start ? new Date(start) : undefined,
-          endDate: end ? new Date(end) : undefined,
+          startDate: parseDateParam(start),
+          endDate: parseDateParam(end),
           cursor,
           take,
           profileId,

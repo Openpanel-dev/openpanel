@@ -40,9 +40,6 @@ export const notificationRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
 
-      // Clear the cache for the project
-      await getNotificationRulesByProjectId.clear(ctx, input.projectId);
-
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
@@ -58,7 +55,11 @@ export const notificationRouter = createTRPCRouter({
         });
       }
 
-      return createOrUpdateNotificationRule(ctx, input);
+      const rule = await createOrUpdateNotificationRule(ctx, input);
+      // After the write, not before: the cache is what session-end reads to
+      // decide which rules fire, so it is stale only once the row has changed.
+      await getNotificationRulesByProjectId.clear(ctx, input.projectId);
+      return rule;
     }),
 
   deleteRule: protectedProcedure
@@ -73,6 +74,8 @@ export const notificationRouter = createTRPCRouter({
         level: 'write',
       });
 
-      return deleteNotificationRule(ctx, input.id);
+      const deleted = await deleteNotificationRule(ctx, input.id);
+      await getNotificationRulesByProjectId.clear(ctx, rule.projectId);
+      return deleted;
     }),
 });

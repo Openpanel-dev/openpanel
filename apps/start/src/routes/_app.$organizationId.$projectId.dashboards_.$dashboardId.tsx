@@ -304,6 +304,7 @@ function Component() {
             <LinkButton
               from={Route.fullPath}
               icon={PlusIcon}
+              search={{ dashboardId }}
               to={'/$organizationId/$projectId/reports'}
             >
               <span className="max-sm:hidden">Create report</span>
@@ -369,6 +370,7 @@ function Component() {
             className="mt-14"
             from={Route.fullPath}
             icon={PlusIcon}
+            search={{ dashboardId }}
             to={'/$organizationId/$projectId/reports'}
           >
             Create report

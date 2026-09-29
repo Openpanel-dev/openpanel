@@ -163,9 +163,22 @@ export async function getUsage(deps: ServiceDeps, organizationId: string) {
     organization.subscriptionStartsAt &&
     organization.subscriptionEndsAt
   ) {
+    // The CURRENT billing period, not the whole subscription term. The usage
+    // counter this chart sits beside resets each period, and
+    // `subscriptionStartsAt` is overwritten with each period start on renewal,
+    // so one interval from it is the period the counter belongs to. A term
+    // running years out — a seeded org, or a long commitment — would otherwise
+    // bucket thousands of days and repeat week numbers along the axis.
+    const periodEnd = addMonths(
+      organization.subscriptionStartsAt,
+      organization.subscriptionInterval === 'year' ? 12 : 1
+    );
     return getOrganizationBillingEventsCountSerieCached(deps, organization, {
       startDate: organization.subscriptionStartsAt,
-      endDate: organization.subscriptionEndsAt,
+      endDate:
+        periodEnd < organization.subscriptionEndsAt
+          ? periodEnd
+          : organization.subscriptionEndsAt,
     });
   }
 
