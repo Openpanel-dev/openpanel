@@ -66,11 +66,9 @@ That file was a dated log of work that landed, not a to-do list. Four of its
 devDependencies, and `verification/golden/queue-keys/`, whose directory is
 gone). These are what was left, each re-checked against the tree on 2026-09-28:
 
-- **`tooling/gates/conformance/rules.test.ts` runs in no suite.** The root
-  `test` script is core + db + api + seed + start + `vitest run`; `tooling/` is
-  in neither list, so the conformance gate's own regression tests only run by
-  hand (`cd tooling/gates/conformance && bun test` → 19 pass, 0 fail). Wiring
-  it in is one entry in the root `package.json`.
+- ~~**`tooling/gates/conformance/rules.test.ts` runs in no suite.**~~ Fixed
+  2026-09-29: the root `test` script now ends with
+  `bun test tooling/gates/conformance` (19 pass, 0 fail).
 - **The conformance R14 residue scan does not reach `packages/`.**
   `tooling/gates/conformance/cli.ts` builds `residueFiles` from `packages/core`,
   `apps/api` and `apps/start` only, so the one surviving `NEXT_PUBLIC_`
@@ -93,16 +91,15 @@ gone). These are what was left, each re-checked against the tree on 2026-09-28:
 
 ### Found while cleaning comments (2026-09-28)
 
-- **`notification.constants.ts` duplicates three schemas from
-  `report.constants.ts`.** `zChartEvent`, `zChartEventFilter` and
-  `zChartEventSegment` are local copies whose operator and value-type enums are
-  inlined as literal tuples rather than derived from `operators` /
-  `filterValueTypes`. Verified on 2026-09-28: both enum sets are identical
-  (15 operators, 5 value types) and `report.constants.ts` does not import
-  `notification.constants.ts`, so there is no cycle — the copies can be
-  collapsed onto the report module's. The file's own TODO asked for exactly
-  this once `report.constants.ts` existed, which it now does. Left as a
-  refactor rather than done inside a comment pass.
+- ~~**`notification.constants.ts` duplicates three schemas from
+  `report.constants.ts`.**~~ Fixed 2026-09-29: the local `zChartEvent`,
+  `zChartEventFilter` and `zChartEventSegment` copies, and the three inlined
+  enum tuples behind them, are gone; the file imports `zChartEvent` from the
+  report module instead. All three enum sets were confirmed identical
+  (15 operators, 5 value types, 10 segments) and the report schema was
+  confirmed to parse a notification-shaped payload before the swap.
+  `constants-stay-isomorphic` still passes, since a `*.constants.ts` may
+  import another. 107 lines removed.
 
 Everything else below is still open.
 
