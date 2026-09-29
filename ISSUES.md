@@ -40,6 +40,36 @@ The fourth pass then closed, in order: **M1**, **H8b + the rest of H8a**, **H8c*
 low-hanging batch, the seed conversions, and **H4** (both halves). **H7 is closed as not a
 bug.** Core suite 1830 pass, 12 skip, 0 fail.
 
+### Sixth pass (2026-09-29): the small list closed, and every input bounded
+
+`14960acd`..`0a111685`. Closed: **M3**, **M4**'s duplicate-key crash and `*`
+row, **M5**'s usage chart, **M7**'s double-fetch half, **M8**, **M9**, and the
+actionable halves of **M11**, **M12** and **M13**.
+
+Also bounds every auth and account input. No `.max()` existed anywhere in the
+auth module, `hashPassword` handed its argument straight to argon2, and
+`consumeRecoveryCode` turned one string into ten sequential verifies. A 20 MB
+sign-in body used to be accepted and answered 401 in 0.52 s; a 200,000-char
+password is now refused with 400 in 0.248 s, before argon2. The numbers live in
+`shared/limits.constants.ts`. **Accepted risk**: a user whose existing password
+is longer than 128 must reset once, which needs only their email address.
+
+Two things found while doing it, both recorded rather than fixed:
+- `assistant.constants.ts`'s chat tool schemas have drifted from the canonical
+  ones `overview.runFilterCommand` uses: the chat's `applyFiltersSchema` is
+  missing `last24h` and `3m`, and its property-filter operators are missing
+  `inCohort`/`notInCohort`. Asking the chat panel for "last 24 hours" fails its
+  own tool validation today.
+- `getInviteById` answering 200 was rendering a blank "Invitation to " banner
+  on the onboarding page, since `{isExpired: undefined}` is truthy. Fixed.
+
+Still open from the small list: **M7**'s filter *merge* (a prompt instruction,
+not code), **M4**'s compute banner (needs a persisted `lastComputeError`),
+**M10**'s empty slug (the name cap its Fix line proposes is breaking; the
+fallback id is the real fix), and **M12**'s two header defects (fixing them
+means an explicit `allowedHeaders` list, which tightens what a browser may
+send).
+
 ### Fifth pass (2026-09-29): every M-entry and the Low section re-verified
 
 Four sub-agents re-checked the M-entries and the Low section against the running
