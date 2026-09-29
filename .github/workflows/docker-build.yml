@@ -11,11 +11,6 @@ on:
       - "**/docs/**"
       - "**/CHANGELOG*"
       - "**/LICENSE*"
-      # Test files
-      - "**/*.test.*"
-      - "**/*.spec.*"
-      - "**/__tests__/**"
-      - "**/tests/**"
       # SDKs (published separately)
       - "packages/sdks/**"
       # Public app (docs/marketing, not part of Docker deploy)
@@ -39,7 +34,8 @@ jobs:
       postgres:
         image: postgres:16-alpine
         ports:
-          - 5432:5432
+          # The host port is what test/databases.ts pins, not a free choice.
+          - 23432:5432
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -52,7 +48,7 @@ jobs:
       redis:
         image: redis:7-alpine
         ports:
-          - 6379:6379
+          - 23379:6379
         options: >-
           --health-cmd "redis-cli ping || exit 1"
           --health-interval 5s
@@ -61,7 +57,7 @@ jobs:
       clickhouse:
         image: clickhouse/clickhouse-server:26.1.3.52
         ports:
-          - 8123:8123
+          - 23123:8123
         env:
           CLICKHOUSE_DB: openpanel
           CLICKHOUSE_USER: default
@@ -87,7 +83,10 @@ jobs:
       - name: Install bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          # .bun-version is the pin's home (ADR-016 rule 5) and
+          # apps/api/src/config/bun-version.test.ts asserts an exact match, so read
+          # it rather than keeping a second copy here.
+          bun-version-file: ".bun-version"
 
       - name: Setup bun cache
         uses: actions/cache@v3
@@ -103,35 +102,43 @@ jobs:
       - name: Codegen
         run: bun run codegen
 
-      - name: Migrate database
-        run: bun run migrate:deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
-          DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
-          CLICKHOUSE_URL: http://localhost:8123/openpanel
-          SELF_HOSTED: "true"
+      # Formatting and import order only. `bun run lint` (the full rule set) still
+      # reports 595 errors / 45 warnings, ~328 of which need a human decision, so
+      # it is not a gate yet; this half is green and catches drift today.
+      - name: Check formatting
+        run: bun run lint:format
 
-      - name: Run tests
-        run: bun run test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
-          CLICKHOUSE_URL: http://localhost:8123/openpanel
-          REDIS_URL: redis://localhost:6379
+      - name: Run TypeScript checks
+        run: bun run typecheck
 
       # ADR-008: dependency-cruiser is the second layer keeping the dissolved
       # validation/constants/common/json packages from growing back (M11-009).
-      # Run standalone, not via `bun run check`, because `check` also runs
-      # `ultracite check` over a repo that has never been bulk-formatted (see
-      # .claude/CLAUDE.md) and is not green today for reasons unrelated to
-      # dependency boundaries.
+      # Run standalone, not via `bun run check`, so a lint error cannot mask a
+      # dependency-boundary break: `check` is `ultracite check && check:deps`, and
+      # the full rule set is not green yet (see the formatting step above).
       - name: Check dependency boundaries
         run: bun run check:deps
 
-      # - name: Run Biome
-      #   run: bun run lint
+      # Exercises the real migration runners, which the suite does not: tests apply
+      # the flat test/clickhouse-schema.sql, so `migrate:deploy` is the only place
+      # Prisma's migrate and the ClickHouse code-migrations actually run. Uses its
+      # own databases, never the suite's `openpanel_test`.
+      - name: Migrate database
+        run: bun run migrate:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:23432/postgres?schema=public
+          DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:23432/postgres?schema=public
+          CLICKHOUSE_URL: http://localhost:23123/openpanel
+          SELF_HOSTED: "true"
 
-      # - name: Run TypeScript checks
-      #   run: bun run typecheck
+      # No env block, deliberately. Every workspace's test preload pins
+      # DATABASE_URL / CLICKHOUSE_URL / REDIS_URL itself and creates and migrates
+      # the isolated `openpanel_test` databases (test/bun-preload.ts,
+      # packages/core/test/preload.ts). Env set here would be silently overwritten,
+      # which is how the old 5432/8123 block came to look correct while every
+      # database-backed test failed.
+      - name: Run tests
+        run: bun run test
 
   build-api:
     permissions:

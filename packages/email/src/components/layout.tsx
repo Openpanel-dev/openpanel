@@ -7,8 +7,7 @@ import {
   Section,
   Tailwind,
 } from '@react-email/components';
-// biome-ignore lint/style/useImportType: <explanation>
-import React from 'react';
+import type React from 'react';
 import { Footer } from './footer';
 
 type Props = {

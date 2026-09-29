@@ -132,7 +132,6 @@ export async function pollUntil<T>(
   { timeoutMs = 30_000, intervalMs = 750 } = {}
 ): Promise<T | null> {
   const deadline = Date.now() + timeoutMs;
-  // biome-ignore lint/nursery/noConstantCondition: poll loop
   while (true) {
     const value = await fn();
     if (value) {

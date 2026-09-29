@@ -1,6 +1,5 @@
 import { Button as EmailButton } from '@react-email/components';
-// biome-ignore lint/style/useImportType: <explanation>
-import React from 'react';
+import type React from 'react';
 
 export function Button({
   href,

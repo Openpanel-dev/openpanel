@@ -78,6 +78,8 @@
     "check:workspace": "bunx sherif@1.13.0",
     "check:deps": "depcruise --config .dependency-cruiser.cjs --output-type err apps/start packages",
     "check": "ultracite check && bun run check:deps",
+    "lint": "ultracite check",
+    "lint:format": "ultracite check --linter-enabled=false",
     "fix": "ultracite fix"
   },
   "simple-git-hooks": {
