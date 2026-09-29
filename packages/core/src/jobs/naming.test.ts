@@ -2,10 +2,8 @@ import { expect, test } from 'bun:test';
 import { queues } from '../jobs.registry';
 import { queueKey } from './naming';
 
-// Byte-identity snapshot, mirroring `verification/golden/queue-keys/keys.json`
-// — which the controller's `check.sh` independently recomputes from V1's
-// `getQueueName`. Both sides pin the same 14 strings; a one-character drift
-// orphans every queue in Redis (ADR-005 risk 4).
+// Byte-identity snapshot of every queue's Redis key; a one-character drift
+// here orphans every queue already enqueued under the old key.
 const GOLDEN_KEYS = [
   { name: 'cohortCompute', queueCluster: false, key: 'cohortCompute' },
   { name: 'cohortCompute', queueCluster: true, key: '{cohortCompute}' },
@@ -38,8 +36,7 @@ test('the golden table covers exactly the queues the registry declares', () => {
   const golden = [...new Set(GOLDEN_KEYS.map((row) => row.name))].sort();
 
   expect(Object.keys(queues).sort()).toEqual(golden);
-  // Registry key === Redis name for all seven, `cohortCompute` included
-  // (ADR-005 acceptance note: no env rename).
+  // Registry key === Redis name for all seven, `cohortCompute` included.
   expect(
     Object.values(queues)
       .map((queue) => queue.name)
@@ -54,10 +51,9 @@ test('braces appear only under QUEUE_CLUSTER', () => {
   expect(queueKey('cron', { cluster: true })).toBe('{cron}');
 });
 
-// The `QUEUE_CLUSTER=off, namespace=set` cell is the one the plan left
-// unspecified; ADR-005 says the snapshot is where it gets pinned. Braces are a
-// Redis Cluster hash-tag concern, the namespace is an isolation concern, so
-// they are independent: the namespace always applies, the braces only cluster.
+// Braces are a Redis Cluster hash-tag concern, the namespace is an isolation
+// concern, so they are independent: the namespace always applies, the braces
+// only cluster.
 test('the namespace always applies; only the braces are cluster-conditional', () => {
   expect(queueKey('cron', { namespace: 'wt3' })).toBe('cron-wt3');
   expect(queueKey('cron', { cluster: false, namespace: 'wt3' })).toBe(

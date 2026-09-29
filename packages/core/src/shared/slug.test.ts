@@ -1,8 +1,8 @@
 // Subject moved to @openpanel/shared; the suite did not follow it. Nothing runs
 // a `test` script in packages/shared yet — the root `test` script names its
-// four workspaces explicitly and root package.json was outside M15-010's scope
-// — so moving this file would take it out of every gate. Move it when that line
-// can gain the filter.
+// four workspaces explicitly and hasn't picked up the new one — so moving this
+// file would take it out of every gate. Move it when that line can gain the
+// filter.
 import { describe, expect, it } from 'bun:test';
 import { slug } from '@openpanel/shared';
 

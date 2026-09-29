@@ -1,12 +1,11 @@
 // The dashboard's copy of
 // packages/core/src/modules/report/src/previous-metric.ts.
 //
-// Moved the six generic aggregates and `shortId` that used to sit beside it
-// into @openpanel/shared, which the dashboard now imports directly. This one
-// function stays duplicated: it returns `PreviousValue`, report vocabulary, and
-// ADR-022 R21 keeps domain constants out of @openpanel/shared while R12 keeps
-// apps/start from value-importing core outside a `*.constants.ts` path. The
-// type is safe to import — it is erased.
+// The six generic aggregates and `shortId` that used to sit beside it live in
+// @openpanel/shared, which the dashboard imports directly. This one function
+// stays duplicated: it returns `PreviousValue`, report vocabulary that stays
+// out of @openpanel/shared, and apps/start cannot value-import core outside a
+// `*.constants.ts` path. The type is safe to import — it is erased.
 import type { PreviousValue } from '@openpanel/core/modules/report/report.constants';
 import { round } from '@openpanel/shared';
 import { isNil } from 'ramda';

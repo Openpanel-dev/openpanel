@@ -148,45 +148,6 @@ async function getOgData(
   }
 }
 
-// export async function generateStaticParams() {
-//   const params: { og: string[] }[] = [];
-
-//   // Static pages
-//   params.push({ og: ['default'] });
-//   params.push({ og: ['supporter'] });
-//   params.push({ og: ['pricing'] });
-//   params.push({ og: ['articles'] });
-//   params.push({ og: ['compare'] });
-//   params.push({ og: ['docs'] });
-
-//   // Articles
-//   const articles = await articleSource.getPages();
-//   for (const article of articles) {
-//     const slug = article.url.replace(/^\/articles\//, '').replace(/\/$/, '');
-//     params.push({ og: ['articles', slug] });
-//   }
-
-//   // Compare pages
-//   const compareSlugs = await getAllCompareSlugs();
-//   for (const slug of compareSlugs) {
-//     params.push({ og: ['compare', slug] });
-//   }
-
-//   // Docs pages
-//   const docs = await source.getPages();
-//   for (const doc of docs) {
-//     params.push({ og: ['docs', ...doc.slugs] });
-//   }
-
-//   // Other pages
-//   const pages = await pageSource.getPages();
-//   for (const page of pages) {
-//     params.push({ og: page.slugs });
-//   }
-
-//   return params;
-// }
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ og: string[] }> }

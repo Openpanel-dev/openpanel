@@ -216,9 +216,9 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
   ]);
 });
 
-// Byte-identity with the id/cadence schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts). The cadence now lives on the job itself, so
-// this reads it straight off the registry.
+// Byte-identity with the id/cadence schedulers.test.ts's golden snapshot
+// pins. The cadence now lives on the job itself, so this reads it straight
+// off the registry.
 test('the gsc cron fragment carries V1 id and cadence unchanged', () => {
   expect(queues.cron.jobs.gscSync.cron).toEqual({ pattern: '0 3 * * *' });
 });

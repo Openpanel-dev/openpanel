@@ -1,16 +1,9 @@
-// Generic date helpers (ADR-007 shared/ layout: "date"). Pure Date/Luxon math,
-// no ClickHouse or Postgres access.
+// Generic date helpers: pure Date/Luxon math, no ClickHouse or Postgres
+// access. This is the one place core re-exports luxon's DateTime from.
 //
-// `DateTime` and `getTime` moved here from packages/common/src/date.ts, which
-// was the workspace's only luxon declaration. This file is now the one place
-// core re-exports luxon's DateTime from.
-//
-// `getDatesFromRange` and `getChartStartEndDate` left with the report
-// vocabulary they read (`IChartRange`, `IReportInput`) — they are
-// `packages/core/src/modules/report/src/chart-dates.ts` now.
-//
-// What was left knows nothing above it and nothing about the domain, so it is
-// @openpanel/shared's.
+// `getDatesFromRange` and `getChartStartEndDate` are not here: they read
+// report vocabulary (`IChartRange`, `IReportInput`), so they live in
+// `packages/core/src/modules/report/src/chart-dates.ts`.
 import { DateTime } from 'luxon';
 
 export { DateTime } from 'luxon';

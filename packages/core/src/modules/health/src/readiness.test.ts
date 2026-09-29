@@ -14,8 +14,8 @@ test('no events consumer on this instance skips the heartbeat check', () => {
   expect(
     evaluateReadiness({
       shuttingDown: false,
-      // V1 left the heartbeat disabled on instances with no events worker,
-      // whose lastActivityAt then never moves off boot time.
+      // An instance with no events consumer has the heartbeat disabled,
+      // since lastActivityAt then never moves off boot time.
       heartbeat: { enabled: false, lastActivityAt: 0 },
       now: NOW,
     })

@@ -1,8 +1,4 @@
-// Built ONCE at boot and hung on `AppDeps.buffers` — never module singletons
-// (ADR-007: "buffers stay boot singletons on AppDeps"). V1's
-// `packages/db/src/buffers/index.ts` is a thin delegate over one call to this
-// factory, so a V1 process and a V2 process reach the same seven objects and
-// the same Redis lists.
+// Built ONCE at boot and hung on `AppDeps.buffers` — never module singletons.
 
 import type { BufferDeps } from './base-buffer';
 import { BotBuffer } from './bot-buffer';

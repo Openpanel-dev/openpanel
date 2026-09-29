@@ -1,9 +1,7 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`. The
-// `loadDb` / `loadDateService` / `loadOrganizationService` lazy loaders are
-// gone: nothing here value-imports `@openpanel/db` or this package's own barrel
-// any more (the Prisma row type below is `import type`, erased at runtime), so
-// there is no import-time client — and no pino-pretty worker per test file —
-// left to defer.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`.
+// Nothing here value-imports `@openpanel/db` or this package's own barrel (the
+// Prisma row type below is `import type`, erased at runtime), so there is no
+// import-time client — and no pino-pretty worker per test file — to defer.
 
 import type { Reference } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
@@ -48,9 +46,8 @@ export function getReferenceById(
   return deps.db.reference.findUnique({ where: { id } });
 }
 
-/** Throws Prisma's own not-found error, same as V1's inline
- *  `findUniqueOrThrow` call sites — used by both routers' ownership lookup
- *  ahead of their own access check. */
+/** Throws Prisma's own not-found error. Used by both routers' ownership
+ *  lookup ahead of their own access check. */
 export function getReferenceByIdOrThrow(
   deps: ServiceDeps,
   id: string

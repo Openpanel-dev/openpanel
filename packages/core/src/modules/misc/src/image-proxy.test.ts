@@ -1,5 +1,3 @@
-// Ported from apps/api/src/utils/image-proxy.test.ts.
-
 import { describe, expect, it } from 'bun:test';
 import sharp from 'sharp';
 import {

@@ -1,12 +1,10 @@
-// The github/google OAuth callbacks, same shape as gsc.routes.ts: DELEGATE
-// PATTERN, token-exchange/session logic lives in auth.service.ts's
+// The github/google OAuth callbacks, same shape as gsc.routes.ts:
+// token-exchange/session logic lives in auth.service.ts's
 // `completeOAuthCallback`. `main.ts` mounts `dashboardRoutes` unconditionally
 // on every HTTP-serving boot, so this route is live.
 //
-// NAMED GAP: per-route cookie signing is not wired yet (gsc.routes.ts's header
-// names the same gap), so `ctx.cookies.get` here reads the raw, unsigned cookie
-// value. V1's Fastify controller does not sign these cookies either (only the
-// GSC flow does), so this is not a parity regression.
+// Per-route cookie signing is not wired yet (gsc.routes.ts's header names the
+// same gap), so `ctx.cookies.get` here reads the raw, unsigned cookie value.
 
 import { redirect } from 'elysia';
 import { z } from 'zod';

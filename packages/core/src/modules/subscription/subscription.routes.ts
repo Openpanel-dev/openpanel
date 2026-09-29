@@ -4,14 +4,11 @@
 // RAW BYTES, deliberately: `validatePolarEvent` verifies Polar's signature over
 // the exact request body, so this handler reads `await request.text` and
 // declares no `body` schema — any parsing (JSON or otherwise) before the
-// signature check breaks it. V1 gets the same raw bytes via
-// `fastify-raw-body`'s `{ rawBody: true }` route config; this is the Elysia
-// equivalent named in ADR-002's plugin substitutions ("raw body → `await
-// request.text` in the one polar webhook handler").
+// signature check breaks it.
 //
 // `parse: 'none'` is what makes that possible: Elysia parses the body before
 // the handler runs by default, and reading the consumed stream throws "Body
-// already used" (which mounted this surface).
+// already used".
 
 import { defineRoutes } from '../../http/define';
 

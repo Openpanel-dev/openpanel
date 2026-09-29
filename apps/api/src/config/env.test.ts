@@ -108,7 +108,7 @@ describe('the boot flags main.ts branches on', () => {
     expect(
       loadConfig({ ...base, DISABLE_BULLBOARD: 'true' }).DISABLE_BULLBOARD
     ).toBe(true);
-    // V1 only ever accepted those two spellings.
+    // Only those two spellings are accepted.
     expect(
       loadConfig({ ...base, DISABLE_BULLBOARD: 'yes' }).DISABLE_BULLBOARD
     ).toBe(false);
@@ -127,7 +127,7 @@ describe('the boot flags main.ts branches on', () => {
   });
 });
 
-// -- M15-006: the parsing core used to do for itself -------------------------
+// -- Blank-value parsing the config loader does for itself ------------------
 
 describe('blank KEY= is absent, not empty', () => {
   it('falls through to the default on every field, not just the preprocessed ones', () => {

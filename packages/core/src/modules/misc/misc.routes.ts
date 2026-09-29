@@ -1,8 +1,3 @@
-// Ported from apps/api/src/routes/misc.router.ts +
-// apps/api/src/controllers/misc.controller.ts. V1's Fastify router stays the
-// LIVE route (DELEGATE PATTERN) and calls the same misc.service.ts functions
-// this file does.
-//
 // `GET /misc/og/clear` and `GET /misc/favicon/clear` are deliberately absent:
 // nothing depends on them.
 

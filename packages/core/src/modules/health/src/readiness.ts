@@ -1,15 +1,14 @@
-// V1's `/healthz/ready` decision, lifted out of the express handler
-// (apps/worker/src/index.ts) so it can be asserted without a server.
+// The `/healthz/ready` decision, kept pure so it can be asserted without a
+// server.
 //
 // Shallow + shutdown-aware, and — only where this process runs the events
-// consumer — heartbeat-aware. V1 skipped the heartbeat check on instances
-// with no events worker; V2 keeps that by leaving `enabled` false unless the
-// role actually started the consumer.
+// consumer — heartbeat-aware. `enabled` stays false unless the role actually
+// started the consumer, so an instance with no events worker never fails
+// readiness on a heartbeat that was never real.
 
 import { getEventsHeartbeat } from '../../ingest/src/heartbeat';
 import { isShuttingDown } from './shutdown';
 
-/** V1's threshold (apps/worker/src/index.ts `EVENTS_HEARTBEAT_STALE_MS`). */
 export const EVENTS_HEARTBEAT_STALE_MS = 60_000;
 
 export type ReadinessResult =

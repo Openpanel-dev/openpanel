@@ -1,15 +1,14 @@
 // `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
 // here and spread into jobs.registry.ts, same shape as organization.jobs.ts's
-// `delete`. Its `cron` is explicitly `null` (ADR-021's on-demand state, not
-// "always scheduled") — `PING_SCHEDULE` in jobs/schedulers.ts adds it
-// separately, conditionally on `SELF_HOSTED && production`, because it is the
-// one scheduler that isn't always-on.
+// `delete`. Its `cron` is explicitly `null` (on-demand, not "always
+// scheduled") — `PING_SCHEDULE` in jobs/schedulers.ts adds it separately,
+// conditionally on `SELF_HOSTED && production`, because it is the one
+// scheduler that isn't always-on.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 import { type DataHealthDb, runDataHealthCron } from './src/data-health';
 
-/** Daily 07:30 UTC — V1's cadence (apps/worker/src/boot-cron.ts). */
 const DATA_HEALTH_CRON = '30 7 * * *';
 
 /** This module's fragment of the `cron` queue's jobs. */

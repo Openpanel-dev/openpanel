@@ -1,7 +1,6 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` / `loadIdService` lazy loaders are gone, so this module
-// value-imports neither `@openpanel/db` nor its own package barrel — the Prisma
-// row types below are `import type`, erased at runtime.
+// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; this
+// module value-imports neither `@openpanel/db` nor its own package barrel —
+// the Prisma row types below are `import type`, erased at runtime.
 
 import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
@@ -45,8 +44,7 @@ export function getDashboardById(
 }
 
 /** Unscoped lookup for mutation handlers that only receive a dashboard id and
- *  need its `projectId` to run the access check — same shape as V1's inline
- *  `db.dashboard.findUniqueOrThrow`. */
+ *  need its `projectId` to run the access check. */
 export function getDashboardByIdOrThrow(
   deps: ServiceDeps,
   id: string

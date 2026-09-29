@@ -68,9 +68,8 @@ describe('clientIpHook', () => {
   });
 });
 
-// "behaviour that must be preserved explicitly" 2. V1's order held by avvio's
-// registration order; here it holds by `.use` order plus the fact that cors
-// runs at `onRequest`, an earlier phase than any `derive`.
+// This order must be preserved: it holds by `.use` order plus the fact that
+// cors runs at `onRequest`, an earlier phase than any `derive`.
 test('root chain runs cors -> requestId -> timestamp -> ip', async () => {
   const ran: string[] = [];
 

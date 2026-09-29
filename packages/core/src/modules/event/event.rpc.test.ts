@@ -1,8 +1,8 @@
 // Only the "is anyone logged in" boundary is exercised here — no database.
 // The access-check + query bodies ride on @openpanel/db (lazy-loaded, see
 // event.service.ts's header); wiring this router end-to-end against a real
-// ClickHouse is P6's (protectedProcedure) job — see event.rpc.ts's header.
-// Same shape as session.rpc.test.ts.
+// ClickHouse is protectedProcedure's job — see event.rpc.ts's header. Same
+// shape as session.rpc.test.ts.
 
 import { expect, test } from 'bun:test';
 import {
@@ -70,8 +70,8 @@ test('every query rejects an unauthenticated caller before touching a database',
   await expect(caller.origin(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
 });
 
-// V1 let anonymous callers in on the mere existence of a ShareOverview row;
-// ADR-011 §9 rules that a bug.
+// Letting anonymous callers in on the mere existence of a ShareOverview row
+// was a bug.
 test('bots rejects an unauthenticated caller (ADR-011: no anonymous share branch)', async () => {
   const caller = await anonCaller();
   await expect(caller.bots(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);

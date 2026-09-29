@@ -6,9 +6,8 @@
 // The organization-admin ladder itself is bound once, in auth.service.ts; every
 // procedure here reaches it through `ctx.services.auth`.
 //
-// `getInvite` still drops V1's rate limiting: `rateLimitMiddleware` did NOT
-// move with M11-001. `createRateLimitMiddleware` in rpc/base.ts is the seam
-// that will carry it.
+// `getInvite` has no rate limiting yet. `createRateLimitMiddleware` in
+// rpc/base.ts is the seam that will carry it.
 
 import { z } from 'zod';
 import {

@@ -1,9 +1,8 @@
-// Every procedure is on its V1 twin's builder. `protectedProcedure` runs
-// `enforceUserIsAuthed` + `enforceAccess` BEFORE the input parser, exactly as
-// V1 does. Every procedure below carries a top-level `projectId`, so
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
+// input parser. Every procedure below carries a top-level `projectId`, so
 // `enforceAccess` already covers it - the explicit `requireProjectAccess` calls
-// in the handlers are the tree-wide M15-007 pattern, not the
-// resolved-from-another-id exception.
+// in the handlers are a tree-wide pattern, not the resolved-from-another-id
+// exception.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

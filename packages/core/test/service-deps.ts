@@ -40,7 +40,7 @@ function unavailable(name: string): never {
   throw new Error(`${name} is not built in this test`);
 }
 
-/** The `services()` thunk every factory takes (ADR-022 R3). No suite here
+/** The `services()` thunk every factory takes. No suite here
  *  reaches a sibling, so calling it is a named error rather than a silently
  *  half-built container; a suite that needs one passes its own thunk. */
 export function testServices(): () => Services {

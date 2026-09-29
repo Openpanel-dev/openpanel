@@ -1,7 +1,5 @@
-// Two pagination shapes ported from V1's routers, generalized: numeric-page
-// offsets (packages/trpc's reference.ts: `cursor ? cursor * 50 : 0`) and
-// opaque keyset cursors (packages/trpc's session.ts encodeCursor/decodeCursor,
-// generalized from its {createdAt, id} shape to any JSON-serializable cursor).
+// Two pagination shapes: numeric-page offsets and opaque keyset cursors
+// (generalized to any JSON-serializable cursor).
 
 export const DEFAULT_PAGE_SIZE = 50;
 

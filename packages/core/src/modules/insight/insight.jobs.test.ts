@@ -236,9 +236,9 @@ test('weeklyDigest delegates to sendWeeklyDigests', async () => {
   expect(called).toBe(true);
 });
 
-// Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts). The cadences now live on the jobs themselves,
-// so this reads them straight off the registry.
+// Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot
+// pins. The cadences now live on the jobs themselves, so this reads them
+// straight off the registry.
 test('the insight cron fragment carries V1 ids and cadences unchanged', () => {
   expect(queues.cron.jobs.insightsDaily.cron).toEqual({
     pattern: '0 2 * * *',

@@ -1,8 +1,6 @@
-// `insightsProject` is this module's own queue (`insights` in the registry —
-// ADR-005's registry key). `insightsDaily` / `insightCleanup` / `weeklyDigest`
-// are cron fragments, spread into the ONE `cron` queue by jobs.registry.ts.
-// Scheduler ids and cadences are V1's, unchanged
-// (apps/worker/src/boot-cron.ts).
+// `insightsProject` is this module's own queue (`insights` in the registry).
+// `insightsDaily` / `insightCleanup` / `weeklyDigest` are cron fragments,
+// spread into the ONE `cron` queue by jobs.registry.ts.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
@@ -25,8 +23,7 @@ export const insightQueueJobs = {
 /** This module's fragment of the `cron` queue's jobs. */
 export const insightCronJobs = {
   // Fans out one `insightsProject` job per eligible project. Jobs are
-  // deduplicated by a per-day, per-project jobId — matches V1
-  // (apps/worker/src/jobs/insights.ts).
+  // deduplicated by a per-day, per-project jobId.
   insightsDaily: defineJob({
     payload: z.null(),
     cron: { pattern: '0 2 * * *' },

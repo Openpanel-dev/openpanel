@@ -4,8 +4,8 @@
 // transport may reach it.
 //
 // The ALS scopes a request's dashboard session id so anything downstream —
-// today only the Prisma read-replica consistency extension ADR-012 retires —
-// can read it without threading a parameter.
+// today only the Prisma read-replica consistency extension — can read it
+// without threading a parameter.
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 

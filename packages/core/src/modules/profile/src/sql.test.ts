@@ -1,8 +1,7 @@
 // Shape tests for the profile module's fragments: every user value binds as a
-// `{pN:Type}` parameter (nothing is interpolated), the optional clauses toggle
-// exactly on V1's conditions, and `sql.id` refuses anything off the column
-// whitelist. Result-set equivalence against V1 was proven per query on the
-// local prod-copy (M7-002 report), not here — these run offline.
+// `{pN:Type}` parameter (nothing is interpolated), and `sql.id` refuses
+// anything off the column whitelist. These run offline, so they assert the
+// rendered statement and its params, never a result set.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';

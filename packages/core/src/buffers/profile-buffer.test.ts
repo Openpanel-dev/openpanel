@@ -55,7 +55,7 @@ beforeEach(async () => {
 
 // The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
 // every file in one process, and closing the singleton takes it away from the
-// files that run next (V1's vitest isolated per file, so it could).
+// files that run next.
 afterAll(() => {
   mock.module('../ch-query', () => realChQuery);
 });

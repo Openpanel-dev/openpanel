@@ -6,8 +6,8 @@ import { requestContext } from './http/context';
 import { registry } from './metrics';
 import { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 
-// The acceptance shape for ADR-007 decision 19: an app built from the mounts
-// plus requestContext answers a real request, end to end.
+// An app built from the mounts plus requestContext answers a real request,
+// end to end.
 test('opsRoutes answers a liveness probe through requestContext', async () => {
   const { deps } = stubAppDeps();
 
@@ -37,8 +37,8 @@ test('publicApiRoutes and dashboardRoutes compose, dashboardRoutes carrying gsc'
   expect(response.status).toBe(200);
 });
 
-// The M3 gate: /metrics serves prometheus text exposition from THE core
-// registry — not a route-local one, not the prom-client global default.
+// /metrics serves prometheus text exposition from THE core registry — not a
+// route-local one, not the prom-client global default.
 test('/metrics serves the one core registry, prometheus text exposition', async () => {
   const { deps } = stubAppDeps();
   const probeName = 'core_rest_routes_metrics_probe_total';
@@ -61,11 +61,9 @@ test('/metrics serves the one core registry, prometheus text exposition', async 
   registry.removeSingleMetric(probeName);
 });
 
-// V1 hides /healthz/live, /healthz/ready and /healthcheck from its OpenAPI
-// document (apps/api/src/app.ts: `schema: { hide: true }` — liveness probes
-// aren't public API); V2 ports that with `detail: { hide: true }`
-// (health.routes.ts), which is what verification/golden/openapi's
-// migrated-route gate pins /healthz to against V1's captured document.
+// Liveness probes aren't public API: /healthz/live, /healthz/ready and
+// /healthcheck are hidden from the OpenAPI document via `detail: { hide: true }`
+// (health.routes.ts).
 test('/openapi.json hides both /healthz/live and /metrics', async () => {
   const { deps } = stubAppDeps();
 

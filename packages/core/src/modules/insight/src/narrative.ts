@@ -1,5 +1,3 @@
-// Ported from @openpanel/ai (dissolved into core — M4-005).
-//
 // Weekly-digest narrative: one short OpenAI call that turns a project's
 // week-over-week stats + notable insights into a friendly intro paragraph.
 // Structured output (a single `narrative` string) reuses the same reliable

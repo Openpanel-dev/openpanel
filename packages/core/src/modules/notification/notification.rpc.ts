@@ -3,10 +3,9 @@
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
 //
-// `list`/`rules` have no access check here either — same gap V1's router has
-// (ported verbatim, not fixed; see notification.service.ts's header for why
-// `deleteRule` and `createOrUpdateRule` re-check access against the *existing*
-// rule's project, not just the input's).
+// `list`/`rules` have no access check here either. `deleteRule` and
+// `createOrUpdateRule` re-check access against the *existing* rule's project,
+// not just the input's.
 //
 // The permission ladder itself is bound once, in auth.service.ts; every
 // procedure here reaches it through `ctx.services.auth`.

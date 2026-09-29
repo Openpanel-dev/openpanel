@@ -1,7 +1,7 @@
-// The two date helpers that read the report vocabulary. Split out of
-// `shared/date.ts` at M15-009: they take `IChartRange` / `IReportInput`, which
-// are this module's own constants, so a file in the bottom layer could not hold
-// them. The generic Date/Luxon math they build on stays in `shared/date.ts`.
+// The two date helpers that read the report vocabulary. They take
+// `IChartRange` / `IReportInput`, which are this module's own constants, so a
+// file in the bottom layer could not hold them. The generic Date/Luxon math
+// they build on stays in `shared/date.ts`.
 
 import { DateTime } from '@openpanel/shared';
 import type { IChartRange, IReportInput } from '../report.constants';

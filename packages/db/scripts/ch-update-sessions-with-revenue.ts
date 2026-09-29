@@ -1,6 +1,6 @@
 // Local fixture script: give a couple of sessions per hour a random revenue.
 //
-// Took it off `clix` (deleted with ADR-013 decision 21) and onto the `sql` tag.
+// Took it off `clix` (since deleted) and onto the `sql` tag.
 // Both statements bind every value as a `{pN:Type}` param instead of splicing
 // it into the text, which is also what removes the hand-rolled `'${id}'`
 // quoting the ALTER used to do.

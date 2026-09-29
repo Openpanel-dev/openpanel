@@ -8,8 +8,7 @@
 //
 // The permission ladder itself is bound once, in auth.service.ts; every
 // procedure here reaches it through `ctx.services.auth`. `createOverview` has
-// no in-handler check — the same gap V1's router has, ported verbatim, not
-// fixed.
+// no in-handler check — a known gap, not fixed.
 
 import { z } from 'zod';
 import {

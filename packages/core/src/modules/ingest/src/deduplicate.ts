@@ -1,12 +1,9 @@
-// Ported from apps/api/src/utils/deduplicate.ts. The web SDK can fire the same
-// event twice (pagehide + visibilitychange); a short-lived Redis lock keyed on
-// the whole payload collapses the pair.
+// The web SDK can fire the same event twice (pagehide + visibilitychange); a
+// short-lived Redis lock keyed on the whole payload collapses the pair.
 
 import { getLock } from '@openpanel/redis';
 import fastJsonStableHash from 'fast-json-stable-hash';
 
-// Live Redis key prefix — byte-identical to V1's, so a V1 and a V2 process
-// deduplicate against the same locks during the rollout.
 const DEDUPLICATE_KEY_PREFIX = 'fastify:deduplicate:';
 const DEDUPLICATE_TTL_MS = 100;
 

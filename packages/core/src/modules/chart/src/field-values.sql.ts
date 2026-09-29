@@ -50,7 +50,7 @@ export function eventFieldValuesQuery(input: {
   const lookbackDays = input.lookbackDays ?? EVENT_FIELD_VALUES_LOOKBACK_DAYS;
   const fromSessions = readsEventFieldValuesFromSessions(event, column);
   const table = fromSessions ? CHART_TABLE.sessions : CHART_TABLE.events;
-  // V1 only skipped the name clause for `*` — an empty event name filters on ''.
+  // Only `*` skips the name clause — an empty event name still filters on ''.
   const eventName =
     fromSessions || event === '*'
       ? sql.empty

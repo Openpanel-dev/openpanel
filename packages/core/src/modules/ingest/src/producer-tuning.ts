@@ -1,5 +1,4 @@
-// The Kafka producer's throughput knobs (turned on by ADR-023), resolved in one
-// place.
+// The Kafka producer's throughput knobs, resolved in one place.
 //
 // The three fields are required members of `KafkaConfig`
 // (`packages/core/src/config.ts`): the config loader always sets them, so there
@@ -15,7 +14,7 @@ export interface ResolvedProducerTuning {
   maxInFlight: number;
   batchSize: number;
   lingerMs: number;
-  /** False keeps the pre-ADR-023 path: one message per awaited `send()`. */
+  /** False keeps the unbatched path: one message per awaited `send()`. */
   batchingEnabled: boolean;
 }
 

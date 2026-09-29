@@ -1,8 +1,8 @@
 // Shape tests for the session module's fragments: every user value binds as a
 // `{pN:Type}` parameter (nothing is interpolated), the optional clauses toggle
-// exactly on V1's conditions, and `sql.id` rejects a column outside the
-// whitelist. Result-set equivalence against V1 was proven per query on the
-// local prod-copy (M7-001 report), not here — these tests run offline.
+// correctly, and `sql.id` rejects a column outside the whitelist. Result-set
+// equivalence was proven per query against the local prod-copy separately —
+// not here; these tests run offline.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';

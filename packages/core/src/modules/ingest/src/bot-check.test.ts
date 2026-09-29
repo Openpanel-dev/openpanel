@@ -1,6 +1,5 @@
 /**
- * Tests for checkIngestBot — the bot filter V1 runs as `isBotHook` on ingestion
- * (apps/api/src/hooks/is-bot.hook.test.ts, moved with M8-002).
+ * Tests for checkIngestBot — the bot filter run on ingestion.
  *
  * The key behaviour guarded here: requests authenticated with a client secret
  * (server-side SDKs) are never treated as bots, regardless of user agent. Bot

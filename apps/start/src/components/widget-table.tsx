@@ -80,22 +80,13 @@ function getResponsiveClass(priority: ColumnPriority): string {
   return '';
 }
 
-function getResponsiveStyle(
-  priority: ColumnPriority
-): React.CSSProperties | undefined {
-  if (priority === 1) {
-    return undefined;
-  }
-
-  const minWidth = (priority - 1) * 100 + 100;
-  return {} as React.CSSProperties;
-}
-
 /**
- * Generates container query class based on custom min-width.
+ * No class of its own: a `data-min-width` column is hidden and revealed by the
+ * `@container` rules generated above, keyed on that attribute. Returning
+ * `hidden` here would pin the column shut and defeat them.
  */
-function getMinWidthClass(minWidth: number): string {
-  return 'hidden';
+function getMinWidthClass(_minWidth: number): string {
+  return '';
 }
 
 export function WidgetTable<T>({

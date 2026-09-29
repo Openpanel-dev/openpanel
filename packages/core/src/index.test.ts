@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
 import * as core from './index';
 
-// The curated barrel is the package's real public API (ADR-008 acceptance
-// note): what apps/api needs to build AppDeps once and mount the three route
-// surfaces plus the tRPC router. A name missing here is a name apps/api cannot
-// reach — there is no `./*` wildcard to fall back on.
+// The curated barrel is the package's real public API: what apps/api needs to
+// build AppDeps once and mount the three route surfaces plus the tRPC router.
+// A name missing here is a name apps/api cannot reach — there is no `./*`
+// wildcard to fall back on.
 test('the mount surface is curated', () => {
   expect(core.appRouter).toBeDefined();
   expect(core.publicApiRoutes).toBeTypeOf('function');
@@ -19,9 +19,8 @@ test('the mount surface is curated', () => {
 });
 
 // ONE tRPC instance: `initTRPC` is called in rpc/base.ts and nowhere else. All
-// 28 routers now build on this barrel's builder, router factory and the two
-// injected middleware factories; V1's `@openpanel/trpc` used to reach them the
-// same way before it was deleted.
+// 28 routers build on this barrel's builder, router factory and the two
+// injected middleware factories.
 test('the rpc base is on the barrel, so there is one tRPC instance', () => {
   expect(core.procedure).toBeDefined();
   expect(core.middleware).toBeTypeOf('function');

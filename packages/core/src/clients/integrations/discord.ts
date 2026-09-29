@@ -1,5 +1,4 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005). Cred to
-// (@OpenStatusHQ)
+// Adapted from OpenStatusHQ's Discord notifier:
 // https://github.com/openstatusHQ/openstatus/blob/main/packages/notifications/discord/src/index.ts
 
 import {
@@ -9,9 +8,9 @@ import {
   type WebhookResult,
 } from './fetcher';
 
-// Lives here rather than in integration.constants.ts (ADR-022 A1: a client has
-// no need of another module's vocabulary). It is this transport's own probe
-// wording, and nothing outside this file reads it.
+// Lives here rather than in integration.constants.ts: a client has no need of
+// another module's vocabulary. It is this transport's own probe wording, and
+// nothing outside this file reads it.
 const DISCORD_TEST_NOTIFICATION_MESSAGE =
   '**🧪 Test [OpenPanel.dev](<https://openpanel.dev/>)**\nIf you can read this, your Discord webhook is functioning correctly!\n';
 

@@ -1,8 +1,7 @@
-// Subject moved to @openpanel/shared; the suite did not follow it. Nothing runs
-// a `test` script in packages/shared yet — the root `test` script names its
-// four workspaces explicitly and root package.json was outside M15-010's scope
-// — so moving this file would take it out of every gate. Move it when that line
-// can gain the filter.
+// Subject moved to @openpanel/shared; the suite did not follow it, since
+// nothing runs a `test` script in packages/shared yet and the root `test`
+// script names its four workspaces explicitly. Move this file once that
+// script can include packages/shared.
 import { describe, expect, test } from 'bun:test';
 import { getSafeJson, getSuperJson, setSuperJson } from '@openpanel/shared';
 

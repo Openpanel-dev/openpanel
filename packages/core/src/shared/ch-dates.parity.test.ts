@@ -1,4 +1,4 @@
-// Guards the second duplication M10-009 introduced: core owns its own copies of
+// Guards the second duplication this creates: core owns its own copies of
 // @openpanel/db's ClickHouse date helpers (see ch-dates.ts's header for why),
 // and a divergence would show up as silently wrong date literals in a query
 // rather than as a failing test.

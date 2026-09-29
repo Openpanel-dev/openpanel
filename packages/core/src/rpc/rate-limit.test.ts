@@ -31,7 +31,6 @@ describe('rate limit escalation', () => {
   });
 });
 
-// V1's limits, procedure for procedure (packages/trpc/src/routers/auth.ts).
 const V1_AUTH_LIMITS: Record<string, { max: number; windowMs: number }> = {
   signUpEmail: { max: 5, windowMs: 60_000 },
   signInEmail: { max: 3, windowMs: 30_000 },

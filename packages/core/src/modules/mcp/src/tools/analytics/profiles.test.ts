@@ -34,8 +34,8 @@ beforeAll(async () => {
   ({ findProfilesCore } = await import('../../../../profile/profile.service'));
 });
 
-// Since M7-002 the service hands ClickHouse a `sql` fragment: the text carries
-// `{pN:Type}` placeholders and every value travels in params.
+// The service hands ClickHouse a `sql` fragment: the text carries `{pN:Type}`
+// placeholders and every value travels in params.
 function captured(): { query: string; params: Record<string, unknown> } {
   const call = chQuery.mock.calls[0]?.[0];
   return {

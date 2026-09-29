@@ -103,10 +103,10 @@ test('clientAuth passes the allow list through to the authenticator', async () =
   });
 });
 
-// V1 has TWO 401 bodies and both are a wire contract: the allow-list routers
-// (/export, /insights, /import, /manage) answered with a JSON envelope
+// This has TWO 401 bodies and both are a wire contract: the allow-list
+// routers (/export, /insights, /import, /manage) answer with a JSON envelope
 // carrying the validator's own message, and the ingest routers (/track,
-// /event, /profile) answered with that message as plain text.
+// /event, /profile) answer with that message as plain text.
 test('clientAuth answers 401 with V1s allow-list body when nothing authenticates', async () => {
   result = REFUSAL;
 
@@ -152,8 +152,8 @@ test('session answers 401 when the cookie resolves to nothing', async () => {
   expect(response.status).toBe(401);
 });
 
-// Problem 2: a route is unauthenticated because it did not ask for a tier, not
-// because of which `.use` it was nested under.
+// A route is unauthenticated because it did not ask for a tier, not because of
+// which `.use` it was nested under.
 test('a route that requests no tier authenticates nobody', async () => {
   const response = await buildApp().handle(
     new Request('http://localhost/open')

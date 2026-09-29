@@ -140,27 +140,4 @@ export function PreviousDiffIndicatorPure({
       {diff.toFixed(1)}%
     </DeltaChip>
   );
-
-  // return (
-  //   <div
-  //     className={cn(
-  //       'flex items-center gap-1 font-mono font-medium',
-  //       size === 'lg' && 'gap-2',
-  //       className,
-  //     )}
-  //   >
-  //     <div
-  //       className={cn(
-  //         'flex size-2.5 items-center justify-center rounded-full',
-  //         variant,
-  //         size === 'lg' && 'size-8',
-  //         size === 'md' && 'size-6',
-  //         size === 'xs' && 'size-3',
-  //       )}
-  //     >
-  //       {renderIcon()}
-  //     </div>
-  //     {diff.toFixed(1)}%
-  //   </div>
-  // );
 }

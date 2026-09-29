@@ -1,5 +1,3 @@
-// Ported from @openpanel/integrations (dissolved into core — M4-005).
-
 import { safeFetch } from '@openpanel/shared/server';
 import type { WebhookFetcher } from '../../../clients/integrations/fetcher';
 

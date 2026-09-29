@@ -1,8 +1,8 @@
 /**
- * ADR-023's decision, expressed as a test: batching is ON at the shipped
- * defaults (size 25, linger 5 ms) and `maxInFlightRequests` stays 1. There are
- * no fallbacks left to test — the three knobs are required `KafkaConfig`
- * fields, so a config that omits one does not compile.
+ * Batching is ON at the shipped defaults (size 25, linger 5 ms) and
+ * `maxInFlightRequests` stays 1. There are no fallbacks left to test — the
+ * three knobs are required `KafkaConfig` fields, so a config that omits one
+ * does not compile.
  */
 
 import { describe, expect, test } from 'bun:test';

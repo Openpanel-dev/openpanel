@@ -5,8 +5,8 @@
 import { describe, expect, test } from 'bun:test';
 import { HTTP_RATE_LIMITS, limitFor } from './rate-limit';
 
-// apps/api/src/routes/*.router.ts on V1, and the published page for the
-// first three.
+// The published rate-limits page's numbers, for the first three entries;
+// `/mcp` is pinned here only.
 const V1_LIMITS = {
   '/manage/clients': { max: 20, windowMs: 10_000 },
   '/export/events': { max: 100, windowMs: 10_000 },

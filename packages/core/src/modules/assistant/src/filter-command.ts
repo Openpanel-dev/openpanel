@@ -2,7 +2,7 @@
 // reaches it through `ctx.services.assistant`.
 //
 // The agent app and its five tools are BUILT from the `deps` that procedure
-// already holds (R15) — importing this file constructs nothing, and the tool
+// already holds — importing this file constructs nothing, and the tool
 // handlers close over `deps` because `@better-agent/core`'s tool-handler
 // signature has no slot for them.
 import {
@@ -35,8 +35,7 @@ import {
 } from '../assistant.constants';
 import { resolveModel } from './providers';
 
-// Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
-// rather than import from a module.
+// Helper, not vocabulary — copy locally rather than import from a module.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {

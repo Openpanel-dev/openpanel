@@ -3,11 +3,6 @@
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
 //
-// V1's router has no compute-heavy or ClickHouse-touching logic to delegate (it
-// is Prisma CRUD + a BullMQ enqueue, unlike gsc/cohort), so
-// packages/trpc/src/routers/import.ts stays completely unmodified — there is
-// nothing here for it to delegate to.
-//
 // The per-project access ladder itself is bound once, in auth.service.ts; every
 // procedure here reaches it through `ctx.services.auth`.
 
@@ -116,7 +111,6 @@ export const importRouter = createTRPCRouter({
         level: 'write',
       });
 
-      // Only allow retry for failed imports
       if (importRecord.status !== 'failed') {
         throw new Error('Only failed imports can be retried');
       }

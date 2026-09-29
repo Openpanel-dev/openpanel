@@ -1,8 +1,7 @@
 /**
- * The producer's fatal-error classification, split out of `kafka.ts` with
- * M16-002's batching. Only these failures invalidate the idempotent producer's
- * PID/sequence state; everything else must be retried against the SAME producer
- * rather than silently rebuilding it.
+ * The producer's fatal-error classification. Only these failures invalidate
+ * the idempotent producer's PID/sequence state; everything else must be
+ * retried against the SAME producer rather than silently rebuilding it.
  */
 
 import { describe, expect, mock, test } from 'bun:test';

@@ -1,6 +1,6 @@
-// The Redis index the session buffer (packages/db/src/buffers/session-buffer.ts,
-// moves at P8) maintains and the reaper/vacuum walk. Redefined here exactly as
-// V1's reaper and vacuum redefine them — the buffer keeps its own copy and
+// The Redis index the session buffer
+// (packages/core/src/buffers/session-buffer.ts) maintains and the
+// reaper/vacuum walk. Redefined here — the buffer keeps its own copy and
 // importing it would construct the ClickHouse client at import time.
 
 /** Idle time after which a session is over; also the reaper's deadman default.

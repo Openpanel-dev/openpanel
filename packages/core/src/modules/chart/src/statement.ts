@@ -1,4 +1,4 @@
-// V1's `getChartSql` / `getAggregateChartSql`: the Postgres cohort lookups a
+// `getChartSql` / `getAggregateChartSql`: the Postgres cohort lookups a
 // chart needs, then the pure fragment builders in sql.ts. Lives beside them
 // (not in chart.service.ts) so the engine can import it without pulling the
 // service — which imports the engine — into a cycle.

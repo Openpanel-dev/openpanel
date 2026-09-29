@@ -3,10 +3,10 @@ import { queues } from '../jobs.registry';
 import { resolveJob } from './compat';
 import { wrap } from './envelope';
 
-// One test per legacy shape, from ADR-005's table. The data is exactly what a
-// V1 producer left in Redis; the assertion is the V2 (job name, payload) pair a
-// worker must see. Fixtures are shape-only — nothing here validates a payload,
-// and nothing in V1 did either.
+// One test per legacy shape. The data is exactly what a legacy producer left
+// in Redis; the assertion is the (job name, payload) pair a worker must see.
+// Fixtures are shape-only — nothing here validates a payload, and nothing in
+// the legacy producer did either.
 
 describe('sessions', () => {
   const payload = {
@@ -43,7 +43,7 @@ describe('sessions', () => {
 describe('cron', () => {
   // `payload: undefined` disappears through JSON, so what is actually stored
   // is `{"type":"salt"}` — the hook must resolve both spellings, and it
-  // resolves them to the same `null` a V2-enqueued cron job carries.
+  // resolves them to the same `null` an envelope-enqueued cron job carries.
   test('{type, payload:undefined} keys the job on the type', () => {
     expect(
       resolveJob(queues.cron, { name: 'salt', data: { type: 'salt' } })
@@ -131,7 +131,7 @@ describe('gsc', () => {
 });
 
 describe('cohortCompute', () => {
-  // The only V1 payload with no `type` discriminant, and the reason the
+  // The only legacy payload with no `type` discriminant, and the reason the
   // envelope test is `'payload' in data && 'meta' in data`.
   test('a bare {cohortId} resolves to the cohortCompute job', () => {
     expect(
@@ -173,8 +173,8 @@ describe('the envelope path', () => {
 });
 
 describe('unresolvable jobs', () => {
-  // V1's cron switch had no `default`: an unknown type completed having done
-  // nothing. V2 throws instead (ADR-005 risk 2).
+  // The legacy cron switch had no `default`: an unknown type completed having
+  // done nothing. This throws instead.
   test.each([
     ['sessions' as const, { nope: true }],
     ['cron' as const, { payload: { a: 1 } }],

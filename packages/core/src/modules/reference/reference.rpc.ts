@@ -7,8 +7,8 @@
 // requestId minted at the edge reaches the Postgres call.
 //
 // The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`. `create` has no access
-// check here either — same gap V1's router has (ported verbatim, not fixed).
+// procedure here reaches it through `ctx.services.auth`. `create` has no
+// access check here either — a known gap, not yet fixed.
 
 import { z } from 'zod';
 import {

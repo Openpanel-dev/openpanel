@@ -1,6 +1,5 @@
-// `onboarding` is this module's fragment of the ONE `cron` queue's jobs, spread
-// into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
-// (apps/worker/src/boot-cron.ts) — same shape as organization.jobs.ts.
+// `onboarding` is this module's fragment of the ONE `cron` queue's jobs,
+// spread into jobs.registry.ts — same shape as organization.jobs.ts.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

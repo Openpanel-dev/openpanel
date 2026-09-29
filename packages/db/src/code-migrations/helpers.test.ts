@@ -1,4 +1,3 @@
-// Ported from the redaction main #511 added to code-migrations/migrate.ts.
 import { describe, expect, it } from 'bun:test';
 import { redactConnectionUrls } from './helpers';
 

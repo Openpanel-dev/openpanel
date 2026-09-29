@@ -1,8 +1,8 @@
 /**
  * Unit tests for mergeGlobalFilters — the helper that combines report-level
  * global filters with each event series' own filters (AND semantics). Pure
- * function, no ClickHouse/Postgres needed. Test. M10-003 moved the helper
- * to./src/series.ts — see that file for why.
+ * function, no ClickHouse/Postgres needed. See ./src/series.ts for the
+ * helper itself.
  */
 import { describe, expect, it } from 'bun:test';
 import type { IChartEventFilter, IChartEventItem } from './report.constants';
