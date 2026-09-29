@@ -12,16 +12,9 @@ export function getPreviousMetric(
     return undefined;
   }
 
-  const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
-    1,
-  );
+  // Change relative to the previous period. The direction lives in `state`,
+  // so a drop from 100 to 50 is a 50% decrease, not 100%.
+  const diff = round(Math.abs((current - previous) / previous) * 100, 1);
 
   return {
     diff:
