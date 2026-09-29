@@ -34,15 +34,13 @@ function pushUrl(url: URL): void {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-function applyFilters(input: ApplyFiltersInput): {
-  applied: boolean;
-  applied_filters: ApplyFiltersInput;
-} {
-  if (typeof window === 'undefined') {
-    return { applied: false, applied_filters: input };
-  }
-  const url = new URL(window.location.href);
-
+// Each of these mutates a URL rather than navigating, so one command that
+// changes a range AND a filter results in one history entry and one round of
+// queries instead of two or three.
+function applyFiltersToUrl(
+  url: URL,
+  input: Omit<ApplyFiltersInput, 'range'> & { range?: string }
+): void {
   if (input.startDate && input.endDate) {
     url.searchParams.set('range', 'custom');
     url.searchParams.set('start', input.startDate);
@@ -56,7 +54,42 @@ function applyFilters(input: ApplyFiltersInput): {
   if (input.interval) {
     url.searchParams.set('overrideInterval', input.interval);
   }
+}
 
+function setPropertyFiltersOnUrl(
+  url: URL,
+  input: {
+    filters: (Omit<PropertyFilter, 'operator'> & { operator?: string })[];
+  }
+): void {
+  if (input.filters.length === 0) {
+    url.searchParams.delete('f');
+  } else {
+    url.searchParams.set('f', serializePropertyFilters(input.filters));
+  }
+}
+
+function setEventNamesFilterOnUrl(
+  url: URL,
+  input: SetEventNamesFilterInput
+): void {
+  if (input.eventNames.length === 0) {
+    url.searchParams.delete('events');
+  } else {
+    // nuqs `parseAsArrayOf(parseAsString)` defaults to comma-separated.
+    url.searchParams.set('events', input.eventNames.join(','));
+  }
+}
+
+function applyFilters(input: ApplyFiltersInput): {
+  applied: boolean;
+  applied_filters: ApplyFiltersInput;
+} {
+  if (typeof window === 'undefined') {
+    return { applied: false, applied_filters: input };
+  }
+  const url = new URL(window.location.href);
+  applyFiltersToUrl(url, input);
   pushUrl(url);
   return { applied: true, applied_filters: input };
 }
@@ -66,7 +99,9 @@ function applyFilters(input: ApplyFiltersInput): {
  * `name,operator,value1|value2`, joined by `;`. We URL-encode the
  * values to match the parser.
  */
-function serializePropertyFilters(filters: PropertyFilter[]): string {
+function serializePropertyFilters(
+  filters: (Omit<PropertyFilter, 'operator'> & { operator?: string })[]
+): string {
   return filters
     .map((f) => {
       const op = f.operator ?? 'is';
@@ -84,11 +119,7 @@ function setPropertyFilters(input: SetPropertyFiltersInput): {
     return { applied: false, count: 0 };
   }
   const url = new URL(window.location.href);
-  if (input.filters.length === 0) {
-    url.searchParams.delete('f');
-  } else {
-    url.searchParams.set('f', serializePropertyFilters(input.filters));
-  }
+  setPropertyFiltersOnUrl(url, input);
   pushUrl(url);
   return { applied: true, count: input.filters.length };
 }
@@ -101,12 +132,7 @@ function setEventNamesFilter(input: SetEventNamesFilterInput): {
     return { applied: false, count: 0 };
   }
   const url = new URL(window.location.href);
-  if (input.eventNames.length === 0) {
-    url.searchParams.delete('events');
-  } else {
-    // nuqs `parseAsArrayOf(parseAsString)` defaults to comma-separated.
-    url.searchParams.set('events', input.eventNames.join(','));
-  }
+  setEventNamesFilterOnUrl(url, input);
   pushUrl(url);
   return { applied: true, count: input.eventNames.length };
 }
@@ -118,3 +144,48 @@ export const chatToolHandlers: ChatClientToolHandlers = {
   set_event_names_filter: async (input) =>
     setEventNamesFilter(input as SetEventNamesFilterInput),
 };
+
+/**
+ * Applies every part of one filter command in a single navigation.
+ *
+ * The overview's AI command used to await the three handlers in turn, so a
+ * command like "last 30 days, mobile only" pushed two history entries and ran
+ * every overview query twice.
+ */
+export function applyFilterCommandToUrl(command: {
+  // `range` and `operator` are widened to `string` on purpose.
+  // `overview.runFilterCommand` validates against the canonical `zRange` and
+  // operator list, while the chat tool's own schemas in assistant.constants.ts
+  // hand-list subsets: they are missing `last24h` and `3m` for range, and
+  // `inCohort`/`notInCohort` for operator. Both values are written verbatim
+  // into search params that the overview's own parsers then validate, so the
+  // wider types are correct here — and they keep the drift visible instead of
+  // hiding it behind the cast the tool-handler map used to apply.
+  applyFilters?: (Omit<ApplyFiltersInput, 'range'> & { range?: string }) | null;
+  setPropertyFilters?: {
+    filters: (Omit<PropertyFilter, 'operator'> & { operator?: string })[];
+  } | null;
+  setEventNamesFilter?: SetEventNamesFilterInput | null;
+}): number {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+  const url = new URL(window.location.href);
+  let applied = 0;
+  if (command.applyFilters) {
+    applyFiltersToUrl(url, command.applyFilters);
+    applied += 1;
+  }
+  if (command.setPropertyFilters) {
+    setPropertyFiltersOnUrl(url, command.setPropertyFilters);
+    applied += 1;
+  }
+  if (command.setEventNamesFilter) {
+    setEventNamesFilterOnUrl(url, command.setEventNamesFilter);
+    applied += 1;
+  }
+  if (applied > 0) {
+    pushUrl(url);
+  }
+  return applied;
+}
