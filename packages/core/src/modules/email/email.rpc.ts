@@ -27,7 +27,7 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCAccessError, TRPCBadRequestError } from '../../rpc/errors';
-import { emailCategories } from './email.constants';
+import { emailCategories, zUpdateEmailPreferences } from './email.constants';
 
 export const emailRouter = createTRPCRouter({
   unsubscribe: publicProcedure
@@ -76,7 +76,7 @@ export const emailRouter = createTRPCRouter({
   }),
 
   updatePreferences: protectedProcedure
-    .input(z.object({ categories: z.record(z.string(), z.boolean()) }))
+    .input(zUpdateEmailPreferences)
     .mutation(async ({ input, ctx }) => {
       const email = ctx.session.user?.email;
       if (!email) {

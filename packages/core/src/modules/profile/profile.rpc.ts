@@ -22,6 +22,8 @@ import {
 import { PROFILE_VALUE_COLUMNS } from './src/sql';
 
 const DEFAULT_LIST_TAKE = 50;
+/** A list page, not an export. `/export/events` is the bulk path. */
+const MAX_LIST_TAKE = 1000;
 
 /**
  * `list` and `powerUsers` had no date filter at all, so their cost grew with
@@ -128,7 +130,12 @@ export const profileRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
-        take: z.number().default(DEFAULT_LIST_TAKE),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_TAKE)
+          .default(DEFAULT_LIST_TAKE),
         search: z.string().optional(),
         isExternal: z.boolean().optional(),
         filters: z.array(zChartEventFilter).default([]),
@@ -154,7 +161,12 @@ export const profileRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
-        take: z.number().default(DEFAULT_LIST_TAKE),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_TAKE)
+          .default(DEFAULT_LIST_TAKE),
         ...zProfileWindow,
       })
     )

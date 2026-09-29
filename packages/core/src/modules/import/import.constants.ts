@@ -120,15 +120,22 @@ export type IImportConfig =
   | IMixpanelImportConfig
   | IAmplitudeImportConfig;
 
-export const zCreateImport = z.object({
-  projectId: z.string().min(1),
-  provider: z.enum(['umami', 'plausible', 'mixpanel', 'amplitude']),
-  config: z.union([
-    zUmamiImportConfig,
-    zPlausibleImportConfig,
-    zMixpanelImportConfig,
-    zAmplitudeImportConfig,
-  ]),
-});
+export const zCreateImport = z
+  .object({
+    projectId: z.string().min(1),
+    provider: z.enum(['umami', 'plausible', 'mixpanel', 'amplitude']),
+    config: z.union([
+      zUmamiImportConfig,
+      zPlausibleImportConfig,
+      zMixpanelImportConfig,
+      zAmplitudeImportConfig,
+    ]),
+  })
+  // The service only ever reads `config.provider`, so a mismatched top-level
+  // `provider` was accepted and then silently ignored.
+  .refine((input) => input.provider === input.config.provider, {
+    path: ['provider'],
+    message: 'provider must match config.provider',
+  });
 
 export type ICreateImport = z.infer<typeof zCreateImport>;

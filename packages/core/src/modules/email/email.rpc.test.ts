@@ -8,6 +8,7 @@ import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
+import { zUpdateEmailPreferences } from './email.constants';
 import { emailRouter } from './email.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
@@ -53,4 +54,29 @@ test('unsubscribe rejects an invalid token before touching the database', async 
       token: 'not-a-real-token',
     })
   ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});
+
+// `updatePreferences` used to take `z.record(z.string(), z.boolean())`, so an
+// unknown key was written to `emailUnsubscribe` where nothing reads it. The
+// first cut of the fix used `z.record(z.enum(...))`, which in zod 4 is
+// EXHAUSTIVE — it rejected a single real toggle, which is what the form sends.
+// These pin both halves so that trap cannot come back.
+test('updatePreferences accepts a subset of real categories', () => {
+  expect(
+    zUpdateEmailPreferences.safeParse({ categories: { weekly_digest: true } })
+      .success
+  ).toBe(true);
+  expect(
+    zUpdateEmailPreferences.safeParse({
+      categories: { weekly_digest: true, onboarding: false },
+    }).success
+  ).toBe(true);
+});
+
+test('updatePreferences refuses a category that does not exist', () => {
+  expect(
+    zUpdateEmailPreferences.safeParse({
+      categories: { not_a_real_category: false },
+    }).success
+  ).toBe(false);
 });

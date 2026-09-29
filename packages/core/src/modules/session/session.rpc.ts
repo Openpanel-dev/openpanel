@@ -13,6 +13,8 @@ import {
 } from './session.service';
 
 const DEFAULT_LIST_TAKE = 50;
+/** A list page, not an export. `/export/events` is the bulk path. */
+const MAX_LIST_TAKE = 1000;
 
 export const sessionRouter = createTRPCRouter({
   list: protectedProcedure
@@ -25,7 +27,12 @@ export const sessionRouter = createTRPCRouter({
         startDate: z.date().optional(),
         endDate: z.date().optional(),
         search: z.string().optional(),
-        take: z.number().default(DEFAULT_LIST_TAKE),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_TAKE)
+          .default(DEFAULT_LIST_TAKE),
       })
     )
     .query(async ({ input, ctx }) => {

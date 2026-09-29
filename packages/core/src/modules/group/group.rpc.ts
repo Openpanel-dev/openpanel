@@ -25,6 +25,8 @@ import {
 } from './group.service';
 
 const DEFAULT_LIST_TAKE = 50;
+/** A list page, not an export. `/export/events` is the bulk path. */
+const MAX_LIST_TAKE = 1000;
 
 const zGroupRef = z.object({ id: z.string(), projectId: z.string() });
 
@@ -34,7 +36,12 @@ export const groupRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
-        take: z.number().default(DEFAULT_LIST_TAKE),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_TAKE)
+          .default(DEFAULT_LIST_TAKE),
         search: z.string().optional(),
         type: z.string().optional(),
       })
@@ -148,7 +155,12 @@ export const groupRouter = createTRPCRouter({
         projectId: z.string(),
         groupId: z.string(),
         cursor: z.number().optional(),
-        take: z.number().default(DEFAULT_LIST_TAKE),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_LIST_TAKE)
+          .default(DEFAULT_LIST_TAKE),
         search: z.string().optional(),
       })
     )

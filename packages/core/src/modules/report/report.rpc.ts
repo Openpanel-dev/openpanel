@@ -13,15 +13,20 @@ import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { zReport } from './report.constants';
 
+// Grid coordinates, so whole numbers inside the grid. A zero width or a
+// height in the tens of thousands is a client bug, not a layout.
+const GRID_MAX_COLUMNS = 12;
+const GRID_MAX_ROWS = 1000;
+const zGridSpan = z.number().int().min(1).max(GRID_MAX_COLUMNS);
 const zReportLayout = z.object({
-  x: z.number(),
-  y: z.number(),
-  w: z.number(),
-  h: z.number(),
-  minW: z.number().optional(),
-  minH: z.number().optional(),
-  maxW: z.number().optional(),
-  maxH: z.number().optional(),
+  x: z.number().int().min(0).max(GRID_MAX_COLUMNS),
+  y: z.number().int().min(0).max(GRID_MAX_ROWS),
+  w: zGridSpan,
+  h: z.number().int().min(1).max(GRID_MAX_ROWS),
+  minW: zGridSpan.optional(),
+  minH: z.number().int().min(1).max(GRID_MAX_ROWS).optional(),
+  maxW: zGridSpan.optional(),
+  maxH: z.number().int().min(1).max(GRID_MAX_ROWS).optional(),
 });
 
 export const reportRouter = createTRPCRouter({

@@ -3,6 +3,7 @@
 
 import { toDots } from '@openpanel/shared';
 import { chQuery } from '../../ch-query';
+import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
 import { formatClickhouseDate, toNullIfDefaultMinDate } from './src/dates';
@@ -198,6 +199,13 @@ export async function createGroup(
   deps: ServiceDeps,
   input: IServiceUpsertGroup
 ) {
+  // `upsertGroup` merges onto an existing row, so without this a create
+  // silently overwrote a group instead of telling the caller it was taken —
+  // the inverse of the guard updateGroup and deleteGroup already carry.
+  const existing = await getGroupById(deps, input.id, input.projectId);
+  if (existing) {
+    throw new TRPCBadRequestError(`Group ${input.id} already exists`);
+  }
   await upsertGroup(deps, input);
   return getGroupById(deps, input.id, input.projectId);
 }
