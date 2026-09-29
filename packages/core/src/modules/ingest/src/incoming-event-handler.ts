@@ -412,8 +412,11 @@ async function ingestIncomingEvent(
 
     const payload = {
       ...baseEvent,
-      deviceId: session?.device_id ?? '',
-      sessionId: session?.id ?? '',
+      // Falls back to the ids the producer already resolved, not ''. /track
+      // returns these two in its response, so storing '' made the response
+      // describe a row that does not exist.
+      deviceId: session?.device_id || deviceId,
+      sessionId: session?.id || sessionId,
       referrer: session?.referrer ?? undefined,
       referrerName: session?.referrer_name ?? undefined,
       referrerType: session?.referrer_type ?? undefined,

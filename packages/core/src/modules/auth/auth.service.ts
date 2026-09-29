@@ -282,6 +282,7 @@ import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import {
   TRPCAccessError,
+  TRPCBadRequestError,
   TRPCForbiddenError,
   TRPCNotFoundError,
 } from '../../rpc/errors';
@@ -387,6 +388,19 @@ export function startOAuthSignIn(
   input: StartOAuthSignInInput,
   setCookie: ISetCookie
 ): StartOAuthSignInResult {
+  // Without this an unconfigured provider still returned a URL, with an empty
+  // `client_id` in it — the caller only found out when the provider rejected
+  // the redirect. `providers` reports the same test, so the two agree.
+  const configured = getConfiguredProviders(deps.config);
+  if (
+    (input.provider === 'github' && !configured.github) ||
+    (input.provider === 'google' && !configured.google)
+  ) {
+    throw new TRPCBadRequestError(
+      `${input.provider} sign-in is not configured on this deployment`
+    );
+  }
+
   if (input.inviteId) {
     setCookie('inviteId', input.inviteId, { maxAge: 60 * 10 });
   }

@@ -176,11 +176,18 @@ const project = {
     async ({
       where,
     }: {
-      where?: { id?: { in: string[] }; deleteAt?: { lte: Date } };
+      where?: {
+        id?: { in: string[] };
+        deleteAt?: { lte: Date };
+        organizationId?: string;
+      };
     } = {}) => {
       let rows = [...projectStore.values()];
       if (where?.id) {
         rows = rows.filter((p) => where.id?.in.includes(p.id));
+      }
+      if (where?.organizationId) {
+        rows = rows.filter((p) => p.organizationId === where.organizationId);
       }
       if (where?.deleteAt) {
         rows = rows.filter((p) => p.deleteAt && p.deleteAt <= new Date());
@@ -609,6 +616,18 @@ test('removeOrganizationMember deletes the member and their project access', asy
 });
 
 test('updateOrganizationMemberAccess replaces project access with the given grants', async () => {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+  });
+  projectStore.set('proj_new', {
+    id: 'proj_new',
+    organizationId: 'org_1',
+    deleteAt: null,
+  });
   projectAccessStore.set('access_old', {
     id: 'access_old',
     userId: 'user_1',
@@ -626,6 +645,52 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
   const remaining = [...projectAccessStore.values()];
   expect(remaining).toHaveLength(1);
   expect(remaining[0]).toMatchObject({ projectId: 'proj_new', level: 'write' });
+});
+
+// These two guards did not exist: access rows were written for a user who was
+// never confirmed to be a member, naming a project that need not belong to the
+// organization the grant is scoped to.
+test('updateOrganizationMemberAccess refuses a user who is not a member', async () => {
+  projectStore.set('proj_new', {
+    id: 'proj_new',
+    organizationId: 'org_1',
+    deleteAt: null,
+  });
+
+  await expect(
+    subject.updateOrganizationMemberAccess(deps, {
+      organizationId: 'org_1',
+      targetUserId: 'not_a_member',
+      access: [{ projectId: 'proj_new', level: 'write' }],
+    })
+  ).rejects.toThrow(/not a member/i);
+
+  expect([...projectAccessStore.values()]).toHaveLength(0);
+});
+
+test('updateOrganizationMemberAccess refuses a project from another organization', async () => {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+  });
+  projectStore.set('proj_elsewhere', {
+    id: 'proj_elsewhere',
+    organizationId: 'org_2',
+    deleteAt: null,
+  });
+
+  await expect(
+    subject.updateOrganizationMemberAccess(deps, {
+      organizationId: 'org_1',
+      targetUserId: 'user_1',
+      access: [{ projectId: 'proj_elsewhere', level: 'write' }],
+    })
+  ).rejects.toThrow(/not in this organization/i);
+
+  expect([...projectAccessStore.values()]).toHaveLength(0);
 });
 
 test('inviteUserToOrganization refuses when the email is already a member', async () => {

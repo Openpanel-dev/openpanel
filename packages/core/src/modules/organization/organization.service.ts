@@ -17,7 +17,7 @@ import { DateTime, generateSecureId } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { sendEmail } from '../../clients/email';
-import { TRPCBadRequestError } from '../../rpc/errors';
+import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import {
   getOrganizationAccess,
@@ -142,9 +142,16 @@ export async function getInviteById(deps: ServiceDeps, inviteId: string) {
     },
   });
 
+  // Spreading a null result produced `{isExpired: undefined}` — a TRUTHY
+  // object — so the onboarding page rendered its invitation banner for a
+  // bogus id, with the organization name blank.
+  if (!res) {
+    throw new TRPCNotFoundError('Invite not found');
+  }
+
   return {
     ...res,
-    isExpired: res?.expiresAt && res.expiresAt < new Date(),
+    isExpired: res.expiresAt < new Date(),
   };
 }
 
@@ -750,6 +757,12 @@ export async function inviteUserToOrganization(
     );
   }
 
+  await assertProjectsInOrganization(
+    deps,
+    input.organizationId,
+    input.access ?? []
+  );
+
   const invite = await db.invite.create({
     data: {
       id: generateSecureId('invite'),
@@ -857,6 +870,33 @@ export async function removeOrganizationMember(
   ]);
 }
 
+/**
+ * A grant may only name a project inside the organization it is granted in.
+ * Without this an admin of one organization could write projectAccess rows
+ * pointing at another organization's projects.
+ */
+async function assertProjectsInOrganization(
+  deps: ServiceDeps,
+  organizationId: string,
+  access: { projectId: string }[]
+) {
+  const projectIds = [...new Set(access.map((grant) => grant.projectId))];
+  if (projectIds.length === 0) {
+    return;
+  }
+  const found = await deps.db.project.findMany({
+    where: { id: { in: projectIds }, organizationId },
+    select: { id: true },
+  });
+  if (found.length !== projectIds.length) {
+    const known = new Set(found.map((project) => project.id));
+    const unknown = projectIds.filter((id) => !known.has(id));
+    throw new TRPCBadRequestError(
+      `Project not in this organization: ${unknown.join(', ')}`
+    );
+  }
+}
+
 export async function updateOrganizationMemberAccess(
   deps: ServiceDeps,
   input: {
@@ -866,6 +906,21 @@ export async function updateOrganizationMemberAccess(
   }
 ) {
   const db = deps.db;
+
+  // The rows below are keyed on a user this never confirmed was a member, so
+  // an unknown id silently produced access rows for a non-member.
+  const member = await db.member.findFirst({
+    where: {
+      userId: input.targetUserId,
+      organizationId: input.organizationId,
+    },
+    select: { id: true },
+  });
+  if (!member) {
+    throw new TRPCNotFoundError('User is not a member of this organization');
+  }
+  await assertProjectsInOrganization(deps, input.organizationId, input.access);
+
   return db.$transaction([
     db.projectAccess.deleteMany({
       where: {
