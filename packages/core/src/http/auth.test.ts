@@ -107,7 +107,7 @@ test('clientAuth passes the allow list through to the authenticator', async () =
 // routers (/export, /insights, /import, /manage) answer with a JSON envelope
 // carrying the validator's own message, and the ingest routers (/track,
 // /event, /profile) answer with that message as plain text.
-test('clientAuth answers 401 with V1s allow-list body when nothing authenticates', async () => {
+test('clientAuth answers 401 with the allow-list body when nothing authenticates', async () => {
   result = REFUSAL;
 
   const response = await buildApp().handle(
@@ -121,7 +121,7 @@ test('clientAuth answers 401 with V1s allow-list body when nothing authenticates
   });
 });
 
-test('clientAuth answers 401 with V1s ingest body, which is plain text', async () => {
+test('clientAuth answers 401 with the ingest body, which is plain text', async () => {
   result = { ok: false, ingest: true, message: 'Missing client id' };
 
   const response = await buildApp().handle(

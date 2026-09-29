@@ -46,7 +46,7 @@ describe('clientIpHook', () => {
     .use(clientIpHook(testCoreConfig().ipHeaders))
     .get('/', ({ clientIp, clientIpHeader }) => ({ clientIp, clientIpHeader }));
 
-  test('prefers the client-forwarded header, as V1 does', async () => {
+  test('prefers the client-forwarded header', async () => {
     const response = await app.handle(
       new Request('http://localhost/', {
         headers: {

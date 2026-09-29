@@ -354,7 +354,7 @@ async function main() {
     );
     check(
       stored !== null && !stored.includes('"meta"'),
-      `${legacyCase.queue}: stored bytes carry no envelope (V1 shape)`
+      `${legacyCase.queue}: stored bytes carry no envelope (legacy shape)`
     );
   }
 
@@ -452,7 +452,7 @@ async function main() {
       run !== undefined &&
         JSON.stringify(run.payload) ===
           JSON.stringify(legacyCase.expectPayload),
-      `${legacyCase.queue}: resolved to '${legacyCase.expectJob}' with V1's payload`
+      `${legacyCase.queue}: resolved to '${legacyCase.expectJob}' with the legacy payload`
     );
   }
 
@@ -472,7 +472,7 @@ async function main() {
   );
   check(
     realFlush !== undefined,
-    "cron: the REAL flushEvents handler ran to completion off V1's `{type:'flushEvents'}`"
+    "cron: the REAL flushEvents handler ran to completion off the legacy `{type:'flushEvents'}`"
   );
 
   const envelopeLine = logLines.find(

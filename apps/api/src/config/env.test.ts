@@ -52,7 +52,7 @@ describe('ENABLED_QUEUES', () => {
     ).toEqual(['sessions', 'cron']);
   });
 
-  it('rejects an unknown token instead of silently idling (V1 ignored it)', () => {
+  it('rejects an unknown token instead of silently idling', () => {
     expect(() =>
       loadConfig({ ...base, ENABLED_QUEUES: 'sessions,nope' })
     ).toThrow(/unknown queue "nope"/);
@@ -66,7 +66,7 @@ describe('ENABLED_QUEUES', () => {
 });
 
 describe('<QUEUE>_CONCURRENCY', () => {
-  it('keeps V1 key derivation — cohortCompute reads COHORTCOMPUTE_CONCURRENCY', () => {
+  it('keeps the env key derivation — cohortCompute reads COHORTCOMPUTE_CONCURRENCY', () => {
     expect(concurrencyEnvKey('cohortCompute')).toBe(
       'COHORTCOMPUTE_CONCURRENCY'
     );
@@ -78,7 +78,7 @@ describe('<QUEUE>_CONCURRENCY', () => {
     expect(concurrencyOverride(loadConfig(base), 'sessions')).toBeUndefined();
   });
 
-  it('ignores a non-numeric or non-positive value, as V1 did', () => {
+  it('ignores a non-numeric or non-positive value', () => {
     expect(
       concurrencyOverride(
         loadConfig({ ...base, SESSIONS_CONCURRENCY: 'lots' }),
@@ -114,7 +114,7 @@ describe('the boot flags main.ts branches on', () => {
     ).toBe(false);
   });
 
-  it('QUEUE_NAMESPACE and QUEUE_CLUSTER default to off, so queue keys are V1s', () => {
+  it('QUEUE_NAMESPACE and QUEUE_CLUSTER default to off, so queue keys stay unprefixed', () => {
     const config = loadConfig(base);
     expect(config.QUEUE_CLUSTER).toBe(false);
     expect(config.QUEUE_NAMESPACE).toBeUndefined();

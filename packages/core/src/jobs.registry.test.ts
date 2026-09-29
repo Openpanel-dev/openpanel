@@ -29,7 +29,7 @@ const GOLDEN_SCHEDULER_IDS = [
 
 // Retry and retention values kept as-is, defects included — five queues
 // that never retry, four with unbounded failed sets.
-const V1_DEFAULTS = {
+const PINNED_DEFAULTS = {
   sessions: { removeOnComplete: true },
   cron: { removeOnComplete: 10 },
   notification: { removeOnComplete: 10 },
@@ -44,7 +44,7 @@ const V1_DEFAULTS = {
   },
 } as const;
 
-const V1_CONCURRENCY = {
+const PINNED_CONCURRENCY = {
   sessions: 1,
   cron: 1,
   notification: 1,
@@ -70,14 +70,14 @@ test('the registry declares the seven queues, keyed by their Redis names', () =>
   }
 });
 
-test('every queue carries V1 retry and retention values unchanged', () => {
-  for (const [key, defaults] of Object.entries(V1_DEFAULTS)) {
+test('every queue keeps its pinned retry and retention values', () => {
+  for (const [key, defaults] of Object.entries(PINNED_DEFAULTS)) {
     expect(queues[key as keyof typeof queues].defaults).toEqual(defaults);
   }
 });
 
-test('every queue carries its V1 default concurrency', () => {
-  for (const [key, concurrency] of Object.entries(V1_CONCURRENCY)) {
+test('every queue keeps its pinned default concurrency', () => {
+  for (const [key, concurrency] of Object.entries(PINNED_CONCURRENCY)) {
     expect(queues[key as keyof typeof queues].worker?.concurrency).toBe(
       concurrency
     );

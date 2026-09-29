@@ -33,7 +33,7 @@ describe('Logger structural interface', () => {
 });
 
 describe('requestId constants', () => {
-  test('the log field is requestId, not V1s reqId', () => {
+  test('the log field is requestId, not reqId', () => {
     expect(REQUEST_ID_LOG_FIELD).toBe('requestId');
   });
 

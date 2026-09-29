@@ -31,7 +31,7 @@ describe('rate limit escalation', () => {
   });
 });
 
-const V1_AUTH_LIMITS: Record<string, { max: number; windowMs: number }> = {
+const AUTH_LIMITS: Record<string, { max: number; windowMs: number }> = {
   signUpEmail: { max: 5, windowMs: 60_000 },
   signInEmail: { max: 3, windowMs: 30_000 },
   signInTotp: { max: 5, windowMs: 60_000 },
@@ -43,14 +43,14 @@ const V1_AUTH_LIMITS: Record<string, { max: number; windowMs: number }> = {
   signInShare: { max: 3, windowMs: 30_000 },
 };
 
-describe("the auth router mounts V1's limits", () => {
+describe('the auth router mounts the documented limits', () => {
   const source = readFileSync(
     new URL('../modules/auth/auth.rpc.ts', import.meta.url),
     'utf8'
   );
 
-  test("every throttled procedure still declares V1's numbers", () => {
-    for (const [name, limit] of Object.entries(V1_AUTH_LIMITS)) {
+  test('every throttled procedure still declares those numbers', () => {
+    for (const [name, limit] of Object.entries(AUTH_LIMITS)) {
       const declaration = new RegExp(
         `${name}: (?:public|protected)Procedure\\s*\\n\\s*\\.use\\(\\s*rateLimit\\(\\{ max: (\\d+), windowMs: ([\\d_]+) \\}\\)\\s*\\)`
       ).exec(source);

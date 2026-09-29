@@ -134,7 +134,7 @@ test('cohortRefresh fans out one enqueueCompute per non-static cohort', async ()
 // Byte-identity with the id/cadence schedulers.test.ts's golden snapshot
 // pins. The cadence now lives on the job itself, so this reads it straight
 // off the registry.
-test('the cohort cron fragment carries V1 id and cadence unchanged', () => {
+test('the cohort cron fragment keeps its scheduler id and cadence', () => {
   expect(queues.cron.jobs.cohortRefresh.cron).toEqual({
     pattern: '*/30 * * * *',
   });

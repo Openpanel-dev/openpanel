@@ -972,9 +972,9 @@ export interface Config {
    * it is handed.
    */
   INGEST_DUPLICATE_MARKER_TTL_MS: number;
-  /** The CORS delegator's origin allowlist, in V1's own order. */
+  /** The CORS delegator's origin allowlist, order-sensitive. */
   dashboardOrigins: string[];
-  /** V1's `ENABLE_VERBOSE_LOGGING`, already split. */
+  /** `ENABLE_VERBOSE_LOGGING`, already split. */
   verboseClientIds: string[];
   /**
    * `Bun.serve`'s listen options. No `hostname` unless API_HOST says one:

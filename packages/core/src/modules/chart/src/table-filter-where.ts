@@ -84,8 +84,8 @@ const NON_INTEGER_LITERAL_TYPE = 'Float64';
 const INTEGER_LITERAL_TEXT = /^-?\d+$/;
 
 /**
- * The integer ClickHouse would parse out of the text V1 emitted, or null when
- * that text is not an integer literal — a fraction, or a magnitude large
+ * The integer ClickHouse would parse out of the number's text form, or null
+ * when that text is not an integer literal — a fraction, or a magnitude large
  * enough that `String` switches to exponent notation.
  */
 function integerLiteralDigits(value: number): bigint | null {
@@ -94,9 +94,9 @@ function integerLiteralDigits(value: number): bigint | null {
 }
 
 /**
- * V1 inlined a numeric filter value and let ClickHouse infer the literal's
- * type; a bound param has to declare one, so declare the one V1's literal
- * had. Declaring `Float64` for every number would bind a *different constant*
+ * An inlined numeric filter value lets ClickHouse infer the literal's type;
+ * a bound param has to declare one, so declare the type that literal would
+ * have had. Declaring `Float64` for every number would bind a *different constant*
  * — visible wherever the comparand's type takes part in type resolution, and
  * in the `NO_COMMON_TYPE` message when a numeric filter lands on a String
  * property (the proof's two error cases).

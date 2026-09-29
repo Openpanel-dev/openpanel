@@ -44,7 +44,7 @@ test('a stale consumer heartbeat is 503 with the numbers that explain it', () =>
   });
 });
 
-test('exactly at the threshold is still ready — V1 compared with >', () => {
+test('exactly at the threshold is still ready — the comparison is >', () => {
   expect(
     evaluateReadiness({
       shuttingDown: false,

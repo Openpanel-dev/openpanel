@@ -799,8 +799,8 @@ export async function requestPasswordReset(
     email: input.email,
     provider: 'email',
   });
-  // Deliberately not found-vs-found: V1 always returns `true` here so the
-  // endpoint cannot be used to enumerate registered emails.
+  // Deliberately not found-vs-found: always `true`, so the endpoint cannot be
+  // used to enumerate registered emails.
   if (!user?.account.id) {
     return true;
   }

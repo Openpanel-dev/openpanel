@@ -12,7 +12,7 @@ const SOURCE = readFileSync(
   'utf8'
 );
 
-describe("tools routes keep V1's public paths", () => {
+describe('tools routes keep their public paths', () => {
   test('both routes are registered under /tools', () => {
     expect(SOURCE).toContain("'/tools/site-checker'");
     expect(SOURCE).toContain("'/tools/ip-lookup'");

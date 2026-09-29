@@ -129,7 +129,7 @@ test('POST /profile/increment passes value through; /decrement negates it', asyn
   ]);
 });
 
-test('adjust results map to V1 status codes and bodies', async () => {
+test('adjust results map to the documented status codes and bodies', async () => {
   const body = { profileId: 'prof-1', property: 'visits', value: 1 };
 
   adjustResult = { status: 'not-found' };

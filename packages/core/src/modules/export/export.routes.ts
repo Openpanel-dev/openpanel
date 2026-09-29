@@ -171,8 +171,7 @@ const zExportCharts = zReport
 
 export const exportRoutes = defineRoutes((app) =>
   app
-    // V1's `preValidation` coercion hook, LOCAL to this surface (see
-    // http/query.ts).
+    // Query-string coercion, LOCAL to this surface (see http/query.ts).
     .onTransform(parseQueryStringTransform)
     .get(
       '/export/events',

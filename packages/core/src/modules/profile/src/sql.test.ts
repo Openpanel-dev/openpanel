@@ -162,7 +162,7 @@ describe('profileListQuery', () => {
     });
   });
 
-  test('search + isExternal + filters + offset all splice in V1 order', () => {
+  test('search + isExternal + filters + offset all splice in a stable order', () => {
     const { query, query_params } = profileListQuery({
       projectId: PROJECT_ID,
       take: 50,
@@ -291,7 +291,7 @@ describe('findProfilesQuery', () => {
 });
 
 describe('project-wide vocab', () => {
-  test("property keys keeps V1's is_external guard and no FINAL", () => {
+  test('property keys keeps the is_external guard and no FINAL', () => {
     const { query, query_params } =
       profilePropertyKeysQuery(PROJECT_ID).toStatement();
 

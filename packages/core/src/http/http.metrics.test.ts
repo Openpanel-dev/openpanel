@@ -23,7 +23,7 @@ beforeEach(() => {
   registry.resetMetrics();
 });
 
-test('both series exist on the ONE registry, with V1s names and labels', () => {
+test('both series exist on the ONE registry, with the names dashboards query', () => {
   const registered = registry.getMetricsAsArray().map((metric) => metric.name);
   expect(registered).toContain(HISTOGRAM);
   expect(registered).toContain(SUMMARY);

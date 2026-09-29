@@ -145,7 +145,7 @@ describe('createSessionEnd', () => {
 });
 
 describe('enqueue shape', () => {
-  test('job id and options match V1 (sessionEnd:v2:<id>, 3 exponential retries)', () => {
+  test('job id and options are pinned (sessionEnd:v2:<id>, 3 exponential retries)', () => {
     expect(getSessionEndJobId('sess-1')).toBe('sessionEnd:v2:sess-1');
     expect(sessionEndEnqueueOptions('sess-1')).toEqual({
       jobId: 'sessionEnd:v2:sess-1',

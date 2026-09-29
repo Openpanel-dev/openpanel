@@ -7,7 +7,7 @@ import { HTTP_RATE_LIMITS, limitFor } from './rate-limit';
 
 // The published rate-limits page's numbers, for the first three entries;
 // `/mcp` is pinned here only.
-const V1_LIMITS = {
+const PUBLISHED_LIMITS = {
   '/manage/clients': { max: 20, windowMs: 10_000 },
   '/export/events': { max: 100, windowMs: 10_000 },
   '/insights/acme-web/overview': { max: 100, windowMs: 10_000 },
@@ -15,8 +15,8 @@ const V1_LIMITS = {
 } as const;
 
 describe('HTTP rate limits', () => {
-  test("each documented surface keeps V1's numbers", () => {
-    for (const [path, expected] of Object.entries(V1_LIMITS)) {
+  test('each documented surface keeps its published numbers', () => {
+    for (const [path, expected] of Object.entries(PUBLISHED_LIMITS)) {
       const limit = limitFor(path);
       expect([path, limit?.max, limit?.windowMs]).toEqual([
         path,

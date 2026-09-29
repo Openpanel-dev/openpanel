@@ -166,7 +166,7 @@ describe('the derived HttpCtx', () => {
     expect(resolveSession).toHaveBeenCalledTimes(1);
   });
 
-  test('writes Set-Cookie through Elysia with V1 attributes', async () => {
+  test('writes Set-Cookie through Elysia with the expected attributes', async () => {
     const { app } = build();
 
     const response = await app.handle(

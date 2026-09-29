@@ -125,7 +125,7 @@ test('onboarding does not log when the cron is a self-hosted no-op', async () =>
 
 // The cadence lives on the job itself, so this reads it straight off the
 // registry.
-test('the onboarding cron fragment carries V1 id and cadence unchanged', () => {
+test('the onboarding cron fragment keeps its scheduler id and cadence', () => {
   expect(queues.cron.jobs.onboarding.cron).toEqual({
     pattern: '0 * * * *',
   });

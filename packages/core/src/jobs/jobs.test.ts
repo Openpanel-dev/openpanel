@@ -76,7 +76,7 @@ test('queue defaults carry retention as {age, count}, which cohortCompute needs'
   });
 });
 
-test('all three V1 idempotency conventions survive the option mapping', () => {
+test('all three legacy idempotency conventions survive the option mapping', () => {
   // sessions and insights key on jobId; cohort keys on deduplication and must
   // NOT be normalised onto jobId (cohort.service.ts records the deadlock).
   expect(toJobsOptions(undefined, { jobId: 'sessionEnd:v2:ses_1' })).toEqual({

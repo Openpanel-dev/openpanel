@@ -35,7 +35,7 @@ function build(options: Partial<Parameters<typeof makeTrpcContext>[2]> = {}) {
   };
 }
 
-test('setCookie writes through resHeaders with V1 option precedence', async () => {
+test('setCookie writes through resHeaders with the documented option precedence', async () => {
   const { trpcCtx, resHeaders } = build();
 
   // Only maxAge and signed are caller-controlled; COOKIE_OPTIONS is spread

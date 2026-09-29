@@ -89,7 +89,7 @@ test('TOO_MANY_REQUESTS logs at warn as "trpc rate limited"', () => {
   expect(logger.lines[0]?.message).toBe('trpc rate limited');
 });
 
-test('everything else logs at error as "trpc error", with the V1 fields', () => {
+test('everything else logs at error as "trpc error", with the expected fields', () => {
   const logger = capturingLogger();
   const failure = report();
 

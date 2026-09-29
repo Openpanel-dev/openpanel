@@ -106,7 +106,7 @@ describe('eventListQuery', () => {
     expect(Math.abs(anchor.getTime() - before)).toBeLessThan(5000);
   });
 
-  test('every scope condition binds in V1 order and none interpolates', () => {
+  test('every scope condition binds in a stable order and none interpolates', () => {
     const { query, query_params } = eventListQuery({
       ...minimal,
       profileId: HOSTILE,
@@ -325,7 +325,7 @@ describe('queryEventsQuery', () => {
     expect(query.indexOf('ORDER BY')).toBeLessThan(query.indexOf('LIMIT'));
   });
 
-  test('equality columns follow V1 order regardless of input order; keys bind too', () => {
+  test('equality columns follow a stable order regardless of input order; keys bind too', () => {
     const { query, query_params } = queryEventsQuery({
       projectId: PROJECT_ID,
       sessionId: 'sess-1',

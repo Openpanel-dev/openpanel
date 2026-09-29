@@ -111,7 +111,7 @@ describe('sessionListQuery', () => {
     });
   });
 
-  test('hasSessionListLookback mirrors V1: off only for a date-bounded first page', () => {
+  test('hasSessionListLookback is off only for a date-bounded first page', () => {
     const range = { startDate: new Date(), endDate: new Date() };
     expect(hasSessionListLookback({})).toBe(true);
     expect(hasSessionListLookback({ cursor: new Date(), ...range })).toBe(true);
@@ -159,7 +159,7 @@ describe('replay and byId', () => {
     });
   });
 
-  test('sessionByIdQuery prewheres the id and keeps sign under FINAL; sessionHasReplayQuery keeps V1 text', () => {
+  test('sessionByIdQuery prewheres the id and keeps sign under FINAL; sessionHasReplayQuery text is pinned', () => {
     const byId = sessionByIdQuery({
       sessionId: 'sess-1',
       projectId: PROJECT_ID,
@@ -205,7 +205,7 @@ describe('sessionDistinctValuesQuery', () => {
 });
 
 describe('querySessionsQuery', () => {
-  test('equality filters follow V1 clause order, dates bind as Strings', () => {
+  test('equality filters follow a stable clause order, dates bind as Strings', () => {
     const { query, query_params } = querySessionsQuery({
       projectId: PROJECT_ID,
       startDate: '2026-07-01 00:00:00',

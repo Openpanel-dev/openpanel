@@ -17,7 +17,7 @@ function fakeQueue(name: string, value: number): CountableQueue {
   };
 }
 
-test('five gauges per queue, named from the Redis key exactly as V1 named them', () => {
+test('five gauges per queue, named from the Redis key so dashboards keep working', () => {
   const register = new client.Registry();
   registerQueueMetrics(
     Object.values(queues).map((definition) => fakeQueue(definition.name, 0)),
