@@ -5,6 +5,7 @@
 // the schema — it is not a consumer.
 
 import { z } from 'zod';
+import { MAX_EMAIL, MAX_ID, MAX_NAME } from '../../shared/limits.constants';
 
 /**
  * A per-project grant. `read` means exactly that: the member can look at the
@@ -19,8 +20,8 @@ export const zProjectAccessGrant = z.object({
 export type IProjectAccessGrant = z.infer<typeof zProjectAccessGrant>;
 
 export const zInviteUser = z.object({
-  email: z.string().email(),
-  organizationId: z.string(),
+  email: z.string().max(MAX_EMAIL).email(),
+  organizationId: z.string().max(MAX_ID),
   role: z.enum(['org:admin', 'org:member']),
   access: z.array(zProjectAccessGrant),
 });
@@ -59,7 +60,7 @@ export const zTimezone = z
   .transform(canonicalTimezone);
 
 export const zEditOrganization = z.object({
-  id: z.string().min(2),
-  name: z.string().min(2),
+  id: z.string().min(2).max(MAX_ID),
+  name: z.string().trim().min(2).max(MAX_NAME),
   timezone: zTimezone,
 });

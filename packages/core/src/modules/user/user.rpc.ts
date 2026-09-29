@@ -10,6 +10,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { MAX_NAME } from '../../shared/limits.constants';
 
 export const userRouter = createTRPCRouter({
   deletionBlockers: protectedProcedure.query(async ({ ctx }) => {
@@ -27,8 +28,8 @@ export const userRouter = createTRPCRouter({
   update: protectedProcedure
     .input(
       z.object({
-        firstName: z.string(),
-        lastName: z.string(),
+        firstName: z.string().trim().min(1).max(MAX_NAME),
+        lastName: z.string().trim().min(1).max(MAX_NAME),
       })
     )
     .mutation(async ({ input, ctx }) => {

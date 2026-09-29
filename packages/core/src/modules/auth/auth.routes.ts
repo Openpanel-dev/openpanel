@@ -9,6 +9,7 @@
 import { redirect } from 'elysia';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
+import { MAX_TOKEN } from '../../shared/limits.constants';
 import {
   assertOAuthState,
   completeOAuthCallback,
@@ -17,9 +18,11 @@ import {
   OAuthCallbackError,
 } from './auth.service';
 
+// Both come from the provider's redirect, so they are attacker-supplied in
+// the sense that anyone can call this URL directly.
 const callbackQuery = z.object({
-  code: z.string(),
-  state: z.string(),
+  code: z.string().max(MAX_TOKEN),
+  state: z.string().max(MAX_TOKEN),
 });
 
 /** Only used to make the URL parseable when DASHBOARD_URL is not set. */
