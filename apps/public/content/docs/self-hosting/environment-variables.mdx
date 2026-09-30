@@ -526,6 +526,8 @@ If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** au
 
 ## OAuth & Integrations
 
+Social login is hidden unless the provider has a client ID, client secret, and redirect URI configured. Use `DISABLE_GITHUB_AUTH` or `DISABLE_GOOGLE_AUTH` to hide a configured login provider.
+
 ### GOOGLE_CLIENT_ID
 
 **Type**: `string`
@@ -618,8 +620,24 @@ GITHUB_REDIRECT_URI=https://analytics.example.com/api/oauth/github/callback
 ```
 
 <Callout>
-The dashboard only shows the social login buttons and the Search Console settings when the API has both the client ID and the redirect URI for that feature. The dashboard itself needs none of these variables.
+The dashboard shows social login buttons only when the API has the matching client ID, client secret, and redirect URI, and login is not disabled. Search Console settings require the Google client ID and Search Console redirect URI independently of the login disable flags. The dashboard itself needs none of these variables.
 </Callout>
+
+### DISABLE_GITHUB_AUTH
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+
+Set to `true` or `1` to hide GitHub login even when GitHub credentials are set. Sign-in attempts through the API are also rejected.
+
+### DISABLE_GOOGLE_AUTH
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+
+Set to `true` or `1` to hide Google login while keeping Google credentials available for Search Console (`GSC_GOOGLE_REDIRECT_URI`). Sign-in attempts through the API are also rejected.
 
 ### SLACK_CLIENT_ID
 

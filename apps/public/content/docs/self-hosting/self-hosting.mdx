@@ -195,6 +195,12 @@ Invitations are enabled by default. You can also disable invitations by setting 
 ALLOW_INVITATION=false
 ```
 
+### Social login (GitHub / Google)
+
+Email/password works without extra setup. GitHub and Google buttons appear only when their client ID, client secret, and redirect URI are configured. Follow the [Social login guide](/docs/self-hosting/social-login) to set up either provider.
+
+To hide a configured provider, set `DISABLE_GITHUB_AUTH=true` or `DISABLE_GOOGLE_AUTH=true`. Disabling Google login keeps its credentials available for the [Google Search Console integration](/docs/self-hosting/google-search-console).
+
 For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 ## Helpful scripts

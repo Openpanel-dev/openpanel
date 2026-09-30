@@ -9,11 +9,13 @@ import {
   generateRecoveryCodes,
   generateSessionToken,
   generateTotpSecret,
+  getEnabledOAuthLoginProviders,
   github,
   google,
   hashPassword,
   hashRecoveryCodes,
   invalidateSession,
+  isOAuthLoginEnabled,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
   validateSessionToken,
@@ -45,7 +47,11 @@ import {
   zTotpOrRecoveryCode,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { TRPCAccessError, TRPCNotFoundError } from '../errors';
+import {
+  TRPCAccessError,
+  TRPCBadRequestError,
+  TRPCNotFoundError,
+} from '../errors';
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -57,7 +63,7 @@ const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
 const INVITE_COOKIE = 'inviteId';
 
-const zProvider = z.enum(['email', 'google', 'github']);
+const zOAuthProvider = z.enum(['google', 'github']);
 
 /**
  * Best-effort consumption of an invite for a user that just authenticated.
@@ -82,18 +88,11 @@ async function consumeInviteForUser(
 
 export const authRouter = createTRPCRouter({
   /**
-   * Which optional OAuth-backed features this instance has credentials for.
-   * The dashboard uses it to hide the social login buttons and the Search
-   * Console settings on self-hosted instances that haven't configured them.
-   * Booleans only: the client id/secret never leave the API.
+   * Optional OAuth features available on this instance. Only booleans are
+   * exposed; login disable flags do not affect Search Console availability.
    */
   providers: publicProcedure.query(() => ({
-    google: Boolean(
-      process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_REDIRECT_URI
-    ),
-    github: Boolean(
-      process.env.GITHUB_CLIENT_ID && process.env.GITHUB_REDIRECT_URI
-    ),
+    ...getEnabledOAuthLoginProviders(),
     gsc: Boolean(
       process.env.GOOGLE_CLIENT_ID && process.env.GSC_GOOGLE_REDIRECT_URI
     ),
@@ -105,7 +104,9 @@ export const authRouter = createTRPCRouter({
     }
   }),
   signInOAuth: publicProcedure
-    .input(z.object({ provider: zProvider, inviteId: z.string().nullish() }))
+    .input(
+      z.object({ provider: zOAuthProvider, inviteId: z.string().nullish() }),
+    )
     .mutation(async ({ input, ctx }) => {
       // NOTE: no registration check here. At this point we have no identity for
       // the caller — the IdP hasn't been hit yet — so we cannot tell a returning
@@ -113,6 +114,12 @@ export const authRouter = createTRPCRouter({
       // as soon as their session expires. The check lives in the OAuth callback
       // (`handleNewUser`), which is the only place we know the user is new.
       const { provider } = input;
+
+      if (!isOAuthLoginEnabled(provider)) {
+        throw new TRPCBadRequestError(
+          `${provider === 'github' ? 'GitHub' : 'Google'} sign-in is not enabled`,
+        );
+      }
 
       if (input.inviteId) {
         ctx.setCookie('inviteId', input.inviteId, {
