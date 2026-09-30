@@ -190,3 +190,42 @@ verified, with a message that says what and why. Never push, never add
 remotes, never rewrite history that is not yours. `WORKTREE.md`, `.seed.json` and
 `.worktree-*` are gitignored — keep them that way.
 
+### Commit messages
+
+Every push to `main` is versioned from its commit messages, and the release
+notes self-hosters read are written from them (`tooling/release`). So a commit
+message is also a changelog entry and a version decision. The same rules apply
+to PR titles, which become the commit on a squash merge.
+
+```
+<type>(<scope>): <what changed, from the user's side>
+
+<why, and what it means for someone running OpenPanel>
+```
+
+- **type** decides the version bump:
+  - `feat` — something users can do that they could not before. Bumps the minor
+    version (3.1.4 → 3.2.0), so use it only for real new capability.
+  - `fix` — a bug users could hit. `perf`, `refactor`, `docs`, `test`, `ci`,
+    `chore` for the rest. All of these are a patch (3.1.4 → 3.1.5).
+- **scope** is the area: `api`, `dashboard`, `ingest`, `self-hosting`, `sdk`, …
+  Optional, but it helps the notes group changes.
+- **Subject**: imperative, lower case, no trailing period, under ~72 characters.
+  Say what changed for a user ("funnels can break down by cohort"), not which
+  file was edited.
+- **Body**: why, in plain sentences. If the change affects a self-hosted
+  install, say so explicitly: a new or renamed environment variable, a compose
+  or migration change, a removed feature, anything someone must do when they
+  upgrade. That is what the release notes' "Upgrade notes" are built from; add
+  the matching `openpanel doctor` check in the same change (`self-hosting/cli`).
+- One logical change per commit. No "WIP", "fixes", or "address review".
+
+**Agents never mark a commit as breaking.** Do not write `!` after the type
+(`feat!:`), a `BREAKING CHANGE:` footer, or `[major]`, even when the change
+does break something. A new major version is the maintainer's release
+decision, not a side effect of one commit (the version tooling ignores the
+first two anyway). Describe the breakage in the body instead, and point it out
+in your summary so the maintainer can decide. Agents also do not use the other
+CI markers: `[minor]` (let `feat` decide) and `[release now]` (skips the
+merge debounce).
+
