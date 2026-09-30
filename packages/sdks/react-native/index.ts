@@ -5,12 +5,31 @@ import type {
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 import * as Application from 'expo-application';
-import Constants from 'expo-constants';
+import * as ExpoConstants from 'expo-constants';
 import { AppState, Platform } from 'react-native';
 
 export * from '@openpanel/sdk';
 
 const QUEUE_STORAGE_KEY = '@openpanel/offline_queue';
+
+/**
+ * Metro/CJS interop can nest the real module under `.default` when this
+ * package is consumed as ESM. Prefer the same `import *` shape we already
+ * use for expo-application, and fall back if the helper is missing so init
+ * never crashes (e.g. Expo SDK 55+ with previously unmet peers).
+ */
+function getWebViewUserAgent(): Promise<string | null> {
+  const mod = ExpoConstants as typeof ExpoConstants & {
+    default?: typeof ExpoConstants;
+  };
+  const constants = (mod.default ?? mod) as {
+    getWebViewUserAgentAsync?: () => Promise<string | null>;
+  };
+  if (typeof constants.getWebViewUserAgentAsync !== 'function') {
+    return Promise.resolve(null);
+  }
+  return constants.getWebViewUserAgentAsync();
+}
 
 interface StorageLike {
   getItem(key: string): Promise<string | null>;
@@ -59,7 +78,7 @@ export class OpenPanel extends OpenPanelBase {
       sdkVersion: process.env.REACT_NATIVE_VERSION!,
     });
 
-    this.api.addHeader('User-Agent', Constants.getWebViewUserAgentAsync());
+    this.api.addHeader('User-Agent', getWebViewUserAgent());
     this.storage = options.storage;
 
     if (options.networkInfo) {
