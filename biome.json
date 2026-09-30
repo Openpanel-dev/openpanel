@@ -97,6 +97,7 @@
     "indentWidth": 2
   },
   "javascript": {
+    "globals": ["Bun"],
     "formatter": {
       "quoteStyle": "single"
     }
