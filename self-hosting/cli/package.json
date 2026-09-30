@@ -1,0 +1,19 @@
+{
+  "name": "@openpanel/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Set up, upgrade and diagnose a self-hosted OpenPanel install",
+  "scripts": {
+    "dev": "bun src/main.ts",
+    "test": "bun test",
+    "build": "bun build --compile src/main.ts --outfile dist/openpanel"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
