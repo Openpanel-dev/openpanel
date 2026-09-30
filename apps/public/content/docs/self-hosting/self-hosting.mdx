@@ -14,7 +14,7 @@ import { SelfHostingVersionBanner } from '@/components/self-hosting-version-bann
 
 - A VPS of any kind (only tested on Ubuntu 24.04)
   - We recommend using [Hetzner (affiliate link)](https://hetzner.cloud/?ref=7Hq0H5mQh7tM). Use the link if you want to support us. 🫶
-  - 🙋‍♂️ This works on any Linux or macOS machine that can run Docker. The CLI offers to install Docker for you on Linux.
+  - 🙋‍♂️ This works on any Linux server (x64 or arm64) that can run Docker. The CLI offers to install Docker for you.
 - At least 4GB RAM (Redpanda, ClickHouse and Postgres run side by side)
 - A domain name pointing at the server, if you want automatic HTTPS
 
@@ -36,7 +36,7 @@ The `openpanel` CLI is a single file with no dependencies. The script downloads 
 curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
 ```
 
-You can also download a binary from the [releases page](https://github.com/Openpanel-dev/openpanel/releases): every OpenPanel release includes the CLI for Linux and macOS, with a `checksums.txt`.
+You can also download a binary from the [releases page](https://github.com/Openpanel-dev/openpanel/releases): every OpenPanel release includes the CLI for Linux (x64 and arm64), with a `checksums.txt`.
 </Step>
 <Step>
 ### Run the setup

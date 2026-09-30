@@ -144,6 +144,14 @@ jobs:
       - name: Run tests
         run: bun run test
 
+      # The self-hosting CLI keeps its own lockfile (it ships as a binary, not
+      # as a workspace package), so it installs and tests on its own.
+      - name: Test the self-hosting CLI
+        working-directory: self-hosting/cli
+        run: |
+          bun install --frozen-lockfile
+          bun test
+
   # Debounce for main: a push within a minute of the previous one cancels its
   # wait, so a burst of merges is built and versioned once, as its newest
   # commit. `[release now]` in the pushed commit, or a manual run, skips the wait.
@@ -491,3 +499,49 @@ jobs:
         run: |
           git tag "v$VERSION" "$GITHUB_SHA"
           git push origin "v$VERSION"
+
+      # Linux only: self-hosting runs on Linux servers, and bun cross-compiles
+      # both architectures here in seconds.
+      - name: Build the CLI
+        if: steps.next.outputs.skip != 'true'
+        working-directory: self-hosting/cli
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          for target in linux-x64 linux-arm64; do
+            bun build --compile --target="bun-$target" --define "OPENPANEL_RELEASE_VERSION=\"$VERSION\"" src/main.ts --outfile "dist/openpanel-$target"
+          done
+          test "$(./dist/openpanel-linux-x64 --version)" = "$VERSION"
+          (cd dist && sha256sum openpanel-* > checksums.txt)
+
+      # Supporters install and self-update from these; public installs ignore
+      # pre-releases until the self-hosting tag promotes one.
+      - name: Publish the build as a pre-release
+        if: steps.next.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          set -euo pipefail
+          files=(self-hosting/cli/dist/openpanel-* self-hosting/cli/dist/checksums.txt)
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release upload "v$VERSION" "${files[@]}" --clobber
+          else
+            gh release create "v$VERSION" "${files[@]}" --verify-tag --prerelease \
+              --title "OpenPanel $VERSION (build)" \
+              --notes "Build of main at $GITHUB_SHA. Supporters get it with \`openpanel upgrade --supporter\`; public releases are published from the self-hosting tag."
+          fi
+
+      # One pre-release per build adds up; keep the newest ten. Tags stay, and a
+      # public release is never a pre-release, so it is never touched.
+      - name: Remove old pre-releases
+        if: steps.next.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: "10"
+        run: |
+          gh release list --limit 200 --json tagName,isPrerelease,createdAt \
+            --jq "[.[] | select(.isPrerelease)] | sort_by(.createdAt) | reverse | .[$KEEP:] | .[].tagName" \
+            | while read -r tag; do gh release delete "$tag" --yes; done

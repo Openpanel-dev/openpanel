@@ -59,13 +59,23 @@ Replace `your_api_key` with the actual API key provided to you.
 Make sure to keep your API key secure and never commit it to version control!
 </Callout>
 
-### Step 4: Switch to the latest images
+### Step 4: Install the CLI
+
+Every build comes with a matching `openpanel` CLI. Install the newest build on your server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | OPENPANEL_CHANNEL=supporter sh
+```
+
+Already have the CLI from a public release? Skip this; the next step updates it.
+
+### Step 5: Switch to the latest images
 
 ```bash
 openpanel upgrade --supporter
 ```
 
-This checks that you're logged in to `docker.openpanel.dev`, finds the newest build (every push to our main branch gets a version such as `3.1.9`), points your install at it, and restarts. It shows every change and asks before writing anything.
+This updates the CLI to the newest build, checks that you're logged in to `docker.openpanel.dev`, finds the newest build (every push to our main branch gets a version such as `3.1.9`), points your install at it, and restarts. It shows every change and asks before writing anything.
 
 Don't have the CLI yet? See [Get started with self-hosting](/docs/self-hosting/self-hosting#quickstart).
 
