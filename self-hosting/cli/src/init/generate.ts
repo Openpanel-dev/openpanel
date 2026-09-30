@@ -133,7 +133,10 @@ const renderCompose = (answers: InitAnswers): string => {
   if (answers.proxy === 'external') {
     removeService(compose, 'op-proxy');
   }
-  for (const service of OPENPANEL_IMAGE_SERVICES) {
+  // A release CLI pins its own version; a dev build keeps the template's tag.
+  for (const service of STACK_IMAGE_TAG === null
+    ? []
+    : OPENPANEL_IMAGE_SERVICES) {
     const image = String(compose.getIn(['services', service, 'image']) ?? '');
     const repository = image.split(':')[0];
     if (compose.hasIn(['services', service]) && repository) {

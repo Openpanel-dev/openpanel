@@ -197,61 +197,61 @@ const OPENPANEL_IMAGE = /^(lindesvard\/openpanel-(?:api|dashboard)):(.+)$/;
 const IMAGE_SERVICES = ['op-api', 'op-dashboard', 'op-worker'] as const;
 
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
-const MAJOR_ONLY = /^\d+$/;
 
-// An image already on the CLI's tag, or newer than it, is left alone: an older
-// CLI must never downgrade a stack. A dev build (floating major, e.g. "3") is
-// satisfied by any exact version of that major.
-export const satisfiesStack = (
-  tag: string,
-  stack: string = STACK_IMAGE_TAG
-): boolean => {
+// An image already on the CLI's version, or newer than it, is left alone: an
+// older CLI must never downgrade a stack.
+export const satisfiesStack = (tag: string, stack: string): boolean => {
   if (tag === stack) {
     return true;
-  }
-  if (MAJOR_ONLY.test(stack)) {
-    return tag.startsWith(`${stack}.`) && EXACT_VERSION.test(tag);
   }
   const bothExact = EXACT_VERSION.test(tag) && EXACT_VERSION.test(stack);
   return bothExact && isNewer(tag, stack);
 };
 
-const staleImages = (install: Install) =>
+const staleImages = (install: Install, stack: string) =>
   IMAGE_SERVICES.flatMap((service) => {
     const image = serviceImage(install, service);
     const match = image ? OPENPANEL_IMAGE.exec(image) : null;
     const [, repository, tag] = match ?? [];
-    return repository && tag && !satisfiesStack(tag)
+    return repository && tag && !satisfiesStack(tag, stack)
       ? [{ service, repository, tag }]
       : [];
   });
 
 // The CLI owns the OpenPanel image tag, pinned versions included: the compose
 // changes it makes only work with the images it was released for. Images from
-// other registries (supporter builds, forks) are never touched.
-export const imageTag: Check = (install) => {
-  const stale = staleImages(install);
-  if (stale.length === 0) {
-    return null;
-  }
-  const changes = stale
-    .map(({ service, tag }) => `${service} ${tag} → ${STACK_IMAGE_TAG}`)
-    .join(', ');
-  return {
-    id: 'compose/image-tag',
-    severity: 'error',
-    title: `OpenPanel images move to :${STACK_IMAGE_TAG} (${changes})`,
-    detail: `This CLI release targets :${STACK_IMAGE_TAG}; the compose changes it makes only work with those images.`,
-    fix: (target) => {
-      for (const { service, repository } of staleImages(target)) {
-        target.compose.setIn(
-          ['services', service, 'image'],
-          `${repository}:${STACK_IMAGE_TAG}`
-        );
-      }
-    },
+// other registries (supporter builds, forks) are never touched, and neither is
+// anything when there is no version to target (a dev build).
+export const imageTagFor =
+  (stack: string | null): Check =>
+  (install) => {
+    if (stack === null) {
+      return null;
+    }
+    const stale = staleImages(install, stack);
+    if (stale.length === 0) {
+      return null;
+    }
+    const changes = stale
+      .map(({ service, tag }) => `${service} ${tag} → ${stack}`)
+      .join(', ');
+    return {
+      id: 'compose/image-tag',
+      severity: 'error',
+      title: `OpenPanel images move to :${stack} (${changes})`,
+      detail: `This CLI release targets :${stack}; the compose changes it makes only work with those images.`,
+      fix: (target) => {
+        for (const { service, repository } of staleImages(target, stack)) {
+          target.compose.setIn(
+            ['services', service, 'image'],
+            `${repository}:${stack}`
+          );
+        }
+      },
+    };
   };
-};
+
+export const imageTag = imageTagFor(STACK_IMAGE_TAG);
 
 export const workerImage: Check = (install) => {
   if (!isLegacyWorkerImage(install)) {

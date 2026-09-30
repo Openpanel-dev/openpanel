@@ -33,13 +33,16 @@ export const templates = {
 
 export const DEFAULT_EVENTS_TOPIC_PARTITIONS = 24;
 
-const TEMPLATE_IMAGE_TAG = /lindesvard\/openpanel-api:(\S+)/;
+const TEMPLATE_IMAGE_PATTERN = /lindesvard\/openpanel-api:(\S+)/;
 
-// The OpenPanel image tag this CLI installs: its own version for a release
-// build, so CLI and images always match; the template's tag for a dev build.
-export const STACK_IMAGE_TAG: string =
-  RELEASE_VERSION ??
-  (TEMPLATE_IMAGE_TAG.exec(templates.compose)?.[1] as string);
+// The exact version a release CLI installs, so CLI and images always match.
+// null for a dev build (run from source), which leaves image tags alone.
+export const STACK_IMAGE_TAG: string | null = RELEASE_VERSION;
+
+// Only a default for local testing with a dev build; nothing shipped reads it.
+export const TEMPLATE_IMAGE_TAG = TEMPLATE_IMAGE_PATTERN.exec(
+  templates.compose
+)?.[1] as string;
 
 export const renderRedpandaBootstrap = (partitions: number): string =>
   templates.redpanda.replace(

@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Install } from './doctor/types';
 import { type Fetcher, isNewer } from './self-update';
-import { STACK_IMAGE_TAG } from './templates';
+import { STACK_IMAGE_TAG, TEMPLATE_IMAGE_TAG } from './templates';
 
 // Supporters pull every internal build (each push to main) from this registry,
 // which mirrors ghcr.io/openpanel-dev; the public release images are on Docker Hub.
@@ -62,7 +62,8 @@ export const pointAt = (
   return changes;
 };
 
-export const publicVersion = (): string => STACK_IMAGE_TAG;
+export const publicVersion = (): string =>
+  STACK_IMAGE_TAG ?? TEMPLATE_IMAGE_TAG;
 
 // Every push to main is tagged vX.Y.Z; the highest one is the newest build.
 export const latestBuildVersion = async (fetcher: Fetcher): Promise<string> => {
