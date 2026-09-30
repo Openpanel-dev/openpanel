@@ -1,0 +1,55 @@
+name: CLI release
+
+# Pushing a `cli-vX.Y.Z` tag builds the self-hosting CLI for every platform and
+# attaches the binaries plus a checksums.txt to a GitHub release. The install
+# script and `openpanel upgrade` both verify those checksums before replacing
+# anything, so the asset names below are a contract with self-hosting/install.sh
+# and self-hosting/cli/src/self-update.ts.
+on:
+  push:
+    tags:
+      - "cli-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: self-hosting/cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun test
+
+      # The tag is the release's only version label, but the binary reports the
+      # one in package.json; a mismatch would make `upgrade` loop forever.
+      - name: Check the tag matches package.json
+        run: |
+          tag="${GITHUB_REF_NAME#cli-v}"
+          version="$(bun -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag says $tag but package.json says $version" >&2
+            exit 1
+          fi
+
+      - name: Build every target
+        run: |
+          mkdir -p dist
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            bun build --compile --target="bun-$target" src/main.ts --outfile "dist/openpanel-$target"
+          done
+          (cd dist && sha256sum openpanel-* > checksums.txt)
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/openpanel-* dist/checksums.txt --generate-notes --title "CLI ${GITHUB_REF_NAME#cli-v}"
