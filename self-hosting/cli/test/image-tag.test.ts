@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { parseDocument } from 'yaml';
 import { applyFixes, runDoctor } from '../src/doctor';
-import { STACK_IMAGE_TAG } from '../src/doctor/checks';
+import { satisfiesStack } from '../src/doctor/checks';
 import type { Install } from '../src/doctor/types';
 import { EnvFile } from '../src/env-file';
-import { templates } from '../src/templates';
+import { STACK_IMAGE_TAG, templates } from '../src/templates';
 
 // A current install whose image lines are replaced, so only the tag check can fire.
 const installWithImages = (images: Record<string, string>): Install => {
@@ -97,5 +97,26 @@ describe('compose/image-tag', () => {
     expect(install.compose.getIn(['services', 'op-api', 'image'])).toBe(
       supporter
     );
+  });
+});
+
+describe('satisfiesStack', () => {
+  test('a release CLI moves floating and older tags to its exact version', () => {
+    expect(satisfiesStack('3', '3.1.4')).toBe(false);
+    expect(satisfiesStack('latest', '3.1.4')).toBe(false);
+    expect(satisfiesStack('3.1.3', '3.1.4')).toBe(false);
+    expect(satisfiesStack('2.3.0', '3.1.4')).toBe(false);
+  });
+
+  test('a release CLI never downgrades newer images', () => {
+    expect(satisfiesStack('3.1.4', '3.1.4')).toBe(true);
+    expect(satisfiesStack('3.2.0', '3.1.4')).toBe(true);
+  });
+
+  test('a dev build (floating major) accepts any exact version of that major', () => {
+    expect(satisfiesStack('3.1.4', '3')).toBe(true);
+    expect(satisfiesStack('3', '3')).toBe(true);
+    expect(satisfiesStack('2', '3')).toBe(false);
+    expect(satisfiesStack('2.3.0', '3')).toBe(false);
   });
 });

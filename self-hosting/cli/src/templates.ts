@@ -15,6 +15,7 @@ import composeTemplate from '../../docker-compose.template.yml' with {
 import redpandaTemplate from '../../redpanda/bootstrap.template.yaml' with {
   type: 'text',
 };
+import { RELEASE_VERSION } from './version';
 
 // `with { type: 'text' }` yields a string, but bun-types types *.xml as a DOM
 // Document, so the two XML imports are narrowed here.
@@ -31,6 +32,14 @@ export const templates = {
 } as const;
 
 export const DEFAULT_EVENTS_TOPIC_PARTITIONS = 24;
+
+const TEMPLATE_IMAGE_TAG = /lindesvard\/openpanel-api:(\S+)/;
+
+// The OpenPanel image tag this CLI installs: its own version for a release
+// build, so CLI and images always match; the template's tag for a dev build.
+export const STACK_IMAGE_TAG: string =
+  RELEASE_VERSION ??
+  (TEMPLATE_IMAGE_TAG.exec(templates.compose)?.[1] as string);
 
 export const renderRedpandaBootstrap = (partitions: number): string =>
   templates.redpanda.replace(

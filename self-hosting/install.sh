@@ -10,7 +10,7 @@
 set -eu
 
 RELEASES_API="${OPENPANEL_RELEASES_API:-https://api.github.com/repos/Openpanel-dev/openpanel/releases?per_page=30}"
-TAG_PREFIX="cli-v"
+TAG_PREFIX="v"
 
 fail() {
   echo "error: $*" >&2
@@ -47,10 +47,14 @@ trap 'rm -rf "$tmp"' EXIT
 echo "Finding the latest release..."
 curl -fsSL "$RELEASES_API" -o "$tmp/releases.json" || fail "could not reach $RELEASES_API"
 
-# Each release object lists its tag before its assets, so the first matching
-# tag's asset URLs are the ones that follow it, up to the next tag.
-tag="$(grep -o "\"tag_name\": *\"$TAG_PREFIX[^\"]*\"" "$tmp/releases.json" | head -n 1 | cut -d'"' -f4)"
-[ -n "$tag" ] || fail "no $TAG_PREFIX release found"
+# Each release object lists its tag before its assets. The newest release that
+# carries this machine's binary is the one to install: every public self-hosting
+# release does, and internal version tags never become releases at all.
+tag="$(awk -v prefix="\"$TAG_PREFIX" -v name="/$asset\"" '
+  /"tag_name":/ { split($0, parts, "\""); current = (index("\"" parts[4], prefix) == 1) ? parts[4] : "" }
+  current != "" && /"browser_download_url":/ && index($0, name) { print current; exit }
+' "$tmp/releases.json")"
+[ -n "$tag" ] || fail "no release with $asset found"
 
 url_for() {
   awk -v tag="$tag" -v name="$1" '

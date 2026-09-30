@@ -5,8 +5,15 @@ import type { EnvFile } from '../env-file';
 import {
   DEFAULT_EVENTS_TOPIC_PARTITIONS,
   renderRedpandaBootstrap,
+  STACK_IMAGE_TAG,
   templates,
 } from '../templates';
+
+const OPENPANEL_IMAGE_SERVICES = [
+  'op-api',
+  'op-dashboard',
+  'op-worker',
+] as const;
 
 const BCRYPT_COST = 10;
 const SECRET_BYTES = { cookie: 16, encryption: 32, admin: 12 } as const;
@@ -125,6 +132,16 @@ const renderCompose = (answers: InitAnswers): string => {
   }
   if (answers.proxy === 'external') {
     removeService(compose, 'op-proxy');
+  }
+  for (const service of OPENPANEL_IMAGE_SERVICES) {
+    const image = String(compose.getIn(['services', service, 'image']) ?? '');
+    const repository = image.split(':')[0];
+    if (compose.hasIn(['services', service]) && repository) {
+      compose.setIn(
+        ['services', service, 'image'],
+        `${repository}:${STACK_IMAGE_TAG}`
+      );
+    }
   }
   // Interpolated by compose from .env, so scaling is one edit and `up -d`.
   compose.setIn(

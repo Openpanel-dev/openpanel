@@ -55,7 +55,7 @@
     "vue": "3.5.25"
   },
   "scripts": {
-    "test": "bun run --filter @openpanel/core test && bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter @openpanel/seed test && bun run --filter start test && vitest run && bun test tooling/gates/conformance",
+    "test": "bun run --filter @openpanel/core test && bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter @openpanel/seed test && bun run --filter start test && bun run --filter @openpanel/release test && vitest run && bun test tooling/gates/conformance",
     "gen:bots": "bun run --filter @openpanel/core gen:bots",
     "gen:referrers": "bun run --filter @openpanel/core gen:referrers",
     "dock:up": "docker compose up -d",

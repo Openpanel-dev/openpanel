@@ -1,8 +1,10 @@
 import { randomBytes } from 'node:crypto';
 import { type Document, isAlias, isMap, isSeq, parseDocument } from 'yaml';
+import { isNewer } from '../self-update';
 import {
   DEFAULT_EVENTS_TOPIC_PARTITIONS,
   renderRedpandaBootstrap,
+  STACK_IMAGE_TAG,
   templates,
 } from '../templates';
 import type { Check, Install } from './types';
@@ -194,20 +196,32 @@ export const redpandaBootstrapFile: Check = (install) => {
 const OPENPANEL_IMAGE = /^(lindesvard\/openpanel-(?:api|dashboard)):(.+)$/;
 const IMAGE_SERVICES = ['op-api', 'op-dashboard', 'op-worker'] as const;
 
-// The tag this CLI release is built for, read from the template so there is one
-// place to change it.
-export const STACK_IMAGE_TAG = String(
-  templateCompose.getIn(['services', 'op-api', 'image'])
-)
-  .split(':')
-  .pop() as string;
+const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
+const MAJOR_ONLY = /^\d+$/;
+
+// An image already on the CLI's tag, or newer than it, is left alone: an older
+// CLI must never downgrade a stack. A dev build (floating major, e.g. "3") is
+// satisfied by any exact version of that major.
+export const satisfiesStack = (
+  tag: string,
+  stack: string = STACK_IMAGE_TAG
+): boolean => {
+  if (tag === stack) {
+    return true;
+  }
+  if (MAJOR_ONLY.test(stack)) {
+    return tag.startsWith(`${stack}.`) && EXACT_VERSION.test(tag);
+  }
+  const bothExact = EXACT_VERSION.test(tag) && EXACT_VERSION.test(stack);
+  return bothExact && isNewer(tag, stack);
+};
 
 const staleImages = (install: Install) =>
   IMAGE_SERVICES.flatMap((service) => {
     const image = serviceImage(install, service);
     const match = image ? OPENPANEL_IMAGE.exec(image) : null;
     const [, repository, tag] = match ?? [];
-    return repository && tag && tag !== STACK_IMAGE_TAG
+    return repository && tag && !satisfiesStack(tag)
       ? [{ service, repository, tag }]
       : [];
   });

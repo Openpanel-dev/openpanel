@@ -2,8 +2,10 @@ import { createHash } from 'node:crypto';
 import { chmod, rename, writeFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 
-// CLI releases live next to the product's own, so they are told apart by tag.
-const RELEASE_TAG_PREFIX = 'cli-v';
+// The CLI ships inside each public self-hosting release (`v3.1.4`), so a
+// release counts only if it carries the CLI binaries. Internal builds are
+// tagged too but never become GitHub releases.
+const RELEASE_TAG_PREFIX = 'v';
 const RELEASES_API =
   process.env.OPENPANEL_RELEASES_API ??
   'https://api.github.com/repos/Openpanel-dev/openpanel/releases?per_page=30';
@@ -70,7 +72,8 @@ export const fetchLatestRelease = async (
     (release) =>
       release.tag_name.startsWith(RELEASE_TAG_PREFIX) &&
       !release.draft &&
-      !release.prerelease
+      !release.prerelease &&
+      release.assets.some((asset) => asset.name === CHECKSUMS_ASSET)
   );
   if (!latest) {
     return null;

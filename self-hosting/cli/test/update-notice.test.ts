@@ -33,10 +33,15 @@ const feed = (version: string): { fetcher: Fetcher; calls: () => number } => {
       calls++;
       return Response.json([
         {
-          tag_name: `cli-v${version}`,
+          tag_name: `v${version}`,
           draft: false,
           prerelease: false,
-          assets: [],
+          assets: [
+            {
+              name: 'checksums.txt',
+              browser_download_url: 'https://example.test/checksums.txt',
+            },
+          ],
         },
       ]);
     },

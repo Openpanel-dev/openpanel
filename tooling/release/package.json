@@ -1,0 +1,21 @@
+{
+  "name": "@openpanel/release",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.130.0",
+    "semver": "7.6.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/semver": "7.5.7",
+    "bun-types": "1.4.0",
+    "typescript": "catalog:"
+  }
+}

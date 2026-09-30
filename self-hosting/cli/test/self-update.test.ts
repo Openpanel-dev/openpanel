@@ -36,7 +36,7 @@ const fakeFetcher = (
   const name = assetName('linux', 'x64');
   const base = 'https://example.test';
   const release = {
-    tag_name: options.tag ?? 'cli-v0.2.0',
+    tag_name: options.tag ?? 'v0.2.0',
     draft: false,
     prerelease: false,
     assets: [
@@ -47,7 +47,8 @@ const fakeFetcher = (
   return async (url) => {
     if (url.includes('/releases')) {
       return Response.json([
-        { tag_name: 'v2.9.0', draft: false, prerelease: false, assets: [] },
+        // A release without the CLI binaries (say, a docs-only one) is not a CLI release.
+        { tag_name: 'v9.9.9', draft: false, prerelease: false, assets: [] },
         release,
       ]);
     }
@@ -138,12 +139,12 @@ describe('selfUpdate', () => {
     expect(readFileSync(execPath, 'utf8')).toBe('old-binary-bytes');
   });
 
-  test('product releases without the cli- prefix are ignored', async () => {
+  test('releases tagged another way (like the old cli-v*) are ignored', async () => {
     const execPath = installedBinary();
     const result = await selfUpdate({
       currentVersion: '0.1.0',
       execPath,
-      fetcher: fakeFetcher({ tag: 'v9.9.9' }),
+      fetcher: fakeFetcher({ tag: 'cli-v9.9.9' }),
       platform: 'linux',
       arch: 'x64',
     });

@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/cli",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Set up, upgrade and diagnose a self-hosted OpenPanel install",
