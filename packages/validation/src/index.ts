@@ -347,6 +347,19 @@ export const zUpdateMemberAccess = z.object({
   access: z.array(zProjectAccessGrant),
 });
 
+export const zUpdateMemberRole = z.object({
+  userId: z.string(),
+  organizationId: z.string(),
+  role: z.enum(['org:admin', 'org:member']),
+});
+
+export const zUpdateMember = z.object({
+  userId: z.string(),
+  organizationId: z.string(),
+  role: z.enum(['org:admin', 'org:member']),
+  access: z.array(zProjectAccessGrant),
+});
+
 export const zShareOverview = z.object({
   organizationId: z.string(),
   projectId: z.string(),
