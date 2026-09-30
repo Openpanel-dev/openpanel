@@ -4,10 +4,11 @@ import { parseArgs } from 'node:util';
 import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
 import { init } from './commands/init';
+import { upgrade } from './commands/upgrade';
 import { isInstallDir } from './install';
 import { log } from './ui';
+import { VERSION } from './version';
 
-const VERSION = '0.1.0';
 const DEFAULT_DIR = join(homedir(), 'openpanel');
 
 const HELP = `openpanel ${VERSION} — run and maintain a self-hosted OpenPanel
@@ -16,6 +17,7 @@ Usage: openpanel <command> [options]
 
 Commands:
   init                       Interactive setup (--yes --domain <url> to skip prompts)
+  upgrade [--yes]            Update the CLI, repair the install, pull images, restart
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
   up | down | restart        Start, stop, or recreate the stack
   logs [service]             Follow logs
@@ -48,6 +50,7 @@ const main = async (): Promise<number> => {
       fix: { type: 'boolean', default: false },
       yes: { type: 'boolean', short: 'y', default: false },
       force: { type: 'boolean', default: false },
+      'no-self-update': { type: 'boolean', default: false },
       domain: { type: 'string' },
       proxy: { type: 'string' },
       workers: { type: 'string' },
@@ -88,6 +91,13 @@ const main = async (): Promise<number> => {
       redisUrl: values['redis-url'],
       resendKey: values['resend-key'],
       emailSender: values['email-sender'],
+    });
+  }
+  if (command === 'upgrade') {
+    return upgrade({
+      dir,
+      yes: values.yes,
+      noSelfUpdate: values['no-self-update'],
     });
   }
   if (command === 'doctor') {

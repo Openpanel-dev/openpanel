@@ -6,6 +6,7 @@ const ARGS = {
   restart: ['up', '-d', '--force-recreate'],
   logs: ['logs', '-f', '--tail', '200'],
   status: ['ps'],
+  pull: ['pull'],
 } as const;
 
 export type ComposeCommand = keyof typeof ARGS;
