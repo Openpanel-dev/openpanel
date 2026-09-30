@@ -5,6 +5,7 @@ import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
 import { exportData } from './commands/export';
 import { init } from './commands/init';
+import { reset } from './commands/reset';
 import { upgrade } from './commands/upgrade';
 import { isInstallDir } from './install';
 import { log, red } from './ui';
@@ -20,6 +21,7 @@ Commands:
   init                       Interactive setup (--yes --domain <url> to skip prompts)
   upgrade [--yes]            Update the CLI, repair the install, pull images, restart
   export [--out <dir>]       Dump ClickHouse data as JSONL (e.g. to move to Cloud)
+  reset [--yes]              Delete this install's data volumes (asks first)
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
   up | down | restart        Start, stop, or recreate the stack
   logs [service]             Follow logs
@@ -118,6 +120,9 @@ const main = async (): Promise<number> => {
       list: values.list,
       noGzip: values['no-gzip'],
     });
+  }
+  if (command === 'reset') {
+    return reset({ dir, yes: values.yes });
   }
   if (command === 'upgrade') {
     return upgrade({
