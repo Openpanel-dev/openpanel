@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
+import { init } from './commands/init';
 import { isInstallDir } from './install';
 import { log } from './ui';
 
@@ -14,6 +15,7 @@ const HELP = `openpanel ${VERSION} — run and maintain a self-hosted OpenPanel
 Usage: openpanel <command> [options]
 
 Commands:
+  init                       Interactive setup (--yes --domain <url> to skip prompts)
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
   up | down | restart        Start, stop, or recreate the stack
   logs [service]             Follow logs
@@ -44,6 +46,17 @@ const main = async (): Promise<number> => {
     options: {
       dir: { type: 'string' },
       fix: { type: 'boolean', default: false },
+      yes: { type: 'boolean', short: 'y', default: false },
+      force: { type: 'boolean', default: false },
+      domain: { type: 'string' },
+      proxy: { type: 'string' },
+      workers: { type: 'string' },
+      partitions: { type: 'string' },
+      'postgres-url': { type: 'string' },
+      'clickhouse-url': { type: 'string' },
+      'redis-url': { type: 'string' },
+      'resend-key': { type: 'string' },
+      'email-sender': { type: 'string' },
       check: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
       version: { type: 'boolean', short: 'v', default: false },
@@ -61,6 +74,22 @@ const main = async (): Promise<number> => {
   }
 
   const dir = resolveDir(values.dir);
+  if (command === 'init') {
+    return init({
+      dir,
+      yes: values.yes,
+      force: values.force,
+      domain: values.domain,
+      proxy: values.proxy,
+      workers: values.workers,
+      partitions: values.partitions,
+      postgresUrl: values['postgres-url'],
+      clickhouseUrl: values['clickhouse-url'],
+      redisUrl: values['redis-url'],
+      resendKey: values['resend-key'],
+      emailSender: values['email-sender'],
+    });
+  }
   if (command === 'doctor') {
     return doctor({ dir, fix: values.fix, check: values.check });
   }

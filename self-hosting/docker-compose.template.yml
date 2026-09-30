@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   op-proxy:
     image: caddy:2-alpine

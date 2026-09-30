@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { parseDocument } from 'yaml';
 import type { Install } from './doctor/types';
@@ -35,21 +35,14 @@ export const loadInstall = (dir: string): Install => {
   };
 };
 
+const EXECUTABLE_MODE = 0o755;
+
 // Originals are kept next to the file as `<name>.bak` so a bad fix is one `mv`
 // away from undone. Only files that actually change are touched.
-export const writeInstall = async (
+export const writeFiles = async (
   dir: string,
-  install: Install
+  outputs: Map<string, string>
 ): Promise<string[]> => {
-  const outputs = new Map<string, string>([
-    [COMPOSE_FILE, install.compose.toString(YAML_OUTPUT)],
-    [ENV_FILE, install.env.toString()],
-    ...(install.caddyfile === null
-      ? []
-      : ([[CADDYFILE, install.caddyfile]] as const)),
-    ...install.files,
-  ]);
-
   const written: string[] = [];
   for (const [relativePath, content] of outputs) {
     const target = join(dir, relativePath);
@@ -62,7 +55,26 @@ export const writeInstall = async (
       await copyFile(target, `${target}.bak`);
     }
     await writeFile(target, content);
+    if (relativePath.endsWith('.sh')) {
+      await chmod(target, EXECUTABLE_MODE);
+    }
     written.push(relativePath);
   }
   return written;
 };
+
+export const writeInstall = (
+  dir: string,
+  install: Install
+): Promise<string[]> =>
+  writeFiles(
+    dir,
+    new Map<string, string>([
+      [COMPOSE_FILE, install.compose.toString(YAML_OUTPUT)],
+      [ENV_FILE, install.env.toString()],
+      ...(install.caddyfile === null
+        ? []
+        : ([[CADDYFILE, install.caddyfile]] as const)),
+      ...install.files,
+    ])
+  );
