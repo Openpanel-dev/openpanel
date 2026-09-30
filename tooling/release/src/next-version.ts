@@ -13,21 +13,18 @@ const TAG_PATTERN = 'v[0-9]*';
 const BUMP_RANK: Record<Bump, number> = { patch: 0, minor: 1, major: 2 };
 const MAJOR_MARKER = '[major]';
 const MINOR_MARKER = '[minor]';
-// Conventional commits: `feat!:` / `fix(api)!:` and a BREAKING CHANGE footer are
-// breaking, `feat:` / `feat(scope):` is a feature. Every other subject is a patch.
-const BREAKING_SUBJECT = /^[a-z]+(\([^)]*\))?!:/i;
-const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
-const FEATURE_SUBJECT = /^feat(\([^)]*\))?:/i;
+// `feat:` / `feat(scope):` / `feat!:` is a feature; every other subject is a patch.
+const FEATURE_SUBJECT = /^feat(\([^)]*\))?!?:/i;
 
+// A major bump needs `[major]`, typed by the maintainer. Conventional-commit
+// breaking markers (`feat!:`, a BREAKING CHANGE footer) are ignored on
+// purpose: agents write most commits and add them out of habit, and a new
+// major version is a release decision, not a side effect of one commit.
 export const bumpFor = (message: string): Bump => {
-  const subject = message.split('\n', 1)[0]?.trim() ?? '';
-  const isBreaking =
-    message.includes(MAJOR_MARKER) ||
-    BREAKING_SUBJECT.test(subject) ||
-    BREAKING_FOOTER.test(message);
-  if (isBreaking) {
+  if (message.includes(MAJOR_MARKER)) {
     return 'major';
   }
+  const subject = message.split('\n', 1)[0]?.trim() ?? '';
   const isFeature =
     message.includes(MINOR_MARKER) || FEATURE_SUBJECT.test(subject);
   return isFeature ? 'minor' : 'patch';

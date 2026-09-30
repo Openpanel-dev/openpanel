@@ -14,13 +14,14 @@ describe('bumpFor', () => {
     ['feat: funnels by cohort', 'minor'],
     ['feat(api): export endpoint', 'minor'],
     ['self-hosting: new doctor check [minor]', 'minor'],
-    ['feat!: drop the v1 ingest route', 'major'],
-    ['fix(api)!: rename the events field', 'major'],
+    ['merge the rewrite [major]', 'major'],
+    // Breaking markers never bump the major on their own (see bumpFor).
+    ['feat!: drop the v1 ingest route', 'minor'],
+    ['fix(api)!: rename the events field', 'patch'],
     [
       'refactor: move ingest\n\nBREAKING CHANGE: KAFKA_BROKERS is required',
-      'major',
+      'patch',
     ],
-    ['merge the rewrite [major]', 'major'],
   ] as const)('%s -> %s', (message, bump) => {
     expect(bumpFor(message)).toBe(bump);
   });
@@ -33,7 +34,8 @@ describe('bumpFor', () => {
 describe('highestBump', () => {
   test('a push takes the largest bump among its commits', () => {
     expect(highestBump(['fix: a', 'feat: b', 'ci: c'])).toBe('minor');
-    expect(highestBump(['fix: a', 'feat!: b'])).toBe('major');
+    expect(highestBump(['fix: a', 'feat!: b'])).toBe('minor');
+    expect(highestBump(['fix: a', 'chore: b [major]'])).toBe('major');
     expect(highestBump([])).toBe('patch');
   });
 });
