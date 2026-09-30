@@ -195,6 +195,16 @@ Invitations are enabled by default. You can also disable invitations by setting 
 ALLOW_INVITATION=false
 ```
 
+### OAuth domain allowlist
+
+To restrict Google/GitHub OAuth to company email domains (while keeping `ALLOW_REGISTRATION=false`):
+
+```bash title=".env"
+OAUTH_ALLOWED_DOMAINS=example.com
+```
+
+Matching-domain OAuth users can sign in and create accounts. Everyone else is rejected at the OAuth callback. For Google Workspace, OpenPanel also checks the `hd` claim on the ID token.
+
 For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 ## Helpful scripts
