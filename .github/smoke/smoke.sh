@@ -64,13 +64,13 @@ assert_ssr_route() {
 
   if [ "$status" != "200" ]; then
     echo "--- response body (first 60 lines) ---"
-    echo "$body" | head -60
+    head -60 <<<"$body"
     fail "$path returned HTTP $status (expected 200)"
   fi
 
   case "$body" in
     *"<html"*) ;;
-    *) echo "$body" | head -40; fail "$path returned 200 but no <html> — SSR did not render" ;;
+    *) head -40 <<<"$body"; fail "$path returned 200 but no <html> — SSR did not render" ;;
   esac
 
   if [ "${#body}" -lt 1000 ]; then
@@ -90,14 +90,14 @@ assert_migrations_ran() {
   local logs
   logs=$(docker compose logs --no-color op-api 2>/dev/null || true)
 
-  if echo "$logs" | grep -qE 'sh: .*: not found|command not found'; then
+  if grep -qE 'sh: .*: not found|command not found' <<<"$logs"; then
     echo "--- matching lines ---"
-    echo "$logs" | grep -nE 'sh: .*: not found|command not found' | head -20
+    grep -nE 'sh: .*: not found|command not found' <<<"$logs" | head -20 || true
     fail "op-api's start command could not find a binary it invokes"
   fi
-  if ! echo "$logs" | grep -q 'migrations have been successfully applied\|No pending migrations to apply'; then
+  if ! grep -q 'migrations have been successfully applied\|No pending migrations to apply' <<<"$logs"; then
     echo "--- op-api logs (first 80 lines) ---"
-    echo "$logs" | head -80
+    head -80 <<<"$logs"
     fail "op-api never reported a successful 'prisma migrate deploy'"
   fi
   echo "  op-api migrations applied"
@@ -109,9 +109,9 @@ assert_no_server_errors() {
   logs=$(docker compose logs --no-color "$svc" 2>/dev/null || true)
 
   # These are the shapes a broken bundle or a missing dependency takes.
-  if echo "$logs" | grep -qE "is not a function|Cannot find (module|package)|ERR_MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED"; then
+  if grep -qE "is not a function|Cannot find (module|package)|ERR_MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED" <<<"$logs"; then
     echo "--- matching lines ---"
-    echo "$logs" | grep -nE "is not a function|Cannot find (module|package)|ERR_MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED" | head -20
+    grep -nE "is not a function|Cannot find (module|package)|ERR_MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED" <<<"$logs" | head -20 || true
     fail "$svc logged a module/runtime resolution error"
   fi
   echo "  $svc logs clean"
