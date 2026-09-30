@@ -24,6 +24,7 @@ import {
   rewriteProfilePropertyRefs,
 } from './chart.service';
 import { mergeGlobalFilters, onlyReportEvents } from './reports.service';
+import { profileJoinColumns } from './filter-where.service';
 
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
@@ -203,14 +204,20 @@ export class FunnelService {
     // Group by breakdown values (normalize empty/null to "Not set")
     const series = funnel.reduce(
       (acc, f) => {
-        if (limit && Object.keys(acc).length >= limit) {
-          return acc;
-        }
-
         const key = breakdowns
           .map((b, index) => normalizeBreakdownValue(f[`b_${index}`]))
           .join('|');
         if (!acc[key]) {
+          // The limit caps how many breakdown series we return, so it must only
+          // reject NEW keys. Bailing out of the whole reduce here would drop the
+          // remaining rows of series already accepted: the query is ordered by
+          // level DESC, so those rows are the lower funnel steps, and losing them
+          // leaves each series holding only its deepest level. fillFunnel then
+          // accumulates that single row into every step, so every step reports an
+          // identical count at 100%.
+          if (limit && Object.keys(acc).length >= limit) {
+            return acc;
+          }
           acc[key] = [];
         }
         acc[key]!.push({
@@ -383,13 +390,12 @@ export class FunnelService {
     if (anyFilterOnProfile || profileBreakdowns.length > 0) {
       // Scalar columns (email etc.) are selected as-is; the properties Map is
       // narrowed to the referenced keys via profilePropertiesCteSelect.
-      const profileFields = new Set<string>(['id']);
-      for (const f of profileFilters) {
-        const fieldName = f.split('.')[0]!;
-        if (fieldName !== 'properties') {
-          profileFields.add(fieldName);
-        }
-      }
+      // Column names are identifiers and cannot be escaped: only allowlisted
+      // profile columns may be selected. The properties Map is added below
+      // via profilePropertiesCteSelect instead.
+      const profileFields = new Set<string>(
+        profileJoinColumns(profileFilters).filter((c) => c !== 'properties'),
+      );
       for (const b of profileBreakdowns) {
         const fieldName = b.name.replace('profile.', '').split('.')[0];
         if (

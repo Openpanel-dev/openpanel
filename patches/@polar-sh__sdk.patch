@@ -1,0 +1,128 @@
+diff --git a/dist/commonjs/models/components/benefitdiscordproperties.d.ts b/dist/commonjs/models/components/benefitdiscordproperties.d.ts
+index 5eed446..a233f87 100644
+--- a/dist/commonjs/models/components/benefitdiscordproperties.d.ts
++++ b/dist/commonjs/models/components/benefitdiscordproperties.d.ts
+@@ -17,7 +17,7 @@ export type BenefitDiscordProperties = {
+      * Whether to kick the member from the Discord server on revocation.
+      */
+     kickMember: boolean;
+-    guildToken: string;
++    guildToken?: string;
+ };
+ /** @internal */
+ export declare const BenefitDiscordProperties$inboundSchema: z.ZodMiniType<BenefitDiscordProperties, unknown>;
+@@ -26,7 +26,7 @@ export type BenefitDiscordProperties$Outbound = {
+     guild_id: string;
+     role_id: string;
+     kick_member: boolean;
+-    guild_token: string;
++    guild_token?: string;
+ };
+ /** @internal */
+ export declare const BenefitDiscordProperties$outboundSchema: z.ZodMiniType<BenefitDiscordProperties$Outbound, BenefitDiscordProperties>;
+diff --git a/dist/commonjs/models/components/benefitdiscordproperties.js b/dist/commonjs/models/components/benefitdiscordproperties.js
+index 9e7f4a6..df20afb 100644
+--- a/dist/commonjs/models/components/benefitdiscordproperties.js
++++ b/dist/commonjs/models/components/benefitdiscordproperties.js
+@@ -47,7 +47,7 @@ exports.BenefitDiscordProperties$inboundSchema = z.pipe(z.object({
+     guild_id: z.string(),
+     role_id: z.string(),
+     kick_member: z.boolean(),
+-    guild_token: z.string(),
++    guild_token: z.optional(z.string()),
+ }), z.transform((v) => {
+     return (0, primitives_js_1.remap)(v, {
+         "guild_id": "guildId",
+@@ -61,7 +61,7 @@ exports.BenefitDiscordProperties$outboundSchema = z.pipe(z.object({
+     guildId: z.string(),
+     roleId: z.string(),
+     kickMember: z.boolean(),
+-    guildToken: z.string(),
++    guildToken: z.optional(z.string()),
+ }), z.transform((v) => {
+     return (0, primitives_js_1.remap)(v, {
+         guildId: "guild_id",
+diff --git a/dist/esm/models/components/benefitdiscordproperties.d.ts b/dist/esm/models/components/benefitdiscordproperties.d.ts
+index 5eed446..a233f87 100644
+--- a/dist/esm/models/components/benefitdiscordproperties.d.ts
++++ b/dist/esm/models/components/benefitdiscordproperties.d.ts
+@@ -17,7 +17,7 @@ export type BenefitDiscordProperties = {
+      * Whether to kick the member from the Discord server on revocation.
+      */
+     kickMember: boolean;
+-    guildToken: string;
++    guildToken?: string;
+ };
+ /** @internal */
+ export declare const BenefitDiscordProperties$inboundSchema: z.ZodMiniType<BenefitDiscordProperties, unknown>;
+@@ -26,7 +26,7 @@ export type BenefitDiscordProperties$Outbound = {
+     guild_id: string;
+     role_id: string;
+     kick_member: boolean;
+-    guild_token: string;
++    guild_token?: string;
+ };
+ /** @internal */
+ export declare const BenefitDiscordProperties$outboundSchema: z.ZodMiniType<BenefitDiscordProperties$Outbound, BenefitDiscordProperties>;
+diff --git a/dist/esm/models/components/benefitdiscordproperties.js b/dist/esm/models/components/benefitdiscordproperties.js
+index 770d69d..fded0a1 100644
+--- a/dist/esm/models/components/benefitdiscordproperties.js
++++ b/dist/esm/models/components/benefitdiscordproperties.js
+@@ -9,7 +9,7 @@ export const BenefitDiscordProperties$inboundSchema = z.pipe(z.object({
+     guild_id: z.string(),
+     role_id: z.string(),
+     kick_member: z.boolean(),
+-    guild_token: z.string(),
++    guild_token: z.optional(z.string()),
+ }), z.transform((v) => {
+     return remap$(v, {
+         "guild_id": "guildId",
+@@ -23,7 +23,7 @@ export const BenefitDiscordProperties$outboundSchema = z.pipe(z.object({
+     guildId: z.string(),
+     roleId: z.string(),
+     kickMember: z.boolean(),
+-    guildToken: z.string(),
++    guildToken: z.optional(z.string()),
+ }), z.transform((v) => {
+     return remap$(v, {
+         guildId: "guild_id",
+diff --git a/src/models/components/benefitdiscordproperties.ts b/src/models/components/benefitdiscordproperties.ts
+index 77e670c..1d93f8a 100644
+--- a/src/models/components/benefitdiscordproperties.ts
++++ b/src/models/components/benefitdiscordproperties.ts
+@@ -24,7 +24,7 @@ export type BenefitDiscordProperties = {
+    * Whether to kick the member from the Discord server on revocation.
+    */
+   kickMember: boolean;
+-  guildToken: string;
++  guildToken?: string;
+ };
+ 
+ /** @internal */
+@@ -36,7 +36,7 @@ export const BenefitDiscordProperties$inboundSchema: z.ZodMiniType<
+     guild_id: z.string(),
+     role_id: z.string(),
+     kick_member: z.boolean(),
+-    guild_token: z.string(),
++    guild_token: z.optional(z.string()),
+   }),
+   z.transform((v) => {
+     return remap$(v, {
+@@ -52,7 +52,7 @@ export type BenefitDiscordProperties$Outbound = {
+   guild_id: string;
+   role_id: string;
+   kick_member: boolean;
+-  guild_token: string;
++  guild_token?: string;
+ };
+ 
+ /** @internal */
+@@ -64,7 +64,7 @@ export const BenefitDiscordProperties$outboundSchema: z.ZodMiniType<
+     guildId: z.string(),
+     roleId: z.string(),
+     kickMember: z.boolean(),
+-    guildToken: z.string(),
++    guildToken: z.optional(z.string()),
+   }),
+   z.transform((v) => {
+     return remap$(v, {

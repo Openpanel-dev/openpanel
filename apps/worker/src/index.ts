@@ -24,6 +24,7 @@ import { bootCron } from './boot-cron';
 import { bootDebugRoutes } from './boot-debug';
 import { bootWorkers } from './boot-workers';
 import { register } from './metrics';
+import { basicAuth } from './utils/basic-auth';
 import { isShuttingDown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
 import { getEventsHeartbeat } from './utils/worker-heartbeat';
@@ -45,31 +46,6 @@ async function start() {
     bootDebugRoutes(app);
   }
 
-  if (
-    process.env.DISABLE_BULLBOARD !== '1' &&
-    process.env.DISABLE_BULLBOARD !== 'true'
-  ) {
-    const serverAdapter = new ExpressAdapter();
-    serverAdapter.setBasePath('/');
-    createBullBoard({
-      queues: [
-        ...eventsGroupQueues.map(
-          (queue) => new BullBoardGroupMQAdapter(queue) as any
-        ),
-        new BullMQAdapter(sessionsQueue),
-        new BullMQAdapter(cronQueue),
-        new BullMQAdapter(notificationQueue),
-        new BullMQAdapter(importQueue),
-        new BullMQAdapter(insightsQueue),
-        new BullMQAdapter(gscQueue),
-        new BullMQAdapter(cohortComputeQueue),
-      ],
-      serverAdapter,
-    });
-
-    app.use('/', serverAdapter.getRouter());
-  }
-
   app.get('/metrics', (req, res) => {
     res.set('Content-Type', register.contentType);
     register
@@ -78,7 +54,11 @@ async function start() {
         res.end(metrics);
       })
       .catch((error) => {
-        res.status(500).end(error);
+        // res.end() only accepts a string/Buffer; passing a raw Error object
+        // throws a TypeError inside this catch, which is unhandled and crashes
+        // the worker. Since /metrics is scraped on every pod, one failing
+        // collector can take down the whole fleet. Stringify to be safe.
+        res.status(500).end(String(error?.message ?? error));
       });
   });
 
@@ -127,6 +107,50 @@ async function start() {
       failedDependencies,
       workingDependencies,
     });
+
+  // Bull Board exposes every queue with add/retry/clean enabled, so it never
+  // mounts without credentials (GHSA-r627-6vrh-65p9). /metrics and
+  // /healthcheck are registered above so the auth guard does not cover them.
+  const bullboardDisabled =
+    process.env.DISABLE_BULLBOARD === '1' ||
+    process.env.DISABLE_BULLBOARD === 'true';
+  const bullboardUsername = process.env.BULLBOARD_USERNAME;
+  const bullboardPassword = process.env.BULLBOARD_PASSWORD;
+
+  const hasBullboardCredentials = Boolean(bullboardUsername && bullboardPassword);
+
+  if (!bullboardDisabled && !hasBullboardCredentials) {
+    logger.warn(
+      'Bull Board is not mounted: set BULLBOARD_USERNAME and BULLBOARD_PASSWORD to enable the queue dashboard, or DISABLE_BULLBOARD=true to silence this warning',
+    );
+  }
+
+  if (!bullboardDisabled && bullboardUsername && bullboardPassword) {
+    const serverAdapter = new ExpressAdapter();
+    serverAdapter.setBasePath('/');
+    createBullBoard({
+      queues: [
+        ...eventsGroupQueues.map(
+          (queue) => new BullBoardGroupMQAdapter(queue) as any
+        ),
+        new BullMQAdapter(sessionsQueue),
+        new BullMQAdapter(cronQueue),
+        new BullMQAdapter(notificationQueue),
+        new BullMQAdapter(importQueue),
+        new BullMQAdapter(insightsQueue),
+        new BullMQAdapter(gscQueue),
+        new BullMQAdapter(cohortComputeQueue),
+      ],
+      serverAdapter,
+    });
+
+    app.use(
+      '/',
+      basicAuth(bullboardUsername, bullboardPassword),
+      serverAdapter.getRouter(),
+    );
+  }
+
   });
 
   // Kubernetes liveness — shallow, event loop only.

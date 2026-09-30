@@ -24,6 +24,10 @@ import {
 } from '@openpanel/auth';
 import { generateSecureId } from '@openpanel/common/server';
 import {
+  createShareAccessToken,
+  shareAccessCookieName,
+} from '@openpanel/common/server/share-access';
+import {
   connectUserToOrganization,
   db,
   decrypt,
@@ -83,7 +87,16 @@ async function consumeInviteForUser(
 }
 
 export const authRouter = createTRPCRouter({
-  getOAuthProviders: publicProcedure.query(() => getEnabledOAuthLoginProviders()),
+  /**
+   * Optional OAuth features available on this instance. Only booleans are
+   * exposed; login disable flags do not affect Search Console availability.
+   */
+  providers: publicProcedure.query(() => ({
+    ...getEnabledOAuthLoginProviders(),
+    gsc: Boolean(
+      process.env.GOOGLE_CLIENT_ID && process.env.GSC_GOOGLE_REDIRECT_URI
+    ),
+  })),
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     deleteSessionTokenCookie(ctx.setCookie);
     if (ctx.session?.session?.id) {
@@ -635,19 +648,15 @@ export const authRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { password, shareId, shareType = 'overview' } = input;
       let share: { password: string | null; public: boolean } | null = null;
-      let cookieName = '';
 
       if (shareType === 'overview') {
         share = await getShareOverviewById(shareId);
-        cookieName = `shared-overview-${shareId}`;
       } else if (shareType === 'dashboard') {
         const { getShareDashboardById } = await import('@openpanel/db');
         share = await getShareDashboardById(shareId);
-        cookieName = `shared-dashboard-${shareId}`;
       } else if (shareType === 'report') {
         const { getShareReportById } = await import('@openpanel/db');
         share = await getShareReportById(shareId);
-        cookieName = `shared-report-${shareId}`;
       }
 
       if (!share) {
@@ -668,10 +677,21 @@ export const authRouter = createTRPCRouter({
         throw new TRPCAccessError('Incorrect password');
       }
 
-      ctx.setCookie(cookieName, '1', {
-        maxAge: 60 * 60 * 24 * 7,
-        ...COOKIE_OPTIONS,
-      });
+      // The cookie value is an HMAC bound to this share and its current
+      // password hash; the share procedures verify it rather than trusting
+      // that the cookie exists.
+      ctx.setCookie(
+        shareAccessCookieName(shareType, shareId),
+        createShareAccessToken({
+          type: shareType,
+          id: shareId,
+          passwordHash: share.password,
+        }),
+        {
+          maxAge: 60 * 60 * 24 * 7,
+          ...COOKIE_OPTIONS,
+        },
+      );
 
       return true;
     }),

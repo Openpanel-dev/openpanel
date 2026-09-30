@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, LinkButton } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -23,11 +23,16 @@ export const Route = createFileRoute(
   component: GscSettings,
 });
 
+const GSC_SELF_HOSTING_DOCS_URL =
+  'https://openpanel.dev/docs/self-hosting/google-search-console';
+
 function GscSettings() {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [selectedSite, setSelectedSite] = useState('');
+
+  const providersQuery = useQuery(trpc.auth.providers.queryOptions());
 
   const connectionQuery = useQuery(
     trpc.gsc.getConnection.queryOptions(
@@ -81,11 +86,45 @@ function GscSettings() {
   );
 
   const connection = connectionQuery.data;
+  const isGscConfigured = providersQuery.data?.gsc ?? false;
 
-  if (connectionQuery.isLoading) {
+  if (connectionQuery.isLoading || providersQuery.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  // The API has no Google OAuth client / GSC redirect URI configured.
+  // Existing connections are still shown below so data keeps working even if
+  // an operator removes the env vars later.
+  if (!(connection || isGscConfigured)) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-medium text-lg">Google Search Console</h3>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Connect your Google Search Console property to import search
+            performance data.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 rounded-lg border p-6">
+          <p className="text-muted-foreground text-sm">
+            Google Search Console is not configured on this instance. Whoever
+            operates it needs to create a Google OAuth client and add it to the
+            API and worker environment. The setup guide has the details.
+          </p>
+          <LinkButton
+            className="w-fit"
+            href={GSC_SELF_HOSTING_DOCS_URL}
+            rel="noopener"
+            target="_blank"
+            variant="outline"
+          >
+            Read the setup guide
+          </LinkButton>
+        </div>
       </div>
     );
   }

@@ -111,8 +111,17 @@ Coolify automatically handles these variables:
 - `API_URL`: API endpoint URL (set via `SERVICE_FQDN_OPAPI`)
 - `DASHBOARD_URL`: Dashboard URL (set via `SERVICE_FQDN_OPDASHBOARD`)
 - `COOKIE_SECRET`: Automatically generated secret
+- `ENCRYPTION_KEY`: Automatically generated key (shared by the API and worker)
 
 You can configure optional variables like `ALLOW_REGISTRATION`, `RESEND_API_KEY`, `OPENAI_API_KEY`, etc. through Coolify's environment variable interface.
+
+The compose template exposes the following inputs for [social login](/docs/self-hosting/social-login) and [Google Search Console](/docs/self-hosting/google-search-console); Coolify maps each one to the containers that need it:
+
+- `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET`, `OPENPANEL_GOOGLE_REDIRECT_URI`
+- `OPENPANEL_GITHUB_CLIENT_ID`, `OPENPANEL_GITHUB_CLIENT_SECRET`, `OPENPANEL_GITHUB_REDIRECT_URI`
+- `OPENPANEL_GSC_GOOGLE_REDIRECT_URI`
+
+The redirect URIs use the API's FQDN, e.g. `https://your-domain.com/api/oauth/google/callback`.
 
 ### Updating OpenPanel
 
@@ -212,6 +221,8 @@ To restore from a backup:
 - [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
 - [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
 - [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+- [Enable social login](/docs/self-hosting/social-login) with Google or GitHub
+- [Connect Google Search Console](/docs/self-hosting/google-search-console) for SEO data
 
 ## Additional Resources
 

@@ -3,7 +3,6 @@ import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
-  TABLE_NAMES,
   chQuery,
   createSqlBuilder,
   getProfileById,
@@ -11,9 +10,12 @@ import {
   getProfileListCount,
   getProfileMetrics,
   getProfiles,
+  isProfileColumn,
+  TABLE_NAMES,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
 
+import { TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const profileRouter = createTRPCRouter({
@@ -159,7 +161,12 @@ export const profileRouter = createTRPCRouter({
           property.replace(/^properties\./, '').replace('.*.', '.%.'),
         )}))) as values`;
       } else {
-        sb.select.values = `${property} as values`;
+        // The property is an identifier and cannot be escaped; only real
+        // profile columns are accepted (GHSA-4j6c-j6vc-xq96).
+        if (!isProfileColumn(property)) {
+          throw new TRPCBadRequestError(`Unknown profile property: ${property}`);
+        }
+        sb.select.values = `${property.replace(/^profile\./, '')} as values`;
       }
 
       const profiles = await chQuery<{ values: string[] }>(getSql());

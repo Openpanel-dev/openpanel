@@ -169,7 +169,7 @@ function compileScalarClause(
  * `getProfilePropertySelect` in chart.service.ts, which lists the same set for
  * the SELECT side.
  */
-const PROFILE_COLUMNS = new Set([
+export const PROFILE_TABLE_COLUMNS = new Set([
   'id',
   'first_name',
   'last_name',
@@ -178,6 +178,32 @@ const PROFILE_COLUMNS = new Set([
   'created_at',
   'last_seen_at',
 ]);
+
+/** Whether `name` (with or without the `profile.` prefix) is a real profiles column. */
+export function isProfileColumn(name: string): boolean {
+  return PROFILE_TABLE_COLUMNS.has(name.replace(/^profile\./, ''));
+}
+
+/**
+ * The columns a profiles JOIN subquery must SELECT so that the given
+ * `profile.*` filter/breakdown names resolve. `profile.properties.<key>`
+ * needs the `properties` Map; a bare field needs that column. Column names
+ * are identifiers and cannot be escaped, so anything not on the allowlist is
+ * dropped here instead of reaching the SQL text (GHSA-pc3q-gw7f-p2x2).
+ * Always includes `id`, which the JOIN condition uses.
+ */
+export function profileJoinColumns(names: string[]): string[] {
+  const columns = new Set<string>(['id']);
+  for (const name of names) {
+    const withoutPrefix = name.replace(/^profile\./, '');
+    if (withoutPrefix.startsWith('properties.') || withoutPrefix === 'properties') {
+      columns.add('properties');
+    } else if (PROFILE_TABLE_COLUMNS.has(withoutPrefix)) {
+      columns.add(withoutPrefix);
+    }
+  }
+  return [...columns];
+}
 
 /**
  * Translate `profile.<field>` into the SQL accessor used when querying the
@@ -191,7 +217,7 @@ function profileColumnSql(name: string): string | null {
     const key = withoutPrefix.replace(/^properties\./, '');
     return `properties[${sqlstring.escape(key)}]`;
   }
-  if (PROFILE_COLUMNS.has(withoutPrefix)) {
+  if (PROFILE_TABLE_COLUMNS.has(withoutPrefix)) {
     return withoutPrefix;
   }
   return null;

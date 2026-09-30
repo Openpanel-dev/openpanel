@@ -1,0 +1,135 @@
+---
+title: Google Search Console
+description: Enable the Google Search Console integration on your self-hosted OpenPanel to import clicks, impressions and keyword rankings
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The Google Search Console (GSC) integration imports search performance data into OpenPanel: clicks, impressions, CTR and average position per page and per query. Once enabled it powers the SEO page in each project (`/<organization>/<project>/seo`), Search Console insights on page reports, and the `gsc_*` tools in the [MCP server](/docs/mcp#google-search-console) and the AI assistant.
+
+Enabling it is an instance-level setup (this page) plus a per-project connection that any project admin does from the project's settings under "Google Search".
+
+## How it works
+
+1. A project admin clicks "Connect Google Search Console" and is sent to Google with the read-only `webmasters.readonly` scope.
+2. Google redirects back to the API with a code. The API exchanges it for an access token and a refresh token and stores both in PostgreSQL, encrypted with `ENCRYPTION_KEY`.
+3. The admin picks which Search Console property to use. A backfill of the last 6 months starts immediately, in 14-day chunks.
+4. Every night at 03:00 (worker time zone) the worker re-syncs a rolling 3-day window, because Google finalises data a couple of days late.
+5. Data lands in the ClickHouse tables `gsc_daily`, `gsc_pages_daily` and `gsc_queries_daily`. Re-syncs overwrite earlier rows. There is no retention limit.
+
+A few views (keyword cannibalization, page and query detail drill-downs) query Google live from the API and cache the result for 4 hours, so both the API and the worker need the Google credentials and `ENCRYPTION_KEY`.
+
+## Prerequisites
+
+You need a Google Cloud OAuth client. If you already set up [Google sign-in](/docs/self-hosting/social-login), reuse it. The integration uses the same `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Google sign-in does not have to be enabled; the OAuth client alone is enough.
+
+You also need `ENCRYPTION_KEY` set on the API and worker. The Docker Compose setup script generates one. Other deployments must create it with `openssl rand -hex 32`.
+
+Finally, you need the public `API_URL` of your instance, e.g. `https://analytics.example.com/api`.
+
+## Setup
+
+<Steps>
+<Step>
+### Enable the Search Console API
+
+In the [Google Cloud Console](https://console.cloud.google.com/), open "APIs & Services", "Library", search for "Google Search Console API" and click "Enable". Without this every request fails with `403 Google Search Console API has not been used in project ... before or it is disabled`.
+</Step>
+
+<Step>
+### Configure the consent screen and scope
+
+Open "APIs & Services", "OAuth consent screen" (or "Google Auth Platform") and make sure the app exists. See the [Google sign-in guide](/docs/self-hosting/social-login#google) if you are starting from scratch.
+
+Under "Data access" (or "Scopes"), add `https://www.googleapis.com/auth/webmasters.readonly` ("View Search Console data for your verified sites").
+
+<Callout type="warn">
+Testing versus published matters here. While the consent screen is in Testing mode, Google expires refresh tokens after 7 days. The nightly sync will then fail with status `token_expired` and the project will need to be reconnected every week. For a stable connection, click "Publish app".
+
+`webmasters.readonly` is classed as a sensitive scope. Publishing an External app that requests it may trigger a request for Google's verification process. In practice this is only enforced when the app is used by many users outside your organisation. For an internal instance you can usually publish and keep using it, but Google will show an "unverified app" warning on the consent screen until verified. If everyone who will connect Search Console is in your Google Workspace, choose Internal as the user type. Internal apps never need verification and their refresh tokens do not expire after 7 days.
+</Callout>
+</Step>
+
+<Step>
+### Add the callback URL to the OAuth client
+
+Open "APIs & Services", "Credentials", select your OAuth 2.0 client (or create a Web application client as described in the [sign-in guide](/docs/self-hosting/social-login#google)) and add another authorized redirect URI:
+
+```
+${API_URL}/gsc/callback
+```
+
+For example `https://analytics.example.com/api/gsc/callback`. This is a different URL from the sign-in callback (`/oauth/google/callback`). Both can coexist on the same client.
+</Step>
+
+<Step>
+### Add the environment variables
+
+```bash title=".env"
+GOOGLE_CLIENT_ID=123456789012-abcdefghijklmnop.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx
+GSC_GOOGLE_REDIRECT_URI=https://analytics.example.com/api/gsc/callback
+ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+`GSC_GOOGLE_REDIRECT_URI` must match the redirect URI registered in the previous step exactly. `ENCRYPTION_KEY` must be exactly 64 hexadecimal characters (32 bytes). Generate one with `openssl rand -hex 32`.
+</Step>
+
+<Step>
+### Restart the services
+
+Which services need which variables:
+
+| Variable | API | Worker | Dashboard |
+|---|---|---|---|
+| `GOOGLE_CLIENT_ID` | yes | yes | no |
+| `GOOGLE_CLIENT_SECRET` | yes | yes | no |
+| `GSC_GOOGLE_REDIRECT_URI` | yes | no | no |
+| `ENCRYPTION_KEY` | yes | yes (must be identical to the API's) | no |
+
+The dashboard needs none of these. It asks the API whether the integration is configured.
+
+How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to `self-hosting/.env` (all services read it) and run `docker compose up -d --force-recreate op-api op-worker`. With Coolify, the bundled template exposes `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET` and `OPENPANEL_GSC_GOOGLE_REDIRECT_URI`, and generates `ENCRYPTION_KEY` for you. For any other setup, add them to the API and worker environment and restart both.
+</Step>
+
+<Step>
+### Connect a project
+
+In the dashboard, open the project's settings, go to the "Google Search" tab and click "Connect Google Search Console". Sign in with a Google account that has at least Restricted access to the property in Search Console, and grant the read-only permission.
+
+You are returned to the settings tab with a list of every property that account can see. Both domain properties (`sc-domain:example.com`) and URL-prefix properties (`https://example.com/`) are listed. Pick the one that matches the site the project tracks. A 6-month backfill starts as soon as you click "Connect property". The badge on the settings page shows its progress, and the SEO page fills in as chunks complete.
+</Step>
+</Steps>
+
+## Things to know
+
+Each project has at most one Search Console connection. Disconnecting keeps the data already imported into ClickHouse. Reconnecting to a different property overwrites overlapping dates.
+
+The refresh token belongs to the Google user who clicked "Connect". If that person loses access to the property, or leaves the organisation, syncing stops with `token_expired` and someone else must reconnect.
+
+Rotating `ENCRYPTION_KEY` breaks existing connections. Stored tokens can no longer be decrypted and every project must reconnect. The same key also protects two-factor secrets and export credentials, so treat it as permanent.
+
+If you restrict the worker with [`ENABLED_QUEUES`](/docs/self-hosting/environment-variables#enabled_queues), it must include both `gsc` (sync and backfill jobs) and `cron` (the nightly trigger). `GSC_CONCURRENCY` (default `5`) controls how many projects sync in parallel.
+
+Search Console allows thousands of requests per site per day. A 6-month backfill makes roughly 40 requests, and the nightly sync makes 3 per project. You are unlikely to hit limits unless you connect hundreds of projects.
+
+Google typically finalises data 2 to 3 days after the fact. OpenPanel requests `dataState: all`, so recent days include preliminary numbers that later syncs correct.
+
+If the connect callback fails, OpenPanel redirects to `/login?error=...&correlationId=...` even though you are still signed in. Navigate back to the project and search the API logs for the correlation ID to see the full error.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Settings tab says "Google Search Console is not configured on this instance" | The API is missing `GOOGLE_CLIENT_ID` or `GSC_GOOGLE_REDIRECT_URI`, or was not restarted after you added them. |
+| Google shows `Error 400: redirect_uri_mismatch` | `GSC_GOOGLE_REDIRECT_URI` differs from the redirect URI registered on the OAuth client. Check `http` vs `https`, the `/api` prefix and trailing slashes. |
+| `/login?error=No refresh token returned from Google GSC OAuth` | Google only issues a refresh token on the first consent for a client, and OpenPanel forces re-consent to work around that. If you still hit this, revoke OpenPanel under [myaccount.google.com/permissions](https://myaccount.google.com/permissions) and connect again. |
+| `/login?error=Missing GSC OAuth cookies` or `GSC OAuth state mismatch` | The state cookies set before the redirect did not reach the API. The API and dashboard must share a registrable domain. See the cookie notes in the [social login guide](/docs/self-hosting/social-login#before-you-start). |
+| Connection shows "Authorization expired" (`token_expired`) | The refresh token was revoked or expired. Most often the consent screen is in Testing mode (7-day limit). Publish the app, then click "Reconnect". |
+| Sync status "error" with `Google Search Console API has not been used in project` | The Search Console API is not enabled in the Google Cloud project. Enable it and wait a minute. |
+| Sync status "error" with `403` / `User does not have sufficient permission for site` | The connected Google account lost access to the property in Search Console. |
+| Worker logs `ENCRYPTION_KEY environment variable is not set` or `must be 32 bytes (64 hex characters)` | `ENCRYPTION_KEY` is missing or malformed on the worker. It must be identical on the API and the worker. |
+| Worker logs `GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in this environment` | The worker has no Google credentials and cannot refresh tokens. Add them to the worker service. |
+| "No Search Console properties found for this Google account" | The Google account you signed in with has no properties in Search Console. Add the account as a user on the property (Search Console settings, "Users and permissions") and reconnect. |
+| SEO page is empty right after connecting | The backfill runs in the background in 14-day chunks. The settings page shows its status. If it stays on "pending", check that the worker is running and `ENABLED_QUEUES` includes `gsc`. |

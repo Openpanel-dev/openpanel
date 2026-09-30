@@ -13,7 +13,7 @@ import {
   toNullIfDefaultMinDate,
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
-import { createSqlBuilder } from '../sql-builder';
+import { type SqlBuilderObject, createSqlBuilder } from '../sql-builder';
 import type { IClickhouseEvent } from './event.service';
 import { buildFilterWhere } from './filter-where.service';
 import type { IClickhouseSession } from './session.service';
@@ -182,71 +182,69 @@ export async function getProfiles(ids: string[], projectId: string) {
 
 export const getProfilesCached = cacheable(getProfiles, 60 * 5);
 
-export async function getProfileList({
+type ProfileListFilterOptions = Omit<GetProfileListOptions, 'cursor' | 'take'>;
+
+/** Where clause shared by the profile list and its count, so the two agree. */
+function applyProfileListWhere(
+  sb: SqlBuilderObject,
+  { projectId, filters, search, isExternal }: ProfileListFilterOptions,
+) {
+  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
+  const searchClause = profileSearchSql(search);
+  if (searchClause) {
+    sb.where.search = searchClause;
+  }
+  if (isExternal !== undefined) {
+    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
+  }
+  if (filters?.length) {
+    Object.assign(
+      sb.where,
+      buildFilterWhere(filters, projectId, {
+        selfTable: 'profiles',
+        profileIdExpr: 'id',
+        groupsExpr: 'groups',
+      }),
+    );
+  }
+}
+
+export function buildProfileListSql({
   take,
   cursor,
-  projectId,
-  filters,
-  search,
-  isExternal,
+  ...options
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
-  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
-  const searchClause = profileSearchSql(search);
-  if (searchClause) {
-    sb.where.search = searchClause;
-  }
-  if (isExternal !== undefined) {
-    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
-  }
-  if (filters?.length) {
-    Object.assign(
-      sb.where,
-      buildFilterWhere(filters, projectId, {
-        selfTable: 'profiles',
-        profileIdExpr: 'id',
-        groupsExpr: 'groups',
-      }),
-    );
-  }
-  const data = await chQuery<IClickhouseProfile>(getSql());
+  applyProfileListWhere(sb, options);
+  return getSql();
+}
+
+export function buildProfileListCountSql(options: ProfileListFilterOptions) {
+  const { sb, getSql } = createSqlBuilder();
+  sb.from = TABLE_NAMES.profiles;
+  // One profile is several rows until a background merge collapses them, so
+  // counting rows overcounts against the FINAL list. uniqExact deduplicates
+  // without FINAL, which cannot spill to disk on large projects.
+  sb.select.count = 'uniqExact(id) as count';
+  sb.groupBy.project_id = 'project_id';
+  applyProfileListWhere(sb, options);
+  return getSql();
+}
+
+export async function getProfileList(options: GetProfileListOptions) {
+  const data = await chQuery<IClickhouseProfile>(buildProfileListSql(options));
   return data.map(transformProfile);
 }
 
-export async function getProfileListCount({
-  projectId,
-  filters,
-  isExternal,
-  search,
-}: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
-  const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles';
-  sb.select.count = 'count(id) as count';
-  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
-  sb.groupBy.project_id = 'project_id';
-  const searchClause = profileSearchSql(search);
-  if (searchClause) {
-    sb.where.search = searchClause;
-  }
-  if (isExternal !== undefined) {
-    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
-  }
-  if (filters?.length) {
-    Object.assign(
-      sb.where,
-      buildFilterWhere(filters, projectId, {
-        selfTable: 'profiles',
-        profileIdExpr: 'id',
-        groupsExpr: 'groups',
-      }),
-    );
-  }
-  const data = await chQuery<{ count: number }>(getSql());
+export async function getProfileListCount(options: ProfileListFilterOptions) {
+  const data = await chQuery<{ count: number }>(
+    buildProfileListCountSql(options),
+  );
   return data[0]?.count ?? 0;
 }
 

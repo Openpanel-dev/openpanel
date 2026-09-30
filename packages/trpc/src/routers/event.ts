@@ -3,9 +3,6 @@ import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
-  type IServiceProfile,
-  type IServiceSession,
-  TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
   db,
@@ -15,8 +12,12 @@ import {
   getEventList,
   getEventMetasCached,
   getSettingsForProject,
+  hasAnonymousShareAccessToProject,
   pagesService,
   sessionService,
+  TABLE_NAMES,
+  type IServiceProfile,
+  type IServiceSession,
 } from '@openpanel/db';
 import {
   zChartEventFilter,
@@ -290,13 +291,14 @@ export const eventRouter = createTRPCRouter({
           throw new TRPCForbiddenError('You do not have access to this project');
         }
       } else {
-        const share = await db.shareOverview.findFirst({
-          where: {
-            projectId,
-          },
-        });
-
-        if (!share) {
+        // Anonymous callers only see bot events through an unlocked public
+        // overview share; the row existing is not enough (GHSA-r4g5-vgpj-923m).
+        const allowed = await hasAnonymousShareAccessToProject(
+          projectId,
+          ctx.cookies,
+          ['overview'],
+        );
+        if (!allowed) {
           throw new TRPCForbiddenError('You do not have access to this project');
         }
       }

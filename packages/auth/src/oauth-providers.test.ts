@@ -74,6 +74,20 @@ describe('isOAuthLoginEnabled', () => {
     expect(isOAuthLoginEnabled('google')).toBe(false);
   });
 
+  it.each([
+    ['github', 'GITHUB_CLIENT_ID'],
+    ['github', 'GITHUB_CLIENT_SECRET'],
+    ['github', 'GITHUB_REDIRECT_URI'],
+    ['google', 'GOOGLE_CLIENT_ID'],
+    ['google', 'GOOGLE_CLIENT_SECRET'],
+    ['google', 'GOOGLE_REDIRECT_URI'],
+  ] as const)('rejects %s when %s is blank', (provider, key) => {
+    enableGithub();
+    enableGoogle();
+    process.env[key] = '  ';
+    expect(isOAuthLoginEnabled(provider)).toBe(false);
+  });
+
   it('treats blank credential strings as unset', () => {
     process.env.GITHUB_CLIENT_ID = '  ';
     process.env.GITHUB_CLIENT_SECRET = 'gh-secret';
@@ -91,4 +105,17 @@ describe('getEnabledOAuthLoginProviders', () => {
       google: false,
     });
   });
+
+  it('keeps GitHub available when Google login is disabled', () => {
+    enableGithub();
+    enableGoogle();
+    process.env.DISABLE_GOOGLE_AUTH = 'true';
+    expect(getEnabledOAuthLoginProviders()).toEqual({
+      github: true,
+      google: false,
+    });
+    expect(process.env.GOOGLE_CLIENT_ID).toBe('go-id');
+    expect(process.env.GOOGLE_CLIENT_SECRET).toBe('go-secret');
+  });
+
 });

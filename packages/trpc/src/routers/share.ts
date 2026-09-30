@@ -15,6 +15,7 @@ import {
 } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/auth';
+import { hasShareAccess } from '@openpanel/common/server/share-access';
 import { z } from 'zod';
 import { requireProjectAccess } from '../access';
 import {
@@ -75,8 +76,14 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-overview-${share.id}`];
-      if (share.password && !hasAccess) {
+      if (
+        share.password &&
+        !hasShareAccess(ctx.cookies, {
+          type: 'overview',
+          id: share.id,
+          passwordHash: share.password,
+        })
+      ) {
         return lockedShare(share.id, share.organization, share.project);
       }
 
@@ -160,8 +167,14 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Dashboard share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-dashboard-${share.id}`];
-      if (share.password && !hasAccess) {
+      if (
+        share.password &&
+        !hasShareAccess(ctx.cookies, {
+          type: 'dashboard',
+          id: share.id,
+          passwordHash: share.password,
+        })
+      ) {
         return lockedShare(share.id, share.organization, share.project);
       }
 
@@ -254,8 +267,14 @@ export const shareRouter = createTRPCRouter({
       }
 
       // Check password access
-      const hasAccess = !!ctx.cookies[`shared-dashboard-${share.id}`];
-      if (share.password && !hasAccess) {
+      if (
+        share.password &&
+        !hasShareAccess(ctx.cookies, {
+          type: 'dashboard',
+          id: share.id,
+          passwordHash: share.password,
+        })
+      ) {
         throw new TRPCAccessError('Password required');
       }
 
@@ -283,8 +302,14 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Report share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-report-${share.id}`];
-      if (share.password && !hasAccess) {
+      if (
+        share.password &&
+        !hasShareAccess(ctx.cookies, {
+          type: 'report',
+          id: share.id,
+          passwordHash: share.password,
+        })
+      ) {
         return lockedShare(share.id, share.organization, share.project);
       }
 

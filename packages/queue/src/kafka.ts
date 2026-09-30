@@ -1,5 +1,6 @@
 import { createLogger } from '@openpanel/logger';
 import { type Consumer, Kafka, logLevel, type Producer } from 'kafkajs';
+import { describeKafkaSecurity, resolveKafkaSecurity } from './kafka-security';
 import type { EventsQueuePayloadIncomingEvent } from './queues';
 
 export type { KafkaMessage } from 'kafkajs';
@@ -80,6 +81,12 @@ const KAFKA_MAX_BYTES_PER_PARTITION =
 
 export const isKafkaConfigured = (): boolean => KAFKA_BROKERS.length > 0;
 
+// Resolved at module load so a partial/invalid TLS+SASL config fails the
+// process at startup rather than on the first produce/consume.
+const KAFKA_SECURITY = isKafkaConfigured()
+  ? resolveKafkaSecurity(process.env)
+  : { ssl: false, sasl: undefined };
+
 export const shouldUseKafka = (): boolean => isKafkaConfigured();
 
 let kafka: Kafka | null = null;
@@ -96,6 +103,8 @@ const getKafka = (): Kafka => {
       logLevel: logLevel.WARN,
       requestTimeout: KAFKA_REQUEST_TIMEOUT_MS,
       connectionTimeout: KAFKA_CONNECTION_TIMEOUT_MS,
+      ssl: KAFKA_SECURITY.ssl,
+      sasl: KAFKA_SECURITY.sasl,
     });
   }
   return kafka;
@@ -129,7 +138,11 @@ const getProducer = async (): Promise<Producer> => {
       .then(() => {
         producer = p;
         kafkaLogger.info(
-          { brokers: KAFKA_BROKERS, topic: KAFKA_EVENTS_TOPIC },
+          {
+            brokers: KAFKA_BROKERS,
+            topic: KAFKA_EVENTS_TOPIC,
+            ...describeKafkaSecurity(KAFKA_SECURITY),
+          },
           'kafka producer connected'
         );
         return p;

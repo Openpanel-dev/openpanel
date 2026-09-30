@@ -302,6 +302,22 @@ describe('chart.service / getChartSql', () => {
     await explain(sql);
   });
 
+  itCH(
+    'one_event_per_user + property breakdown resolves the events alias',
+    async () => {
+      const sql = await getChartSql({
+        event: event({ segment: 'one_event_per_user' }),
+        breakdowns: [breakdown('properties.linked')],
+        interval: 'day',
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      await explain(sql);
+    },
+  );
+
   // Regressions from HyperDX 2026-05-14 → 2026-05-17 ClickHouse error log.
   // Saved reports / older clients send field names that don't match the events
   // schema; the chart service used to inline them verbatim, crashing parse.
@@ -416,6 +432,39 @@ describe('chart.service / getAggregateChartSql', () => {
     expect(sql).toContain("e.properties['__query.utm_source']");
     await explain(sql);
   });
+
+  itCH(
+    'one_event_per_user + group filter drops the out-of-scope WHERE',
+    async () => {
+      const sql = await getAggregateChartSql({
+        event: event({
+          segment: 'one_event_per_user',
+          filters: [{ name: 'group.plan', operator: 'is', value: ['pro'] }],
+        }),
+        breakdowns: [],
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      await explain(sql);
+    },
+  );
+
+  itCH(
+    'one_event_per_user + property breakdown resolves the events alias',
+    async () => {
+      const sql = await getAggregateChartSql({
+        event: event({ segment: 'one_event_per_user' }),
+        breakdowns: [breakdown('properties.linked')],
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      await explain(sql);
+    },
+  );
 });
 
 describe('overview.service / getRawWhereClause (UTM remapping)', () => {

@@ -817,12 +817,13 @@ export async function getChartSql({
         ' AND '
       )}
         ORDER BY profile_id, created_at DESC
-      ) as subQuery`;
+      ) as e`;
     sb.joins = {};
     // Filters were already applied inside the subquery, and the outer query
-    // selects from `subQuery` — the `e` alias used in sb.where is no longer
-    // in scope, so re-emitting WHERE would produce
-    // "Unknown identifier `e.name`". Clear it.
+    // selects from the subquery aliased `e` — the `e` alias used in sb.where
+    // still resolves to it (the subquery does `SELECT * FROM events e`), but
+    // re-emitting WHERE here would just re-apply the same filters a second
+    // time. Clear it.
     sb.where = {};
 
     const sql = rewriteProfilePropertyRefs(
@@ -1166,8 +1167,14 @@ export async function getAggregateChartSql({
         ' AND '
       )}
         ORDER BY profile_id, created_at DESC
-      ) as subQuery`;
+      ) as e`;
     sb.joins = {};
+    // Filters were already applied inside the subquery. A profile or group
+    // filter's join (and any ARRAY JOIN alias like _group_id) is scoped to
+    // it and is gone now that sb.joins is cleared, so re-emitting WHERE here
+    // would produce "Unknown identifier `_group_id`"/`profile.*`. Clear it,
+    // matching getChartSql.
+    sb.where = {};
 
     const sql = rewriteProfilePropertyRefs(getSql(), profileProps.keys);
     console.log('-- Aggregate Chart --');

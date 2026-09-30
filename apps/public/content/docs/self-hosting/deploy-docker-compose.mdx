@@ -120,6 +120,8 @@ For a complete reference of all available environment variables, see the [Enviro
 If you change the `.env` file, you need to restart the services for the changes to take effect. Use `./stop` and `./start` or `docker compose restart`.
 </Callout>
 
+The generated `.env` also contains commented-out blocks for optional features. Uncomment and fill them in to enable [social login with Google or GitHub](/docs/self-hosting/social-login) and the [Google Search Console integration](/docs/self-hosting/google-search-console).
+
 ### Using Custom Docker Images
 
 If you want to use specific image versions, edit the `docker-compose.yml` file and update the image tags:
@@ -351,4 +353,6 @@ If you want to use NGINX, Traefik, or another reverse proxy instead of the bundl
 - [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
 - [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
 - [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+- [Enable social login](/docs/self-hosting/social-login) with Google or GitHub
+- [Connect Google Search Console](/docs/self-hosting/google-search-console) for SEO data
 

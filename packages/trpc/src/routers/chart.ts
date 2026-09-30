@@ -1,7 +1,7 @@
 import {
   AggregateChartEngine,
-  ChartEngine,
   ch,
+  ChartEngine,
   chQuery,
   clix,
   conversionService,
@@ -21,13 +21,14 @@ import {
   getRetentionCohort,
   getSelectPropertyKey,
   getSettingsForProject,
-  type IServiceProfile,
   isKnownEventField,
   mergeGlobalFilters,
   normalizeEventField,
   onlyReportEvents,
+  profileJoinColumns,
   sankeyService,
   TABLE_NAMES,
+  type IServiceProfile,
   validateShareAccess,
 } from '@openpanel/db';
 import {
@@ -824,11 +825,10 @@ export const chartRouter = createTRPCRouter({
       ];
 
       if (profileFields.length > 0) {
-        // Extract top-level field names and select only what's needed
-        const fieldsToSelect = uniq(
-          profileFields.map((f) => f.split('.')[0])
-        ).join(', ');
-        sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+        // Only allowlisted columns: the names are user input and identifiers
+        // cannot be escaped.
+        const fieldsToSelect = profileJoinColumns(profileFields).join(', ');
+        sb.joins.profiles = `LEFT ANY JOIN (SELECT ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
       }
 
       // Check for group filters/breakdowns and add ARRAY JOIN if needed

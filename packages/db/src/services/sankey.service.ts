@@ -1,5 +1,6 @@
 import { chartColors } from '@openpanel/constants';
 import { type IChartEventFilter, zChartEvent } from '@openpanel/validation';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -58,13 +59,13 @@ export class SankeyService {
     if (include && include.length > 0) {
       const eventNames = [...include, startEventName, endEventName]
         .filter((item) => item !== undefined)
-        .map((e) => `'${e!.replace(/'/g, "''")}'`)
+        .map((e) => sqlstring.escape(e))
         .join(', ');
       return `name IN (${eventNames})`;
     }
     if (exclude.length > 0) {
       const excludedNames = exclude
-        .map((e) => `'${e.replace(/'/g, "''")}'`)
+        .map((e) => sqlstring.escape(e))
         .join(', ');
       return `name NOT IN (${excludedNames})`;
     }
@@ -102,40 +103,40 @@ export class SankeyService {
     const defaultSliceExpr = `arraySlice(events_deduped, 1, ${steps})`;
 
     if (mode === 'after' && startEvent) {
-      const escapedStartEvent = startEvent.name.replace(/'/g, "''");
+      const escapedStartEvent = sqlstring.escape(startEvent.name);
       const sessionFilter = hasStartEventCTE
         ? 'session_id IN (SELECT session_id FROM start_event_sessions)'
-        : `arrayExists(x -> x = '${escapedStartEvent}', events_deduped)`;
-      const eventsSliceExpr = `arraySlice(events_deduped, arrayFirstIndex(x -> x = '${escapedStartEvent}', events_deduped), ${steps})`;
+        : `arrayExists(x -> x = ${escapedStartEvent}, events_deduped)`;
+      const eventsSliceExpr = `arraySlice(events_deduped, arrayFirstIndex(x -> x = ${escapedStartEvent}, events_deduped), ${steps})`;
       return { sessionFilter, eventsSliceExpr };
     }
 
     if (mode === 'before' && startEvent) {
-      const escapedStartEvent = startEvent.name.replace(/'/g, "''");
+      const escapedStartEvent = sqlstring.escape(startEvent.name);
       const sessionFilter = hasStartEventCTE
         ? 'session_id IN (SELECT session_id FROM start_event_sessions)'
-        : `arrayExists(x -> x = '${escapedStartEvent}', events_deduped)`;
+        : `arrayExists(x -> x = ${escapedStartEvent}, events_deduped)`;
       const eventsSliceExpr = `arraySlice(
         events_deduped,
-        greatest(1, arrayFirstIndex(x -> x = '${escapedStartEvent}', events_deduped) - ${steps} + 1),
-        arrayFirstIndex(x -> x = '${escapedStartEvent}', events_deduped) - greatest(1, arrayFirstIndex(x -> x = '${escapedStartEvent}', events_deduped) - ${steps} + 1) + 1
+        greatest(1, arrayFirstIndex(x -> x = ${escapedStartEvent}, events_deduped) - ${steps} + 1),
+        arrayFirstIndex(x -> x = ${escapedStartEvent}, events_deduped) - greatest(1, arrayFirstIndex(x -> x = ${escapedStartEvent}, events_deduped) - ${steps} + 1) + 1
       )`;
       return { sessionFilter, eventsSliceExpr };
     }
 
     if (mode === 'between' && startEvent && endEvent) {
-      const escapedStartEvent = startEvent.name.replace(/'/g, "''");
-      const escapedEndEvent = endEvent.name.replace(/'/g, "''");
+      const escapedStartEvent = sqlstring.escape(startEvent.name);
+      const escapedEndEvent = sqlstring.escape(endEvent.name);
       let sessionFilter = '';
       if (hasStartEventCTE && hasEndEventCTE) {
         sessionFilter =
           'session_id IN (SELECT session_id FROM start_event_sessions) AND session_id IN (SELECT session_id FROM end_event_sessions)';
       } else if (hasStartEventCTE) {
-        sessionFilter = `session_id IN (SELECT session_id FROM start_event_sessions) AND arrayExists(x -> x = '${escapedEndEvent}', events_deduped)`;
+        sessionFilter = `session_id IN (SELECT session_id FROM start_event_sessions) AND arrayExists(x -> x = ${escapedEndEvent}, events_deduped)`;
       } else if (hasEndEventCTE) {
-        sessionFilter = `arrayExists(x -> x = '${escapedStartEvent}', events_deduped) AND session_id IN (SELECT session_id FROM end_event_sessions)`;
+        sessionFilter = `arrayExists(x -> x = ${escapedStartEvent}, events_deduped) AND session_id IN (SELECT session_id FROM end_event_sessions)`;
       } else {
-        sessionFilter = `arrayExists(x -> x = '${escapedStartEvent}', events_deduped) AND arrayExists(x -> x = '${escapedEndEvent}', events_deduped)`;
+        sessionFilter = `arrayExists(x -> x = ${escapedStartEvent}, events_deduped) AND arrayExists(x -> x = ${escapedEndEvent}, events_deduped)`;
       }
       return { sessionFilter, eventsSliceExpr: defaultSliceExpr };
     }
@@ -172,8 +173,8 @@ export class SankeyService {
       }>([
         'session_id',
         'events',
-        `arrayFirstIndex(x -> x = '${startEvent.name.replace(/'/g, "''")}', events) as start_index`,
-        `arrayFirstIndex(x -> x = '${endEvent.name.replace(/'/g, "''")}', events) as end_index`,
+        `arrayFirstIndex(x -> x = ${sqlstring.escape(startEvent.name)}, events) as start_index`,
+        `arrayFirstIndex(x -> x = ${sqlstring.escape(endEvent.name)}, events) as end_index`,
       ])
       .from('session_paths')
       .having('start_index', '>', 0)

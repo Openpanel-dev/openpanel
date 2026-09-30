@@ -198,6 +198,24 @@ COOKIE_SECRET=your-random-secret-here
 Never use the default value in production! Always generate a unique secret.
 </Callout>
 
+### ENCRYPTION_KEY
+
+**Type**: `string` (64 hexadecimal characters)
+**Required**: For [Google Search Console](/docs/self-hosting/google-search-console), two-factor authentication (TOTP) and object-store exports
+**Default**: None
+
+AES-256 key used for everything OpenPanel encrypts at rest: Google Search Console tokens, users' 2FA secrets and S3/GCS export credentials. Must be exactly 32 bytes encoded as 64 hex characters, and must be identical on the API and worker services. The Docker Compose setup script generates one for you.
+
+**Example**:
+```bash
+# Generate with: openssl rand -hex 32
+ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+<Callout type="warn">
+Rotating this key makes every existing ciphertext unreadable. Search Console connections must be re-authorised, 2FA must be re-enrolled and export credentials re-entered. Back it up together with your database.
+</Callout>
+
 ### COOKIE_TLDS
 
 **Type**: `string` (comma-separated)
@@ -508,46 +526,102 @@ If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** au
 
 ## OAuth & Integrations
 
-Social login (GitHub / Google) is **off by default** for self-hosted installs. Set the provider credentials below to show the matching button on `/login` and `/onboarding`. Leave them unset (or set `DISABLE_*_AUTH`) to hide a provider.
+Social login is hidden unless the provider has a client ID, client secret, and redirect URI configured. Use `DISABLE_GITHUB_AUTH` or `DISABLE_GOOGLE_AUTH` to hide a configured login provider.
+
+### GOOGLE_CLIENT_ID
+
+**Type**: `string`
+**Required**: No
+**Default**: None
+
+OAuth client ID from Google Cloud Console. Enables [Sign in with Google](/docs/self-hosting/social-login#google) and is also used by the [Google Search Console integration](/docs/self-hosting/google-search-console). Set it on the API, and on the worker if you use Search Console.
+
+**Example**:
+```bash
+GOOGLE_CLIENT_ID=123456789012-abcdefghijklmnop.apps.googleusercontent.com
+```
+
+### GOOGLE_CLIENT_SECRET
+
+**Type**: `string`
+**Required**: No (required together with `GOOGLE_CLIENT_ID`)
+**Default**: None
+
+OAuth client secret matching `GOOGLE_CLIENT_ID`. Only the API and worker need it.
+
+**Example**:
+```bash
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### GOOGLE_REDIRECT_URI
+
+**Type**: `string`
+**Required**: For Google sign-in
+**Default**: None
+
+Full callback URL for Google sign-in: `${API_URL}/oauth/google/callback`. Must exactly match an authorized redirect URI on the Google OAuth client. It is not derived from `API_URL`, so set it explicitly. See [Social login](/docs/self-hosting/social-login).
+
+**Example**:
+```bash
+GOOGLE_REDIRECT_URI=https://analytics.example.com/api/oauth/google/callback
+```
+
+### GSC_GOOGLE_REDIRECT_URI
+
+**Type**: `string`
+**Required**: For the Google Search Console integration
+**Default**: None
+
+Full callback URL for connecting Google Search Console: `${API_URL}/gsc/callback`. Must be registered as an authorized redirect URI on the same Google OAuth client as `GOOGLE_REDIRECT_URI`. Only the API needs it. See [Google Search Console](/docs/self-hosting/google-search-console).
+
+**Example**:
+```bash
+GSC_GOOGLE_REDIRECT_URI=https://analytics.example.com/api/gsc/callback
+```
 
 ### GITHUB_CLIENT_ID
 
 **Type**: `string`
-**Required**: No (required to enable GitHub login)
+**Required**: No
 **Default**: None
 
-OAuth App client ID from [GitHub Developer Settings](https://github.com/settings/developers).
+Client ID of a GitHub OAuth App. Enables [Sign in with GitHub](/docs/self-hosting/social-login#github). Only the API needs it.
 
 **Example**:
 ```bash
-GITHUB_CLIENT_ID=Ov23liABCDEFG
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxxxxxx
 ```
 
 ### GITHUB_CLIENT_SECRET
 
 **Type**: `string`
-**Required**: No (required to enable GitHub login)
+**Required**: No (required together with `GITHUB_CLIENT_ID`)
 **Default**: None
 
-OAuth App client secret from GitHub.
+Client secret of the GitHub OAuth App. Only the API needs it.
 
 **Example**:
 ```bash
-GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ### GITHUB_REDIRECT_URI
 
 **Type**: `string`
-**Required**: No (required to enable GitHub login)
+**Required**: For GitHub sign-in
 **Default**: None
 
-Must match the **Authorization callback URL** configured on the GitHub OAuth App. Point it at your API host:
+Full callback URL for GitHub sign-in: `${API_URL}/oauth/github/callback`. Must exactly match the authorization callback URL of the GitHub OAuth App. It is not derived from `API_URL`, so set it explicitly.
 
 **Example**:
 ```bash
-GITHUB_REDIRECT_URI=https://api.example.com/oauth/github/callback
+GITHUB_REDIRECT_URI=https://analytics.example.com/api/oauth/github/callback
 ```
+
+<Callout>
+The dashboard shows social login buttons only when the API has the matching client ID, client secret, and redirect URI, and login is not disabled. Search Console settings require the Google client ID and Search Console redirect URI independently of the login disable flags. The dashboard itself needs none of these variables.
+</Callout>
 
 ### DISABLE_GITHUB_AUTH
 
@@ -555,51 +629,7 @@ GITHUB_REDIRECT_URI=https://api.example.com/oauth/github/callback
 **Required**: No
 **Default**: `false`
 
-Set to `true` or `1` to hide GitHub login even when GitHub credentials are set.
-
-**Example**:
-```bash
-DISABLE_GITHUB_AUTH=true
-```
-
-### GOOGLE_CLIENT_ID
-
-**Type**: `string`
-**Required**: No (required to enable Google login)
-**Default**: None
-
-OAuth 2.0 Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials). The same client can also be used for Google Search Console integration.
-
-**Example**:
-```bash
-GOOGLE_CLIENT_ID=1234567890-abcdefg.apps.googleusercontent.com
-```
-
-### GOOGLE_CLIENT_SECRET
-
-**Type**: `string`
-**Required**: No (required to enable Google login)
-**Default**: None
-
-OAuth 2.0 Client secret from Google Cloud Console.
-
-**Example**:
-```bash
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-```
-
-### GOOGLE_REDIRECT_URI
-
-**Type**: `string`
-**Required**: No (required to enable Google login)
-**Default**: None
-
-Must match an authorized redirect URI on the Google OAuth client. Point it at your API host:
-
-**Example**:
-```bash
-GOOGLE_REDIRECT_URI=https://api.example.com/oauth/google/callback
-```
+Set to `true` or `1` to hide GitHub login even when GitHub credentials are set. Sign-in attempts through the API are also rejected.
 
 ### DISABLE_GOOGLE_AUTH
 
@@ -607,12 +637,7 @@ GOOGLE_REDIRECT_URI=https://api.example.com/oauth/google/callback
 **Required**: No
 **Default**: `false`
 
-Set to `true` or `1` to hide Google login while keeping `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` available for Search Console (`GSC_GOOGLE_REDIRECT_URI`).
-
-**Example**:
-```bash
-DISABLE_GOOGLE_AUTH=true
-```
+Set to `true` or `1` to hide Google login while keeping Google credentials available for Search Console (`GSC_GOOGLE_REDIRECT_URI`). Sign-in attempts through the API are also rejected.
 
 ### SLACK_CLIENT_ID
 
@@ -696,13 +721,27 @@ Port for the worker service to listen on.
 WORKER_PORT=3000
 ```
 
+### BULLBOARD_USERNAME / BULLBOARD_PASSWORD
+
+**Type**: `string`
+**Required**: No
+**Default**: None
+
+Credentials for the Bull Board queue dashboard served on the worker port. The dashboard can add, retry and clean jobs, so it is only mounted when both variables are set. Without them the worker logs a warning at startup and serves only `/healthcheck` and `/metrics`. The browser prompts for these credentials (HTTP Basic auth).
+
+**Example**:
+```bash
+BULLBOARD_USERNAME=ops
+BULLBOARD_PASSWORD=$(openssl rand -hex 16)
+```
+
 ### DISABLE_BULLBOARD
 
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
 
-Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring dashboard.
+Disable the Bull Board queue dashboard entirely and silence the startup warning about missing credentials. Set to `true` or `1`.
 
 **Example**:
 ```bash
@@ -728,7 +767,7 @@ DISABLE_WORKERS=true
 **Required**: No
 **Default**: All queues enabled
 
-Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `misc`, `import`.
+Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `import`, `insights`, `gsc`, `cohortCompute`.
 
 **Example**:
 ```bash
@@ -750,6 +789,19 @@ Number of concurrent event processing jobs per worker.
 **Example**:
 ```bash
 EVENT_JOB_CONCURRENCY=20
+```
+
+### GSC_CONCURRENCY
+
+**Type**: `number`
+**Required**: No
+**Default**: `5`
+
+Number of [Google Search Console](/docs/self-hosting/google-search-console) sync/backfill jobs a worker runs in parallel. Only relevant when the integration is enabled; requires `gsc` (and `cron`) in `ENABLED_QUEUES` if that variable is set.
+
+**Example**:
+```bash
+GSC_CONCURRENCY=2
 ```
 
 ### EVENT_BLOCKING_TIMEOUT_SEC
@@ -848,6 +900,8 @@ OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka 
 
 Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
 
+Connections are unauthenticated plaintext by default. For managed or production clusters, enable TLS with `KAFKA_SSL` and SASL authentication (`plain`, `scram-sha-256` or `scram-sha-512`) with the `KAFKA_SASL_*` variables below.
+
 <Callout>
 The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
 </Callout>
@@ -866,6 +920,98 @@ KAFKA_BROKERS=redpanda:9092
 # Multiple brokers
 KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
 ```
+
+### KAFKA_SSL
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false` (automatically `true` when SASL credentials are set)
+
+Connect to the brokers over TLS. Set this to `true` for a TLS-only cluster without authentication. When `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD` are set, TLS is enabled automatically; set `KAFKA_SSL=false` explicitly to send SASL over plaintext (only sensible on a trusted internal network).
+
+**Example**:
+```bash
+KAFKA_SSL=true
+```
+
+### KAFKA_SSL_CA_PATH
+
+**Type**: `string`
+**Required**: No
+**Default**: None (system trust store)
+
+Path to a PEM-encoded CA certificate (or bundle) to trust in addition to the system trust store. Use this when your brokers present certificates signed by a private or self-signed CA. Requires TLS to be enabled.
+
+**Example**:
+```bash
+KAFKA_SSL_CA_PATH=/etc/openpanel/kafka-ca.pem
+```
+
+### KAFKA_SSL_REJECT_UNAUTHORIZED
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `true`
+
+Whether to reject broker certificates that cannot be verified. Only set to `false` for local development against a self-signed broker; prefer `KAFKA_SSL_CA_PATH` in production. Requires TLS to be enabled.
+
+**Example**:
+```bash
+KAFKA_SSL_REJECT_UNAUTHORIZED=false
+```
+
+### KAFKA_SASL_USERNAME
+
+**Type**: `string`
+**Required**: No (required together with `KAFKA_SASL_PASSWORD` to enable SASL)
+**Default**: None
+
+SASL username. Setting a username without a password (or vice versa) is a configuration error and the process refuses to start. Credential values are never logged.
+
+**Example**:
+```bash
+KAFKA_SASL_USERNAME=openpanel
+```
+
+### KAFKA_SASL_PASSWORD
+
+**Type**: `string`
+**Required**: No (required together with `KAFKA_SASL_USERNAME` to enable SASL)
+**Default**: None
+
+SASL password.
+
+**Example**:
+```bash
+KAFKA_SASL_PASSWORD=your-secret
+```
+
+### KAFKA_SASL_MECHANISM
+
+**Type**: `string`
+**Required**: No
+**Default**: `scram-sha-512`
+
+SASL mechanism to authenticate with. One of `plain`, `scram-sha-256` or `scram-sha-512` (case-insensitive). Any other value is rejected at startup, before a Kafka client is created.
+
+**Example**:
+```bash
+# TLS + SASL/SCRAM-SHA-512 (the default when credentials are set)
+KAFKA_BROKERS=kafka-1.example.com:9093,kafka-2.example.com:9093
+KAFKA_SASL_USERNAME=openpanel
+KAFKA_SASL_PASSWORD=your-secret
+
+# TLS + SASL/PLAIN with a private CA
+KAFKA_BROKERS=kafka.internal:9093
+KAFKA_SASL_MECHANISM=plain
+KAFKA_SASL_USERNAME=openpanel
+KAFKA_SASL_PASSWORD=your-secret
+KAFKA_SSL_CA_PATH=/etc/openpanel/kafka-ca.pem
+```
+
+<Callout>
+The producer runs in idempotent mode, so the SASL principal needs the `IdempotentWrite` cluster permission in addition to `Write`/`Describe` on the topic and `Read` on the consumer group. Managed Kafka providers usually grant this by default; on a locked-down cluster you may need to add it explicitly.
+</Callout>
 
 ### KAFKA_EVENTS_TOPIC
 
@@ -1340,6 +1486,10 @@ For a basic self-hosted installation, these variables are required:
 - `RESEND_API_KEY` or `SMTP_HOST` - For email features (pick one)
 - `EMAIL_SENDER` - Email sender address
 - `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` - For the in-app AI chat assistant
+- `ENCRYPTION_KEY` - Required for Google Search Console, 2FA and exports
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` - [Sign in with Google](/docs/self-hosting/social-login)
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI` - [Sign in with GitHub](/docs/self-hosting/social-login)
+- `GSC_GOOGLE_REDIRECT_URI` - [Google Search Console integration](/docs/self-hosting/google-search-console)
 
 ### See Also
 

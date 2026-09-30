@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { MailIcon } from 'lucide-react';
 import { z } from 'zod';
@@ -7,7 +7,6 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import { useOAuthProviders } from '@/hooks/use-oauth-providers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -30,14 +29,14 @@ export const Route = createFileRoute('/_public/onboarding')({
   validateSearch,
   loader: async ({ context, location }) => {
     await context.queryClient.ensureQueryData(
-      context.trpc.auth.getOAuthProviders.queryOptions(),
+      context.trpc.auth.providers.queryOptions()
     );
     const search = validateSearch.safeParse(location.search);
     if (search.success && search.data.inviteId) {
       await context.queryClient.prefetchQuery(
         context.trpc.organization.getInvite.queryOptions({
           inviteId: search.data.inviteId,
-        }),
+        })
       );
     }
   },
@@ -47,7 +46,11 @@ export const Route = createFileRoute('/_public/onboarding')({
 function Component() {
   const { inviteId } = Route.useSearch();
   const trpc = useTRPC();
-  const { providers, hasAny } = useOAuthProviders();
+  const { data: providers } = useSuspenseQuery(
+    trpc.auth.providers.queryOptions()
+  );
+  const hasOAuthProviders = providers.google || providers.github;
+  const hasBothOAuthProviders = providers.google && providers.github;
   const { data: invite } = useQuery(
     trpc.organization.getInvite.queryOptions(
       {
@@ -55,8 +58,8 @@ function Component() {
       },
       {
         enabled: !!inviteId,
-      },
-    ),
+      }
+    )
   );
   return (
     <div className="col w-full gap-8 py-4 text-left">
@@ -124,9 +127,15 @@ function Component() {
       )}
 
       <div className="space-y-6">
-        {hasAny && (
+        {hasOAuthProviders && (
           <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div
+              className={
+                hasBothOAuthProviders
+                  ? 'grid grid-cols-1 gap-4 md:grid-cols-2'
+                  : 'grid grid-cols-1 gap-4'
+              }
+            >
               {providers.github && (
                 <SignInGithub inviteId={inviteId} type="sign-up" />
               )}

@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { db, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
+import {
+  db,
+  getChartStartEndDate,
+  getSettingsForProject,
+  hasAnonymousShareAccessToProject,
+} from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
 import { getProjectAccess, requireProjectAccess } from '../access';
@@ -107,7 +112,29 @@ export const referenceRouter = createTRPCRouter({
         range: zRange,
       }),
     )
-    .query(async ({ input: { projectId, ...input } }) => {
+    .query(async ({ input: { projectId, ...input }, ctx }) => {
+      // Public so that share pages can draw annotations on their charts, but
+      // never without a check: a member needs project access, an anonymous
+      // viewer needs an unlocked public share for the project
+      // (GHSA-vrrm-p9p4-2gfg).
+      if (ctx.session.userId) {
+        const access = await getProjectAccess({
+          userId: ctx.session.userId,
+          projectId,
+        });
+        if (!access) {
+          throw new TRPCForbiddenError('You do not have access to this project');
+        }
+      } else {
+        const allowed = await hasAnonymousShareAccessToProject(
+          projectId,
+          ctx.cookies,
+        );
+        if (!allowed) {
+          throw new TRPCForbiddenError('You do not have access to this project');
+        }
+      }
+
       const { timezone } = await getSettingsForProject(projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return db.reference.findMany({
