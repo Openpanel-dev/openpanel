@@ -14,8 +14,17 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - { target: linux-x64, runner: ubuntu-latest, smoke: true }
+          - { target: linux-arm64, runner: ubuntu-latest, smoke: false }
+          # macOS binaries are built and signed on macOS: an unsigned binary is
+          # killed on launch on Apple Silicon.
+          - { target: darwin-arm64, runner: macos-latest, smoke: true }
+          - { target: darwin-x64, runner: macos-latest, smoke: false }
+    runs-on: ${{ matrix.runner }}
     defaults:
       run:
         working-directory: self-hosting/cli
@@ -41,15 +50,45 @@ jobs:
             exit 1
           fi
 
-      - name: Build every target
+      - name: Build
+        run: bun build --compile --target="bun-${{ matrix.target }}" src/main.ts --outfile "dist/openpanel-${{ matrix.target }}"
+
+      - name: Sign (ad hoc)
+        if: runner.os == 'macOS'
         run: |
-          mkdir -p dist
-          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
-            bun build --compile --target="bun-$target" src/main.ts --outfile "dist/openpanel-$target"
-          done
-          (cd dist && sha256sum openpanel-* > checksums.txt)
+          codesign --force --sign - "dist/openpanel-${{ matrix.target }}"
+          codesign --verify --verbose "dist/openpanel-${{ matrix.target }}"
+
+      # Only where the runner can execute the target natively.
+      - name: Smoke test
+        if: matrix.smoke
+        run: |
+          test "$("./dist/openpanel-${{ matrix.target }}" --version)" = "${GITHUB_REF_NAME#cli-v}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openpanel-${{ matrix.target }}
+          path: self-hosting/cli/dist/openpanel-${{ matrix.target }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: openpanel-*
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: |
+          chmod +x openpanel-*
+          sha256sum openpanel-* > checksums.txt
+          cat checksums.txt
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/openpanel-* dist/checksums.txt --generate-notes --title "CLI ${GITHUB_REF_NAME#cli-v}"
+        run: gh release create "$GITHUB_REF_NAME" dist/openpanel-* dist/checksums.txt --repo "$GITHUB_REPOSITORY" --generate-notes --title "CLI ${GITHUB_REF_NAME#cli-v}"
