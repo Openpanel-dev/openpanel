@@ -133,10 +133,10 @@ OpenPanel requests the `user:email` and `user:read` scopes and uses the account'
 
 All six variables belong to the API service. The dashboard and worker do not use them; the dashboard asks the API which providers are configured and renders buttons accordingly. Giving every service the full set is harmless, which is what the Docker Compose setup does.
 
-How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to `self-hosting/.env` (the generated file already contains a commented-out template) and recreate the API container:
+How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to your install's `.env` (the generated file already contains a commented-out template) and apply them:
 
 ```bash
-docker compose up -d --force-recreate op-api
+openpanel reload
 ```
 
 With Coolify, the bundled template exposes them as `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET`, `OPENPANEL_GOOGLE_REDIRECT_URI`, `OPENPANEL_GITHUB_CLIENT_ID`, `OPENPANEL_GITHUB_CLIENT_SECRET` and `OPENPANEL_GITHUB_REDIRECT_URI`. For any other setup, add them to the API's environment the same way you set `COOKIE_SECRET` and restart the API.
@@ -156,7 +156,7 @@ OpenPanel remembers the last provider a browser signed in with (a one-year cooki
 | Symptom | Likely cause |
 |---|---|
 | Google shows `Error 400: redirect_uri_mismatch`; GitHub shows "The redirect_uri MUST match the registered callback URL" | `GOOGLE_REDIRECT_URI` / `GITHUB_REDIRECT_URI` differs from the URL registered at the provider. Check `http` vs `https`, the `/api` prefix and trailing slashes. |
-| Google shows `Error 401: invalid_client`, or the authorization URL has an empty `client_id` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` is not set on the API service, or the API was not restarted after changing `.env`. |
+| Google shows `Error 401: invalid_client`, or the authorization URL has an empty `client_id` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` is not set on the API service, or the changes to `.env` were not applied (`openpanel reload`). |
 | Redirected to `/login?error=Missing oauth parameters` or `OAuth state mismatch` | The state cookie set before the redirect was not sent back to the API. Usually the API and dashboard are on different registrable domains, `DASHBOARD_URL` is wrong, or the browser blocks cookies. See the cookie callout above. |
 | `/login?error=Registrations are not allowed` | New user and `ALLOW_REGISTRATION=false` with no valid invite. Send an invite from the organisation settings or set `ALLOW_REGISTRATION=true`. |
 | `/login?error=Please sign in using your original authentication method` | An account with that email already exists via another method. Sign in with that method instead. |

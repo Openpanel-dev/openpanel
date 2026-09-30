@@ -151,7 +151,7 @@ OpenPanel includes an AI-powered analytics assistant that can help you analyze d
 
 #### Configuration
 
-Add one or both of the following to your `.env` file in your install directory, then run `openpanel restart`:
+Add one or both of the following to your `.env` file in your install directory, then run `openpanel reload`:
 
 ```bash title=".env"
 # OpenAI — get a key at platform.openai.com/api-keys
@@ -206,10 +206,19 @@ Run these anywhere: the CLI finds your install (the current directory, `./self-h
 ```bash
 openpanel up        # Start all OpenPanel services
 openpanel down      # Stop all OpenPanel services
-openpanel restart   # Recreate services so a changed .env takes effect
+openpanel reload    # Apply changes to .env or docker-compose.yml
+openpanel restart   # Recreate every container (a full restart)
 openpanel logs      # Follow logs (openpanel logs op-api for one service)
 openpanel status    # Show running services
 ```
+
+### Changed your .env?
+
+```bash
+openpanel reload
+```
+
+This applies your changes: it checks `.env` for mistakes first, then recreates only the services whose settings changed, so your databases keep running. `docker compose restart` does **not** pick up `.env` changes; the containers keep their old values.
 
 ### Diagnose
 

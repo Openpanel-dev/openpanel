@@ -11,6 +11,10 @@ This page documents all environment variables used by OpenPanel. Variables are o
 For deployment-specific configuration, see the [deployment guides](/docs/self-hosting/deploy-docker-compose).
 </Callout>
 
+<Callout type="info">
+After editing `.env`, run `openpanel reload`. It checks the file for mistakes first, then recreates only the services whose settings changed; your databases keep running. A plain `docker compose restart` is not enough: it restarts containers with their old environment.
+</Callout>
+
 ## Database & Storage
 
 ### DATABASE_URL

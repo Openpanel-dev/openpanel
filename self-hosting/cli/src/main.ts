@@ -4,6 +4,7 @@ import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
 import { exportData } from './commands/export';
 import { init } from './commands/init';
+import { reload } from './commands/reload';
 import { reset } from './commands/reset';
 import { upgrade } from './commands/upgrade';
 import {
@@ -28,6 +29,7 @@ Commands:
   export [--out <dir>]       Dump ClickHouse data as JSONL (e.g. to move to Cloud)
   reset [--yes]              Delete this install's data volumes (asks first)
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
+  reload                     Apply changes to .env or docker-compose.yml
   up | down | restart        Start, stop, or recreate the stack
   logs [service]             Follow logs
   status                     Show running services
@@ -201,6 +203,9 @@ const route = async (
       public: values.public,
       noSelfUpdate: values['no-self-update'],
     });
+  }
+  if (command === 'reload') {
+    return reload(await requireInstall(values.dir));
   }
   if (command === 'reset') {
     return reset({ dir: await requireInstall(values.dir), yes: values.yes });

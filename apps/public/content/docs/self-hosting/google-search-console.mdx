@@ -90,7 +90,7 @@ Which services need which variables:
 
 The dashboard needs none of these. It asks the API whether the integration is configured.
 
-How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to `self-hosting/.env` (all services read it) and run `docker compose up -d --force-recreate op-api op-worker`. With Coolify, the bundled template exposes `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET` and `OPENPANEL_GSC_GOOGLE_REDIRECT_URI`, and generates `ENCRYPTION_KEY` for you. For any other setup, add them to the API and worker environment and restart both.
+How you set them depends on how you deployed OpenPanel. With the Docker Compose setup, add them to your install's `.env` (all services read it) and run `openpanel reload`. With Coolify, the bundled template exposes `OPENPANEL_GOOGLE_CLIENT_ID`, `OPENPANEL_GOOGLE_CLIENT_SECRET` and `OPENPANEL_GSC_GOOGLE_REDIRECT_URI`, and generates `ENCRYPTION_KEY` for you. For any other setup, add them to the API and worker environment and restart both.
 </Step>
 
 <Step>

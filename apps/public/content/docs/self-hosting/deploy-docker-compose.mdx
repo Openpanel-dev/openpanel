@@ -94,7 +94,7 @@ Once all services are healthy, you can access OpenPanel at your configured domai
 For a complete reference of all available environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 <Callout>
-If you change the `.env` file, run `openpanel restart` for the changes to take effect. It recreates the containers, which a plain `docker compose restart` does not, so the new values are actually picked up.
+Changed the `.env` file? run `openpanel reload`. It checks the file for mistakes first, then recreates only the services whose settings changed; your databases keep running. A plain `docker compose restart` is not enough: it restarts containers with their old environment.
 </Callout>
 
 The generated `.env` also contains commented-out blocks for optional features. Uncomment and fill them in to enable [social login with Google or GitHub](/docs/self-hosting/social-login) and the [Google Search Console integration](/docs/self-hosting/google-search-console).
@@ -124,7 +124,8 @@ Run these anywhere: the CLI finds your install (the current directory, `./self-h
 ```bash
 openpanel up        # Start all OpenPanel services
 openpanel down      # Stop all OpenPanel services (data is kept)
-openpanel restart   # Recreate services, picking up a changed .env
+openpanel reload    # Apply changes to .env or docker-compose.yml
+openpanel restart   # Recreate every container (a full restart)
 openpanel logs      # Follow logs from all services
 openpanel status    # Show running services
 ```
