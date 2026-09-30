@@ -4,6 +4,7 @@ import { checkHost } from '../host';
 import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { run } from '../run';
 import { type Fetcher, isCompiledBinary, selfUpdate } from '../self-update';
+import { showSupportBanner } from '../support-banner';
 import {
   type Channel,
   channelOf,
@@ -220,5 +221,9 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   if (pulled !== 0) {
     return pulled;
   }
-  return compose('up', flags.dir, ['--remove-orphans']);
+  const started = await compose('up', flags.dir, ['--remove-orphans']);
+  if (started === 0) {
+    showSupportBanner(install);
+  }
+  return started;
 };

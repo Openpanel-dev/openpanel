@@ -24,6 +24,7 @@ import {
 import { isInstallDir, writeFiles } from '../install';
 import { discoverInstall, isEmptyOrMissing, rememberDir } from '../install-dir';
 import { run } from '../run';
+import { showSupportBanner } from '../support-banner';
 import { bold } from '../ui';
 import { compose } from './compose';
 
@@ -311,8 +312,13 @@ export const init = async (flags: InitFlags): Promise<number> => {
       await confirm({ message: 'Start OpenPanel now?', initialValue: true })
     );
   if (start) {
-    return compose('up', flags.dir);
+    const code = await compose('up', flags.dir);
+    if (code === 0) {
+      showSupportBanner(null);
+    }
+    return code;
   }
+  showSupportBanner(null);
   outro('Start it with: openpanel up');
   return 0;
 };
