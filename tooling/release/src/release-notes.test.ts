@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type Anthropic from '@anthropic-ai/sdk';
+import type OpenAI from 'openai';
 import {
   fallbackNotes,
   generateNotes,
@@ -25,7 +25,7 @@ const input: NotesInput = {
 
 // Just enough of the client for generateNotes; each test decides the outcome.
 const fakeClient = (create: () => Promise<unknown>) =>
-  ({ beta: { messages: { create } } }) as unknown as Anthropic;
+  ({ responses: { create } }) as unknown as OpenAI;
 
 describe('release notes', () => {
   test('CI markers never reach the notes', () => {
@@ -69,28 +69,25 @@ describe('release notes', () => {
     });
   });
 
-  test('a declined request means the fallback', async () => {
+  test('an incomplete response (cut off or declined) means the fallback', async () => {
     const client = fakeClient(() =>
-      Promise.resolve({ stop_reason: 'refusal', content: [] })
+      Promise.resolve({ status: 'incomplete', output_text: '## Added\n- half' })
     );
     expect(await generateNotes(input, client)).toMatchObject({
       source: 'fallback',
-      reason: 'model declined',
+      reason: 'response incomplete',
     });
   });
 
   test('model text is used, with the compare link appended', async () => {
     const client = fakeClient(() =>
       Promise.resolve({
-        stop_reason: 'end_turn',
-        content: [
-          { type: 'thinking', thinking: '' },
-          { type: 'text', text: '## Added\n- Export endpoint' },
-        ],
+        status: 'completed',
+        output_text: '## Added\n- Export endpoint',
       })
     );
     const notes = await generateNotes(input, client);
-    expect(notes.source).toBe('claude');
+    expect(notes.source).toBe('model');
     expect(notes.markdown).toStartWith('## Added\n- Export endpoint');
     expect(notes.markdown).toContain(input.compareUrl as string);
   });

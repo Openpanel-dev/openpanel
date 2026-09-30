@@ -5,7 +5,7 @@ name: Self-hosting release
 #   1. its v* tag says which version it is (commits main never built have none)
 #   2. the images main already built and smoke-tested are copied to Docker Hub
 #   3. the CLI is built for every platform, stamped with the same version
-#   4. Claude writes the notes for everything since the previous public release
+#   4. GPT-6 Astra writes the notes for everything since the previous public release
 #   5. a GitHub release `vX.Y.Z` carries the notes, the CLI and checksums.txt
 # That release is what `openpanel upgrade` and install.sh look for, and the
 # previous one is where the next release's notes start.
@@ -184,7 +184,7 @@ jobs:
       # release never waits on it.
       - name: Write release notes
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: bun tooling/release/src/release-notes.ts --from "${{ needs.resolve.outputs.previous }}" --to "v${{ needs.resolve.outputs.version }}" --out release-notes.md
 
       - uses: actions/upload-artifact@v4

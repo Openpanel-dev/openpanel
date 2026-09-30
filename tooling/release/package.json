@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.130.0",
+    "openai": "7.25.0",
     "semver": "7.6.0"
   },
   "devDependencies": {

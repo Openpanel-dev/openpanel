@@ -1,10 +1,12 @@
 import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { git, lines } from './git';
 
-const MODEL = 'claude-opus-5-5';
-const MAX_TOKENS = 16_000;
+// OpenAI's top model: there are only a handful of public releases a year, and
+// these notes are what self-hosters read, so quality wins over cost here.
+const MODEL = 'gpt-6-astra';
+const REASONING_EFFORT = 'high';
 const FIELD = '\u001f';
 const RECORD = '\u001e';
 
@@ -80,58 +82,43 @@ const userPrompt = (input: NotesInput): string => {
   return `Release v${input.version} (previous release: v${input.previous}).\n\nChanged files that can affect a self-hosted install:\n${sensitive}\n\nCommits:\n\n${commits}`;
 };
 
-type Generated = {
+interface Generated {
   markdown: string;
-  source: 'claude' | 'fallback';
+  source: 'model' | 'fallback';
   reason?: string;
-};
+}
+
+const fallback = (input: NotesInput, reason: string): Generated => ({
+  markdown: fallbackNotes(input),
+  source: 'fallback',
+  reason,
+});
 
 export const generateNotes = async (
   input: NotesInput,
-  client: Anthropic | null
+  client: OpenAI | null
 ): Promise<Generated> => {
   if (!client) {
-    return {
-      markdown: fallbackNotes(input),
-      source: 'fallback',
-      reason: 'no API key',
-    };
+    return fallback(input, 'no API key');
   }
   try {
-    const response = await client.beta.messages.create({
+    const response = await client.responses.create({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'medium' },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt(input) }],
+      reasoning: { effort: REASONING_EFFORT },
+      instructions: SYSTEM_PROMPT,
+      input: userPrompt(input),
     });
-    if (response.stop_reason === 'refusal') {
-      return {
-        markdown: fallbackNotes(input),
-        source: 'fallback',
-        reason: 'model declined',
-      };
+    // `incomplete` (cut off or declined) must not publish half a note.
+    if (response.status !== 'completed') {
+      return fallback(input, `response ${response.status}`);
     }
-    const text = response.content
-      .flatMap((block) => (block.type === 'text' ? [block.text] : []))
-      .join('')
-      .trim();
+    const text = response.output_text.trim();
     if (!text) {
-      return {
-        markdown: fallbackNotes(input),
-        source: 'fallback',
-        reason: 'empty response',
-      };
+      return fallback(input, 'empty response');
     }
-    return { markdown: `${text}${compareLine(input)}\n`, source: 'claude' };
+    return { markdown: `${text}${compareLine(input)}\n`, source: 'model' };
   } catch (error) {
-    return {
-      markdown: fallbackNotes(input),
-      source: 'fallback',
-      reason: (error as Error).message,
-    };
+    return fallback(input, (error as Error).message);
   }
 };
 
@@ -175,12 +162,12 @@ if (import.meta.main) {
       ? `${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${repository}/compare/${values.from}...${values.to}`
       : null,
   };
-  const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+  const client = process.env.OPENAI_API_KEY ? new OpenAI() : null;
   const notes = await generateNotes(input, client);
   writeFileSync(values.out, notes.markdown);
   const usage =
-    notes.source === 'claude'
-      ? 'written by Claude'
+    notes.source === 'model'
+      ? `written by ${MODEL}`
       : `plain commit list (${notes.reason})`;
   console.error(
     `${input.commits.length} commits, ${input.sensitivePaths.length} upgrade-sensitive files; notes ${usage} -> ${values.out}`
