@@ -3,6 +3,10 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
   push:
+    # Branches only: the self-hosting tag has its own workflow, and the v* tags
+    # this workflow pushes must not start another build.
+    branches:
+      - "**"
     paths-ignore:
       # README and docs
       - "**/README*"
@@ -140,11 +144,27 @@ jobs:
       - name: Run tests
         run: bun run test
 
+  # Debounce for main: a push within a minute of the previous one cancels its
+  # wait, so a burst of merges is built and versioned once, as its newest
+  # commit. `[release now]` in the pushed commit, or a manual run, skips the wait.
+  settle:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: main-settle
+      cancel-in-progress: true
+    steps:
+      - name: Wait for a quiet minute
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[release now]')
+        run: sleep 60
+
   build-api:
     permissions:
       packages: write
       contents: read
-    needs: lint-and-test
+    needs: [lint-and-test, settle]
+    # settle is skipped on other branches; a cancelled settle (debounced) stops the run.
+    if: ${{ !cancelled() && needs.lint-and-test.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.settle.result) }}
     strategy:
       fail-fast: false
       matrix:
@@ -207,6 +227,8 @@ jobs:
       packages: read
       contents: read
     needs: [build-api, build-dashboard]
+    # Explicit, because a skipped settle earlier in the chain would otherwise skip this.
+    if: ${{ !cancelled() && needs.build-api.result == 'success' && needs.build-dashboard.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -252,8 +274,9 @@ jobs:
   merge-api:
     permissions:
       packages: write
-      contents: write
+      contents: read
     needs: [build-api, smoke]
+    if: ${{ !cancelled() && needs.build-api.result == 'success' && needs.smoke.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -291,28 +314,12 @@ jobs:
             -t ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
             $(printf 'ghcr.io/${{ env.repo_owner }}/api@sha256:%s ' *)
 
-      - name: Create/Update API tag
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # Delete existing tag if it exists
-          if git tag -l "api" | grep -q "api"; then
-            git tag -d "api"
-            echo "Deleted local tag: api"
-          fi
-
-          # Create new tag
-          git tag "api" "${{ github.sha }}"
-          echo "Created tag: api"
-
-          # Push tag to remote
-          git push origin "api" --force
-          echo "Pushed tag: api"
-
   build-dashboard:
     permissions:
       packages: write
       contents: read
-    needs: lint-and-test
+    needs: [lint-and-test, settle]
+    if: ${{ !cancelled() && needs.lint-and-test.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.settle.result) }}
     strategy:
       fail-fast: false
       matrix:
@@ -371,8 +378,9 @@ jobs:
   merge-dashboard:
     permissions:
       packages: write
-      contents: write
+      contents: read
     needs: [build-dashboard, smoke]
+    if: ${{ !cancelled() && needs.build-dashboard.result == 'success' && needs.smoke.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -410,19 +418,76 @@ jobs:
             -t ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
             $(printf 'ghcr.io/${{ env.repo_owner }}/dashboard@sha256:%s ' *)
 
-      - name: Create/Update Dashboard tag
-        if: github.ref == 'refs/heads/main'
+  # Every build on main gets the next version: the git tag vX.Y.Z and the image
+  # tags X.Y.Z, X.Y and X, taken from this run's own digests. One run at a time,
+  # so two versions are never computed from the same last tag.
+  version:
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && needs.merge-api.result == 'success' && needs.merge-dashboard.result == 'success' }}
+    needs: [merge-api, merge-dashboard]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: main-version
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - run: bun install --frozen-lockfile --filter @openpanel/release
+
+      - name: Decide the version
+        id: next
+        run: bun tooling/release/src/next-version.ts "$GITHUB_SHA"
+
+      - name: Download digests
+        if: steps.next.outputs.skip != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.next.outputs.skip != 'true'
+
+      - uses: docker/login-action@v3
+        if: steps.next.outputs.skip != 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the images
+        if: steps.next.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
+          MINOR: ${{ steps.next.outputs.minor }}
+          MAJOR: ${{ steps.next.outputs.major }}
         run: |
-          # Delete existing tag if it exists
-          if git tag -l "dashboard" | grep -q "dashboard"; then
-            git tag -d "dashboard"
-            echo "Deleted local tag: dashboard"
-          fi
+          set -euo pipefail
+          for app in api dashboard; do
+            image="ghcr.io/$repo_owner/$app"
+            # One file per platform, named after that platform's digest.
+            sources=()
+            for file in /tmp/digests/digests-"$app"-*/*; do
+              sources+=("$image@sha256:$(basename "$file")")
+            done
+            docker buildx imagetools create -t "$image:$VERSION" -t "$image:$MINOR" -t "$image:$MAJOR" "${sources[@]}"
+            echo "$image: $VERSION, $MINOR, $MAJOR"
+          done
 
-          # Create new tag
-          git tag "dashboard" "${{ github.sha }}"
-          echo "Created tag: dashboard"
-
-          # Push tag to remote
-          git push origin "dashboard" --force
-          echo "Pushed tag: dashboard"
+      # Pushed with GITHUB_TOKEN, which starts no workflow of its own.
+      - name: Tag the commit
+        if: steps.next.outputs.skip != 'true' && steps.next.outputs.is_new == 'true'
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          git tag "v$VERSION" "$GITHUB_SHA"
+          git push origin "v$VERSION"

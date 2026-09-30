@@ -4,6 +4,8 @@ export const git = (...args: string[]): string =>
   execFileSync('git', args, {
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
+    // Expected misses (no earlier tag) would otherwise print "fatal: ..." into CI logs.
+    stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 
 // Absent refs are normal here (no earlier tag), so they return null rather than throw.
