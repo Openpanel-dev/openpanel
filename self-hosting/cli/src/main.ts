@@ -9,6 +9,7 @@ import { reset } from './commands/reset';
 import { upgrade } from './commands/upgrade';
 import { isInstallDir } from './install';
 import { log, red } from './ui';
+import { CHECK_TIMEOUT_MS, startUpdateCheck } from './update-notice';
 import { VERSION } from './version';
 
 const DEFAULT_DIR = join(homedir(), 'openpanel');
@@ -45,8 +46,8 @@ const resolveDir = (flag: string | undefined): string => {
   return isInstallDir(process.cwd()) ? process.cwd() : DEFAULT_DIR;
 };
 
-const main = async (): Promise<number> => {
-  const { values, positionals } = parseArgs({
+const parseFlags = () =>
+  parseArgs({
     args: process.argv.slice(2),
     allowPositionals: true,
     options: {
@@ -79,6 +80,11 @@ const main = async (): Promise<number> => {
       version: { type: 'boolean', short: 'v', default: false },
     },
   });
+
+type Flags = ReturnType<typeof parseFlags>['values'];
+
+const main = async (): Promise<number> => {
+  const { values, positionals } = parseFlags();
   const [command, ...rest] = positionals;
 
   if (values.version) {
@@ -91,6 +97,21 @@ const main = async (): Promise<number> => {
   }
 
   const dir = resolveDir(values.dir);
+  // `upgrade` does its own (authoritative) check.
+  const updateCheck =
+    command === 'upgrade' ? Promise.resolve() : startUpdateCheck(VERSION);
+  const code = await route(command, rest, values, dir);
+  // A slow or offline network must not hold up the command's own exit.
+  await Promise.race([updateCheck, Bun.sleep(CHECK_TIMEOUT_MS)]);
+  return code;
+};
+
+const route = async (
+  command: string,
+  rest: string[],
+  values: Flags,
+  dir: string
+): Promise<number> => {
   if (command === 'init') {
     return init({
       dir,

@@ -126,6 +126,63 @@ export const redpandaBootstrapFile: Check = (install) => {
   };
 };
 
+const OPENPANEL_IMAGE = /^(lindesvard\/openpanel-(?:api|dashboard)):(.+)$/;
+// A floating tag follows a release line; anything else is a version the user chose.
+const FLOATING_TAG = /^(\d+|latest)$/;
+const IMAGE_SERVICES = ['op-api', 'op-dashboard', 'op-worker'] as const;
+
+// The tag this CLI release is built for, read from the template so there is one
+// place to change it.
+export const STACK_IMAGE_TAG = String(
+  templateCompose.getIn(['services', 'op-api', 'image'])
+)
+  .split(':')
+  .pop() as string;
+
+const staleImages = (install: Install) =>
+  IMAGE_SERVICES.flatMap((service) => {
+    const image = serviceImage(install, service);
+    const match = image ? OPENPANEL_IMAGE.exec(image) : null;
+    const [, repository, tag] = match ?? [];
+    return repository && tag && tag !== STACK_IMAGE_TAG
+      ? [{ service, repository, tag }]
+      : [];
+  });
+
+export const imageTag: Check = (install) => {
+  const stale = staleImages(install);
+  if (stale.length === 0) {
+    return null;
+  }
+  const floating = stale.filter(({ tag }) => FLOATING_TAG.test(tag));
+  const pinned = stale.filter(({ tag }) => !FLOATING_TAG.test(tag));
+  const pinnedNote =
+    pinned.length > 0
+      ? ` Pinned versions (${pinned.map(({ service, tag }) => `${service}:${tag}`).join(', ')}) are left for you to change.`
+      : '';
+  return {
+    id: 'compose/image-tag',
+    severity: floating.length > 0 ? 'error' : 'warn',
+    title: `OpenPanel images are not on :${STACK_IMAGE_TAG}`,
+    detail: `This CLI release targets :${STACK_IMAGE_TAG}; the compose changes here only work with those images.${pinnedNote}`,
+    fix:
+      floating.length > 0
+        ? (target) => {
+            for (const { service, repository } of floating) {
+              target.compose.setIn(
+                ['services', service, 'image'],
+                `${repository}:${STACK_IMAGE_TAG}`
+              );
+            }
+          }
+        : undefined,
+    manual:
+      floating.length === 0
+        ? `Change the pinned tags to ${STACK_IMAGE_TAG} (or a ${STACK_IMAGE_TAG}.x.y version) in docker-compose.yml.`
+        : undefined,
+  };
+};
+
 export const workerImage: Check = (install) => {
   if (!isLegacyWorkerImage(install)) {
     return null;
@@ -441,6 +498,7 @@ export const checks: Check[] = [
   drainOldQueue,
   redpandaService,
   redpandaBootstrapFile,
+  imageTag,
   workerImage,
   workerRole,
   workerHealthcheck,
