@@ -13,6 +13,8 @@ import {
 } from '../src/init/generate';
 import { loadInstall, writeFiles } from '../src/install';
 
+// Compose interpolation syntax, spelled so the linter does not mistake it for a typo'd template.
+const DOLLAR = '$';
 const DOMAIN = 'https://analytics.example.com';
 const secrets = generateSecrets();
 
@@ -88,7 +90,7 @@ describe('init output', () => {
   test('worker count is an overridable compose variable', async () => {
     const compose = composeOf(await generate({ workers: 3 }));
     expect(compose.services['op-worker'].deploy.replicas).toBe(
-      '${OP_WORKER_REPLICAS:-3}'
+      `${DOLLAR}{OP_WORKER_REPLICAS:-3}`
     );
   });
 

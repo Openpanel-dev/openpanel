@@ -3,10 +3,11 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
+import { exportData } from './commands/export';
 import { init } from './commands/init';
 import { upgrade } from './commands/upgrade';
 import { isInstallDir } from './install';
-import { log } from './ui';
+import { log, red } from './ui';
 import { VERSION } from './version';
 
 const DEFAULT_DIR = join(homedir(), 'openpanel');
@@ -18,6 +19,7 @@ Usage: openpanel <command> [options]
 Commands:
   init                       Interactive setup (--yes --domain <url> to skip prompts)
   upgrade [--yes]            Update the CLI, repair the install, pull images, restart
+  export [--out <dir>]       Dump ClickHouse data as JSONL (e.g. to move to Cloud)
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
   up | down | restart        Start, stop, or recreate the stack
   logs [service]             Follow logs
@@ -51,6 +53,16 @@ const main = async (): Promise<number> => {
       yes: { type: 'boolean', short: 'y', default: false },
       force: { type: 'boolean', default: false },
       'no-self-update': { type: 'boolean', default: false },
+      container: { type: 'string' },
+      out: { type: 'string' },
+      'project-id': { type: 'string' },
+      from: { type: 'string' },
+      to: { type: 'string' },
+      tables: { type: 'string' },
+      'rows-per-file': { type: 'string' },
+      db: { type: 'string' },
+      list: { type: 'boolean', default: false },
+      'no-gzip': { type: 'boolean', default: false },
       domain: { type: 'string' },
       proxy: { type: 'string' },
       workers: { type: 'string' },
@@ -93,6 +105,20 @@ const main = async (): Promise<number> => {
       emailSender: values['email-sender'],
     });
   }
+  if (command === 'export') {
+    return exportData({
+      container: values.container,
+      out: values.out ?? './op-export',
+      projectId: values['project-id'],
+      from: values.from,
+      to: values.to,
+      tables: values.tables,
+      rowsPerFile: values['rows-per-file'],
+      db: values.db ?? 'openpanel',
+      list: values.list,
+      noGzip: values['no-gzip'],
+    });
+  }
   if (command === 'upgrade') {
     return upgrade({
       dir,
@@ -111,4 +137,10 @@ const main = async (): Promise<number> => {
   return 1;
 };
 
-process.exit(await main());
+try {
+  process.exit(await main());
+} catch (error) {
+  // Expected failures (bad flag, no container) are a message, not a stack trace.
+  console.error(`${red('error')} ${(error as Error).message}`);
+  process.exit(1);
+}
