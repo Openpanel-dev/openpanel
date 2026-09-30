@@ -15,7 +15,12 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { PopoverPortal } from '@radix-ui/react-popover';
-import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronsUpDown,
+  GanttChartIcon,
+  PlusIcon,
+} from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import { EventIcon } from '../events/event-icon';
@@ -99,6 +104,44 @@ export function ComboboxEvents<
       ? find(selectedValues[0])
       : null;
 
+  const trimmedSearch = search.trim();
+
+  const filteredItems = React.useMemo(() => {
+    if (search === '') return items;
+    return items.filter((item) =>
+      item.name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [items, search]);
+
+  // Forward-declared event: when the typed name matches no known event, offer a
+  // synthetic "Create" item so a not-yet-fired event can still be added to a
+  // chart/funnel (mirrors ComboboxAdvanced). It flows through the same
+  // onChange, and the query filters `WHERE name = <name>` — returning 0 rows
+  // until the event first fires, at which point the report auto-populates.
+  const hasExactMatch = React.useMemo(
+    () =>
+      items.some(
+        (item) => item.name.toLowerCase() === trimmedSearch.toLowerCase(),
+      ),
+    [items, trimmedSearch],
+  );
+
+  const showCreateItem = trimmedSearch !== '' && !hasExactMatch;
+
+  type ListItem = (typeof items)[number] & { __create?: boolean };
+
+  const data = React.useMemo<ListItem[]>(() => {
+    const base = filteredItems as ListItem[];
+    if (!showCreateItem) return base;
+    const createItem = {
+      name: trimmedSearch,
+      count: 0,
+      meta: undefined,
+      __create: true,
+    } as unknown as ListItem;
+    return [createItem, ...base];
+  }, [filteredItems, showCreateItem, trimmedSearch]);
+
   const handleSelection = (selectedValue: string) => {
     if (multiple) {
       const currentValues = selectedValues;
@@ -179,15 +222,32 @@ export function ComboboxEvents<
             <CommandEmpty>Nothing selected</CommandEmpty>
             <VirtualList
               height={300}
-              data={items.filter((item) => {
-                if (search === '') return true;
-                return item.name.toLowerCase().includes(search.toLowerCase());
-              })}
+              data={data}
               itemHeight={32}
-              itemKey="value"
+              itemKey="name"
               className="w-[33em] max-sm:max-w-[100vw]"
             >
               {(item) => {
+                if (item.__create) {
+                  return (
+                    <CommandItem
+                      className="p-4 py-2.5 gap-4"
+                      key={`__create__${item.name}`}
+                      value={item.name}
+                      onSelect={() => {
+                        handleSelection(item.name);
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium flex-1 truncate">
+                        Create "{item.name}"
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        not seen yet
+                      </span>
+                    </CommandItem>
+                  );
+                }
                 return (
                   <CommandItem
                     className={cn(
