@@ -4,6 +4,9 @@ description: Tuning OpenPanel for high event throughput
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
 
 The default Docker Compose setup works well for most deployments. When you start seeing high event throughput — thousands of events per second or dozens of worker replicas — a few things need adjusting.
 

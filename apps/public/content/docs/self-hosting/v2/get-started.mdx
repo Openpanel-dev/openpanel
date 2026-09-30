@@ -1,70 +1,70 @@
 ---
-title: Get started with self-hosting
+title: Get started with self-hosting (2.x)
 description: This is a simple guide how to get started with OpenPanel on your own VPS.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
 
-<SelfHostingVersionBanner />
+<SelfHostingVersionBanner version="v2" />
 
 ## Instructions
 
 ### Prerequisites
 
-- A VPS of any kind (only tested on Ubuntu 24.04)
+- VPS of any kind (only tested on Ubuntu 24.04)
   - We recommend using [Hetzner (affiliate link)](https://hetzner.cloud/?ref=7Hq0H5mQh7tM). Use the link if you want to support us. 🫶
-  - 🙋‍♂️ This works on any Linux or macOS machine that can run Docker. The CLI offers to install Docker for you on Linux.
-- At least 4GB RAM (Redpanda, ClickHouse and Postgres run side by side)
-- A domain name pointing at the server, if you want automatic HTTPS
+  - 🙋‍♂️ This should work on any system if you have pre-installed docker, node and pnpm
 
 ### Quickstart
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
-openpanel init
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+# After setup is complete run `./start` to start OpenPanel
 ```
 
 <Steps>
 
 <Step>
-### Install the CLI
+### Clone
 
-The `openpanel` CLI is a single file with no dependencies. The script downloads the right build for your machine, checks its checksum, and puts it on your `PATH`.
+Clone the repository to your VPS and checkout the self-hosting tag
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
 ```
-
-You can also download a binary from the [releases page](https://github.com/Openpanel-dev/openpanel/releases): every OpenPanel release includes the CLI for Linux and macOS, with a `checksums.txt`.
 </Step>
 <Step>
-### Run the setup
+### Run the setup script
+
+The setup script will do 3 things
+
+1. Install node (if you accept)
+2. Install docker (if you accept)
+3. Execute a node script that will ask some questions about your setup
+
+> Setup takes 30s to 2 minutes depending on your VPS
 
 ```bash
-openpanel init
+cd openpanel/self-hosting
+./setup
 ```
 
-It checks that Docker is installed and running (on Linux it offers to install it), then asks a few questions:
+⚠️ If the `./setup` script fails to run, you can do it manually.
 
-1. Where OpenPanel will live (your URL)
-2. Whether to run Postgres, ClickHouse and Redis for you, or use your own
-3. Whether to use the bundled Caddy (automatic HTTPS) or your own reverse proxy
-4. A [Resend](https://resend.com) key for email (optional)
+1. Install docker
+2. Install node
+3. Install npm
+4. Run the `npm run quiz` script inside the self-hosting folder
 
-Everything else is generated for you: secrets, the worker count, and the password for the queue dashboard. The files are written to `~/openpanel`. Pass `--dir <path>` to put them somewhere else.
-
-Running unattended? Pass the answers as flags:
-
-```bash
-openpanel init --yes --domain https://analytics.example.com
-```
 </Step>
 <Step>
 ### Start 🚀
 
+Run the `./start` script located inside the self-hosting folder
+
 ```bash
-openpanel up
+./start
 ```
 </Step>
 </Steps>
@@ -154,7 +154,7 @@ OpenPanel includes an AI-powered analytics assistant that can help you analyze d
 
 #### Configuration
 
-Add one or both of the following to your `.env` file in your install directory, then run `openpanel reload`:
+Add one or both of the following to your `.env` file in the `self-hosting` directory, then restart the API service:
 
 ```bash title=".env"
 # OpenAI — get a key at platform.openai.com/api-keys
@@ -200,66 +200,44 @@ ALLOW_INVITATION=false
 
 For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
-## Helpful commands
+## Helpful scripts
 
-Run these anywhere: the CLI finds your install (the current directory, `./self-hosting` in an old git clone, the last install it used, or a running OpenPanel stack) and prints which one it picked. Pass `--dir <path>` to choose explicitly.
+OpenPanel comes with several utility scripts to help manage your self-hosted instance:
 
 ### Basic Operations
 
 ```bash
-openpanel up        # Start all OpenPanel services
-openpanel down      # Stop all OpenPanel services
-openpanel reload    # Apply changes to .env or docker-compose.yml
-openpanel restart   # Recreate every container (a full restart)
-openpanel logs      # Follow logs (openpanel logs op-api for one service)
-openpanel status    # Show running services
+./start    # Start all OpenPanel services
+./stop     # Stop all OpenPanel services
+./logs     # View real-time logs from all services
 ```
 
-### Changed your .env?
+### Maintenance
 
 ```bash
-openpanel reload
+./rebuild <service-name>    # Rebuild and restart a specific service
+                            # Example: ./rebuild op-dashboard
 ```
-
-This applies your changes: it checks `.env` for mistakes first, then recreates only the services whose settings changed, so your databases keep running. `docker compose restart` does **not** pick up `.env` changes; the containers keep their old values.
-
-### Diagnose
-
-```bash
-openpanel doctor          # Check Docker, memory, and your docker-compose.yml / .env
-openpanel doctor --fix    # Repair what it can (originals are kept as <file>.bak)
-openpanel doctor --check  # Exit non-zero on errors, for scripts
-```
-
-### Move your data
-
-```bash
-openpanel export --out ./op-export   # Dump ClickHouse data as JSONL
-```
-
-The dump is gzipped JSONL per table and day, plus a `manifest.jsonl` and `_meta.json`. Filter it with `--project-id`, `--from` and `--to`, or list candidate containers with `--list` if auto-detection can't find ClickHouse.
 
 ### Troubleshooting
 
 ```bash
-openpanel reset   # ⚠️ Deletes this install's data volumes
-                  # Only use this if you want to start fresh!
+./danger_wipe_everything   # ⚠️ Removes all containers, volumes, and data
+                           # Only use this if you want to start fresh!
 ```
 
 <Callout>
-`openpanel reset` deletes your databases and queues. It only touches this install's own data volumes (your config and HTTPS certificates are kept), and asks you to type the directory name before it does anything. Export first if you need the events.
+The `danger_wipe_everything` script will delete all your OpenPanel data including databases, configurations, and cached files. Use with extreme caution!
 </Callout>
+
+All these scripts should be run from within the `self-hosting` directory. Make sure the scripts are executable (`chmod +x script-name` if needed).
 
 ## Updating
 
-```bash
-openpanel upgrade
-```
-
-This updates the CLI itself (after verifying its checksum), runs `doctor` to bring your `docker-compose.yml` and `.env` up to date with the new version, pulls the new images and restarts the stack. It shows what it will change and asks first.
-
-Also read any changes in the [changelog](/docs/self-hosting/changelog).
+To grab the latest and greatest from OpenPanel you should just run the `./update` script inside the self-hosting folder.
 
 <Callout>
-  Coming from the `./setup` / `./update` scripts? Install the CLI as shown above and run `openpanel doctor` in your existing directory. It works on installs made by the old scripts too.
+  If you don't have the `./update` script, you can run `git pull` and then `./update`
 </Callout>
+
+Also read any changes in the [changelog](/docs/self-hosting/changelog) and apply them to your instance.

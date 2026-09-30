@@ -5,6 +5,9 @@ description: Enable the Google Search Console integration on your self-hosted Op
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
 
 The Google Search Console (GSC) integration imports search performance data into OpenPanel: clicks, impressions, CTR and average position per page and per query. Once enabled it powers the SEO page in each project (`/<organization>/<project>/seo`), Search Console insights on page reports, and the `gsc_*` tools in the [MCP server](/docs/mcp#google-search-console) and the AI assistant.
 
