@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-h
 openpanel upgrade
 ```
 
-Before you do, stop sending events and let the old worker finish its queue. Events still waiting in Redis are not moved to Redpanda.
+Before you do, stop sending events and let the old worker finish its queue. Events still waiting in Redis are not moved to Redpanda. `upgrade` asks you to confirm this; in scripts, pass `--queue-drained` (`--yes` does not answer it).
 
 TLDR;
 

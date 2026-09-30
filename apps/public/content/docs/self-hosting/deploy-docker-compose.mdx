@@ -99,14 +99,9 @@ If you change the `.env` file, run `openpanel restart` for the changes to take e
 
 The generated `.env` also contains commented-out blocks for optional features. Uncomment and fill them in to enable [social login with Google or GitHub](/docs/self-hosting/social-login) and the [Google Search Console integration](/docs/self-hosting/google-search-console).
 
-### Using Custom Docker Images
+### Docker Image Versions
 
-If you want to use specific image versions, edit the `docker-compose.yml` file and update the image tags:
-
-```yaml
-op-api:
-  image: lindesvard/openpanel-api:2.0.0  # Specify version
-```
+Each CLI release is built for one OpenPanel image tag, and `openpanel upgrade` moves the `lindesvard/openpanel-*` images in your `docker-compose.yml` to it, including a version you pinned yourself. The compose changes an upgrade makes only work with the images they were released for. To stay on a version, don't run `upgrade`. Images from other registries are left alone.
 
 ### Scaling Workers
 
@@ -122,7 +117,7 @@ openpanel up
 
 ## Managing Your Deployment
 
-Run these from your install directory, or pass `--dir <path>`.
+Run these anywhere: the CLI finds your install (the current directory, `./self-hosting` in an old git clone, the last install it used, or a running OpenPanel stack) and prints which one it picked. Pass `--dir <path>` to choose explicitly.
 
 ### Basic Operations
 
@@ -171,7 +166,7 @@ Always backup your data before updating. The database migrations will run automa
 openpanel reset
 ```
 
-Deletes this install's data volumes after you type the directory name to confirm. `docker-compose.yml` and `.env` are kept.
+Deletes this install's data volumes after you type the directory name to confirm. `docker-compose.yml`, `.env` and Caddy's HTTPS certificates are kept, so a fresh start does not re-request certificates.
 
 ### Backup and Restore
 

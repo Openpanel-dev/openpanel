@@ -199,7 +199,7 @@ For a complete reference of all environment variables, see the [Environment Vari
 
 ## Helpful commands
 
-Run these from your install directory (`~/openpanel` by default), or pass `--dir <path>` from anywhere.
+Run these anywhere: the CLI finds your install (the current directory, `./self-hosting` in an old git clone, the last install it used, or a running OpenPanel stack) and prints which one it picked. Pass `--dir <path>` to choose explicitly.
 
 ### Basic Operations
 
@@ -235,7 +235,7 @@ openpanel reset   # ⚠️ Deletes this install's data volumes
 ```
 
 <Callout>
-`openpanel reset` deletes your databases and queues. It only touches this install's own volumes, and asks you to type the directory name before it does anything. Export first if you need the events.
+`openpanel reset` deletes your databases and queues. It only touches this install's own data volumes (your config and HTTPS certificates are kept), and asks you to type the directory name before it does anything. Export first if you need the events.
 </Callout>
 
 ## Updating
