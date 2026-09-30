@@ -218,3 +218,26 @@ describe('validateOptions', () => {
     ).not.toThrow();
   });
 });
+
+describe('credentials', () => {
+  test('never appear on the docker command line', async () => {
+    const { dockerPrefix } = await import('../src/export/clickhouse');
+    const prefix = dockerPrefix('ch-container', {
+      user: 'reader',
+      password: 's3cret-value',
+    });
+
+    expect(prefix).toEqual([
+      'docker',
+      'exec',
+      '-i',
+      '-e',
+      'CLICKHOUSE_USER',
+      '-e',
+      'CLICKHOUSE_PASSWORD',
+      'ch-container',
+      'clickhouse-client',
+    ]);
+    expect(prefix.join(' ')).not.toContain('s3cret-value');
+  });
+});

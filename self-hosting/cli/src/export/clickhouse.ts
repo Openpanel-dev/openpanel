@@ -21,11 +21,20 @@ export interface Candidate {
   image: string;
 }
 
-const authArgs = (auth: Auth): string[] => [
-  ...(auth.host ? [`--host=${auth.host}`] : []),
-  ...(auth.user ? [`--user=${auth.user}`] : []),
-  ...(auth.password ? [`--password=${auth.password}`] : []),
-];
+// Credentials travel in the environment (clickhouse-client reads
+// CLICKHOUSE_USER / CLICKHOUSE_PASSWORD), never on a command line where `ps`
+// would show them for the length of the export. Only the host is an argument.
+const hostArgs = (auth: Auth): string[] =>
+  auth.host ? [`--host=${auth.host}`] : [];
+
+const credentialEnv = (auth: Auth): Record<string, string> => ({
+  ...(auth.user ? { CLICKHOUSE_USER: auth.user } : {}),
+  ...(auth.password ? { CLICKHOUSE_PASSWORD: auth.password } : {}),
+});
+
+// `-e NAME` without a value makes docker copy NAME from its own environment.
+const forwardedEnv = (auth: Auth): string[] =>
+  Object.keys(credentialEnv(auth)).flatMap((name) => ['-e', name]);
 
 const finish = (child: ChildProcess, label: string): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -42,18 +51,19 @@ export const createClient = (
   database: string,
   auth: Auth
 ): ClickHouse => {
+  const env = credentialEnv(auth);
   const [binary = '', ...base] = prefix;
   // `--max_execution_time=0`: a day of events can outlast the default limit.
   const args = (sql: string) => [
     ...base,
     `--database=${database}`,
     '--max_execution_time=0',
-    ...authArgs(auth),
+    ...hostArgs(auth),
     `--query=${sql}`,
   ];
   return {
     query: async (sql) => {
-      const { code, stdout } = await run([binary, ...args(sql)]);
+      const { code, stdout } = await run([binary, ...args(sql)], { env });
       if (code !== 0) {
         throw new Error(`ClickHouse query failed: ${sql.slice(0, 80)}`);
       }
@@ -63,6 +73,7 @@ export const createClient = (
       // stdin is closed on purpose: `docker exec -i` would otherwise read ours.
       const child = spawn(binary, args(sql), {
         stdio: ['ignore', 'pipe', 'inherit'],
+        env: { ...process.env, ...env },
       });
       return {
         output: child.stdout as Readable,
@@ -99,15 +110,19 @@ export const holdsEvents = async (
   database: string,
   auth: Auth
 ): Promise<boolean> => {
-  const { code, stdout } = await run([
-    'docker',
-    'exec',
-    containerId,
-    'clickhouse-client',
-    ...authArgs(auth),
-    '--query',
-    PROBE_SQL(database),
-  ]);
+  const { code, stdout } = await run(
+    [
+      'docker',
+      'exec',
+      ...forwardedEnv(auth),
+      containerId,
+      'clickhouse-client',
+      ...hostArgs(auth),
+      '--query',
+      PROBE_SQL(database),
+    ],
+    { env: credentialEnv(auth) }
+  );
   return code === 0 && stdout.trim() === '1';
 };
 
@@ -143,10 +158,11 @@ export const findContainers = async (
   return [];
 };
 
-export const dockerPrefix = (containerId: string): string[] => [
+export const dockerPrefix = (containerId: string, auth: Auth): string[] => [
   'docker',
   'exec',
   '-i',
+  ...forwardedEnv(auth),
   containerId,
   'clickhouse-client',
 ];

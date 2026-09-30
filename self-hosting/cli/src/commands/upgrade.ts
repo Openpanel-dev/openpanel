@@ -3,17 +3,21 @@ import { applyFixes, type Finding, runDoctor } from '../doctor';
 import { checkHost } from '../host';
 import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { run } from '../run';
-import { isCompiledBinary, selfUpdate } from '../self-update';
+import { type Fetcher, isCompiledBinary, selfUpdate } from '../self-update';
 import { bold, dim, SEVERITY_LABEL } from '../ui';
 import { VERSION } from '../version';
 import { compose } from './compose';
 
 const DRAIN_FINDING_ID = 'upgrade/drain-old-queue';
 const NO_SELF_UPDATE_FLAG = '--no-self-update';
+// Generous: the binary is ~80 MB and some servers sit on slow links.
+const SELF_UPDATE_TIMEOUT_MS = 5 * 60 * 1000;
+const PERMISSION_ERRORS = new Set(['EACCES', 'EPERM']);
 
 export interface UpgradeFlags {
   dir: string;
   yes: boolean;
+  queueDrained: boolean;
   noSelfUpdate: boolean;
 }
 
@@ -29,25 +33,40 @@ const ask = async (message: string, yes: boolean): Promise<boolean> => {
   return answer;
 };
 
-// Returns an exit code when the CLI replaced itself and the new one took over,
-// so the doctor checks and templates that run are the new release's.
-const updateSelf = async (): Promise<number | null> => {
+const fetchWithTimeout: Fetcher = (url) =>
+  fetch(url, { signal: AbortSignal.timeout(SELF_UPDATE_TIMEOUT_MS) });
+
+type SelfUpdateOutcome = { kind: 'continue' } | { kind: 'exit'; code: number };
+
+// A newer CLI carries the checks and image tag for the newer stack, so when one
+// exists but cannot be installed, stopping beats upgrading with stale knowledge.
+const updateSelf = async (): Promise<SelfUpdateOutcome> => {
   try {
     const result = await selfUpdate({
       currentVersion: VERSION,
       execPath: process.execPath,
-      fetcher: fetch,
+      fetcher: fetchWithTimeout,
     });
     if (result.status === 'current') {
-      return null;
+      return { kind: 'continue' };
     }
     clackLog.success(`Updated the CLI ${result.from} → ${result.to}`);
     const args = [...process.argv.slice(2), NO_SELF_UPDATE_FLAG];
-    return (await run([process.execPath, ...args], { inherit: true })).code;
+    const { code } = await run([process.execPath, ...args], { inherit: true });
+    return { kind: 'exit', code };
   } catch (error) {
-    // Offline or rate-limited: upgrading the stack with this version still works.
-    clackLog.warn(`Skipped CLI self-update: ${(error as Error).message}`);
-    return null;
+    const code = (error as NodeJS.ErrnoException).code ?? '';
+    if (PERMISSION_ERRORS.has(code)) {
+      clackLog.error(
+        `A newer CLI is available but ${process.execPath} is not writable.\nRun \`sudo openpanel upgrade\`, or \`openpanel upgrade ${NO_SELF_UPDATE_FLAG}\` to continue with ${VERSION}.`
+      );
+      return { kind: 'exit', code: 1 };
+    }
+    // Offline or rate-limited: nothing newer is known, so this version is current enough.
+    clackLog.warn(
+      `Could not check for a newer CLI: ${(error as Error).message}`
+    );
+    return { kind: 'continue' };
   }
 };
 
@@ -57,16 +76,42 @@ const listFindings = (findings: Finding[]) => {
   }
 };
 
+const isBlocking = (finding: Finding) =>
+  finding.severity === 'error' && !finding.fix;
+
+// Applies the fixes to a throwaway copy, so problems that a fix resolves (an
+// old variable name carrying DASHBOARD_URL) do not count as blockers.
+const blockersAfterFixes = (dir: string): Finding[] => {
+  const preview = loadInstall(dir);
+  applyFixes(preview);
+  return runDoctor(preview).filter(isBlocking);
+};
+
+const confirmQueueDrained = async (flags: UpgradeFlags): Promise<boolean> => {
+  clackLog.warn(
+    `${bold('This install predates Redpanda.')} Events still queued in Redis are not moved over. Stop tracking traffic and let the old worker drain first.`
+  );
+  if (flags.queueDrained) {
+    return true;
+  }
+  // --yes is for routine confirmations; losing queued events is not routine.
+  if (flags.yes) {
+    clackLog.error('Pass --queue-drained once the old events queue is empty.');
+    return false;
+  }
+  return ask('Has the old event queue drained?', false);
+};
+
 export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   if (!flags.noSelfUpdate && isCompiledBinary()) {
-    const handedOver = await updateSelf();
-    if (handedOver !== null) {
-      return handedOver;
+    const outcome = await updateSelf();
+    if (outcome.kind === 'exit') {
+      return outcome.code;
     }
   }
 
   if (!isInstallDir(flags.dir)) {
-    clackLog.error(`No install in ${flags.dir}. Run \`openpanel init\` first.`);
+    clackLog.error(`${flags.dir} is not an OpenPanel install.`);
     return 1;
   }
   const hostProblems = (await checkHost()).filter(
@@ -81,44 +126,41 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
     return 1;
   }
 
+  // Refuse before touching anything, so a stopped upgrade leaves v2 files with
+  // v2 containers rather than v3 files with v2 containers.
+  const blockers = blockersAfterFixes(flags.dir);
+  if (blockers.length > 0) {
+    listFindings(blockers);
+    clackLog.error(
+      'Fix these first (see `openpanel doctor`). Nothing was changed.'
+    );
+    return 1;
+  }
+
   const install = loadInstall(flags.dir);
   const findings = runDoctor(install);
 
-  if (findings.some((finding) => finding.id === DRAIN_FINDING_ID)) {
-    clackLog.warn(
-      `${bold('Upgrading from v1.')} Events still queued in Redis are not moved to Redpanda. Stop tracking traffic and let the old worker drain first.`
-    );
-    if (!(await ask('Has the old event queue drained?', flags.yes))) {
-      clackLog.info('Come back once it has. Nothing was changed.');
-      return 1;
-    }
+  const needsDrain = findings.some(
+    (finding) => finding.id === DRAIN_FINDING_ID
+  );
+  if (needsDrain && !(await confirmQueueDrained(flags))) {
+    clackLog.info('Nothing was changed.');
+    return 1;
   }
 
   const fixable = findings.filter((finding) => finding.fix);
   if (fixable.length > 0) {
     listFindings(fixable);
-    if (
-      !(await ask(
-        `Apply ${fixable.length} fix(es)? Originals are kept as <name>.bak`,
-        flags.yes
-      ))
-    ) {
+    const approved = await ask(
+      `Apply ${fixable.length} change(s)? Originals are kept as <name>.bak`,
+      flags.yes
+    );
+    if (!approved) {
       return 1;
     }
     applyFixes(install);
     const written = await writeInstall(flags.dir, install);
     clackLog.success(`Updated ${written.join(', ')}`);
-  }
-
-  const blocking = findings.filter(
-    (finding) => finding.severity === 'error' && !finding.fix
-  );
-  if (blocking.length > 0) {
-    listFindings(blocking);
-    clackLog.error(
-      'These need you before the stack can start. See `openpanel doctor`.'
-    );
-    return 1;
   }
 
   const pulled = await compose('pull', flags.dir);

@@ -27,7 +27,7 @@ const installWithImages = (images: Record<string, string>): Install => {
     env,
     caddyfile: null,
     files: new Map(),
-    hasFile: () => true,
+    fileKind: () => 'file',
   };
 };
 
@@ -66,31 +66,19 @@ describe('compose/image-tag', () => {
     expect(tagFinding(install)).toBeUndefined();
   });
 
-  test('an exact pin is reported but never rewritten', () => {
-    const install = installWithImages({
-      'op-api': 'lindesvard/openpanel-api:1.2.3',
-    });
-    const finding = tagFinding(install);
-
-    expect(finding?.fix).toBeUndefined();
-    expect(finding?.manual).toContain(STACK_IMAGE_TAG);
-    expect(finding?.detail).toContain('op-api:1.2.3');
-
-    applyFixes(install);
-    expect(install.compose.getIn(['services', 'op-api', 'image'])).toBe(
-      'lindesvard/openpanel-api:1.2.3'
-    );
-  });
-
-  test('a mix fixes the floating tags and leaves the pin', () => {
+  test('exact pins are moved too, and the title says what changes', () => {
     const install = installWithImages({
       'op-api': 'lindesvard/openpanel-api:1.2.3',
       'op-dashboard': 'lindesvard/openpanel-dashboard:1',
     });
+    expect(tagFinding(install)?.title).toContain(
+      `op-api 1.2.3 → ${STACK_IMAGE_TAG}`
+    );
+
     applyFixes(install);
     const compose = install.compose.toJS();
     expect(compose.services['op-api'].image).toBe(
-      'lindesvard/openpanel-api:1.2.3'
+      `lindesvard/openpanel-api:${STACK_IMAGE_TAG}`
     );
     expect(compose.services['op-dashboard'].image).toBe(
       `lindesvard/openpanel-dashboard:${STACK_IMAGE_TAG}`

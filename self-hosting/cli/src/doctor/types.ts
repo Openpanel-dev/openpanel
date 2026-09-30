@@ -11,7 +11,9 @@ export interface Install {
   caddyfile: string | null;
   // Files doctor may create, keyed by path relative to the install dir.
   files: Map<string, string>;
-  hasFile: (relativePath: string) => boolean;
+  // Pending writes count as files. A directory matters separately: Docker
+  // creates one when a bind-mounted file is missing, and it then shadows the file.
+  fileKind: (relativePath: string) => 'file' | 'directory' | 'missing';
 }
 
 export interface Finding {

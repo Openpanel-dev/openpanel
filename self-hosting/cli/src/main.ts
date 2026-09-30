@@ -1,5 +1,4 @@
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { compose, isComposeCommand } from './commands/compose';
 import { doctor } from './commands/doctor';
@@ -7,12 +6,15 @@ import { exportData } from './commands/export';
 import { init } from './commands/init';
 import { reset } from './commands/reset';
 import { upgrade } from './commands/upgrade';
-import { isInstallDir } from './install';
-import { log, red } from './ui';
+import {
+  DEFAULT_INSTALL_DIR,
+  discoverInstall,
+  type Resolution,
+  rememberDir,
+} from './install-dir';
+import { dim, log, red } from './ui';
 import { CHECK_TIMEOUT_MS, startUpdateCheck } from './update-notice';
 import { VERSION } from './version';
-
-const DEFAULT_DIR = join(homedir(), 'openpanel');
 
 const HELP = `openpanel ${VERSION} — run and maintain a self-hosted OpenPanel
 
@@ -29,21 +31,56 @@ Commands:
   status                     Show running services
 
 Options:
-  --dir <path>               Install directory (default: current dir if it has
-                             a docker-compose.yml, else ~/openpanel)
+  --dir <path>               Install directory. Without it the CLI looks in the
+                             current dir, ./self-hosting, the last install it
+                             used, and running stacks. init defaults to ~/openpanel
   -h, --help                 Show this help
   -v, --version              Show the version
 `;
 
-// A user standing in their install dir should not have to say so.
-const resolveDir = (flag: string | undefined): string => {
+const EXPLICIT_SOURCES = new Set(['--dir', 'OPENPANEL_DIR']);
+
+const describeNone = (searched: string[]) =>
+  `No OpenPanel install found. Looked in:\n${[...new Set(searched)].map((path) => `  ${path}`).join('\n')}\nRun \`openpanel init\`, or point at yours with --dir <path>.`;
+
+// Says which install a command acts on, since that is no longer always the cwd.
+const locateInstall = async (flag: string | undefined): Promise<Resolution> => {
+  const resolution = await discoverInstall(flag);
+  if (resolution.kind === 'ambiguous') {
+    const list = resolution.candidates.map((dir) => `  ${dir}`).join('\n');
+    throw new Error(
+      `Found ${resolution.candidates.length} OpenPanel installs:\n${list}\nChoose one with --dir <path> (or set OPENPANEL_DIR).`
+    );
+  }
+  if (resolution.kind === 'found') {
+    process.stderr.write(
+      `${dim(`Using ${resolution.dir} (${resolution.source})`)}\n`
+    );
+    if (!EXPLICIT_SOURCES.has(resolution.source)) {
+      await rememberDir(resolution.dir);
+    }
+  }
+  return resolution;
+};
+
+const requireInstall = async (flag: string | undefined): Promise<string> => {
+  const resolution = await locateInstall(flag);
+  if (resolution.kind !== 'found') {
+    throw new Error(
+      describeNone(resolution.kind === 'none' ? resolution.searched : [])
+    );
+  }
+  return resolution.dir;
+};
+
+const initDir = (flag: string | undefined) => {
   if (flag) {
-    return resolve(flag);
+    return { dir: resolve(flag), explicit: true };
   }
   if (process.env.OPENPANEL_DIR) {
-    return resolve(process.env.OPENPANEL_DIR);
+    return { dir: resolve(process.env.OPENPANEL_DIR), explicit: true };
   }
-  return isInstallDir(process.cwd()) ? process.cwd() : DEFAULT_DIR;
+  return { dir: DEFAULT_INSTALL_DIR, explicit: false };
 };
 
 const parseFlags = () =>
@@ -56,6 +93,7 @@ const parseFlags = () =>
       yes: { type: 'boolean', short: 'y', default: false },
       force: { type: 'boolean', default: false },
       'no-self-update': { type: 'boolean', default: false },
+      'queue-drained': { type: 'boolean', default: false },
       container: { type: 'string' },
       out: { type: 'string' },
       'project-id': { type: 'string' },
@@ -96,11 +134,10 @@ const main = async (): Promise<number> => {
     return 0;
   }
 
-  const dir = resolveDir(values.dir);
   // `upgrade` does its own (authoritative) check.
   const updateCheck =
     command === 'upgrade' ? Promise.resolve() : startUpdateCheck(VERSION);
-  const code = await route(command, rest, values, dir);
+  const code = await route(command, rest, values);
   // A slow or offline network must not hold up the command's own exit.
   await Promise.race([updateCheck, Bun.sleep(CHECK_TIMEOUT_MS)]);
   return code;
@@ -109,12 +146,11 @@ const main = async (): Promise<number> => {
 const route = async (
   command: string,
   rest: string[],
-  values: Flags,
-  dir: string
+  values: Flags
 ): Promise<number> => {
   if (command === 'init') {
     return init({
-      dir,
+      ...initDir(values.dir),
       yes: values.yes,
       force: values.force,
       domain: values.domain,
@@ -142,21 +178,29 @@ const route = async (
       noGzip: values['no-gzip'],
     });
   }
-  if (command === 'reset') {
-    return reset({ dir, yes: values.yes });
+  if (command === 'doctor') {
+    const resolution = await locateInstall(values.dir);
+    return doctor({
+      dir: resolution.kind === 'found' ? resolution.dir : null,
+      missingMessage:
+        resolution.kind === 'none' ? describeNone(resolution.searched) : '',
+      fix: values.fix,
+      check: values.check,
+    });
   }
   if (command === 'upgrade') {
     return upgrade({
-      dir,
+      dir: await requireInstall(values.dir),
       yes: values.yes,
+      queueDrained: values['queue-drained'],
       noSelfUpdate: values['no-self-update'],
     });
   }
-  if (command === 'doctor') {
-    return doctor({ dir, fix: values.fix, check: values.check });
+  if (command === 'reset') {
+    return reset({ dir: await requireInstall(values.dir), yes: values.yes });
   }
   if (isComposeCommand(command)) {
-    return compose(command, dir, rest);
+    return compose(command, await requireInstall(values.dir), rest);
   }
 
   log(`Unknown command "${command}".\n\n${HELP}`);

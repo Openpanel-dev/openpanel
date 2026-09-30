@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { isMap, isSeq, parseDocument } from 'yaml';
+import { type Document, isAlias, isMap, isSeq, parseDocument } from 'yaml';
 import {
   DEFAULT_EVENTS_TOPIC_PARTITIONS,
   renderRedpandaBootstrap,
@@ -25,8 +25,15 @@ const REMOVED_ENV_VARS = [
   'SHUTDOWN_GRACE_PERIOD_MS',
   'FUNNEL_NON_STRICT_ORDERING',
   'CHART_VALUES_LOOKBACK_DAYS',
-  'NEXT_PUBLIC_API_URL',
 ] as const;
+
+// Renamed in 2.0; a pre-2.0 .env may still carry only the old name.
+const RENAMED_ENV_VARS = [
+  ['NEXT_PUBLIC_DASHBOARD_URL', 'DASHBOARD_URL'],
+  ['NEXT_PUBLIC_API_URL', 'API_URL'],
+  ['NEXT_PUBLIC_SELF_HOSTED', 'SELF_HOSTED'],
+] as const;
+const BUNDLED_KAFKA_HOST = 'op-rp:';
 
 const templateCompose = parseDocument(templates.compose);
 
@@ -64,17 +71,68 @@ const envEntries = (install: Install, service: string): string[] => {
 const hasWorkerRole = (install: Install) =>
   envEntries(install, 'op-worker').includes('ROLE=worker');
 
-const hasHealthyDependency = (
-  install: Install,
+const dependsOnPath = (service: string) => ['services', service, 'depends_on'];
+
+// depends_on comes as a map (with conditions), a plain list, or a YAML alias
+// shared between services; all three are valid compose.
+const dependencyNames = (compose: Document, service: string): string[] => {
+  const node = compose.getIn(dependsOnPath(service), true);
+  const resolved = isAlias(node) ? node.resolve(compose) : node;
+  if (isMap(resolved)) {
+    return resolved.items.map((pair) =>
+      String((pair.key as { value?: unknown }).value ?? pair.key)
+    );
+  }
+  if (isSeq(resolved)) {
+    return resolved.items.map((item) =>
+      String((item as { value?: unknown }).value ?? item)
+    );
+  }
+  return [];
+};
+
+const addDependency = (
+  compose: Document,
   service: string,
   dependency: string
-) => install.compose.hasIn(['services', service, 'depends_on', dependency]);
+) => {
+  const path = dependsOnPath(service);
+  if (dependencyNames(compose, service).includes(dependency)) {
+    return;
+  }
+  const node = compose.getIn(path, true);
+  // Editing an alias would change every service sharing the anchor, so this
+  // service gets its own copy first.
+  if (isAlias(node)) {
+    compose.setIn(path, compose.createNode(node.resolve(compose)?.toJSON()));
+  }
+  const current = compose.getIn(path, true);
+  if (isSeq(current)) {
+    current.add(dependency);
+    return;
+  }
+  compose.setIn(
+    [...path, dependency],
+    compose.createNode({ condition: 'service_healthy' })
+  );
+};
+
+// External Kafka (KAFKA_BROKERS pointing elsewhere) means no bundled Redpanda.
+const usesBundledKafka = (install: Install) => {
+  const brokers = install.env.get('KAFKA_BROKERS');
+  return (
+    !brokers ||
+    brokers
+      .split(',')
+      .some((broker) => broker.trim().startsWith(BUNDLED_KAFKA_HOST))
+  );
+};
 
 const isLegacyWorkerImage = (install: Install) =>
   (serviceImage(install, 'op-worker') ?? '').includes('openpanel-worker');
 
 export const redpandaService: Check = (install) => {
-  if (hasService(install, 'op-rp')) {
+  if (hasService(install, 'op-rp') || !usesBundledKafka(install)) {
     return null;
   }
   return {
@@ -89,14 +147,8 @@ export const redpandaService: Check = (install) => {
       target.compose.setIn(['services', 'op-rp'], service);
       target.compose.setIn(['volumes', 'op-rp-data'], volume);
       for (const name of ['op-api', 'op-worker']) {
-        if (
-          hasService(target, name) &&
-          !hasHealthyDependency(target, name, 'op-rp')
-        ) {
-          target.compose.setIn(
-            ['services', name, 'depends_on', 'op-rp'],
-            target.compose.createNode({ condition: 'service_healthy' })
-          );
+        if (hasService(target, name)) {
+          addDependency(target.compose, name, 'op-rp');
         }
       }
     },
@@ -104,8 +156,21 @@ export const redpandaService: Check = (install) => {
 };
 
 export const redpandaBootstrapFile: Check = (install) => {
-  if (install.hasFile(BOOTSTRAP_PATH)) {
+  const needsBootstrap =
+    hasService(install, 'op-rp') || usesBundledKafka(install);
+  const kind = install.fileKind(BOOTSTRAP_PATH);
+  if (!needsBootstrap || kind === 'file') {
     return null;
+  }
+  if (kind === 'directory') {
+    return {
+      id: 'files/redpanda-bootstrap',
+      severity: 'error',
+      title: `${BOOTSTRAP_PATH} is a directory`,
+      detail:
+        'Docker creates a directory when a bind-mounted file is missing at start, and op-rp then cannot read its config.',
+      manual: `Remove it (it is usually root-owned): sudo rm -rf ${BOOTSTRAP_PATH}, then run \`openpanel doctor --fix\`.`,
+    };
   }
   return {
     id: 'files/redpanda-bootstrap',
@@ -127,8 +192,6 @@ export const redpandaBootstrapFile: Check = (install) => {
 };
 
 const OPENPANEL_IMAGE = /^(lindesvard\/openpanel-(?:api|dashboard)):(.+)$/;
-// A floating tag follows a release line; anything else is a version the user chose.
-const FLOATING_TAG = /^(\d+|latest)$/;
 const IMAGE_SERVICES = ['op-api', 'op-dashboard', 'op-worker'] as const;
 
 // The tag this CLI release is built for, read from the template so there is one
@@ -149,37 +212,30 @@ const staleImages = (install: Install) =>
       : [];
   });
 
+// The CLI owns the OpenPanel image tag, pinned versions included: the compose
+// changes it makes only work with the images it was released for. Images from
+// other registries (supporter builds, forks) are never touched.
 export const imageTag: Check = (install) => {
   const stale = staleImages(install);
   if (stale.length === 0) {
     return null;
   }
-  const floating = stale.filter(({ tag }) => FLOATING_TAG.test(tag));
-  const pinned = stale.filter(({ tag }) => !FLOATING_TAG.test(tag));
-  const pinnedNote =
-    pinned.length > 0
-      ? ` Pinned versions (${pinned.map(({ service, tag }) => `${service}:${tag}`).join(', ')}) are left for you to change.`
-      : '';
+  const changes = stale
+    .map(({ service, tag }) => `${service} ${tag} → ${STACK_IMAGE_TAG}`)
+    .join(', ');
   return {
     id: 'compose/image-tag',
-    severity: floating.length > 0 ? 'error' : 'warn',
-    title: `OpenPanel images are not on :${STACK_IMAGE_TAG}`,
-    detail: `This CLI release targets :${STACK_IMAGE_TAG}; the compose changes here only work with those images.${pinnedNote}`,
-    fix:
-      floating.length > 0
-        ? (target) => {
-            for (const { service, repository } of floating) {
-              target.compose.setIn(
-                ['services', service, 'image'],
-                `${repository}:${STACK_IMAGE_TAG}`
-              );
-            }
-          }
-        : undefined,
-    manual:
-      floating.length === 0
-        ? `Change the pinned tags to ${STACK_IMAGE_TAG} (or a ${STACK_IMAGE_TAG}.x.y version) in docker-compose.yml.`
-        : undefined,
+    severity: 'error',
+    title: `OpenPanel images move to :${STACK_IMAGE_TAG} (${changes})`,
+    detail: `This CLI release targets :${STACK_IMAGE_TAG}; the compose changes it makes only work with those images.`,
+    fix: (target) => {
+      for (const { service, repository } of staleImages(target)) {
+        target.compose.setIn(
+          ['services', service, 'image'],
+          `${repository}:${STACK_IMAGE_TAG}`
+        );
+      }
+    },
   };
 };
 
@@ -230,6 +286,29 @@ export const workerRole: Check = (install) => {
       }
       target.compose.setIn(path, target.compose.createNode(['ROLE=worker']));
     },
+  };
+};
+
+const REPLICAS_PATH = ['services', 'op-worker', 'deploy', 'replicas'];
+
+// Installs from before the CLI have a literal count; the variable form lets
+// OP_WORKER_REPLICAS in .env change it without editing compose.
+export const workerReplicas: Check = (install) => {
+  const replicas = install.compose.getIn(REPLICAS_PATH);
+  if (typeof replicas !== 'number') {
+    return null;
+  }
+  return {
+    id: 'compose/worker-replicas',
+    severity: 'info',
+    title: `op-worker replica count is fixed at ${replicas}`,
+    detail:
+      'Switching to the OP_WORKER_REPLICAS variable keeps the count and makes it settable from .env.',
+    fix: (target) =>
+      target.compose.setIn(
+        REPLICAS_PATH,
+        `\${OP_WORKER_REPLICAS:-${replicas}}`
+      ),
   };
 };
 
@@ -359,6 +438,48 @@ export const cookieSecret: Check = (install) => {
   };
 };
 
+export const renamedEnvVars: Check = (install) => {
+  const present = RENAMED_ENV_VARS.filter(([oldName]) =>
+    install.env.has(oldName)
+  );
+  if (present.length === 0) {
+    return null;
+  }
+  return {
+    id: 'env/renamed-vars',
+    severity: 'error',
+    title: `Old variable names in .env: ${present.map(([oldName]) => oldName).join(', ')}`,
+    detail:
+      'Renamed in 2.0. Their values are moved to the new names unless those are already set.',
+    fix: (target) => {
+      for (const [oldName, newName] of present) {
+        const value = target.env.get(oldName);
+        if (value && !target.env.get(newName)) {
+          target.env.set(newName, value);
+        }
+        target.env.remove(oldName);
+      }
+    },
+  };
+};
+
+export const apiUrl: Check = (install) => {
+  if (install.env.get('API_URL')) {
+    return null;
+  }
+  const dashboard = install.env.get('DASHBOARD_URL');
+  return {
+    id: 'env/api-url',
+    severity: 'error',
+    title: 'API_URL is not set',
+    detail:
+      'The dashboard calls the api at this address; without it every request fails.',
+    manual: dashboard
+      ? `With the bundled Caddy it is ${dashboard}/api. Set API_URL to that, or to wherever your proxy serves the api.`
+      : 'Set API_URL to the public address of the api, e.g. https://analytics.example.com/api.',
+  };
+};
+
 export const dashboardUrl: Check = (install) => {
   if (install.env.get('DASHBOARD_URL')) {
     return null;
@@ -475,10 +596,12 @@ export const caddyBullboardRedirect: Check = (install) => {
   };
 };
 
-// Reminder, not a repair: surfaced only while the install still looks like v1.
+// Reminder, not a repair: surfaced only while the install still looks like it
+// predates Kafka (old worker image, or no Redpanda while using the bundled one).
 export const drainOldQueue: Check = (install) => {
-  const looksLikeV1 =
-    isLegacyWorkerImage(install) || !hasService(install, 'op-rp');
+  const missingBundledKafka =
+    !hasService(install, 'op-rp') && usesBundledKafka(install);
+  const looksLikeV1 = isLegacyWorkerImage(install) || missingBundledKafka;
   if (!looksLikeV1) {
     return null;
   }
@@ -493,7 +616,8 @@ export const drainOldQueue: Check = (install) => {
 };
 
 // Order matters for fixes: the worker image is swapped before its role is
-// checked, and op-rp is added before anything asks for its bootstrap file.
+// checked, op-rp is added before anything asks for its bootstrap file, and old
+// env names are migrated before the new ones are checked.
 export const checks: Check[] = [
   drainOldQueue,
   redpandaService,
@@ -501,13 +625,16 @@ export const checks: Check[] = [
   imageTag,
   workerImage,
   workerRole,
+  workerReplicas,
   workerHealthcheck,
   apiMigrations,
   kafkaBrokers,
   kafkaPartitions,
   encryptionKey,
   cookieSecret,
+  renamedEnvVars,
   dashboardUrl,
+  apiUrl,
   adminCredentials,
   selfHosted,
   enabledQueues,

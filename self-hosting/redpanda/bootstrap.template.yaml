@@ -6,7 +6,7 @@
 # Generated as redpanda/bootstrap.yaml by `openpanel init` from this template — do not
 # edit the generated file directly, it is overwritten on the next setup run.
 #
-# FOOTGUN (ADR-004 risk 6): the producer partitions by
+# Careful: the producer partitions by
 # murmur2(key) % numPartitions, so raising this value after the `events`
 # topic already exists reshuffles every key — it silently breaks per-key
 # ordering and mutual exclusion for events produced before the change. Set it

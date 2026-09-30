@@ -76,7 +76,9 @@ dir="${OPENPANEL_INSTALL_DIR:-}"
 if [ -z "$dir" ]; then
   if [ -w /usr/local/bin ]; then
     dir=/usr/local/bin
-  elif command -v sudo >/dev/null 2>&1 && [ -t 0 ]; then
+  # Under `curl | sh` stdin is the script, so ask whether a terminal exists for
+  # sudo to prompt on, rather than whether stdin is one.
+  elif command -v sudo >/dev/null 2>&1 && (: </dev/tty) 2>/dev/null; then
     dir=/usr/local/bin
     use_sudo=1
   else

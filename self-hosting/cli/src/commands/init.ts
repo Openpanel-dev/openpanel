@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { cpus } from 'node:os';
+import { join } from 'node:path';
 import {
   cancel,
   log as clackLog,
@@ -10,6 +12,7 @@ import {
   select,
   text,
 } from '@clack/prompts';
+import { EnvFile } from '../env-file';
 import { checkHost, DOCKER_INSTALL_COMMAND, type HostCheck } from '../host';
 import {
   defaultAnswers,
@@ -19,12 +22,15 @@ import {
   type InitAnswers,
 } from '../init/generate';
 import { isInstallDir, writeFiles } from '../install';
+import { discoverInstall, isEmptyOrMissing, rememberDir } from '../install-dir';
 import { run } from '../run';
 import { bold } from '../ui';
 import { compose } from './compose';
 
 export interface InitFlags {
   dir: string;
+  // True when the user named the directory (--dir / OPENPANEL_DIR).
+  explicit: boolean;
   yes: boolean;
   force: boolean;
   domain?: string;
@@ -39,9 +45,14 @@ export interface InitFlags {
 }
 
 const MIN_WORKERS = 1;
+// One or two workers carry most installs; more is a deliberate choice (--workers).
+const MAX_DEFAULT_WORKERS = 2;
 
 const defaultWorkers = () =>
-  Math.max(Math.floor(cpus().length / 2), MIN_WORKERS);
+  Math.min(
+    Math.max(Math.floor(cpus().length / 2), MIN_WORKERS),
+    MAX_DEFAULT_WORKERS
+  );
 
 const isHttpUrl = (value: string) => /^https?:\/\/[^\s/]+/.test(value);
 
@@ -232,14 +243,41 @@ const queueDashboardLines = (answers: InitAnswers, adminPassword: string) =>
       ]
     : [];
 
+const readExistingEnv = (dir: string): EnvFile | null => {
+  try {
+    return new EnvFile(readFileSync(join(dir, '.env'), 'utf8'));
+  } catch {
+    return null;
+  }
+};
+
+// Why init should not write here, or null when it may.
+const targetProblem = async (flags: InitFlags): Promise<string | null> => {
+  if (isInstallDir(flags.dir)) {
+    return flags.force
+      ? null
+      : `${flags.dir} already has an install. Run \`openpanel doctor\` to check it or \`openpanel upgrade\` to update it. --force regenerates the files but keeps your secrets.`;
+  }
+  // Without --dir, an install elsewhere (say ~/openpanel/self-hosting from the
+  // old git clone) is the likelier explanation than a user wanting a second one.
+  if (!flags.explicit) {
+    const existing = await discoverInstall();
+    if (existing.kind === 'found') {
+      return `You already have an install at ${existing.dir}. Use \`openpanel doctor\` / \`openpanel upgrade\` there, or pass --dir <path> to set up another one.`;
+    }
+  }
+  if (!isEmptyOrMissing(flags.dir)) {
+    return `${flags.dir} is not empty and is not an OpenPanel install (a git clone, perhaps). Choose another directory with --dir <path>.`;
+  }
+  return null;
+};
+
 export const init = async (flags: InitFlags): Promise<number> => {
   intro(bold('OpenPanel setup'));
 
-  if (isInstallDir(flags.dir) && !flags.force) {
-    clackLog.error(`${flags.dir} already has an install.`);
-    clackLog.message(
-      'Run `openpanel doctor` to check it, or `openpanel upgrade` to update it.\nUse --force to overwrite (originals are kept as .bak).'
-    );
+  const problem = await targetProblem(flags);
+  if (problem) {
+    clackLog.error(problem);
     return 1;
   }
   if (!(await ensureDocker(flags))) {
@@ -247,17 +285,21 @@ export const init = async (flags: InitFlags): Promise<number> => {
   }
 
   const answers = await askAnswers(flags);
-  const secrets = generateSecrets();
+  // --force on a live install must not rotate secrets: the encryption key guards
+  // stored credentials in databases that --force leaves in place.
+  const secrets = generateSecrets(readExistingEnv(flags.dir));
   const written = await writeFiles(
     flags.dir,
     await generateInstall(answers, secrets)
   );
 
+  await rememberDir(flags.dir);
+
   note(
     [
       `Files:     ${written.length} written to ${flags.dir}`,
       `Dashboard: ${answers.domain}`,
-      `Workers:   ${answers.workers}`,
+      `Workers:   ${answers.workers} (change with OP_WORKER_REPLICAS in .env)`,
       ...queueDashboardLines(answers, secrets.adminPassword),
     ].join('\n'),
     'Installed'
@@ -271,8 +313,6 @@ export const init = async (flags: InitFlags): Promise<number> => {
   if (start) {
     return compose('up', flags.dir);
   }
-  outro(
-    `Start it with: openpanel up${flags.dir === process.cwd() ? '' : ` --dir ${flags.dir}`}`
-  );
+  outro('Start it with: openpanel up');
   return 0;
 };

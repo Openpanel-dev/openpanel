@@ -1,6 +1,7 @@
 import { password } from 'bun';
 import { randomBytes } from 'node:crypto';
 import { parseDocument } from 'yaml';
+import type { EnvFile } from '../env-file';
 import {
   DEFAULT_EVENTS_TOPIC_PARTITIONS,
   renderRedpandaBootstrap,
@@ -43,10 +44,17 @@ export interface Secrets {
   adminPassword: string;
 }
 
-export const generateSecrets = (): Secrets => ({
-  cookieSecret: randomBytes(SECRET_BYTES.cookie).toString('hex'),
-  encryptionKey: randomBytes(SECRET_BYTES.encryption).toString('hex'),
-  adminPassword: randomBytes(SECRET_BYTES.admin).toString('hex'),
+// Values already in an existing .env win, so regenerating never rotates them.
+export const generateSecrets = (existing: EnvFile | null = null): Secrets => ({
+  cookieSecret:
+    existing?.get('COOKIE_SECRET') ??
+    randomBytes(SECRET_BYTES.cookie).toString('hex'),
+  encryptionKey:
+    existing?.get('ENCRYPTION_KEY') ??
+    randomBytes(SECRET_BYTES.encryption).toString('hex'),
+  adminPassword:
+    existing?.get('ADMIN_PASSWORD') ??
+    randomBytes(SECRET_BYTES.admin).toString('hex'),
 });
 
 export const hostOf = (domain: string): string =>

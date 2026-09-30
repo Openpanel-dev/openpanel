@@ -87,12 +87,9 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Required stateful service (ADR-004): /track always produces to Kafka, no
-  # fallback transport. Sizing here is a sane single-node starting point, NOT
-  # the --memory=1G/--mode=dev-container cap the root docker-compose.yml uses
-  # for local dev — that cap was never measured against real ingest traffic
-  # and is not a production baseline. Tune --memory to what the host can
-  # spare.
+  # Required: every tracked event goes through Redpanda (Kafka-compatible).
+  # --memory=2G is a single-node starting point; raise it if the host can
+  # spare more, or lower it on small machines.
   op-rp:
     image: redpandadata/redpanda:v25.1.4
     restart: always
@@ -127,23 +124,9 @@ services:
   op-api:
     image: lindesvard/openpanel-api:2
     restart: always
-    # P9.5 collapsed the two-Dockerfile setup onto oven/bun, and P13
-    # (ADR-014, M13-003) made bun the installer as well, so no second package
-    # manager exists in this image or in the repo it is built from.
-    #
-    # MIGRATIONS RUN HERE, in the api container's start command (Carl,
-    # 2026-09-08). The Prisma CLI is a devDependency of packages/db, so the
-    # image's production-only install correctly omits it; `bunx` fetches it at
-    # start instead of the image carrying the CLI plus @prisma/engines (~86 MB)
-    # for a command that runs once per deploy. The version is PINNED because a
-    # bare `bunx prisma` fetches latest, which can drift from the generated
-    # client and the schema this image ships. Accepted consequence: the api
-    # container needs npm-registry reach at start.
-    #
-    # The code migrations run through `scripts/migrate-code.ts`, the shell that
-    # reads the environment for them — `src/code-migrations/migrate.ts` only
-    # exports the runner (ADR-022 R7), and the `jiti` this line used to name is
-    # no longer a dependency of anything.
+    # Database migrations run here, before the api starts. The Prisma CLI is
+    # fetched at start (pinned to the version the image was built with), so
+    # this container needs to reach the npm registry when it boots.
     command: >
       sh -c "
         echo 'Running migrations...'
@@ -194,11 +177,8 @@ services:
         max-size: "20m"
         max-file: "3"
 
-  # ONE image, two roles. v3.0.0 deleted the separate worker image: the api
-  # image serves the queues, the schedulers and the Kafka consumer when it is
-  # started with ROLE=worker. Upgrading from v2 means changing this image line
-  # and adding ROLE — nothing else; queue names, scheduler ids and the Kafka
-  # topic are unchanged.
+  # The worker is the api image started with ROLE=worker: it runs the queues,
+  # the scheduled jobs and the event consumer.
   op-worker:
     image: lindesvard/openpanel-api:2
     restart: always

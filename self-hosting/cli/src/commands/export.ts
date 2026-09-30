@@ -65,17 +65,17 @@ const resolveClient = async (
   if (flags.container) {
     if (!(await holdsEvents(flags.container, flags.db, auth))) {
       throw new Error(
-        `Container '${flags.container}' has no '${flags.db}.events' table. Wrong container, or wrong --db? Try \`openpanel export --list\`.`
+        `Container '${flags.container}' has no '${flags.db}.events' table, or rejected the credentials. Check --container, --db and CH_USER / CH_PASSWORD, or try \`openpanel export --list\`.`
       );
     }
-    return createClient(dockerPrefix(flags.container), flags.db, auth);
+    return createClient(dockerPrefix(flags.container, auth), flags.db, auth);
   }
 
   const matches = await findContainers(flags.db, auth);
   const [only] = matches;
   if (matches.length === 1 && only) {
     clackLog.info(`ClickHouse container: ${only.name} (${only.id})`);
-    return createClient(dockerPrefix(only.id), flags.db, auth);
+    return createClient(dockerPrefix(only.id, auth), flags.db, auth);
   }
   if (matches.length > 1) {
     const names = matches

@@ -12,12 +12,17 @@ const MISSING_BINARY_CODE = 127;
 // command instead of throwing, so host checks can report it.
 export const run = (
   command: string[],
-  options: { cwd?: string; inherit?: boolean } = {}
+  options: {
+    cwd?: string;
+    inherit?: boolean;
+    env?: Record<string, string>;
+  } = {}
 ): Promise<RunResult> =>
   new Promise((resolve) => {
     const [binary = '', ...args] = command;
     const child = spawn(binary, args, {
       cwd: options.cwd,
+      env: options.env ? { ...process.env, ...options.env } : process.env,
       stdio: options.inherit ? 'inherit' : ['ignore', 'pipe', 'ignore'],
     });
     let stdout = '';

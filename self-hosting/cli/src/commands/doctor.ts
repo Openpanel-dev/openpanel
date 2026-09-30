@@ -4,7 +4,9 @@ import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { bold, dim, green, log, red, SEVERITY_LABEL } from '../ui';
 
 interface DoctorOptions {
-  dir: string;
+  // null when no install was found; the host checks still run.
+  dir: string | null;
+  missingMessage: string;
   fix: boolean;
   check: boolean;
 }
@@ -29,8 +31,12 @@ const printHost = async (): Promise<boolean> => {
   return results.every((result) => result.ok);
 };
 
+const isBlocking = (finding: Finding) =>
+  finding.severity === 'error' && !finding.fix;
+
 export const doctor = async ({
   dir,
+  missingMessage,
   fix,
   check,
 }: DoctorOptions): Promise<number> => {
@@ -38,9 +44,15 @@ export const doctor = async ({
   const hostOk = await printHost();
   log();
 
-  if (!isInstallDir(dir)) {
-    log(`No install found in ${dir}. Run \`openpanel init\` to create one.`);
+  if (dir === null) {
+    log(missingMessage);
     return hostOk ? 0 : 1;
+  }
+  if (!isInstallDir(dir)) {
+    log(
+      `${dir} is not an OpenPanel install (its docker-compose.yml has no op-api and op-dashboard).`
+    );
+    return 1;
   }
 
   const install = loadInstall(dir);
@@ -64,7 +76,8 @@ export const doctor = async ({
         ? `Run \`openpanel doctor --fix\` to repair ${fixable.length} of ${findings.length}.`
         : 'Nothing here can be fixed automatically.'
     );
-    return check && blocking.length > 0 ? 1 : 0;
+    const failed = blocking.length > 0 || !hostOk;
+    return check && failed ? 1 : 0;
   }
 
   applyFixes(install);
@@ -79,5 +92,7 @@ export const doctor = async ({
   if (manual.length > 0) {
     log(`${manual.length} item(s) still need you — see above.`);
   }
-  return 0;
+  // Fixed files are not a healthy install while a blocker or the host is broken.
+  const stillBlocked = findings.some(isBlocking);
+  return stillBlocked || !hostOk ? 1 : 0;
 };

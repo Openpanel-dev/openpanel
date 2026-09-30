@@ -31,6 +31,7 @@ describe('doctor on a v1 install', () => {
       'files/redpanda-bootstrap',
       'compose/worker-image',
       'compose/worker-role',
+      'compose/worker-replicas',
       'compose/worker-healthcheck',
       'compose/api-migrations',
       'env/kafka-brokers',
