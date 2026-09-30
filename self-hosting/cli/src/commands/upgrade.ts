@@ -53,12 +53,15 @@ type SelfUpdateOutcome = { kind: 'continue' } | { kind: 'exit'; code: number };
 
 // A newer CLI carries the checks and image tag for the newer stack, so when one
 // exists but cannot be installed, stopping beats upgrading with stale knowledge.
-const updateSelf = async (): Promise<SelfUpdateOutcome> => {
+const updateSelf = async (
+  includePrereleases: boolean
+): Promise<SelfUpdateOutcome> => {
   try {
     const result = await selfUpdate({
       currentVersion: VERSION,
       execPath: process.execPath,
       fetcher: fetchWithTimeout,
+      includePrereleases,
     });
     if (result.status === 'current') {
       return { kind: 'continue' };
@@ -128,7 +131,14 @@ const resolveChannel = (flags: UpgradeFlags, install: Install): Channel => {
 
 export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   if (!flags.noSelfUpdate && isCompiledBinary()) {
-    const outcome = await updateSelf();
+    // A supporter install runs the newest build's images, so it takes the CLI
+    // built alongside them (a pre-release) instead of the last public release.
+    const followsBuilds =
+      flags.supporter ||
+      (!flags.public &&
+        isInstallDir(flags.dir) &&
+        channelOf(loadInstall(flags.dir)) === 'supporter');
+    const outcome = await updateSelf(followsBuilds);
     if (outcome.kind === 'exit') {
       return outcome.code;
     }

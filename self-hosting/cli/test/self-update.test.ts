@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import {
   assetName,
   type Fetcher,
+  fetchLatestRelease,
   isCompiledBinary,
   isNewer,
   parseChecksums,
@@ -149,5 +150,53 @@ describe('selfUpdate', () => {
       arch: 'x64',
     });
     expect(result.status).toBe('current');
+  });
+});
+
+describe('fetchLatestRelease: builds vs public releases', () => {
+  const cliAssets = [
+    {
+      name: 'openpanel-linux-x64',
+      browser_download_url: 'https://example.test/bin',
+    },
+    {
+      name: 'checksums.txt',
+      browser_download_url: 'https://example.test/sums',
+    },
+  ];
+  const release = (tag: string, prerelease: boolean) => ({
+    tag_name: tag,
+    draft: false,
+    prerelease,
+    assets: cliAssets,
+  });
+  // GitHub lists by creation date; a promoted build keeps its build date, so an
+  // older build can sit above a newer public release.
+  const feed: Fetcher = async () =>
+    Response.json([
+      release('v3.1.9', true),
+      release('v3.1.8', true),
+      release('v3.1.4', false),
+      release('v3.0.0', false),
+    ]);
+
+  test('public installs take the highest public release, never a build', async () => {
+    expect((await fetchLatestRelease(feed))?.version).toBe('3.1.4');
+  });
+
+  test('supporters take the newest build', async () => {
+    expect(
+      (await fetchLatestRelease(feed, { includePrereleases: true }))?.version
+    ).toBe('3.1.9');
+  });
+
+  test('the highest version wins, whatever the list order', async () => {
+    const unordered: Fetcher = async () =>
+      Response.json([
+        release('v3.0.0', false),
+        release('v3.2.0', false),
+        release('v3.1.4', false),
+      ]);
+    expect((await fetchLatestRelease(unordered))?.version).toBe('3.2.0');
   });
 });

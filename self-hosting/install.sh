@@ -7,6 +7,8 @@
 # Environment:
 #   OPENPANEL_INSTALL_DIR   Where to put the binary (default: /usr/local/bin, else ~/.local/bin)
 #   OPENPANEL_RELEASES_API  Release feed to read (default: GitHub)
+#   OPENPANEL_CHANNEL       "supporter" installs the newest build (a pre-release)
+#                           instead of the latest public release
 set -eu
 
 RELEASES_API="${OPENPANEL_RELEASES_API:-https://api.github.com/repos/Openpanel-dev/openpanel/releases?per_page=30}"
@@ -21,8 +23,8 @@ command -v curl >/dev/null 2>&1 || fail "curl is required"
 
 case "$(uname -s)" in
   Linux) os=linux ;;
-  Darwin) os=darwin ;;
-  *) fail "unsupported OS: $(uname -s). Download a binary from the releases page instead." ;;
+  Darwin) fail "the openpanel CLI runs on the Linux server that hosts OpenPanel. To try it on a Mac, run it from source: cd self-hosting/cli && bun install && bun src/main.ts --help" ;;
+  *) fail "unsupported OS: $(uname -s). The openpanel CLI runs on Linux servers." ;;
 esac
 
 case "$(uname -m)" in
@@ -50,8 +52,13 @@ curl -fsSL "$RELEASES_API" -o "$tmp/releases.json" || fail "could not reach $REL
 # Each release object lists its tag before its assets. The newest release that
 # carries this machine's binary is the one to install: every public self-hosting
 # release does, and internal version tags never become releases at all.
-tag="$(awk -v prefix="\"$TAG_PREFIX" -v name="/$asset\"" '
+# Builds of main are pre-releases; only supporters want those.
+allow_prerelease=0
+[ "${OPENPANEL_CHANNEL:-}" = "supporter" ] && allow_prerelease=1
+
+tag="$(awk -v prefix="\"$TAG_PREFIX" -v name="/$asset\"" -v pre="$allow_prerelease" '
   /"tag_name":/ { split($0, parts, "\""); current = (index("\"" parts[4], prefix) == 1) ? parts[4] : "" }
+  /"prerelease": *true/ && pre != 1 { current = "" }
   current != "" && /"browser_download_url":/ && index($0, name) { print current; exit }
 ' "$tmp/releases.json")"
 [ -n "$tag" ] || fail "no release with $asset found"

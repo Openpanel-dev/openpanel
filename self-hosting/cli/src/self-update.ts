@@ -60,26 +60,46 @@ interface ReleaseJson {
   assets: { name: string; browser_download_url: string }[];
 }
 
+// Every build on main is a pre-release carrying the CLI; a public self-hosting
+// release is one of those promoted. Supporters follow the builds, everyone
+// else only the public releases.
+export interface ReleaseFilter {
+  includePrereleases?: boolean;
+}
+
+const versionOfTag = (tag: string) => tag.slice(RELEASE_TAG_PREFIX.length);
+
 export const fetchLatestRelease = async (
-  fetcher: Fetcher
+  fetcher: Fetcher,
+  { includePrereleases = false }: ReleaseFilter = {}
 ): Promise<Release | null> => {
   const response = await fetcher(RELEASES_API);
   if (!response.ok) {
     throw new Error(`Could not list releases (HTTP ${response.status})`);
   }
   const releases = (await response.json()) as ReleaseJson[];
-  const latest = releases.find(
+  const candidates = releases.filter(
     (release) =>
       release.tag_name.startsWith(RELEASE_TAG_PREFIX) &&
       !release.draft &&
-      !release.prerelease &&
+      (includePrereleases || !release.prerelease) &&
       release.assets.some((asset) => asset.name === CHECKSUMS_ASSET)
+  );
+  // Highest version, not first in the list: a promoted build keeps the date it
+  // was built, so list order and version order can differ.
+  const latest = candidates.reduce<ReleaseJson | null>(
+    (highest, release) =>
+      highest === null ||
+      isNewer(versionOfTag(release.tag_name), versionOfTag(highest.tag_name))
+        ? release
+        : highest,
+    null
   );
   if (!latest) {
     return null;
   }
   return {
-    version: latest.tag_name.slice(RELEASE_TAG_PREFIX.length),
+    version: versionOfTag(latest.tag_name),
     assets: Object.fromEntries(
       latest.assets.map((asset) => [asset.name, asset.browser_download_url])
     ),
@@ -90,7 +110,7 @@ export type UpdateResult =
   | { status: 'current'; version: string }
   | { status: 'updated'; from: string; to: string };
 
-interface UpdateOptions {
+interface UpdateOptions extends ReleaseFilter {
   currentVersion: string;
   execPath: string;
   fetcher: Fetcher;
@@ -106,8 +126,9 @@ export const selfUpdate = async ({
   fetcher,
   platform = process.platform,
   arch = process.arch,
+  includePrereleases = false,
 }: UpdateOptions): Promise<UpdateResult> => {
-  const release = await fetchLatestRelease(fetcher);
+  const release = await fetchLatestRelease(fetcher, { includePrereleases });
   if (!(release && isNewer(release.version, currentVersion))) {
     return { status: 'current', version: currentVersion };
   }
