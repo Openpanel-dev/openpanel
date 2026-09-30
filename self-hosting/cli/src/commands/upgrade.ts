@@ -1,9 +1,19 @@
 import { cancel, log as clackLog, confirm, isCancel } from '@clack/prompts';
-import { applyFixes, type Finding, runDoctor } from '../doctor';
+import { applyFixes, type Finding, type Install, runDoctor } from '../doctor';
 import { checkHost } from '../host';
 import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { run } from '../run';
 import { type Fetcher, isCompiledBinary, selfUpdate } from '../self-update';
+import {
+  type Channel,
+  channelOf,
+  isLoggedIn,
+  LOGIN_HINT,
+  latestBuildVersion,
+  pointAt,
+  publicVersion,
+  SUPPORTER_REGISTRY,
+} from '../supporter';
 import { bold, dim, SEVERITY_LABEL } from '../ui';
 import { VERSION } from '../version';
 import { compose } from './compose';
@@ -19,6 +29,8 @@ export interface UpgradeFlags {
   yes: boolean;
   queueDrained: boolean;
   noSelfUpdate: boolean;
+  supporter: boolean;
+  public: boolean;
 }
 
 const ask = async (message: string, yes: boolean): Promise<boolean> => {
@@ -102,6 +114,17 @@ const confirmQueueDrained = async (flags: UpgradeFlags): Promise<boolean> => {
   return ask('Has the old event queue drained?', false);
 };
 
+// An explicit flag switches channel; otherwise the install stays where it is.
+const resolveChannel = (flags: UpgradeFlags, install: Install): Channel => {
+  if (flags.supporter) {
+    return 'supporter';
+  }
+  if (flags.public) {
+    return 'public';
+  }
+  return channelOf(install);
+};
+
 export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   if (!flags.noSelfUpdate && isCompiledBinary()) {
     const outcome = await updateSelf();
@@ -138,6 +161,29 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   }
 
   const install = loadInstall(flags.dir);
+  // --supporter / --public switch channels; otherwise an install stays on the
+  // one it is on, so a supporter's plain `upgrade` keeps getting the newest build.
+  if (flags.supporter && flags.public) {
+    clackLog.error('Choose one of --supporter and --public.');
+    return 1;
+  }
+  const channel = resolveChannel(flags, install);
+  if (channel === 'supporter' && !isLoggedIn()) {
+    clackLog.error(
+      `Supporter images need a login to ${SUPPORTER_REGISTRY}.\n${LOGIN_HINT}`
+    );
+    return 1;
+  }
+  const version =
+    channel === 'supporter'
+      ? await latestBuildVersion(fetchWithTimeout)
+      : publicVersion();
+  clackLog.info(
+    channel === 'supporter'
+      ? `Supporter images from ${SUPPORTER_REGISTRY}, newest build: ${version}`
+      : `Public release images: ${version}`
+  );
+
   const findings = runDoctor(install);
 
   const needsDrain = findings.some(
@@ -148,17 +194,24 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
     return 1;
   }
 
+  // Everything is applied in memory first, so the list below is exactly what
+  // gets written, and declining leaves the files untouched.
   const fixable = findings.filter((finding) => finding.fix);
-  if (fixable.length > 0) {
+  applyFixes(install);
+  const imageChanges = pointAt(install, channel, version);
+  const changeCount = fixable.length + imageChanges.length;
+  if (changeCount > 0) {
     listFindings(fixable);
+    for (const change of imageChanges) {
+      clackLog.message(`image ${change}`);
+    }
     const approved = await ask(
-      `Apply ${fixable.length} change(s)? Originals are kept as <name>.bak`,
+      `Apply ${changeCount} change(s)? Originals are kept as <name>.bak`,
       flags.yes
     );
     if (!approved) {
       return 1;
     }
-    applyFixes(install);
     const written = await writeInstall(flags.dir, install);
     clackLog.success(`Updated ${written.join(', ')}`);
   }

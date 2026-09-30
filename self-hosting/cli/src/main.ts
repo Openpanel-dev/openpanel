@@ -23,6 +23,8 @@ Usage: openpanel <command> [options]
 Commands:
   init                       Interactive setup (--yes --domain <url> to skip prompts)
   upgrade [--yes]            Update the CLI, repair the install, pull images, restart
+    --supporter              Use the newest build from docker.openpanel.dev (supporters)
+    --public                 Switch back to the public release images
   export [--out <dir>]       Dump ClickHouse data as JSONL (e.g. to move to Cloud)
   reset [--yes]              Delete this install's data volumes (asks first)
   doctor [--fix] [--check]   Check the host and your install; --fix repairs it
@@ -94,6 +96,8 @@ const parseFlags = () =>
       force: { type: 'boolean', default: false },
       'no-self-update': { type: 'boolean', default: false },
       'queue-drained': { type: 'boolean', default: false },
+      supporter: { type: 'boolean', default: false },
+      public: { type: 'boolean', default: false },
       container: { type: 'string' },
       out: { type: 'string' },
       'project-id': { type: 'string' },
@@ -193,6 +197,8 @@ const route = async (
       dir: await requireInstall(values.dir),
       yes: values.yes,
       queueDrained: values['queue-drained'],
+      supporter: values.supporter,
+      public: values.public,
       noSelfUpdate: values['no-self-update'],
     });
   }

@@ -55,62 +55,35 @@ Replace `your_api_key` with the actual API key provided to you.
 Make sure to keep your API key secure and never commit it to version control!
 </Callout>
 
-### Step 4: Update to latest images
-
-We've created a convenient script to make updating your images effortless. Navigate to your self-hosting folder and run:
+### Step 4: Switch to the latest images
 
 ```bash
-./get_latest_images apply
+openpanel upgrade --supporter
 ```
 
-This script will:
-- Check that you're authenticated with our Docker registry
-- Fetch the latest Git tags from our repository
-- Update your `docker-compose.yml` with the new image tags pointing to the latest builds
+This checks that you're logged in to `docker.openpanel.dev`, finds the newest build (every push to our main branch gets a version such as `3.1.9`), points your install at it, and restarts. It shows every change and asks before writing anything.
 
-<Callout type="info">
-The script will automatically check if you're logged in. If not, it will provide you with instructions to authenticate first.
-</Callout>
+Don't have the CLI yet? See [Get started with self-hosting](/docs/self-hosting/self-hosting#quickstart).
 
-You can also check what tags are available without applying them:
+## Staying up to date
+
+Once your install uses the supporter images, a plain upgrade keeps it there and moves it to the newest build:
 
 ```bash
-./get_latest_images           # Show latest tags
-./get_latest_images --list    # List all available tags
+openpanel upgrade
 ```
 
-### Step 5: Restart your services
-
-After updating `docker-compose.yml`, recreate your services so they use the new images:
+To go back to the public release images from Docker Hub:
 
 ```bash
-docker compose up -d
+openpanel upgrade --public
 ```
-
-That's it! Your OpenPanel instance is now running the latest and greatest version.
-
-## Quick update workflow
-
-Once you're set up, updating to the latest version is as simple as:
-
-```bash
-cd /path/to/self-hosting
-./get_latest_images apply
-docker compose up -d
-```
-
-This entire process takes less than a minute, giving you instant access to new features and fixes.
-
-The `get_latest_images` script will:
-1. Verify you're logged into the Docker registry
-2. Fetch the latest tags from GitHub
-3. Update your `docker-compose.yml` with images pointing to the latest commit SHAs
-4. Create a backup of your docker-compose file before making changes
 
 ## Important notes
 
 - **Stability**: While these images are tested, they may occasionally contain bugs that haven't been discovered yet. We recommend having a backup strategy.
 - **Breaking changes**: We strive to maintain backwards compatibility, but occasionally breaking changes may occur. Always check the [changelog](/docs/self-hosting/changelog) before updating.
+- **Configuration changes**: `openpanel upgrade` updates your `docker-compose.yml` and `.env` for what its own release knows about. Builds newer than your CLI rarely need more; when they do, the next CLI release (installed automatically by `openpanel upgrade`) brings it.
 - **Support**: As a supporter, you have priority access to support. If you encounter any issues, reach out to us on Discord or via email.
 
 ## Need help?
