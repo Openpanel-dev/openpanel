@@ -1,0 +1,19 @@
+# Pins the toolchain per checkout, so `cd` into the repo selects the versions it
+# expects rather than whatever is installed globally. `bun upgrade` moves a
+# machine off the pin silently and offers no flag to go back, which is the drift
+# this prevents.
+#
+# The versions are written out rather than read from .bun-version and .nvmrc,
+# because mise's idiomatic version file for bun is package.json, not
+# .bun-version: with `idiomatic_version_file_enable_tools = ["bun"]` it resolves
+# `engines.bun` (a `>=` range) to the newest matching release, which is how a
+# machine ends up on a version scripts/doctor.sh then rejects.
+#
+# So four files now carry the bun version — here, .bun-version, and the
+# ARG BUN_VERSION in apps/api/Dockerfile and apps/start/Dockerfile. doctor.sh
+# compares the running bun against .bun-version, which catches the two that
+# matter to a developer; keep the rest in step when bumping.
+
+[tools]
+bun = "1.4.0"
+node = "24.19.0"
