@@ -3,7 +3,7 @@
 # after that point (including an auto-created `events` topic); it does not
 # repartition anything that already exists.
 #
-# Generated as redpanda/bootstrap.yaml by ./setup from this template — do not
+# Generated as redpanda/bootstrap.yaml by `openpanel init` from this template — do not
 # edit the generated file directly, it is overwritten on the next setup run.
 #
 # FOOTGUN (ADR-004 risk 6): the producer partitions by

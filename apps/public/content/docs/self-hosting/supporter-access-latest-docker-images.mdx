@@ -81,10 +81,10 @@ You can also check what tags are available without applying them:
 
 ### Step 5: Restart your services
 
-After pulling the latest images, simply restart your services:
+After updating `docker-compose.yml`, recreate your services so they use the new images:
 
 ```bash
-./restart
+docker compose up -d
 ```
 
 That's it! Your OpenPanel instance is now running the latest and greatest version.
@@ -96,7 +96,7 @@ Once you're set up, updating to the latest version is as simple as:
 ```bash
 cd /path/to/self-hosting
 ./get_latest_images apply
-./restart
+docker compose up -d
 ```
 
 This entire process takes less than a minute, giving you instant access to new features and fixes.

@@ -3,6 +3,31 @@ title: Changelog for self-hosting
 description: This is a list of changes that have been made to the self-hosting setup.
 ---
 
+## 3.0.0
+
+Redpanda is now a required part of the stack, and the separate worker image is gone.
+
+Upgrade with the CLI, which makes all of the changes below for you after asking:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
+openpanel upgrade
+```
+
+Before you do, stop sending events and let the old worker finish its queue. Events still waiting in Redis are not moved to Redpanda.
+
+TLDR;
+
+- New `op-rp` (Redpanda) service, its `op-rp-data` volume and `redpanda/bootstrap.yaml`; `op-api` and `op-worker` wait for it
+- `op-worker` now runs the `openpanel-api` image with `ROLE=worker` and a `/healthz/ready` healthcheck; `openpanel-worker` is no longer built
+- `op-api` migrates with `prisma` and `scripts/migrate-code.ts` under bun
+- New required env: `KAFKA_BROKERS=op-rp:9092`, `KAFKA_EVENTS_TOPIC_PARTITIONS`, `ENCRYPTION_KEY` (64 hex characters) and `COOKIE_SECRET`
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD` must be set together
+- `ENABLED_QUEUES`: `events_kafka` is now `events`, and `misc` is removed
+- Removed, no longer read: `WORKER_PORT`, `EVENT_JOB_CONCURRENCY`, `EVENTS_GROUP_QUEUES_SHARDS`, `EVENT_BLOCKING_TIMEOUT_SEC`, `ORDERING_DELAY_MS`, `AUTO_BATCH_SIZE`, `AUTO_BATCH_MAX_WAIT_MS`, `SHUTDOWN_GRACE_PERIOD_MS`
+- Caddy: `worker.<domain>` redirects `/` to `/bullboard/`
+- The `./setup`, `./start`, `./update` and friends are replaced by the `openpanel` CLI. `openpanel doctor` checks an existing install and `openpanel doctor --fix` repairs it
+
 ## 2.0.0
 
 We have released the first stable version of OpenPanel v2. This is a big one!

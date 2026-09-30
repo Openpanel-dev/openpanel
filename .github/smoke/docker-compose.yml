@@ -56,7 +56,7 @@ services:
   # single-node sizing (not the root docker-compose.yml's 1G dev cap). Bootstrap
   # config is the checked-in dev file (partitions=24, same as cloud) rather than
   # the self-host setup script's generated one, which doesn't exist until
-  # ./setup has run — keeps this stack reproducible from this file alone.
+  # `openpanel init` has run — keeps this stack reproducible from this file alone.
   op-rp:
     image: redpandadata/redpanda:v25.1.4
     command:

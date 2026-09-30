@@ -1037,7 +1037,7 @@ KAFKA_EVENTS_TOPIC_PARTITIONS=48
 ```
 
 <Callout type="warn">
-Set this once, before the first `./start`. The Kafka/Redpanda partitioner is `murmur2(key) % numPartitions`, so raising the partition count after the topic already has data reshuffles where every key lands — it silently breaks per-key event ordering and the mutual exclusion the session buffer relies on for events produced before the change. To raise it later: stop producers, let consumers fully drain the backlog, delete the `events` topic, then restart so it's recreated with the new count.
+Set this once, before the first `openpanel up`. The Kafka/Redpanda partitioner is `murmur2(key) % numPartitions`, so raising the partition count after the topic already has data reshuffles where every key lands — it silently breaks per-key event ordering and the mutual exclusion the session buffer relies on for events produced before the change. To raise it later: stop producers, let consumers fully drain the backlog, delete the `events` topic, then restart so it's recreated with the new count.
 </Callout>
 
 ### KAFKA_CONSUMER_GROUP

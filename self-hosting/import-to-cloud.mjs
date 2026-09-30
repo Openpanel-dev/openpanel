@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
 /**
- * Import an `export-for-cloud.sh` dump into another OpenPanel ClickHouse.
+ * Import an `openpanel export` dump into another OpenPanel ClickHouse.
  *
  * Runs on plain Node (>= 18), no dependencies.
  *

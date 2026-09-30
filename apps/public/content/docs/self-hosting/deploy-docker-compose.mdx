@@ -10,68 +10,51 @@ This guide will help you deploy OpenPanel using Docker Compose. This method give
 
 ## Prerequisites
 
-- A VPS or server (Docker and Node will be installed automatically if needed)
-- At least 4GB RAM (6GB+ recommended) — the stack now includes Redpanda alongside Postgres, Redis and ClickHouse
+- A VPS or server. Docker is checked for automatically, and on Linux the CLI offers to install it.
+- At least 4GB RAM (6GB+ recommended) — the stack includes Redpanda alongside Postgres, Redis and ClickHouse
 - Domain name pointing to your server (optional but recommended)
 - Basic knowledge of command line
 
 <Callout>
-🙋‍♂️ This should work on any system. The setup script will install Docker and Node if they're not already installed.
+🙋‍♂️ This works on any Linux or macOS machine that can run Docker. You don't need Node, npm or git.
 </Callout>
 
 ## Quick Start
 
 <Steps>
 <Step>
-### Clone the Repository
-
-Clone the OpenPanel repository and navigate to the self-hosting directory:
+### Install the CLI
 
 ```bash
-git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
-cd openpanel/self-hosting
+curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
 ```
+
+This downloads a single `openpanel` binary, verifies its checksum and puts it on your `PATH`. Builds for Linux and macOS (x64 and arm64) are also on the [releases page](https://github.com/Openpanel-dev/openpanel/releases).
 </Step>
 
 <Step>
-### Run the Setup Script
-
-The setup script will guide you through the configuration process. It will:
-
-1. Install Node.js (if you accept and it's not already installed)
-2. Install Docker (if you accept and it's not already installed)
-3. Run an interactive quiz/wizard that asks questions about your setup
-
-> Setup takes 30s to 2 minutes depending on your VPS
+### Run the setup
 
 ```bash
-./setup
+openpanel init
 ```
 
-The wizard will ask you questions about:
+It checks your host (Docker, Docker Compose, memory), then asks about:
 - Your domain name
-- Database configuration
-- Email settings (optional)
-- AI integration (optional)
-- Registration settings
+- Whether to run Postgres, ClickHouse and Redis for you, or connect your own
+- Whether to use the bundled Caddy (automatic HTTPS) or your own reverse proxy
+- Email (optional)
 
-<Callout>
-⚠️ If the `./setup` script fails to run, you can do it manually:
+Secrets, the worker count and the queue-dashboard password are generated. It writes `docker-compose.yml`, `.env` and the supporting config files to `~/openpanel` (use `--dir <path>` to change that) and prints the queue-dashboard password once.
 
-1. Install Docker
-2. Install Node.js
-3. Install npm
-4. Run `npm run quiz` inside the self-hosting folder
-</Callout>
+For unattended setups every answer is a flag, e.g. `openpanel init --yes --domain https://analytics.example.com`. Run `openpanel --help` to see them.
 </Step>
 
 <Step>
 ### Start the Services
 
-After the setup is complete, start all OpenPanel services:
-
 ```bash
-./start
+openpanel up
 ```
 
 This will start all required services:
@@ -82,30 +65,23 @@ This will start all required services:
 - **op-api**: OpenPanel API server
 - **op-dashboard**: OpenPanel dashboard (frontend)
 - **op-worker**: Background worker for processing events
+- **op-proxy**: Caddy reverse proxy, unless you chose your own
 </Step>
 
 <Step>
 ### Verify Installation
 
-Check that all containers are running:
-
 ```bash
-docker compose ps
+openpanel status
 ```
 
-All services should show as "healthy" or "running". You can also check the logs:
+All services should show as "healthy" or "running". To watch the logs:
 
 ```bash
-docker compose logs -f
+openpanel logs
 ```
 
-Or use the provided logs script:
-
-```bash
-./logs
-```
-
-Once all services are healthy, you can access OpenPanel at your configured domain (or `http://your-server-ip` if you haven't configured a domain).
+Once all services are healthy, you can access OpenPanel at your configured domain.
 </Step>
 </Steps>
 
@@ -113,12 +89,12 @@ Once all services are healthy, you can access OpenPanel at your configured domai
 
 ### Environment Variables
 
-The setup wizard will configure most environment variables automatically. You can manually edit the `.env` file in the `self-hosting` directory if needed.
+`openpanel init` configures most environment variables for you. You can edit the `.env` file in your install directory if needed.
 
 For a complete reference of all available environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 <Callout>
-If you change the `.env` file, you need to restart the services for the changes to take effect. Use `./stop` and `./start` or `docker compose restart`.
+If you change the `.env` file, run `openpanel restart` for the changes to take effect. It recreates the containers, which a plain `docker compose restart` does not, so the new values are actually picked up.
 </Callout>
 
 The generated `.env` also contains commented-out blocks for optional features. Uncomment and fill them in to enable [social login with Google or GitHub](/docs/self-hosting/social-login) and the [Google Search Console integration](/docs/self-hosting/google-search-console).
@@ -134,126 +110,68 @@ op-api:
 
 ### Scaling Workers
 
-To scale the worker service, set the `OP_WORKER_REPLICAS` environment variable:
+The worker count is set in `docker-compose.yml` as `${OP_WORKER_REPLICAS:-N}`, where N is what `init` chose. Override it by adding a line to `.env`, then apply it:
 
-```bash
-OP_WORKER_REPLICAS=3 docker compose up -d
+```bash title=".env"
+OP_WORKER_REPLICAS=3
 ```
 
-Or edit the `docker-compose.yml` file:
-
-```yaml
-op-worker:
-  deploy:
-    replicas: 3
+```bash
+openpanel up
 ```
 
 ## Managing Your Deployment
 
-OpenPanel comes with several utility scripts to help manage your deployment. All scripts should be run from within the `self-hosting` directory.
+Run these from your install directory, or pass `--dir <path>`.
 
 ### Basic Operations
 
 ```bash
-./start    # Start all OpenPanel services
-./stop     # Stop all OpenPanel services
-./logs     # View real-time logs from all services
+openpanel up        # Start all OpenPanel services
+openpanel down      # Stop all OpenPanel services (data is kept)
+openpanel restart   # Recreate services, picking up a changed .env
+openpanel logs      # Follow logs from all services
+openpanel status    # Show running services
 ```
 
 ### View Logs
 
-View logs from all services:
-
 ```bash
-./logs
+openpanel logs            # all services
+openpanel logs op-api     # one service
 ```
 
-Or using Docker Compose directly:
+### Check Your Setup
 
 ```bash
-docker compose logs -f
+openpanel doctor
 ```
 
-View logs from a specific service:
-
-```bash
-docker compose logs -f op-api
-```
-
-### Stop Services
-
-Stop all services:
-
-```bash
-./stop
-```
-
-Or using Docker Compose:
-
-```bash
-docker compose down
-```
-
-Stop services but keep volumes (data persists):
-
-```bash
-docker compose stop
-```
-
-### Restart Services
-
-Restart all services:
-
-```bash
-./stop && ./start
-```
-
-Or using Docker Compose:
-
-```bash
-docker compose restart
-```
-
-Restart a specific service:
-
-```bash
-docker compose restart op-api
-```
-
-### Rebuild Services
-
-Rebuild and restart a specific service:
-
-```bash
-./rebuild op-dashboard
-```
+Checks that Docker is running and has enough memory, and that your `docker-compose.yml` and `.env` match what this version expects. `openpanel doctor --fix` repairs what it can and keeps the originals as `<file>.bak`.
 
 ### Update OpenPanel
 
-To update to the latest version, use the update script:
-
 ```bash
-./update
+openpanel upgrade
 ```
 
-This script will:
-1. Pull the latest changes from the repository
-2. Pull the latest Docker images
-3. Restart all services
-
-<Callout>
-If you don't have the `./update` script, you can manually update:
-
-```bash
-git pull
-docker compose pull
-docker compose up -d
-```
-</Callout>
+This will:
+1. Update the CLI itself, after verifying its checksum
+2. Run the `doctor` checks and offer to fix your `docker-compose.yml` and `.env` for the new version
+3. Pull the latest Docker images
+4. Restart the services
 
 <Callout type="warn">
-Always backup your data before updating. The database migrations will run automatically when the API container starts. Also read any changes in the [changelog](/docs/self-hosting/changelog) and apply them to your instance.
+Always backup your data before updating. The database migrations will run automatically when the API container starts. Also read any changes in the [changelog](/docs/self-hosting/changelog).
 </Callout>
+
+### Start Over
+
+```bash
+openpanel reset
+```
+
+Deletes this install's data volumes after you type the directory name to confirm. `docker-compose.yml` and `.env` are kept.
 
 ### Backup and Restore
 
