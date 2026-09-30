@@ -34,7 +34,7 @@ interface OverviewMetricsProps {
 const REVENUE_COLOR = 'oklch(0.68 0.11 158)';
 // Bump alpha (0.2 → 0.4) so the bklit hover highlight — which inherits the
 // line's stroke color — has enough body to be perceptible on hover.
-const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.4)';
+const PREV_LINE_COLOR = 'var(--chart-crosshair)';
 
 const TITLES = [
   {

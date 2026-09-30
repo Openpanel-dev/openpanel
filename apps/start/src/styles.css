@@ -77,12 +77,12 @@ code {
   --chart-foreground-muted: var(--muted-foreground);
   --chart-line-primary: var(--chart-0);
   --chart-line-secondary: var(--chart-1);
-  --chart-crosshair: oklch(from var(--foreground) l c h / 0.4);
+  --chart-crosshair: color-mix(in oklch, var(--foreground) 40%, transparent);
   --chart-grid: var(--border);
   /* Outer tooltip box is transparent — OPTooltipCard owns the visible card. */
   --chart-tooltip-background: transparent;
   --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  --chart-tooltip-muted: color-mix(in oklch, var(--background) 60%, transparent);
   --chart-marker-background: var(--def-100);
   --chart-marker-border: var(--border);
   --chart-marker-foreground: var(--foreground);
@@ -92,7 +92,7 @@ code {
      black and the count badge renders as a black dot. */
   --chart-marker-badge-background: var(--foreground);
   --chart-marker-badge-foreground: var(--background);
-  --chart-ring-background: oklch(from var(--foreground) l c h / 0.12);
+  --chart-ring-background: color-mix(in oklch, var(--foreground) 12%, transparent);
   --chart-label: var(--muted-foreground);
 }
 
@@ -132,7 +132,7 @@ code {
      theme-agnostic and is defined in :root only, so we do NOT redefine it here. */
   --chart-tooltip-background: transparent;
   --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  --chart-tooltip-muted: color-mix(in oklch, var(--background) 60%, transparent);
   --chart-1: oklch(1 0 none);
   --chart-2: oklch(0.73 0 none);
   --chart-3: oklch(0.51 0 none);

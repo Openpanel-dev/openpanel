@@ -2,6 +2,7 @@
 
 import type { Transition } from "motion/react";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { clipRevealTransition } from "./animation";
 
 export interface ChartRevealClipProps {
@@ -13,6 +14,15 @@ export interface ChartRevealClipProps {
   revealEpoch: number;
   /** Extra inset around the clip rect so edge glyphs are not cut off. */
   padding?: number;
+}
+
+function isSafariSvgClipBug(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  // Motion animates SVG `width` via CSS on Safari, which clipPath ignores —
+  // charts stay clipped to 0. Skip the motion path there.
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 }
 
 /**
@@ -30,6 +40,24 @@ export function ChartRevealClip({
   const transition = clipRevealTransition(enterTransition);
   const paddedWidth = Math.max(0, targetWidth + padding * 2);
   const paddedHeight = height + padding * 2;
+  const [safariSafe, setSafariSafe] = useState(false);
+
+  useEffect(() => {
+    setSafariSafe(isSafariSvgClipBug());
+  }, []);
+
+  if (safariSafe) {
+    return (
+      <clipPath id={clipPathId}>
+        <rect
+          height={paddedHeight}
+          width={paddedWidth}
+          x={-padding}
+          y={-padding}
+        />
+      </clipPath>
+    );
+  }
 
   return (
     <clipPath id={clipPathId}>

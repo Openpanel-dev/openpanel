@@ -1,7 +1,8 @@
 "use client";
 
 import { type MotionValue, motion } from "motion/react";
-import { type RefObject, useId } from "react";
+import type { RefObject } from "react";
+import { useSvgId } from "./use-svg-id";
 
 // Hover-highlight overlay: re-strokes the base path `d`, clipped to a vertical
 // band whose x/width spring to track the hovered point, so only the segment
@@ -33,7 +34,7 @@ export function HighlightSegment({
   x,
   width,
 }: HighlightSegmentProps) {
-  const clipId = useId();
+  const clipId = useSvgId("highlight");
   if (!(visible && pathRef.current)) {
     return null;
   }
