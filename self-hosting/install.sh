@@ -7,8 +7,6 @@
 # Environment:
 #   OPENPANEL_INSTALL_DIR   Where to put the binary (default: /usr/local/bin, else ~/.local/bin)
 #   OPENPANEL_RELEASES_API  Release feed to read (default: GitHub)
-#   OPENPANEL_CHANNEL       "supporter" installs the newest build (a pre-release)
-#                           instead of the latest public release
 set -eu
 
 RELEASES_API="${OPENPANEL_RELEASES_API:-https://api.github.com/repos/Openpanel-dev/openpanel/releases?per_page=30}"
@@ -52,15 +50,24 @@ curl -fsSL "$RELEASES_API" -o "$tmp/releases.json" || fail "could not reach $REL
 # Each release object lists its tag before its assets. The newest release that
 # carries this machine's binary is the one to install: every public self-hosting
 # release does, and internal version tags never become releases at all.
-# Builds of main are pre-releases; only supporters want those.
-allow_prerelease=0
-[ "${OPENPANEL_CHANNEL:-}" = "supporter" ] && allow_prerelease=1
+# The newest release carrying this machine's binary. Builds of main are
+# pre-releases: skipped while a public release exists, used only before the
+# first one (supporters then move to the builds with `openpanel upgrade --supporter`).
+find_release() {
+  awk -v prefix="\"$TAG_PREFIX" -v name="/$asset\"" -v pre="$1" '
+    /"tag_name":/ { split($0, parts, "\""); current = (index("\"" parts[4], prefix) == 1) ? parts[4] : "" }
+    /"prerelease": *true/ && pre != 1 { current = "" }
+    current != "" && /"browser_download_url":/ && index($0, name) { print current; exit }
+  ' "$tmp/releases.json"
+}
 
-tag="$(awk -v prefix="\"$TAG_PREFIX" -v name="/$asset\"" -v pre="$allow_prerelease" '
-  /"tag_name":/ { split($0, parts, "\""); current = (index("\"" parts[4], prefix) == 1) ? parts[4] : "" }
-  /"prerelease": *true/ && pre != 1 { current = "" }
-  current != "" && /"browser_download_url":/ && index($0, name) { print current; exit }
-' "$tmp/releases.json")"
+tag="$(find_release 0)"
+if [ -z "$tag" ]; then
+  tag="$(find_release 1)"
+  if [ -n "$tag" ]; then
+    echo "No public release yet; installing the newest build ($tag)."
+  fi
+fi
 [ -n "$tag" ] || fail "no release with $asset found"
 
 url_for() {
