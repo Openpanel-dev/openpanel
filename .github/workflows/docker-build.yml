@@ -93,7 +93,7 @@ jobs:
           bun-version-file: ".bun-version"
 
       - name: Setup bun cache
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
