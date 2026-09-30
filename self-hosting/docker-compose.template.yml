@@ -122,7 +122,7 @@ services:
     #   - 19092:9092
 
   op-api:
-    image: lindesvard/openpanel-api:2
+    image: lindesvard/openpanel-api:3
     restart: always
     # Database migrations run here, before the api starts. The Prisma CLI is
     # fetched at start (pinned to the version the image was built with), so
@@ -158,7 +158,7 @@ services:
         max-file: "3"
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:2
+    image: lindesvard/openpanel-dashboard:3
     restart: always
     depends_on:
       op-api:
@@ -180,7 +180,7 @@ services:
   # The worker is the api image started with ROLE=worker: it runs the queues,
   # the scheduled jobs and the event consumer.
   op-worker:
-    image: lindesvard/openpanel-api:2
+    image: lindesvard/openpanel-api:3
     restart: always
     environment:
       - ROLE=worker

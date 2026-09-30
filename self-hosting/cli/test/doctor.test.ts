@@ -29,6 +29,7 @@ describe('doctor on a v1 install', () => {
       'upgrade/drain-old-queue',
       'compose/redpanda-service',
       'files/redpanda-bootstrap',
+      'compose/image-tag',
       'compose/worker-image',
       'compose/worker-role',
       'compose/worker-replicas',
@@ -58,6 +59,10 @@ describe('doctor on a v1 install', () => {
     expect(compose.volumes).toHaveProperty('op-rp-data');
     expect(compose.services['op-worker'].image).toBe(
       compose.services['op-api'].image
+    );
+    expect(compose.services['op-api'].image).toBe('lindesvard/openpanel-api:3');
+    expect(compose.services['op-dashboard'].image).toBe(
+      'lindesvard/openpanel-dashboard:3'
     );
     expect(compose.services['op-worker'].environment).toContain('ROLE=worker');
     expect(compose.services['op-api'].command).toContain(

@@ -18,6 +18,7 @@ Before you do, stop sending events and let the old worker finish its queue. Even
 
 TLDR;
 
+- Images move from `:2` to `:3` (`lindesvard/openpanel-api:3`, `lindesvard/openpanel-dashboard:3`)
 - New `op-rp` (Redpanda) service, its `op-rp-data` volume and `redpanda/bootstrap.yaml`; `op-api` and `op-worker` wait for it
 - `op-worker` now runs the `openpanel-api` image with `ROLE=worker` and a `/healthz/ready` healthcheck; `openpanel-worker` is no longer built
 - `op-api` migrates with `prisma` and `scripts/migrate-code.ts` under bun
