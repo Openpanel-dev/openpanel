@@ -13,6 +13,7 @@ import { Button } from '../ui/button';
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
 
+/** Email/password sign-in form; forwards to the TOTP challenge or the dashboard. */
 export function SignInEmailForm({
   isLastUsed,
   inviteId,
@@ -26,7 +27,9 @@ export function SignInEmailForm({
           return;
         }
         toast.success('Successfully signed in');
-        window.location.href = '/';
+        window.location.href = data.inviteError
+          ? `/?inviteError=${encodeURIComponent(data.inviteError)}`
+          : '/';
       },
       onError(error) {
         toast.error(error.message);

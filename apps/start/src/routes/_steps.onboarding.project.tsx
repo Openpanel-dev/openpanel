@@ -27,11 +27,15 @@ import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { onboardingInviteErrorMessage } from '@/utils/invite-error';
 import { op } from '@/utils/op';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
+  /** Why a pending invite could not be consumed, set by the OAuth callback. */
+  inviteError: z.string().optional(),
 });
+
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
@@ -63,7 +67,10 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 
 type IForm = z.infer<typeof zOnboardingProject>;
 
+/** The project-creation step of onboarding: create a new workspace or join an existing one. */
 function Component() {
+  const { inviteError } = Route.useSearch();
+  const inviteMessage = onboardingInviteErrorMessage(inviteError);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -149,6 +156,14 @@ function Component() {
       onSubmit={form.handleSubmit(onSubmit)}
     >
       <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
+        {inviteMessage && (
+          <div
+            className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive text-sm"
+            role="alert"
+          >
+            {inviteMessage}
+          </div>
+        )}
         <div className="row mb-4 gap-2 rounded-lg bg-muted p-1">
           <button
             className={cn(

@@ -7,9 +7,21 @@ import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
+import { inviteErrorMessage } from '@/utils/invite-error';
 import { createTitle } from '@/utils/title';
+import { z } from 'zod';
+
+const validateSearch = z.object({
+  /**
+   * Set by the OAuth callback when an invite could not be consumed. Carried
+   * into onboarding so an invited user is told their invite expired instead of
+   * silently being walked through creating an organization of their own.
+   */
+  inviteError: z.string().optional(),
+});
 
 export const Route = createFileRoute('/')({
+  validateSearch,
   beforeLoad: ({ context }) => {
     if (!context.session?.session) {
       throw redirect({ to: '/login' });
@@ -19,7 +31,7 @@ export const Route = createFileRoute('/')({
   head: () => ({
     meta: [{ title: createTitle('Welcome') }],
   }),
-  loader: async ({ context }) => {
+  loader: async ({ context, location }) => {
     // Unsure why not using ensureQueryData here works
     // We need to put staleTime and gcTime to 0 to get the latest data
     // Even tho this query has never been called before
@@ -32,20 +44,31 @@ export const Route = createFileRoute('/')({
       )
       .catch(() => []);
 
+    const search = validateSearch.safeParse(location.search);
+    const inviteError =
+      search.success && search.data.inviteError
+        ? search.data.inviteError
+        : undefined;
+
     if (organizations.length === 0) {
-      throw redirect({ to: '/onboarding/project' });
+      throw redirect({
+        to: '/onboarding/project',
+        search: inviteError ? { inviteError } : undefined,
+      });
     }
 
     if (organizations.length === 1) {
       throw redirect({
         to: '/$organizationId',
         params: { organizationId: organizations[0].id },
+        search: inviteError ? { inviteError } : undefined,
       });
     }
   },
   pendingComponent: FullPageLoadingState,
 });
 
+/** The root page for a signed-in user with more than one organization: pick one to enter. */
 function LandingPage() {
   const trpc = useTRPC();
   const logout = useLogout();
@@ -53,6 +76,8 @@ function LandingPage() {
     trpc.organization.list.queryOptions()
   );
   const number = useNumber();
+  const { inviteError } = Route.useSearch();
+  const inviteMessage = inviteErrorMessage(inviteError);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
@@ -64,6 +89,15 @@ function LandingPage() {
             title="Welcome to OpenPanel.dev"
           />
         </div>
+
+        {inviteMessage && (
+          <div
+            className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive text-sm"
+            role="alert"
+          >
+            {inviteMessage}
+          </div>
+        )}
 
         <div className="col gap-2">
           {organizations?.map((org) => (

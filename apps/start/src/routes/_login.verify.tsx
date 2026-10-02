@@ -22,6 +22,7 @@ export const Route = createFileRoute('/_login/verify')({
   }),
 });
 
+/** Two-factor challenge: a 6-digit TOTP code or a one-time recovery code. */
 function VerifyPage() {
   const trpc = useTRPC();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
@@ -29,9 +30,11 @@ function VerifyPage() {
 
   const mutation = useMutation(
     trpc.auth.signInTotp.mutationOptions({
-      onSuccess() {
+      onSuccess(data) {
         toast.success('Signed in');
-        window.location.href = '/';
+        window.location.href = data.inviteError
+          ? `/?inviteError=${encodeURIComponent(data.inviteError)}`
+          : '/';
       },
       onError(error) {
         toast.error(error.message);

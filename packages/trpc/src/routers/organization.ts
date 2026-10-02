@@ -18,6 +18,35 @@ import {
 import { generateSecureId } from '@openpanel/common/server';
 import { sendEmail } from '@openpanel/email';
 import { addDays, addHours } from 'date-fns';
+
+const DEFAULT_INVITE_EXPIRY_DAYS = 7;
+const MIN_INVITE_EXPIRY_DAYS = 1;
+const MAX_INVITE_EXPIRY_DAYS = 90;
+
+/**
+ * How long an invite stays valid, in days. A week by default: three days meant
+ * an invite sent on a Thursday was dead before Monday, and an expired invite is
+ * not a dead end the recipient can see — they just end up somewhere unexpected.
+ * Override with INVITE_EXPIRY_DAYS.
+ */
+export function getInviteExpiryDays(): number {
+  const raw = process.env.INVITE_EXPIRY_DAYS;
+  if (!raw) {
+    return DEFAULT_INVITE_EXPIRY_DAYS;
+  }
+  // Number.parseInt would accept a numeric prefix ("7days" -> 7, "1e2" -> 1)
+  // and silently apply the wrong value instead of falling back or clamping.
+  // Number() rejects trailing garbage and evaluates scientific notation
+  // properly, so validate the whole string through it first.
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed)) {
+    return DEFAULT_INVITE_EXPIRY_DAYS;
+  }
+  return Math.min(
+    MAX_INVITE_EXPIRY_DAYS,
+    Math.max(MIN_INVITE_EXPIRY_DAYS, parsed)
+  );
+}
 import { getOrganizationAccess } from '../access';
 import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import {
@@ -160,6 +189,7 @@ export const organizationRouter = createTRPCRouter({
       return true;
     }),
 
+  /** Invite a user to the organization by email, expiring per getInviteExpiryDays(). */
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
@@ -216,7 +246,7 @@ export const organizationRouter = createTRPCRouter({
           role: input.role,
           createdById: ctx.session.userId,
           projectAccess: input.access ?? [],
-          expiresAt: addDays(new Date(), 3),
+          expiresAt: addDays(new Date(), getInviteExpiryDays()),
         },
         include: {
           organization: {

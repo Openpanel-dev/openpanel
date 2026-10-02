@@ -12,6 +12,7 @@ import {
   type Account,
   connectUserToOrganization,
   db,
+  getInviteFailureCode,
   getIsRegistrationAllowed,
 } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -53,7 +54,30 @@ interface OAuthUser {
   lastName?: string;
 }
 
-// Shared utility functions
+/**
+ * Where to send someone once OAuth has succeeded.
+ *
+ * An invite that could not be consumed is carried to the dashboard as a query
+ * param rather than dropped. Without it the person lands on onboarding with no
+ * membership and creates their own organization — which looks like a working
+ * account, in the wrong place, with no hint that anything went wrong.
+ */
+function dashboardRedirect(inviteError: string | null): string {
+  const base =
+    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!;
+  if (!inviteError) {
+    return base;
+  }
+  const url = new URL(base);
+  url.searchParams.set('inviteError', inviteError);
+  return url.toString();
+}
+
+/**
+ * Log in an existing OAuth account. If an invite is pending, tries to consume
+ * it and carries any failure through to the dashboard redirect rather than
+ * dropping it.
+ */
 async function handleExistingUser({
   account,
   oauthUser,
@@ -79,6 +103,7 @@ async function handleExistingUser({
     },
   });
 
+  let inviteError: string | null = null;
   if (inviteId) {
     try {
       const user = await db.user.findUniqueOrThrow({
@@ -86,10 +111,12 @@ async function handleExistingUser({
       });
       await connectUserToOrganization({ user, inviteId });
     } catch (error) {
+      inviteError = getInviteFailureCode(error) ?? 'failed';
       reply.log.error(
         {
           error,
           inviteId,
+          inviteError,
           userId: account.userId,
         },
         'error connecting existing user to organization'
@@ -106,11 +133,14 @@ async function handleExistingUser({
     (...args) => reply.setCookie(...args),
     providerName
   );
-  return reply.redirect(
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!
-  );
+  return reply.redirect(dashboardRedirect(inviteError));
 }
 
+/**
+ * Create a user from a first-time OAuth sign-in. If an invite is pending,
+ * tries to consume it and carries any failure through to the dashboard
+ * redirect rather than dropping it.
+ */
 async function handleNewUser({
   oauthUser,
   providerName,
@@ -165,15 +195,21 @@ async function handleNewUser({
     },
   });
 
+  let inviteError: string | null = null;
   if (inviteId) {
     try {
       await connectUserToOrganization({ user, inviteId });
     } catch (error) {
-      reply.log.error({
-        error,
-        inviteId,
-        user,
-      }, 'error connecting user to organization');
+      inviteError = getInviteFailureCode(error) ?? 'failed';
+      reply.log.error(
+        {
+          error,
+          inviteId,
+          inviteError,
+          user,
+        },
+        'error connecting user to organization'
+      );
     }
   }
 
@@ -188,9 +224,7 @@ async function handleNewUser({
     (...args) => reply.setCookie(...args),
     providerName
   );
-  return reply.redirect(
-    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!
-  );
+  return reply.redirect(dashboardRedirect(inviteError));
 }
 
 // Provider-specific user fetching
