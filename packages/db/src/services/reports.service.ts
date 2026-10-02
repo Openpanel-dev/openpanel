@@ -50,6 +50,11 @@ export function transformFilter(
     operator: filter.operator ?? 'is',
     value:
       typeof filter.value === 'string' ? [filter.value] : (filter.value ?? []),
+    // Pass the optional fields through so a saved report keeps its cast type
+    // and cohort selection after it is reloaded.
+    ...(filter.type ? { type: filter.type } : {}),
+    ...(filter.cohortId ? { cohortId: filter.cohortId } : {}),
+    ...(filter.cohortIds ? { cohortIds: filter.cohortIds } : {}),
   };
 }
 
