@@ -322,12 +322,18 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
   /**
    * Stream user profiles from Mixpanel Engage API.
-   * Paginates with page/page_size (5k per page) and yields each profile.
+   *
+   * Engage pagination is session based: page 0 opens a snapshot and returns its
+   * `session_id`, and every later page has to replay that id or Mixpanel answers
+   * 400 "must have session_id when requesting page > 0".
    */
   async *streamProfiles(): AsyncGenerator<MixpanelRawProfile, void, unknown> {
     const { serviceAccount, serviceSecret, projectId } = this.config;
-    const pageSize = 5000;
+    const requestedPageSize = 5000;
+    let pageSize = requestedPageSize;
+    let sessionId: string | undefined;
     let page = 0;
+    let receivedCount = 0;
 
     while (true) {
       await this.waitForRateLimit();
@@ -335,8 +341,11 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       const url = `${this.residencyUrls.apiBase}/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
       const body = new URLSearchParams({
         page: String(page),
-        page_size: String(pageSize),
+        page_size: String(requestedPageSize),
       });
+      if (sessionId) {
+        body.set('session_id', sessionId);
+      }
 
       this.logger?.info(
         { page, page_size: pageSize, projectId },
@@ -371,11 +380,22 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
       const data = (await response.json()) as {
         results?: Array<{ $distinct_id: string | number; $properties?: Record<string, unknown> }>;
+        session_id?: string;
         page?: number;
+        page_size?: number;
         total?: number;
       };
 
+      // Not `?? sessionId`: a later page that omits session_id has to clear
+      // it, or the stop-on-missing-session guard below never fires and we
+      // keep paging with a session id Mixpanel no longer recognizes.
+      sessionId = data.session_id;
+      // Mixpanel may hand back a smaller page than we asked for; the size it
+      // reports is the one its own paging follows.
+      pageSize = data.page_size ?? pageSize;
+
       const results = data.results ?? [];
+      receivedCount += results.length;
       for (const row of results) {
         const parsed = zMixpanelRawProfile.safeParse(row);
         if (parsed.success) {
@@ -388,7 +408,38 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         }
       }
 
+      // `total` tells us whether a page that looks like the end actually is
+      // one, or just happens to land on a boundary. Mixpanel treats page_size
+      // as a cap, not a guarantee -- a short page is not necessarily the last
+      // one -- so this has to run before *either* break below, not only the
+      // missing-session-id one.
+      const assertNoProfilesRemain = (reason: string) => {
+        if (typeof data.total === 'number' && receivedCount < data.total) {
+          throw new Error(
+            `Mixpanel Engage ${reason}, but ${data.total - receivedCount} of ${data.total} profiles remain unfetched (project ${projectId})`
+          );
+        }
+      };
+
       if (results.length < pageSize) {
+        assertNoProfilesRemain('returned a short page');
+        break;
+      }
+      // Without a session id Mixpanel would reject the next page anyway.
+      if (!sessionId) {
+        // No total either means no signal at all that this is really the end
+        // -- assertNoProfilesRemain can't tell us anything without it, so
+        // don't let a full page fall through to the "stop" path unchecked.
+        if (typeof data.total !== 'number') {
+          throw new Error(
+            `Mixpanel Engage returned a full page without a session_id or total (project ${projectId})`
+          );
+        }
+        assertNoProfilesRemain('returned a full page without a session_id');
+        this.logger?.warn(
+          { page, projectId },
+          'Mixpanel Engage returned a full page without a session_id; stopping profile pagination',
+        );
         break;
       }
       page++;
