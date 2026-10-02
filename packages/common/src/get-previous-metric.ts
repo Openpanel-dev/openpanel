@@ -12,16 +12,10 @@ export function getPreviousMetric(
     return undefined;
   }
 
-  const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
-    1,
-  );
+  const diff =
+    previous === 0
+      ? null
+      : round(Math.abs((current - previous) / previous) * 100, 1);
 
   return {
     diff:
