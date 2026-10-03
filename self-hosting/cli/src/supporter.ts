@@ -15,13 +15,6 @@ const TAGS_API =
   'https://api.github.com/repos/Openpanel-dev/openpanel/tags?per_page=100';
 const VERSION_TAG = /^v(\d+\.\d+\.\d+)$/;
 
-// The worker runs the api image, so it follows the api's repository.
-const SERVICE_APP = {
-  'op-api': 'api',
-  'op-worker': 'api',
-  'op-dashboard': 'dashboard',
-} as const;
-
 export type Channel = 'public' | 'supporter';
 
 export const supporterImage = (app: string, version: string) =>
@@ -34,32 +27,6 @@ export const channelOf = (install: Install): Channel => {
   return typeof image === 'string' && image.startsWith(`${SUPPORTER_REGISTRY}/`)
     ? 'supporter'
     : 'public';
-};
-
-// Points every OpenPanel service at the channel's images; returns what changed.
-export const pointAt = (
-  install: Install,
-  channel: Channel,
-  version: string
-): string[] => {
-  const changes: string[] = [];
-  for (const [service, app] of Object.entries(SERVICE_APP)) {
-    if (!install.compose.hasIn(['services', service])) {
-      continue;
-    }
-    const current = String(
-      install.compose.getIn(['services', service, 'image']) ?? ''
-    );
-    const next =
-      channel === 'supporter'
-        ? supporterImage(app, version)
-        : publicImage(app, version);
-    if (current !== next) {
-      install.compose.setIn(['services', service, 'image'], next);
-      changes.push(`${service}: ${current} → ${next}`);
-    }
-  }
-  return changes;
 };
 
 export const publicVersion = (): string =>

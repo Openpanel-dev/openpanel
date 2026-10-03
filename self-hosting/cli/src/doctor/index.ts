@@ -8,11 +8,15 @@ export const runDoctor = (install: Install): Finding[] =>
 
 // Fixes run one at a time against live state, in check order, so a later fix
 // sees the result of an earlier one (the worker image before its role).
-export const applyFixes = (install: Install): Finding[] => {
+// `skip` leaves findings to the caller, e.g. `upgrade` asks about images itself.
+export const applyFixes = (
+  install: Install,
+  { skip = [] }: { skip?: string[] } = {}
+): Finding[] => {
   const applied: Finding[] = [];
   for (const check of checks) {
     const finding = check(install);
-    if (!finding?.fix) {
+    if (!finding?.fix || skip.includes(finding.id)) {
       continue;
     }
     finding.fix(install);

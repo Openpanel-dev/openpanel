@@ -222,6 +222,8 @@ const staleImages = (install: Install, stack: string) =>
 // changes it makes only work with the images it was released for. Images from
 // other registries (supporter builds, forks) are never touched, and neither is
 // anything when there is no version to target (a dev build).
+export const IMAGE_TAG_CHECK_ID = 'compose/image-tag';
+
 export const imageTagFor =
   (stack: string | null): Check =>
   (install) => {
@@ -236,7 +238,7 @@ export const imageTagFor =
       .map(({ service, tag }) => `${service} ${tag} → ${stack}`)
       .join(', ');
     return {
-      id: 'compose/image-tag',
+      id: IMAGE_TAG_CHECK_ID,
       severity: 'error',
       title: `OpenPanel images move to :${stack} (${changes})`,
       detail: `This CLI release targets :${stack}; the compose changes it makes only work with those images.`,

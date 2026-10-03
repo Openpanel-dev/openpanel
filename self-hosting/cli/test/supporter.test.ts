@@ -10,7 +10,6 @@ import {
   channelOf,
   isLoggedIn,
   latestBuildVersion,
-  pointAt,
   SUPPORTER_REGISTRY,
 } from '../src/supporter';
 import { templates } from '../src/templates';
@@ -30,9 +29,6 @@ const install = (): Install => ({
   fileKind: () => 'file',
 });
 
-const image = (target: Install, service: string) =>
-  target.compose.getIn(['services', service, 'image']);
-
 const tagsFeed =
   (names: string[], ok = true): Fetcher =>
   async () =>
@@ -47,43 +43,15 @@ const dockerConfig = (config: unknown) => {
   return dir;
 };
 
-describe('channels', () => {
-  test('a fresh install is on the public channel', () => {
-    expect(channelOf(install())).toBe('public');
-  });
-
-  test('switching to supporter points api and worker at the api image, dashboard at its own', () => {
+describe('channelOf', () => {
+  test('an install on docker.openpanel.dev images is on the supporter channel', () => {
     const target = install();
-    const changes = pointAt(target, 'supporter', '3.1.9');
-
-    expect(image(target, 'op-api')).toBe(
-      `${SUPPORTER_REGISTRY}/openpanel-dev/api:3.1.9`
-    );
-    expect(image(target, 'op-worker')).toBe(
-      `${SUPPORTER_REGISTRY}/openpanel-dev/api:3.1.9`
-    );
-    expect(image(target, 'op-dashboard')).toBe(
-      `${SUPPORTER_REGISTRY}/openpanel-dev/dashboard:3.1.9`
-    );
-    expect(changes).toHaveLength(3);
-    expect(channelOf(target)).toBe('supporter');
-  });
-
-  test('switching back to public restores the Docker Hub images', () => {
-    const target = install();
-    pointAt(target, 'supporter', '3.1.9');
-    pointAt(target, 'public', '3.1.4');
-    expect(image(target, 'op-api')).toBe('lindesvard/openpanel-api:3.1.4');
-    expect(image(target, 'op-dashboard')).toBe(
-      'lindesvard/openpanel-dashboard:3.1.4'
-    );
     expect(channelOf(target)).toBe('public');
-  });
-
-  test('nothing changes when the images are already right', () => {
-    const target = install();
-    pointAt(target, 'supporter', '3.1.9');
-    expect(pointAt(target, 'supporter', '3.1.9')).toEqual([]);
+    target.compose.setIn(
+      ['services', 'op-api', 'image'],
+      `${SUPPORTER_REGISTRY}/openpanel-dev/api:3.1.9`
+    );
+    expect(channelOf(target)).toBe('supporter');
   });
 });
 

@@ -1,6 +1,8 @@
 import { cancel, log as clackLog, confirm, isCancel } from '@clack/prompts';
 import { applyFixes, type Finding, type Install, runDoctor } from '../doctor';
+import { IMAGE_TAG_CHECK_ID } from '../doctor/checks';
 import { checkHost } from '../host';
+import { applyImage, chooseImage, imageDecisions } from '../image-choice';
 import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { run } from '../run';
 import { type Fetcher, isCompiledBinary, selfUpdate } from '../self-update';
@@ -11,10 +13,10 @@ import {
   isLoggedIn,
   LOGIN_HINT,
   latestBuildVersion,
-  pointAt,
   publicVersion,
   SUPPORTER_REGISTRY,
 } from '../supporter';
+import { STACK_IMAGE_TAG } from '../templates';
 import { bold, dim, SEVERITY_LABEL } from '../ui';
 import { VERSION } from '../version';
 import { compose } from './compose';
@@ -118,13 +120,13 @@ const confirmQueueDrained = async (flags: UpgradeFlags): Promise<boolean> => {
   return ask('Has the old event queue drained?', false);
 };
 
+// The version this upgrade installs: the newest build for supporters, this
+// CLI's own version otherwise. A dev build has none, so it only changes images
+// when told to (--public), using the template's tag.
 const targetImageVersion = async (
   channel: Channel,
-  managesImages: boolean
+  explicitPublic: boolean
 ): Promise<string | null> => {
-  if (!managesImages) {
-    return null;
-  }
   if (channel === 'supporter') {
     const version = await latestBuildVersion(fetchWithTimeout);
     clackLog.info(
@@ -132,8 +134,10 @@ const targetImageVersion = async (
     );
     return version;
   }
-  const version = publicVersion();
-  clackLog.info(`Public release images: ${version}`);
+  const version = STACK_IMAGE_TAG ?? (explicitPublic ? publicVersion() : null);
+  if (version !== null) {
+    clackLog.info(`Public release images: ${version}`);
+  }
   return version;
 };
 
@@ -204,12 +208,7 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
     );
     return 1;
   }
-  // The image line only changes channel when asked (--supporter / --public),
-  // or to follow the newest build on the supporter channel. Otherwise the tag is
-  // doctor's business, which only ever moves OpenPanel's own Docker Hub images:
-  // an install running its own build or a mirror keeps its images.
-  const managesImages = channel === 'supporter' || flags.public;
-  const version = await targetImageVersion(channel, managesImages);
+  const version = await targetImageVersion(channel, flags.public);
 
   const findings = runDoctor(install);
 
@@ -223,10 +222,20 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
 
   // Everything is applied in memory first, so the list below is exactly what
   // gets written, and declining leaves the files untouched.
-  const fixable = findings.filter((finding) => finding.fix);
-  applyFixes(install);
-  const imageChanges =
-    version === null ? [] : pointAt(install, channel, version);
+  // Images are a question (keep, take the new one, or type another) rather
+  // than doctor's automatic fix, so an install on its own build or a mirror is
+  // never switched without asking.
+  const fixable = findings.filter(
+    (finding) => finding.fix && finding.id !== IMAGE_TAG_CHECK_ID
+  );
+  applyFixes(install, { skip: [IMAGE_TAG_CHECK_ID] });
+  const imageChanges: string[] = [];
+  for (const decision of version === null
+    ? []
+    : imageDecisions(install, channel, version)) {
+    const image = await chooseImage(decision, flags.yes);
+    imageChanges.push(...applyImage(install, decision, image));
+  }
   const changeCount = fixable.length + imageChanges.length;
   if (changeCount > 0) {
     listFindings(fixable);

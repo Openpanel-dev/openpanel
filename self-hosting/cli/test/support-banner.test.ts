@@ -7,7 +7,6 @@ import {
   shouldShowSupportBanner,
   supportBannerText,
 } from '../src/support-banner';
-import { pointAt } from '../src/supporter';
 import { templates } from '../src/templates';
 
 const install = (): Install => ({
@@ -36,7 +35,10 @@ describe('support banner', () => {
 
   test('never for supporters: supporter images, or logged in to the supporter registry', () => {
     const supporterInstall = install();
-    pointAt(supporterInstall, 'supporter', '3.1.9');
+    supporterInstall.compose.setIn(
+      ['services', 'op-api', 'image'],
+      'docker.openpanel.dev/openpanel-dev/api:3.1.9'
+    );
     expect(
       shouldShowSupportBanner(context({ install: supporterInstall }))
     ).toBe(false);
