@@ -1,3 +1,4 @@
+import { createCallableOpenPanel } from './callable';
 import { OpenPanel } from './index';
 
 ((window) => {
@@ -12,34 +13,9 @@ import { OpenPanel } from './index';
       }
     });
 
-    // Create a Proxy that supports both window.op('track', ...) and window.op.track(...)
-    const opCallable = new Proxy(
-      ((method: string, ...args: any[]) => {
-        const fn = (op as any)[method]
-          ? (op as any)[method].bind(op)
-          : undefined;
-        if (typeof fn === 'function') {
-          fn(...args);
-        } else {
-          console.warn(`OpenPanel: ${method} is not a function`);
-        }
-      }) as typeof op & ((method: string, ...args: any[]) => void),
-      {
-        get(target, prop) {
-          // Handle special properties
-          if (prop === 'q') {
-            return undefined; // q doesn't exist after SDK loads
-          }
-          // If accessing a method on op, return the bound method
-          const value = (op as any)[prop];
-          if (typeof value === 'function') {
-            return value.bind(op);
-          }
-          // Otherwise return the property from op (for things like options, etc.)
-          return value;
-        },
-      },
-    );
+    // Support window.op('track', ...), window.op.track(...), and native
+    // Function helpers such as window.op.call(...) emitted by transpilers.
+    const opCallable = createCallableOpenPanel(op);
 
     window.op = opCallable;
     window.openpanel = op;
