@@ -118,6 +118,25 @@ const confirmQueueDrained = async (flags: UpgradeFlags): Promise<boolean> => {
   return ask('Has the old event queue drained?', false);
 };
 
+const targetImageVersion = async (
+  channel: Channel,
+  managesImages: boolean
+): Promise<string | null> => {
+  if (!managesImages) {
+    return null;
+  }
+  if (channel === 'supporter') {
+    const version = await latestBuildVersion(fetchWithTimeout);
+    clackLog.info(
+      `Supporter images from ${SUPPORTER_REGISTRY}, newest build: ${version}`
+    );
+    return version;
+  }
+  const version = publicVersion();
+  clackLog.info(`Public release images: ${version}`);
+  return version;
+};
+
 // An explicit flag switches channel; otherwise the install stays where it is.
 const resolveChannel = (flags: UpgradeFlags, install: Install): Channel => {
   if (flags.supporter) {
@@ -185,15 +204,12 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
     );
     return 1;
   }
-  const version =
-    channel === 'supporter'
-      ? await latestBuildVersion(fetchWithTimeout)
-      : publicVersion();
-  clackLog.info(
-    channel === 'supporter'
-      ? `Supporter images from ${SUPPORTER_REGISTRY}, newest build: ${version}`
-      : `Public release images: ${version}`
-  );
+  // The image line only changes channel when asked (--supporter / --public),
+  // or to follow the newest build on the supporter channel. Otherwise the tag is
+  // doctor's business, which only ever moves OpenPanel's own Docker Hub images:
+  // an install running its own build or a mirror keeps its images.
+  const managesImages = channel === 'supporter' || flags.public;
+  const version = await targetImageVersion(channel, managesImages);
 
   const findings = runDoctor(install);
 
@@ -209,7 +225,8 @@ export const upgrade = async (flags: UpgradeFlags): Promise<number> => {
   // gets written, and declining leaves the files untouched.
   const fixable = findings.filter((finding) => finding.fix);
   applyFixes(install);
-  const imageChanges = pointAt(install, channel, version);
+  const imageChanges =
+    version === null ? [] : pointAt(install, channel, version);
   const changeCount = fixable.length + imageChanges.length;
   if (changeCount > 0) {
     listFindings(fixable);
