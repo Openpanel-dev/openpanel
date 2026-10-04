@@ -108,10 +108,12 @@ function Component() {
                 <WithLabel label="Timezone">
                   <Combobox
                     className="w-full"
-                    items={Intl.supportedValuesOf('timeZone').map((item) => ({
-                      value: item,
-                      label: item,
-                    }))}
+                    items={['UTC', ...Intl.supportedValuesOf('timeZone')].map(
+                      (item) => ({
+                        value: item,
+                        label: item,
+                      })
+                    )}
                     onChange={field.onChange}
                     placeholder="Select timezone"
                     value={field.value}
