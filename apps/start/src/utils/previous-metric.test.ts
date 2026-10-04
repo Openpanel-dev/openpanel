@@ -19,16 +19,16 @@ describe('getPreviousMetric', () => {
     });
   });
 
-  test('reports a drop as negative, with the ratio the other way round', () => {
+  test('reports a drop as negative, relative to the previous value', () => {
     expect(getPreviousMetric(50, 100)).toEqual({
-      diff: 100,
+      diff: 50,
       state: 'negative',
       value: 100,
     });
-    expect(getPreviousMetric(3, 7)).toEqual({
-      diff: 133.3,
+    expect(getPreviousMetric(4, 10)).toEqual({
+      diff: 60,
       state: 'negative',
-      value: 7,
+      value: 10,
     });
   });
 
@@ -40,14 +40,17 @@ describe('getPreviousMetric', () => {
     });
   });
 
-  test('a zero on either side keeps the direction but drops the diff', () => {
+  test('a previous value of zero keeps the direction but drops the diff', () => {
     expect(getPreviousMetric(5, 0)).toEqual({
       diff: null,
       state: 'positive',
       value: 0,
     });
+  });
+
+  test('a drop to zero is a full drop', () => {
     expect(getPreviousMetric(0, 5)).toEqual({
-      diff: null,
+      diff: 100,
       state: 'negative',
       value: 5,
     });

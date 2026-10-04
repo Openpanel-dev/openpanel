@@ -19,13 +19,7 @@ export function getPreviousMetric(
   }
 
   const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
+    (Math.abs(current - previous) / Math.abs(previous)) * 100,
     1
   );
 
