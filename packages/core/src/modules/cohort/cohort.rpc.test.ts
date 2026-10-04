@@ -4,9 +4,10 @@
 // end-to-end against a real Postgres is P6's (protectedProcedure) job, not
 // this one's — see cohort.rpc.ts's header.
 
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import type { CookieOptions } from '../../shared/cookie';
 import { cohortRouter } from './cohort.rpc';
 
@@ -133,4 +134,64 @@ test('refresh rejects an unauthenticated caller before enqueueing a recompute', 
   await expect(caller.refresh({ cohortId: 'cohort_1' })).rejects.toMatchObject({
     code: 'UNAUTHORIZED',
   });
+});
+
+// The project-access middleware and the handler both ask this ladder; a
+// refusal from either must stop the write.
+function nonMemberCaller(write: ReturnType<typeof mock>) {
+  const requireProjectAccess = mock(() =>
+    Promise.reject(
+      new TRPCForbiddenError('You do not have access to this project')
+    )
+  );
+  const { ctx } = stubHttpCtx(
+    {
+      services: {
+        auth: { requireProjectAccess },
+        cohort: { enqueueCompute: write },
+      },
+    } as unknown as Parameters<typeof stubHttpCtx>[0],
+    { session: {}, user: {}, userId: 'user_outsider' }
+  );
+  return {
+    requireProjectAccess,
+    caller: async () =>
+      cohortRouter.createCaller(
+        await makeTrpcContext(ctx, new Headers(), {
+          cookieOptions: COOKIE_OPTIONS,
+        })
+      ),
+  };
+}
+
+test('create refuses a signed-in user without write access to the project', async () => {
+  const enqueueCompute = mock(() => Promise.resolve());
+  const t = nonMemberCaller(enqueueCompute);
+  const caller = await t.caller();
+
+  await expect(
+    caller.create({
+      name: 'Power users',
+      projectId: 'proj_1',
+      definition: {
+        type: 'event',
+        criteria: {
+          operator: 'and',
+          events: [
+            {
+              name: 'purchase',
+              filters: [],
+              timeframe: { type: 'relative', value: '30d' },
+            },
+          ],
+        },
+      },
+    })
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(t.requireProjectAccess).toHaveBeenCalledWith({
+    userId: 'user_outsider',
+    projectId: 'proj_1',
+    level: 'write',
+  });
+  expect(enqueueCompute).not.toHaveBeenCalled();
 });

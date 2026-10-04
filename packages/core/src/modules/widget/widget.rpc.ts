@@ -127,6 +127,12 @@ export const widgetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+
       const defaultOptions =
         input.type === 'realtime'
           ? zRealtimeWidgetOptions.parse({ type: 'realtime' })
@@ -149,15 +155,21 @@ export const widgetRouter = createTRPCRouter({
         options: zWidgetOptions,
       })
     )
-    .mutation(async ({ input, ctx }) =>
-      upsertWidgetByType(ctx.db, {
+    .mutation(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+
+      return upsertWidgetByType(ctx.db, {
         projectId: input.projectId,
         organizationId: input.organizationId,
         type: input.options.type,
         update: { options: input.options },
         create: { public: false, options: input.options },
-      })
-    ),
+      });
+    }),
 
   counter: publicProcedure
     .input(z.object({ shareId: z.string() }))

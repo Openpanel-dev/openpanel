@@ -7,6 +7,7 @@
 import { expect, mock, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
+import { TRPCForbiddenError } from '../../rpc/errors';
 import type { CookieOptions } from '../../shared/cookie';
 import { referenceRouter } from './reference.rpc';
 
@@ -150,4 +151,53 @@ test('delete rejects an unauthenticated caller before looking up the reference',
   await expect(caller.delete({ id: 'ref_1' })).rejects.toMatchObject({
     code: 'UNAUTHORIZED',
   });
+});
+
+// The project-access middleware and the handler both ask this ladder; a
+// refusal from either must stop the write.
+function nonMemberCaller(write: ReturnType<typeof mock>) {
+  const requireProjectAccess = mock(() =>
+    Promise.reject(
+      new TRPCForbiddenError('You do not have access to this project')
+    )
+  );
+  const { ctx } = stubHttpCtx(
+    {
+      services: {
+        auth: { requireProjectAccess },
+        reference: { createReference: write },
+      },
+    } as unknown as Parameters<typeof stubHttpCtx>[0],
+    { session: {}, user: {}, userId: 'user_outsider' }
+  );
+  return {
+    requireProjectAccess,
+    caller: async () =>
+      referenceRouter.createCaller(
+        await makeTrpcContext(ctx, new Headers(), {
+          cookieOptions: COOKIE_OPTIONS,
+        })
+      ),
+  };
+}
+
+test('create refuses a signed-in user without write access to the project', async () => {
+  const createReference = mock(() => Promise.resolve({}));
+  const t = nonMemberCaller(createReference);
+  const caller = await t.caller();
+
+  await expect(
+    caller.create({
+      title: 'Launch',
+      description: null,
+      datetime: '2026-09-03T00:00:00.000Z',
+      projectId: 'proj_1',
+    })
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(t.requireProjectAccess).toHaveBeenCalledWith({
+    userId: 'user_outsider',
+    projectId: 'proj_1',
+    level: 'write',
+  });
+  expect(createReference).not.toHaveBeenCalled();
 });

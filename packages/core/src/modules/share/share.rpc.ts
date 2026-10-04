@@ -7,8 +7,7 @@
 // requestId minted at the edge reaches the Postgres call.
 //
 // The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`. `createOverview` has
-// no in-handler check — a known gap, not fixed.
+// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import {
@@ -37,7 +36,13 @@ export const shareRouter = createTRPCRouter({
 
   createOverview: protectedProcedure
     .input(zShareOverview)
-    .mutation(({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
       return ctx.services.share.createShareOverview(input);
     }),
 

@@ -105,12 +105,16 @@ export const cohortRouter = createTRPCRouter({
       return cohort;
     }),
 
-  // No project-access check here — protectedProcedure's session check is the
-  // only gate today. Preserved as found rather than silently added or
-  // removed; this router does not yet serve live traffic.
   create: protectedProcedure
     .input(zCohortInput)
     .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+
       const db = ctx.db;
       const cohort = await db.cohort.create({
         data: {
