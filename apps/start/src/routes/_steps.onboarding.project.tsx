@@ -28,6 +28,7 @@ import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
+import { isSignedIn } from '@/utils/route-session';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
@@ -35,8 +36,8 @@ const validateSearch = z.object({
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
-  beforeLoad: ({ context }) => {
-    if (!context.session?.session) {
+  beforeLoad: async ({ context }) => {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/onboarding' });
     }
   },

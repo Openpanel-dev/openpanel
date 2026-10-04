@@ -6,10 +6,11 @@ import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { cn } from '@/utils/cn';
+import { isSignedIn } from '@/utils/route-session';
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context }) => {
-    if (!context.session?.session) {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/login' });
     }
   },

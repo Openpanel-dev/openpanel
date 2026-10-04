@@ -8,6 +8,7 @@ import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { useTRPC } from '@/integrations/trpc/react';
+import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 const validateSearch = z.object({
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_public/onboarding')({
     ],
   }),
   beforeLoad: async ({ context }) => {
-    if (context.session?.session) {
+    if (await isSignedIn(context)) {
       throw redirect({ to: '/' });
     }
   },

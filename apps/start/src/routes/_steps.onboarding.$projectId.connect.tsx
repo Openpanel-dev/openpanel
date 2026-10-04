@@ -10,6 +10,7 @@ import { Button, LinkButton } from '@/components/ui/button';
 import { isRealClientSecret, useClientSecret } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
 import { clipboard } from '@/utils/clipboard';
+import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
@@ -18,8 +19,8 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
       { title: createEntityTitle('Connect data', PAGE_TITLES.ONBOARDING) },
     ],
   }),
-  beforeLoad: ({ context }) => {
-    if (!context.session?.session) {
+  beforeLoad: async ({ context }) => {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/onboarding' });
     }
   },

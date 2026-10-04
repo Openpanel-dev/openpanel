@@ -12,14 +12,15 @@ import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 import { op } from '@/utils/op';
+import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   head: () => ({
     meta: [{ title: createEntityTitle('Verify', PAGE_TITLES.ONBOARDING) }],
   }),
-  beforeLoad: ({ context }) => {
-    if (!context.session?.session) {
+  beforeLoad: async ({ context }) => {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/onboarding' });
     }
   },
