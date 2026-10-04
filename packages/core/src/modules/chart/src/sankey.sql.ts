@@ -138,9 +138,12 @@ function modeConfig(input: SankeyPathsInput): ModeConfig {
   }
 
   if (mode === 'between' && startEvent && endEvent) {
+    // The whole rest of the session from the start event: the end event can
+    // be anywhere after it, and `betweenSessionsQuery` cuts and caps the path.
+    const name = sql.string(startEvent.name);
     return {
       sessionFilter: sql`${inStartSessions} AND session_id IN (SELECT session_id FROM end_event_sessions)`,
-      eventsSlice: defaultSlice,
+      eventsSlice: sql`arraySlice(events_deduped, arrayFirstIndex(x -> x = ${name}, events_deduped))`,
     };
   }
 
@@ -169,18 +172,23 @@ export function sankeySessionPathsQuery(input: SankeyPathsInput): SqlFragment {
 
   const having = sessionFilter ?? sql`1 = 1`;
   const eventsExpr =
-    input.mode === 'before' ? sql`events_sliced` : TRUNCATE_AT_REPEAT;
+    input.mode === 'after' ? TRUNCATE_AT_REPEAT : sql`events_sliced`;
 
   return sql`WITH ${anchors}events_deduped_cte AS (WITH ordered_events AS (SELECT session_id, name as event_name, created_at FROM ${sql.id(CHART_TABLE.events)} WHERE ${dateRange(input)}${eventNameFilter(input)} ORDER BY session_id ASC, created_at ASC) SELECT session_id, ${DEDUPE_CONSECUTIVE} FROM ordered_events GROUP BY session_id), events_sliced_cte AS (SELECT session_id, ${eventsSlice} as events_sliced FROM events_deduped_cte HAVING ${having}) SELECT session_id, ${eventsExpr} as events, events[1] as entry_event FROM events_sliced_cte HAVING length(events) >= ${sql.uint64(MIN_PATH_LENGTH)}`;
 }
 
-/** `between` mode narrows each path to the slice from the start to the end event. */
+/**
+ * `between` mode keeps the sessions that reach the end event within `steps`
+ * events of the start event, and narrows each path to that stretch.
+ */
 function betweenSessionsQuery(
   input: SankeyPathsInput,
   startEvent: SankeyEvent,
   endEvent: SankeyEvent
 ): SqlFragment {
-  return sql`WITH session_paths AS (${sankeySessionPathsQuery(input)}) SELECT session_id, events, arrayFirstIndex(x -> x = ${sql.string(startEvent.name)}, events) as start_index, arrayFirstIndex(x -> x = ${sql.string(endEvent.name)}, events) as end_index FROM session_paths HAVING start_index > 0 AND end_index > 0 AND start_index < end_index`;
+  const start = sql.string(startEvent.name);
+  const end = sql.string(endEvent.name);
+  return sql`WITH session_paths AS (${sankeySessionPathsQuery(input)}) SELECT session_id, events, arrayFirstIndex(x -> x = ${start}, events) as start_index, arrayFirstIndex((x, i) -> x = ${end} AND i > start_index, events, arrayEnumerate(events)) as end_index FROM session_paths HAVING start_index > 0 AND end_index > 0 AND end_index - start_index < ${sql.uint64(input.steps)}`;
 }
 
 const BETWEEN_SLICE = compiledText(

@@ -12,6 +12,7 @@ export function ReportSankeyChart() {
   const {
     report: {
       series,
+      globalFilters,
       range,
       projectId,
       options,
@@ -22,12 +23,9 @@ export function ReportSankeyChart() {
     isLazyLoading,
   } = useReportChartContext();
 
-  if (!options) {
-    return <Empty />;
-  }
-
   const input: IReportInput = {
     series,
+    globalFilters,
     range,
     projectId,
     interval: 'day',
@@ -43,9 +41,13 @@ export function ReportSankeyChart() {
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.sankey.queryOptions(input, {
-      enabled: !isLazyLoading && input.series.length > 0,
+      enabled: !isLazyLoading && !!options && input.series.length > 0,
     })
   );
+
+  if (!options) {
+    return <Empty />;
+  }
 
   if (isLazyLoading || res.isLoading) {
     return <Loading />;
