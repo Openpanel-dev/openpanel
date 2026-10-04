@@ -431,16 +431,22 @@ async function getMetricsFromSessions(
   ]);
 
   const overallRevenue = getOverallRevenue(revenueRes);
-  const series = mergeRevenueIntoSeries(sessionRes.slice(1), revenueRes);
+  // A window without sessions has no rollup row (`HAVING` drops it), so the
+  // totals row is found by its date rather than assumed to be first.
+  const totals = sessionRes.find((row) => isClickhouseDefaultMinDate(row.date));
+  const series = mergeRevenueIntoSeries(
+    sessionRes.filter((row) => !isClickhouseDefaultMinDate(row.date)),
+    revenueRes
+  );
 
   return {
     metrics: {
-      bounce_rate: sessionRes[0]?.bounce_rate ?? 0,
-      unique_visitors: sessionRes[0]?.unique_visitors ?? 0,
-      total_sessions: sessionRes[0]?.total_sessions ?? 0,
-      avg_session_duration: sessionRes[0]?.avg_session_duration ?? 0,
-      total_screen_views: sessionRes[0]?.total_screen_views ?? 0,
-      views_per_session: sessionRes[0]?.views_per_session ?? 0,
+      bounce_rate: totals?.bounce_rate ?? 0,
+      unique_visitors: totals?.unique_visitors ?? 0,
+      total_sessions: totals?.total_sessions ?? 0,
+      avg_session_duration: totals?.avg_session_duration ?? 0,
+      total_screen_views: totals?.total_screen_views ?? 0,
+      views_per_session: totals?.views_per_session ?? 0,
       total_revenue: overallRevenue,
     },
     series,
