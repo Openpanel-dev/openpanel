@@ -8,6 +8,7 @@ bun run seed                       # small: 14 days, ~5k sessions
 bun run seed --size large --reset  # 90 days, ~1M sessions; --reset clears earlier seeded rows
 bun run seed --days 3 --sessions-per-day 500 --projects saas,app --seed 7
 bun run seed --dry-run             # the plan only
+bun run seed --timezone UTC        # the organization's timezone; defaults to this machine's
 ```
 
 Same flags + seed ⇒ identical rows.

@@ -1,5 +1,6 @@
 // `bun run seed [--size small|medium|large|xl] [--days N --sessions-per-day N]
-//               [--seed N] [--projects website,saas,...] [--reset] [--dry-run] [--out path]`
+//               [--seed N] [--projects website,saas,...] [--timezone zone] [--reset]
+//               [--dry-run] [--out path]`
 //
 // Targets whatever DATABASE_URL and CLICKHOUSE_URL name (a worktree's own
 // databases). Same flags and seed ⇒ identical data.
@@ -35,6 +36,7 @@ const USAGE = `Usage: bun run seed [options]
   --sessions-per-day <n>           override the preset's sessions per day (all projects)
   --seed <n>                       deterministic seed (default: ${DEFAULT_SEED})
   --projects <a,b>                 archetypes to seed (default: ${ARCHETYPE_IDS.join(',')})
+  --timezone <zone>                the organization's timezone (default: this machine's)
   --variance <x>                   0 regular … 1 lively … 2 chaotic (default: ${DEFAULT_VARIANCE})
   --reset                          delete earlier seeded rows for these projects first
   --dry-run                        print the plan and exit
@@ -76,6 +78,10 @@ function maskedUrl(url: string | undefined): string {
   }
 }
 
+function machineTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 function main(): Promise<void> {
   const { values } = parseArgs({
     args: process.argv.slice(2),
@@ -86,6 +92,7 @@ function main(): Promise<void> {
       seed: { type: 'string' },
       projects: { type: 'string' },
       variance: { type: 'string' },
+      timezone: { type: 'string' },
       reset: { type: 'boolean', default: false },
       'dry-run': { type: 'boolean', default: false },
       out: { type: 'string' },
@@ -125,6 +132,7 @@ function main(): Promise<void> {
     seed,
     variance,
     archetypes,
+    timezone: values.timezone ?? machineTimezone(),
     reset: values.reset,
     dryRun: values['dry-run'],
     outPath,
@@ -138,6 +146,7 @@ async function run(options: {
   seed: number;
   variance: number;
   archetypes: typeof ARCHETYPES;
+  timezone: string;
   reset: boolean;
   dryRun: boolean;
   outPath: string;
@@ -169,9 +178,13 @@ async function run(options: {
   }
 
   const rng = new Rng(`${options.seed}/postgres`);
-  const postgres = await seedPostgres(rng, options.archetypes);
+  const postgres = await seedPostgres(
+    rng,
+    options.archetypes,
+    options.timezone
+  );
   console.log(
-    `Postgres ready: organization ${postgres.organizationId}, ${postgres.projects.length} projects`
+    `Postgres ready: organization ${postgres.organizationId} (${options.timezone}), ${postgres.projects.length} projects`
   );
 
   if (options.reset) {

@@ -46,7 +46,7 @@ function inList(): string {
 describe('seed against real databases', () => {
   beforeAll(async () => {
     await bootstrapTestDatabases();
-    await seedPostgres(new Rng(`${SEED}/postgres`), ARCHETYPES);
+    await seedPostgres(new Rng(`${SEED}/postgres`), ARCHETYPES, 'UTC');
     await resetProjects(PROJECT_IDS);
     const sink = new ClickhouseSink();
     await generate(

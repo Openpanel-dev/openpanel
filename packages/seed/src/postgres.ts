@@ -83,7 +83,10 @@ async function upsertUser(): Promise<string> {
   return user.id;
 }
 
-async function upsertOrganization(userId: string): Promise<string> {
+async function upsertOrganization(
+  userId: string,
+  timezone: string
+): Promise<string> {
   const now = new Date();
   const subscription = {
     subscriptionStatus: 'active',
@@ -107,11 +110,16 @@ async function upsertOrganization(userId: string): Promise<string> {
       id: SEED_ORGANIZATION.id,
       name: SEED_ORGANIZATION.name,
       createdByUserId: userId,
-      timezone: 'UTC',
+      timezone,
       onboarding: '',
       ...subscription,
     },
-    update: { name: SEED_ORGANIZATION.name, deleteAt: null, ...subscription },
+    update: {
+      name: SEED_ORGANIZATION.name,
+      timezone,
+      deleteAt: null,
+      ...subscription,
+    },
   });
   await db.member.upsert({
     where: {
@@ -220,10 +228,11 @@ async function upsertProject(
 
 export async function seedPostgres(
   rng: Rng,
-  archetypes: readonly Archetype[]
+  archetypes: readonly Archetype[],
+  timezone: string
 ): Promise<PostgresSeed> {
   const userId = await upsertUser();
-  const organizationId = await upsertOrganization(userId);
+  const organizationId = await upsertOrganization(userId, timezone);
   const rootClient = await upsertClient(rng, {
     name: 'Seed root client',
     organizationId,
