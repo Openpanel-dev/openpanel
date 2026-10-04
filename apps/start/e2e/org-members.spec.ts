@@ -84,6 +84,19 @@ const clickRowAction = async (page: Page, email: string, action: string) => {
   }).toPass({ timeout: ACTION_TIMEOUT_MS * 2 });
 };
 
+// The row can vanish while the table re-renders, before the server has
+// finished, so wait for the mutation itself (not its CORS preflight).
+const removeMember = async (page: Page, email: string) => {
+  const removed = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('organization.removeMember') &&
+      response.ok()
+  );
+  await clickRowAction(page, email, 'Remove member');
+  await removed;
+};
+
 const guestStatus = async (guest: Page, path: string, input: unknown) => {
   const query = encodeURIComponent(JSON.stringify({ json: input }));
   const response = await guest.request.get(
@@ -404,7 +417,7 @@ test.describe('an invited member', () => {
       await expect(dialog).toBeHidden();
     } finally {
       await gotoHydrated(page, `/${seed.organizationId}/members`);
-      await clickRowAction(page, email, 'Remove member');
+      await removeMember(page, email);
       await expect(
         page.getByText('E2E has been removed from the organization')
       ).toBeVisible();
@@ -447,7 +460,7 @@ test.describe('an invited member', () => {
       expect(await readProject()).toBe(HTTP_OK);
     } finally {
       await gotoHydrated(page, `/${seed.organizationId}/members`);
-      await clickRowAction(page, email, 'Remove member');
+      await removeMember(page, email);
       await expect(
         page.getByRole('row', { name: new RegExp(email) })
       ).toHaveCount(0);
