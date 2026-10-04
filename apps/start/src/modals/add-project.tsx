@@ -35,7 +35,6 @@ export default function AddProject() {
     resolver: zodResolver(validator),
     defaultValues: {
       organizationId,
-      timezone: '', // Not used
       project: '',
       domain: '',
       cors: [],
