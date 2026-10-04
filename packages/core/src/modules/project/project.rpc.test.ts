@@ -1,12 +1,13 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// The access-check + mutation bodies ride on @openpanel/db (lazy-loaded
-// through ./src/access and project.service.ts); wiring this router
-// end-to-end against a real Postgres is P6's (protectedProcedure) job, not
-// this one's — see project.rpc.ts's header.
+// No database: the anonymous tests stop at the login boundary, and the update
+// tests stub `ctx.services` to assert what the procedure hands the service.
 
 import { expect, test } from 'bun:test';
-import { stubHttpCtx } from '../../../test/rpc-fixtures';
+import {
+  servicesWithProjectAccess,
+  stubHttpCtx,
+} from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
+import type { Services } from '../../services';
 import type { CookieOptions } from '../../shared/cookie';
 import { projectRouter } from './project.rpc';
 
@@ -85,4 +86,45 @@ test('cancelDeletion rejects an unauthenticated caller', async () => {
   await expect(
     caller.cancelDeletion({ projectId: 'proj_1' })
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+});
+
+async function updateCallerRecordingInput() {
+  const updates: unknown[] = [];
+  const services = {
+    ...servicesWithProjectAccess(),
+    project: {
+      getProjectById: () =>
+        Promise.resolve({ id: 'proj_1', organizationId: 'org_1' }),
+      updateProjectForOrganization: (
+        _id: string,
+        _organizationId: string,
+        input: unknown
+      ) => {
+        updates.push(input);
+        return Promise.resolve(null);
+      },
+    },
+  } as unknown as Services;
+  const { ctx } = stubHttpCtx({ services });
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return { caller: projectRouter.createCaller(trpcCtx), updates };
+}
+
+test('update passes exclude filters through to the service', async () => {
+  const { caller, updates } = await updateCallerRecordingInput();
+  const filters = [{ type: 'ip' as const, ip: '203.0.113.7' }];
+
+  await caller.update({ id: 'proj_1', filters });
+
+  expect(updates).toEqual([expect.objectContaining({ filters })]);
+});
+
+test('update leaves filters undefined when the caller omits them', async () => {
+  const { caller, updates } = await updateCallerRecordingInput();
+
+  await caller.update({ id: 'proj_1', name: 'Renamed' });
+
+  expect(updates).toEqual([expect.objectContaining({ filters: undefined })]);
 });

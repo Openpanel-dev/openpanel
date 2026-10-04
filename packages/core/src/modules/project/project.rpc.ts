@@ -80,6 +80,7 @@ export const projectRouter = createTRPCRouter({
           cors: input.cors,
           crossDomain: input.crossDomain,
           allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
+          filters: input.filters,
         }
       );
     }),

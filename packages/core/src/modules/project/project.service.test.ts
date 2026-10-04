@@ -262,6 +262,35 @@ test('updateProjectForOrganization strips trailing slashes from domain and cors'
   expect(result?.cors).toEqual(['https://a.com', 'https://b.com']);
 });
 
+test('updateProjectForOrganization persists exclude filters', async () => {
+  projectStore.set('p1', makeProject({ id: 'p1', organizationId: 'org_1' }));
+  const filters = [
+    { type: 'ip' as const, ip: '203.0.113.7' },
+    { type: 'profile_id' as const, profileId: 'usr_1' },
+  ];
+
+  const result = await subject.updateProjectForOrganization('p1', 'org_1', {
+    filters,
+  });
+
+  expect(result?.filters).toEqual(filters);
+  expect(projectStore.get('p1')?.filters).toEqual(filters);
+});
+
+test('updateProjectForOrganization leaves filters unchanged when omitted', async () => {
+  const filters = [{ type: 'ip', ip: '203.0.113.7' }];
+  projectStore.set(
+    'p1',
+    makeProject({ id: 'p1', organizationId: 'org_1', filters })
+  );
+
+  await subject.updateProjectForOrganization('p1', 'org_1', {
+    name: 'Renamed',
+  });
+
+  expect(projectStore.get('p1')?.filters).toEqual(filters);
+});
+
 test('deleteProjectForOrganization schedules a 24h grace period, scoped to the org', async () => {
   projectStore.set('p1', makeProject({ id: 'p1', organizationId: 'org_1' }));
 

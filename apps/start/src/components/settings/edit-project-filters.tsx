@@ -11,7 +11,7 @@ import type {
   IChartEventFilterValue,
 } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -27,9 +27,9 @@ import { useEventNames } from '@/hooks/use-event-names';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
-type Props = {
+interface Props {
   project: NonNullable<RouterOutputs['project']['getProjectWithClients']>;
-};
+}
 
 const validator = z.object({
   ips: z.array(z.string()),
@@ -120,22 +120,18 @@ function EventRuleItem({
         </Button>
       </div>
 
-      {rule.filters.length > 0 && (
-        <>
-          {rule.filters.map((filter) => (
-            <PureFilterItem
-              className="border-t border-l-2 border-l-emerald-500 p-2 px-4"
-              eventName={rule.name}
-              filter={filter}
-              immediateInput
-              key={filter.id}
-              onChangeOperator={changeFilterOperator}
-              onChangeValue={changeFilterValue}
-              onRemove={removeFilter}
-            />
-          ))}
-        </>
-      )}
+      {rule.filters.map((filter) => (
+        <PureFilterItem
+          className="border-t border-l-2 border-l-emerald-500 p-2 px-4"
+          eventName={rule.name}
+          filter={filter}
+          immediateInput
+          key={filter.id}
+          onChangeOperator={changeFilterOperator}
+          onChangeValue={changeFilterValue}
+          onRemove={removeFilter}
+        />
+      ))}
       <div className="border-t p-4">
         <PropertiesCombobox categories={['event']} onSelect={addFilter}>
           {(setOpen) => (
@@ -179,11 +175,17 @@ export default function EditProjectFilters({ project }: Props) {
   });
 
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.project.update.mutationOptions({
       onError: handleError,
       onSuccess: () => {
         toast.success('Project filters updated');
+        queryClient.invalidateQueries(
+          trpc.project.getProjectWithClients.queryFilter({
+            projectId: project.id,
+          })
+        );
       },
     })
   );
@@ -238,15 +240,9 @@ export default function EditProjectFilters({ project }: Props) {
         </p>
       </WidgetHead>
       <WidgetBody>
-        <form
-          className="space-y-4"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
-              e.preventDefault();
-            }
-          }}
-          onSubmit={form.handleSubmit(onSubmit)}
-        >
+        {/* Not a <form>: Enter in a tag or filter input adds a value, so the
+            page must never submit implicitly. */}
+        <div className="space-y-4">
           <Controller
             control={form.control}
             name="ips"
@@ -309,11 +305,12 @@ export default function EditProjectFilters({ project }: Props) {
             className="self-end"
             icon={SaveIcon}
             loading={mutation.isPending}
-            type="submit"
+            onClick={form.handleSubmit(onSubmit)}
+            type="button"
           >
             Save
           </Button>
-        </form>
+        </div>
       </WidgetBody>
     </Widget>
   );

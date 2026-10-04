@@ -19,6 +19,7 @@ import { TABLE_NAMES } from '../../shared/ch-tables';
 import { hashClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
 import { getClientByIdCached } from '../client/client.service';
+import type { IProjectFilters } from './project.constants';
 
 // The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
 // compile-time template tag holding no client (see ch-query.ts).
@@ -391,6 +392,7 @@ export function createProjectService(
       cors?: string[];
       crossDomain?: boolean;
       allowUnsafeRevenueTracking?: boolean;
+      filters?: IProjectFilters[];
     }
   ): Promise<IServiceProject | null> {
     const existing = await deps.db.project.findFirst({
@@ -419,6 +421,9 @@ export function createProjectService(
     }
     if (input.allowUnsafeRevenueTracking !== undefined) {
       updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
+    }
+    if (input.filters !== undefined) {
+      updateData.filters = input.filters;
     }
 
     const project = await deps.db.project.update({
