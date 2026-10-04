@@ -99,6 +99,10 @@ export function Line({
     },
     [dataKey, yScale]
   );
+  const hasValue = useCallback(
+    (d: Record<string, unknown>) => typeof d[dataKey] === 'number',
+    [dataKey]
+  );
 
   const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
   const fadeSides = resolveFadeSides(fadeEdges);
@@ -125,6 +129,7 @@ export function Line({
         <LinePath
           curve={curve}
           data={renderData}
+          defined={hasValue}
           innerRef={pathRef}
           stroke={hasDashTail ? 'transparent' : lineStroke}
           strokeLinecap="round"

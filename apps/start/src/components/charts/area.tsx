@@ -120,6 +120,10 @@ export function Area({
     },
     [dataKey, yScale]
   );
+  const hasValue = useCallback(
+    (d: Record<string, unknown>) => typeof d[dataKey] === 'number',
+    [dataKey]
+  );
 
   const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
   // The stroke gradient is only emitted when at least one edge fades, so fall
@@ -159,6 +163,7 @@ export function Area({
             <AreaClosed
               curve={curve}
               data={renderData}
+              defined={hasValue}
               fill={areaFill}
               x={(d) => xScale(xAccessor(d)) ?? 0}
               y={getY}
@@ -172,6 +177,7 @@ export function Area({
             <LinePath
               curve={curve}
               data={renderData}
+              defined={hasValue}
               innerRef={pathRef}
               stroke={hasDashTail ? 'transparent' : strokePaint}
               strokeLinecap="round"
