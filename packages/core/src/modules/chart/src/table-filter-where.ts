@@ -34,6 +34,11 @@ export interface FilterTableContext {
    */
   profileIdExpr: string;
   /**
+   * Expression on the outer row that yields its session id. Required for
+   * `session.*` filters on any table other than `sessions` itself.
+   */
+  sessionIdExpr?: string;
+  /**
    * Expression on the outer row that yields the array of group ids. All three
    * canonical tables expose a `groups Array(String)` column today.
    */
@@ -385,9 +390,11 @@ function buildSessionClause(
   projectId: string,
   ctx: FilterTableContext
 ): SqlFragment | null {
-  if (ctx.selfTable !== 'sessions') {
+  const onSessions = ctx.selfTable === 'sessions';
+  if (!(onSessions || ctx.sessionIdExpr)) {
     return null;
   }
+  const sessionId = onSessions ? sql`id` : sql.id(ctx.sessionIdExpr!);
   const fieldName = filter.name.replace(/^session\./, '');
 
   if (fieldName === 'performed_event') {
@@ -404,10 +411,22 @@ function buildSessionClause(
         : sql.empty;
     const members = sql`(SELECT DISTINCT session_id FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(projectId)} ${dateScope}AND name ${nameClause})`;
     return filter.operator === 'isNot'
-      ? sql`id NOT IN ${members}`
-      : sql`id IN ${members}`;
+      ? sql`${sessionId} NOT IN ${members}`
+      : sql`${sessionId} IN ${members}`;
   }
 
+  const clause = sessionColumnClause(filter, fieldName);
+  if (!clause || onSessions) {
+    return clause;
+  }
+  return sql`${sessionId} IN (SELECT id FROM ${sql.id(CHART_TABLE.sessions)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${clause})`;
+}
+
+/** A `session.<column>` filter as a predicate on a sessions row. */
+function sessionColumnClause(
+  filter: IChartEventFilter,
+  fieldName: string
+): SqlFragment | null {
   if (fieldName === 'is_bounce') {
     if (filter.value.length === 0) {
       return null;

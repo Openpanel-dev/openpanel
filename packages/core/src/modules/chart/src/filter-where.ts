@@ -28,6 +28,7 @@ import {
   hasTypedCast,
   isTypedOperator,
 } from './filter-cast';
+import { buildFilterWhere } from './table-filter-where';
 
 export type FilterTableScope = 'events' | 'sessions';
 
@@ -130,6 +131,28 @@ export function getEventFiltersWhereClause(
         where[id] = sql`profile_id != device_id`;
       } else {
         where[id] = sql`profile_id = device_id`;
+      }
+      return;
+    }
+
+    // Profile and session filters compile to a subquery on the profile or
+    // session id, so they work in every chart without the query joining
+    // `profiles` or `sessions`.
+    if (
+      projectId &&
+      tableScope === 'events' &&
+      (name.startsWith('profile.') || name.startsWith('session.')) &&
+      !isWildcardPropertyKey(name)
+    ) {
+      const column = (field: string) =>
+        eventsAlias ? `${eventsAlias}.${field}` : field;
+      const compiled = buildFilterWhere([{ ...filter, name }], projectId, {
+        selfTable: 'events',
+        profileIdExpr: column('profile_id'),
+        sessionIdExpr: column('session_id'),
+      });
+      if (compiled.f0) {
+        where[id] = compiled.f0;
       }
       return;
     }

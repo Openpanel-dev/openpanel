@@ -86,7 +86,8 @@ interface TopEntry {
  */
 export function getRawWhereClause(
   type: 'events' | 'sessions',
-  filters: IChartEventFilter[]
+  filters: IChartEventFilter[],
+  projectId?: string
 ): SqlFragment | null {
   const where = getEventFiltersWhereClause(
     filters.map((filter) => {
@@ -106,19 +107,21 @@ export function getRawWhereClause(
         };
       }
       return filter;
-    })
+    }),
+    projectId
   );
 
   return joinFilterClauses(where);
 }
 
 function toSankeyEvent(
-  event: IChartEvent | undefined
+  event: IChartEvent | undefined,
+  projectId: string
 ): SankeyEvent | undefined {
   return event
     ? {
         name: event.name,
-        whereClause: getRawWhereClause('events', event.filters),
+        whereClause: getRawWhereClause('events', event.filters, projectId),
       }
     : undefined;
 }
@@ -178,8 +181,8 @@ export async function getSankey(
     endDate,
     steps,
     mode,
-    startEvent: toSankeyEvent(startEvent),
-    endEvent: toSankeyEvent(endEvent),
+    startEvent: toSankeyEvent(startEvent, projectId),
+    endEvent: toSankeyEvent(endEvent, projectId),
     include,
     exclude,
   };
