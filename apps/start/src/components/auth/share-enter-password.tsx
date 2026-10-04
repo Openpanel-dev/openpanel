@@ -58,7 +58,7 @@ export function ShareEnterPassword({
       description={`Please enter correct password to access this ${typeLabel.toLowerCase()}`}
       title={`${typeLabel} is locked`}
     >
-      <form className="col gap-4" onSubmit={onSubmit}>
+      <form className="col gap-4" method="post" onSubmit={onSubmit}>
         <Input
           {...form.register('password')}
           placeholder="Enter your password"

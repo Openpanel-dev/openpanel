@@ -50,7 +50,11 @@ export function SignInEmailForm({
   };
 
   return (
-    <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+    <form
+      className="col gap-4"
+      method="post"
+      onSubmit={form.handleSubmit(onSubmit)}
+    >
       <InputWithLabel
         {...form.register('email')}
         className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"

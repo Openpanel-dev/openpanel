@@ -54,7 +54,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           </a>
         </p>
       </div>
-      <form className="col gap-6" onSubmit={onSubmit}>
+      <form className="col gap-6" method="post" onSubmit={onSubmit}>
         <InputWithLabel
           label="New password"
           placeholder="New password"

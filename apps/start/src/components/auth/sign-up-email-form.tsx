@@ -38,7 +38,11 @@ export function SignUpEmailForm({
     });
   };
   return (
-    <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+    <form
+      className="col gap-4"
+      method="post"
+      onSubmit={form.handleSubmit(onSubmit)}
+    >
       <div className="row w-full flex-1 gap-4">
         <InputWithLabel
           className="flex-1"
