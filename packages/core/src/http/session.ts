@@ -37,14 +37,13 @@ export async function resolveSession(
   const token = cookies.get(SESSION_COOKIE_NAME);
   const auth = ctx.services.auth;
 
-  try {
-    const result = await runWithAlsSession(
-      token ? auth.decodeSessionToken(token) : DEMO_ALS_SESSION_ID,
-      () => auth.validateSessionToken(token ?? null)
-    );
-    return result.userId === null ? null : result;
-  } catch {
-    // A malformed cookie resolves to null (nobody signed in) rather than a 500.
-    return null;
-  }
+  // No catch: decoding is a hash and cannot fail on any cookie value, so the
+  // only thing that throws here is the database. Answering `null` for that
+  // would be a 401 and the dashboard would sign every user out during a blip;
+  // a 500 makes the client retry instead.
+  const result = await runWithAlsSession(
+    token ? auth.decodeSessionToken(token) : DEMO_ALS_SESSION_ID,
+    () => auth.validateSessionToken(token ?? null)
+  );
+  return result.userId === null ? null : result;
 }
