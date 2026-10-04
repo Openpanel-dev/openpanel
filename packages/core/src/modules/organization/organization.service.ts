@@ -185,6 +185,29 @@ export async function getMembers(
   })) as IServiceMember[];
 }
 
+/**
+ * The access lookups cache a granted answer for minutes, so every change to a
+ * membership or its project grants must drop that user's entries for every
+ * project of the organization. A grant on one project also revokes the
+ * implicit org-wide default on all the others. Call it after the write, or a
+ * concurrent request can cache the old answer again.
+ */
+async function clearMemberAccessCache(
+  deps: ServiceDeps,
+  { userId, organizationId }: { userId: string; organizationId: string }
+): Promise<void> {
+  const projects = await deps.db.project.findMany({
+    where: { organizationId },
+    select: { id: true },
+  });
+  await Promise.all([
+    getOrganizationAccess.clear({ userId, organizationId }),
+    ...projects.map((project) =>
+      getProjectAccess.clear({ userId, projectId: project.id })
+    ),
+  ]);
+}
+
 export async function connectUserToOrganization(
   deps: ServiceDeps,
   {
@@ -239,28 +262,22 @@ export async function connectUserToOrganization(
     },
   });
 
-  await getOrganizationAccess.clear({
+  for (const grant of invite.projectAccess) {
+    await db.projectAccess.create({
+      data: {
+        projectId: grant.projectId,
+        userId: user.id,
+        organizationId: invite.organizationId,
+        // The level the inviting admin chose, not a hardcoded default.
+        level: grant.level,
+      },
+    });
+  }
+
+  await clearMemberAccessCache(deps, {
     userId: user.id,
     organizationId: invite.organizationId,
   });
-
-  if (invite.projectAccess.length > 0) {
-    for (const grant of invite.projectAccess) {
-      await getProjectAccess.clear({
-        userId: user.id,
-        projectId: grant.projectId,
-      });
-      await db.projectAccess.create({
-        data: {
-          projectId: grant.projectId,
-          userId: user.id,
-          organizationId: invite.organizationId,
-          // The level the inviting admin chose, not a hardcoded default.
-          level: grant.level,
-        },
-      });
-    }
-  }
 
   await db.invite.delete({
     where: {
@@ -868,6 +885,10 @@ export async function removeOrganizationMember(
       },
     }),
   ]);
+  await clearMemberAccessCache(deps, {
+    userId: input.targetUserId,
+    organizationId: input.organizationId,
+  });
 }
 
 /**
@@ -921,7 +942,7 @@ export async function updateOrganizationMemberAccess(
   }
   await assertProjectsInOrganization(deps, input.organizationId, input.access);
 
-  return db.$transaction([
+  const result = await db.$transaction([
     db.projectAccess.deleteMany({
       where: {
         userId: input.targetUserId,
@@ -940,6 +961,11 @@ export async function updateOrganizationMemberAccess(
       })),
     }),
   ]);
+  await clearMemberAccessCache(deps, {
+    userId: input.targetUserId,
+    organizationId: input.organizationId,
+  });
+  return result;
 }
 
 export function createOrganizationService(

@@ -438,6 +438,7 @@ const deps = {
 // Real `cacheable` overloads on `(fn, ttl)` OR `(name, fn, ttl)` — this
 // module uses the first form, access.service.ts (reached via
 // connectUserToOrganization) the second.
+const clearedCacheKeys: string[] = [];
 function cacheableStub(
   fnOrName: ((...args: unknown[]) => unknown) | string,
   fnOrTtl: ((...args: unknown[]) => unknown) | number
@@ -446,12 +447,35 @@ function cacheableStub(
     typeof fnOrName === 'function'
       ? fnOrName
       : (fnOrTtl as (...args: unknown[]) => unknown);
+  const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
   return Object.assign(fn, {
     getKey: () => '',
-    clear: async () => 0,
+    clear: async (...args: unknown[]) => {
+      clearedCacheKeys.push(`${name}:${JSON.stringify(args[0])}`);
+      return 0;
+    },
     set: () => async () => 'OK' as const,
   });
 }
+
+function seedMemberWithTwoProjects() {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+  });
+  for (const id of ['proj_1', 'proj_2']) {
+    projectStore.set(id, { id, organizationId: 'org_1', deleteAt: null });
+  }
+}
+
+const EXPECTED_CLEARED_ACCESS_KEYS = [
+  'getOrganizationAccess:{"userId":"user_1","organizationId":"org_1"}',
+  'getProjectAccessV2:{"userId":"user_1","projectId":"proj_1"}',
+  'getProjectAccessV2:{"userId":"user_1","projectId":"proj_2"}',
+];
 // Spread the real module: `mock.module` replaces this specifier process-wide,
 // and `event-buffer.ts` value-imports `publishEvent` from here, so a partial
 // factory turns this file's own barrel import into a SyntaxError.
@@ -493,6 +517,7 @@ beforeAll(async () => {
 beforeEach(() => {
   resetStores();
   sentEmails.length = 0;
+  clearedCacheKeys.length = 0;
 });
 
 test('scheduleOrganizationDeletion sets deleteAt on the org and its projects', async () => {
@@ -613,6 +638,55 @@ test('removeOrganizationMember deletes the member and their project access', asy
 
   expect(memberStore.has('member_1')).toBe(false);
   expect(projectAccessStore.has('access_1')).toBe(false);
+});
+
+// The lookups cache a granted answer for minutes; without these clears a
+// removed or restricted member kept their access until the entry expired.
+test('removeOrganizationMember drops the cached access for every project of the organization', async () => {
+  seedMemberWithTwoProjects();
+
+  await subject.removeOrganizationMember(deps, {
+    organizationId: 'org_1',
+    memberId: 'member_1',
+    targetUserId: 'user_1',
+    requestedByUserId: 'user_admin',
+  });
+
+  expect(clearedCacheKeys.sort()).toEqual(EXPECTED_CLEARED_ACCESS_KEYS);
+});
+
+test('updateOrganizationMemberAccess drops the cached access for every project of the organization', async () => {
+  seedMemberWithTwoProjects();
+
+  await subject.updateOrganizationMemberAccess(deps, {
+    organizationId: 'org_1',
+    targetUserId: 'user_1',
+    access: [{ projectId: 'proj_1', level: 'read' }],
+  });
+
+  expect(clearedCacheKeys.sort()).toEqual(EXPECTED_CLEARED_ACCESS_KEYS);
+});
+
+test('connectUserToOrganization drops the cached access for every project of the organization', async () => {
+  seedMemberWithTwoProjects();
+  memberStore.clear();
+  inviteStore.set('invite_1', {
+    id: 'invite_1',
+    email: 'a@example.com',
+    organizationId: 'org_1',
+    role: 'org:member',
+    createdById: 'user_admin',
+    projectAccess: [{ projectId: 'proj_1', level: 'read' }],
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: EPOCH,
+  });
+
+  await subject.connectUserToOrganization(deps, {
+    user: { id: 'user_1', email: 'a@example.com' } as never,
+    inviteId: 'invite_1',
+  });
+
+  expect(clearedCacheKeys.sort()).toEqual(EXPECTED_CLEARED_ACCESS_KEYS);
 });
 
 test('updateOrganizationMemberAccess replaces project access with the given grants', async () => {
