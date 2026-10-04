@@ -92,7 +92,7 @@ export async function validateReportAccess(
       },
     });
 
-    if (!(share && share.public)) {
+    if (!share?.public) {
       throw new Error('Share not found or not public');
     }
 
@@ -108,7 +108,7 @@ export async function validateReportAccess(
     include: { report: true },
   });
 
-  if (!(share && share.public)) {
+  if (!share?.public) {
     throw new Error('Share not found or not public');
   }
 
@@ -214,7 +214,7 @@ export async function validateOverviewShareAccess(
       where: { id: shareId },
     });
 
-    if (!(share && share.public)) {
+    if (!share?.public) {
       throw new Error('Share not found or not public');
     }
 
@@ -351,7 +351,7 @@ export async function getShareOverview(
     },
   });
 
-  if (!(share && share.public)) {
+  if (!share?.public) {
     throw new TRPCNotFoundError('Share not found');
   }
 
@@ -385,11 +385,25 @@ export async function getShareOverviewSettings(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
+/**
+ * Keeps the input's three states apart: `undefined` leaves the stored password
+ * untouched (Prisma skips an undefined field on update), null or an empty
+ * string removes it, anything else replaces it.
+ */
+async function hashSharePassword(
+  password: string | null | undefined
+): Promise<string | null | undefined> {
+  if (password === undefined) {
+    return undefined;
+  }
+  return password ? await hashPassword(password) : null;
+}
+
 export interface CreateShareOverviewInput {
   organizationId: string;
   projectId: string;
   public: boolean;
-  password: string | null;
+  password?: string | null;
 }
 
 export async function createShareOverview(
@@ -397,9 +411,7 @@ export async function createShareOverview(
   input: CreateShareOverviewInput
 ) {
   const db = deps.db;
-  const passwordHash = input.password
-    ? await hashPassword(input.password)
-    : null;
+  const passwordHash = await hashSharePassword(input.password);
 
   const share = await db.shareOverview.upsert({
     where: { projectId: input.projectId },
@@ -435,7 +447,7 @@ export async function getShareDashboard(
     },
   });
 
-  if (!(share && share.public)) {
+  if (!share?.public) {
     throw new TRPCNotFoundError('Dashboard share not found');
   }
 
@@ -477,7 +489,7 @@ export interface CreateShareDashboardInput {
   projectId: string;
   dashboardId: string;
   public: boolean;
-  password: string | null;
+  password?: string | null;
 }
 
 export async function createShareDashboard(
@@ -493,9 +505,7 @@ export async function createShareDashboard(
     throw new TRPCNotFoundError('Dashboard not found');
   }
 
-  const passwordHash = input.password
-    ? await hashPassword(input.password)
-    : null;
+  const passwordHash = await hashSharePassword(input.password);
 
   const db = deps.db;
   const share = await db.shareDashboard.upsert({
@@ -525,7 +535,7 @@ export async function getShareDashboardReports(
 ) {
   const share = await getShareDashboardById(deps, shareId);
 
-  if (!(share && share.public)) {
+  if (!share?.public) {
     throw new TRPCNotFoundError('Dashboard share not found');
   }
 
@@ -559,7 +569,7 @@ export async function getShareReport(
     },
   });
 
-  if (!(share && share.public)) {
+  if (!share?.public) {
     throw new TRPCNotFoundError('Report share not found');
   }
 
@@ -602,7 +612,7 @@ export interface CreateShareReportInput {
   projectId: string;
   reportId: string;
   public: boolean;
-  password: string | null;
+  password?: string | null;
 }
 
 export async function createShareReport(
@@ -614,9 +624,7 @@ export async function createShareReport(
     throw new TRPCNotFoundError('Report not found');
   }
 
-  const passwordHash = input.password
-    ? await hashPassword(input.password)
-    : null;
+  const passwordHash = await hashSharePassword(input.password);
 
   const db = deps.db;
   const share = await db.shareReport.upsert({

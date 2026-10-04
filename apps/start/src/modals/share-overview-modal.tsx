@@ -15,6 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
+import {
+  getSharePasswordFieldValue,
+  getSharePasswordToSubmit,
+  STORED_PASSWORD_PLACEHOLDER,
+} from '@/utils/share-password';
 
 const validator = zShareOverview;
 
@@ -43,12 +48,15 @@ export default function ShareOverviewModal() {
 
   const { register, handleSubmit, watch } = useForm<IForm>({
     resolver: zodResolver(validator),
-    defaultValues: {
+    // `values` rather than `defaultValues`: the share settings arrive after
+    // the first render, and the field must then show the stored password.
+    values: {
       public: true,
-      password: existingShare?.hasPassword ? '••••••••' : '',
+      password: getSharePasswordFieldValue(existingShare?.hasPassword),
       projectId,
       organizationId,
     },
+    resetOptions: { keepDirtyValues: true },
   });
 
   const password = watch('password');
@@ -156,9 +164,7 @@ export default function ShareOverviewModal() {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            // Only send password if it's not the placeholder
-            password:
-              values.password === '••••••••' ? null : values.password || null,
+            password: getSharePasswordToSubmit(values.password),
           });
         })}
       >
@@ -166,7 +172,7 @@ export default function ShareOverviewModal() {
           {...register('password')}
           placeholder="Enter your password (optional)"
           size="large"
-          type={password === '••••••••' ? 'text' : 'password'}
+          type={password === STORED_PASSWORD_PLACEHOLDER ? 'text' : 'password'}
         />
         <ButtonContainer>
           <Button onClick={() => popModal()} type="button" variant="outline">

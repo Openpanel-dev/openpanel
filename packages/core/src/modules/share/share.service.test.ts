@@ -25,6 +25,17 @@ interface FakeReportShare extends FakeShare {
   reportId: string;
 }
 
+/** Prisma skips an `undefined` field on update; a plain spread would not. */
+function applyUpdate<T extends FakeShare>(
+  existing: T,
+  update: { public: boolean; password?: string | null }
+): T {
+  const defined = Object.fromEntries(
+    Object.entries(update).filter(([, value]) => value !== undefined)
+  );
+  return { ...existing, ...defined };
+}
+
 const overviewStore = new Map<string, FakeShare>();
 const dashboardShareStore = new Map<string, FakeDashboardShare>();
 const reportShareStore = new Map<string, FakeReportShare>();
@@ -72,10 +83,10 @@ const shareOverview = {
     }: {
       where: { projectId: string };
       create: FakeShare;
-      update: { public: boolean; password: string | null };
+      update: { public: boolean; password?: string | null };
     }) => {
       const existing = findOverviewByProjectId(projectId);
-      const next = existing ? { ...existing, ...update } : { ...create };
+      const next = existing ? applyUpdate(existing, update) : { ...create };
       overviewStore.set(next.id, next);
       return next;
     }
@@ -119,10 +130,10 @@ const shareDashboard = {
     }: {
       where: { dashboardId: string };
       create: FakeDashboardShare;
-      update: { public: boolean; password: string | null };
+      update: { public: boolean; password?: string | null };
     }) => {
       const existing = findDashboardShareByDashboardId(dashboardId);
-      const next = existing ? { ...existing, ...update } : { ...create };
+      const next = existing ? applyUpdate(existing, update) : { ...create };
       dashboardShareStore.set(next.id, next);
       return next;
     }
@@ -160,10 +171,10 @@ const shareReport = {
     }: {
       where: { reportId: string };
       create: FakeReportShare;
-      update: { public: boolean; password: string | null };
+      update: { public: boolean; password?: string | null };
     }) => {
       const existing = findReportShareByReportId(reportId);
-      const next = existing ? { ...existing, ...update } : { ...create };
+      const next = existing ? applyUpdate(existing, update) : { ...create };
       reportShareStore.set(next.id, next);
       return next;
     }
@@ -373,6 +384,73 @@ test('createShareOverview hashes the password and reports hasPassword', async ()
     password: null,
   });
   expect(noPassword).toMatchObject({ public: false, hasPassword: false });
+});
+
+// "Update" in the share modals omits the password it never saw; treating the
+// omission as null silently removed the password from every updated share.
+test('createShareOverview keeps the stored password when the input omits it, removes it on null', async () => {
+  const base = { organizationId: 'org_1', projectId: 'proj_1' };
+  await subject.createShareOverview({
+    ...base,
+    public: true,
+    password: 'sekret123',
+  });
+
+  const kept = await subject.createShareOverview({ ...base, public: true });
+  expect(kept).toMatchObject({ hasPassword: true });
+
+  const removed = await subject.createShareOverview({
+    ...base,
+    public: true,
+    password: null,
+  });
+  expect(removed).toMatchObject({ hasPassword: false });
+});
+
+test('createShareDashboard keeps the stored password when the input omits it, removes it on null', async () => {
+  const base = {
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    dashboardId: 'dash_1',
+  };
+  await subject.createShareDashboard({
+    ...base,
+    public: true,
+    password: 'sekret123',
+  });
+
+  const kept = await subject.createShareDashboard({ ...base, public: true });
+  expect(kept).toMatchObject({ hasPassword: true });
+
+  const removed = await subject.createShareDashboard({
+    ...base,
+    public: true,
+    password: null,
+  });
+  expect(removed).toMatchObject({ hasPassword: false });
+});
+
+test('createShareReport keeps the stored password when the input omits it, removes it on null', async () => {
+  const base = {
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    reportId: 'report_1',
+  };
+  await subject.createShareReport({
+    ...base,
+    public: true,
+    password: 'sekret123',
+  });
+
+  const kept = await subject.createShareReport({ ...base, public: false });
+  expect(kept).toMatchObject({ public: false, hasPassword: true });
+
+  const removed = await subject.createShareReport({
+    ...base,
+    public: true,
+    password: null,
+  });
+  expect(removed).toMatchObject({ hasPassword: false });
 });
 
 test('createShareDashboard throws NOT_FOUND when the dashboard does not exist', async () => {
