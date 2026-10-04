@@ -65,8 +65,7 @@ test('a stale session cookie next to a fresh one does not block signing in', asy
   });
 });
 
-// BUG "A password with surrounding whitespace can be set but never used":
-// sign-up and reset hash the password as typed, sign-in trims it first.
+// Sign-up, reset and sign-in all use the password exactly as typed.
 test('a password with a trailing space signs in after signing up with it', async ({
   request,
 }) => {

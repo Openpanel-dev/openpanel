@@ -597,8 +597,7 @@ test('email preferences save per category and survive a reload', async ({
   expect(issues.unexpected()).toEqual([]);
 });
 
-// BUG "A wrong two-factor code throws the user out of the page": the API
-// answers a wrong code with 401, and the dashboard treats every 401 as "session
+// A wrong code must not be a 401: the dashboard treats every 401 as "session
 // gone" and hard-navigates to /login.
 test('a mistyped code while enabling two-factor keeps the setup open', async ({
   page,
@@ -680,8 +679,8 @@ test('two-factor can be enabled and its recovery codes regenerated', async ({
   expect(issues.unexpected()).toEqual([]);
 });
 
-// BUG "A wrong two-factor code throws the user out of the page", on /verify:
-// the visitor lands back on /login without ever seeing "Invalid code".
+// The same on /verify: a 401 would send the visitor back to /login without
+// ever showing "Invalid code".
 test('a mistyped code on /verify says so and lets the visitor try again', async ({
   page,
 }) => {
@@ -775,11 +774,11 @@ test('a recovery code signs in once and is then used up', async ({
     page.getByText(`${RECOVERY_CODE_COUNT - 1} recovery codes remaining`)
   ).toBeVisible();
 
-  // The same code is refused the second time (asked through the API: see the 401 bug above).
+  // The same code is refused the second time.
   const reuse = await page.request.post(`${apiUrl()}/trpc/auth.totpDisable`, {
     data: { json: { code: recoveryCode } },
   });
-  expect(reuse.status()).toBe(401);
+  expect(reuse.status()).toBe(400);
   expect((await reuse.json()).error.json.message).toBe('Invalid code');
   expect(issues.unexpected()).toEqual([]);
 });

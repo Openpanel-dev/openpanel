@@ -96,7 +96,8 @@ test('a wrong password and an unknown email are both refused', async ({
     email: seed.user.email,
     password: 'definitely-not-the-password',
   });
-  expect(wrongPassword.status()).toBe(401);
+  // 400, not 401: the dashboard reads any 401 as "signed out" and redirects.
+  expect(wrongPassword.status()).toBe(400);
   await expect(toast(page, 'Incorrect email or password')).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
   await page.screenshot({ path: `${SHOTS_DIR}/login-wrong-password.png` });
@@ -193,9 +194,8 @@ test('the login and sign-up pages fit a phone screen', async ({ page }) => {
   ).toBeInViewport();
 });
 
-// BUG "Sign-in before hydration puts the password in the URL": the forms are
-// server-rendered without `method="post"`, so until React hydrates a submit is
-// a native GET to /login?email=…&password=….
+// Until React hydrates, a submit is native: without `method="post"` it would be
+// a GET to /login?email=…&password=….
 test('a submit before hydration never puts the password in the URL', async ({
   page,
   baseURL,

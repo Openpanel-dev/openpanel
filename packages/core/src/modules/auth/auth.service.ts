@@ -445,7 +445,7 @@ export async function signUpWithEmail(
     input.inviteId
   );
   if (!isRegistrationAllowed) {
-    throw new TRPCAccessError('Registrations are not allowed');
+    throw new TRPCForbiddenError('Registrations are not allowed');
   }
 
   const provider = 'email';
@@ -496,7 +496,6 @@ export async function signInWithEmail(
   setCookie: ISetCookie,
   logger: Pick<Logger, 'error'>
 ): Promise<SignInEmailResult> {
-  const password = input.password.trim();
   const user = await getUserAccount(deps, {
     email: input.email,
     provider: 'email',
@@ -510,15 +509,19 @@ export async function signInWithEmail(
   // any other value is a legacy bcrypt row (from Clerk) that has been
   // nulled, so this is now just a generic reject.
   if (!user.account.password?.startsWith('$argon2')) {
-    throw new TRPCAccessError('Reset your password, old password has expired');
+    throw new TRPCBadRequestError(
+      'Reset your password, old password has expired'
+    );
   }
 
+  // Not trimmed: sign-up and reset hash the password as typed, so trimming
+  // here would make a password with edge whitespace unusable.
   const validPassword = await verifyPasswordHash(
     user.account.password,
-    password
+    input.password
   );
   if (!validPassword) {
-    throw new TRPCAccessError('Incorrect email or password');
+    throw new TRPCBadRequestError('Incorrect email or password');
   }
 
   const totp = await deps.db.userTotp.findUnique({
@@ -573,7 +576,7 @@ export async function signInWithTotp(
 ): Promise<{ type: 'email' }> {
   const challengeId = cookies.get(TWO_FACTOR_COOKIE);
   if (!challengeId) {
-    throw new TRPCAccessError('No active two-factor challenge');
+    throw new TRPCBadRequestError('No active two-factor challenge');
   }
 
   const challenge = await deps.db.twoFactorChallenge.findUnique({
@@ -585,7 +588,7 @@ export async function signInWithTotp(
       await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
     }
     setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
-    throw new TRPCAccessError('Two-factor challenge has expired');
+    throw new TRPCBadRequestError('Two-factor challenge has expired');
   }
 
   const totp = await deps.db.userTotp.findUnique({
@@ -594,7 +597,7 @@ export async function signInWithTotp(
   if (!totp?.enabledAt) {
     await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
     setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
-    throw new TRPCAccessError('Two-factor is not enabled');
+    throw new TRPCBadRequestError('Two-factor is not enabled');
   }
 
   const secret = decrypt(deps.config.encryptionKey, totp.secret);
@@ -618,7 +621,7 @@ export async function signInWithTotp(
   }
 
   if (!valid) {
-    throw new TRPCAccessError('Invalid code');
+    throw new TRPCBadRequestError('Invalid code');
   }
 
   await deps.db.twoFactorChallenge.delete({ where: { id: challenge.id } });
@@ -660,13 +663,13 @@ export async function setupTotp(deps: ServiceDeps, userId: string) {
     select: { id: true },
   });
   if (!emailAccount) {
-    throw new TRPCAccessError(
+    throw new TRPCBadRequestError(
       'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.'
     );
   }
   const existing = await deps.db.userTotp.findUnique({ where: { userId } });
   if (existing?.enabledAt) {
-    throw new TRPCAccessError(
+    throw new TRPCBadRequestError(
       'Two-factor is already enabled. Disable it first to re-configure.'
     );
   }
@@ -707,12 +710,12 @@ export async function enableTotp(
     throw new TRPCNotFoundError('Start two-factor setup first');
   }
   if (totp.enabledAt) {
-    throw new TRPCAccessError('Two-factor is already enabled');
+    throw new TRPCBadRequestError('Two-factor is already enabled');
   }
 
   const secret = decrypt(deps.config.encryptionKey, totp.secret);
   if (!verifyTotpCode(secret, code)) {
-    throw new TRPCAccessError('Invalid code');
+    throw new TRPCBadRequestError('Invalid code');
   }
 
   const recoveryCodes = generateRecoveryCodes();
@@ -733,7 +736,7 @@ export async function disableTotp(
 ) {
   const totp = await deps.db.userTotp.findUnique({ where: { userId } });
   if (!totp?.enabledAt) {
-    throw new TRPCAccessError('Two-factor is not enabled');
+    throw new TRPCBadRequestError('Two-factor is not enabled');
   }
 
   const secret = decrypt(deps.config.encryptionKey, totp.secret);
@@ -744,7 +747,7 @@ export async function disableTotp(
         .valid;
 
   if (!valid) {
-    throw new TRPCAccessError('Invalid code');
+    throw new TRPCBadRequestError('Invalid code');
   }
 
   await deps.db.userTotp.delete({ where: { userId } });
@@ -759,11 +762,11 @@ export async function regenerateTotpRecoveryCodes(
 ) {
   const totp = await deps.db.userTotp.findUnique({ where: { userId } });
   if (!totp?.enabledAt) {
-    throw new TRPCAccessError('Two-factor is not enabled');
+    throw new TRPCBadRequestError('Two-factor is not enabled');
   }
   const secret = decrypt(deps.config.encryptionKey, totp.secret);
   if (!verifyTotpCode(secret, code)) {
-    throw new TRPCAccessError('Invalid code');
+    throw new TRPCBadRequestError('Invalid code');
   }
   const recoveryCodes = generateRecoveryCodes();
   const hashed = await hashRecoveryCodes(recoveryCodes);
