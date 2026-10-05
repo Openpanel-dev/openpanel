@@ -176,6 +176,7 @@ export default function OverviewFilters({
                   'duration',
                   'created_at',
                   'has_profile',
+                  'revenue',
                 ]
           }
           onSelect={(action) => {

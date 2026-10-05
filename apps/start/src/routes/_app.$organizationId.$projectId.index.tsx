@@ -55,7 +55,7 @@ function ProjectDashboard() {
               <OverviewShare projectId={projectId} />
             </div>
           </div>
-          <OverviewFiltersButtons />
+          <OverviewFiltersButtons filterModal={{ mode: 'events' }} />
         </div>
       </div>
       <div className="grid grid-cols-6 gap-4 p-4 pt-0">

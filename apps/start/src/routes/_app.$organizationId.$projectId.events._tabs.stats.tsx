@@ -36,7 +36,10 @@ function Component() {
     <div>
       <div className="mb-2 flex items-center gap-2">
         <OverviewFilterButton enableEventsFilter />
-        <OverviewFiltersButtons className="justify-end p-0" />
+        <OverviewFiltersButtons
+          className="justify-end p-0"
+          filterModal={{ enableEventsFilter: true }}
+        />
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Widget className="w-full">

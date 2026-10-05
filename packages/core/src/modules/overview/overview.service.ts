@@ -61,7 +61,6 @@ const WHITELISTED_FILTERS = [
   'origin',
   'region',
   'device',
-  'revenue',
   'country',
   'browser',
   'referrer',
@@ -86,14 +85,14 @@ const UTM_COLUMNS = [
   'utm_content',
 ];
 
-type MetricsRow = {
+interface MetricsRow {
   bounce_rate: number;
   unique_visitors: number;
   total_sessions: number;
   avg_session_duration: number;
   total_screen_views: number;
   views_per_session: number;
-};
+}
 
 type MetricsSeriesRow = MetricsRow & { date: string; total_revenue: number };
 

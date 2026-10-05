@@ -273,7 +273,7 @@ test('page filter from the filter modal: totals match the API and the series is 
   });
 });
 
-test('a revenue filter (offered by "Add filter") does not break the widgets', async ({
+test('a revenue filter in the URL is ignored by the overview instead of breaking the widgets', async ({
   page,
 }) => {
   const filters = [filter('revenue', ['0'], 'gt')];

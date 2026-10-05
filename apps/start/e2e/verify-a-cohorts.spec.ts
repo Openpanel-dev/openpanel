@@ -314,25 +314,31 @@ test('profiles list: in cohort and not in cohort', async ({ page }) => {
   await page.screenshot({ path: `${SHOTS_DIR}/profiles-not-in-cohort.png` });
 });
 
-test('overview: a cohort filter narrows the metrics to the cohort members', async ({
+test('the overview filter sheet offers only event filters, from the button and from a filter pill', async ({
   page,
 }) => {
-  const cohort = cohorts.oneProperty;
-  const memberVisitors = await clickhouseNumber(
-    `SELECT uniqExact(profile_id) FROM sessions WHERE project_id = '${PROJECT}' AND created_at >= now() - INTERVAL 31 DAY AND profile_id IN (SELECT profile_id FROM cohort_members FINAL WHERE project_id = '${PROJECT}' AND cohort_id = '${cohort.id}')`
-  );
-  const stats = page.waitForResponse(
-    (response) =>
-      response.url().includes('/trpc/overview.stats') &&
-      decodeURIComponent(response.url()).includes(cohort.id)
-  );
-  await openHydrated(page, `${BASE}?range=30d&f=cohort,inCohort,,${cohort.id}`);
-  const body = await (await stats).json();
-  await page.screenshot({
-    path: `${SHOTS_DIR}/overview-cohort-filter.png`,
-    fullPage: true,
-  });
-  expect(body.result.data.json.metrics.unique_visitors).toBe(memberVisitors);
+  await openHydrated(page, `${BASE}?range=30d&f=device,is,desktop`);
+  const openers = [
+    page.getByRole('button', { name: 'Filters', exact: true }),
+    page.getByRole('button', { name: /^device$/i }),
+  ];
+  for (const opener of openers) {
+    await opener.click();
+    const sheet = page.getByRole('dialog');
+    await sheet.getByRole('button', { name: 'Add filter' }).click();
+    const menu = page.locator('[data-radix-menu-content]');
+    await expect(menu).toBeVisible();
+    for (const category of [
+      'Profile properties',
+      'Group properties',
+      'Cohorts',
+    ]) {
+      await expect(menu.getByText(category, { exact: true })).toHaveCount(0);
+    }
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+  }
 });
 
 test('deleting a cohort removes it from the list and drops its members', async ({

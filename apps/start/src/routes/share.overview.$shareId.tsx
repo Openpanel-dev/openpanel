@@ -114,7 +114,7 @@ function RouteComponent() {
               <LiveCounter projectId={projectId} shareId={shareId} />
             </div>
           </div>
-          <OverviewFiltersButtons />
+          <OverviewFiltersButtons filterModal={{ mode: 'events' }} />
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">
