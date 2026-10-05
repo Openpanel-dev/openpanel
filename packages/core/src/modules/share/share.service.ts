@@ -93,7 +93,7 @@ export async function validateReportAccess(
     });
 
     if (!share?.public) {
-      throw new Error('Share not found or not public');
+      throw new TRPCNotFoundError('Share not found or not public');
     }
 
     if (!share.dashboard.reports.some((r) => r.id === reportId)) {
@@ -109,7 +109,7 @@ export async function validateReportAccess(
   });
 
   if (!share?.public) {
-    throw new Error('Share not found or not public');
+    throw new TRPCNotFoundError('Share not found or not public');
   }
 
   if (share.reportId !== reportId) {
@@ -146,7 +146,7 @@ export async function validateShareAccess(
     dashboardShare.dashboard.reports.length > 0
   ) {
     if (!dashboardShare.public) {
-      throw new Error('Share not found or not public');
+      throw new TRPCNotFoundError('Share not found or not public');
     }
 
     const projectId = dashboardShare.projectId;
@@ -174,7 +174,7 @@ export async function validateShareAccess(
 
   if (reportShare) {
     if (!reportShare.public) {
-      throw new Error('Share not found or not public');
+      throw new TRPCNotFoundError('Share not found or not public');
     }
 
     const projectId = reportShare.projectId;
@@ -195,7 +195,7 @@ export async function validateShareAccess(
     return { projectId, isValid: hasCookie || !!hasMemberAccess };
   }
 
-  throw new Error('Share not found');
+  throw new TRPCNotFoundError('Share not found');
 }
 
 export async function validateOverviewShareAccess(
@@ -215,7 +215,7 @@ export async function validateOverviewShareAccess(
     });
 
     if (!share?.public) {
-      throw new Error('Share not found or not public');
+      throw new TRPCNotFoundError('Share not found or not public');
     }
 
     if (share.projectId !== projectId) {
