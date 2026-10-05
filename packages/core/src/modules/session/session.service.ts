@@ -12,6 +12,7 @@ import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
+import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
@@ -154,6 +155,12 @@ const QUERY_SESSIONS_DEFAULT_LIMIT = 20;
 // clix keep sending it so their result sets stay identical.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
+export function withReadableCountry<Row extends { country: string }>(
+  row: Row
+): Row {
+  return { ...row, country: stripFixedStringPadding(row.country) };
+}
+
 export function transformSession(session: IClickhouseSession): IServiceSession {
   return {
     id: session.id,
@@ -176,7 +183,7 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     device: session.device,
     brand: session.brand,
     model: session.model,
-    country: session.country,
+    country: stripFixedStringPadding(session.country),
     region: session.region,
     city: session.city,
     longitude: session.longitude,
@@ -455,7 +462,7 @@ export async function querySessionsCore(
   const from = toRangeBoundaryLiteral(startDate, 'start');
   const to = toRangeBoundaryLiteral(endDate, 'end');
 
-  return chQuery<IClickhouseSession>(
+  const rows = await chQuery<IClickhouseSession>(
     deps,
     querySessionsQuery({
       ...input,
@@ -473,6 +480,7 @@ export async function querySessionsCore(
     }),
     CLIX_SESSION_TIMEZONE
   );
+  return rows.map(withReadableCountry);
 }
 
 export function createSessionService(

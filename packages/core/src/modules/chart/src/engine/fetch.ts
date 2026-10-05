@@ -1,4 +1,5 @@
 import type { ServiceDeps } from '../../../../services';
+import { stripFixedStringPadding } from '../../../../shared/ch-fixed-string';
 import type { ISerieDataItem } from '../../../../shared/group-by-labels';
 import { groupByLabels } from '../../../../shared/group-by-labels';
 import type {
@@ -68,6 +69,35 @@ function breakdownValues(
   return values;
 }
 
+const BREAKDOWN_LABEL_KEYS = ['label_1', 'label_2', 'label_3'] as const;
+
+/**
+ * A `WITH FILL` row carries each label column's type default: `\0\0` for the
+ * `FixedString(2)` country, the epoch for a date. Grouped as-is those became a
+ * zero series named after the default. A real row always has `label_0` (the
+ * event name or `*`), so a fill row keeps only its date and count, which still
+ * pads every series to the full range. A real row without geo also comes back
+ * NUL-padded; it reads as an empty value, like any other unset breakdown.
+ */
+function readableLabels(row: ISerieDataItem): ISerieDataItem {
+  if (!row.label_0) {
+    return {
+      label_0: '',
+      date: row.date,
+      count: row.count,
+      total_count: row.total_count,
+    };
+  }
+  const labels: Partial<ISerieDataItem> = {};
+  for (const key of BREAKDOWN_LABEL_KEYS) {
+    const value = row[key];
+    if (typeof value === 'string') {
+      labels[key] = stripFixedStringPadding(value);
+    }
+  }
+  return { ...row, ...labels };
+}
+
 /**
  * One ConcreteSeries per label group. `name[0]` is the event name, `name[1+]`
  * the breakdown values the row was grouped on.
@@ -87,7 +117,7 @@ function expandGroupedRows({
   definitionIndex: number;
   seriesId: (nameParts: string[]) => string;
 }): ConcreteSeries[] {
-  return groupByLabels(rows).map((grouped) => {
+  return groupByLabels(rows.map(readableLabels)).map((grouped) => {
     const hasBreakdownParts = breakdowns.length > 0 && grouped.name.length > 1;
     const breakdownValue = hasBreakdownParts
       ? grouped.name.slice(1).join(' - ')
