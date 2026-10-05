@@ -78,7 +78,7 @@ test('a card links to the project and its cog opens project settings', async ({
   await expect(page).toHaveURL(/\/acme\/acme-shop$/);
 });
 
-// BUG org-1: LinkButton passes `href` to TanStack's <Link>, which renders the
+// Open defect: LinkButton passes `href` to TanStack's <Link>, which renders the
 // current location instead. Open-in-new-tab and copy-link go to /acme.
 test('the cog on a card carries the project settings href', async ({
   page,
@@ -179,7 +179,7 @@ test('an organization the user is not a member of is refused', async ({
   await shot(page, 'foreign-org');
 });
 
-// BUG org-2: same LinkButton `href` problem; the button points at the page it is on.
+// Open defect: same LinkButton `href` problem; the button points at the page it is on.
 test('"Go to home" on the not-found page leaves the page', async ({ page }) => {
   await gotoHydrated(page, '/e2e-org-not-a-member');
   const home = page.getByRole('link', { name: 'Go to home' });

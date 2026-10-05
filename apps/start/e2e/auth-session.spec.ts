@@ -43,8 +43,8 @@ test('an invalid session cookie is treated as signed out, not as an error', asyn
   expect(guarded.status()).toBe(401);
 });
 
-// BUG "A stale `session` cookie ahead of a valid one locks the user out": the
-// API reads only the first `session` value of the Cookie header.
+// Open defect: the API reads only the first `session` value of the Cookie
+// header, so a stale cookie ahead of a valid one locks the user out.
 test('a stale session cookie next to a fresh one does not block signing in', async ({
   page,
   context,

@@ -80,7 +80,7 @@ test('the name can be changed and restored', async ({ page, seed }) => {
   expectNoCrashes(problems);
 });
 
-// BUG org-7: saving refetches organization.get only; the sidebar reads organization.list.
+// Open defect: saving refetches organization.get only; the sidebar reads organization.list.
 test('the sidebar shows the new name right after a rename', async ({
   page,
 }) => {
@@ -97,7 +97,7 @@ test('the sidebar shows the new name right after a rename', async ({
   }
 });
 
-// BUG org-5: the form has no resolver, so the server's zod issue list is shown raw.
+// Open defect: the form has no resolver, so the server's zod issue list is shown raw.
 test('a too short name gets a readable validation message', async ({
   page,
   seed,
@@ -138,7 +138,7 @@ test('the timezone can be changed, survives a reload and is restored', async ({
   }
 });
 
-// BUG org-6: 419 zones in a list that cannot be searched.
+// Open defect: 419 zones in a list that cannot be searched.
 test('the timezone picker can be searched', async ({ page }) => {
   await timezonePicker(page).click();
   await expect(page.getByRole('option').first()).toBeVisible();

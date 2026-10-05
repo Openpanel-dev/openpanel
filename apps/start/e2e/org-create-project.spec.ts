@@ -187,7 +187,7 @@ test('a website + backend project is created with its domains and leads into set
   expect(apiFailures(problems)).toEqual([]);
 });
 
-// BUG org-3: project.create hardcodes `types: []`, so the choice made in this
+// Open defect: project.create hardcodes `types: []`, so the choice made in this
 // modal is dropped (onboarding's first project keeps it).
 test('the tracking types chosen in the modal are stored on the project', async ({
   page,

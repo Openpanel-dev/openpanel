@@ -366,9 +366,8 @@ test('a website project leads to the connect step with its one-time credentials'
   expect(issues.unexpected()).toEqual([]);
 });
 
-// BUG "`LinkButton href` renders a link to the current page": TanStack's
-// `Link` builds its href from `to`, so `href` is dropped and `target="_blank"`
-// links open the page you are already on.
+// Open defect: TanStack's `Link` builds its href from `to`, so a LinkButton's
+// `href` is dropped and `target="_blank"` links open the page you are already on.
 test('"More details" in the framework instructions links to the docs', async ({
   page,
   context,
@@ -544,8 +543,8 @@ test('the profile tab edits the name and keeps it after a reload', async ({
   expect(issues.unexpected()).toEqual([]);
 });
 
-// BUG "Profile form shows a raw validation dump for an empty name": the form's
-// own schema accepts '', the API does not, and the toast prints the Zod issues.
+// Open defect: the form's own schema accepts '', the API does not, and the
+// toast prints the raw Zod issues.
 test('an empty first name is refused with a readable message', async ({
   page,
   context,

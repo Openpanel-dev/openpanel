@@ -288,7 +288,7 @@ test('an admin invite with project access shows in the list and can be copied an
   await guestContext.close();
 });
 
-// BUG org-8: the picker offers "Pick '<typed text>'" for anything that is not a project.
+// Open defect: the picker offers "Pick '<typed text>'" for anything that is not a project.
 test('the project access picker only offers projects', async ({
   page,
   seed,
@@ -428,7 +428,7 @@ test.describe('an invited member', () => {
     }
   });
 
-  // BUG org-0: removeMember and updateMemberAccess do not clear the 5-minute
+  // Open defect: removeMember and updateMemberAccess do not clear the 5-minute
   // access cache, so the removed user keeps reading project data.
   test('loses access as soon as an admin removes them', async ({
     page,

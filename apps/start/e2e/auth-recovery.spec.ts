@@ -88,8 +88,8 @@ test('/reset-password refuses an unknown token and keeps the visitor on the page
   expect(issues.unexpected([/auth\.resetPassword/])).toEqual([]);
 });
 
-// BUG "Reset password form swallows validation errors": the input is rendered
-// without the `error` prop, so a too-short password makes the button do nothing.
+// Open defect: the password input is rendered without the `error` prop, so a
+// too-short password makes the button do nothing.
 test('/reset-password tells the visitor when the new password is too short', async ({
   page,
 }) => {

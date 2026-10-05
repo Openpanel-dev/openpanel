@@ -210,7 +210,7 @@ test('the rule modal validates, lists every template variable and creates an eve
     template: TEMPLATE,
     config: { type: 'events', events: [{ name: TRIGGER_EVENT }] },
   });
-  // Opening the event picker logs a React list-key warning; reported separately.
+  // Opening the event picker logs a React list-key warning; known, so it is filtered out below.
   expect(
     issues.list.filter((issue) => !issue.includes('unique "key"'))
   ).toEqual([]);
@@ -256,7 +256,7 @@ test('a matching event produces an in-app notification with the template filled 
   await expect(row).toHaveCount(0);
   await page.getByPlaceholder('Search').fill('plan=pro');
   await expect(row).toHaveCount(1);
-  // The table logs a React setState-in-render warning; reported separately.
+  // The table logs a React setState-in-render warning; known, so it is filtered out below.
   expect(
     issues.list.filter((issue) => !issue.includes('Cannot update a component'))
   ).toEqual([]);
@@ -317,7 +317,7 @@ test('a rule is deleted after confirmation', async ({ page }) => {
   await expect(page.getByText('Rule deleted')).toBeVisible(SLOW_ASSERT);
   await expect(page.getByText('No rules yet')).toBeVisible(SLOW_ASSERT);
   expect(await fetchRules()).toEqual([]);
-  // The funnel card renders its events without keys; reported separately.
+  // The funnel card renders its events without keys; known, so it is filtered out below.
   expect(
     issues.list.filter((issue) => !issue.includes('unique "key"'))
   ).toEqual([]);
