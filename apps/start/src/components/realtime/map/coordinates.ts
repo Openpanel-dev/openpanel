@@ -365,8 +365,6 @@ export function clusterCoordinates(
     adjustedRadius = radius * Math.max(0.5, 1 / Math.sqrt(zoom));
   }
 
-  // Always use basic clustering for now to ensure it works correctly
-  // TODO: Re-enable optimized clustering after thorough testing
   const result = basicClusterCoordinates(coordinates, adjustedRadius);
 
   if (detailLevel === 'coordinate') {
@@ -461,9 +459,6 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
 
   return clusters;
 }
-
-// Note: Optimized clustering algorithm was removed temporarily
-// TODO: Re-implement optimized clustering after basic algorithm is working well
 
 export function getClusteringStats(
   coordinates: Coordinate[],

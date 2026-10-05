@@ -105,10 +105,9 @@ export function WidgetTable<T>({
           .join(' ')}`
       : '1fr';
 
-  // `useId` is stable across SSR and hydration where `Math.random()` was not:
-  // the id lands in a className AND inside injected <style> text, so both the
-  // attribute and the stylesheet differed and React regenerated the subtree
-  // (ISSUES.md H10). React's ids contain colons, which are not valid in a CSS
+  // `useId` is stable across SSR and hydration, unlike `Math.random()`: the id
+  // lands in a className AND inside injected <style> text, so a mismatch makes
+  // React regenerate the subtree. React's ids contain colons, which are not valid in a CSS
   // selector, so they are stripped.
   const reactId = React.useId();
   const containerId = `widget-table-${reactId.replace(/:/g, '')}`;
@@ -153,7 +152,6 @@ export function WidgetTable<T>({
         style={{ containerType: 'inline-size' }}
       >
         {containerQueryStyles}
-        {/* Header */}
         <div
           className={cn('head grid border-border border-b', columnClassName)}
           style={{ gridTemplateColumns }}
@@ -199,7 +197,6 @@ export function WidgetTable<T>({
           })}
         </div>
 
-        {/* Body */}
         <div className="body flex flex-col">
           {data.map((item, index) => (
             <div

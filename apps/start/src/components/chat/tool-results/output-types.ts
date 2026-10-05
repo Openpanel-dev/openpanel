@@ -9,19 +9,11 @@
  * we narrow with predicates rather than `as any`.
  */
 
-// ────────────────────────────────────────────────────────────────────
-// Metrics (get_analytics_overview, get_profile_metrics)
-// ────────────────────────────────────────────────────────────────────
-
 export type MetricsLike = Record<string, unknown>;
 
 export function isMetricsLike(value: unknown): value is MetricsLike {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Profile full (get_profile_full)
-// ────────────────────────────────────────────────────────────────────
 
 export type ProfileMetrics = {
   sessions?: number;
@@ -65,10 +57,6 @@ export function asProfileFullOutput(value: unknown): ProfileFullOutput | null {
   return value as ProfileFullOutput;
 }
 
-// ────────────────────────────────────────────────────────────────────
-// Report (get_report_data, generate_report, preview_report_with_changes)
-// ────────────────────────────────────────────────────────────────────
-
 export type ReportOutput = {
   data?: unknown;
   report?: {
@@ -87,10 +75,6 @@ export function asReportOutput(value: unknown): ReportOutput | null {
   }
   return value as ReportOutput;
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Tables (top_pages, top_referrers, country_breakdown, etc.)
-// ────────────────────────────────────────────────────────────────────
 
 export type TableRow = Record<string, unknown>;
 

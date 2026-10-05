@@ -9,11 +9,7 @@ import {
   INACTIVE_SEGMENT,
 } from './highlight-segment-bounds';
 
-// Hover-highlight band for `line.tsx` and `area.tsx`. Computes the segment
-// bounds and springs its x/width; `<HighlightSegment>` renders the clipped
-// re-stroke. Spring tuning comes from `ChartConfigProvider.highlightSpring`.
-// Stable + hover slices are read separately so callers can see the exact
-// subscription surface (anything calling this hook will re-render on hover).
+// Anything calling this hook re-renders on hover.
 
 export interface HighlightSegmentResult {
   xSpring: ReturnType<typeof useSpring>;

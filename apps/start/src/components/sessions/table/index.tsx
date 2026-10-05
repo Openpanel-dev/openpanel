@@ -196,7 +196,6 @@ const VirtualizedSessionsTable = ({
       className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
     >
-      {/* Table Header */}
       <div
         className="sticky top-0 z-10 border-b bg-card"
         style={{
@@ -231,7 +230,6 @@ const VirtualizedSessionsTable = ({
         />
       )}
 
-      {/* Table Body */}
       <div
         className="relative w-full"
         style={{
@@ -291,7 +289,6 @@ export const SessionsTable = ({ query }: Props) => {
     return query.data?.pages?.flatMap((p) => p.items) ?? [];
   }, [query.data, isLoading]);
 
-  // const { setPage, state: pagination } = useDataTablePagination();
   const { columnVisibility, setColumnVisibility } =
     usePersistentColumnVisibility(columns);
 

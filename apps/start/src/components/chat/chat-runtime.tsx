@@ -19,20 +19,9 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 
 /**
- * Drawer-scoped runtime that owns the `useAgent()` instance and exposes
- * `messages`, `status`, `sendMessage`, `stop` to body + footer via a
- * tiny context. Mounts inside the drawer, between the header and the
- * body/footer pair.
- *
- * Why this is here and not in a global provider:
- *   - The `useAgent()` call itself is a hook — it can't move without
- *     mounting. Putting it on the drawer means the chat client is
- *     only active when the drawer is open.
- *   - Page context is read here so every send carries the user's
- *     current view (project, page, filters). Re-evaluates on each
- *     send via the closure — no refs needed.
- *   - When `agentName` or `conversationId` changes, the controller
- *     rebuilds. Better Agent handles hydration via `hydrateFromServer`.
+ * Drawer-scoped runtime that owns the `useAgent()` instance, so the chat
+ * client is only active while the drawer is open. Page context is read per
+ * send, so every message carries the user's current view.
  */
 
 type ChatRuntimeValue = ReturnType<typeof useAgent> & {
@@ -130,9 +119,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
         // set — it's the in-memory source of truth for this session.
         // It gets cleared on `newConversation()` / `switchConversation()`.
         if (isFirstTurn) {
-          // Cancel any previously in-flight title (shouldn't exist on
-          // a first turn, but defensive) and start a fresh controller
-          // bound to this runtime's lifecycle.
+          // Defensive: a first turn should have no title request in flight.
           titleAbortRef.current?.abort();
           const controller = new AbortController();
           titleAbortRef.current = controller;

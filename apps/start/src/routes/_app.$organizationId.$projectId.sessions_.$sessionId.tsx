@@ -236,9 +236,7 @@ function Component() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        {/* Left column */}
         <div className="col gap-6">
-          {/* Session info */}
           <Widget className="w-full">
             <WidgetHead>
               <WidgetTitle>Session info</WidgetTitle>
@@ -321,7 +319,6 @@ function Component() {
             />
           </Widget>
 
-          {/* Profile card */}
           {isIdentified && profile && (
             <Widget className="w-full">
               <WidgetHead>
@@ -353,7 +350,6 @@ function Component() {
             </Widget>
           )}
 
-          {/* Group cards */}
           {sessionGroups && sessionGroups.length > 0 && (
             <Widget className="w-full">
               <WidgetHead>
@@ -382,20 +378,16 @@ function Component() {
             </Widget>
           )}
 
-          {/* Visited pages */}
           <VisitedRoutes
             paths={events
               .filter((e) => e.name === 'screen_view' && e.path)
               .map((e) => e.path)}
           />
 
-          {/* Event distribution */}
           <EventDistribution events={events} />
         </div>
 
-        {/* Right column */}
         <div className="col gap-6">
-          {/* Events list */}
           <Widget className="w-full">
             <WidgetHead>
               <WidgetTitle>Events</WidgetTitle>

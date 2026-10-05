@@ -22,8 +22,8 @@ export function PromptCard({
 }: PromptCardProps) {
   // `show` comes from a cookie, which the server can read, so this card can
   // render during SSR. framer writes its `initial` transform and opacity into
-  // the style attribute and the client's first frame differs, so React threw
-  // the tree away (ISSUES.md H10). Waiting for mount keeps the slide-in —
+  // the style attribute and the client's first frame differs, so React throws
+  // the tree away. Waiting for mount keeps the slide-in —
   // `initial={false}` would have removed it — and costs nothing, since the
   // card is a popup nobody expects in the server-rendered HTML.
   const [mounted, setMounted] = useState(false);

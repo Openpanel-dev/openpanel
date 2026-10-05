@@ -16,9 +16,7 @@ interface ProjectAccessGrantsProps {
 
 /**
  * Picks the projects a member may reach and, for each, whether they may change
- * anything in it. The level used to be hardcoded server-side, so `read` was
- * assigned to people who were meant to have `write` - and nothing enforced it
- * either way. Both halves are real now, so it has to be chooseable.
+ * anything in it.
  */
 export function ProjectAccessGrants({
   value,

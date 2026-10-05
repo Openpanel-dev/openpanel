@@ -170,7 +170,6 @@ function FilterPill({
         {getPropertyLabel(filter.name)}
       </button>
 
-      {/* Operator dropdown */}
       <FilterOperatorSelect onChange={onChangeOperator} value={filter.operator}>
         <button
           className="cursor-pointer border-l px-2 lowercase opacity-50 transition-colors hover:bg-accent hover:opacity-100"
@@ -200,7 +199,6 @@ function FilterPill({
         </ComboboxAdvanced>
       )}
 
-      {/* Remove */}
       <button
         aria-label="Remove filter"
         className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"

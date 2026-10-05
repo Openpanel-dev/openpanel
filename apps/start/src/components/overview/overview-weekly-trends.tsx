@@ -177,9 +177,7 @@ export default function OverviewWeeklyTrends({
           </div>
         ) : heatmap ? (
           <div className="flex">
-            {/* Hour labels */}
             <div className="w-14 shrink-0 pr-2">
-              {/* Spacer for the day-label row */}
               <div className="h-6" />
               {Array.from({ length: 24 }, (_, hour) => (
                 <div
@@ -191,9 +189,7 @@ export default function OverviewWeeklyTrends({
               ))}
             </div>
 
-            {/* Grid */}
             <div className="min-w-0 flex-1">
-              {/* Day labels */}
               <div className="flex h-6">
                 {SHORT_DAY_NAMES.map((day) => (
                   <div
@@ -206,7 +202,6 @@ export default function OverviewWeeklyTrends({
               </div>
 
               <TooltipProvider delayDuration={0} disableHoverableContent>
-                {/* Rows = hours, columns = days */}
                 {Array.from({ length: 24 }, (_, hour) => (
                   <div className="flex h-4" key={hour}>
                     {Array.from({ length: 7 }, (_, day) => {

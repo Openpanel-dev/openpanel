@@ -171,7 +171,7 @@ export function ActionCTAButton() {
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
               {/* `initial={false}` suppresses only the FIRST mount: framer writes
                   transform/opacity into the style attribute, and the SSR string
-                  differs from the client's first frame (ISSUES.md H10). The
+                  differs from the client's first frame. The
                   cycling animation between actions is unaffected. */}
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.span

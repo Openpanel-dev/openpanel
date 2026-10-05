@@ -22,7 +22,7 @@ export interface DataTableProps<TData> {
   /**
    * A failed query, not an empty one. Without this the table renders its
    * empty state for both, so a 500 from `profile.list` reads as "you haven't
-   * identified any profiles yet" (ISSUES.md H11).
+   * identified any profiles yet".
    */
   error?: boolean;
   empty?: {

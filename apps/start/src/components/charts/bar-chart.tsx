@@ -514,7 +514,6 @@ const ChartCore = memo(function ChartCore({
           style={{ cursor: canInteract ? 'crosshair' : 'default' }}
           transform={`translate(${margin.left},${margin.top})`}
         >
-          {/* Background rect for mouse event detection */}
           <rect
             fill="transparent"
             height={innerHeight}

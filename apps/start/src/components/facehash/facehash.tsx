@@ -2,10 +2,6 @@ import * as React from 'react';
 import { FACES } from './faces';
 import { stringHash } from './utils/hash';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export type Intensity3D = 'none' | 'subtle' | 'medium' | 'dramatic';
 export type Variant = 'gradient' | 'solid';
 
@@ -101,10 +97,6 @@ export interface FacehashProps
   gradientOverlayClass?: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const INTENSITY_PRESETS = {
   none: {
     rotateRange: 0,
@@ -170,10 +162,6 @@ const DEFAULT_GRADIENT_STYLE: React.CSSProperties = {
   background:
     'radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255,255,255,0.15) 0%, transparent 60%)',
 };
-
-// ============================================================================
-// Component
-// ============================================================================
 
 /**
  * Facehash - Deterministic avatar faces from any string.

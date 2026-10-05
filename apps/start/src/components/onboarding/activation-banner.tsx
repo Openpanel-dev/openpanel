@@ -10,11 +10,9 @@ import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
 
-// The project's first funnel: event -> report -> teammate, drawn as three
-// nodes on a progress track. The current step carries the product's live ping
-// dot, and while the first event is missing the query polls so the banner
-// flips green by itself the moment data arrives. Steps derive from existing
-// data (Project.firstEventAt, report count, member count) — no state machine.
+// Steps derive from existing data (Project.firstEventAt, report count, member
+// count). While the first event is missing the query polls so the banner
+// flips by itself.
 
 const dismissKey = (projectId: string) =>
   `op-activation-checklist-dismissed:${projectId}`;

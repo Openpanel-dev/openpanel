@@ -9,14 +9,10 @@ export function dateDifferanceInDays(date1: Date, date2: Date) {
 }
 
 /**
- * Pinned, deliberately. This used to return `navigator.language` and fall back
- * to `en-US` only when `navigator` was undefined — which is dead code on
- * modern runtimes, since node defines `navigator` too. The server therefore
- * formatted with the MACHINE locale while the browser used the visitor's, so
- * the two renders disagreed and React discarded the tree: `21:35:55` against
- * `9:35:55 PM`, and Swedish month names in an English UI (ISSUES.md H10).
- *
- * Numbers were already pinned this way in `use-numer-formatter.ts`.
+ * Pinned, deliberately. `navigator.language` differs between the server (the
+ * MACHINE locale, since node defines `navigator` too) and the browser, so the
+ * two renders disagreed and React discarded the tree: `21:35:55` against
+ * `9:35:55 PM`, and Swedish month names in an English UI.
  *
  * Note this pins the LOCALE, not the timezone: a server in a different zone
  * from the visitor still renders different clock times. That is a separate

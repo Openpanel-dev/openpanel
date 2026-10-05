@@ -211,21 +211,6 @@ function Component() {
                   </WithLabel>
                 )}
               />
-              {/* {organizations.length > 0 && (
-                <button
-                  className="-mt-2 self-start text-left text-muted-foreground text-sm hover:text-foreground"
-                  onClick={() => {
-                    form.setValue('organization', '', {
-                      shouldValidate: false,
-                    });
-                    form.clearErrors(['organization', 'organizationId']);
-                    setCreateNewOrg(false);
-                  }}
-                  type="button"
-                >
-                  ← Use existing workspace
-                </button>
-              )} */}
             </>
           ) : (
             <div className="col-span-2">
@@ -255,19 +240,6 @@ function Component() {
                   );
                 }}
               />
-              {/* <button
-                className="mt-2 text-muted-foreground text-sm hover:text-foreground"
-                onClick={() => {
-                  form.setValue('organizationId', undefined, {
-                    shouldValidate: false,
-                  });
-                  form.clearErrors(['organization', 'organizationId']);
-                  setCreateNewOrg(true);
-                }}
-                type="button"
-              >
-                + Create new workspace
-              </button> */}
             </div>
           )}
           <InputWithLabel

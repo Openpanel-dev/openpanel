@@ -52,24 +52,7 @@ export function RealtimeLiveHistogram({
     Math.max(...chartData.map((item) => item.visitorCount), 0) * 1.2 || 1;
 
   return (
-    <Wrapper
-      count={totalVisitors}
-      // icons={
-      //   liveData.referrers && liveData.referrers.length > 0 ? (
-      //     <div className="row shrink-0 gap-2">
-      //       {liveData.referrers.slice(0, 3).map((ref, index) => (
-      //         <div
-      //           className="row items-center gap-1 font-bold text-xs"
-      //           key={`${ref.referrer}-${ref.count}-${index}`}
-      //         >
-      //           <SerieIcon name={ref.referrer} />
-      //           <span>{number.short(ref.count)}</span>
-      //         </div>
-      //       ))}
-      //     </div>
-      //   ) : null
-      // }
-    >
+    <Wrapper count={totalVisitors}>
       <ResponsiveContainer height="100%" width="100%">
         <BarChart
           data={chartData}

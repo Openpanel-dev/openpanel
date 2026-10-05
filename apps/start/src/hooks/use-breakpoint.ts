@@ -1,9 +1,6 @@
 import { useMediaQuery } from 'react-responsive';
 
-// import type { ScreensConfig } from 'tailwindcss/types/config';
-
 // TODO: Ensure we have same breakpoints as tailwind
-// const breakpoints = theme?.screens ?? {
 const breakpoints = {
   xs: '480px',
   sm: '640px',

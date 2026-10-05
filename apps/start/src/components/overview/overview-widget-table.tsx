@@ -18,7 +18,6 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
 
   return (
     <svg className="flex-shrink-0" height={size} width={size}>
-      {/* Background circle */}
       <circle
         className="text-def-200"
         cx={size / 2}
@@ -28,7 +27,6 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
         stroke="currentColor"
         strokeWidth={strokeWidth}
       />
-      {/* Revenue arc */}
       <circle
         className="transition-all"
         cx={size / 2}

@@ -97,55 +97,48 @@ function Component() {
   );
 
   return (
-    <>
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="col-span-1 md:col-span-2">
-          <ProfileMetrics data={metrics.data} />
-        </div>
-        {/* Profile properties - full width */}
-        <div className="col-span-1 flex flex-col gap-3 md:col-span-2">
-          <ProfileProperties profile={profile.data!} />
-          {profile.data?.groups?.length ? (
-            <ProfileGroups
-              groups={profile.data.groups}
-              profileId={profileId}
-              projectId={projectId}
-            />
-          ) : null}
-        </div>
-
-        {/* Heatmap / Activity */}
-        <div className="col-span-1">
-          <ProfileActivity data={activity.data} />
-        </div>
-
-        {/* Latest events */}
-        <div className="col-span-1">
-          <LatestEvents
-            organizationId={organizationId}
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="col-span-1 md:col-span-2">
+        <ProfileMetrics data={metrics.data} />
+      </div>
+      {/* Profile properties - full width */}
+      <div className="col-span-1 flex flex-col gap-3 md:col-span-2">
+        <ProfileProperties profile={profile.data!} />
+        {profile.data?.groups?.length ? (
+          <ProfileGroups
+            groups={profile.data.groups}
             profileId={profileId}
             projectId={projectId}
           />
-        </div>
+        ) : null}
+      </div>
 
-        {/* Most events */}
-        <div className="col-span-1">
-          <MostEvents data={mostEvents.data} />
-        </div>
+      <div className="col-span-1">
+        <ProfileActivity data={activity.data} />
+      </div>
 
-        {/* Popular routes */}
-        <div className="col-span-1">
-          <PopularRoutes data={popularRoutes.data} />
-        </div>
+      <div className="col-span-1">
+        <LatestEvents
+          organizationId={organizationId}
+          profileId={profileId}
+          projectId={projectId}
+        />
+      </div>
 
-        {/* Charts - spans both columns */}
-        <div className="col-span-1 md:col-span-2">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <ProfileCharts profileId={profileId} projectId={projectId} />
-          </div>
+      <div className="col-span-1">
+        <MostEvents data={mostEvents.data} />
+      </div>
+
+      <div className="col-span-1">
+        <PopularRoutes data={popularRoutes.data} />
+      </div>
+
+      {/* Charts - spans both columns */}
+      <div className="col-span-1 md:col-span-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <ProfileCharts profileId={profileId} projectId={projectId} />
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,10 +1,6 @@
-// Re-export the shared model whitelist helpers from
-// `@openpanel/core`'s assistant.constants.
-// Server + client consume the same source, so drift is a compile error
-// rather than a silent "agent not found at runtime".
-//
-// The *available* model list is fetched at runtime via `trpc.chat.models` —
-// it filters by which provider API keys the API process has configured.
+// Shared with the server so drift is a compile error, not a runtime "agent not
+// found". The available models come from `trpc.chat.models`, filtered by the
+// API's configured provider keys.
 
 export type { ChatModelEntry as ChatModelOption } from '@openpanel/core/modules/assistant/assistant.constants';
 export {

@@ -1,6 +1,4 @@
-// Helper, not vocabulary: `objectToZodEnums` has no owning module, so it is
-// copied here rather than value-imported from @openpanel/core (same
-// treatment the `common` math helpers get).
+// Copied rather than value-imported from @openpanel/core.
 export function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {

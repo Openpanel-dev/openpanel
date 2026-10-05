@@ -303,7 +303,6 @@ export function Chart({ data }: Props) {
                 );
               })}
 
-              {/* Previous */}
               {previous
                 ? series.map((serie) => {
                     const color = getChartColor(serie.index);

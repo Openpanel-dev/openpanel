@@ -114,7 +114,6 @@ export default function DateTimePicker({
       <ModalHeader title={title} />
 
       <div className="space-y-4">
-        {/* Selected Date/Time Display */}
         <div className="rounded-lg border border-dashed bg-muted/50 p-4">
           <div className="flex items-center justify-center space-x-2 text-sm">
             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -129,7 +128,6 @@ export default function DateTimePicker({
           </div>
         </div>
 
-        {/* Calendar Section */}
         <div className="row h-[333px] gap-2">
           <Calendar
             className="rounded-lg border [&_table]:mx-auto [&_table]:w-auto"
@@ -167,7 +165,6 @@ export default function DateTimePicker({
           </ScrollArea>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
           <Button
             className="flex-1"

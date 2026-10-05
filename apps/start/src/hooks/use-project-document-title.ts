@@ -12,11 +12,8 @@ function inject(title: string, projectName: string): string {
   return title.replace(BASE_SUFFIX, ` | ${projectName}${BASE_SUFFIX}`);
 }
 
-// Browser tab titles are set by each route's `head()` (server + client).
-// Rather than threading project name through every route's loader/head,
-// we patch the title imperatively on the client whenever it changes —
-// observed via a MutationObserver on <title>. This keeps the change
-// localized to one hook mounted under the project layout.
+// Route `head()` sets the title; rather than thread the project name through
+// every route, patch <title> on the client via a MutationObserver.
 export function useProjectDocumentTitle(projectName: string | undefined) {
   const lastApplied = useRef<string | null>(null);
 

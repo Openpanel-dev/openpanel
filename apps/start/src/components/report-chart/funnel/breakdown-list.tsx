@@ -90,14 +90,12 @@ export function BreakdownList({
 
         return (
           <div className="col" key={item.id}>
-            {/* Compact row */}
             <div
               className={cn(
                 'card row w-full items-center gap-3 px-4 py-3 text-left',
                 isExpanded && 'rounded-b-none'
               )}
             >
-              {/* Chart visibility checkbox */}
               {hasBreakdowns && (
                 <Checkbox
                   checked={isVisible}
@@ -110,7 +108,6 @@ export function BreakdownList({
                 />
               )}
 
-              {/* Expandable row content */}
               <button
                 className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
                 onClick={() => toggleExpanded(item.id)}
@@ -160,7 +157,6 @@ export function BreakdownList({
               </div>
             </div>
 
-            {/* Expanded detailed view */}
             {isExpanded && (
               <Tables
                 data={{

@@ -164,7 +164,6 @@ const VirtualizedEventsTable = ({
       className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
     >
-      {/* Table Header */}
       <div
         className="sticky top-0 z-10 border-b bg-card"
         style={{
@@ -199,7 +198,6 @@ const VirtualizedEventsTable = ({
         />
       )}
 
-      {/* Table Body */}
       <div
         className="relative w-full"
         style={{

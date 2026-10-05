@@ -198,7 +198,6 @@ export function S3ExportIntegrationForm({
         </div>
       </div>
 
-      {/* Auth Mode Selector */}
       <div className="col gap-1.5">
         <label className="font-medium text-sm">Authentication Mode</label>
         <Controller
@@ -225,7 +224,6 @@ export function S3ExportIntegrationForm({
         </p>
       </div>
 
-      {/* IAM Role fields */}
       {authMode === 'iam_role' && (
         <>
           <InputWithLabel
@@ -250,7 +248,6 @@ export function S3ExportIntegrationForm({
         </>
       )}
 
-      {/* Access Key fields */}
       {authMode === 'access_key' && (
         <>
           <InputWithLabel

@@ -9,7 +9,7 @@ import { cn } from '@/utils/cn';
 
 // Fixed, not random. The server and the browser each rendered their own
 // widths, so every skeleton row was an attribute mismatch and React threw the
-// SSR tree away (ISSUES.md H10). The exact values do not matter; only that
+// SSR tree away. The exact values do not matter; only that
 // both renders agree.
 const SKELETON_NAME_WIDTHS = [186, 134, 158, 112, 170, 126, 194, 148, 120, 176];
 const SKELETON_BAR_WIDTHS = [72, 48, 63, 35, 57, 41, 78, 52, 29, 66];
@@ -64,17 +64,14 @@ function Loading() {
               <div className="relative z-10 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    {/* Icon skeleton */}
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-def-100 dark:border-def-800 dark:bg-def-900" />
 
                     <div className="min-w-0">
-                      {/* Rank badge skeleton */}
                       <div className="mb-1 flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-def-200 dark:bg-def-700" />
                         <div className="h-2 w-12 rounded bg-def-200 dark:bg-def-700" />
                       </div>
 
-                      {/* Name skeleton */}
                       <div
                         className="h-4 rounded bg-def-200 dark:bg-def-700"
                         style={{
@@ -84,13 +81,11 @@ function Loading() {
                     </div>
                   </div>
 
-                  {/* Count skeleton */}
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <div className="h-5 w-16 rounded bg-def-200 dark:bg-def-700" />
                   </div>
                 </div>
 
-                {/* Bar skeleton */}
                 <div className="flex items-center">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
                     <div

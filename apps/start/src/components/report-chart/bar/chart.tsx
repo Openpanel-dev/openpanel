@@ -189,7 +189,6 @@ export function Chart({ data }: Props) {
                 role={isClickable ? 'button' : undefined}
                 tabIndex={isClickable ? 0 : undefined}
               >
-                {/* Subtle accent glow */}
                 <div
                   className="pointer-events-none absolute -top-10 -left-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
                   style={{
@@ -301,7 +300,6 @@ export function Chart({ data }: Props) {
                     </div>
                   </div>
 
-                  {/* Bar */}
                   <div className="flex items-center">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
                       <div

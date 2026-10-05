@@ -19,8 +19,7 @@ export const Route = createFileRoute('/unsubscribe')({
   component: RouteComponent,
   validateSearch: unsubscribeSearchSchema,
   pendingComponent: FullPageLoadingState,
-  // An unsubscribe link with a missing or malformed parameter used to render
-  // the raw ZodError issues array at the recipient.
+  // A missing or malformed parameter would otherwise show the raw ZodError.
   errorComponent: () => (
     <FullPageEmptyState
       description="This unsubscribe link is missing information or has expired. Open the link from your email again, or change your preferences from your account settings."

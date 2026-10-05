@@ -40,9 +40,8 @@ export function useColumns({
           const page = row.original;
           return (
             <div className="flex min-w-0 items-center gap-3">
-              {/* No origin means no favicon to fetch; the request used to go
-                  out anyway as `?url=` and answer 404 on every render. The
-                  value is also user data, so it is encoded. */}
+              {/* No origin means no favicon to fetch (`?url=` would 404). The
+                  value is user data, so it is encoded. */}
               {page.origin ? (
                 <img
                   alt=""
@@ -114,7 +113,7 @@ export function useColumns({
           );
           // The count is always known. Only the comparison depends on having a
           // previous period, so a missing `prev` hides the delta, not the
-          // number — it used to replace the whole cell with an em dash.
+          // number.
           const count = (
             <span className="font-mono text-sm tabular-nums">
               {number.short(row.original.sessions)}

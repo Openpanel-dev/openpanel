@@ -149,8 +149,8 @@ function ProfileList({ profiles }: { profiles: any[] }) {
 
 /**
  * Renders the query's outcome. A failed request must not look like an empty
- * result — `data ?? []` used to render backend errors as "No users found",
- * which hid real failures (e.g. a funnel breakdown whose SQL didn't compile).
+ * result, or backend errors (e.g. a funnel breakdown whose SQL didn't compile)
+ * would read as "No users found".
  */
 function ProfileListState({
   query,

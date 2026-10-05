@@ -188,30 +188,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         <div className="row items-center justify-between">
           <div className="title">{event.name}</div>
           <div className="row items-center gap-2 pr-2">
-            {/* <Button
-                size="icon"
-                variant={'ghost'}
-                onClick={() => {
-                  const event = new KeyboardEvent('keydown', {
-                    key: 'ArrowLeft',
-                  });
-                  dispatchEvent(event);
-                }}
-              >
-                <ArrowLeftIcon className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant={'ghost'}
-                onClick={() => {
-                  const event = new KeyboardEvent('keydown', {
-                    key: 'ArrowRight',
-                  });
-                  dispatchEvent(event);
-                }}
-              >
-                <ArrowRightIcon className="size-4" />
-              </Button> */}
             <Button onClick={() => popModal()} size="icon" variant={'ghost'}>
               <XIcon className="size-4" />
             </Button>
@@ -402,7 +378,6 @@ function EventDetailsSkeleton() {
         </WidgetButtons>
       </WidgetHead>
       <WidgetBody className="col gap-4 bg-def-100">
-        {/* Profile skeleton */}
         <div className="card col gap-2 p-4 py-2">
           <div className="row items-center justify-between gap-2">
             <div className="row min-w-0 items-center gap-2">
@@ -421,7 +396,6 @@ function EventDetailsSkeleton() {
           <div className="h-4 w-64 animate-pulse rounded bg-muted" />
         </div>
 
-        {/* Properties skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-20 animate-pulse rounded bg-muted" />
@@ -439,7 +413,6 @@ function EventDetailsSkeleton() {
           </div>
         </section>
 
-        {/* Information skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-24 animate-pulse rounded bg-muted" />
@@ -457,7 +430,6 @@ function EventDetailsSkeleton() {
           </div>
         </section>
 
-        {/* Chart skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-40 animate-pulse rounded bg-muted" />

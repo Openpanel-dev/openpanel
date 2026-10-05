@@ -237,9 +237,7 @@ export function WidgetHeadSearchable<T extends string>({
 
   return (
     <div className={cn('border-border border-b', className)}>
-      {/* Scrollable tabs container */}
       <div className="relative">
-        {/* Left gradient */}
         <div
           className={cn(
             'pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
@@ -247,7 +245,6 @@ export function WidgetHeadSearchable<T extends string>({
           )}
         />
 
-        {/* Scrollable tabs */}
         <div
           className="hide-scrollbar flex gap-1 overflow-x-auto px-2 py-3"
           ref={scrollRef}
@@ -269,7 +266,6 @@ export function WidgetHeadSearchable<T extends string>({
           ))}
         </div>
 
-        {/* Right gradient */}
         <div
           className={cn(
             'pointer-events-none absolute top-0 right-0 bottom-px z-10 w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
@@ -278,7 +274,6 @@ export function WidgetHeadSearchable<T extends string>({
         />
       </div>
 
-      {/* Search input */}
       {onSearchChange && (
         <div className="relative">
           <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />

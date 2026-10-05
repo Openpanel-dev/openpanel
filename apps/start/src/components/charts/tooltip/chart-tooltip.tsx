@@ -207,7 +207,6 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
         </svg>
       )}
 
-      {/* Tooltip Box */}
       <TooltipBox
         className={className}
         containerHeight={height}

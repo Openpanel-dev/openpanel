@@ -25,7 +25,6 @@ export function useColumns() {
         const { title } = row.original;
         return (
           <div className="row items-center gap-2">
-            {/* {isReadAt === null && <PingBadge>Unread</PingBadge>} */}
             <span className="max-w-md truncate font-medium">{title}</span>
           </div>
         );

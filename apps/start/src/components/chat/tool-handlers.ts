@@ -148,9 +148,8 @@ export const chatToolHandlers: ChatClientToolHandlers = {
 /**
  * Applies every part of one filter command in a single navigation.
  *
- * The overview's AI command used to await the three handlers in turn, so a
- * command like "last 30 days, mobile only" pushed two history entries and ran
- * every overview query twice.
+ * One navigation, so a command like "last 30 days, mobile only" pushes one
+ * history entry and runs the overview queries once.
  */
 export function applyFilterCommandToUrl(command: {
   // `range` and `operator` are widened to `string` on purpose.
@@ -159,8 +158,7 @@ export function applyFilterCommandToUrl(command: {
   // hand-list subsets: they are missing `last24h` and `3m` for range, and
   // `inCohort`/`notInCohort` for operator. Both values are written verbatim
   // into search params that the overview's own parsers then validate, so the
-  // wider types are correct here — and they keep the drift visible instead of
-  // hiding it behind the cast the tool-handler map used to apply.
+  // wider types are correct here and keep the drift visible.
   applyFilters?: (Omit<ApplyFiltersInput, 'range'> & { range?: string }) | null;
   setPropertyFilters?: {
     filters: (Omit<PropertyFilter, 'operator'> & { operator?: string })[];

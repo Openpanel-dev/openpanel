@@ -63,7 +63,6 @@ const sellingPoints = [
 export function LoginLeftPanel() {
   return (
     <div className="relative h-screen overflow-hidden">
-      {/* Carousel */}
       <div className="mt-24 flex h-full items-center justify-center">
         <Carousel
           className="h-full w-full [&>div]:h-full [&>div]:min-h-full"

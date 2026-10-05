@@ -68,13 +68,7 @@ export function ChatDrawer() {
 
   return (
     <>
-      {/*
-        Spacer in the flex layout — the aside is `fixed` so the main
-        content would otherwise render under it. This empty div takes
-        the drawer's width on `lg+` so the page naturally shrinks.
-        Hidden on mobile where the drawer overlays as a modal-style
-        panel (standard behavior for narrow viewports).
-      */}
+      {/* The aside is `fixed`; this spacer makes the page shrink on `lg+`. */}
       <div aria-hidden className="hidden shrink-0 lg:block" style={{ width }} />
       <aside
         className="fixed top-0 right-0 z-40 flex h-screen flex-col border-l bg-background shadow-2xl"
@@ -86,20 +80,8 @@ export function ChatDrawer() {
           {...dragHandleProps}
         />
         <ChatDrawerHeader onClose={closeChat} projectId={projectId} />
-        {/*
-          Three states, all derived from the `chat.models` tRPC query
-          (see `ChatStateProvider`). The frontend no longer reads any
-          AI-specific env vars — empty models list = not configured.
-            1. `isAiEnabled === false` — the API returned zero models,
-               meaning no provider keys are set. Skip the runtime and
-               render the setup-instructions empty state.
-            2. `isAiEnabled` is `null` or `agentName` is still empty —
-               models query in flight. Render a placeholder so we don't
-               crash `useAgent({ agent: '' })`.
-            3. `agentName` resolved — mount the runtime as normal.
-               `key={conversationId}` remounts the `useAgent` controller
-               on conversation switches to force a fresh hydrate.
-        */}
+        {/* `key={conversationId}` remounts the runtime so a switch re-hydrates. The
+            placeholder avoids `useAgent({ agent: '' })` while models load. */}
         {isAiEnabled === false ? (
           <ChatDrawerNotConfigured />
         ) : agentName ? (

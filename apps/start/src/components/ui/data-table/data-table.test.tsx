@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-// An error and an empty result both produce zero rows, so the table used to
-// render "nothing here yet" for a failed query — a 500 from `profile.list`
-// read as "Looks like you haven't identified any profiles yet" (ISSUES.md H11).
+// An error and an empty result both produce zero rows, so a failed query must
+// not render "nothing here yet" (a 500 from `profile.list` is not "you haven't
+// identified any profiles yet").
 
 import {
   type ColumnDef,

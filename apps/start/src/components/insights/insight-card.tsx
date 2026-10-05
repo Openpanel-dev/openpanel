@@ -115,7 +115,6 @@ export function InsightCard({
         <Badge className="-ml-2" variant="outline">
           {formatWindowKind(insight.windowKind)}
         </Badge>
-        {/* Severity: subtle dot instead of big pill */}
         {insight.severityBand && (
           <div className="flex shrink-0 items-center gap-1">
             <span
@@ -166,14 +165,12 @@ export function InsightCard({
         {renderTitle()}
       </div>
 
-      {/* AI plain-language summary (Tier-1 enrichment) */}
       {insight.aiSummary && (
         <p className="mt-1 line-clamp-3 text-muted-foreground text-xs leading-snug">
           {insight.aiSummary}
         </p>
       )}
 
-      {/* Metric row */}
       <div className="mt-auto pt-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
@@ -186,7 +183,6 @@ export function InsightCard({
                 {formatValue(currentValue)}
               </div>
 
-              {/* Inline compare, smaller */}
               {compareValue != null && (
                 <div className="text-muted-foreground text-xs">
                   vs {formatValue(compareValue)}
@@ -195,7 +191,6 @@ export function InsightCard({
             </div>
           </div>
 
-          {/* Delta chip */}
           <DeltaChip
             size="sm"
             variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}

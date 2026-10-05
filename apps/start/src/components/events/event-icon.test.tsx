@@ -3,7 +3,7 @@
 // `meta.icon` is a free-text column an operator fills in, so it can name an
 // icon `EventIconMapper` does not carry — or be the empty string, which is
 // not nullish and therefore survives the `??` chain. Either way the lookup
-// used to yield `undefined`, and rendering `undefined` as a component makes
+// must not yield `undefined`, because rendering `undefined` as a component makes
 // React throw "Element type is invalid" and discard the whole subtree. On the
 // mobile events list (`event-list-item.tsx`) that is the entire page.
 

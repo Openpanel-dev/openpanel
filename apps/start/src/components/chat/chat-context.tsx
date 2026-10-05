@@ -40,11 +40,8 @@ interface ChatStateValue {
   isOpen: boolean;
 
   /**
-   * Open the drawer with a fresh conversation. This is the default
-   * "Ask AI" / ⌘J behavior — previously this resumed a per-page
-   * conversation from localStorage, but that added a second source of
-   * truth next to the URL and was removed. The header's conversation
-   * dropdown is the way to resume a prior conversation.
+   * Open the drawer with a fresh conversation (the default "Ask AI" / ⌘J
+   * behavior). The header's conversation dropdown resumes a prior one.
    */
   openChatForContext: () => void;
   /**

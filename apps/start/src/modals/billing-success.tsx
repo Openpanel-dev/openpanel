@@ -14,7 +14,6 @@ export default function BillingSuccess() {
       </button>
 
       <div className="flex flex-col items-center justify-center px-8 py-12">
-        {/* Success Icon with animated rings */}
         <div className="relative mb-10 flex h-64 w-64 items-center justify-center">
           <div className="absolute inset-0 flex animate-ping-slow items-center justify-center opacity-10">
             <div className="h-64 w-64 rounded-full bg-emerald-400" />
@@ -32,7 +31,6 @@ export default function BillingSuccess() {
           </div>
         </div>
 
-        {/* Success Message */}
         <h2 className="mb-4 font-semibold text-3xl">
           Subscription updated successfully
         </h2>

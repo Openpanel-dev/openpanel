@@ -67,7 +67,6 @@ function Component() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {/* Metrics */}
       {m && (
         <div className="col-span-1 md:col-span-2">
           <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-4">
@@ -113,7 +112,6 @@ function Component() {
         </div>
       )}
 
-      {/* Properties */}
       <div className="col-span-1 md:col-span-2">
         <Widget className="w-full">
           <WidgetHead>
@@ -142,22 +140,18 @@ function Component() {
         </Widget>
       </div>
 
-      {/* Activity heatmap */}
       <div className="col-span-1">
         <ProfileActivity data={activity.data} />
       </div>
 
-      {/* New members last 30 days */}
       <div className="col-span-1">
         <GroupMemberGrowth data={memberGrowth.data} />
       </div>
 
-      {/* Top events */}
       <div className="col-span-1">
         <MostEvents data={mostEvents.data} />
       </div>
 
-      {/* Popular routes */}
       <div className="col-span-1">
         <PopularRoutes data={popularRoutes.data} />
       </div>

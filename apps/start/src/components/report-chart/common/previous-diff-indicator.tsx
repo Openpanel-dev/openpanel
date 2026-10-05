@@ -21,8 +21,6 @@ export function getDiffIndicator<A, B, C>(
   return state === 'positive' ? positive : negative;
 }
 
-// TODO: Fix this mess!
-
 interface PreviousDiffIndicatorProps {
   diff?: number | null | undefined;
   state?: string | null | undefined;

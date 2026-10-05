@@ -215,7 +215,6 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
               ref={thumbRef}
               style={{ left: `calc(${progressPct}% - 8px)` }}
             />
-            {/* Hover timestamp tooltip */}
             <AnimatePresence>
               {hoverInfo && (
                 <motion.div
@@ -230,9 +229,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                   }}
                   transition={{ duration: 0.15 }}
                 >
-                  {/* Vertical line */}
                   <div className="absolute top-1/2 left-0 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground/30" />
-                  {/* Timestamp badge */}
                   <motion.div
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     className="absolute bottom-6 left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] text-background tabular-nums shadow"

@@ -100,9 +100,6 @@ export const OnboardingSteps = ({ className }: Props) => {
               )}
               <div className="relative">
                 {step.status === 'completed' && <CheckCheckIcon size={14} />}
-                {/* {step.status === 'current' && (
-                  <ArrowRightCircleIcon size={14} />
-                )} */}
                 {(step.status === 'pending' || step.status === 'current') &&
                   index + 1}
               </div>
