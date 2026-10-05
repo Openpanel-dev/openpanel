@@ -209,3 +209,6 @@ apps/start/playwright-report/
 
 # SQL dumps the ClickHouse code-migration runner writes next to each migration
 packages/db/src/code-migrations/*.sql
+
+# local working list of open issues
+ISSUES.md
