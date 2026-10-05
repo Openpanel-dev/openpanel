@@ -84,6 +84,19 @@ const UTM_COLUMNS = [
   'utm_term',
   'utm_content',
 ];
+const UTM_PROPERTY_PREFIX = 'properties.__query.';
+
+// A session has no `path`/`origin` of its own; its entry page stands in.
+const SESSION_COLUMN_FOR_FILTER: Record<string, string> = {
+  path: 'entry_path',
+  origin: 'entry_origin',
+};
+
+// These compare against nothing, so they apply without a value.
+const VALUELESS_OPERATORS: ReadonlySet<string> = new Set([
+  'isNull',
+  'isNotNull',
+]);
 
 interface MetricsRow {
   bounce_rate: number;
@@ -329,8 +342,17 @@ function sessionsFilterMode(params: {
   };
 }
 
+/** A filter still being edited in the UI has no value yet and filters nothing. */
+function isFilterApplicable(filter: IChartEventFilter): boolean {
+  return (
+    (filter.value?.length ?? 0) > 0 || VALUELESS_OPERATORS.has(filter.operator)
+  );
+}
+
 export function isPageFilter(filters: IChartEventFilter[]) {
-  return filters.some((filter) => filter.name === 'path' && filter.value);
+  return filters.some(
+    (filter) => filter.name === 'path' && isFilterApplicable(filter)
+  );
 }
 
 export async function getMetrics(
@@ -531,45 +553,36 @@ async function getMetricsWithPageFilter(
   };
 }
 
+/**
+ * The sources widget names a UTM filter by its events spelling
+ * (`properties.__query.utm_source`), saved filters may use the bare column;
+ * both resolve to the bare name before the whitelist sees them.
+ */
+function toOverviewFilterName(name: string): string {
+  const bareName = name.startsWith(UTM_PROPERTY_PREFIX)
+    ? name.slice(UTM_PROPERTY_PREFIX.length)
+    : name;
+  return UTM_COLUMNS.includes(bareName) ? bareName : name;
+}
+
+function toTableFilterName(type: 'events' | 'sessions', name: string): string {
+  if (type === 'events') {
+    return UTM_COLUMNS.includes(name) ? `${UTM_PROPERTY_PREFIX}${name}` : name;
+  }
+  return SESSION_COLUMN_FOR_FILTER[name] ?? name;
+}
+
 export function getRawWhereClause(
   type: 'events' | 'sessions',
   filters: IChartEventFilter[]
 ): SqlFragment | null {
   const where = getEventFiltersWhereClause(
     filters.flatMap((item) => {
-      if (!WHITELISTED_FILTERS.includes(item.name)) {
+      const name = toOverviewFilterName(item.name);
+      if (!WHITELISTED_FILTERS.includes(name)) {
         return [];
       }
-      if (type === 'sessions') {
-        if (item.name === 'path') {
-          return [{ ...item, name: 'entry_path' }];
-        }
-        if (item.name === 'origin') {
-          return [{ ...item, name: 'entry_origin' }];
-        }
-        if (item.name.startsWith('properties.__query.utm_')) {
-          return [
-            {
-              ...item,
-              name: item.name.replace('properties.__query.utm_', 'utm_'),
-            },
-          ];
-        }
-        // sessions table has no `properties` map for arbitrary keys —
-        // drop them instead of generating an invalid WHERE clause.
-        if (item.name.startsWith('properties.')) {
-          return [];
-        }
-        return [item];
-      }
-      // events table has no top-level utm_* columns — those live in the
-      // properties map under the __query.utm_* keys. Route them through
-      // getEventFiltersWhereClause's properties.* path so we emit
-      // `properties['__query.utm_source']` instead of the bare column.
-      if (UTM_COLUMNS.includes(item.name)) {
-        return [{ ...item, name: `properties.__query.${item.name}` }];
-      }
-      return [item];
+      return [{ ...item, name: toTableFilterName(type, name) }];
     }),
     undefined,
     undefined,

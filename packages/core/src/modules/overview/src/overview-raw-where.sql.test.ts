@@ -22,7 +22,7 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ch } from '@openpanel/db/src/clickhouse/client';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import { getRawWhereClause } from '../overview.service';
+import { getRawWhereClause, isPageFilter } from '../overview.service';
 
 const PROJECT_ID = 'test-sql-validation';
 
@@ -97,6 +97,52 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
     expect(query_params).toEqual({ p1: 'awn' });
   });
 
+  const UTM_FIELDS = [
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'utm_term',
+    'utm_content',
+  ];
+
+  it('accepts the properties.__query.utm_* spelling the sources widget sets', () => {
+    for (const field of UTM_FIELDS) {
+      for (const operator of ['is', 'isNot', 'contains'] as const) {
+        const filters = [
+          { name: `properties.__query.${field}`, operator, value: ['google'] },
+        ];
+        const bare = [{ name: field, operator, value: ['google'] }];
+        expect(rendered(getRawWhereClause('sessions', filters))).toEqual(
+          rendered(getRawWhereClause('sessions', bare))
+        );
+        expect(rendered(getRawWhereClause('events', filters))).toEqual(
+          rendered(getRawWhereClause('events', bare))
+        );
+        expect(rendered(getRawWhereClause('sessions', filters)).query).toMatch(
+          new RegExp(`(?<![._\\w])${field}\\b`)
+        );
+      }
+    }
+  });
+
+  it('drops a filter that has no value yet', () => {
+    expect(
+      getRawWhereClause('events', [{ name: 'path', operator: 'is', value: [] }])
+    ).toBeNull();
+  });
+
+  it('does not treat a path filter without a value as a page filter', () => {
+    expect(isPageFilter([{ name: 'path', operator: 'is', value: [] }])).toBe(
+      false
+    );
+    expect(
+      isPageFilter([{ name: 'path', operator: 'is', value: ['/cart'] }])
+    ).toBe(true);
+    expect(
+      isPageFilter([{ name: 'path', operator: 'isNotNull', value: [] }])
+    ).toBe(true);
+  });
+
   it('drops non-whitelisted filters', () => {
     const where = getRawWhereClause('events', [
       { name: 'malicious_column', operator: 'is', value: ['x'] },
@@ -117,6 +163,28 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
         `SELECT count() FROM events WHERE project_id = '${PROJECT_ID}' AND ${query}`,
         query_params
       );
+    }
+  );
+
+  itCH(
+    'properties.__query.utm_* filters parse against both tables',
+    async () => {
+      for (const table of ['events', 'sessions'] as const) {
+        const { query, query_params } = rendered(
+          getRawWhereClause(table, [
+            {
+              name: 'properties.__query.utm_campaign',
+              operator: 'isNot',
+              value: ['spring'],
+            },
+          ])
+        );
+        // An empty clause leaves a dangling `AND`, which EXPLAIN rejects.
+        await explain(
+          `SELECT count() FROM ${table} WHERE project_id = '${PROJECT_ID}' AND ${query}`,
+          query_params
+        );
+      }
     }
   );
 

@@ -21,6 +21,9 @@ const SESSION_DAY = '2026-01-05';
 const EVENT_DAY = '2026-01-08';
 const WINDOW_START = '2026-01-01 00:00:00';
 const WINDOW_END = '2026-01-15 00:00:00';
+const DURATION_PATH = '/checkout';
+const DURATION_SESSION_ID = 'session-duration';
+const SECONDS_ON_DURATION_PATH = 60;
 /** One bounced and one non-bounced session, both on `SESSION_DAY`. */
 const EXPECTED_OVERALL_BOUNCE_RATE = 50;
 
@@ -89,6 +92,21 @@ const screenView = (id: string, index: number) => ({
   path: FILTERED_PATH,
 });
 
+/** `/home` → `DURATION_PATH` → `/home`, so the filtered view is followed only by another page. */
+const durationSessionViews = [
+  ['00000000-0000-0000-0000-0000000000c1', '/home', '10:00:00'],
+  ['00000000-0000-0000-0000-0000000000c2', DURATION_PATH, '10:00:30'],
+  ['00000000-0000-0000-0000-0000000000c3', '/home', '10:01:30'],
+].map(([id, path, time]) => ({
+  id,
+  project_id: PROJECT_ID,
+  name: 'screen_view',
+  created_at: `${SESSION_DAY} ${time}`,
+  profile_id: 'profile-duration',
+  session_id: DURATION_SESSION_ID,
+  path,
+}));
+
 beforeAll(async () => {
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
   OV = await import('./overview.sql');
@@ -118,6 +136,7 @@ beforeAll(async () => {
     values: [
       screenView('00000000-0000-0000-0000-0000000000b1', 1),
       screenView('00000000-0000-0000-0000-0000000000b2', 2),
+      ...durationSessionViews,
     ],
     format: 'JSONEachRow',
   });
@@ -155,6 +174,24 @@ describe('metricsWithPageFilterQuery — window-wide totals', () => {
       expect(row.overall_total_sessions).toBeNull();
       expect(row.overall_bounce_rate).toBeNull();
       expect(row.total_screen_views).toBe(0);
+    }
+  });
+});
+
+describe('metricsWithPageFilterQuery — session duration', () => {
+  it('measures a filtered view up to the next view of any page in its session', async () => {
+    const rows = await metricsFor(DURATION_PATH);
+    const day = rows.find((row) => row.total_screen_views > 0);
+
+    expect(day?.total_screen_views).toBe(1);
+    expect(day?.avg_session_duration).toBe(SECONDS_ON_DURATION_PATH);
+  });
+
+  it('reports 0 rather than null for a bucket whose views have no measurable duration', async () => {
+    const rows = await metricsFor(FILTERED_PATH);
+
+    for (const row of rows) {
+      expect(row.avg_session_duration).not.toBeNull();
     }
   });
 });

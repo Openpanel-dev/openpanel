@@ -207,17 +207,25 @@ export function metricsWithPageFilterQuery(
   // re-executed once per reference, so each source is read exactly once here
   // and the window-wide totals are lifted off its own `WITH ROLLUP` row rather
   // than from a second scan.
+  //
+  // The filter is evaluated as a column and applied only after `lead`: a view's
+  // duration runs to the session's next view of any page, not the next view
+  // of a page that also matches the filter.
   const filteredScreenViews = sql`
-    SELECT
-      ${dateBucket} AS date,
-      profile_id,
-      session_id,
-      dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration
-    FROM events
-    WHERE project_id = ${sql.string(input.projectId)}
-      AND name = 'screen_view'
-      AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
-      ${rawWhere(input.rawEventFilterWhere)}
+    SELECT date, profile_id, session_id, duration
+    FROM (
+      SELECT
+        ${dateBucket} AS date,
+        profile_id,
+        session_id,
+        dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration,
+        ${input.rawEventFilterWhere ?? sql`true`} AS matches_filter
+      FROM events
+      WHERE project_id = ${sql.string(input.projectId)}
+        AND name = 'screen_view'
+        AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
+    )
+    WHERE matches_filter
   `;
 
   const eventAgg = sql`
@@ -227,7 +235,7 @@ export function metricsWithPageFilterQuery(
       uniq(session_id) AS total_sessions,
       count(*) AS total_screen_views,
       round((count(*) * 1.) / uniq(session_id), 2) AS views_per_session,
-      round(avgIf(duration, duration > 0), 2) / 1000 AS avg_session_duration
+      ifNotFinite(round(avgIf(duration, duration > 0), 2) / 1000, 0) AS avg_session_duration
     FROM filtered_screen_views
     GROUP BY date
     WITH ROLLUP
