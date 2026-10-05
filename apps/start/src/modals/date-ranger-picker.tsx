@@ -1,6 +1,6 @@
 import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { getDefaultIntervalByDates } from '@openpanel/core/modules/report/report.constants';
-import { endOfDay, subMonths } from 'date-fns';
+import { endOfDay, startOfDay, subMonths } from 'date-fns';
 import { CheckIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { popModal } from '.';
@@ -11,6 +11,7 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { formatDate } from '@/utils/date';
 
 interface Props {
+  /** `startDate` is the start of the first picked day, `endDate` the end of the last, in the browser's timezone. */
   onChange: (payload: {
     startDate: Date;
     endDate: Date;
@@ -73,12 +74,14 @@ export default function DateRangerPicker({
             onClick={() => {
               popModal();
               if (startDate && endDate) {
+                const rangeStart = startOfDay(startDate);
+                const rangeEnd = endOfDay(endDate);
                 onChange({
-                  startDate,
-                  endDate,
+                  startDate: rangeStart,
+                  endDate: rangeEnd,
                   interval: getDefaultIntervalByDates(
-                    startDate.toISOString(),
-                    endDate.toISOString()
+                    rangeStart.toISOString(),
+                    rangeEnd.toISOString()
                   )!,
                 });
               }
