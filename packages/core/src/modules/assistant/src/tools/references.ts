@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../../services';
+import { getChartStartEndDate } from '../../../report/src/chart-dates';
+import type { PageContext } from '../context';
+import { chatRunContext } from '../run-context';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
 /**
@@ -7,6 +10,23 @@ import { chatTool, resolveDateRange, truncateRows } from './helpers';
  * campaign" on 2026-03-15) so the AI can correlate traffic changes with
  * off-platform events.
  */
+
+// Never read: `resolveDateRange` always returns both bounds, which is the case
+// where `getChartStartEndDate` only normalizes them.
+const UNUSED_FALLBACK_RANGE = '30d';
+
+/** The same window the chart's reference annotations use for these filters. */
+export function getReferenceDateWindow(filters: PageContext['filters']): {
+  gte: Date;
+  lte: Date;
+} {
+  const timezone = chatRunContext.getStore()?.timezone ?? 'UTC';
+  const { startDate, endDate } = getChartStartEndDate(
+    { ...resolveDateRange(filters), range: UNUSED_FALLBACK_RANGE },
+    timezone
+  );
+  return { gte: new Date(startDate), lte: new Date(endDate) };
+}
 
 export const listReferences = (deps: ServiceDeps) =>
   chatTool(
@@ -31,33 +51,16 @@ export const listReferences = (deps: ServiceDeps) =>
       }),
     },
     async ({ startDate, endDate, search, limit }, context) => {
-      const range = resolveDateRange({
+      const dateWindow = getReferenceDateWindow({
         ...context.pageContext?.filters,
         startDate: startDate ?? context.pageContext?.filters?.startDate,
         endDate: endDate ?? context.pageContext?.filters?.endDate,
       });
-
-      // KNOWN DEFECT, deliberately left: these two bounds do not agree, and
-      // neither is safe for every shape `resolveDateRange` returns. It yields
-      // `YYYY-MM-DD` from explicit dates and from its 30-day default, but
-      // `YYYY-MM-DD HH:mm:ss` in the PROJECT's timezone when the page carries a
-      // range preset (`chart-dates.ts` `getDatesFromRange`). On that second
-      // shape the `lte` concatenation builds "2026-09-10
-      // 23:59:59T23:59:59.999Z", which is an Invalid Date, and the `gte` is
-      // parsed as LOCAL time rather than UTC. Do NOT "align" the two by
-      // appending `T00:00:00.000Z` to the `gte` — that reads as equivalent only
-      // if `range.startDate` were always date-only, and it is not. Repairing it
-      // changes which rows the preset path returns, and picking the right
-      // window means settling which clock `Reference.date` is stored in —
-      // `modules/reference`'s `getChartReferences` owns that answer.
       const db = deps.db;
       const rows = await db.reference.findMany({
         where: {
           projectId: context.projectId,
-          date: {
-            gte: new Date(range.startDate),
-            lte: new Date(`${range.endDate}T23:59:59.999Z`),
-          },
+          date: dateWindow,
           ...(search
             ? {
                 OR: [
