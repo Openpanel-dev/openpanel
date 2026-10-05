@@ -1,18 +1,7 @@
 // Plain exported functions, not only methods on `createInsightService`'s
-// container: a caller with no Ctx yet still needs a direct call.
-// `createInsightService` is the `ctx.services.insight` binding for code that
-// already has a Ctx.
-//
-// Every exported function takes `ServiceDeps` and reaches Postgres as `deps.db`
-// and ClickHouse as `deps.ch`, so the requestId minted at the edge reaches the
-// query.
-//
-// The engine and its five detection modules run on the `sql` tag;
-// `createEngine` therefore takes the scope's deps rather than a bare ClickHouse
-// client, so the requestId reaches every module statement.
-//
-// The explain cache runs on `deps.redis` — the app shell owns that connection's
-// lifecycle; this module never opens one of its own.
+// container: a caller with no Ctx yet still needs a direct call. They take
+// `ServiceDeps` so the requestId minted at the edge reaches every query, and the
+// explain cache runs on `deps.redis`, whose lifecycle the app shell owns.
 
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';

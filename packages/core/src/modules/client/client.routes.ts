@@ -1,12 +1,3 @@
-// The /manage/clients REST surface, delegating its CRUD bodies to
-// client.service.ts's createClientForOrganization/updateClientForOrganization/
-// etc — the same functions the tRPC router (client.rpc.ts) calls. Response
-// envelopes (`{ data }` / `{ success }`) keep a byte-unchanged URL surface.
-//
-// Body schemas are local, not in a client.constants.ts file: unlike project,
-// whose zCreateProject / zUpdateProject moved with ProjectTypeNames, this
-// module has no rpc-shared constants to publish.
-//
 // Auth goes through `authenticateAllowedClient` (http/client-auth.ts);
 // `allow: ['root']` means only root clients may manage resources.
 

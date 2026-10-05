@@ -1,18 +1,11 @@
 // Postgres-backed login sessions (a `sessions` row keyed by the hash of a
-// browser's cookie). Not to be confused with session.service.ts's ClickHouse
-// visitor sessions.
-//
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` lazy loader is gone. `http/session.ts`'s `resolveSession` already
-// carried an (until-now-unused) `AppDeps` for exactly this.
+// browser's cookie). Not to be confused with ClickHouse visitor sessions.
 
 import type { Session, User } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
 import { EMPTY_SESSION } from '../../../shared/session';
 import { decodeSessionToken, hashSessionToken } from './token';
 
-/** Only Postgres — narrowed so `AppDeps` (http/session.ts, before
- *  `ServiceDeps.queues` exists) satisfies it with no cast. */
 type LoginSessionDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;

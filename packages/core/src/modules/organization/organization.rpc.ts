@@ -1,13 +1,7 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check in the handler.
 //
-// The organization-admin ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
-//
-// `getInvite` has no rate limiting yet. `createRateLimitMiddleware` in
-// rpc/base.ts is the seam that will carry it.
+// `getInvite` has no rate limiting yet.
 
 import { z } from 'zod';
 import {

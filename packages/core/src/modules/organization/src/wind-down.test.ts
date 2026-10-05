@@ -1,7 +1,5 @@
-// Prisma, the event counts, the last-event lookup, the highlight builder and
-// the email transport are injected stubs — these assert the job's decisions
-// (who enters, which step fires, what gets written), not any real persistence.
-// No `mock.module`, so nothing this file does leaks into another test file.
+// Everything the job touches is an injected stub; these assert its decisions
+// (who enters, which step fires, what gets written). No `mock.module`.
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { subDays } from 'date-fns';

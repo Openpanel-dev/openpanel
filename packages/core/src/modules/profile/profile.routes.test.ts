@@ -1,8 +1,5 @@
-// The three /profile routes run end to end through `app.handle()`.
-// `../../http/client-auth`'s `authenticateClient` is mocked so the client
-// principal is deterministic, same as http/auth.test.ts does; the service
-// and the geo lookup are mocked so nothing reaches a database. Every mock is
-// registered before the subject's first (dynamic) import — AGENTS.md.
+// The three /profile routes end to end through `app.handle()`, with client auth, the
+// service and the geo lookup mocked so nothing reaches a database.
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { stubAppDeps } from '../../../test/http-fixtures';
@@ -153,15 +150,10 @@ test('a client without a project answers 400 before touching the service', async
   expect(identifyProfile).not.toHaveBeenCalled();
 });
 
-// These bodies used to reach the service and throw on `input.property.split`,
-// so the caller saw a 500 with a raw TypeError (ISSUES.md H5). Elysia's schema
-// refuses them instead.
-//
-// This suite mounts the routes alone, so it sees Elysia's own VALIDATION
-// status. The assembled app maps that to 400 — see http/errors.ts, which
-// documents the mapping — and the live API was verified answering
-// `400 {"message":"body/property Invalid input: expected string, received
-// undefined"}` for these same bodies.
+// These bodies used to reach the service and throw on `input.property.split`, giving
+// a 500 with a raw TypeError; Elysia's schema now refuses them. This suite mounts the
+// routes alone, so it sees Elysia's own VALIDATION status; the assembled app maps it
+// to 400 (http/errors.ts).
 const ELYSIA_VALIDATION_STATUS = 422;
 
 test('the adjust routes reject a body that cannot name a property', async () => {
@@ -197,11 +189,8 @@ test('increment still accepts a negative delta', async () => {
   expect(adjustProfileProperty).toHaveBeenCalled();
 });
 
-// Each path gets a body its schema accepts, so the 401 under test is the auth
-// check and not the body validation. Elysia validates the body before the
-// clientAuth hook — `/track` has behaved that way since it got
-// `zTrackHandlerPayload`, so an anonymous caller with a malformed body sees a
-// 400 there too.
+// Each path gets a body its schema accepts, so the 401 under test is the auth check,
+// not body validation (Elysia validates the body before the clientAuth hook).
 const VALID_BODY_FOR: Record<string, Record<string, unknown>> = {
   '/profile': { profileId: 'prof-1' },
   '/profile/increment': { profileId: 'prof-1', property: 'score', value: 1 },

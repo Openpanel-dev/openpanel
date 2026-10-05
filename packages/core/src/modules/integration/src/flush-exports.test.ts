@@ -1,6 +1,5 @@
-// `runFlushExportsCron` now takes injected deps, so the fan-out, the watermark
-// advance and the manifest-last upload order can be asserted with no
-// infrastructure at all.
+// Deps are injected, so the fan-out, watermark advance and manifest-last upload
+// order are asserted without infrastructure.
 
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';
@@ -221,7 +220,6 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
       };
       const adapter = createGCSAdapter(config, testCoreConfig());
 
-      // --- exactly what processExport() does ---
       const events = [1, 2, 3].map(chEvent).map(clickhouseEventToExportEvent);
       const batch = await createBatch(
         stubLogger(),
@@ -256,7 +254,6 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
         content: serializeManifest(manifest),
         contentType: MANIFEST_CONTENT_TYPE,
       });
-      // --- end ---
 
       const read = async (key: string) => {
         const res = await fetch(

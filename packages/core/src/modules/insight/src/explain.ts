@@ -1,18 +1,16 @@
-// Given an insight plus a deterministic decomposition of the change (current
-// vs baseline breakdowns across referrer/country/device/utm) and any nearby
-// references, produce an honest explanation: which sub-segment drove the
-// delta, and which off-platform event (reference) might correlate. It
-// explains the *internal decomposition*, not invented external causes. The
-// caller gathers the data (DB/CH); this module just narrates.
+// Explains an insight from a deterministic decomposition of the change (current
+// vs baseline across referrer/country/device/utm) plus nearby references: which
+// sub-segment drove the delta and which off-platform event might correlate. It
+// narrates the internal decomposition, not invented external causes; the caller
+// gathers the data.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
 
-// gpt-4.1 (the larger non-reasoning model) synthesizes the supplied breakdown
-// well without reasoning-option plumbing. Swap to a reasoning model later if
-// deeper inference is wanted.
+// gpt-4.1 (larger, non-reasoning) synthesizes the supplied breakdown well
+// without reasoning-option plumbing.
 const EXPLAIN_MODEL_ID = 'gpt-4-1';
 
 // Preferred model and fallback are both OpenAI — see enrich.ts.

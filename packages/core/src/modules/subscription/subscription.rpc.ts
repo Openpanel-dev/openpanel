@@ -2,10 +2,6 @@
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
-//
-// `requireOrganizationAdmin` lives in subscription.service.ts, not here — see
-// that file's header. `ctx.services.subscription` carries this module's factory
-// the same as every other module now.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

@@ -1,18 +1,5 @@
 import { z } from 'zod';
 
-/**
- * The full `ChatApp` type (Better Agent's inferred app type) lives in
- * `./src/app.ts` — it's `ReturnType<typeof createChatApp>` and inherently bound
- * to the server-side agent definition, so it stays out of this constants file
- * (a Prisma/Better-Agent type would follow it into a browser bundle). The
- * frontend type-imports it from the core barrel instead
- * (`apps/start/src/agents/client.ts`); see that file for why.
- */
-
-// ────────────────────────────────────────────────────────────────────
-// Page context — "what the user is looking at right now"
-// ────────────────────────────────────────────────────────────────────
-
 export const pageContextPageSchema = z.enum([
   'overview',
   'insights',
@@ -60,12 +47,9 @@ export type PageContext = z.infer<typeof pageContextSchema>;
 export type PageContextPage = z.infer<typeof pageContextPageSchema>;
 
 /**
- * Agent context shared by every agent. The client sends all three fields;
- * `assistant.routes.ts` re-reads the body, checks the session user's access
- * to (projectId, organizationId) and 403s a mismatch before handing the
- * request to the agent — so tools may trust these values. That check is the
- * module's ONLY tenancy gate: all 65 server tools use `context.projectId` as
- * their key without re-checking it.
+ * Agent context shared by every agent. `assistant.routes.ts` checks the session
+ * user's access to (projectId, organizationId) before a run; that is the
+ * module's only tenancy gate, so tools trust `context.projectId`.
  */
 export const chatContextSchema = z.object({
   projectId: z.string(),
@@ -74,13 +58,6 @@ export const chatContextSchema = z.object({
 });
 
 export type ChatAgentContext = z.infer<typeof chatContextSchema>;
-
-// ────────────────────────────────────────────────────────────────────
-// Model whitelist — single source of truth, consumed by:
-//   - src/app.ts (builds an agent per entry)
-//   - apps/start (model picker)
-// Adding a new model = add an entry here. No other changes required.
-// ────────────────────────────────────────────────────────────────────
 
 export type ChatProvider = 'OpenAI' | 'Anthropic';
 
@@ -91,12 +68,7 @@ export type ChatModelEntry = {
   modelId: string;
   label: string;
   group: ChatProvider;
-  /**
-   * When true, the agent is configured with the provider's `reasoning`
-   * options so the model returns reasoning tokens as streamed text
-   * events. Only set this on reasoning-capable models (o-series,
-   * gpt-5 / gpt-5.x, etc.). Non-reasoning models reject the option.
-   */
+  /** Only for reasoning-capable models; others reject the `reasoning` option. */
   reasoning?: boolean;
 };
 
@@ -138,24 +110,15 @@ export const CHAT_MODELS = [
 export type ChatModelId = (typeof CHAT_MODELS)[number]['id'];
 
 /**
- * localStorage key holding the user's preferred chat model id.
- *
- * Bumped to `v2` when the default was switched from `gpt-4-1` to
- * `gpt-4-1-mini` (April 2026). Existing users had `gpt-4-1` pinned in
- * their v1 key and hit rate-limit errors almost immediately on Tier 1
- * OpenAI accounts; invalidating the old key is the only way to
- * migrate them to the new default without a UI prompt. If you change
- * the default again, bump the suffix.
+ * localStorage key for the preferred chat model id. Bump the suffix when the
+ * default changes: it invalidates models users had pinned (gpt-4-1 hit Tier 1
+ * rate limits almost immediately).
  */
 export const MODEL_STORAGE_KEY = 'op-chat-model-v2';
 
 /**
- * Preferred default model id. The tRPC `chat.models` endpoint picks
- * this when it's available in the configured provider set, falling
- * back to the first entry in `CHAT_MODELS` otherwise. Picked for its
- * much higher per-minute token budget (OpenAI Tier 1 gives gpt-4.1
- * just 30k TPM — one user exhausts it with a single long turn —
- * whereas gpt-4.1-mini gets 200k TPM for the same tier).
+ * Preferred default model id when its provider is configured. gpt-4.1-mini has
+ * a far higher per-minute token budget than gpt-4.1 on OpenAI Tier 1 (200k vs 30k TPM).
  */
 export const PREFERRED_DEFAULT_MODEL_ID = 'gpt-4-1-mini';
 
@@ -169,11 +132,7 @@ export function getModelLabel(id: string): string {
   return CHAT_MODELS.find((m) => m.id === id)?.label ?? id;
 }
 
-/**
- * Filter the whitelist to models whose provider has an API key configured.
- * Returned in the same order as `CHAT_MODELS` (OpenAI first, then Anthropic)
- * so the first entry is a stable default.
- */
+/** Models whose provider has an API key configured, in `CHAT_MODELS` order so the first entry is a stable default. */
 export function getAvailableChatModels(providers: {
   openai: boolean;
   anthropic: boolean;
@@ -188,13 +147,6 @@ export function getAvailableChatModels(providers: {
     return false;
   });
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Client-side tool schemas — the three URL-param mutators the LLM can
-// call on the page. Defined here because both the server (wraps them
-// with `defineTool().client()`) and the client (types handler inputs)
-// need the same Zod schema.
-// ────────────────────────────────────────────────────────────────────
 
 export const applyFiltersSchema = z.object({
   range: z
@@ -296,16 +248,9 @@ export type SetEventNamesFilterInput = z.infer<
 >;
 
 /**
- * Handler-map type for the client-side UI-mutator tools.
- *
- * Better Agent's `toolHandlers` expects each value to be
- * `(input: unknown, ctx?: ...) => unknown`, so the input is typed as
- * `unknown` here — the concrete handlers narrow with a cast using the
- * matching `*Input` type exported above. The point of this type is
- * the *key set*: adding a new `.client()` tool on the server surfaces
- * an unused-property error here, forcing us to register a handler
- * rather than silently returning undefined. It avoids the frontend
- * needing to cross the app boundary for its handler typing.
+ * Handler map for the client-side UI tools. Inputs are `unknown` to match Better
+ * Agent's `toolHandlers`; the key set makes a new `.client()` tool fail to
+ * compile until a handler is registered.
  */
 export type ChatClientToolHandlers = {
   apply_filters: (input: unknown) => unknown | Promise<unknown>;

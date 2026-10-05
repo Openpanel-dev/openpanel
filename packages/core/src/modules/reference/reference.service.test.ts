@@ -105,11 +105,8 @@ const getChartStartEndDate = mock(() => ({
   startDate: '2026-08-25 00:00:00',
   endDate: '2026-09-01 23:59:59',
 }));
-// The module no longer reaches either through a lazy `@openpanel/core` hop —
-// Postgres arrives as `deps.db` and these two are plain relative imports, so
-// each is mocked at the specifier the source actually resolves through.
-// Snapshot-before-mock so `afterAll` restores the real module rather than
-// re-applying the mock.
+// Each is mocked at the specifier the source resolves through, snapshot-before-mock so
+// `afterAll` restores the real module rather than re-applying the mock.
 const actualOrganization = await import('../organization/organization.service');
 const realOrganization = { ...actualOrganization };
 mock.module('../organization/organization.service', () => ({

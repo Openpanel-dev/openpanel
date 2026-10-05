@@ -1,8 +1,7 @@
-// Session bearer tokens: the browser holds `token`, Postgres stores only its
-// hash — a leaked `sessions` row is not a leaked cookie. `hashSessionToken` is
-// the single source for that hash so @openpanel/db's session CRUD (which
-// cannot live here without a core -> db cycle, see auth.service.ts) and this
-// package's own token issuance always agree on the session id.
+// The browser holds `token`, Postgres stores only its hash, so a leaked
+// `sessions` row is not a leaked cookie. `hashSessionToken` is the single source
+// of that hash so @openpanel/db's session CRUD (which cannot live here without
+// a core -> db cycle) and this package's token issuance agree on the session id.
 
 import crypto from 'node:crypto';
 import { sha256 } from '@oslojs/crypto/sha2';

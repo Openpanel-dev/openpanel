@@ -1,9 +1,3 @@
-// Widgets are read-only chart embeds. Their zod schemas (`zWidgetType` /
-// `zWidgetOptions`) are chart/report vocabulary and live in
-// ./report/report.constants.ts, so this module carries no constants file of
-// its own, and there is no widget.service.ts — the queries are small enough to
-// stay in the procedures.
-//
 // `get`/`toggle`/`updateOptions` require a login; `counter`/`badge`/
 // `realtimeData` are deliberately open, because a widget is embedded on a
 // public page.

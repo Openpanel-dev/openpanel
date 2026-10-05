@@ -60,7 +60,6 @@ export abstract class BaseImportProvider<
     while (cursor <= endDate) {
       const chunkStart = cursor.toISOString().split('T')[0]!;
 
-      // Calculate chunk end: move forward by (chunkSizeDays - 1) to get the last day of the chunk
       const chunkEndDate = new Date(cursor);
       chunkEndDate.setDate(chunkEndDate.getDate() + (chunkSizeDays - 1));
 

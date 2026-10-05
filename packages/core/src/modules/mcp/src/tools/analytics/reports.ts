@@ -191,10 +191,8 @@ export function registerReportTools(
     async ({ projectId: inputProjectId, dashboardId }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
-        // Bind the id to the project BEFORE reading, the way every other
-        // dashboard/report tool here does: the post-hoc check this replaced
-        // let a foreign dashboard holding zero reports answer with a normal
-        // empty table instead of an error.
+        // Bind the id to the project BEFORE reading, so a foreign dashboard with
+        // zero reports cannot answer with a normal empty table.
         await requireDashboard(deps, projectId, dashboardId);
         const reports = await getReportsByDashboardId(deps, dashboardId);
         const rows = reports.map((r) => ({
@@ -294,15 +292,9 @@ export function registerReportTools(
 }
 
 /**
- * Execute a saved report by ID. Dispatches on chart type: funnel → getFunnel,
- * metric → executeAggregateChart, others → executeChart.
- *
- * The assistant module (`../../assistant/src/report-runner.ts`) carries its
- * own copy of this dispatch for its in-app chat tools — MCP's tool
- * definitions and assistant's are deliberately not unified, so the two live
- * as hand-synced copies rather than a shared helper. Deliberately returns the
- * raw engine output here — the MCP tool reshapes it for LLM consumption, the
- * chat renderer needs the full chart.
+ * Execute a saved report by ID, dispatching on chart type. Returns the raw engine
+ * output; the MCP tool reshapes it for an LLM. The assistant module keeps its own
+ * hand-synced copy of this dispatch.
  */
 async function runReport(
   deps: ServiceDeps,

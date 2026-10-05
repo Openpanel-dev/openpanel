@@ -1,8 +1,3 @@
-// organization.service.ts reaches Postgres/ClickHouse through the `ServiceDeps`
-// it is handed, and its module body has no import-time side effects, which is
-// what makes `mock.module` work here with nothing to race: every mock below is
-// registered before the subject's first call, not before its import.
-
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
 import { recordingLogger } from '../../../test/service-deps';
@@ -19,8 +14,7 @@ interface FakeOrganization {
   subscriptionEndsAt: Date | null;
   subscriptionChartEndDate: Date | null;
   createdAt: Date;
-  // Prisma $extends computed fields — set directly on the fixture rather
-  // than derived, since the mock never touches the real extension.
+  // Prisma `$extends` computed fields, set directly on the fixture.
   hasSubscription: boolean;
   isWillBeCanceled: boolean;
 }
@@ -410,10 +404,8 @@ const projectAccess = {
 
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
-// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` ARE
-// the fakes below. `connectUserToOrganization` reaches `shared/access-lookups.ts`
-// (cacheable, on the unscoped db), which is why the `@openpanel/redis` stand-in
-// below stays.
+// `connectUserToOrganization` reaches `shared/access-lookups.ts` (cacheable, on
+// the unscoped db), which is why the `@openpanel/redis` stand-in below stays.
 const chCommand = mock(async () => undefined);
 const deps = {
   logger: recordingLogger(),
@@ -430,14 +422,9 @@ const deps = {
   config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
 
-// Bypasses the Redis cache-aside entirely — this module's own logic is
-// exercised directly, caching is @openpanel/redis's concern. `access.service.ts`
-// (reached via connectUserToOrganization's dynamic import) calls `.clear()` on
-// its cacheable-wrapped lookups, so the stand-in needs that method too, not
-// just the bare passthrough gsc.service.test.ts's identical mock gets away with.
-// Real `cacheable` overloads on `(fn, ttl)` OR `(name, fn, ttl)` — this
-// module uses the first form, access.service.ts (reached via
-// connectUserToOrganization) the second.
+// Bypasses the Redis cache-aside. The access lookups call `.clear()` on their
+// cacheable-wrapped functions, so the stand-in needs that method too. Real
+// `cacheable` overloads on `(fn, ttl)` or `(name, fn, ttl)`; both are used.
 const clearedCacheKeys: string[] = [];
 function cacheableStub(
   fnOrName: ((...args: unknown[]) => unknown) | string,
@@ -494,11 +481,8 @@ afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
 });
 
-// Mocks core's own clients/email.ts wrapper, not @openpanel/email itself:
-// that package statically imports @openpanel/db's full barrel (Resend/SMTP
-// setup aside), an eager side-effecting chain this test avoids by mocking
-// at this depth. mcp.service.test.ts mocks the same relative depth for the
-// same reason.
+// Mocks core's `clients/email.ts` wrapper, not @openpanel/email: that package
+// statically imports @openpanel/db's full barrel, an eager side-effecting chain.
 const sentEmails: { templateKey: string; to: string; data: unknown }[] = [];
 mock.module('../../clients/email', () => ({
   sendEmail: async (
@@ -721,9 +705,8 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
   expect(remaining[0]).toMatchObject({ projectId: 'proj_new', level: 'write' });
 });
 
-// These two guards did not exist: access rows were written for a user who was
-// never confirmed to be a member, naming a project that need not belong to the
-// organization the grant is scoped to.
+// Guards: access rows must not be written for a user never confirmed as a
+// member, or for a project outside the organization the grant is scoped to.
 test('updateOrganizationMemberAccess refuses a user who is not a member', async () => {
   projectStore.set('proj_new', {
     id: 'proj_new',

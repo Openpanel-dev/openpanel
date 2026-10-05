@@ -118,8 +118,7 @@ test('defers a step whose day gate has not been reached', async () => {
 });
 
 test('completes rather than replays when the pointer is unknown', async () => {
-  // The whole reason this branch exists: the old findIndex returned -1 for a
-  // removed step, which restarted the sequence from the top.
+  // A removed step must not restart the sequence from the top.
   const { onAdvance, onComplete, result } = run(makeSteps(), [
     makeSubject('a-step-that-was-renamed', 40),
   ]);

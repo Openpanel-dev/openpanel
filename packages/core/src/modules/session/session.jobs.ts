@@ -1,15 +1,3 @@
-// `sessions` is this module's own queue — registry key and Redis name
-// `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1
-// (jobs.registry.ts). Its wire payload is `{ event, snapshot }`, which is
-// what `legacyCompat.sessions` maps the legacy `{type:'createSessionEnd',
-// payload, snapshot}` shape onto. `flushSessions` / `flushReplay` /
-// `sessionReaper` / `sessionVacuum` are cron fragments, spread into the ONE
-// `cron` queue by jobs.registry.ts, ids and cadences unchanged.
-//
-// Every handler reads its clients off `ctx` — the buffers and the Redis
-// connection main.ts built once, and the ClickHouse client the job's own
-// requestId is bound to.
-
 import { z } from 'zod';
 import { chQuery } from '../../ch-query';
 import type { Ctx } from '../../context';
@@ -39,15 +27,11 @@ const SESSION_VACUUM_CRON = '0 4 * * *';
 const FLUSH_SESSIONS_INTERVAL_MS = 10_000;
 const FLUSH_REPLAY_INTERVAL_MS = 10_000;
 
-// Wire-shape check only — tightening it now would reject payloads the
-// running system currently accepts (see jobs/compat.test.ts).
+// Wire-shape check only: tightening it would reject payloads currently accepted.
 //
-// The schema's INPUT is what the producer holds (`SessionEndJobData`, a real
-// `Date` on `event.createdAt`) and its OUTPUT is what a handler is actually
-// handed after BullMQ's JSON round-trip (`SessionEndJobWire`, a string there).
-// `PayloadOf` reads the input and the handler reads the output, so the two stay
-// honest without either side casting. The transform is a type seam only — it
-// returns the value it was given.
+// The schema's INPUT is what the producer holds (`SessionEndJobData`, a real `Date`);
+// its OUTPUT is what a handler gets after BullMQ's JSON round-trip (`SessionEndJobWire`,
+// a string). The transform is a type seam only.
 const sessionEndWireShape = z.object({
   event: z.object({ projectId: z.string(), deviceId: z.string() }),
   snapshot: z.object({
@@ -65,11 +49,8 @@ const sessionEndPayload = z
   .transform((value) => value as unknown as SessionEndJobWire);
 
 /**
- * The session-end job's dependencies, bound to the run's own ctx.
- *
- * Two lookups stay dynamic to keep `notification.service.ts` — and the
- * dispatch module built on it — out of jobs.registry.ts's eager import
- * graph, which every core test file walks.
+ * The session-end job's dependencies, bound to the run's own ctx. Two lookups stay
+ * dynamic to keep `notification.service.ts` out of jobs.registry.ts's eager import graph.
  */
 async function sessionEndDeps(
   ctx: Ctx,

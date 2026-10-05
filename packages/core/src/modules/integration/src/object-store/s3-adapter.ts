@@ -59,7 +59,6 @@ export class S3Adapter implements IObjectStoreAdapter {
     config: IS3ExportConfig,
     private readonly coreConfig: CoreConfig
   ) {
-    // Decrypt secretAccessKey if present and encrypted
     if (config.authMode === 'access_key') {
       this.config = {
         ...config,
@@ -141,7 +140,6 @@ export class S3Adapter implements IObjectStoreAdapter {
         : {}),
     });
 
-    // Mark as non-expiring
     this.clientExpiresAt = 0;
     this.clientPromise = Promise.resolve(client);
 

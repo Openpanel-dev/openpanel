@@ -1,8 +1,6 @@
-// The store is a FACTORY over `ServiceDeps` — `deps.db` is the boot scope's
-// client, so the requestId minted at the edge reaches every insight write.
-// `Prisma` here is the namespace's JSON sentinel (`DbNull`), which arrives on
-// the same scope as `deps.prisma` rather than by importing `@openpanel/db` from
-// core.
+// A factory over `ServiceDeps` so the requestId minted at the edge reaches every
+// insight write. `Prisma` is the JSON sentinel (`DbNull`), which arrives on the
+// scope as `deps.prisma`.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
@@ -250,15 +248,10 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
       keepTopN,
       now,
     }): Promise<{ deleted: number }> {
-      // Below-top-N insights are DELETED rather than persisted as `suppressed`
-      // rows. Nothing reads suppressed insights (every query filters state=active),
-      // yet they were ~75% of the table. A dimension that later climbs back into
-      // the top-N is simply re-created on the next run — it loses thread
-      // continuity, which is cosmetic and not surfaced anywhere.
-      //
-      // Nothing here writes `suppressed` any more; the two paths that still read
-      // it (the reopen lookup above, `cleanupStaleInsights`) exist for rows
-      // written before that change.
+      // Below-top-N insights are DELETED, not stored as `suppressed`: nothing
+      // reads them and they were ~75% of the table. A dimension that climbs back
+      // into the top-N is re-created next run, losing thread continuity (not
+      // surfaced anywhere). `suppressed` is only read for rows written before this.
       const insights = await db.projectInsight.findMany({
         where: {
           projectId,

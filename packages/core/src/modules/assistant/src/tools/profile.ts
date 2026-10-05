@@ -245,7 +245,6 @@ export const compareProfileToAverage = (deps: ServiceDeps) =>
     async ({ profileId }, context) => {
       const id = profileId || context.pageContext?.ids?.profileId || '';
 
-      // Get this profile's metrics + a sample of other profiles' metrics
       const [thisMetrics, allProfiles] = await Promise.all([
         getProfileMetricsCore(deps, {
           projectId: context.projectId,
@@ -261,11 +260,9 @@ export const compareProfileToAverage = (deps: ServiceDeps) =>
         return { error: 'Profile not found or has no events', profileId: id };
       }
 
-      // Compute averages from a sample of other profiles: of the
-      // AVERAGE_CANDIDATE_LIMIT fetched above we query metrics for the first
-      // AVERAGE_SAMPLE_SIZE, in parallel. For a precise project-wide average
-      // we'd want a dedicated db helper, but this gives the LLM a useful
-      // comparison without extra schema work.
+      // Average over a sample: metrics for the first AVERAGE_SAMPLE_SIZE of the
+      // AVERAGE_CANDIDATE_LIMIT profiles fetched, in parallel. Not a precise
+      // project-wide average.
       const sampleIds = allProfiles
         .filter((p) => p.id !== id)
         .slice(0, AVERAGE_SAMPLE_SIZE)

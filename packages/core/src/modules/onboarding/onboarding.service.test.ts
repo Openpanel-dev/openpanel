@@ -1,8 +1,6 @@
-// Onboarding email cron: the sequential drip driven by the
-// `organization.onboarding` pointer. Db, the organization module's event-count
-// lookup, and email are mocked; asserts template selection, day gating, early
-// completion on active subs, and usage personalization. `mock.module` is not
-// hoisted, so the subject is imported inside `beforeAll` — see AGENTS.md.
+// Onboarding email cron: the sequential drip driven by the `organization.onboarding`
+// pointer. Db, the event-count lookup and email are mocked. `mock.module` is not
+// hoisted, so the subject is imported inside `beforeAll`.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';
@@ -13,8 +11,6 @@ const organizationUpdate = mock(async () => ({}));
 const dbMock = {
   organization: { findMany: organizationFindMany, update: organizationUpdate },
 };
-// `runOnboardingCron` takes `ServiceDeps` now, so `deps.db` IS the fake below —
-// no Prisma module mock needed.
 const deps = {
   db: dbMock,
   config: testCoreConfig(),
@@ -23,12 +19,10 @@ const deps = {
 const getOrganizationEventsCount = mock(
   async (_deps: unknown, _projectIds: string[]) => 0
 );
-// Spread a plain-object SNAPSHOT of the real module, not a partial factory:
-// `mock.module` replaces this specifier process-wide under bare `bun test`
-// (AGENTS.md), and every cross-module caller reaches
-// `getSettingsForProject` / `getOrganizationByProjectIdCached` through this
-// deep path rather than the package barrel — a partial factory here silently
-// deleted them for every file that ran afterwards.
+// Spread a SNAPSHOT of the real module, not a partial factory: `mock.module` replaces
+// this specifier process-wide, and every cross-module caller reaches
+// `getSettingsForProject` / `getOrganizationByProjectIdCached` through this deep path;
+// a partial factory silently deleted them for every later file.
 const realOrganizationService = {
   ...(await import('../organization/organization.service')),
 };
@@ -173,8 +167,8 @@ test('completes onboarding when the org subscribed before the trial emails', asy
 });
 
 test('populates recommendedPlan and trial stats in the trial-ending email', async () => {
-  // Regression: recommendedPlan used to read subscriptionPeriodEventsCount,
-  // which is always 0 for trial orgs (no Polar billing period).
+  // `recommendedPlan` must not read subscriptionPeriodEventsCount, which is always 0
+  // for trial orgs (no Polar billing period).
   getOrganizationEventsCount.mockResolvedValue(84_211);
   organizationFindMany.mockResolvedValue([
     org({
@@ -220,10 +214,9 @@ test('marks onboarding completed once every email has been sent', async () => {
 });
 
 test('completes orgs left on the retired trial-ended pointer', async () => {
-  // The day-30 'onboarding-trial-ended' step moved to the wind-down sequence.
-  // Orgs still holding that pointer must finish the drip, not restart it from
-  // the welcome email. Code migration 21 settles these, but the runner has to
-  // be safe on its own for any that slip through.
+  // The day-30 'onboarding-trial-ended' step belongs to the wind-down sequence. Orgs
+  // still holding that pointer must finish the drip, not restart it from the welcome
+  // email; the runner has to be safe on its own for any that slip through.
   organizationFindMany.mockResolvedValue([
     org({
       onboarding: 'onboarding-trial-ended',

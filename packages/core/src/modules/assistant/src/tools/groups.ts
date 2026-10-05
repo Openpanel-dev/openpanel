@@ -42,9 +42,7 @@ export const getGroupFull = (deps: ServiceDeps) =>
         memberLimit: 10,
       });
 
-      // Pull a few recent events from any members. We use the
-      // `profileIds IN (...)` filter on queryEventsCore so the DB does
-      // the narrowing instead of us post-filtering a generic feed.
+      // `profileIds IN (...)` lets the DB narrow instead of post-filtering a feed.
       const memberIds = group.members.map((m) => m.id);
       const recentEvents = memberIds.length
         ? await queryEventsCore(deps, {
@@ -159,10 +157,8 @@ export const getGroupMetrics = (deps: ServiceDeps) =>
         return { group_id: id, total_members: 0, note: 'Group has no members' };
       }
 
-      // Pull events for this group's members over the last 30 days, then
-      // bucket by 7d vs 30d. `profileIds IN (...)` lets ClickHouse do the
-      // narrowing — a generic project-wide feed would miss members whose
-      // activity falls outside the last N raw events.
+      // `profileIds IN (...)` lets ClickHouse narrow: a project-wide feed would
+      // miss members whose activity falls outside the last N raw events.
       const memberIds = members.data.map((m) => m.id);
       const recentEvents = await queryEventsCore(deps, {
         projectId: context.projectId,
@@ -224,11 +220,8 @@ export const compareGroups = (deps: ServiceDeps) =>
         return { this_group: thisGroup, peers: [], note: 'No peer groups' };
       }
 
-      // `findGroupsCore` returns `IServiceGroup[]` without a memberCount
-      // — that lives on `IServiceGroupStats` via a separate query. We
-      // don't fetch it here, so we report peer count + this group's
-      // count and list a handful of peers without rankings. If "rank by
-      // members" becomes useful, fetch `getGroupStats` for each peer.
+      // `findGroupsCore` returns no memberCount (that is `IServiceGroupStats`, a
+      // separate query), so peers are listed without rankings.
       return {
         this_group: {
           id: thisGroup.group.id,

@@ -1,11 +1,5 @@
-// The session read path. Every query is a `sql` fragment (src/sql.ts);
-// `buildFilterWhere` is the shared filter compiler and src/filter-clauses.ts is
-// the bridge to it.
-//
-// `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the
-// call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps have to
-// travel beside the key rather than inside it, or the Redis key would change
-// per request.
+// `getSessionsCountCached` is `cacheablePerDeps`: `cacheable` keys on the call's
+// arguments, so deps travel beside the key or the Redis key would change per request.
 
 import { getSafeJson, resolveDateRange } from '@openpanel/shared';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
@@ -151,8 +145,7 @@ const REPLAY_CHUNKS_PAGE_SIZE = 40;
 const DISTINCT_VALUES_DEFAULT_LIMIT = 200;
 const QUERY_SESSIONS_DEFAULT_LIMIT = 20;
 
-// clix always sent `session_timezone: 'UTC'`; the two queries converted from
-// clix keep sending it so their result sets stay identical.
+// Keeps sending `session_timezone: 'UTC'` so result sets are consistent.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 export function withReadableCountry<Row extends { country: string }>(
@@ -368,10 +361,8 @@ export async function getSessionReplayChunksFrom(
     })
   );
 
-  // `chunkIndex` is the row's position, not `row.chunk_index`, and `hasMore`
-  // counts rows the JSON filter may drop — so an unparseable chunk rewinds
-  // the client. Correcting either changes what the endpoint returns, so it
-  // is reported, not fixed.
+  // `chunkIndex` is the row's position, not `row.chunk_index`, and `hasMore` counts rows
+  // the JSON filter may drop, so an unparseable chunk rewinds the client.
   return {
     data: rows
       .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
@@ -455,10 +446,8 @@ export async function querySessionsCore(
     input.endDate
   );
 
-  // MCP sends a bare `YYYY-MM-DD`. The local `clix.datetime` helper this
-  // replaces flattened that to midnight before the query builder could widen
-  // it, so the whole last day was dropped, and it read an explicit datetime in
-  // the server's local zone on the way through.
+  // MCP sends a bare `YYYY-MM-DD`: flattening it to midnight would drop the whole last
+  // day, and an explicit datetime must not be read in the server's local zone.
   const from = toRangeBoundaryLiteral(startDate, 'start');
   const to = toRangeBoundaryLiteral(endDate, 'end');
 
@@ -487,10 +476,6 @@ export function createSessionService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  /**
-   * Enqueue one `session_end` job, idempotent on the closed session's id,
-   * through the ctx.queues-based producer.
-   */
   async function enqueueSessionEnd(
     input: EnqueueSessionEndInput
   ): Promise<void> {
@@ -500,9 +485,7 @@ export function createSessionService(
     );
   }
 
-  /** `event.service.ts` reaches this through the composition root's thunk
-   * `session-end.ts` statically imports the event module, so the two are a real
-   * cycle and an import back would be the wrong answer. */
+  /** Reached through the composition root's thunk: `session-end.ts` imports the event module, so a direct import is a cycle. */
   function getById(
     sessionId: string,
     projectId: string

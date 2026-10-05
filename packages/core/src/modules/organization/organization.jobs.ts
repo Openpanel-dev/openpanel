@@ -1,6 +1,3 @@
-// `delete` is this module's fragment of the ONE `cron` queue's jobs, spread
-// into jobs.registry.ts.
-
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';

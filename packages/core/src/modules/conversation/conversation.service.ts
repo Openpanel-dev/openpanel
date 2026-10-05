@@ -1,5 +1,3 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`.
-
 import type {
   ChatMessage,
   Conversation,
@@ -69,12 +67,9 @@ export async function listConversations(
 }
 
 /**
- * Set the title on a conversation, creating the row if it doesn't
- * exist yet. Used by the chat titler: on the first turn we stream a
- * title in parallel with the agent run, and the titler may finish
- * before the agent's `ConversationStore.save()` has inserted the row.
- * This upsert makes that race harmless — the row ends up with the
- * right owner + title regardless of which side finishes first.
+ * Set the title on a conversation, creating the row if it doesn't exist. The chat
+ * titler may finish before the agent's `ConversationStore.save()` inserts the row;
+ * the upsert makes that race harmless.
  */
 export async function upsertConversationTitle(
   deps: ServiceDeps,

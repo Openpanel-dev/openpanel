@@ -2,9 +2,6 @@
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
-//
-// `pages` / `pagesTimeseries` / `previousPages` / `pageTimeseries` read the
-// overview module's pages service via `ctx.services.pages`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

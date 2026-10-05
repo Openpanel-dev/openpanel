@@ -1,15 +1,9 @@
-// The permission ladder. It lives in the auth module, not in `shared/` — it
-// throws a transport error (`TRPCForbiddenError`) from the bottom layer, and
-// R10 puts every access check in the auth service and the procedure
-// builders.
+// Lives in the auth module, not `shared/`: it throws a transport error
+// (`TRPCForbiddenError`).
 //
-// The four data lookups arrive as an injected `AccessLookups` instead of
-// being imported from `@openpanel/db`. That injection is not decoration:
-// core must stay importable without a database — `bun test` loads this
-// package with no DATABASE_URL and no Prisma client — and it is the same
-// seam `createCacheMiddleware` and `createRateLimitMiddleware` already use
-// in rpc/base.ts. `auth.service.ts`'s `createAccessChecks` call binds it to
-// the real services; a test binds it to two functions.
+// The data lookups are injected rather than imported from `@openpanel/db` so
+// core stays importable without a database: `bun test` loads this package with
+// no DATABASE_URL and no Prisma client.
 
 import { TRPCForbiddenError } from '../../../rpc/errors';
 
@@ -71,20 +65,17 @@ export interface AccessChecks<
 const ORGANIZATION_ADMIN_ROLE = 'org:admin';
 
 /**
- * The permission ladder.
- *
- * Two independent controls, each with one job:
+ * The permission ladder. Two independent controls:
  *
  *  - ADMIN is the organization role (`member.role === 'org:admin'`). It gates
  *    destruction and billing.
- *  - WRITE is the per-project access level. It gates every mutation. `admin`
+ *  - WRITE is the per-project access level. It gates every mutation; `admin`
  *    level counts as a superset of `write`.
- *  - READ is the floor: membership of the project, which is what queries need.
+ *  - READ is the floor: membership of the project.
  *
- * They are deliberately separate. Project levels were unenforced for so long
- * that the value stored on most rows was never chosen by anyone, so hanging
- * destructive operations off the org role avoids retroactively giving meaning
- * to that data.
+ * They are separate because project levels were unenforced for so long that
+ * the stored value on most rows was never chosen by anyone, so hanging
+ * destructive operations off the org role avoids giving meaning to that data.
  */
 export function createAccessChecks<
   TProjectAccess extends ProjectAccessLike,

@@ -1,15 +1,11 @@
-// Every ClickHouse query the session module runs, as pure `sql` fragments,
-// with every value bound as a `{pN:Type}` parameter instead of an escaped
-// literal.
+// Dates bind as `YYYY-MM-DD HH:mm:ss` strings on purpose: a String param in a
+// DateTime64 position is parsed exactly like the literal it replaces, so result
+// sets cannot drift by a millisecond truncation.
 //
-// Dates bind as `YYYY-MM-DD HH:mm:ss` strings on purpose: a String param in
-// a DateTime64 position is parsed exactly like the literal it replaces, so
-// the result sets cannot drift by a millisecond truncation.
-//
-// Cluster note: `sessions` and `session_replay_chunks` are Distributed on
-// Cloud. The has_replay LEFT JOIN subquery and any `IN (SELECT...)` a filter
-// compiles to run under the client's `distributed_product_mode: 'allow'` —
-// changing that shape changes the query's cluster semantics.
+// `sessions` and `session_replay_chunks` are Distributed on Cloud. The has_replay
+// LEFT JOIN subquery and any `IN (SELECT...)` a filter compiles to run under the
+// client's `distributed_product_mode: 'allow'`; changing that shape changes the
+// query's cluster semantics.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -286,7 +282,7 @@ type QuerySessionsEqualityKey =
 export interface QuerySessionsQuery
   extends Partial<Record<QuerySessionsEqualityKey, string>> {
   projectId: string;
-  /** `YYYY-MM-DD HH:mm:ss`, inclusive on both ends — what clix.datetime sent. */
+  /** `YYYY-MM-DD HH:mm:ss`, inclusive on both ends. */
   startDate: string;
   endDate: string;
   limit: number;

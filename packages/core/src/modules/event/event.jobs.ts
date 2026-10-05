@@ -1,6 +1,4 @@
-// The event buffer (Redis → ClickHouse `events`) is this module's domain, so
-// its flush cron fragment lives here rather than on the ingest module that
-// merely writes to it.
+// The event buffer (Redis -> ClickHouse `events`) is this module's domain.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

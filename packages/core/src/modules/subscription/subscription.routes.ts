@@ -1,6 +1,3 @@
-// The Polar webhook, `POST /webhook/polar`. This route is the only caller of
-// subscription.service.ts's `handlePolarWebhookEvent`.
-//
 // RAW BYTES, deliberately: `validatePolarEvent` verifies Polar's signature over
 // the exact request body, so this handler reads `await request.text` and
 // declares no `body` schema — any parsing (JSON or otherwise) before the

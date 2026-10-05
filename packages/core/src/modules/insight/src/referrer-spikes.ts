@@ -1,9 +1,6 @@
-// The ClickHouse client is `deps.ch` (the boot scope's round-robin proxy), so
-// the requestId minted at the edge reaches these queries. Table names and the
-// date helper are core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
-//
-// `getRawWhereClause` returns a `SqlFragment` carrying bound params;
-// `chQuery` always sends `session_timezone` in its settings.
+// `deps.ch` carries the requestId minted at the edge. `getRawWhereClause`
+// returns a `SqlFragment` with bound params; `chQuery` always sends
+// `session_timezone`.
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { chQuery } from '../../../ch-query';
 import type { ServiceDeps } from '../../../services';
@@ -55,12 +52,9 @@ export interface ReferrerSpike {
 }
 
 /**
- * One bucket's worth of spike data. The wire format keeps the cluster
- * shape (anchorDate + spikes array) for forward-compatibility, but the
- * backend no longer groups across buckets — every entry has
- * `spikes.length === 1`. Visual density grouping happens on the frontend,
- * where the live `xScale` knows actual pixel distances and the right
- * threshold doesn't depend on the chosen interval.
+ * One bucket's worth of spike data. The wire format keeps the cluster shape
+ * (anchorDate + spikes array), but every entry has `spikes.length === 1`:
+ * density grouping happens on the frontend, where `xScale` knows pixel distances.
  */
 export interface ReferrerSpikeCluster {
   /** Bucket date — used to position the marker. */

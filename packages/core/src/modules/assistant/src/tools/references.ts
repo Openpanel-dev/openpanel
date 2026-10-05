@@ -3,18 +3,9 @@ import type { ServiceDeps } from '../../../../services';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
 /**
- * References are manual annotations the user adds — e.g.
- * "Launched new marketing campaign" on 2026-03-15. They mark
- * real-world events so the AI can correlate traffic changes with
- * things that happened off-platform.
- *
- * Use these tools whenever the user asks things like:
- *   - "What caused this spike?"
- *   - "Are any recent launches affecting the numbers?"
- *   - "Show me what happened around [date]"
- *
- * Or proactively when you notice a traffic anomaly and want to see
- * if a reference explains it.
+ * References are manual annotations the user adds (e.g. "Launched new marketing
+ * campaign" on 2026-03-15) so the AI can correlate traffic changes with
+ * off-platform events.
  */
 
 export const listReferences = (deps: ServiceDeps) =>

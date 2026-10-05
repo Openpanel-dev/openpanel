@@ -1,5 +1,4 @@
-// Job wiring — no ClickHouse/Postgres touched. The service methods
-// themselves are exercised in import.service.test.ts.
+// Job wiring only; no ClickHouse/Postgres touched.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';

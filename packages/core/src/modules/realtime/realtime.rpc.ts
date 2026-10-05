@@ -6,9 +6,6 @@
 // Each procedure also calls `requireProjectAccess({ level: 'read' })`
 // explicitly; `enforceAccess` already does the same off the `projectId` input,
 // and the redundant call is kept deliberately.
-//
-// The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

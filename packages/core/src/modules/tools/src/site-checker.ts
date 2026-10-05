@@ -1,6 +1,3 @@
-// Ported verbatim from apps/api/src/controllers/tools.controller.ts's
-// `siteChecker`.
-
 import * as dns from 'node:dns/promises';
 import * as net from 'node:net';
 import * as tls from 'node:tls';

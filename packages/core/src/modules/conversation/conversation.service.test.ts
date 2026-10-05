@@ -1,7 +1,3 @@
-// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
-// needs no module mock at all — `deps.db` IS the fake below, same idiom as
-// reference.service.test.ts.
-
 import { beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
 import type { ServiceDeps } from '../../services';

@@ -54,10 +54,9 @@ export interface SessionRuntime {
 }
 
 /**
- * The two boot singletons the lifecycle needs, read off the work scope rather
- * than constructed here: `ctx.redis` and `ctx.buffers` are the same objects
- * main.ts built once, so a job handler no longer opens a connection of its own
- * and its writes stay inside the request's scope.
+ * The two boot singletons the lifecycle needs, read off the work scope: `ctx.redis`
+ * and `ctx.buffers` are the objects main.ts built once, so writes stay inside the
+ * request's scope.
  */
 export function sessionRuntimeFrom(
   ctx: Pick<Ctx, 'redis' | 'buffers' | 'config'>

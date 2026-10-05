@@ -112,10 +112,6 @@ const zDateRange = z.object({
   range: zRange.optional(),
 });
 
-// ---------------------------------------------------------------------------
-// /export
-// ---------------------------------------------------------------------------
-
 const zExportEvents = z.object({
   project_id: z.string().optional(),
   projectId: z.string().optional(),
@@ -303,10 +299,6 @@ export const exportRoutes = defineRoutes((app) =>
     )
 );
 
-// ---------------------------------------------------------------------------
-// /insights — analytics overview
-// ---------------------------------------------------------------------------
-
 const zOverviewQuery = zDateRange.extend({
   interval: z.enum(['hour', 'day', 'week', 'month']).optional(),
 });
@@ -428,10 +420,6 @@ const zUserFlowQuery = zDateRange.extend({
     .optional(),
 });
 
-// ---------------------------------------------------------------------------
-// /insights — events
-// ---------------------------------------------------------------------------
-
 const zEventsQuery = zDateRange.extend({
   eventNames: z
     .union([z.array(z.string()), z.string().transform((s) => [s])])
@@ -457,10 +445,6 @@ const zPropertyValuesQuery = z.object({
   propertyKey: z.string(),
 });
 
-// ---------------------------------------------------------------------------
-// /insights — profiles
-// ---------------------------------------------------------------------------
-
 const zProfilesQuery = z.object({
   name: z.string().optional(),
   email: z.string().optional(),
@@ -483,10 +467,6 @@ const zProfileSessionsQuery = z.object({
   limit: z.number().int().min(1).max(100).default(20),
 });
 
-// ---------------------------------------------------------------------------
-// /insights — sessions
-// ---------------------------------------------------------------------------
-
 const zSessionsQuery = zDateRange.extend({
   country: z.string().optional(),
   city: z.string().optional(),
@@ -501,10 +481,6 @@ const zSessionsQuery = zDateRange.extend({
   limit: z.number().int().min(1).max(100).default(20),
 });
 
-// ---------------------------------------------------------------------------
-// /insights — groups
-// ---------------------------------------------------------------------------
-
 const zGroupsQuery = z.object({
   type: z.string().optional(),
   search: z.string().optional(),
@@ -514,10 +490,6 @@ const zGroupsQuery = z.object({
 const zGetGroupQuery = z.object({
   memberLimit: z.number().int().min(1).max(50).default(10),
 });
-
-// ---------------------------------------------------------------------------
-// /insights — Google Search Console
-// ---------------------------------------------------------------------------
 
 const zGscOverviewQuery = zDateRange.extend({
   interval: z.enum(['day', 'week', 'month']).default('day'),

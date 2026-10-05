@@ -1,6 +1,3 @@
-// `salt` is this module's fragment of the ONE `cron` queue's jobs, spread into
-// jobs.registry.ts.
-
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 

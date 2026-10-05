@@ -18,28 +18,19 @@ import { chatRunContext } from '../run-context';
 const TOOL_TIMEOUT_MS = 30_000;
 
 /**
- * Thin wrapper around `defineTool().server()` that bakes in our typed
- * agent context and enforces a time ceiling. Three things this gives
- * us over the raw API:
+ * Wrapper around `defineTool().server()` that types the agent context and
+ * enforces a time ceiling.
  *
- *  1. The agent's `contextSchema` only types itself — `defineTool` has
- *     no idea which agent it'll be bound to, so its `runCtx.context`
- *     is `unknown`. We cast it to `ChatAgentContext` here so every
- *     handler sees a typed context.
- *  2. The handler input is `any` (validated at runtime by Zod). We
- *     deliberately don't try to infer it from the schema generic —
- *     mixing TInput inference with the `BivariantFn` parameter shape
- *     hits TypeScript's "type instantiation is excessively deep" limit
- *     and breaks. Tools that need typed input destructure with an
- *     inline annotation, or use `z.infer<typeof mySchema>`.
- *  3. A 30-second timeout wraps every handler. A slow ClickHouse query
- *     or a stalled external fetch would otherwise hold the turn for
- *     the full latency of the tool. We throw with a known shape so
- *     the agent sees a clear "tool took too long" message and can
- *     decide whether to retry with narrower params or move on. It
- *     bounds the TURN, not the work: the race abandons the handler
- *     rather than cancelling it, so the query behind a timed-out
- *     tool keeps running to completion on the server.
+ * - `defineTool` does not know which agent it is bound to, so `runCtx.context`
+ *   is `unknown`; it is cast to `ChatAgentContext` here.
+ * - The handler input is `any` (validated at runtime by Zod): inferring it from
+ *   the schema generic hits TypeScript's "type instantiation is excessively
+ *   deep" limit. Tools that need typed input annotate it inline or use
+ *   `z.infer`.
+ * - A 30-second timeout wraps every handler so a slow query or stalled fetch
+ *   cannot hold the turn; the agent gets a clear "tool took too long" error.
+ *   It bounds the TURN, not the work: the race abandons the handler, so the
+ *   query behind a timed-out tool keeps running on the server.
  */
 export function chatTool(
   config: {
@@ -82,10 +73,7 @@ export function chatTool(
   }) as AgentToolDefinition;
 }
 
-/**
- * Cap an array result to `max` items and append a truncation marker so the
- * frontend renderer + the LLM both know there's more data.
- */
+/** Cap an array result to `max` items and append a truncation marker so the renderer and the LLM know there is more. */
 export function truncateRows<T>(
   rows: T[],
   max = 500
@@ -97,19 +85,14 @@ export function truncateRows<T>(
 }
 
 /**
- * Compact output from `listEventPropertiesCore` for consumption by the LLM.
+ * Compact `listEventPropertiesCore` output for the LLM. `columns` are top-level
+ * event columns, used bare in filters; `properties` are keys of the JSON
+ * `properties` map, used as `properties.<key>`.
  *
- * `columns` are top-level event columns, used bare in filters/breakdowns.
- * `properties` are custom keys from the JSON `properties` map, used as
- * `properties.<key>`.
- *
- * The raw `properties` rows are ordered alphabetically and capped at 500,
- * which is token-hungry: a property with dynamic sub-paths (`__query.foo`,
- * `__query.<uuid>`, …) can flood the list with hundreds of rows before an
- * unrelated property like `country` appears, and `event_name` repeats on
- * every row even when it's a filter-supplied constant. This collapses
- * dotted keys to their root, dedupes, orders by frequency, and caps the
- * list to the ~50 roots the model needs for filter/breakdown discovery.
+ * The raw rows are alphabetical and capped at 500, so a property with dynamic
+ * sub-paths (`__query.<uuid>`, ...) can flood the list before `country`
+ * appears. This collapses dotted keys to their root, dedupes, orders by
+ * frequency and keeps the ~50 roots the model needs.
  */
 export function compactEventProperties(
   raw: {
@@ -144,11 +127,7 @@ export function compactEventProperties(
   };
 }
 
-/**
- * Known range presets that map to date windows via `getDatesFromRange`.
- * Anything outside this set (including `"custom"`) is treated as "no
- * preset" and we fall through to explicit dates / the 30-day default.
- */
+/** Range presets `getDatesFromRange` understands; anything else (including `"custom"`) falls through to explicit dates or the 30-day default. */
 const PRESET_RANGES: ReadonlySet<IChartRange> = new Set([
   '30min',
   'lastHour',
@@ -165,21 +144,10 @@ const PRESET_RANGES: ReadonlySet<IChartRange> = new Set([
 ]);
 
 /**
- * Resolve a date range from `PageContext.filters`.
- *
- * Precedence:
- *   1. Explicit `startDate` + `endDate` → use as-is (either one alone
- *      falls back to the other via `resolveDateRangeCore`).
- *   2. `range` is a known preset (`"7d"`, `"6m"`, …) → expand via
- *      `getDatesFromRange(range, projectTimezone)` so a preset-only
- *      URL (as set by the dashboard's `useOverviewOptions`) produces
- *      the same window the dashboard is displaying.
- *   3. Nothing → default to the last 30 days (via
- *      `resolveDateRangeCore`).
- *
- * Timezone comes from `chatRunContext` (populated by
- * `assistant.routes.ts` once per request). Outside that context we fall
- * back to UTC — only relevant in tests / direct calls.
+ * Resolve a date range from `PageContext.filters`: explicit start/end dates
+ * first, then a known preset expanded in the project timezone (so a
+ * preset-only URL gives the window the dashboard shows), else the last 30
+ * days. The timezone comes from `chatRunContext`, UTC outside it (tests).
  */
 export function resolveDateRange(filters?: PageContext['filters']): {
   startDate: string;
@@ -199,14 +167,10 @@ export function resolveDateRange(filters?: PageContext['filters']): {
 }
 
 /**
- * Extract `IChartEventFilter[]` from the chat's page context. The
- * context schema keeps filters loose (Zod `record`), but the frontend
- * always ships the real chart-filter shape — so we cast here. Invalid
- * entries (missing `name`) are dropped defensively.
- *
- * Tools use this so the assistant sees the user's active filters ("I
- * see you're filtered to mobile") instead of returning project-wide
- * numbers that contradict the dashboard.
+ * Extract `IChartEventFilter[]` from the page context so the assistant sees the
+ * user's active filters instead of returning project-wide numbers that
+ * contradict the dashboard. The context schema keeps filters loose, so this
+ * casts and drops entries without a `name`.
  */
 export function pageContextFilters(
   pageContext: ChatAgentContext['pageContext']

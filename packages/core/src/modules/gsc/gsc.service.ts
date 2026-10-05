@@ -1,20 +1,9 @@
-// The GSC OAuth token lifecycle, the Search Console API client, ClickHouse
-// read/write, the AI-tool wrapper functions and the
-// gscProjectSync/gscProjectBackfill job bodies.
+// `getGscCannibalization` is `cacheablePerDeps`: `cacheable` keys on the call's
+// arguments, so the caller's deps travel beside the key rather than inside it.
 //
-// Every exported function takes `ServiceDeps` and reaches Postgres as
-// `deps.db` and ClickHouse as `deps.ch`, so the requestId minted at the edge
-// reaches the query. `getGscCannibalization` is `cacheablePerDeps`:
-// `cacheable` keys on the call's ARGUMENTS, so the caller's deps travel
-// beside the key rather than inside it and the Redis key stays
-// byte-identical.
-//
-// `deps.ch` is the round-robin/retry proxy every other core module uses,
-// which also applies the shared INSERT_DEFAULT_SETTINGS
-// (`wait_end_of_query`, insert block size) to the four sync inserts here.
-//
-// ClickHouse queries here still go through raw SQL strings, not the `sql`
-// tag — this module's queries haven't been converted yet.
+// `deps.ch` is the round-robin/retry proxy every core module uses; it also
+// applies INSERT_DEFAULT_SETTINGS (`wait_end_of_query`, insert block size) to
+// the four sync inserts here.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { decrypt, encrypt } from '@openpanel/shared/server';
@@ -710,10 +699,6 @@ export async function getGscQueries(
   return result.json();
 }
 
-// --------------------------------------------------------------------------
-// Connection CRUD.
-// ---------------------------------------------------------------------------
-
 export interface GscConnectionSummary {
   id: string;
   siteUrl: string;
@@ -769,11 +754,6 @@ export async function disconnectGscConnection(
   const db = deps.db;
   await db.gscConnection.deleteMany({ where: { projectId } });
 }
-
-// --------------------------------------------------------------------------
-// Dashboard aggregate queries — date resolution and search/AI-engine
-// breakdown logic.
-// ---------------------------------------------------------------------------
 
 export interface GscDateRangeInput {
   range: string;
@@ -1036,11 +1016,6 @@ export async function getGscPreviousOverview(
   );
 }
 
-// ---------------------------------------------------------------------------
-// AI-tool wrappers — consumed by apps/api's assistant SEO tools and the
-// /insights REST surface.
-// ---------------------------------------------------------------------------
-
 export interface GscQueryOpportunity {
   query: string;
   clicks: number;
@@ -1271,11 +1246,6 @@ export async function gscGetCannibalizationCore(
   );
 }
 
-// --------------------------------------------------------------------------
-// Job bodies. Each fully owns its status-update bookkeeping so the worker
-// file is a bare dispatch.
-// ---------------------------------------------------------------------------
-
 /** The `gscSync` cron fan-out: every project with a connected GSC site. */
 export async function listGscConnectionsForSync(
   deps: ServiceDeps
@@ -1408,11 +1378,6 @@ export async function runGscProjectBackfill(
   }
 }
 
-// --------------------------------------------------------------------------
-// OAuth callback business logic. Cookie reading/signing and the redirect
-// stay with the transport route; this is the transport-agnostic part.
-// ---------------------------------------------------------------------------
-
 export interface GscOAuthCallbackInput {
   code: string;
   state: string;
@@ -1476,10 +1441,6 @@ export async function completeGscOAuthCallback(
 
   return { organizationId: project.organizationId };
 }
-
-// ---------------------------------------------------------------------------
-// `ctx.services.gsc` binding.
-// ---------------------------------------------------------------------------
 
 /** A module function's signature with its leading `ServiceDeps` dropped —
  *  what `createGscService` exposes once it has closed over its own. */

@@ -1,7 +1,5 @@
-// Route-handler coverage for runIpLookup — the smell docs/review/tools.md
-// flagged as "zero test coverage of the two route handlers." getGeoLocation is
-// mocked; everything else (validation, rate limiting, private-range
-// classification) runs for real.
+// getGeoLocation is mocked; validation, rate limiting and private-range
+// classification run for real.
 
 import { beforeAll, describe, expect, it, mock } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';

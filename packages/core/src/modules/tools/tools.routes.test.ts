@@ -1,8 +1,5 @@
-// The `/tools` prefix came from a wrapper that mounted the router under
-// `/tools`, over a router whose own urls were bare. `defineRoutes` has no
-// prefix mechanism, so the port dropped the segment and both routes answered
-// at the root — apps/public's own pages call `${API_URL}/tools/ip-lookup`
-// and were 404ing. Nothing covered the path, which is why it slipped.
+// `defineRoutes` has no prefix mechanism, so each route spells out `/tools/...`;
+// apps/public calls `${API_URL}/tools/ip-lookup`, which 404s if the segment is dropped.
 
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';

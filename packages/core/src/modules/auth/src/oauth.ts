@@ -3,14 +3,11 @@ import { GitHub } from 'arctic';
 import type { CoreConfig } from '../../../config';
 
 export type { OAuth2Tokens } from 'arctic';
-// Re-exported straight from source, not the `Arctic` import above — that one
-// is also used below for `Arctic.Google`, so `export { Arctic }` would trip
-// `noExportedImports` over a binding that genuinely has a second use.
+// Re-exported from source: `Arctic` is also used below, so `export { Arctic }`
+// would trip `noExportedImports`.
 export * as Arctic from 'arctic';
 
-// Built per call, not at import: an arctic client is a credential holder with
-// no socket, so there is nothing to keep alive and nothing to construct at
-// module scope.
+// Built per call: an arctic client only holds credentials.
 export function githubClient(config: CoreConfig): GitHub {
   const { clientId, clientSecret, redirectUri } = config.auth.github;
   return new GitHub(clientId, clientSecret, redirectUri);

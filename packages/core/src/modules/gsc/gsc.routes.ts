@@ -1,11 +1,6 @@
-// The GSC OAuth callback. Delegates its token-exchange/upsert logic to
-// gsc.service.ts's `completeGscOAuthCallback` — the same function this route
-// calls.
-//
-// Per-route cookie signing is not wired yet, so `ctx.cookies.get` here reads
-// the raw, unsigned cookie value; this route only re-checks the state match,
-// and should not be treated as a signature-verified equivalent until that
-// wiring lands.
+// Per-route cookie signing is not wired yet, so `ctx.cookies.get` reads the
+// raw, unsigned cookie value; this route only re-checks the state match and is
+// not a signature-verified equivalent.
 
 import { redirect } from 'elysia';
 import { z } from 'zod';

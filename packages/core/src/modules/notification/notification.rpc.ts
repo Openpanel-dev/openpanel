@@ -6,9 +6,6 @@
 // `list`/`rules` have no access check here either. `deleteRule` and
 // `createOrUpdateRule` re-check access against the *existing* rule's project,
 // not just the input's.
-//
-// The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

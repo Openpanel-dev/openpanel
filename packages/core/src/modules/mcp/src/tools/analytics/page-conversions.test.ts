@@ -12,12 +12,11 @@ import type { McpToolDeps } from '../shared';
 
 const mockGetPageConversionsCore = mock();
 
-// Mocked at the specifier the source imports resolve to — a whole-barrel
-// replacement would drop every other export those modules carry for any
-// other file sharing this process (bun:test only isolates modules per file
-// under `--isolate`; see AGENTS.md). Restored in `afterAll` from a
-// plain-object snapshot taken BEFORE the first `mock.module` call: restoring
-// via the live `await import(...)` binding is a no-op once mocked.
+// Mocked at the specifier the source imports resolve to: a whole-barrel
+// replacement would drop every other export those modules carry for any other
+// file sharing this process. Restored in `afterAll` from a plain-object snapshot
+// taken BEFORE the first `mock.module`, since restoring via the live
+// `await import(...)` binding is a no-op once mocked.
 const actualPagesService = await import('../../../../overview/pages.service');
 const realPagesService = { ...actualPagesService };
 mock.module('../../../../overview/pages.service', () => ({

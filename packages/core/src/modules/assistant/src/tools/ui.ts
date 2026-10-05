@@ -7,25 +7,15 @@ import {
 } from '../../assistant.constants';
 
 /**
- * Client-side UI-mutator tools.
- *
- * Better Agent emits each call as a `tool-call` part with no server
- * execution; the frontend (`useAgent({ toolHandlers })`) handles them
- * by updating the URL params the dashboard's hooks read. Zod schemas
- * are imported from `assistant.constants.ts` so the frontend handler
- * types stay in sync with what the LLM calls.
- *
- * Each is exported as a `(deps) => AgentToolDefinition` for uniformity with
- * every other tool bucket (`./index.ts`'s `ToolFactory`); these three touch
- * nothing, so `_deps` is genuinely unused here.
+ * Client-side UI-mutator tools: Better Agent emits each call as a `tool-call`
+ * part with no server execution, and the frontend handles it by updating the
+ * URL params the dashboard reads. Factories take an unused `_deps` to match the
+ * other tool buckets.
  */
 
-// Cast to `any` before `.client()` for the same reason `chatTool`
-// does in `helpers.ts`: TS otherwise fully instantiates
-// `ClientToolDefinition<TSchema, ...>` for the deeply-nested Zod
-// schema and trips its instantiation depth limit. The runtime is
-// fine; the AgentToolDefinition cast on the way out restores a
-// usable type for downstream code.
+// Cast to `any` before `.client()`: TS otherwise fully instantiates
+// `ClientToolDefinition` for the deeply nested Zod schema and trips its
+// instantiation depth limit.
 // biome-ignore lint/suspicious/noExplicitAny: see comment above
 const applyFiltersContract: any = defineTool({
   name: 'apply_filters',

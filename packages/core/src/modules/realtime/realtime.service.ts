@@ -1,11 +1,5 @@
-// The realtime queries plus the `/live` websocket glue:
-// `getActiveVisitorCount` and the four `subscribeToPublishedEvent` calls,
-// filtered by projectId.
-//
-// `TABLE_NAMES` and the date helpers come from core's own pure copies
-// (shared/ch-tables.ts, shared/ch-dates.ts) rather than @openpanel/db, which
-// is what lets the import stay static: db's clickhouse/client.ts constructs a
-// real client and a pino transport at module load.
+// `TABLE_NAMES` and the date helpers come from core's own copies rather than
+// @openpanel/db, whose clickhouse client constructs a real client at module load.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {
@@ -41,11 +35,8 @@ const EXCLUDED_BADGE_EVENT_NAMES = [
   'session_start',
   'session_end',
 ];
-// clix built these queries with no timezone argument, and `clix(client)`
-// defaults to `'UTC'`, sending it as `clickhouse_settings.session_timezone`
-// on every `execute()`. The seven statements that came off clix keep sending
-// it so their result sets stay identical; the three that were already raw
-// `chQuery` calls sent no `session_timezone` and still send none.
+// Statements that send `session_timezone: 'UTC'` keep sending it so result sets stay
+// consistent; the raw `chQuery` ones send none.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 function since(): Date {
@@ -131,10 +122,8 @@ function adaptiveCluster(
   return points.slice(0, target);
 }
 
-// --- location filters ------------------------------------------------------
-//
-// These are `SqlFragment`s, so the same fragment object composes into every
-// statement and each one numbers its own params at `toStatement()`.
+// `SqlFragment`s compose into every statement; each statement numbers its own
+// params at `toStatement()`.
 
 function coordinateTuples(locations: RealtimeLocation[]): SqlFragment[] {
   return locations
@@ -436,11 +425,7 @@ export function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
     CLIX_SESSION_TIMEZONE
   );
 }
-// --- /live websocket glue -------------------------------------------------
-//
-// Framework-agnostic: resolve to an unsubscribe function each, exactly
-// `subscribeToPublishedEvent`'s own shape. realtime.routes.ts (Elysia/Bun)
-// awaits these directly; nothing here is HTTP- or ws-library-specific.
+// Each resolves to an unsubscribe function; nothing here is HTTP- or ws-library-specific.
 
 export function getActiveVisitorCount(
   deps: ServiceDeps,
@@ -491,13 +476,9 @@ export async function subscribeToProjectNotifications(
 }
 
 /**
- * Scoped to the single organization the caller's membership was verified
- * against, exactly as the three siblings above scope to a verified
- * `projectId`.
- *
- * The channel is instance-wide: without this filter every subscriber saw the
- * `organizationId` of every organization whose subscription changed, which is
- * a cross-tenant identifier leak.
+ * Scoped to the single organization the caller's membership was verified against.
+ * The channel is instance-wide: unscoped, every subscriber saw the `organizationId`
+ * of every organization whose subscription changed (a cross-tenant leak).
  */
 export async function subscribeToOrganizationSubscriptionUpdates(
   organizationId: string,

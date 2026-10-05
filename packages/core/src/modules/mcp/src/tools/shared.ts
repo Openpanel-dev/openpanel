@@ -4,14 +4,7 @@ import { classifyDriverError } from '../../../../shared/driver-errors';
 import { resolveClientProjectId } from '../../../project/project.service';
 import type { McpAuthContext } from '../auth';
 
-/**
- * What every MCP tool handler closes over.
- *
- * `@modelcontextprotocol/sdk`'s tool-handler signature has no context
- * parameter, so the API's connections cannot be threaded through it as an
- * argument. They are captured in a CLOSURE instead, when the per-request server
- * is built from the `deps` the route already holds.
- */
+/** What every MCP tool handler closes over. */
 export interface McpToolDeps {
   /** The API's connections. Postgres and ClickHouse are reached from here. */
   deps: ServiceDeps;
@@ -20,10 +13,8 @@ export interface McpToolDeps {
   /** The authenticated MCP caller. */
   context: McpAuthContext;
   /**
-   * `Prisma.DbNull` — the explicit-SQL-NULL sentinel for a nullable Json
-   * column. A frozen constant, not a client: `ServiceDeps` has no field for
-   * it and `core-uses-ctx-not-db-internals` forbids importing it here, so
-   * `mcp.service.ts` resolves it once and hands it in with the rest.
+   * `Prisma.DbNull`, the explicit-SQL-NULL sentinel for a nullable Json column.
+   * Resolved once by `mcp.service.ts` because tools may not import it.
    */
   dbJsonNull: unknown;
 }
@@ -354,8 +345,8 @@ export async function withErrorHandling<T>(
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
     // The model sees this text, so a driver failure must not hand it Prisma's
-    // invocation dump or a ClickHouse message quoting the generated SQL
-    // (ISSUES.md H12). The full error still goes to the log.
+    // invocation dump or a ClickHouse message quoting the generated SQL. The
+    // full error still goes to the log.
     const failure = classifyDriverError(err);
     const message = failure ? failure.message : raw;
     deps.logger.error({ err }, `MCP tool error: ${raw}`);

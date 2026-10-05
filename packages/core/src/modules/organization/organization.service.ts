@@ -1,10 +1,6 @@
-// Organizations, their projects, the invite/member mutations, and the
-// deletion cron that reaps organizations left without an admin.
-//
 // The two `cacheable` wrappers are `cacheablePerDeps`: `cacheable` keys on the
-// call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps have to
-// travel beside the key rather than inside it, or the Redis key would change
-// per request.
+// call's arguments, so the caller's deps travel beside the key rather than
+// inside it, or the Redis key would change per request.
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
@@ -142,9 +138,8 @@ export async function getInviteById(deps: ServiceDeps, inviteId: string) {
     },
   });
 
-  // Spreading a null result produced `{isExpired: undefined}` — a TRUTHY
-  // object — so the onboarding page rendered its invitation banner for a
-  // bogus id, with the organization name blank.
+  // Spreading a null result gave `{isExpired: undefined}`, a truthy object, so
+  // the onboarding page showed an invitation banner for a bogus id.
   if (!res) {
     throw new TRPCNotFoundError('Invite not found');
   }
@@ -288,10 +283,6 @@ export async function connectUserToOrganization(
   return member;
 }
 
-/**
- * Get the total number of events during the
- * current subscription period for an organization
- */
 export async function getOrganizationBillingEventsCount(
   deps: ServiceDeps,
   organization: IServiceOrganization & { projects: { id: string }[] }
@@ -950,9 +941,8 @@ export async function updateOrganizationMemberAccess(
       },
     }),
     db.projectAccess.createMany({
-      // The level comes from the admin's choice. This used to be hardcoded
-      // to 'read', which was harmless only because nothing enforced the
-      // level (GHSA-f9rx-pxgw-c6rg).
+      // The level the admin chose; a hardcoded 'read' hid that nothing enforced
+      // levels (GHSA-f9rx-pxgw-c6rg).
       data: input.access.map((grant) => ({
         userId: input.targetUserId,
         organizationId: input.organizationId,

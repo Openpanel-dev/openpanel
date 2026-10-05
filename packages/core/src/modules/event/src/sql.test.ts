@@ -1,7 +1,6 @@
 // Shape tests for the event module's fragments: every user value binds as a
-// `{pN:Type}` parameter (nothing is interpolated), and `sql.id` refuses
-// anything off the column whitelists. These run offline, so they assert the
-// rendered statement and its params, never a result set.
+// `{pN:Type}` parameter, and `sql.id` refuses anything off the column whitelists. These
+// run offline.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
@@ -312,8 +311,8 @@ describe('queryEventsQuery', () => {
     expect(query_params).toEqual({ p1: PROJECT_ID, p2: 100 });
   });
 
-  // Callers label these rows newest-first, so the cut has to happen after the
-  // sort rather than wherever the scan starts (#476).
+  // Callers label these rows newest-first, so the cut has to happen after the sort
+  // rather than wherever the scan starts (#476).
   test('takes the newest rows, not an arbitrary slice', () => {
     const { query } = queryEventsQuery({
       projectId: PROJECT_ID,

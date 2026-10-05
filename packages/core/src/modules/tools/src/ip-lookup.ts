@@ -1,6 +1,3 @@
-// Ported verbatim from apps/api/src/controllers/tools.controller.ts's
-// `ipLookup`.
-
 import { getGeoLocation } from '../../../clients/geo';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';

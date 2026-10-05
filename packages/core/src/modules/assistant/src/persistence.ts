@@ -3,34 +3,17 @@ import type { ConversationItem } from '@better-agent/core/providers';
 import type { ServiceDeps } from '../../../services';
 import { chatRunContext } from './run-context';
 
-// `ConversationStore`'s `load`/`save` signatures are @better-agent/core's own
-// interface — betterAgent calls them with no `Ctx`/`ServiceDeps` to thread
-// through, so the store is BUILT from the deps the route already holds and
-// closes over them.
+// Built from the route's deps and closing over them: `ConversationStore`'s
+// load/save signatures leave no room for a `Ctx`.
 
 /**
- * Prisma-backed `ConversationStore` for Better Agent.
+ * Prisma-backed `ConversationStore`: one `ConversationItem` per `ChatMessage`
+ * row, the whole item in `parts`.
  *
- * One Better Agent `ConversationItem` (message, tool call, or tool
- * result) is stored as one `ChatMessage` row. The `parts` JSON column
- * holds the entire item; `role` is a discriminator for analytics.
- *
- * Save semantics: Better Agent hands us the FULL item list every save.
- * In steady state the list is append-only — earlier items don't change,
- * only new ones get added. We exploit that invariant with a cheap
- * row-count comparison, which is O(1) instead of deep-equaling every
- * prior item on every turn.
- *
- * If `items.length >= existingCount`, we insert only the tail. Any
- * other case (shrank, or user-initiated edit/retry) falls back to a
- * full wipe-and-rewrite. The trade-off: if Better Agent ever mutates
- * a prior item in place while keeping the total count the same, we'd
- * miss that change — but Better Agent's ConversationStore contract
- * documents that prior items are immutable, so this is safe.
- *
- * Cursor is the `updatedAt` timestamp. Better Agent uses it for
- * optimistic concurrency — we trust the single-writer-per-conversation
- * invariant and don't check it explicitly.
+ * Better Agent hands over the full item list on every save and prior items are
+ * immutable, so when the list is not shorter than the stored count only the
+ * tail is inserted; otherwise (edit, retry) the rows are rewritten. The cursor
+ * is `updatedAt`; a single writer per conversation is assumed, not checked.
  */
 function roleOf(item: ConversationItem): string {
   if (item.type === 'message') {
@@ -43,10 +26,7 @@ function itemToRow(conversationId: string, item: ConversationItem) {
   return {
     conversationId,
     role: roleOf(item),
-    // Prisma's `IPrismaUIMessageParts` narrows to `unknown[]`, but our
-    // JSON column stores a single `ConversationItem` object. The
-    // runtime is fine — Prisma accepts any JSON-serializable value —
-    // so we cast past the generator.
+    // Prisma types the column as `unknown[]` but it stores one `ConversationItem`.
     // biome-ignore lint/suspicious/noExplicitAny: see comment above
     parts: item as any,
   };
@@ -97,8 +77,6 @@ export function createConversationStore(deps: ServiceDeps): ConversationStore {
         });
 
         if (items.length >= existingCount) {
-          // Append-only fast path: Better Agent guarantees prior items
-          // are immutable, so we can safely insert only the tail.
           const newItems = items.slice(existingCount);
           if (newItems.length > 0) {
             await tx.chatMessage.createMany({
@@ -106,8 +84,6 @@ export function createConversationStore(deps: ServiceDeps): ConversationStore {
             });
           }
         } else {
-          // Incoming list is shorter than what's stored — an edit,
-          // retry, or deletion. Rewrite.
           await tx.chatMessage.deleteMany({ where: { conversationId } });
           if (items.length > 0) {
             await tx.chatMessage.createMany({

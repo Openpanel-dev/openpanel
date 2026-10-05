@@ -1,9 +1,5 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// list/listAll/explain's actual access-check + business logic ride on
-// @openpanel/db (lazy-loaded, see insight.service.ts's header) and are
-// covered at the unit level in insight.service.test.ts; wiring this router
-// end-to-end against a real Postgres is P6's (protectedProcedure) job, not
-// this one's — see insight.rpc.ts's header.
+// Only the "is anyone logged in" boundary is exercised here, with no database;
+// the access checks and business logic are covered in insight.service.test.ts.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -19,7 +15,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

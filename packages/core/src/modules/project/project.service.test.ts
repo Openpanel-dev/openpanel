@@ -1,13 +1,9 @@
-// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
-// needs no module mock at all — `deps.db` IS the fake below, same idiom as
-// reference.service.test.ts. `getProjectEventsCount` / `getLastEventPerProject`
-// (ClickHouse) stay a lazy-loaded, unmocked call — exercised against local
-// ClickHouse manually, not re-tested here.
+// The subject is built over a fake `ServiceDeps`, so `deps.db` IS the fake below and
+// Postgres needs no module mock. The ClickHouse readers (`getProjectEventsCount`,
+// `getLastEventPerProject`) are not covered here.
 //
-// `createProjectForOrganization`/`updateProjectForOrganization` invalidate a
-// project's clients through `client.service.ts`'s module-scope
-// `getClientByIdCached`, which is built from the `cacheable` stub below — so
-// there is no seam left to mock here.
+// Create/update invalidate a project's clients through `client.service.ts`'s
+// module-scope `getClientByIdCached`, built from the `cacheable` stub below.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -145,9 +141,7 @@ const member = {
   ),
 };
 
-// Bypasses the Redis cache-aside entirely — this module's own logic is
-// exercised directly, caching is @openpanel/redis's concern. Same stub as
-// organization.service.test.ts.
+// Bypasses the Redis cache-aside: this module's own logic is exercised directly.
 function cacheableStub(
   fnOrName: ((...args: unknown[]) => unknown) | string,
   fnOrTtl: ((...args: unknown[]) => unknown) | number

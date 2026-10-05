@@ -1,10 +1,5 @@
-// Explicitly defers unifying MCP's tool definitions with assistant's, so
-// `modules/mcp/src/tools/analytics/reports.ts` keeps its own copy of this
-// dispatch — reaching into another module's tool tree is not the fix.
-//
-// The result is a second copy of this dispatch logic, kept as an accepted
-// trade-off: both copies call the same @openpanel/db primitives and must be
-// kept in sync by hand.
+// Intentionally separate from `modules/mcp/src/tools/analytics/reports.ts`: both
+// call the same @openpanel/db primitives and must be kept in sync by hand.
 
 import type { CoreConfig } from '../../../config';
 import type { ServiceDeps } from '../../../services';
@@ -34,13 +29,9 @@ function reportUrl(
 }
 
 /**
- * Execute a saved report by ID. Dispatches on chart type:
- *  - funnel  → getFunnel
- *  - metric  → executeAggregateChart
- *  - others  → executeChart
- *
- * Deliberately returns the raw engine output — the chat renderer needs the
- * full chart, unlike MCP's copy which reshapes it for LLM consumption.
+ * Execute a saved report by ID, dispatching on chart type. Returns the raw
+ * engine output: the chat renderer needs the full chart, unlike MCP's copy,
+ * which reshapes it for an LLM.
  */
 export async function runReport(
   deps: ServiceDeps,
@@ -60,11 +51,7 @@ export async function runReport(
       startDate: string;
       endDate: string;
       dashboard_url: string;
-      /**
-       * The saved config in the same `zReportInput` shape `runReportFromConfig`
-       * returns, so the chat renderer can draw the chart instead of only
-       * reading the numbers off `data`.
-       */
+      /** The saved config as `zReportInput`, so the renderer can draw the chart. */
       report: Omit<NonNullable<IServiceReport>, 'layout'>;
       data: unknown;
     }
@@ -86,10 +73,8 @@ export async function runReport(
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 
-  // `layout` is the dashboard grid position, not part of the chart config —
-  // everything else `transformReport` returns already matches `zReportInput`
-  // (the DB `events` column arrives here as `series`). `id` stays on, so the
-  // renderer can tell an already-saved report from an ad-hoc one.
+  // `layout` is the dashboard grid position, not chart config. `id` stays so the
+  // renderer can tell a saved report from an ad-hoc one.
   const { layout: _layout, ...config } = report;
 
   const meta = {
@@ -118,17 +103,12 @@ export async function runReport(
   return { ...meta, data: await executeChart(deps, chartInput) };
 }
 
-/**
- * Execute an ad-hoc report config (no DB lookup — config is supplied
- * directly). Used by the `generate_report` / `preview_report_with_changes`
- * chat tools.
- */
+/** Execute an ad-hoc report config (no DB lookup). */
 export async function runReportFromConfig(
   deps: ServiceDeps,
   input: {
     organizationId: string;
     projectId: string;
-    /** Full zReportInput shape, with required startDate/endDate */
     config: {
       chartType: string;
       interval: string;

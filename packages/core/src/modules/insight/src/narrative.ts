@@ -1,7 +1,5 @@
 // Weekly-digest narrative: one short OpenAI call that turns a project's
-// week-over-week stats + notable insights into a friendly intro paragraph.
-// Structured output (a single `narrative` string) reuses the same reliable
-// pattern as enrich.ts / filter-command.ts.
+// week-over-week stats and notable insights into an intro paragraph.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';

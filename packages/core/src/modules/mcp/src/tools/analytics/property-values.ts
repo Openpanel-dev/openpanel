@@ -32,11 +32,6 @@ const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
  * push real properties like `country` off the end. Collapsing to the root
  * segment and ranking by how many sub-keys fall under it turns 500 near-useless
  * rows into a few dozen useful ones.
- *
- * The in-app chat agent solves the same problem in
- * `packages/core/src/modules/assistant/src/tools/helpers.ts`; kept as a local
- * copy rather than a shared abstraction since the two consumers may want to
- * diverge.
  */
 function compactPropertyKeys(
   rows: Array<{ property_key: string }>,

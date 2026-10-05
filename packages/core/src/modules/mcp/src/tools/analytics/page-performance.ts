@@ -22,10 +22,9 @@ const MAX_PERFORMANCE_LIMIT = 500;
 const PAGE_SCAN_LIMIT = 1000;
 
 /**
- * Thresholds the tool used to stamp onto every row as a `seo_signals` object of
- * three booleans. They're pure functions of `bounce_rate` and `avg_duration`,
- * both of which are already columns — so we state the rule once instead of
- * re-deriving it 25 times at ~50 tokens a row.
+ * Thresholds for high bounce, low engagement and good landing pages. They are
+ * pure functions of `bounce_rate` and `avg_duration`, so the rule is stated once
+ * instead of re-derived on every row.
  */
 const SEO_THRESHOLDS = {
   high_bounce: 'bounce_rate > 70',

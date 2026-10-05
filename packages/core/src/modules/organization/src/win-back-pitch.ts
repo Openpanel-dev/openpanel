@@ -1,9 +1,6 @@
-// Wind-down win-back pitch: one short OpenAI call that turns a lapsed trial's
-// recent stats into a two-sentence selling argument for the wind-down emails.
-// Same one-shot structured-output pattern as narrative.ts — and like the
-// narrative, the caller must treat a throw as "no pitch", never as a failed
-// email: the wind-down job falls back to a deterministic sentence built from
-// the same facts.
+// One short OpenAI call that turns a lapsed trial's recent stats into a
+// two-sentence pitch. A throw means "no pitch", never a failed email: the job
+// falls back to a deterministic sentence built from the same facts.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
@@ -12,7 +9,7 @@ import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
 
 const WIN_BACK_MODEL_ID = 'gpt-4-1-mini';
 
-// Preferred model and fallback are both OpenAI — see insight/src/enrich.ts.
+// Preferred model and fallback are both OpenAI.
 const WIN_BACK_PROVIDER = 'openai';
 
 function winBackModel(config: CoreConfig) {

@@ -1,5 +1,4 @@
-// Job/cron-fragment wiring — no ClickHouse/Postgres touched. The service
-// methods themselves are exercised in gsc.service.test.ts.
+// Job/cron-fragment wiring only; no ClickHouse/Postgres touched.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -216,9 +215,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
   ]);
 });
 
-// Byte-identity with the id/cadence schedulers.test.ts's golden snapshot
-// pins. The cadence now lives on the job itself, so this reads it straight
-// off the registry.
+// Pins the id/cadence, read straight off the registry.
 test('the gsc cron fragment keeps its scheduler id and cadence', () => {
   expect(queues.cron.jobs.gscSync.cron).toEqual({ pattern: '0 3 * * *' });
 });

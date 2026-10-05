@@ -12,9 +12,8 @@ import { getReportsByDashboardId } from '../../../report/report.service';
 import { getChartStartEndDate } from '../../../report/src/chart-dates';
 import { chatTool, dashboardUrl } from './helpers';
 
-// Cap on parallel report execution. Real dashboards rarely exceed this,
-// but we don't want a runaway 100-report dashboard to blow our 30s tool
-// timeout or hammer ClickHouse with one request.
+// Caps parallel report execution so a huge dashboard cannot blow the 30s tool
+// timeout or hammer ClickHouse.
 const MAX_REPORTS_PER_SUMMARY = 30;
 
 export const summarizeDashboard = (deps: ServiceDeps) =>
@@ -82,10 +81,8 @@ export const summarizeDashboard = (deps: ServiceDeps) =>
       const results = await Promise.all(
         reports.map(async (report) => {
           try {
-            // Apply the dashboard's global range picker to each report.
-            // If both startDate + endDate are set, that wins; otherwise
-            // the preset range is used. Mirrors how ReportItem behaves
-            // when the page-level range/interval flow into a report.
+            // The dashboard's global range applies to each report; explicit
+            // start+end dates win over the preset.
             const useCustom = !!(overrideStart && overrideEnd);
             const merged = {
               ...report,

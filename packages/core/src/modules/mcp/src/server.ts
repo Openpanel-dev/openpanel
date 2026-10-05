@@ -6,12 +6,8 @@ const SERVER_NAME = 'OpenPanel';
 const SERVER_VERSION = '1.0.0';
 
 /**
- * Create a fully configured McpServer for one authenticated request.
- *
- * The API owns every connection (R15, Carl's ruling): the server is
- * bootstrapped from the `deps` `mcp.routes.ts` already holds, and each tool
- * handler CLOSES OVER them — the SDK's tool-handler signature has no context
- * parameter, which is a closure problem, not a context problem.
+ * Create a configured McpServer for one authenticated request. Tool handlers
+ * close over `deps` because the SDK's handler signature has no context parameter.
  */
 export function createMcpServer(tools: McpToolDeps): McpServer {
   const server = new McpServer(

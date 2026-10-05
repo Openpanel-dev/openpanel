@@ -357,8 +357,6 @@ export async function getGroupMemberProfiles(
   return { data, count };
 }
 
-// ---- the trpc group router's bodies
-
 /** `list`: the page plus each group's member count / last activity. */
 export async function getGroupListPage(
   deps: ServiceDeps,
@@ -461,8 +459,6 @@ export async function getGroupMemberProfilesPage(
     meta: { count, pageCount: input.take },
   };
 }
-
-// ---- the assistant/mcp tool entry points
 
 export async function listGroupTypesCore(deps: ServiceDeps, projectId: string) {
   const types = await getGroupTypes(deps, projectId);

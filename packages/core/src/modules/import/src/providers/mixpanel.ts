@@ -119,8 +119,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   }
 
   getTotalEventsCount(): Promise<number> {
-    // Mixpanel sucks and dont provide a good way to extract total event count within a period
-    // jql would work but not accurate and will be deprecated end of 2025
+    // Mixpanel has no accurate total event count for a period; -1 means unknown.
     return Promise.resolve(-1);
   }
 
@@ -143,8 +142,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
     const { serviceAccount, serviceSecret, projectId, from, to } = this.config;
 
-    // Split the date range into daily chunks for reliability
-    // Uses base class utility to avoid timeout issues with large date ranges
     const dateChunks = this.getDateChunks(overrideFrom ?? from, to); // 1 day per chunk (default)
 
     for (const [chunkFrom, chunkTo] of dateChunks) {
@@ -440,7 +437,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       ''
     );
 
-    // Build full URL from current_url and current_url_search (web only)
     const fullUrl = props.$current_url;
     let path = '';
     let origin = '';
@@ -457,21 +453,18 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       path = props[this.config.mapScreenViewProperty] || '';
     }
 
-    // Extract referrer information (web only)
     const referrerUrl = props.$initial_referrer || props.$referrer || '';
     const referrer =
       referrerUrl && !isSameDomain(referrerUrl, fullUrl)
         ? parseReferrer(referrerUrl)
         : null;
 
-    // Check for UTM referrer in query params (web only)
     const utmReferrer = getReferrerWithQuery(query);
 
     const country = props.$country || props.mp_country_code || '';
     const city = props.$city || '';
     const region = props.$region || '';
 
-    // For web events, use the standard user agent parsing
     const userAgent = props.osVersion || '';
     const uaInfo = this.isWebEvent(props.mp_lib)
       ? parseUserAgent(userAgent, props)
@@ -563,8 +556,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       groups: [],
     };
 
-    // TODO: Remove this
-    // This is a hack to get utm tags (not sure if this is just the testing project or all mixpanel projects)
+    // Workaround: UTM tags can arrive as a query string inside `utm_source`.
     if (props.utm_source && !properties.__query?.utm_source) {
       const split = decodeURIComponent(props.utm_source).split('&');
       const query = Object.fromEntries(split.map((item) => item.split('=')));

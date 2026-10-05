@@ -1,25 +1,12 @@
-// `app.handle` cannot exercise a websocket upgrade (no real HTTP connection to
-// upgrade), so this boots the actual Elysia app with `.listen` (== `Bun.serve`
-// under the hood, same as main.ts) on an ephemeral port and drives it with a
-// real `WebSocket` client — the same shape `apps/api/e2e/boot-proof.sh` uses
-// for the plain-HTTP ops surface, extended to a ws handshake.
+// `app.handle` cannot do a websocket upgrade, so this boots the Elysia app with
+// `.listen` on an ephemeral port and drives it with a real `WebSocket` client.
 //
-// The harness buffers messages/close events from the moment the socket is
-// constructed: the server can send its "No active session" / "No access" frame
-// and close the connection before the test ever gets to `await` a listener, and
-// a listener attached after the fact misses an event that already fired.
+// The harness buffers messages/close events from construction: the server can send
+// its reject frame and close before the test awaits a listener.
 //
-// `./realtime.service` and `../../shared/access-lookups` (the real lookups
-// auth.service.ts's `createAuthService` binds `ctx.services.auth` to) are
-// mocked (not a real Postgres/ClickHouse/Redis), and `../../http/session` is
-// mocked for the same reason http/auth.test.ts mocks it: `resolveSession` is
-// still a stub.
-//
-// Every import here is STATIC. Bun 1.4.0's `mock.module` swaps an
-// already-loaded module's exports in place, so a subject imported above the
-// `mock.module` calls still sees them; the "not called" and "called with"
-// assertions on every mock below are what would go red if that ever stopped
-// holding.
+// Subjects are imported statically: Bun's `mock.module` swaps an already-loaded
+// module's exports in place, and the "not called" / "called with" assertions would go
+// red if that stopped holding.
 
 import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { getSuperJson } from '@openpanel/shared';
@@ -56,13 +43,9 @@ const subscribeToOrganizationSubscriptionUpdates = mock(
 let activeVisitorCount = 0;
 const getActiveVisitorCount = mock(async () => activeVisitorCount);
 
-// Spread the real module rather than hand-listing every export:
-// `mock.module` replaces this specifier process-wide (bun shares one module
-// registry across files without `--isolate` — see AGENTS.md), and
-// realtime.service.test.ts imports `./realtime.service` expecting the real
-// implementation. A plain snapshot, not the live import binding — see
-// gsc.service.test.ts's clickhouse/client mock for why the live binding would
-// make a same-binding "restore" a no-op.
+// Spread the real module rather than hand-listing exports: `mock.module` replaces
+// the specifier process-wide, and realtime.service.test.ts expects the real
+// implementation. A snapshot, not the live binding, so a same-binding restore is not a no-op.
 const realService = { ...actualService };
 mock.module('./realtime.service', () => ({
   ...realService,
@@ -77,10 +60,8 @@ afterAll(() => {
   mock.module('./realtime.service', () => realService);
 });
 
-// `ctx.services.auth` binds these same lookups in auth.service.ts, so
-// mocking them here is what makes
-// `ws.data.ctx.services.auth.getProjectAccess`/`getOrganizationAccess`
-// observable from the test.
+// `ctx.services.auth` binds these lookups, so mocking them makes
+// `getProjectAccess`/`getOrganizationAccess` observable from the test.
 let projectAccess: { level: string } | null = null;
 let organizationAccess: { role: string } | null = null;
 const getProjectAccess = mock(async () => projectAccess);
@@ -145,11 +126,7 @@ interface WsHarness {
   nextClose(): Promise<CloseInfo>;
 }
 
-/**
- * Buffers messages/close events from construction, not from whenever the
- * test happens to `await` for one — the server can send its reject frame
- * and close the socket before the test's next line runs.
- */
+/** Buffers from construction: the server can reject and close before the test's next line runs. */
 function connect(path: string): Promise<WsHarness> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}${path}`);
@@ -307,12 +284,9 @@ test('wsOrganizationEvents: session but no org access -> "No access" then close'
   });
 });
 
-// `organization:subscription_updated` is an instance-wide channel. Before
-// this fix the open handler subscribed to it unscoped, so a member of org_1
-// was sent the `organizationId` of every OTHER organization whose
-// subscription changed. The scope handed to the subscription must be the id
-// `getOrganizationAccess` just proved this caller is a member of — the filter
-// itself is asserted in realtime.service.test.ts.
+// `organization:subscription_updated` is instance-wide: the subscription must be scoped
+// to the organization `getOrganizationAccess` proved the caller belongs to, or members
+// receive other organizations' ids (the filter itself is asserted in realtime.service.test.ts).
 test('wsOrganizationEvents: subscribes scoped to the organization the caller is a member of', async () => {
   session = { userId: 'user_1' };
   organizationAccess = { role: 'org:member' };

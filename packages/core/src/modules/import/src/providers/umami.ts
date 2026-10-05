@@ -8,11 +8,9 @@ import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
-// Core's own date helper, not @openpanel/db's — importing
-// `@openpanel/db/src/clickhouse/client` constructs a ClickHouse client and a
-// pino-pretty transport at import time (fatal under bun:test's `--isolate`
-// worker threads) and is a value import of `@openpanel/db` from core. See
-// shared/ch-dates.ts's header.
+// Core's own date helper: importing @openpanel/db's clickhouse client constructs
+// a ClickHouse client and pino-pretty transport at import time (fatal under
+// bun:test's `--isolate` worker threads).
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,
@@ -23,11 +21,7 @@ import type { IClickhouseEvent } from '../../../event/event.service';
 import type { IUmamiImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
 
-/**
- * Bounds for a remote Umami export. `parseRemoteFile` has always accepted these
- * but `parseSource` never passed them, so every guard inside it was dead code
- * and the download was unbounded.
- */
+/** Bounds for a remote Umami export. */
 const MAX_IMPORT_BYTES = 2_000_000_000; // 2 GB
 const MAX_IMPORT_ROWS = 50_000_000;
 /** Bounds the connection and redirect walk only, not the download itself. */

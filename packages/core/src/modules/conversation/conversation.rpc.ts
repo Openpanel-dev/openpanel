@@ -1,13 +1,7 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. `enforceAccess` reads the raw, pre-zod input and only a
-// TOP-LEVEL `projectId` — `list` and `rename` both take one, so their project
-// access is already enforced before the handler runs. `get` and `delete` take
-// only `id`, invisible to `enforceAccess`, so their ownership check stays in
-// the handler. `get` denies with NOT_FOUND rather than FORBIDDEN — a
-// deliberate choice, not an oversight.
-//
-// The per-project access ladder itself is bound once, in auth.service.ts;
-// every procedure here reaches it through `ctx.services.auth`.
+// `protectedProcedure` runs `enforceAccess` BEFORE the input parser, and it only reads a
+// TOP-LEVEL `projectId`. `list` and `rename` take one, so their project access is already
+// enforced; `get` and `delete` take only `id`, so their ownership check stays in the
+// handler. `get` denies with NOT_FOUND rather than FORBIDDEN on purpose.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
@@ -23,12 +17,8 @@ const LIST_LIMIT_MIN = 1;
 const LIST_LIMIT_MAX = 200;
 
 /**
- * Conversation management — listing, fetching, renaming, deleting.
- * Conversation creation is implicit (lazy) on the first message via the
- * /ai/agents/* route, so there's no `create` here.
- *
- * All procedures enforce ownership via `userId === session.userId` so a
- * user can never read or mutate another user's conversations.
+ * Listing, fetching, renaming, deleting. Creation is implicit on the first message via
+ * the /ai/agents/* route. Every procedure enforces `userId === session.userId`.
  */
 export const conversationRouter = createTRPCRouter({
   list: protectedProcedure

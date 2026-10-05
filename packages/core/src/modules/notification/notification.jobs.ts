@@ -1,8 +1,5 @@
-// `sendNotification` is this module's own queue (`notification` in the
-// registry). legacyCompat.notification already discriminates on this exact
-// job name (jobs/compat.ts), so this pins the two in agreement. No cron
-// fragment — notifications are always triggered by a rule match, never
-// scheduled.
+// legacyCompat.notification discriminates on this exact job name (jobs/compat.ts).
+// No cron fragment: notifications are only triggered by a rule match.
 
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { z } from 'zod';

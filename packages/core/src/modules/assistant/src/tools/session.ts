@@ -125,7 +125,6 @@ export const getSimilarSessions = (deps: ServiceDeps) =>
         device: session.device ?? undefined,
         limit: (limit ?? 10) + 1,
       });
-      // Drop the session itself
       const filtered = similar.filter((s) => s.id !== id).slice(0, limit ?? 10);
 
       return {
@@ -162,7 +161,6 @@ export const compareSessionToTypical = (deps: ServiceDeps) =>
       const id = sessionId || context.pageContext?.ids?.sessionId || '';
       const session = await getSessionById(deps, id, context.projectId);
 
-      // Sample recent sessions to compute project averages.
       const sample = await querySessionsCore(deps, {
         projectId: context.projectId,
         limit: 100,

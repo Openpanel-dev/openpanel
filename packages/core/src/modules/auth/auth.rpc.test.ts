@@ -1,8 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// The sign-up/sign-in/reset-password/share bodies ride on @openpanel/db
-// (lazy-loaded through ./auth.service); wiring this router end-to-end
-// against a real Postgres is P6's (protectedProcedure) job, not this one's —
-// see auth.rpc.ts's header.
+// Only the "is anyone logged in" boundary is exercised here, with no database.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -19,8 +15,7 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (./src/login-session.ts) — `TrpcContext.session` is
-// never literally `null`, only its `userId` is.
+// `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
 async function anonCaller() {

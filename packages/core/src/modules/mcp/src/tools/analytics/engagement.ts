@@ -34,7 +34,6 @@ export function registerEngagementTools(
         const projectId = await resolveProjectId(deps, context, inputProjectId);
         const raw = await getRetentionLastSeenSeries(deps, { projectId });
 
-        // Bucket into meaningful segments for easier reading
         let active_0_7 = 0;
         let active_8_14 = 0;
         let active_15_30 = 0;

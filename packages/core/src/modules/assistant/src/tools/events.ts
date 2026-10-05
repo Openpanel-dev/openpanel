@@ -37,7 +37,6 @@ export const analyzeEventDistribution = (deps: ServiceDeps) =>
         limit: DISTRIBUTION_SAMPLE_LIMIT,
       });
 
-      // Tally frequency by event name
       const frequency = new Map<string, number>();
       const byCountry = new Map<string, number>();
       const byDevice = new Map<string, number>();
@@ -90,7 +89,6 @@ export const correlateEvents = (deps: ServiceDeps) =>
         limit: CORRELATION_SAMPLE_LIMIT,
       });
 
-      // Group events by sessionId, then count co-occurring event-name pairs
       const bySession = new Map<string, Set<string>>();
       for (const e of events) {
         if (!e.session_id) {

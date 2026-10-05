@@ -56,8 +56,8 @@ describe('processImage', () => {
   });
 
   it('rasterizes small images rather than passing the bytes through', async () => {
-    // A sub-5KB body used to be returned verbatim with the upstream content
-    // type, which let an attacker serve arbitrary content from the API origin.
+    // A sub-5KB body must not be returned verbatim with the upstream content type, or an
+    // attacker could serve arbitrary content from the API origin.
     const png = await makePng();
     expect(png.length).toBeLessThan(5000);
 

@@ -1,14 +1,5 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// Rate limits are mounted below through `createRateLimitMiddleware`
-// (rpc/base.ts), procedure for procedure. Blocks are keyed per procedure and
-// per trusted IP, and escalate on repeat offence — see rpc/rate-limit.ts.
-//
-// This module has no queue/cron of its own, so there is no `ctx.services.auth`
-// entry here — same shape as `user`/`project`.
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check in the handler.
 
 import { z } from 'zod';
 import {
@@ -50,9 +41,8 @@ const rateLimit = createRateLimitMiddleware(enforceRateLimit);
 
 export const authRouter = createTRPCRouter({
   /**
-   * Which optional OAuth-backed features this instance has credentials for.
-   * The dashboard hides the social login buttons and the Search Console
-   * settings on a self-hosted instance that has not configured them.
+   * Which optional OAuth features this instance has credentials for, so the
+   * dashboard can hide the social login and Search Console settings.
    * Booleans only: the client id/secret never leave the API.
    */
   providers: publicProcedure.query(({ ctx }) =>

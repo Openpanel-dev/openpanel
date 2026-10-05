@@ -1,5 +1,4 @@
-// Job/cron-fragment wiring — no ClickHouse/Postgres touched. The service
-// method itself is exercised in organization.service.test.ts.
+// Job/cron-fragment wiring only; no ClickHouse/Postgres touched.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -109,9 +108,7 @@ test('delete delegates to runDeleteCron', async () => {
   expect(called).toBe(true);
 });
 
-// Byte-identity with schedulers.test.ts's golden snapshot pins. The cadences
-// now live on the jobs themselves, so this reads them straight off the
-// registry.
+// Pins the cadences, read straight off the registry.
 test('the organization cron fragment keeps its scheduler id and cadence', () => {
   expect(queues.cron.jobs.delete.cron).toEqual({ pattern: '0 * * * *' });
   expect(queues.cron.jobs.windDown.cron).toEqual({ pattern: '0 * * * *' });

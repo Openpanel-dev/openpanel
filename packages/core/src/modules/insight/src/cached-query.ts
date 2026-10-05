@@ -22,10 +22,9 @@ export type StatementRunner = <T extends object>(
 ) => Promise<T[]>;
 
 /**
- * @param deps the scope's ClickHouse client + logger (so the requestId reaches
- * the query — ADR-018). @param cache per module+window result cache; omit to
- * disable memoisation. @param timezone `session_timezone` for every statement
- * run through it.
+ * @param deps the scope's ClickHouse client + logger, so the requestId reaches
+ * the query. @param cache per module+window result cache; omit to disable
+ * memoisation. @param timezone `session_timezone` for every statement run.
  */
 export function createStatementCache(
   deps: ChScope,

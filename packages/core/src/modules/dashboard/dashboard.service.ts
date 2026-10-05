@@ -1,7 +1,3 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; this
-// module value-imports neither `@openpanel/db` nor its own package barrel —
-// the Prisma row types below are `import type`, erased at runtime.
-
 import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';

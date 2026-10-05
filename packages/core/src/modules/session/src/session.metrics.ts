@@ -1,7 +1,5 @@
-// The session lifecycle collectors, on core's one registry. The ingest-side
-// `sessions_started_total` lives with the ingest path
-// (modules/ingest/src/ingest.metrics.ts); the three at-scrape gauges are
-// registered by `registerSessionScrapeMetrics` at the bottom of this file.
+// The ingest-side `sessions_started_total` lives in modules/ingest/src/ingest.metrics.ts;
+// the three at-scrape gauges are registered by `registerSessionScrapeMetrics` below.
 
 import client from 'prom-client';
 import { registry } from '../../../metrics';
@@ -93,14 +91,11 @@ export const sessionsVacuumed = new client.Counter({
 });
 
 /**
- * The three scrape-time session gauges.
+ * The three scrape-time session gauges. Registered only where the role consumes
+ * queues: each scrape costs one `ZCARD` and one `GET` per project, and ten api
+ * replicas would multiply that Redis load for no new information.
  *
- * Registered by main.ts and ONLY where the role consumes queues: each scrape
- * costs one `ZCARD` and one `GET` per project, and ten api replicas exposing
- * them would multiply that Redis load for no new information.
- *
- * The client is injected rather than imported so core does not open a Redis
- * connection at import time — `main.ts` hands in `getRedisCache`.
+ * The client is injected so core does not open a Redis connection at import time.
  */
 export function registerSessionScrapeMetrics(
   getRedis: () => SessionMetricsRedis,

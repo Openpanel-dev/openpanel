@@ -1,8 +1,3 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`.
-// Nothing here value-imports `@openpanel/db` or this package's own barrel (the
-// Prisma row type below is `import type`, erased at runtime), so there is no
-// import-time client — and no pino-pretty worker per test file — to defer.
-
 import type { Reference } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';

@@ -1,13 +1,10 @@
-// The cache-key contract of the wrapper that replaced `cached-clix.ts`.
+// The cache key must cover the bound params as well as the rendered text: the
+// `sql` tag names placeholders `{p1}, {p2}, …` from a per-render counter, so two
+// statements differing only in their values render to the SAME text. The second
+// test is the regression a text-only key would fail.
 //
-// The clix wrapper keyed on `sha256(toSQL() + '|' + timezone)`, which was only
-// sound because clix inlined every value into the text it hashed. The `sql`
-// tag names its placeholders `{p1}, {p2}, …` from a per-render counter, so two
-// statements that differ only in their bound values render to the SAME text —
-// the second test below is the regression that a text-only key would fail.
-//
-// No module mock: `chQuery` is a thin wrapper over `deps.ch.query`, so a fake
-// client counts the round trips and shows what was actually sent.
+// No module mock: `chQuery` wraps `deps.ch.query`, so a fake client counts the
+// round trips and shows what was sent.
 
 import { expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';

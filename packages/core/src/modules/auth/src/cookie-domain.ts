@@ -40,7 +40,6 @@ export const parseCookieDomain = (config: CoreConfig, url: string) => {
   const domain = new URL(url);
   const hostname = domain.hostname;
 
-  // For localhost or IP addresses, don't set domain
   if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
     return {
       domain: undefined,
@@ -50,12 +49,9 @@ export const parseCookieDomain = (config: CoreConfig, url: string) => {
 
   const parts = hostname.split('.');
 
-  // Handle multi-part TLDs like co.uk, com.au, etc.
   if (parts.length >= 3) {
     const potentialTLD = parts.slice(-2).join('.');
     if (isMultiPartTLD(config, potentialTLD)) {
-      // For domains like example.co.uk or subdomain.example.co.uk
-      // Use the last 3 parts: .example.co.uk
       return {
         domain: `.${parts.slice(-3).join('.')}`,
         secure: domain.protocol === 'https:',
@@ -63,7 +59,6 @@ export const parseCookieDomain = (config: CoreConfig, url: string) => {
     }
   }
 
-  // For regular subdomains, use the last 2 parts
   if (parts.length > 2) {
     return {
       domain: `.${parts.slice(-2).join('.')}`,
@@ -71,7 +66,6 @@ export const parseCookieDomain = (config: CoreConfig, url: string) => {
     };
   }
 
-  // For root domains, use the full domain with leading dot
   return {
     domain: `.${hostname}`,
     secure: domain.protocol === 'https:',

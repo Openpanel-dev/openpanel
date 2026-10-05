@@ -1,9 +1,3 @@
-// `zProjectAccessGrant` is a per-project grant but every consumer is
-// organization-shaped (organization.rpc.ts's invite/access mutations), so it
-// lives here and `zInviteUser` embeds it without a cross-file constants import.
-// @openpanel/db's `code-migrations/constants.ts` keeps its own frozen copy of
-// the schema — it is not a consumer.
-
 import { z } from 'zod';
 import { MAX_EMAIL, MAX_ID, MAX_NAME } from '../../shared/limits.constants';
 
@@ -50,7 +44,7 @@ export function canonicalTimezone(value: string): string {
     .timeZone;
 }
 
-// An unknown zone stored on the organization used to turn every date-driven
+// An unknown zone stored on the organization would turn every date-driven
 // query in it into `Invalid Date` 500s, so the zone is checked at the door.
 export const zTimezone = z
   .string()

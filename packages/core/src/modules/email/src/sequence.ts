@@ -1,9 +1,3 @@
-// It sends email, so it sits in the module that owns email, not in the layer
-// below every transport. Its two callers — the onboarding drip
-// (modules/onboarding) and the wind-down track
-// (modules/organization/src/wind-down.ts) — reach it sideways, module to
-// module.
-//
 // A day-gated email sequence runner. Each subject carries a pointer (the last
 // step whose email was sent) and an anchor date. On every tick the runner
 // resolves the next step, checks the day gate and the step's own guard, sends,

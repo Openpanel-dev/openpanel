@@ -1,7 +1,3 @@
-// `insightsProject` is this module's own queue (`insights` in the registry).
-// `insightsDaily` / `insightCleanup` / `weeklyDigest` are cron fragments,
-// spread into the ONE `cron` queue by jobs.registry.ts.
-
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 

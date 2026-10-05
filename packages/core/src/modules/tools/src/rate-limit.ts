@@ -1,5 +1,4 @@
-// Shared in-memory rate limiter for the two public tools endpoints. Ported
-// verbatim from apps/api/src/controllers/tools.controller.ts: one process-local
+// Shared in-memory rate limiter for the two public tools endpoints: one process-local
 // map, keyed per endpoint by the caller.
 
 // Both endpoints are public and unauthenticated, so a key (one per distinct

@@ -14,8 +14,7 @@ import {
 const SHARE_ID_LENGTH = 6;
 const uid = new ShortUniqueId({ length: SHARE_ID_LENGTH });
 
-/** `HttpCtx.cookies`'s shape, named locally so this file has no import from
- *  the rpc/http layer that calls it — same as auth.service.ts's CookieReader. */
+/** `HttpCtx.cookies`'s shape, named locally so this file does not import the rpc/http layer. */
 interface CookieReader {
   get(name: string): string | undefined;
 }
@@ -68,10 +67,7 @@ export async function getShareReportByReportId(
   return db.shareReport.findUnique({ where: { reportId } });
 }
 
-/**
- * @deprecated Zero call sites (ADR-015 register entry #14, graded DEAD). Ported
- * as-is — removal is a separate P6/P7 task, not this one's.
- */
+/** @deprecated Zero call sites. */
 export async function validateReportAccess(
   deps: ServiceDeps,
   reportId: string,
@@ -482,8 +478,7 @@ export async function getShareDashboardSettings(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
-/** The caller must already have write access to `input.projectId` — the RPC
- *  layer's job (each transport still owns its own access-check plumbing). */
+/** The caller must already have write access to `input.projectId`. */
 export interface CreateShareDashboardInput {
   organizationId: string;
   projectId: string;
@@ -605,8 +600,7 @@ export async function getShareReportSettings(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
-/** The caller must already have write access to `input.projectId` — the RPC
- *  layer's job (each transport still owns its own access-check plumbing). */
+/** The caller must already have write access to `input.projectId`. */
 export interface CreateShareReportInput {
   organizationId: string;
   projectId: string;
@@ -643,8 +637,6 @@ export async function createShareReport(
 
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
-
-// --- service ------------------------------------------------------------
 
 /** What the RPC layer passes to the two share validators. */
 export interface ShareAccessContext {

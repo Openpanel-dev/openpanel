@@ -1,9 +1,5 @@
-// `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
-// here and spread into jobs.registry.ts, same shape as organization.jobs.ts's
-// `delete`. Its `cron` is explicitly `null` (on-demand, not "always
-// scheduled") — `PING_SCHEDULE` in jobs/schedulers.ts adds it separately,
-// conditionally on `SELF_HOSTED && production`, because it is the one
-// scheduler that isn't always-on.
+// `cron` is explicitly `null` (on-demand): `PING_SCHEDULE` in jobs/schedulers.ts adds
+// it separately, only on `SELF_HOSTED && production`.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

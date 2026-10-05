@@ -1,7 +1,6 @@
-// Both buffers are this module's domain: the profile buffer (Redis → ClickHouse
-// `profiles`) and the profile-backfill buffer, which patches a session's
-// `profile_id` once a device is identified after the session row was already
-// written.
+// Both buffers are this module's domain: the profile buffer (Redis -> ClickHouse
+// `profiles`) and the profile-backfill buffer, which patches a session's `profile_id`
+// once a device is identified after the session row was written.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

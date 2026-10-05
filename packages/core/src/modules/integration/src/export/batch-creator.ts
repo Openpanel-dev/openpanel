@@ -129,7 +129,6 @@ export async function createBatch(
 
   const { minEventTime, maxEventTime } = eventTimeRange(events);
 
-  // Determine partition based on min event time
   const partitionDate = new Date(minEventTime);
   const dt = partitionDate.toISOString().split('T')[0]!;
   const hour = partitionDate.getUTCHours().toString().padStart(2, '0');

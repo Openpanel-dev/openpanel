@@ -1,31 +1,20 @@
-// The two stats lookups and the AI call arrive as injected deps
-// (`WinBackHighlightDeps`) instead of static imports, the same idiom the
-// session lifecycle uses (modules/session/src/runtime.ts):
-// `organization.jobs.ts` binds them off the job's ctx, and tests hand in
-// stubs, so no `mock.module` is needed anywhere.
+// Deps are injected rather than imported so tests need no `mock.module`.
 
 import { format, subDays } from 'date-fns';
 import type { Logger } from '../../../logger';
 
 /**
  * The personalized paragraph in the wind-down emails: a couple of concrete
- * facts from the org's own recent data ("your busiest day was...", "your
- * most-viewed page is...") turned into prose by a small AI call.
+ * facts from the org's own recent data turned into prose by a small AI call.
+ * Recipients stopped opening the dashboard long ago, so a specific fact only
+ * the product could tell them is the reminder that it does something.
  *
- * The reasoning: the people this sequence targets stopped opening their
- * dashboard long ago, so deadlines alone read as noise. A specific fact they
- * didn't know — one only the product could tell them — is the reminder that
- * the thing they're about to lose actually *does* something.
- *
- * Three deliberate properties:
- * - Gated on volume. Below HIGHLIGHT_MIN_RECENT_EVENTS the "facts" are
- *   trivia ("your busiest day had 3 visitors") and would undercut the email,
- *   so low-volume orgs simply get no highlight paragraph.
- * - Never fails the email. AI throwing, or the stats queries throwing, falls
- *   back to a deterministic sentence or to nothing at all.
- * - Facts come from the org's most recently active project only. One project
- *   keeps the queries bounded and the copy concrete ("on acme-web") instead
- *   of a mush of totals across projects.
+ * - Gated on volume: below HIGHLIGHT_MIN_RECENT_EVENTS the facts are trivia
+ *   that would undercut the email, so low-volume orgs get no paragraph.
+ * - Never fails the email: an AI or stats-query error falls back to a
+ *   deterministic sentence or to nothing.
+ * - Facts come from the most recently active project only, which keeps the
+ *   queries bounded and the copy concrete.
  */
 
 export const HIGHLIGHT_MIN_RECENT_EVENTS = 1000;

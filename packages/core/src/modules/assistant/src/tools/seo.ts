@@ -16,11 +16,9 @@ import { chatTool, resolveDateRange, truncateRows } from './helpers';
 const DATE_ONLY_LENGTH = 10;
 
 /**
- * The GSC tables store `date` as a ClickHouse `Date` and Google's
- * searchAnalytics API takes `YYYY-MM-DD`, so the datetime bounds
- * `resolveDateRange` returns — right for the event and session tables — are
- * refused here with "Cannot convert string ... to type Date"
- * (main a0e122e8).
+ * The GSC tables store `date` as a ClickHouse `Date`, so the datetime bounds
+ * `resolveDateRange` returns for the event and session tables are refused here
+ * ("Cannot convert string ... to type Date").
  */
 function toGscRange(range: { startDate: string; endDate: string }) {
   return {
@@ -244,9 +242,8 @@ export const correlateSeoWithTraffic = (deps: ServiceDeps) =>
         }),
       ]);
 
-      // The OP `getTopPagesCore` and GSC `gscGetTopPagesCore` return
-      // different row shapes — the fields we actually read are captured
-      // in these local types, keeping the lookup map typed.
+      // The two functions return different row shapes; these types cover the
+      // fields read.
       type OpPage = {
         name?: string;
         path?: string;

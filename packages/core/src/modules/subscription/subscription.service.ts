@@ -1,11 +1,3 @@
-// `requireOrganizationAdmin` travels with the business logic here rather than
-// living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
-// do: every mutating procedure in this module gates on it first, before
-// touching Polar.
-//
-// `Prisma.DbNull` (the JSON-column null sentinel) arrives as `deps.prisma`
-// rather than an import, keeping this module's only dependency `ServiceDeps`.
-
 import {
   applySubscriptionDiscount,
   cancelSubscription as cancelPolarSubscription,
@@ -44,7 +36,6 @@ const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const DEFAULT_USAGE_WINDOW_DAYS = 30;
 
-// Every mutating export below gates on this before touching Polar.
 async function requireOrgAdmin(
   userId: string,
   organizationId: string
@@ -356,11 +347,8 @@ export async function portal(
   return { url: created.customerPortalUrl };
 }
 
-// - Polar webhook --------------------------------------------------------
-// This module's own `/webhook/polar` route (subscription.routes.ts) is the
-// only caller. `validatePolarEvent` verifies the signature over the RAW body
-// bytes; any body parsing before this call breaks that verification, which is
-// why the route reads `await request.text()` rather than a parsed JSON body.
+// `validatePolarEvent` verifies the signature over the RAW body bytes, so the route
+// must read `request.text()`, not parsed JSON.
 
 type PolarEvent = ReturnType<typeof validatePolarEvent>;
 type PolarSubscriptionData = Extract<

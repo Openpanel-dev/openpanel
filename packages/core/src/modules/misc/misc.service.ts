@@ -1,16 +1,3 @@
-// `GET/POST /misc/og/clear` and `/misc/favicon/clear` are deliberately absent:
-// nothing proxies them.
-//
-// The ClickHouse CLIENT is `deps.ch` — reads through ch-query.ts, the one
-// write through `deps.ch.insert`. These three statements are raw strings, not
-// `sql` fragments, so they still need `TABLE_NAMES` / `formatClickhouseDate`,
-// and core owns its own parity-tested copies of both (shared/ch-tables.ts,
-// shared/ch-dates.ts, guarded by their `.parity.test.ts` siblings).
-//
-// `getCache` is a plain static import. It was lazy to survive core tests that
-// partially mock `@openpanel/redis` without a `getCache` export; those mocks
-// snapshot the real module and spread it now, so the loader bought nothing.
-
 import crypto from 'node:crypto';
 import { getCache, getRedisCache } from '@openpanel/redis';
 import {
@@ -88,8 +75,7 @@ function validateUrl(raw?: string): URL | null {
   }
 }
 
-// Reaches the redis singleton directly rather than through `deps`/`ctx`:
-// nothing calling these two functions today holds a `deps`/`ctx` to thread.
+// Reaches the redis singleton directly: callers of these two functions hold no `deps`/`ctx`.
 async function getFromCacheBinary(
   key: string
 ): Promise<{ buffer: Buffer; contentType: string } | null> {

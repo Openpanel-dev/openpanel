@@ -1,7 +1,4 @@
-// SERVER-ONLY. This module instantiates `@better-agent/providers` clients
-// from the credentials the config loader parsed. Never value-import it from
-// the browser (apps/start) — import the model catalog/types from
-// `@openpanel/core/modules/assistant/assistant.constants` instead.
+// Server-only: browser code imports the model catalog from `assistant.constants`.
 import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
 import type { CoreConfig } from '../../../config';
@@ -10,17 +7,9 @@ import type { ChatModelEntry } from '../assistant.constants';
 export type { ChatModelEntry } from '../assistant.constants';
 export { CHAT_MODELS as ALLOWED_MODELS } from '../assistant.constants';
 
-// A provider client is memoized per `CoreConfig`, not per process: what a
-// thing owns dies with its owner, and nothing outlives the thing that opened
-// it. `loadConfig` runs once per boot, so a running API still builds each
-// client exactly once; a second config in the same process — a test, a
-// second boot — gets a client carrying ITS credentials rather than the first
-// config's, and both are collected with the config that produced them.
-//
-// There is nothing here to close: `createOpenAI`/`createAnthropic` return a
-// closure over a base URL and a header set that calls the global `fetch`.
-// They hold no socket, so there is no connection to close — only a lifetime,
-// which is what the WeakMap key fixes.
+// Memoized per `CoreConfig`, so a second config in one process (a test, a
+// reboot) gets clients with its own credentials. Nothing to close: the clients
+// are closures over `fetch` and hold no socket.
 const openaiClients = new WeakMap<
   CoreConfig,
   ReturnType<typeof createOpenAI>

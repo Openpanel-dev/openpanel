@@ -1,6 +1,3 @@
-// Every exported function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`, so the requestId minted at the edge reaches the query.
-
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { stripTrailingSlash } from '@openpanel/shared';
@@ -35,11 +32,8 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
-  // Sequential, not Promise.all: the early return below skips the
-  // projectAccess query entirely for any user with a membership, which a
-  // parallel fetch would give up. Changing this trades a real
-  // memberships-found saving for the all-false path's latency — a behavior
-  // change, out of scope here.
+  // Sequential, not Promise.all: the early return below skips the projectAccess query
+  // for any user with a membership, which a parallel fetch would give up.
   const db = deps.db;
   const members = await db.member.findMany({ where: { userId } });
   if (members.length > 0) {
@@ -168,7 +162,6 @@ export async function createOnboardingProject(
   return { ...client, secret };
 }
 
-// -----------------------------------------------------------------------
 // The onboarding email drip cron. The `organization.onboarding` column
 // stores the last sent step, and step names are equal to template names for
 // historical reasons: in-flight orgs already hold those values. Renaming one
@@ -410,10 +403,7 @@ export async function runOnboardingCron(
   return summary;
 }
 
-/** Registered in `services.ts`. Closes over `deps.logger`, the same value
- *  `ctx.logger` is, so `ctx.services.onboarding.runOnboardingCron()` takes no
- *  arguments — same shape as organization's `runDeleteCron`, which needs no
- *  logger of its own at all. */
+/** Closes over `deps.logger`, so `ctx.services.onboarding.runOnboardingCron()` takes no arguments. */
 export function createOnboardingService(
   deps: ServiceDeps,
   _services: () => Services

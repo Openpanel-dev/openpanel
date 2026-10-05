@@ -1,17 +1,6 @@
-// Token issuance/hashing, argon2 password hashing, TOTP, the OAuth clients and
-// cookie helpers. The Prisma-touching half — creating, validating and
-// invalidating a `sessions` row — moved here too (`./src/login-session.ts`).
-//
-// The permission ladder (`modules/auth/src/access.ts`) is bound to its real
-// lookups exactly here, once, instead of once per module in a
-// `modules/*/src/access.ts` copy — see `getAccessChecks` below for the binding
-// itself.
-
 import { z } from 'zod';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
-// Aliased: three members of `createAuthService` below carry the same names,
-// and this file is the ONE place the ladder is bound to these lookups.
 import {
   canWriteProject,
   getClientAccess as getClientAccessLookup,
@@ -46,10 +35,8 @@ import {
   verifyTotpCode,
 } from './src/totp';
 
-// Re-exported straight from source (not through the imports above, which
-// exist for `createAuthService` below) — `noExportedImports` would otherwise
-// flag every one of those imports as "only re-exported", which is false;
-// they are also the members `createAuthService` returns.
+// Re-exported from source: the imports above are also used by
+// `createAuthService`, so re-exporting them would trip `noExportedImports`.
 export { COOKIE_MAX_AGE, cookieOptions } from './src/constants';
 export {
   deleteSessionTokenCookie,
@@ -87,18 +74,11 @@ type ProjectAccessChecks = AccessChecks<IProjectAccess>;
 let accessChecksPromise: Promise<ProjectAccessChecks> | undefined;
 
 /**
- * The single binding of the ladder to real lookups — memoized:
- * `createAccessChecks` runs exactly once per process, on however many requests,
- * no matter how many of this function's callers invoke it. Nothing runs at
- * module-import time or at `createAuthService` construction time; the binding
- * is built on the first actual check. An earlier attempt bound it at module
- * scope and hung `bun test` for 30 minutes.
- *
- * Still a `Promise` because the contract is awaited at every call site.
+ * Memoized: the ladder is bound once per process, on the first check. Binding
+ * at module scope hung `bun test`.
  *
  * `integration.service.ts` and `subscription.service.ts` import this directly
- * instead of going through `ctx.services.auth`: both are called with a bare
- * `userId` and no `ctx`. Operator-authorized.
+ * because they are called with a bare `userId` and no `ctx`.
  */
 export function getAccessChecks(): Promise<ProjectAccessChecks> {
   if (!accessChecksPromise) {
@@ -115,26 +95,17 @@ export function getAccessChecks(): Promise<ProjectAccessChecks> {
 }
 
 /**
- * Test-only escape hatch. `accessChecksPromise` is a true process-lifetime
- * singleton by design (see `getAccessChecks` above), so a test that mocks
- * `access-lookups`/`project.service` to prove the injection seam works must
- * clear it afterward — otherwise, under a bare (non-`--isolate`) `bun test`,
- * the fake closures it built would answer every later file's real access
- * checks too.
+ * Test-only. The binding is a process-lifetime singleton, so a test that mocks
+ * the lookups must clear it or, without `--isolate`, later files get the fakes.
  */
 export function resetAccessChecksForTests(): void {
   accessChecksPromise = undefined;
 }
 
 /**
- * The one login check in the tree.
- *
- * `protectedProcedure` already refuses an anonymous caller and hands the
- * handler a `session.userId` that is a `string`, so a protected procedure needs
- * nothing here. This is for the paths the builder cannot decide: the
- * share-aware `chartProcedure` / `overviewProcedure`, which are public because
- * a valid share link is an alternative to being signed in, and only demand a
- * user when no share was presented.
+ * Login check for the share-aware procedures, which are public because a valid
+ * share link is an alternative to being signed in. `protectedProcedure`
+ * already refuses anonymous callers.
  */
 export function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -144,20 +115,13 @@ export function requireLogin(userId: string | null | undefined): string {
 }
 
 /**
- * Registered in `services.ts`. Ignores BOTH arguments: every member here
- * is either pure, reads its own env, or — for the access checks — reaches the
- * shared, memoized `getAccessChecks` above, whose lookups are `cacheable`
- * (their key is derived from the call's arguments, so they cannot take a
- * leading `deps`; see shared/access-lookups.ts). A member that later needs `db`
- * / `logger` drops the underscore and reads the parameter.
+ * Ignores both arguments: the access lookups are `cacheable`, keyed by call
+ * arguments, so they cannot take a leading `deps`.
  */
 export function createAuthService(
   deps: ServiceDeps,
   _services: () => Services
 ) {
-  // One function per member, closing over `deps`, so the return statement below
-  // stays a plain index — nothing here is a `return {... }` literal with logic
-  // inside it.
   async function requireProjectAccess(
     args: Parameters<ProjectAccessChecks['requireProjectAccess']>[0]
   ): ReturnType<ProjectAccessChecks['requireProjectAccess']> {
@@ -195,11 +159,6 @@ export function createAuthService(
     return getClientAccessLookup(...args);
   }
 
-  /**
-   * The session cookie's other half. `http/session.ts` reaches it here rather
-   * than deep-importing `./src/login-session`, which is also what keeps the
-   * demo-user branch inside one function.
-   */
   function checkSessionToken(
     token: string | null | undefined
   ): Promise<SessionValidationResult> {
@@ -260,22 +219,6 @@ export function createAuthService(
   };
 }
 
-// ---------------------------------------------------------------------- The
-// Prisma-touching half: sign-up/sign-in, TOTP challenges, password reset,
-// share unlock and the github/google OAuth callback.
-//
-// Session/registration access is `deps.db`, via static imports of
-// `./src/login-session` and `./src/registration` — neither cycles back to this
-// file, so there is nothing to keep lazy there. Share is the one real cycle —
-// share.service.ts statically imports this file's own `hashPassword` — so
-// `signInToShare` reaches it through the composition root's `services` thunk
-// instead of importing it at all.
-//
-// None of these functions take a `TrpcContext`/`Ctx` directly — they take a
-// `deps: ServiceDeps` plus exactly the other primitives they touch
-// (`setCookie`, `cookies.get`, `logger`), so this file has no dependency on the
-// rpc layer that calls it.
-
 import { generateSecureId } from '@openpanel/shared';
 import { decrypt, encrypt } from '@openpanel/shared/server';
 import { sendEmail } from '../../clients/email';
@@ -307,8 +250,6 @@ const RESET_PASSWORD_TTL_MS = 1000 * 60 * 10;
 
 export type AuthProvider = 'email' | 'google' | 'github';
 
-/** `HttpCtx.cookies`'s shape (`shared/cookie.ts`'s `CookieJar`), named locally
- *  so this file has no import from the rpc/http layer that calls it. */
 interface CookieReader {
   get(name: string): string | undefined;
 }
@@ -388,9 +329,8 @@ export function startOAuthSignIn(
   input: StartOAuthSignInInput,
   setCookie: ISetCookie
 ): StartOAuthSignInResult {
-  // Without this an unconfigured provider still returned a URL, with an empty
-  // `client_id` in it — the caller only found out when the provider rejected
-  // the redirect. `providers` reports the same test, so the two agree.
+  // An unconfigured provider would otherwise yield a URL with an empty
+  // `client_id`.
   const configured = getConfiguredProviders(deps.config);
   if (
     (input.provider === 'github' && !configured.github) ||
@@ -505,9 +445,7 @@ export async function signInWithEmail(
     throw new TRPCNotFoundError('User does not exists');
   }
 
-  // If the password starts with $argon2 we use the new password hashing;
-  // any other value is a legacy bcrypt row (from Clerk) that has been
-  // nulled, so this is now just a generic reject.
+  // Anything but argon2 is a legacy row whose password was nulled.
   if (!user.account.password?.startsWith('$argon2')) {
     throw new TRPCBadRequestError(
       'Reset your password, old password has expired'
@@ -874,9 +812,8 @@ export interface SignInShareInput {
   shareType?: 'overview' | 'dashboard' | 'report';
 }
 
-/** Share's three lookups arrive through the composition root's thunk.
- * Not a dynamic import: `share.service.ts` statically imports this file's
- * `hashPassword`, so a static edge back would be a real cycle. */
+/** `share.service.ts` statically imports `hashPassword` from this file, so
+ * share is reached through the `services` thunk to avoid an import cycle. */
 const SHARE_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export async function signInToShare(
@@ -928,12 +865,6 @@ export async function signInToShare(
   );
   return true;
 }
-
-// -----------------------------------------------------------------------
-// The github/google OAuth callback (apps/api's /oauth/{github,google}/callback,
-// same shape as gsc.service.ts#completeGscOAuthCallback). State/query parsing
-// and cookie reads stay in each transport: only the token exchange, user
-// lookup/creation and session issuance live here.
 
 export interface OAuthUser {
   id: string;
@@ -1082,11 +1013,6 @@ export interface CompleteOAuthCallbackInput {
   logger: Pick<Logger, 'error'>;
 }
 
-/**
- * State/token-exchange validation stays with the caller (`assertOAuthState`,
- * then the provider-specific `fetch*OAuthUser`); this is the shared half —
- * find-or-create the account and issue a session.
- */
 export async function completeOAuthCallback(
   deps: ServiceDeps,
   input: CompleteOAuthCallbackInput

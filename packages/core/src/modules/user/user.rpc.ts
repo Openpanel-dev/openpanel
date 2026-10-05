@@ -4,9 +4,6 @@
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
-//
-// `ctx.services.user` carries this module's factory; it has no queue/cron of
-// its own, same as `conversation`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

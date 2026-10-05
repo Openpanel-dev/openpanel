@@ -1,15 +1,10 @@
-// The subject is built over a fake `ServiceDeps`, so Postgres needs no module
-// mock at all — `deps.db` IS the fake below, same idiom as
-// reference.service.test.ts. `@openpanel/redis`'s `cacheable` is still stubbed
-// (module-level `getSalts` binds it at this file's first import), so
-// `rotateSalt`'s `getSalts.clear` never reaches a real Redis connection.
+// The subject is built over a fake `ServiceDeps`, so `deps.db` IS the fake below.
+// `@openpanel/redis`'s `cacheable` is still stubbed (module-level `getSalts` binds it
+// at first import) so `rotateSalt`'s `getSalts.clear` never reaches a real Redis.
 //
-// `getSalts` itself stays untested here: it is bare (no `deps` argument)
-// because ingest.service.ts's hot path calls it with none — see the module
-// header — and its `cacheable(...)` wrapping binds at this module's first-ever
-// evaluation, which a bare (non `--isolate`) `bun test` run does not let this
-// file control. `fetchSalts` (the uncached read it wraps) is exercised directly
-// instead.
+// `getSalts` itself is untested: it takes no `deps` (ingest's hot path calls it bare)
+// and its `cacheable(...)` wrapping binds at first evaluation, which a non-`--isolate`
+// run does not let this file control. `fetchSalts` is exercised directly instead.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -65,9 +60,7 @@ const $transaction = mock(
     fn({ salt: saltDelegate })
 );
 
-// Bypasses the Redis cache-aside entirely, same as organization.service.test.ts's
-// `cacheableStub` — this module's own logic is exercised directly, caching is
-// @openpanel/redis's concern. Only the `cacheable(name, fn, ttl)` overload
+// Bypasses the Redis cache-aside; only the `cacheable(name, fn, ttl)` overload
 // salt.service.ts uses needs covering.
 function cacheableStub<T extends (...args: unknown[]) => unknown>(
   _name: string,

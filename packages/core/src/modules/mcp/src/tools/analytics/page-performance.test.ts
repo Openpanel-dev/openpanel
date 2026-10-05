@@ -15,13 +15,11 @@ const mockGetSettingsForProject = mock(() =>
   Promise.resolve({ timezone: 'UTC' })
 );
 
-// The tool reads the pages service off the `services` graph handed in with
-// `deps`, so `getTopPages` is a plain stub on TOOLS below rather than a module
-// mock. Only the two sibling module functions this file drives are still
-// replaced, each at the specifier the source imports resolve to, and each is
-// restored in `afterAll` from a plain-object snapshot taken BEFORE the first
-// `mock.module` call, since restoring via the live `await import(...)`
-// binding is a no-op once mocked.
+// `getTopPages` is a plain stub on the `services` graph; only the two sibling
+// module functions driven here are mocked, at the specifier the source imports
+// resolve to, and restored in `afterAll` from a plain-object snapshot taken
+// BEFORE the first `mock.module` (restoring via the live `await import(...)`
+// binding is a no-op once mocked).
 const actualOrganizationService = await import(
   '../../../../organization/organization.service'
 );

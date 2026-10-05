@@ -1,9 +1,6 @@
-// Every ClickHouse query the profile module runs, as pure `sql` fragments.
-//
-// Cluster note: `profiles`, `events` and `sessions` are Distributed on Cloud.
-// `findProfilesQuery`'s three `IN (SELECT...)` subqueries, and any a filter
-// compiles to, run under the client's `distributed_product_mode: 'allow'`.
-// Every `IN` list binds as `Array(String)`, a literal list to the planner.
+// `profiles`, `events` and `sessions` are Distributed on Cloud. The `IN (SELECT...)`
+// subqueries run under the client's `distributed_product_mode: 'allow'`. Every `IN`
+// list binds as `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
@@ -48,7 +45,6 @@ function optional(
   return condition ? fragment() : sql.empty;
 }
 
-/** Same spelling `overview/src/pages.sql.ts` uses, so the two read alike. */
 function dateRangeWhere(
   column: string,
   startDate: string,
@@ -57,7 +53,7 @@ function dateRangeWhere(
   return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toRangeBoundaryLiteral(startDate, 'start'))}) AND toDateTime(${sql.string(toRangeBoundaryLiteral(endDate, 'end'))})`;
 }
 
-/** The window every profile-list / power-user statement is now bounded to. */
+/** The window every profile-list / power-user statement is bounded to. */
 export interface ProfileWindow {
   startDate: string;
   endDate: string;
@@ -352,8 +348,6 @@ export function profilePropertyKeysQuery(projectId: string): SqlFragment {
   return sql`SELECT DISTINCT arrayJoin(mapKeys(properties)) as key FROM ${sql.id(TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} AND is_external = ${sql.bool(true)}`;
 }
 
-// ---- packages/trpc/src/routers/profile.ts's inline queries
-
 export function profileActivityQuery(query: {
   projectId: string;
   profileId: string;
@@ -381,11 +375,7 @@ export function profilePropertyNamesQuery(projectId: string): SqlFragment {
   return sql`SELECT distinct mapKeys(properties) as keys from ${sql.id(TABLE.profiles)} where project_id = ${sql.string(projectId)};`;
 }
 
-/**
- * Bounded to the caller's window. Unbounded this ranked every event the project
- * ever recorded (44.2 M rows on the busiest anchor), so "power users of all
- * time" is now "power users of the range".
- */
+/** Bounded to the caller's window: unbounded, it ranked every event the project ever recorded. */
 export function powerUsersQuery(
   query: ProfileWindow & {
     projectId: string;

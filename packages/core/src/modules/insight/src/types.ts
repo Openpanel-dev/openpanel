@@ -115,10 +115,7 @@ export interface MaterialDecision {
   newSeverityBand?: SeverityBand | null;
 }
 
-/**
- * Persistence interface: implement with Postgres.
- * Keep engine independent of query builder choice.
- */
+/** Persistence interface, implemented with Postgres. */
 export interface InsightStore {
   listProjectIdsForCadence(cadence: Cadence): Promise<string[]>;
   /** Used by the engine/worker to decide if a window has enough baseline history. */

@@ -1,9 +1,3 @@
-// notification.service.ts's db access is lazy (`await import(...)` inside
-// each function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
-
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import type { IChartEvent } from '../report/report.constants';
 
@@ -43,10 +37,9 @@ function makeRule(overrides: Partial<FakeRule> & { id: string }): FakeRule {
 }
 
 const publishedEvents: unknown[] = [];
-// Spread a plain-object SNAPSHOT of the real module and restore it in afterAll
-// — `mock.module` has no per-file scope under bare `bun test` (AGENTS.md), and
-// a partial factory deletes `getRedisCache` and friends for every file that
-// runs next.
+// Spread a SNAPSHOT of the real module and restore it in afterAll: `mock.module` has no
+// per-file scope under bare `bun test`, and a partial factory deletes `getRedisCache`
+// and friends for every file that runs next.
 const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
   ...realRedis,

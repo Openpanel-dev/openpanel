@@ -144,9 +144,7 @@ export function extractToken(
   if (typeof query['token'] === 'string') {
     return query['token'];
   }
-  // RFC 7235: the auth scheme is case-insensitive, so `bearer` is as valid as
-  // `Bearer`. Refusing it was non-conformant, and accepting it can only let
-  // more clients through.
+  // RFC 7235: the auth scheme is case-insensitive.
   const [scheme, value] = (authHeader ?? '').split(' ');
   if (scheme?.toLowerCase() === 'bearer' && value) {
     return value;

@@ -329,7 +329,6 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
       path = String(props[this.config.mapScreenViewProperty] ?? '');
     }
 
-    // Referrer (web only)
     const referrerUrl = String(props.referrer || props.$referrer || '');
     const referrer =
       referrerUrl && !isSameDomain(referrerUrl, rawUrl || '')
@@ -516,7 +515,6 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     if (raw.device_manufacturer) {
       return raw.device_manufacturer;
     }
-    // Derive from device_family (e.g. "Apple iPhone" -> "Apple")
     const family = raw.device_family || raw.device_type || '';
     if (/apple|iphone|ipad|ios/i.test(family)) {
       return 'Apple';

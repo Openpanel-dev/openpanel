@@ -1,8 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// The access-check + query bodies ride on @openpanel/db (lazy-loaded, see
-// session.service.ts's header); wiring this router end-to-end against a real
-// ClickHouse is P6's (protectedProcedure) job — see session.rpc.ts's header.
-// Same shape as realtime.rpc.test.ts.
+// Only the "is anyone logged in" boundary is exercised here; no database.
 
 import { expect, test } from 'bun:test';
 import {
@@ -21,7 +17,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

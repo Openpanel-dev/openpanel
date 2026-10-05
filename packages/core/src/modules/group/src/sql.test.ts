@@ -1,7 +1,5 @@
 // Shape tests for the group module's fragments: every user value binds as a
-// `{pN:Type}` parameter (nothing is interpolated), and the optional clauses
-// toggle correctly. Result-set equivalence was proven separately, per query,
-// on a local prod-copy — not here; these run offline.
+// `{pN:Type}` parameter, and the optional clauses toggle correctly. These run offline.
 
 import { describe, expect, test } from 'bun:test';
 import {

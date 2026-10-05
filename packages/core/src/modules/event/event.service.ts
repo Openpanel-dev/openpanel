@@ -1,7 +1,3 @@
-// The event read path. Every query is a `sql` fragment (src/sql.ts); the two
-// filter compilers (`getEventFiltersWhereClause`, `buildFilterWhere`) are
-// shared, and src/filter-clauses.ts is the bridge.
-
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
 import { getCache } from '@openpanel/redis';
@@ -145,17 +141,15 @@ export interface IClickhouseEvent {
   brand: string;
   model: string;
   imported_at: string | null;
-  // Ingestion (ClickHouse-insert) time. Set explicitly at insert time; the
-  // column DEFAULTs to created_at for rows that omit it. Used as the cursor for
-  // object-store exports. Optional here because most read queries don't select
-  // it.
+  // Ingestion (ClickHouse-insert) time, the cursor for object-store exports. Optional
+  // because most read queries don't select it.
   inserted_at?: string;
   sdk_name: string;
   sdk_version: string;
   revenue?: number;
   groups: string[];
 
-  // They do not exist here. Just make ts happy for now
+  // Not stored on the event row; populated by readers that join them.
   profile?: IServiceProfile;
   meta?: EventMeta;
 }
@@ -450,14 +444,9 @@ export async function getEvents(
 }
 
 /**
- * Persist an event to ClickHouse (via the buffer) and upsert the profile
- * on session boundaries.
- *
- * Does NOT touch the session-row buffer. Callers producing non-session_start
- * / session_end events are responsible for calling `sessionBuffer.ingest()`
- * before this. `incoming-event.ts` is the only such caller today; everywhere
- * else (session_start, session_end) the session-row update is correctly a
- * no-op anyway.
+ * Persist an event to ClickHouse (via the buffer) and upsert the profile on session
+ * boundaries. Does NOT touch the session-row buffer: callers producing events other
+ * than session_start / session_end must call `sessionBuffer.ingest()` first.
  */
 export async function createEvent(
   deps: ServiceDeps,
@@ -536,19 +525,11 @@ export async function createEvent(
       },
     };
 
-    // Only upsert the profile on session boundaries.
-    // - session_start covers fresh activity.
-    // - session_end is synthesized server-side by the worker.
-    // Identified users' explicit profile writes (op.identify(), op.setProfile())
-    // go through the controller path and are not affected by this branch.
-    //
-    // `isFromEvent=true` activates profile-buffer's cache shortcut: if the
-    // profile is in the 1h Redis cache (i.e. recently flushed), the add is
-    // skipped. Trade-off: profile.last_seen_at granularity is capped at the
-    // cache TTL (~1h) rather than per-session. Accepted because (a) the bulk
-    // of those writes carry no new information (anonymous profile data is
-    // event-derived and stable across a session), and (b) recency queries
-    // should derive from event timestamps, not from profile.last_seen_at.
+    // Only upsert the profile on session boundaries (session_start covers fresh
+    // activity; session_end is synthesized by the worker). `isFromEvent=true` makes
+    // profile-buffer skip the add when the profile is in the 1h Redis cache, so
+    // profile.last_seen_at is only as fine as that TTL. Accepted: anonymous profile
+    // data is stable across a session, and recency queries should use event timestamps.
     if (payload.name === 'session_start' || payload.name === 'session_end') {
       promises.push(upsertProfile(deps, profile, true));
     }

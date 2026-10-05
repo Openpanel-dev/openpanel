@@ -1,5 +1,4 @@
-// Job/cron-fragment wiring — no ClickHouse/Postgres touched. The service
-// methods themselves are exercised in insight.service.test.ts.
+// Job/cron-fragment wiring only; the service methods are in insight.service.test.ts.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -236,9 +235,8 @@ test('weeklyDigest delegates to sendWeeklyDigests', async () => {
   expect(called).toBe(true);
 });
 
-// Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot
-// pins. The cadences now live on the jobs themselves, so this reads them
-// straight off the registry.
+// The cadences live on the jobs themselves, so this reads them off the registry;
+// schedulers.test.ts's golden snapshot pins the same ids.
 test('the insight cron fragment keeps its scheduler ids and cadences', () => {
   expect(queues.cron.jobs.insightsDaily.cron).toEqual({
     pattern: '0 2 * * *',

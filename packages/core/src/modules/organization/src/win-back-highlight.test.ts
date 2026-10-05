@@ -1,7 +1,5 @@
-// Asserts the gating and fallback decisions, which are the point of the module:
-// a highlight is a bonus, never a reason an email fails or embarrasses us with
-// tiny numbers. The stats lookups and the AI call are injected stubs — no
-// `mock.module`, so every assertion is on a call the code under test made.
+// Asserts the gating and fallback decisions: a highlight is a bonus, never a
+// reason an email fails or shows tiny numbers. Stats and AI are injected stubs.
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Logger } from '../../../logger';

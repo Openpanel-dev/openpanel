@@ -149,13 +149,7 @@ function since(days: number): SqlParam {
   );
 }
 
-/**
- * No live callers today; kept only so the defects above stay visible.
- *
- * The class is no longer exported; `createLegacyInsightsScanner(deps)` below is
- * the module's factory, so every service module in core is reached the same way
- * and nothing in the tree still exports a `*Service` class.
- */
+/** No live callers; kept only so the defects above stay visible. */
 class LegacyInsightsScanner {
   constructor(private readonly deps: ChScope) {}
 

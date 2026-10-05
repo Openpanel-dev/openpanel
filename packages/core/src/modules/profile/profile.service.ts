@@ -1,7 +1,3 @@
-// Every query is a `sql` fragment (src/sql.ts). The exception is
-// `buildFilterWhere`, the shared filter compiler; src/filter-clauses.ts is the
-// bridge to it.
-
 import { round, strip, toObject } from '@openpanel/shared';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
@@ -54,8 +50,7 @@ const FIND_PROFILES_DEFAULT_LIMIT = 20;
 const FIND_PROFILES_MAX_LIMIT = 100;
 const SECONDS_PER_MINUTE = 60;
 
-// clix always sent `session_timezone: 'UTC'`; the queries converted from clix
-// keep sending it so their result sets stay identical.
+// Keeps sending `session_timezone: 'UTC'` so result sets are consistent.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
 const PROFILE_FILTER_TARGET = {
@@ -504,8 +499,6 @@ export const getProfilePropertyKeysCached = cacheablePerDeps(
   PROPERTY_KEYS_CACHE_SECONDS
 );
 
-// ---- the trpc profile router's bodies
-
 export async function getProfileActivity(
   deps: ServiceDeps,
   profileId: string,
@@ -637,8 +630,6 @@ export async function getProfileValues(
 
   return { values };
 }
-
-// ---- apps/api's /profile controller bodies
 
 export interface IdentifyProfileInput {
   /** `string | number` because /track's identify payload allows both

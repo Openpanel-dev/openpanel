@@ -1,10 +1,7 @@
-// The subject is built by its factory over a fake `ServiceDeps`, so Postgres
-// needs no module mock at all — `deps.db` IS the fake below, same idiom as
-// reference.service.test.ts. `@openpanel/redis` is still stubbed:
-// `getClientByIdCached` calls `cacheable(...)` inside `createClientService`
-// itself now (not at this module's import time), but the binding is resolved at
-// `client.service.ts`'s own import time, so the mock must still land before
-// that import — hence the `await import` in `beforeAll`.
+// The subject is built over a fake `ServiceDeps`, so `deps.db` IS the fake below.
+// `@openpanel/redis` is still stubbed: the `cacheable` binding resolves at
+// `client.service.ts`'s import time, so the mock must land first (the `await import`
+// in `beforeAll`).
 
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -111,10 +108,8 @@ const client = {
   }),
 };
 
-// Bypasses the Redis cache-aside entirely — this module's own logic is
-// exercised directly, caching is @openpanel/redis's concern. Same stub as
-// organization.service.test.ts, needed because create/update/delete all call
-// `.clear()` on getClientByIdCached.
+// Bypasses the Redis cache-aside; create/update/delete all call `.clear()` on
+// getClientByIdCached.
 function cacheableStub(
   fnOrName: ((...args: unknown[]) => unknown) | string,
   fnOrTtl: ((...args: unknown[]) => unknown) | number
@@ -250,10 +245,8 @@ test('deleteClientForOrganization deletes only when the client belongs to the or
   expect(clientStore.has('client_a')).toBe(false);
 });
 
-// The stored secret is a hash, and the published docs promise it is never
-// retrievable after creation (docs/api/manage/clients.mdx). The fake Prisma
-// above ignores `omit`, so these assert on what the service ASKED FOR rather
-// than on the rows it got back.
+// The stored secret is a hash and is never retrievable after creation. The fake Prisma
+// above ignores `omit`, so these assert on what the service ASKED FOR.
 const OMIT_SECRET = { secret: true };
 
 test('every client read path asks Prisma to omit the secret', async () => {

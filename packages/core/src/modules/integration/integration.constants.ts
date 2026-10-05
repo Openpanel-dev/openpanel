@@ -1,14 +1,4 @@
-// `zSlackAuthResponse` does NOT move here even though it is zod-only and would
-// pass `constants-stay-isomorphic`: it is Slack's OAuth token-exchange wire
-// contract, not integration config a form validates against — nothing in
-// apps/start ever sees it. It stays in `./src/slack-contract.ts`, defined as
-// `zSlackConfig` minus the persisted `type` discriminant (see that file).
-
 import { z } from 'zod';
-
-// ---------------------------------------------------------------------------
-// Secret handling
-// ---------------------------------------------------------------------------
 
 /**
  * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
@@ -36,10 +26,6 @@ const zWriteOnlySecret = (label: string) =>
   z.string().refine((value) => !looksEncrypted(value), {
     message: `${label} looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`,
   });
-
-// ---------------------------------------------------------------------------
-// Google service-account credentials
-// ---------------------------------------------------------------------------
 
 /** The only credential document shape we accept for GCS. */
 export interface IServiceAccountKey {
@@ -110,15 +96,9 @@ export function parseServiceAccountKey(raw: string): IServiceAccountKeyResult {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Per-type config schemas
-// ---------------------------------------------------------------------------
-
-// The Slack integration's persisted config is exactly Slack's OAuth
-// token-exchange response (`oauth.v2.access`) plus our own `type` tag —
-// `./src/slack-contract.ts`'s `zSlackAuthResponse` is this schema minus
-// `type`, kept the other direction (constants owns the shape, src derives
-// from it) so the two can never drift.
+// Slack's persisted config is its OAuth token-exchange response
+// (`oauth.v2.access`) plus our `type` tag. `./src/slack-contract.ts` derives
+// `zSlackAuthResponse` from this schema so the two cannot drift.
 export const zSlackConfig = z.object({
   type: z.literal('slack'),
   ok: z.literal(true),
@@ -237,14 +217,9 @@ export const zGCSExportConfig = z.object({
 });
 export type IGCSExportConfig = z.infer<typeof zGCSExportConfig>;
 
-// ---------------------------------------------------------------------------
-// The explicit discriminated union — the SOURCE OF TRUTH for narrowing.
-// Do NOT derive this from the registry: deriving via z.infer over a registry
-// array can silently widen a member to { type: string } and break every
-// config.type narrow downstream (incl. Prisma's IPrismaIntegrationConfig).
-// The registry below is forced to MATCH this union via `satisfies`, never the
-// other way round.
-// ---------------------------------------------------------------------------
+// Explicit union, the source of truth for narrowing. Deriving it from the
+// registry via z.infer can silently widen a member to `{ type: string }`; the
+// registry is forced to match this union via `satisfies`.
 
 export type IIntegrationConfig =
   | ISlackConfig
@@ -257,13 +232,9 @@ export type IIntegrationConfig =
 
 export type IIntegrationType = IIntegrationConfig['type'];
 
-// ---------------------------------------------------------------------------
-// Plugin descriptor registry (core layer). Each integration declares its
-// capabilities, setup style, config schema and catalog metadata once. The
-// server (this module's src/registry.ts) and client
-// (apps/start) registries are keyed by the same `type` literal and are
-// forced to cover this union.
-// ---------------------------------------------------------------------------
+// Plugin descriptor registry: each integration declares its capabilities, setup
+// style, config schema and catalog metadata once. The server and client
+// registries are keyed by the same `type` and forced to cover the union.
 
 export type IIntegrationKind = 'notification' | 'export';
 
@@ -411,10 +382,6 @@ export const zIntegrationConfig = z.union([
   zGCSExportConfig,
 ]);
 
-// ---------------------------------------------------------------------------
-// Create-integration input schemas
-// ---------------------------------------------------------------------------
-
 const zCreateIntegrationBase = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
@@ -443,11 +410,7 @@ export const zCreateGCSExportIntegration = zCreateIntegrationBase.merge(
   })
 );
 
-// ---------------------------------------------------------------------------
-// Compile-time guards (the type-safety gate). These are type aliases, so they
-// add no runtime and don't trip unused-locals, but they fail `tsc` if the
-// invariant breaks.
-// ---------------------------------------------------------------------------
+// Compile-time guards: type aliases that fail `tsc` if an invariant breaks.
 
 type Assert<T extends true> = T;
 type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;

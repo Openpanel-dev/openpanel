@@ -24,8 +24,8 @@ function nextExceededAt(
   count: number,
   selfHosted: boolean
 ): Date | null {
-  // Self-hosting has no billing limits: never flag, and clear any stale flag
-  // set before this guard existed (default limit 0 trips on the first event).
+  // Self-hosting has no billing limits: never flag, and clear any stale flag (default
+  // limit 0 trips on the first event).
   if (selfHosted) {
     return null;
   }

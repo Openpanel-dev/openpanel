@@ -1,10 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { ServiceDeps } from '../../../../../services';
 
-// `findProfilesCore` takes `ServiceDeps` and reaches ClickHouse as `deps.ch`
-// (through ch-query.ts), so the client is HANDED IN rather than mocked onto
-// `@openpanel/db/src/clickhouse/client` process-wide. Same assertions, one less
-// shared-registry hazard.
+// `findProfilesCore` reaches ClickHouse as `deps.ch`, so the client is handed in
+// rather than mocked process-wide.
 const chQuery = mock(
   async (_params: {
     query: string;

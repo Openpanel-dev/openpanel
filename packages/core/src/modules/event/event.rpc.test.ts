@@ -1,8 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// The access-check + query bodies ride on @openpanel/db (lazy-loaded, see
-// event.service.ts's header); wiring this router end-to-end against a real
-// ClickHouse is protectedProcedure's job — see event.rpc.ts's header. Same
-// shape as session.rpc.test.ts.
+// Only the "is anyone logged in" boundary is exercised here; no database.
 
 import { expect, test } from 'bun:test';
 import {

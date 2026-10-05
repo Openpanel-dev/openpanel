@@ -2,11 +2,6 @@
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
-//
-// `ctx.services.client` carries this module's factory.
-//
-// The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

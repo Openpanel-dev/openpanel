@@ -1,10 +1,5 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// The per-project access ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check in the handler.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

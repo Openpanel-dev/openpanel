@@ -1,6 +1,3 @@
-// This module dispatches to its own transports, so it lives above them in the
-// layer graph — placing it below would have made those imports point upward.
-
 import {
   type EncryptionKey,
   encryptCredential,
@@ -56,10 +53,8 @@ export interface INotificationDeliverArgs<
 
 /**
  * Server-side behavior for one integration type. Capability slots are optional;
- * which ones are present is declared by the core descriptor's `kinds`. A new
- * integration adds one entry to SERVER_INTEGRATIONS — the `satisfies Record`
- * below forces an entry for every union member (a missing one is a compile
- * error, not a silent runtime gap).
+ * the core descriptor's `kinds` declares which are present. The `satisfies
+ * Record` below makes a missing entry a compile error.
  */
 export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   type: T;
@@ -285,16 +280,14 @@ export function getServerIntegration<T extends IIntegrationConfig['type']>(
   return SERVER_INTEGRATIONS[type] as unknown as IServerIntegration<T>;
 }
 
-// ---------------------------------------------------------------------------
 // Generic secret handling, driven by each plugin's `secretFields`.
 //
 // Credentials are WRITE-ONLY: blanked before a config is returned to a client,
 // and restored from the stored row when an update submits a blank. Returning a
-// stored credential would hand a project *reader* the org's secrets — `read` is
+// stored credential would hand a project *reader* the org's secrets: `read` is
 // bare project membership. For the encrypted ones it is worse than disclosure:
 // decryptCredential accepts any `enc:` value under the single global key, so a
 // returned ciphertext is a portable bearer token, not an opaque handle.
-// ---------------------------------------------------------------------------
 
 type LooseConfig = Record<string, unknown>;
 
@@ -406,12 +399,6 @@ export function redactConfigSecrets<C>(config: C): C {
   return mapSecrets(config, (value) => (value === '' ? undefined : ''));
 }
 
-// Credentials are write-only: they are encrypted at rest and never travel back
-// to a client. `read` on a project is bare membership, so returning the stored
-// ciphertext would hand every project member the org's object-store keys — and
-// because `decryptCredential` accepts any `enc:` blob under the single global
-// key, that ciphertext is a replayable bearer token, not an opaque handle.
-//
 // Every function that returns an integration row — here and in the
 // notification service, which embeds the rows attached to each rule — goes
 // through this. Returning a row straight from Prisma is how the Slack bot

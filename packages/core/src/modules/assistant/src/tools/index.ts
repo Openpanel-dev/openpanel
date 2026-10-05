@@ -14,30 +14,21 @@ import * as seo from './seo';
 import * as session from './session';
 import * as ui from './ui';
 
-// A tool is BUILT per unit of work, from the `deps` the route already holds:
-// `@better-agent/core`'s tool-handler signature has no context parameter, so
-// each handler closes over them instead. The lists are typed loosely as
-// `(deps) => AgentToolDefinition` — without the cast, TypeScript tries to
-// compute the union of every tool's schema + result type and hits its
-// instantiation depth limit.
+// `@better-agent/core`'s tool handler signature has no context parameter, so
+// handlers close over `deps`. Lists are typed loosely: without the cast,
+// TypeScript hits its instantiation depth limit computing the union of every
+// tool's schema and result type.
 type ToolFactory = (deps: ServiceDeps) => AgentToolDefinition;
 type ToolList = ToolFactory[];
 
-/**
- * Always-available base tool set: discovery + saved reports + aggregate
- * analytics + free-form queries. Every chat session starts here.
- */
 const BASE_TOOLS: ToolList = [
-  // Discovery
   base.listEventNames,
   base.listEventProperties,
   base.getEventPropertyValues,
-  // Saved dashboards & reports
   base.listDashboards,
   base.listReports,
   base.getReportData,
   base.generateReport,
-  // Aggregate analytics
   base.getAnalyticsOverview,
   base.getTopPages,
   base.getTopReferrers,
@@ -47,14 +38,10 @@ const BASE_TOOLS: ToolList = [
   base.getFunnel,
   base.getRetentionCohort,
   base.getUserFlow,
-  // Free-form queries
   base.queryEvents,
   base.querySessions,
   base.findProfiles,
-  // References — manual annotations the user adds for real-world
-  // events (campaigns, deploys, announcements). Available everywhere
-  // because "what happened around X?" is a useful question on
-  // every page, not just the overview.
+  // Available on every page: "what happened around X?" is not overview-specific.
   references.listReferences,
   references.getReferencesAround,
 ] as ToolList;
@@ -105,10 +92,7 @@ const SEO_TOOLS: ToolList = [
   seo.correlateSeoWithTraffic,
 ] as ToolList;
 
-// No property-listing tool here on purpose: `base.listEventProperties` is in
-// BASE_TOOLS, so it is already registered on this page. `list_properties_for_event`
-// was a second wire name over the same handler, and the events page offered the
-// model both at once.
+// No property-listing tool here: `base.listEventProperties` is already in BASE_TOOLS.
 const EVENTS_TOOLS: ToolList = [
   events.analyzeEventDistribution,
   events.correlateEvents,
@@ -131,11 +115,7 @@ const GROUP_TOOLS: ToolList = [
 
 const DASHBOARD_TOOLS: ToolList = [dashboard.summarizeDashboard] as ToolList;
 
-// Client-side UI mutators. Available on pages that have user-
-// settable filters (date range, event names, property filters) so
-// the assistant can act on requests like "filter to last 7 days",
-// "show me only signups", or "referrers from GitHub" instead of
-// just describing data.
+// Client-side UI mutators, for pages with user-settable filters.
 const UI_TOOLS: ToolList = [
   ui.applyFilters,
   ui.setEventNamesFilter,
@@ -143,15 +123,9 @@ const UI_TOOLS: ToolList = [
 ] as ToolList;
 
 /**
- * Compose the chat tool set for a given request. Base tools are always
- * present; page-specific tools layer on top.
- *
- * Page-specific tools are only included when the corresponding entity
- * id is present in pageContext (e.g. profile tools require profileId),
- * so the LLM doesn't see tools it can't usefully call.
- *
- * The LLM sees fewer-but-more-focused tools per page, which produces
- * better tool selection than one giant flat registry.
+ * Compose the chat tool set for a request: base tools always, page-specific
+ * tools only when their entity id is in pageContext, so the model is not
+ * offered tools it cannot usefully call.
  */
 export function composeChatTools(
   deps: ServiceDeps,

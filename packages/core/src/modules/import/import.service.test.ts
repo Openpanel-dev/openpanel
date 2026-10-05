@@ -1,8 +1,6 @@
-// Import.service.ts takes its clients from `ServiceDeps`, so this file hands in
-// fakes as `deps.db` / `deps.ch` and mocks NO module at all. That is the point
-// of the conversion: a module mock of `@openpanel/db/src/clickhouse/client`
-// replaced that specifier for every other FILE in the process (bare `bun test`
-// shares one module registry).
+// Fakes are handed in as `deps.db` / `deps.ch` and no module is mocked: a mock
+// of `@openpanel/db/src/clickhouse/client` would replace that specifier for
+// every other file in the process (bare `bun test` shares one module registry).
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -40,8 +38,6 @@ const importUpdate = mock(
   async (_opts: { where: { id: string }; data: unknown }) => undefined
 );
 
-// The subject's functions take `ServiceDeps`, so `deps.db` / `deps.ch` ARE
-// the fakes below.
 const deps = {
   db: { import: { update: importUpdate } },
   ch: {

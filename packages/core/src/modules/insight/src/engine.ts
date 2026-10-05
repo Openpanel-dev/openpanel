@@ -37,10 +37,6 @@ function isSeverityIncrease(
   return SEVERITY_RANK[next] > SEVERITY_RANK[prev];
 }
 
-/**
- * Sanitize a string for PostgreSQL by removing null bytes (0x00).
- * PostgreSQL text columns don't accept null bytes in UTF-8 encoding.
- */
 function sanitizeForPostgres(str: string): string {
   // Remove null bytes which cause "invalid byte sequence for encoding UTF8: 0x00"
   // Using String.fromCharCode(0) to avoid linter warnings about control characters in regex
@@ -58,7 +54,6 @@ export interface EngineConfig {
   };
 }
 
-/** Simple gating to cut noise; modules can override via thresholds. */
 function passesThresholds(
   r: ComputeResult,
   mod: InsightModule,
@@ -99,7 +94,6 @@ function chunk<T>(arr: T[], size: number): T[][] {
 export function createEngine(args: {
   store: InsightStore;
   modules: InsightModule[];
-  /** The scope's ClickHouse client + logger; every module query runs on it. */
   deps: ChScope;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
   config: EngineConfig;
@@ -139,7 +133,6 @@ export function createEngine(args: {
           ) {
             continue;
           }
-          // Garbage collected automatically when this context goes out of scope.
           const cache = new Map<string, unknown>();
           ctx = {
             projectId,
@@ -158,13 +151,11 @@ export function createEngine(args: {
           continue;
         }
 
-        // 1) enumerate dimensions
         let dims: string[] = [];
         try {
           const rawDims = mod.enumerateDimensions
             ? await mod.enumerateDimensions(ctx)
             : [];
-          // Sanitize dimension keys to remove null bytes that PostgreSQL can't handle
           dims = rawDims.map(sanitizeForPostgres);
         } catch (e) {
           // Important: enumeration failures should not abort the whole project run.
@@ -204,7 +195,6 @@ export function createEngine(args: {
           continue;
         }
 
-        // 2) compute in batches
         const seen: string[] = [];
         const dimBatches = chunk(dims, config.dimensionBatchSize);
         for (const batch of dimBatches) {
@@ -229,21 +219,17 @@ export function createEngine(args: {
               continue;
             }
 
-            // Sanitize dimensionKey to remove null bytes that PostgreSQL can't handle
             r.dimensionKey = sanitizeForPostgres(r.dimensionKey);
 
-            // 3) gate noise
             if (!passesThresholds(r, mod, config)) {
               continue;
             }
 
-            // 4) score
             const impact = mod.score
               ? mod.score(r, ctx)
               : defaultImpactScore(r);
             const sev = severityBand(r.changePct);
 
-            // 5) dedupe/material change requires loading prev identity
             const prev = await store.getActiveInsightByIdentity({
               projectId,
               moduleKey: mod.key,
@@ -256,10 +242,8 @@ export function createEngine(args: {
               direction: r.direction,
             });
 
-            // 6) render
             const card = mod.render(r, ctx);
 
-            // 7) upsert
             const persisted = await store.upsertInsight({
               projectId,
               moduleKey: mod.key,
@@ -278,7 +262,6 @@ export function createEngine(args: {
 
             seen.push(r.dimensionKey);
 
-            // 8) events only when material
             if (!prev) {
               await store.insertEvent({
                 projectId,
@@ -331,7 +314,6 @@ export function createEngine(args: {
           }
         }
 
-        // 10) lifecycle: close missing insights for this module/window
         await store.closeMissingActiveInsights({
           projectId,
           moduleKey: mod.key,
@@ -341,7 +323,6 @@ export function createEngine(args: {
           staleDays: config.closeStaleAfterDays,
         });
 
-        // 11) suppression: keep top N
         await store.applySuppression({
           projectId,
           moduleKey: mod.key,

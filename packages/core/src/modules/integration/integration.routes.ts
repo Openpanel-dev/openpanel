@@ -1,7 +1,3 @@
-// The Slack OAuth callback, `GET /webhook/slack`. Delegates token-exchange
-// and upsert logic to integration.service.ts's `completeSlackOAuthCallback`,
-// same shape as gsc.routes.ts / auth.routes.ts's OAuth callbacks.
-
 import { redirect } from 'elysia';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
@@ -31,11 +27,8 @@ export const integrationRoutes = defineRoutes((app) =>
           query
         );
 
-        // Integrations are project-scoped; the org-level integrations route no
-        // longer exists. Newer installs carry projectId in their metadata.
-        // Older in-flight installs (started before the project-scoped routes
-        // shipped) may lack it — fall back to the org landing page rather
-        // than a now-404 integrations URL.
+        // Installs started before integrations were project-scoped may lack
+        // projectId; fall back to the org landing page.
         return redirect(
           projectId
             ? `${ctx.config.dashboardUrl}/${organizationId}/${projectId}/integrations/installed`

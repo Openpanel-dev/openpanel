@@ -1,7 +1,3 @@
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
-// `loadDb` lazy loader is gone. Every caller — including
-// `onboarding.service.ts` and `auth.service.ts` — passes the `deps` it holds.
-
 import type { User } from '@openpanel/db/src/prisma-client';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';

@@ -1,17 +1,6 @@
-// The /manage REST CRUD bodies (client.routes.ts's listClients/getClient/
-// createClient/updateClient/deleteClient) call the same
-// create/update/delete/list functions the tRPC router (client.rpc.ts) does.
-//
-// Every function takes `ServiceDeps` and reaches Postgres as `deps.db`. No
-// dependency on project.service.ts here (the reverse direction exists, for
-// cache invalidation) — project-ownership checks below query `db.project`
-// directly.
-//
-// `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on the
-// Postgres client rather than on the scope. Its L1 LRU has to survive across
-// calls to be worth anything, and the ingest hot path
-// (`ingest/src/client-auth.ts`, `http/client-auth.ts`) passes the scope it
-// holds on each call. One instance per process to read, one to invalidate.
+// `getClientByIdCached` is a module-scope `cacheablePerDb`, keyed on the Postgres
+// client rather than the scope: its L1 LRU has to survive across calls, and the
+// ingest hot path passes the scope it holds on each call.
 
 import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
@@ -22,10 +11,8 @@ import { hashClientSecret } from '../../shared/client-secret';
 export type IServiceClient = Client;
 
 /**
- * What a read path may return. The stored `secret` is a hash and the docs
- * promise it is never retrievable after creation
- * (apps/public/content/docs/api/manage/clients.mdx), so every path but the
- * one authentication uses drops it.
+ * What a read path may return. The stored `secret` is a hash that is never
+ * retrievable after creation, so every path but the one authentication uses drops it.
  */
 export type IPublicClient = Omit<Client, 'secret'>;
 
@@ -37,10 +24,8 @@ export type IServiceClientWithProject = Prisma.ClientGetPayload<{
   };
 }>;
 
-// Single source for the three client tiers — Prisma's own `ClientType` enum
-// (schema.prisma) is a `@openpanel/db` VALUE import, which
-// `core-uses-ctx-not-db-internals` forbids outside the four named seams, so
-// this is declared here instead and reused by client.rpc.ts / client.routes.ts.
+// Declared here because Prisma's `ClientType` enum would be an `@openpanel/db`
+// value import, which core forbids outside the named seams.
 export const CLIENT_TYPES = ['read', 'write', 'root'] as const;
 export type ClientType = (typeof CLIENT_TYPES)[number];
 
@@ -94,17 +79,14 @@ export async function getClientById(
  * invalidates Redis and that LRU; other nodes may serve stale from theirs for
  * up to 60s.
  *
- * The name is EMPTY on purpose: the in-factory `cacheable(...)` this replaces
- * was handed an anonymous arrow, so `fn.name` was `''` and the Redis key is
- * `cachable::<id>`. Naming it here would orphan every live entry.
+ * The name is EMPTY on purpose: the Redis key is `cachable::<id>` and naming it
+ * would orphan every live entry.
  */
 export const getClientByIdCached = cacheablePerDb(
   '',
   getClientById,
   FIVE_MINUTES_IN_SECONDS
 );
-
-// --- /manage REST CRUD (client.routes.ts) ---
 
 export async function listClientsForOrganization(
   deps: ServiceDeps,
@@ -251,10 +233,7 @@ export function createClientService(
       id: string
     ): Promise<IServiceClientWithProject | null> =>
       getClientByIdCached(deps, id),
-    /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. Its
-     *  own create/update/delete already call this; `project.service.ts` calls
-     *  the module-scope spelling to invalidate a project's clients on a
-     *  project mutation. */
+    /** Invalidates a single id in `getClientByIdCached`'s L1 LRU + Redis. */
     clearClientByIdCache: (id: string): Promise<number> =>
       getClientByIdCached.clear(deps, id),
     listClientsForOrganization: (

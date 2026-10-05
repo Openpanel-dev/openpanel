@@ -1,10 +1,5 @@
-// The one caller is `overview.rpc.ts`'s `runFilterCommand` procedure, which
-// reaches it through `ctx.services.assistant`.
-//
-// The agent app and its five tools are BUILT from the `deps` that procedure
-// already holds — importing this file constructs nothing, and the tool
-// handlers close over `deps` because `@better-agent/core`'s tool-handler
-// signature has no slot for them.
+// Tool handlers close over `deps` because @better-agent/core's tool handler
+// signature has no context parameter.
 import {
   type AgentToolDefinition,
   betterAgent,
@@ -35,7 +30,6 @@ import {
 } from '../assistant.constants';
 import { resolveModel } from './providers';
 
-// Helper, not vocabulary — copy locally rather than import from a module.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {

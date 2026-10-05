@@ -19,7 +19,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

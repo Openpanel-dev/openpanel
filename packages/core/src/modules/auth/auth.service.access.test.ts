@@ -1,9 +1,5 @@
-// Auth.service.ts is the only place the ladder is bound to real lookups, via
-// the lazy, memoized `getAccessChecks`. This proves that seam still takes a
-// fake `AccessLookups` cleanly — mocking `../../shared/access-lookups`, which
-// auth.service.ts reaches only through a dynamic import and which owns all
-// four lookups — and that the fail-closed ordering, messages and write-level
-// gate are unchanged.
+// Proves `getAccessChecks` accepts fake `AccessLookups`, and that the
+// fail-closed ordering, messages and write-level gate hold.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testServices } from '../../../test/service-deps';
@@ -24,11 +20,8 @@ const canWriteProject = mock(
 );
 const getProjectById = mock(async () => projectById);
 
-// Snapshotted BEFORE `mock.module` below, not after — restoring by
-// re-`import`ing later would resolve the already-mocked registry entry, not
-// the real module (bare `bun test` shares one module registry across every
-// file, and this one is reached by plenty of other modules — client.rpc.ts,
-// project.rpc.ts, integration.service.ts, ...).
+// Snapshotted before `mock.module`: bare `bun test` shares one module registry
+// across files, so re-importing later would return the mocked entry.
 const realAccessLookups = { ...(await import('../../shared/access-lookups')) };
 
 mock.module('../../shared/access-lookups', () => ({
@@ -49,15 +42,12 @@ beforeAll(async () => {
 
 afterAll(() => {
   mock.module('../../shared/access-lookups', () => realAccessLookups);
-  // `getAccessChecks()` memoizes for the life of the process — clear it so a
-  // later file in this bare run rebuilds against the real lookups just
-  // restored above, not this file's fakes.
+  // `getAccessChecks()` memoizes per process; clear it so later files in a bare
+  // run use the real lookups.
   resetAccessChecksForTests();
 });
 
 function authService() {
-  // Both arguments are ignored by `createAuthService`. Every member reaches
-  // the mocked lookups above.
   return createAuthService(
     {} as import('../../services').ServiceDeps,
     testServices()

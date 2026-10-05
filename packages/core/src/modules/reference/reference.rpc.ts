@@ -2,12 +2,6 @@
 // input parser. The explicit checks in the handlers below stay: `enforceAccess`
 // only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
 // from another id needs its own.
-//
-// The handler bodies reach the module through `ctx.services.reference`, so the
-// requestId minted at the edge reaches the Postgres call.
-//
-// The permission ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import {

@@ -1,6 +1,5 @@
-// `createEvent` takes `ServiceDeps` and writes through `deps.buffers.event`,
-// so the buffer is handed in rather than mocked onto a module specifier — no
-// `mock.module` and no restore to get wrong.
+// `createEvent` writes through `deps.buffers.event`, so the buffer is handed in
+// rather than mocked onto a module specifier.
 
 import { beforeAll, describe, expect, mock, test } from 'bun:test';
 import type { ServiceDeps } from '../../../services';

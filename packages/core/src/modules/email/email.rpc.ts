@@ -1,23 +1,9 @@
-// Deliberately R + C only (no `email.service.ts`): the three procedures' bodies
-// are three small `db.emailUnsubscribe` calls, inlined here the same way
-// conversation.rpc.ts inlines its organization lookup. Sending/templates stay
-// in @openpanel/email; core's `clients/email.ts` already wraps that package
-// for the one thing this module doesn't need — sending.
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check in the handler.
 //
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// This module has no queue/cron of its own, so there is no
-// `ctx.services.email`, same as `user`/`reference`.
-//
-// `verifyUnsubscribeToken` is imported from @openpanel/email's own
-// `unsubscribe.ts` file, not its barrel: the barrel (`@openpanel/email` ->
-// `./src`) pulls in @openpanel/db, which is exactly the cycle
-// `clients/email.ts`'s header describes for `sendEmail`. `unsubscribe.ts`
-// itself only touches `node:crypto`, so importing it directly sidesteps the
-// cycle instead of deferring it.
+// `verifyUnsubscribeToken` is imported from @openpanel/email's `unsubscribe.ts`,
+// not its barrel: the barrel pulls in @openpanel/db, a cycle (see
+// `clients/email.ts`). `unsubscribe.ts` only touches `node:crypto`.
 
 import { verifyUnsubscribeToken } from '@openpanel/email/src/unsubscribe';
 import { z } from 'zod';

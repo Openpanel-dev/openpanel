@@ -1,8 +1,6 @@
 // Tier-1 insight enrichment: a one-shot OpenAI call that scores and summarizes
-// auto-detected analytics insights so the product can filter noise, select
-// email-worthy items, and flag chart-reference candidates. No persistence, no
-// tools — pure transform. The worker queries stale insights, calls this, and
-// writes the results back (this module stays db-free).
+// insights so the product can filter noise, pick email-worthy items and flag
+// chart-reference candidates. No persistence: the caller writes results back.
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
@@ -113,8 +111,8 @@ function getApp(config: CoreConfig) {
 }
 
 /**
- * Enrich a batch of insights in a single model call. Returns one entry per
- * insight the model scored (caller maps back by id; missing ids are skipped).
+ * Enrich a batch of insights in one model call. Returns one entry per insight
+ * the model scored; the caller maps back by id and missing ids are skipped.
  * Keep batches modest (~25) so the prompt stays small and the mapping reliable.
  */
 export async function enrichInsights(

@@ -13,12 +13,9 @@ const noopLogger = {
   child: () => noopLogger,
 };
 
-// The client lookup and the logger are ARGUMENTS now — `deps` and `services`
-// come from the route, so only `@openpanel/redis`'s process-global `getCache`
-// and argon2 verification are still mocked at the specifier the source resolves
-// to (a whole-barrel replacement would drop every other export those barrels
-// carry for any other file sharing this process — bun:test only isolates
-// modules per file under `--isolate`, see AGENTS.md).
+// Only `@openpanel/redis`'s `getCache` and argon2 verification are mocked, at
+// the specifier the source resolves to: a whole-barrel replacement would drop
+// every other export for other files sharing this process.
 const actualRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...actualRedis,
@@ -75,10 +72,6 @@ const baseClient = {
   organizationId: 'org-456',
 };
 
-// ---------------------------------------------------------------------------
-// extractToken
-// ---------------------------------------------------------------------------
-
 describe('extractToken', () => {
   it('returns token from ?token= query param', () => {
     expect(extractToken({ token: 'abc' }, undefined)).toBe('abc');
@@ -102,10 +95,6 @@ describe('extractToken', () => {
     expect(extractToken({}, 'Basic abc123')).toBeUndefined();
   });
 });
-
-// ---------------------------------------------------------------------------
-// authenticateToken
-// ---------------------------------------------------------------------------
 
 describe('authenticateToken', () => {
   it('throws McpAuthError when token is missing', async () => {

@@ -1,8 +1,5 @@
-// Only the "is anyone logged in" boundary and the deterministic model-list
-// shape are exercised here — no LLM call, no database. `chat.models` reads
-// only `ctx.config.ai` + the static whitelist (assistant.constants.ts);
-// wiring the live-model whitelist against real provider keys is out of
-// scope for a unit test — see assistant.rpc.ts's header.
+// No LLM call and no database: `chat.models` reads only `ctx.config.ai` and the
+// static whitelist.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -19,7 +16,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

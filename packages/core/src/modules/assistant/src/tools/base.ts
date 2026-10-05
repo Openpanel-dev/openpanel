@@ -40,17 +40,12 @@ import {
 /** Series label for `get_rolling_active_users`' chart — always daily uniques. */
 const DAILY_ACTIVE_USERS_SERIES_LABEL = 'Daily active users';
 
-// Helper, not vocabulary — copied locally rather than imported from a module.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
   return [firstKey!, ...otherKeys];
 }
-
-// ─────────────────────────────────────────────────────────────────
-// DISCOVERY
-// ─────────────────────────────────────────────────────────────────
 
 export const listEventNames = (deps: ServiceDeps) =>
   chatTool(
@@ -110,10 +105,6 @@ export const getEventPropertyValues = (deps: ServiceDeps) =>
         propertyKey,
       })
   );
-
-// ─────────────────────────────────────────────────────────────────
-// SAVED DASHBOARDS & REPORTS (PREFER THESE OVER generate_report)
-// ─────────────────────────────────────────────────────────────────
 
 export const listDashboards = (deps: ServiceDeps) =>
   chatTool(
@@ -409,10 +400,8 @@ export const generateReport = (deps: ServiceDeps) =>
         ...(options ? { options } : {}),
       };
 
-      // Pre-validate against the real report schema so invalid shapes
-      // (bad operator, wrong filter value type, unknown chartType) are
-      // returned to the model as a structured error, letting the agent
-      // loop self-correct instead of producing a broken chart.
+      // Pre-validate so an invalid shape is returned to the model as a structured
+      // error it can self-correct from, instead of producing a broken chart.
       const parsed = zReportInput.safeParse(config);
       if (!parsed.success) {
         return {
@@ -433,8 +422,7 @@ export const generateReport = (deps: ServiceDeps) =>
         >[1]['config'],
       });
       return {
-        // Use the model-supplied title when present; the frontend
-        // falls back to a derived title from input if this is empty.
+        // The frontend derives a title when this is empty.
         ...(input.title?.trim() ? { name: input.title.trim() } : {}),
         ...chart,
       };
@@ -471,10 +459,6 @@ const ALPHABET_IDS = [
   'Y',
   'Z',
 ] as const;
-
-// ─────────────────────────────────────────────────────────────────
-// AGGREGATE ANALYTICS — default to current page's filters
-// ─────────────────────────────────────────────────────────────────
 
 export const getAnalyticsOverview = (deps: ServiceDeps) =>
   chatTool(
@@ -665,15 +649,10 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
       const window = windowDays ?? 1;
       const range = days ?? 30;
 
-      // Build a chart config that represents "unique users per day".
-      // We use a user-segment on `screen_view` — OpenPanel's standard
-      // pageview event — with a linear chart. The ChartEngine dedupes
-      // per profile_id because of `segment: 'user'`.
-      //
-      // The chart is daily uniques regardless of `windowDays`: the chart
-      // engine has no rolling-window series type. `windowDays` shapes the
-      // `summary` below and nothing else, which is why the series is
-      // labelled for what it is rather than for the requested window.
+      // Unique users per day: a user-segment on `screen_view` with a linear chart.
+      // The chart is daily uniques whatever `windowDays` is, since the engine has
+      // no rolling-window series type; `windowDays` only shapes the `summary`
+      // below, so the series is labelled for what it is.
       const endDate = new Date().toISOString().slice(0, 10);
       const startDate = new Date(Date.now() - (range - 1) * 86_400_000)
         .toISOString()
@@ -714,26 +693,19 @@ export const getRollingActiveUsers = (deps: ServiceDeps) =>
         config: config as Parameters<typeof runReportFromConfig>[1]['config'],
       });
 
-      // Also keep the rolling summary so the model can quote the
-      // single-number "MAU is 205,127" line.
       const summary = await getRollingActiveUsersCore(deps, {
         projectId: context.projectId,
         days: window,
       });
 
       return {
-        // `name` is the title the frontend `ChatReportResult` uses for
-        // the card header. The model is asked to supply a `title` —
-        // we use it when present, falling back to a generic label. The
-        // fallback names the CHART, not the summary: the two measure
-        // different windows.
+        // Names the CHART, not the summary: the two measure different windows.
         name:
           title?.trim() ||
           `${DAILY_ACTIVE_USERS_SERIES_LABEL} — last ${range} days`,
         label: summaryLabel,
         window,
         summary,
-        // Keys the frontend report renderer knows about.
         ...chart,
       };
     }
@@ -777,8 +749,6 @@ export const getFunnel = (deps: ServiceDeps) =>
         endDate: endDate ?? pageContext?.filters?.endDate,
       });
 
-      // Raw funnel numbers — step-by-step breakdown for the model to
-      // reason about.
       const numbers = await getFunnelCore(deps, {
         projectId: context.projectId,
         steps,
@@ -788,9 +758,7 @@ export const getFunnel = (deps: ServiceDeps) =>
         groupBy,
       });
 
-      // Chart config — same shape `generate_report` returns, so the
-      // frontend's `ChatReportResult` renderer draws an actual funnel
-      // chart via `<ReportChart>`.
+      // Same shape `generate_report` returns, so `ChatReportResult` draws a funnel.
       const chartConfig = {
         chartType: 'funnel' as const,
         interval: 'day' as const,
@@ -823,7 +791,6 @@ export const getFunnel = (deps: ServiceDeps) =>
       return {
         name: title?.trim() || `Funnel: ${steps.join(' → ')}`,
         numbers,
-        // Keys the frontend report renderer knows about.
         ...chart,
       };
     }
@@ -876,10 +843,6 @@ export const getUserFlow = (deps: ServiceDeps) =>
       });
     }
   );
-
-// ─────────────────────────────────────────────────────────────────
-// FREE-FORM QUERIES (escape hatches when nothing else fits)
-// ─────────────────────────────────────────────────────────────────
 
 export const queryEvents = (deps: ServiceDeps) =>
   chatTool(

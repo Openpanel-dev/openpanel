@@ -1,11 +1,3 @@
-// The github/google OAuth callbacks, same shape as gsc.routes.ts:
-// token-exchange/session logic lives in auth.service.ts's
-// `completeOAuthCallback`. `main.ts` mounts `dashboardRoutes` unconditionally
-// on every HTTP-serving boot, so this route is live.
-//
-// Per-route cookie signing is not wired yet (gsc.routes.ts's header names the
-// same gap), so `ctx.cookies.get` here reads the raw, unsigned cookie value.
-
 import { redirect } from 'elysia';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
@@ -18,8 +10,7 @@ import {
   OAuthCallbackError,
 } from './auth.service';
 
-// Both come from the provider's redirect, so they are attacker-supplied in
-// the sense that anyone can call this URL directly.
+// Anyone can call this URL directly, so both values are attacker-controlled.
 const callbackQuery = z.object({
   code: z.string().max(MAX_TOKEN),
   state: z.string().max(MAX_TOKEN),

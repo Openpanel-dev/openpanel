@@ -37,18 +37,14 @@ export function registerAllTools(server: McpServer, tools: McpToolDeps): void {
   registerEventNameTools(server, tools);
   registerPropertyValueTools(server, tools);
 
-  // Analytics — event data
   registerEventTools(server, tools);
   registerSessionTools(server, tools);
 
-  // Analytics — profiles
   registerProfileTools(server, tools);
   registerProfileMetricTools(server, tools);
 
-  // Analytics — groups (B2B)
   registerGroupTools(server, tools);
 
-  // Analytics — aggregated metrics
   registerOverviewTools(server, tools);
   registerActiveUserTools(server, tools);
   registerPageTools(server, tools);
@@ -56,13 +52,11 @@ export function registerAllTools(server: McpServer, tools: McpToolDeps): void {
   registerPageConversionTools(server, tools);
   registerTrafficTools(server, tools);
 
-  // Analytics — user behavior
   registerFunnelTools(server, tools);
   registerRetentionTools(server, tools);
   registerEngagementTools(server, tools);
   registerUserFlowTools(server, tools);
 
-  // Google Search Console
   registerGscOverviewTools(server, tools);
   registerGscPageTools(server, tools);
   registerGscQueryTools(server, tools);

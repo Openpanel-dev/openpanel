@@ -1,7 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// Wiring this router end-to-end against a real Postgres is a separate
-// concern from `protectedProcedure`'s auth guard, which is what these
-// tests cover.
+// Only the "is anyone logged in" boundary is exercised here; no database.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -17,7 +14,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

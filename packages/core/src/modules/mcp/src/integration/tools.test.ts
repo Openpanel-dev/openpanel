@@ -1,28 +1,18 @@
 /**
- * Integration tests for MCP tools against a real ClickHouse instance.
- *
- * `bunfig.toml`'s preload pins CLICKHOUSE_URL/DATABASE_URL to the isolated
- * `openpanel_test` databases (never production) — bun:test has no
- * vitest-style globalSetup, so this suite bootstraps and seeds its own
- * fixture (test/fixtures.ts) in beforeAll/afterAll, under its own
- * project/org id so it can run concurrently with other suites using the
- * same fixture helper.
- *
- * Fixture data (test/fixtures.ts's FIXTURE), seeded and queried with the clock
- * pinned to test/fixture-clock.ts's 12:00 UTC anchor so "5 days ago" is one
- * calendar day whatever time the suite runs:
+ * MCP tools against a real ClickHouse. `bunfig.toml`'s preload pins the
+ * isolated `openpanel_test` databases; the suite seeds its own fixture
+ * (test/fixtures.ts) under its own project/org id so it can run alongside other
+ * suites, with the clock pinned to test/fixture-clock.ts's 12:00 UTC anchor so
+ * "5 days ago" is one calendar day whenever it runs:
  *   Alice   — 3 events: session_start, page_view(/home), session_end  — 2 days ago — country: US, browser: Chrome
  *   Bob     — 0 events (inactive)                                      — profile created 90 days ago — country: SE
  *   Charlie — 5 events: session_start, screen_view, page_view(/shop), purchase, session_end — 5 days ago — browser: Firefox
  *             2 sessions (sess-charlie-1 5d ago, sess-charlie-2 10d ago)
  *
- * get_page_performance also calls getSettingsForProject (Postgres) — real,
- * not mocked, which is why setupPostgresFixtures runs alongside the
- * ClickHouse fixture.
- *
- * The fixture import reaches SEVEN levels up, out of this package and into the
- * repository root's `test/fixtures.ts`. That is deliberate: copying the
- * seeder here would fork the schema the golden harness seeds from.
+ * get_page_performance also reads Postgres (getSettingsForProject), unmocked,
+ * hence `setupPostgresFixtures`. The fixture is imported from the repository
+ * root's `test/fixtures.ts` rather than copied, so the schema the golden harness
+ * seeds from cannot fork.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
@@ -103,9 +93,6 @@ beforeAll(async () => {
   pinFixtureClock();
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
-  // The tools take `deps`/`services` as arguments, so the suite builds the same
-  // graph `mcp.routes.ts` hands them at runtime — no compat seam, no
-  // process-global registration.
   const { testServiceDeps } = await import('../../../../../test/service-deps');
   const { createServices } = await import('../../../../services');
   const deps = await testServiceDeps();
@@ -171,8 +158,6 @@ function rowsOf(result: { columns: string[]; rows: unknown[][] }): any[] {
   );
 }
 
-// ─── Discovery ────────────────────────────────────────────────────────────────
-
 describe('list_event_names', () => {
   it('returns { event_names: string[] }', async () => {
     const server = makeServer();
@@ -211,8 +196,6 @@ describe('get_event_property_values', () => {
     expect(Array.isArray(res.values)).toBe(true);
   });
 });
-
-// ─── Raw data ─────────────────────────────────────────────────────────────────
 
 describe('query_events', () => {
   it('returns all 8 fixture events', async () => {
@@ -318,8 +301,6 @@ describe('query_sessions', () => {
     expect(sessions[0].profile_id).toBe(FIXTURE.profiles.alice);
   });
 });
-
-// ─── Profile tools ────────────────────────────────────────────────────────────
 
 describe('find_profiles', () => {
   it('returns all 3 fixture profiles', async () => {
@@ -452,7 +433,6 @@ describe('get_profile_metrics', () => {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.charlie,
     });
-    // No error — bug was getProfileMetrics returns single object, not array
     expect(res.error).toBeUndefined();
     expect(res.profileId).toBe(FIXTURE.profiles.charlie);
     expect(res.sessions).toBe(2); // sess-charlie-1 and sess-charlie-2 in the sessions table
@@ -478,10 +458,8 @@ describe('get_profile_metrics', () => {
     expect(res.screenViews).toBe(0);
   });
 
-  // The query aggregates, so an unknown id used to come back as a row of
-  // zeros and the tool's not-found branch could never fire — a made-up
-  // profile reported confident zeros, indistinguishable from a real but
-  // inactive user (ISSUES.md H8e).
+  // The query aggregates, so an unknown id must not come back as a row of
+  // zeros that reads as a real but inactive user.
   it('reports not found for a profile that does not exist', async () => {
     const server = makeServer();
     registerProfileMetricTools(server as any, TOOLS);
@@ -494,8 +472,6 @@ describe('get_profile_metrics', () => {
     expect(res.totalEvents).toBeUndefined();
   });
 });
-
-// ─── Groups ───────────────────────────────────────────────────────────────────
 
 describe('list_group_types', () => {
   it('returns { types: [] } (no groups in fixtures)', async () => {
@@ -533,8 +509,6 @@ describe('get_group', () => {
     expect(res.groupId).toBe('nonexistent');
   });
 });
-
-// ─── Aggregated metrics ───────────────────────────────────────────────────────
 
 describe('get_analytics_overview', () => {
   it('returns summary with numeric metric fields and a series array', async () => {
@@ -659,8 +633,6 @@ describe('get_device_breakdown', () => {
     expect(devices).toContain('desktop');
   });
 });
-
-// ─── User behavior ────────────────────────────────────────────────────────────
 
 describe('get_funnel', () => {
   it('detects charlie completing session_start → purchase', async () => {

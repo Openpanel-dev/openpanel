@@ -1,7 +1,3 @@
-// `gscProjectSync` / `gscProjectBackfill` are this module's own queue (`gsc` in
-// the registry). `gscSync` is a cron fragment, spread into the ONE `cron`
-// queue by jobs.registry.ts.
-
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 

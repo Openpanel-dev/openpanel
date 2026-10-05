@@ -1,7 +1,3 @@
-/**
- * Shared utilities for insight modules
- */
-
 export function getWeekday(date: Date): number {
   return date.getUTCDay();
 }

@@ -1,6 +1,3 @@
-// `GET /misc/og/clear` and `GET /misc/favicon/clear` are deliberately absent:
-// nothing depends on them.
-
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
 import {

@@ -38,7 +38,7 @@ export function materialDecision(
     };
   }
 
-  // Otherwise: treat as non-material (silent refresh). You can add deadband crossing here if you store prior changePct.
+  // Otherwise non-material (silent refresh).
   return {
     material: false,
     reason: 'none',

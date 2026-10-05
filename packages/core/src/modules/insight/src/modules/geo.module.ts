@@ -18,8 +18,7 @@ import {
   selectTopDimensions,
 } from '../utils';
 
-/** clix inlined the value; `sign = 1` is the sessions table's live-row
- *  predicate and now binds like every other value. */
+/** `sign = 1` is the sessions table's live-row predicate. */
 const ACTIVE_SESSION_SIGN = sql.param('Int8', 1);
 
 async function fetchGeoAggregates(ctx: ComputeContext): Promise<{

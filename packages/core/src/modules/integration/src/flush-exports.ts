@@ -1,10 +1,5 @@
-// Prisma, the ClickHouse client and the object-store adapter factory arrive
-// as injected deps so the orchestration is testable without `mock.module`
-// (same idiom as modules/session/src/runtime.ts).
-//
-// The window query already binds every value through ClickHouse's own
-// `{name:Type}` params; converting it to the `sql` tag would change the
-// emitted statement, so it stays byte-identical.
+// Prisma, ClickHouse and the object-store adapter factory are injected so the
+// orchestration is testable without `mock.module`.
 
 import { DateTime } from '@openpanel/shared';
 import { isProviderError } from '../../../clients/provider-error';
@@ -45,9 +40,8 @@ const DEFAULT_CONCURRENCY = 4;
 // would skip all but one row.
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
-// Local literal, not @openpanel/db's TABLE_NAMES — same choice cohort.service.ts
-// made, and for the same reason: importing that module constructs a ClickHouse
-// client at import time.
+// Local literal, not @openpanel/db's TABLE_NAMES: importing that module
+// constructs a ClickHouse client at import time.
 const EVENTS_TABLE = 'events';
 
 const EXPORT_COLUMNS = `
@@ -118,11 +112,8 @@ const formatCh = (date: Date): string =>
   DateTime.fromJSDate(date).setZone('UTC').toFormat('yyyy-MM-dd HH:mm:ss.SSS');
 
 /**
- * Drain new ClickHouse events into each configured object-store export.
- *
- * ClickHouse is the single source of truth: this job windows the events
- * table by `inserted_at` and uploads batched files. Export never touches the
- * ingestion path.
+ * Drain new ClickHouse events into each configured object-store export,
+ * windowed by `inserted_at`. Never touches the ingestion path.
  */
 export async function runFlushExportsCron(
   deps: FlushExportsDeps
@@ -369,8 +360,8 @@ async function saveCursor(
   });
 }
 
-// Local copy for the reason every modules/*/src/dates.ts gives: importing
-// @openpanel/db's clickhouse/client constructs a client at import time.
+// Local copy: importing @openpanel/db's clickhouse/client constructs a client
+// at import time.
 function convertClickhouseDateToJs(date: string): Date {
   return new Date(`${date.replace(' ', 'T')}Z`);
 }

@@ -1,8 +1,5 @@
-// Only the "is anyone logged in" boundary (+ the token check, which never
-// touches a database) is exercised here. `unsubscribe`'s upsert and
-// `getPreferences`/`updatePreferences`'s reads ride on @openpanel/db
-// (lazy-loaded, see email.rpc.ts's header); wiring this router end-to-end
-// against a real Postgres is P6's (protectedProcedure) job, not this one's.
+// Only the "is anyone logged in" boundary and the token check (which never
+// touches a database) are exercised here.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -19,7 +16,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
@@ -56,11 +52,10 @@ test('unsubscribe rejects an invalid token before touching the database', async 
   ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 });
 
-// `updatePreferences` used to take `z.record(z.string(), z.boolean())`, so an
-// unknown key was written to `emailUnsubscribe` where nothing reads it. The
-// first cut of the fix used `z.record(z.enum(...))`, which in zod 4 is
-// EXHAUSTIVE — it rejected a single real toggle, which is what the form sends.
-// These pin both halves so that trap cannot come back.
+// `updatePreferences` once took `z.record(z.string(), z.boolean())`, so an
+// unknown key was written to `emailUnsubscribe` where nothing reads it. An
+// enum-keyed `z.record` is EXHAUSTIVE in zod 4 and rejected a single real
+// toggle, which is what the form sends. These pin both halves.
 test('updatePreferences accepts a subset of real categories', () => {
   expect(
     zUpdateEmailPreferences.safeParse({ categories: { weekly_digest: true } })

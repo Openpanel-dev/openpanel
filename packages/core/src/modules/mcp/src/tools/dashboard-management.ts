@@ -143,11 +143,9 @@ function reportUrl(
   return `${dashboardBaseUrl(config)}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
-// `dbNull` is `Prisma.DbNull` (an explicit SQL NULL on a nullable Json column),
-// threaded in as `unknown` rather than importing `@openpanel/db` here — same
-// shape notification.service.ts's `isValidPayload` uses for the same sentinel.
-// It arrives on `McpToolDeps.dbJsonNull`, resolved once by `mcp.service.ts`
-// when it builds the server.
+// `dbNull` is `Prisma.DbNull` (explicit SQL NULL on a nullable Json column),
+// passed as `unknown` via `McpToolDeps.dbJsonNull` instead of importing
+// `@openpanel/db` here.
 function reportData(report: z.infer<typeof reportSchema>, dbNull: unknown) {
   return {
     name: report.name,

@@ -1,9 +1,5 @@
 // Both routes stay unauthenticated and hidden from the OpenAPI document,
 // deliberately.
-//
-// The `/tools` prefix is spelled out on each path since `defineRoutes` has no
-// prefix mechanism; apps/public calls these URLs with the full
-// `/tools/ip-lookup` and `/tools/site-checker` paths.
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';

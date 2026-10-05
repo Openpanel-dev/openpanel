@@ -24,12 +24,10 @@ const TAGS = ['Profile'];
 type StatusFn = (code: 400 | 404, body: string) => unknown;
 
 /**
- * Deliberately NOT `zIncrementPayload` from ingest.constants: that schema is
- * `/track`'s, where `value` is optional and must be positive. This route has
- * always accepted a negative delta and has always needed a value — without
- * one the service writes NaN. So the schema below is exactly as permissive as
- * the paths that work today, and rejects only the bodies that reached
- * `input.property.split` and answered 500.
+ * Deliberately NOT `zIncrementPayload` from ingest.constants: that is `/track`'s, where
+ * `value` is optional and positive. This route accepts a negative delta and needs a
+ * value (without one the service writes NaN), so this schema rejects only the bodies
+ * that reached `input.property.split` and answered 500.
  */
 const zAdjustProperty = z.object({
   profileId: zProfileId,

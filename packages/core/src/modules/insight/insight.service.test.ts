@@ -1,8 +1,7 @@
-// The subject's functions take `ServiceDeps`, so `deps.db` IS the fake below
-// and no Prisma module mock is needed. The intra-package modules (store,
-// referrer-spikes, legacy-scan) are still `mock.module`'d — that works here
-// with no import-time side effects to race because every mock is registered
-// before the subject's first call, not before its import.
+// The subject's functions take `ServiceDeps`, so `deps.db` is the fake below and
+// no Prisma module mock is needed. The intra-package modules (store,
+// referrer-spikes, legacy-scan) are `mock.module`'d, registered before the
+// subject's first call.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -163,8 +162,7 @@ test('explainInsight is a cache-aside over the AI call, keyed by the caller-supp
   expect(generateInsightExplanation).toHaveBeenCalledTimes(1);
   expect(second).toEqual(first);
 
-  // The cache it read and wrote is the one the scope handed it, not a
-  // module-level `getRedisCache()` connection nobody closes.
+  // The cache used is the one the scope handed in, not a module-level connection.
   expect(redis.setex).toHaveBeenCalledTimes(1);
   expect(redis.get).toHaveBeenCalledTimes(2);
 });

@@ -3,8 +3,8 @@
 // the read paths AND the mutation return values — a create/update that echoes
 // the stored row is how a webhook's Authorization header reached the client.
 //
-// Access is a real `getAccessChecks()` over faked lookups, the same seam
-// auth.service.access.test.ts uses; storage is an in-memory fake `deps.db`.
+// Access is a real `getAccessChecks()` over faked lookups; storage is an
+// in-memory fake `deps.db`.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';

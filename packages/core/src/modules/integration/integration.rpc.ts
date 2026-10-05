@@ -1,11 +1,6 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// Every access assertion (including the data-dependent "authorize against the
-// EXISTING row" rule) lives in integration.service.ts, not here — see that
-// file's header for why.
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check. Access
+// assertions live in integration.service.ts.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
@@ -44,8 +39,6 @@ export const integrationRouter = createTRPCRouter({
       createOrUpdateSlackIntegration(ctx, ctx.session.userId, input)
     ),
 
-  // Generic create/update for any form-configured integration. Per-type
-  // behavior lives in the server plugin; no switch here.
   createOrUpdate: protectedProcedure
     .input(
       z.object({

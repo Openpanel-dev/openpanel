@@ -19,11 +19,9 @@ import {
 
 const DELIMITER = '|||';
 
-/** One number, two call sites: the threshold below and `enumerateDimensions`'s
- *  fallback, which had drifted back to the pre-tightening 100. */
+/** One number, two call sites: the threshold below and `enumerateDimensions`'s fallback. */
 const MAX_PAGES_PER_RUN = 30;
 
-/** clix inlined the value; the pageview event name now binds. */
 const SCREEN_VIEW_EVENT = sql.string('screen_view');
 
 async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
@@ -142,13 +140,10 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
 export const pageTrendsModule: InsightModule = {
   key: 'page-trends',
   cadence: ['daily'],
-  // Share-based thresholds (values in basis points: 100 = 1%)
-  // Tightened to cut noise: page-trends was ~85% of all insight rows because
-  // a 0.5pp share wiggle on up to 100 pages/run crossed the bar.
-  // minTotal: require at least 1% combined share (current + baseline)
-  // minAbsDelta: require at least 1.0 percentage point shift
-  // minPct: require at least 35% relative change in share
-  // maxDims: evaluate at most MAX_PAGES_PER_RUN pages/run (was 100)
+  // Share-based thresholds (values in basis points: 100 = 1%), tight because a
+  // 0.5pp share wiggle on up to 100 pages/run used to flood the insight rows.
+  // minTotal: 1% combined share; minAbsDelta: 1.0pp shift; minPct: 35% relative
+  // change in share; maxDims: at most MAX_PAGES_PER_RUN pages/run.
   thresholds: {
     minTotal: 100,
     minAbsDelta: 100,
@@ -198,13 +193,11 @@ export const pageTrendsModule: InsightModule = {
       results.push({
         ok: true,
         dimensionKey: dimKey,
-        // Use share in basis points for threshold checks
         currentValue: currentShareBp,
         compareValue: compareShareBp,
         changePct: shareChangePct,
         direction,
         extra: {
-          // Keep absolute values for display
           pageviewsCurrent,
           pageviewsCompare,
           shareShiftPp,

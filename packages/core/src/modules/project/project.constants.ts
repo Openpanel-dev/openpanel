@@ -1,7 +1,4 @@
-// `zCreateProject`/`zUpdateProject` are the /manage REST body schemas
-// (apps/api/src/controllers/manage.controller.ts), moved here with the CRUD
-// bodies they validate (project.service.ts's
-// createProjectForOrganization/updateProjectForOrganization).
+// `zCreateProject`/`zUpdateProject` are the /manage REST body schemas.
 //
 // `zChartEvent` is imported by name, not re-exported: `zProjectFilterEvent`
 // extends it as a bound identifier.

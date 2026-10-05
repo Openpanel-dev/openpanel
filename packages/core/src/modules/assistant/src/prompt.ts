@@ -136,11 +136,6 @@ When you call a chart tool, keep prose SHORT — a one-line caption like "Here's
 \`{ "chartType": "linear", "interval": "day", "startDate": "...", "endDate": "...", "previous": true, "series": [{ "type": "event", "name": "subscription_charge", "segment": "property_sum", "property": "amount" }], "unit": "$", "title": "MRR vs last month" }\``;
 }
 
-/**
- * Build the system prompt for an agent run, layering page context onto
- * the base behavioral rules. Called by the agent factory's `instruction`
- * function.
- */
 export function buildSystemPrompt(context: ChatAgentContext): string {
   return [buildBasePrompt(), buildPageContextSection(context.pageContext)].join(
     '\n\n'
@@ -148,10 +143,8 @@ export function buildSystemPrompt(context: ChatAgentContext): string {
 }
 
 function buildPageContextSection(pc?: PageContext): string {
-  // The date varies every day, so we keep it out of the cached prefix
-  // and render it at the bottom of the prompt together with the rest
-  // of the per-request context. UTC is fine — analytics queries bucket
-  // by day boundaries, not user timezone.
+  // The date changes daily, so it goes at the bottom, out of the cached prefix.
+  // UTC: queries bucket by day, not by user timezone.
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
   const dayName = today.toLocaleDateString('en-US', {
@@ -172,9 +165,8 @@ function buildPageContextSection(pc?: PageContext): string {
 
   if (pc.filters?.range) {
     const range = pc.filters.range;
-    // Resolve presets ("6m", "7d", …) to actual dates in the project's
-    // timezone so the model sees the same window the dashboard shows.
-    // Falls through gracefully if the range isn't a preset.
+    // Resolve presets ("6m", "7d") in the project's timezone so the model sees
+    // the window the dashboard shows.
     const resolved = resolveDateRange(pc.filters);
     const dates = ` (${resolved.startDate} to ${resolved.endDate})`;
     const interval = pc.filters.interval ?? 'day';

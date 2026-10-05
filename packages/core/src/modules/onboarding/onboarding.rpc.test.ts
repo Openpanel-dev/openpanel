@@ -1,8 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// The org+project+client creation rides on @openpanel/db (lazy-loaded
-// through ./onboarding.service); wiring this router end-to-end against a
-// real Postgres is P6's (protectedProcedure) job, not this one's — see
-// onboarding.rpc.ts's header.
+// Only the "is anyone logged in" boundary is exercised here; no database.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -18,7 +14,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape (packages/db/src/services/auth-session.service.ts) —
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 

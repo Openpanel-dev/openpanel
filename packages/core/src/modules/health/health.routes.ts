@@ -14,11 +14,9 @@ import { chQuery } from '../../ch-query';
 import { defineRoutes } from '../../http/define';
 import { currentReadiness } from './src/readiness';
 
-// The first zod schema through the OpenAPI plugin: response schemas generate
-// with `io: 'output'`, which is what zod 4's native Standard Schema JSON
-// conversion does by default for the `response` slot — no `mapJsonSchema`
-// override needed, and none is added, because that hook gets no `io` argument
-// and would collapse the input/output split this schema relies on.
+// Response schemas generate with `io: 'output'`, which is zod 4's default for the
+// `response` slot. No `mapJsonSchema` override: that hook gets no `io` argument and
+// would collapse the input/output split this schema relies on.
 const healthLiveResponseSchema = z.object({ live: z.literal(true) });
 
 // Two readiness bodies: `{ready:true}` at 200, and

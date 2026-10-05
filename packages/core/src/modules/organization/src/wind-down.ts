@@ -12,23 +12,18 @@ import {
 import type { HighlightProject } from './win-back-highlight';
 
 /**
- * Wind-down: what happens to a trial that expired without a purchase.
+ * What happens to a trial that expired without a purchase: four emails over 44
+ * days, then deletion. Ingestion keeps flowing until day 21 so the first two
+ * emails have something to be about; from day 21 the ingestion hook rejects
+ * events (it reads `windDownStep`). Day 44 arms `deleteAt`, which the delete
+ * cron sweeps seven days later.
  *
- * Four emails over 44 days, then deletion. Ingestion keeps flowing until day
- * 21 so the first two emails have something to be about; from day 21 the
- * ingestion hook rejects events (it reads `windDownStep`). Day 44 arms
- * `deleteAt`, and the existing delete cron sweeps it seven days later.
+ * The schedule is measured from `windDownStartedAt`, not `subscriptionEndsAt`:
+ * for the existing backlog that is hundreds of days old and would put every org
+ * past day 44 on the first tick.
  *
- * The schedule is measured from `windDownStartedAt`, stamped when an org
- * enters. That is the whole reason the column exists: `subscriptionEndsAt` for
- * the existing backlog is hundreds of days old, so anchoring there would put
- * every one of them past day 44 on the first tick.
- *
- * The population this is really aimed at is the org whose trial lapsed months
- * ago and whose SDKs never stopped — still sending events, still costing
- * storage, never billed. Those orgs are the ones worth converting, so they
- * enter the sequence first and their emails lead with what they are currently
- * sending rather than with a lifetime total.
+ * Orgs whose SDKs never stopped sending are the ones worth converting, so they
+ * enter first and their emails lead with current volume, not a lifetime total.
  */
 
 const BLOCK_DAY = 21;
@@ -142,8 +137,6 @@ function createUsageGetter(org: WindDownOrganization, deps: WindDownDeps) {
   let promise: Promise<WindDownUsage> | null = null;
   return () => {
     const projectIds = org.projects.map((project) => project.id);
-    // Only orgs that clear a day gate pay for these two ClickHouse counts, and
-    // each org pays at most once per tick.
     promise ??= Promise.all([
       deps.getOrganizationEventsCount(projectIds),
       deps.getOrganizationEventsCountSince(
@@ -408,7 +401,6 @@ export async function runWindDownCron(
     const startedAt = org.windDownStartedAt ?? now;
     const seen = activity.get(org.id);
 
-    // Most recently active project carries the highlight facts.
     let highlightProject: HighlightProject | null = null;
     let highlightSeen: Date | null = null;
     for (const project of org.projects) {

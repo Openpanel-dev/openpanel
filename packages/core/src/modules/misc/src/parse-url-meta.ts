@@ -1,5 +1,3 @@
-// Ported verbatim from apps/api/src/utils/parseUrlMeta.ts.
-
 import urlMetadata from 'url-metadata';
 
 const URL_METADATA_TIMEOUT_MS = 500;

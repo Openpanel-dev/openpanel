@@ -1,12 +1,9 @@
-// This route delegates its ClickHouse insert to import.service.ts's
-// `insertRawEventsBatch`.
-//
 // `allow: ['read', 'root']`: a `write`-type client may not import.
 //
 // The body is typed but not shape-validated for this route.
 //
-// `client.projectId` is `null` for a root client, which is why the handler
-// guards on it explicitly before importing.
+// `client.projectId` is `null` for a root client, hence the explicit guard
+// before importing.
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';

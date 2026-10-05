@@ -1,12 +1,6 @@
-// `main.ts` passes its own `deps` to `createInitialSalts` at boot;
-// `salt.jobs.ts`'s handler passes its `JobCtx` (a `ServiceDeps` by
-// construction) to `rotateSalt`.
-//
-// `getSalts` is a module-scope `cacheablePerDb`, keyed on the Postgres client
-// rather than on the scope — its L1 LRU has to survive across calls to be
-// worth anything, so `ingest.service.ts`'s `/track` hot path passes the
-// scope it holds rather than a boot-scoped singleton. `generateNewSalt`
-// clears the same instance.
+// `getSalts` is a module-scope `cacheablePerDb`, keyed on the Postgres client rather
+// than the scope: its L1 LRU has to survive across calls, so the `/track` hot path
+// passes the scope it holds. `generateNewSalt` clears the same instance.
 
 import { generateSalt } from '@openpanel/shared/server';
 import { cacheablePerDb } from '../../cacheable-per-deps';
@@ -28,9 +22,7 @@ export interface Salts {
   previous: string;
 }
 
-/** Only Postgres — narrowed so `main.ts`'s `AppDeps` (which never carries
- *  `queues`; that field only exists on the per-request/per-job `Ctx`)
- *  satisfies it with no cast. */
+/** Only Postgres, so `main.ts`'s `AppDeps` (which has no `queues`) satisfies it without a cast. */
 type SaltDeps = Pick<ServiceDeps, 'db'>;
 
 function sleep(ms: number): Promise<void> {
@@ -51,9 +43,7 @@ export async function fetchSalts(deps: SaltDeps): Promise<Salts> {
   return { current: curr.salt, previous: prev?.salt ?? curr.salt };
 }
 
-/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. No arguments, so
- *  the Redis key stays the single `cachable:op:salt:[]` the in-factory
- *  `cacheable(SALT_CACHE_NAME, () => fetchSalts(deps), ...)` produced. */
+/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. No arguments, so the Redis key is the single `cachable:op:salt:[]`. */
 export const getSalts = cacheablePerDb(
   SALT_CACHE_NAME,
   fetchSalts,

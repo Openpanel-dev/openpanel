@@ -1,10 +1,5 @@
 // The /manage/projects REST surface: root-only project CRUD, delegating to
 // project.service.ts's create/update functions.
-//
-// NAMED GAP, same as import.routes.ts: this route is not yet reachable.
-// `authenticateClient` (http/client-auth.ts) is a stub that always returns
-// null, so `clientAuth` 401s every request until it is filled in; main.ts
-// also does not mount `publicApiRoutes` until a real `AppDeps` exists.
 // `allow: ['root']` restricts project management to root clients.
 
 import { z } from 'zod';

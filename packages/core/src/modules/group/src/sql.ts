@@ -1,5 +1,3 @@
-// Every ClickHouse query the group module runs, as pure `sql` fragments.
-//
 // Cluster note: `groups`, `profiles` and `events` are Distributed on Cloud. No
 // query here carries an `IN (subquery)`; the `IN` lists bind as `Array(String)`
 // params, which is a literal list to the planner.

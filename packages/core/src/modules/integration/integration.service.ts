@@ -1,10 +1,6 @@
-// Authorization here is data-dependent — an update must authorize against the
-// EXISTING row's scope, not the attacker-controlled input — so, unlike a
-// simple input-shape ladder check, the access assertions travel WITH the
-// business logic.
-//
-// Every exported function takes `ServiceDeps` and reaches Postgres as
-// `deps.db`, so a requestId minted at the edge reaches the query.
+// Authorization is data-dependent: an update must authorize against the
+// EXISTING row's scope, not the attacker-controlled input, so the access
+// assertions live here with the business logic.
 
 import { z } from 'zod';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
@@ -129,9 +125,7 @@ export async function listIntegrationsForProject(
   const db = deps.db;
   const integrations = await db.integration.findMany({
     where: {
-      // The project's own integrations, plus legacy org-wide integrations
-      // (projectId null) so they stay visible/selectable during the
-      // transition off org-scoping.
+      // Plus legacy org-wide integrations (projectId null).
       OR: [{ projectId }, { projectId: null, organizationId }],
       config: {
         not: {},
@@ -378,10 +372,6 @@ export async function deleteIntegration(
   return { id };
 }
 
-// - Slack OAuth callback ---------------------------------------------------
-// The token-exchange/upsert logic behind this module's `/webhook/slack` route
-// (integration.routes.ts).
-
 const slackOAuthMetadataSchema = z.object({
   organizationId: z.string(),
   integrationId: z.string(),
@@ -457,10 +447,6 @@ export async function completeSlackOAuthCallback(
 
   return { organizationId, projectId };
 }
-
-// ---------------------------------------------------------------------------
-// `ctx.services.integration` binding.
-// ---------------------------------------------------------------------------
 
 /** A module function's signature with its leading `ServiceDeps` dropped. */
 type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =

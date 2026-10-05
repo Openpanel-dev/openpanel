@@ -1,8 +1,5 @@
-// gsc.service.ts's db/ch access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// `mock.module` is registered before the subject's first call; the subject's
+// import is side-effect-free.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -99,12 +96,10 @@ const ch = {
   insert: mock(async () => undefined),
 };
 
-// The subject's functions take `ServiceDeps`, so `deps.db`/`deps.ch` ARE the
-// fakes above — no `@openpanel/db` module mock is needed for either. The one
-// module still mocked is core's own `ch-query`, which is what the subject now
-// calls. `mock.module` has no per-file scope under bare `bun test` (AGENTS.md),
-// so snapshot the real module into a plain object FIRST and restore it in
-// afterAll — restoring via the live import binding would re-apply the mock.
+// `deps.db`/`deps.ch` are the fakes above. The one module still mocked is
+// core's own `ch-query`. Snapshot the real module into a plain object first and
+// restore it in afterAll: restoring via the live import binding would re-apply
+// the mock.
 const realChQuery = { ...(await import('../../ch-query')) };
 mock.module('../../ch-query', () => ({
   ...realChQuery,

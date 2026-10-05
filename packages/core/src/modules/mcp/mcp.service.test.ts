@@ -1,22 +1,15 @@
 /**
- * `auth.test.ts` covers `authenticateToken`/`extractToken` in isolation, and
- * `src/integration/tools.test.ts` covers tool business logic against real
- * ClickHouse — neither exercises this file's own logic: turning one HTTP POST
- * into a real MCP JSON-RPC exchange (auth → ephemeral server → synthetic
- * initialize handshake → dispatch → response), with no session surviving
- * between requests. This file is that missing layer: the client lookup is a
- * stub on the `Services` handed in, everything from `createMcpServer` down —
- * the real SDK server, `InMemoryTransport`, the wire-format handshake, tool
- * registration and dispatch — runs for real.
+ * Covers what `auth.test.ts` and `src/integration/tools.test.ts` do not: one
+ * HTTP POST becoming a real MCP JSON-RPC exchange (auth, ephemeral server,
+ * synthetic initialize handshake, dispatch, response), with no session surviving
+ * between requests. The client lookup is a stub; everything from
+ * `createMcpServer` down (SDK server, `InMemoryTransport`, handshake, tool
+ * dispatch) runs for real.
  *
- * `deps` and `services` are now ARGUMENTS, so the Postgres handle and the
- * client lookup are supplied by the test rather than mocked into the module
- * registry. The only surviving `mock.module` calls are for the two
- * process-global seams MCP auth still reaches (`@openpanel/redis`'s `getCache`
- * and argon2 verification), and both are restored in `afterAll` from a
- * plain-object snapshot taken before the first `mock.module` call — restoring
- * via the live `await import(...)` binding itself is a no-op once mocked, since
- * namespace bindings track the current mock.
+ * `mock.module` is used only for `@openpanel/redis`'s `getCache` and argon2
+ * verification, restored in `afterAll` from a plain-object snapshot taken before
+ * the first mock: restoring via the live `await import(...)` binding is a no-op
+ * once mocked.
  */
 
 import {
@@ -66,10 +59,8 @@ beforeAll(async () => {
 const mockFindUnique = mock();
 const mockGetClientByIdCached = mock();
 
-// Real pino would instantiate a pino-pretty transport worker thread whenever
-// NODE_ENV isn't 'production' (pino-logger.ts), which intermittently fails
-// to spawn under Bun. `deps.logger` is an argument now, so the test simply
-// hands in a noop.
+// Real pino spawns a pino-pretty worker thread outside production, which
+// intermittently fails to start under Bun.
 const noopLogger = {
   fatal: () => {
     // no-op

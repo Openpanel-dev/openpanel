@@ -1,12 +1,5 @@
-// The export module owns no data of its own — it is the public read API
-// (`/export` + `/insights`). Every handler in `export.routes.ts` is a thin
-// delegate onto the overview/chart/event/session/profile/group/gsc/report
-// services. This file holds only the plumbing every route shares — resolving
-// a project id and a date range.
-//
-// The sibling services these routes delegate to are imported by RELATIVE
-// path rather than through this package's own barrel (`@openpanel/core`), to
-// avoid re-entering it mid-evaluation, which a relative import cannot do.
+// Sibling services are imported by relative path, not through the package barrel,
+// to avoid re-entering it mid-evaluation.
 
 import { resolveDateRange } from '@openpanel/shared';
 import type { AuthenticatedClient } from '../../http/client-auth';
@@ -126,8 +119,6 @@ export async function resolveGscInsightsDateRange(
     endDate: endDate.slice(0, DATE_ONLY_LENGTH),
   };
 }
-
-// --- service ------------------------------------------------------------
 
 export function createExportService(
   deps: ServiceDeps,

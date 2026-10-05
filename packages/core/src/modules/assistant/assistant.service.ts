@@ -1,16 +1,6 @@
-// The bulk of the logic lives under./src — this file is the module's public
-// entry point, the same shape as insight.service.ts drawing from insight/src/*.
-//
-// Every export takes `deps`. `./src/app.ts` and `./src/filter-command.ts`
-// construct nothing at import time any more, so the three lazy loaders that
-// used to stand between this file and them are gone (R15) — a static import
-// here builds no agent, opens no provider client and reaches no database.
-//
-// The chat app is memoized PER `deps` object rather than per process: a Ctx
-// builds one `ServiceDeps` per unit of work (context.ts's
-// `installLazyServices`), so two calls inside one chat request share an app
-// while two requests do not — the same trade `cacheable-per-deps.ts` records
-// for the cross-module caches.
+// The chat app is memoized per `deps` object, not per process: a Ctx builds one
+// `ServiceDeps` per unit of work, so calls inside one chat request share an app
+// and separate requests do not.
 
 import type { ServiceDeps, Services } from '../../services';
 import type { PageContext } from './assistant.constants';

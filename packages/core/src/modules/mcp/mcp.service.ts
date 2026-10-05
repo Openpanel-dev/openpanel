@@ -1,15 +1,7 @@
-// Stateless-POST MCP transport. Every POST authenticates from scratch and
-// gets its own ephemeral McpServer; nothing survives between requests, so
-// there is no session to store, touch or close, and no cross-instance
-// stickiness requirement. GET/SSE and DELETE are not supported.
-//
-// MCP is not a separate process and has no dependency builder of its own.
-// `rest.routes.ts` mounts it with `.use(mcpRoutes(deps))`, so the route
-// already holds the API's connections; this factory closes over them and
-// hands them to `createMcpServer` per request. The
-// `@modelcontextprotocol/sdk` tool-handler signature has no context
-// parameter, which is a CLOSURE problem — solved by building the server
-// where `deps` is in hand — not a context problem.
+// Every POST authenticates from scratch and gets its own ephemeral McpServer,
+// so there is no session to store or close and no cross-instance stickiness.
+// GET/SSE and DELETE are not supported. Tool handlers close over `deps` because
+// the `@modelcontextprotocol/sdk` handler signature has no context parameter.
 
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import {
@@ -33,11 +25,9 @@ export type { McpAuthContext } from './src/auth';
 export { extractToken, McpAuthError } from './src/auth';
 
 /**
- * The wire constants of the synthetic handshake. They are a CONTRACT with
- * whatever client is on the other end of `/mcp`, not an implementation
- * detail: `mcp.service.test.ts` pins them, because bumping
- * `@modelcontextprotocol/sdk` does not bump them and nothing else would
- * notice if it did.
+ * Wire constants of the synthetic handshake. They are a contract with clients
+ * of `/mcp`: `mcp.service.test.ts` pins them because bumping
+ * `@modelcontextprotocol/sdk` does not bump them.
  */
 const MCP_PROTOCOL_VERSION = '2024-11-05';
 const MCP_PROXY_CLIENT_INFO = { name: 'mcp-proxy', version: '0' };
@@ -70,11 +60,8 @@ function invalidRequest(body: unknown, message: string): McpHttpResult {
 }
 
 /**
- * Handle one stateless MCP POST request end-to-end.
- *
- * Auth failures resolve to a 401 result rather than throwing, so the caller
- * (an HTTP framework's route handler) needs only one catch block for
- * everything else.
+ * Handle one stateless MCP POST request. Auth failures resolve to a 401 result
+ * rather than throwing, so callers need one catch block for everything else.
  */
 export async function handleStatelessMcpRequest(
   deps: ServiceDeps,
@@ -155,11 +142,9 @@ async function runOnEphemeralServer(
       clientTransport.send(message).catch(reject);
     });
   } finally {
-    // This function opened the pair, so this function closes it. `server.close`
-    // closes `serverTransport`, and an InMemoryTransport closes its linked
-    // peer, so one call tears down both ends — and with them the SDK's response
-    // handlers and in-flight abort controllers, which a dropped-on-the-floor
-    // server would have kept alive until GC.
+    // `server.close` closes `serverTransport`, and an InMemoryTransport closes its
+    // linked peer, so one call tears down both ends and the SDK's response
+    // handlers and abort controllers with them.
     await server.close();
   }
 }
@@ -248,10 +233,6 @@ function logToolResult(
   );
 }
 
-/**
- * The MCP tool tree reaches Postgres and ClickHouse through the `deps` this
- * factory closes over. `extractToken` is pure and stays a bare re-export.
- */
 export function createMcpService(deps: ServiceDeps, services: () => Services) {
   return {
     extractToken,

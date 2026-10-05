@@ -143,7 +143,6 @@ export const suggestBreakdowns = (deps: ServiceDeps) =>
         )
       );
 
-      // Aggregate property keys across events
       const keyCount = new Map<string, number>();
       for (const r of propsPerEvent) {
         for (const p of r.properties) {
@@ -151,7 +150,6 @@ export const suggestBreakdowns = (deps: ServiceDeps) =>
         }
       }
 
-      // Filter out keys that are already used as breakdowns
       const used = new Set((draft.breakdowns ?? []).map((b) => b.name));
       const suggestions = Array.from(keyCount.entries())
         .filter(([k]) => !used.has(k))
@@ -251,8 +249,7 @@ export const findAnomaliesInCurrentReport = (deps: ServiceDeps) =>
         } as unknown as Parameters<typeof runReportFromConfig>[1]['config'],
       });
 
-      // Best-effort anomaly detection on the first series of the result.
-      // The data shape varies by chart type — we look for an array of
+      // Best-effort anomaly detection on the first series, if it is an array of
       // { date, count } points.
       // biome-ignore lint/suspicious/noExplicitAny: chart engine output shape is varied
       const data = result.data as any;

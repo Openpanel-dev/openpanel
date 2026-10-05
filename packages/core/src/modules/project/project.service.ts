@@ -1,7 +1,3 @@
-// `getProjectByIdCached` is a module-scope `cacheablePerDb` for the same
-// reason `getClientByIdCached` is in client.service.ts — see that file's
-// header.
-
 import crypto from 'node:crypto';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
@@ -21,14 +17,8 @@ import { getId } from '../../slug-id';
 import { getClientByIdCached } from '../client/client.service';
 import type { IProjectFilters } from './project.constants';
 
-// The `sql` tag is a value import of `@openpanel/db` and stays one: it is a
-// compile-time template tag holding no client (see ch-query.ts).
-// `TABLE_NAMES` and the date helper are core's own copies
-// (shared/ch-tables.ts, shared/ch-dates.ts).
-//
-// `getLastEventPerProject` explicitly sends session_timezone=UTC so its
-// result set stays consistent; `getProjectEventsCount` is a raw `chQuery`
-// call and sends none.
+// `getLastEventPerProject` sends session_timezone=UTC; `getProjectEventsCount` is a
+// raw `chQuery` and sends none.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end after tracking already stopped) — only real tracking activity
@@ -57,12 +47,7 @@ export async function getProjectById(deps: DbScope, id: string) {
   return res;
 }
 
-/**
- * L1 LRU (60s) + L2 Redis, one instance per Postgres client — the ingest
- * consumer, `/track` and mcp all read and invalidate the same one. The name
- * is EMPTY, same as `getClientByIdCached`'s, so the Redis key is
- * `cachable::<id>`.
- */
+/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. Empty cache name, so the Redis key is `cachable::<id>`. */
 export const getProjectByIdCached = cacheablePerDb(
   '',
   getProjectById,
@@ -198,12 +183,8 @@ export const getLastEventPerProject = async (
 
 /**
  * Resolve and validate a projectId for an API client.
- *
- * - Read clients: returns the fixed projectId from the client (ignores any supplied value).
- * - Root clients: validates that the supplied projectId belongs to the client's organization.
- *
- * Throws if the project is not found or does not belong to the organization.
- * Use this as the single source of truth for projectId resolution across the API and MCP.
+ * Read clients get their fixed projectId (any supplied value is ignored); root clients
+ * must supply a projectId belonging to their organization. Throws otherwise.
  */
 export async function resolveClientProjectId(
   deps: ServiceDeps,
@@ -254,7 +235,6 @@ export interface ProjectActivationStatus {
   hasTeammate: boolean;
 }
 
-/** Powers the activation checklist on the project overview (trpc project.activationStatus). */
 export async function getProjectActivationStatus(
   deps: ServiceDeps,
   projectId: string
@@ -284,8 +264,6 @@ export async function getProjectActivationStatus(
     hasTeammate: memberCount > 1,
   };
 }
-
-// --- /manage REST CRUD (project.routes.ts) ---
 
 export interface CreatedProjectClient {
   id: string;
@@ -465,10 +443,8 @@ export function createProjectService(
     return true;
   }
 
-  // --- trpc project.delete / project.cancelDeletion ---
-  // Caller has already been proven a project (or organization) admin by
-  // requireProjectAdmin, so unlike the /manage functions above these take no
-  // organizationId and do no ownership re-check.
+  // Caller is already proven a project (or organization) admin, so no organizationId
+  // and no ownership re-check.
 
   async function scheduleProjectDeletion(id: string): Promise<void> {
     await deps.db.project.update({
@@ -507,9 +483,7 @@ export function createProjectService(
       getProjectById(deps, id),
     getProjectByIdCached: (id: string): ReturnType<typeof getProjectById> =>
       getProjectByIdCached(deps, id),
-    /** Invalidates a single id in `getProjectByIdCached`'s L1 LRU + Redis —
-     *  `ingest/src/incoming-event-handler.ts` calls the module-scope spelling
-     *  right after marking a project's first event. */
+    /** Also called by ingest right after a project's first event. */
     clearProjectByIdCache: (id: string): Promise<number> =>
       getProjectByIdCached.clear(deps, id),
     getProjectWithClients: (

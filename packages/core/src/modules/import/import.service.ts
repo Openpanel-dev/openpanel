@@ -1,10 +1,6 @@
-// The provider classes are behind a dynamic `import`: they eagerly import
+// The provider classes are behind a dynamic `import`: they import
 // `formatClickhouseDate` from @openpanel/db's clickhouse client, which
-// constructs a real pino transport at import time. See gsc.service.ts's
-// header for the full reasoning.
-//
-// ClickHouse queries here still go through raw `ch`/`chQuery` calls, not the
-// `sql` tag — this module's queries haven't been converted yet.
+// constructs a real pino transport at import time.
 
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
@@ -35,10 +31,6 @@ function yieldToEventLoop(): Promise<void> {
     setTimeout(resolve, 100);
   });
 }
-
-// ---------------------------------------------------------------------------
-// ClickHouse staging pipeline
-// ---------------------------------------------------------------------------
 
 export interface ImportStageResult {
   importId: string;
@@ -648,9 +640,8 @@ export async function getImportDateBounds(
 
 /**
  * Reports progress on a running import. A BullMQ `Job` satisfies this
- * structurally. Core's own job runner (import.jobs.ts) has no BullMQ job
- * object to hand over (`JobCtx.job` is the erased `{id, attempt, queue,
- * name}`, not the live BullMQ handle), so it falls back to the no-op default.
+ * structurally; core's job runner has no live BullMQ job (`JobCtx.job` is the
+ * erased `{id, attempt, queue, name}`), so it falls back to the no-op default.
  */
 export interface ImportJobProgress {
   updateProgress(progress: Record<string, unknown>): unknown;
@@ -770,10 +761,6 @@ export async function updateImportStatus(
   });
 }
 
-// ---------------------------------------------------------------------------
-// Provider dispatch + job body
-// ---------------------------------------------------------------------------
-
 /**
  * Merge a freshly-derived profile into the bounded dedup map: keep the earliest
  * created_at (first seen), advance last_seen_at to the latest activity, and fill
@@ -848,8 +835,7 @@ async function createImportProvider(
 
 /**
  * The `import` queue job body. Takes `importId` + `progress` rather than a
- * BullMQ `Job` directly (see `ImportJobProgress`'s header) so it can run
- * under either a real BullMQ job or core's own job runner.
+ * BullMQ `Job` so it runs under either a real BullMQ job or core's job runner.
  */
 export async function runImportJob(
   deps: ServiceDeps,
@@ -879,9 +865,7 @@ export async function runImportJob(
     const canResume =
       isRetry && RESUMABLE_STEPS.includes(record.currentStep as string);
 
-    // -------------------------------------------------------
-    // STAGING PHASE: clean slate on failure, run from scratch
-    // -------------------------------------------------------
+    // Staging phase: clean slate on failure, run from scratch
     if (!canResume) {
       if (isRetry) {
         jobLogger.info(
@@ -890,7 +874,6 @@ export async function runImportJob(
         await cleanupStagingData(deps, importId);
       }
 
-      // Phase 1: Load events into staging
       await updateImportStatus(deps, jobLogger, progress, importId, {
         step: 'loading',
       });
@@ -1046,9 +1029,7 @@ export async function runImportJob(
       }
     }
 
-    // -------------------------------------------------------
-    // SESSION CREATION PHASE: resumable by cleaning session_start/end
-    // -------------------------------------------------------
+    // Session creation phase: resumable by cleaning session_start/end
     const skipSessionCreation =
       canResume && record.currentStep !== 'creating_sessions';
 
@@ -1070,9 +1051,7 @@ export async function runImportJob(
       jobLogger.info('Session event creation complete');
     }
 
-    // -------------------------------------------------------
-    // PRODUCTION PHASE: resume-safe, track progress per batch
-    // -------------------------------------------------------
+    // Production phase: resume-safe, progress tracked per batch
 
     // Phase 3: Move staging events to production (per-day)
     const resumeMovingFrom =
@@ -1123,7 +1102,6 @@ export async function runImportJob(
 
     jobLogger.info('Session backfill complete');
 
-    // Done
     await updateImportStatus(deps, jobLogger, progress, importId, {
       step: 'completed',
     });
@@ -1150,11 +1128,8 @@ export async function runImportJob(
   }
 }
 
-// ---------------------------------------------------------------------------
-// /import/events — bulk-inserts already-shaped events straight into
-// production; unrelated to the provider/staging pipeline above (no Import
-// record, no ClickHouse staging table).
-// ---------------------------------------------------------------------------
+// /import/events bulk-inserts already-shaped events straight into production,
+// bypassing the provider/staging pipeline.
 
 export interface InsertRawEventsResult {
   writtenRows: number;
@@ -1187,10 +1162,6 @@ export async function insertRawEventsBatch(
   logger.info({ writtenRows, projectId }, 'events imported');
   return { writtenRows };
 }
-
-// ---------------------------------------------------------------------------
-// `ctx.services.import` binding.
-// ---------------------------------------------------------------------------
 
 /** `ctx.services.import` — a thin binding of the job body above to a Ctx's queues. */
 export function createImportService(

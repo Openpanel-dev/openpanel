@@ -1,8 +1,6 @@
 // Shape tests for the session module's fragments: every user value binds as a
-// `{pN:Type}` parameter (nothing is interpolated), the optional clauses toggle
-// correctly, and `sql.id` rejects a column outside the whitelist. Result-set
-// equivalence was proven per query against the local prod-copy separately —
-// not here; these tests run offline.
+// `{pN:Type}` parameter, the optional clauses toggle correctly, and `sql.id` rejects a
+// column outside the whitelist. These run offline.
 
 import { describe, expect, test } from 'bun:test';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
@@ -230,9 +228,8 @@ describe('querySessionsQuery', () => {
     });
   });
 
-  // `query_sessions` labels its rows `created_at desc`, so the cut has to
-  // happen after the sort rather than wherever the scan starts. Without this
-  // the seeded August window returned the five OLDEST sessions (ISSUES.md H8b).
+  // `query_sessions` labels its rows `created_at desc`, so the cut has to happen after
+  // the sort; otherwise a bare LIMIT returns the OLDEST sessions in the window.
   test('takes the newest sessions, not an arbitrary slice', () => {
     const { query } = querySessionsQuery({
       projectId: PROJECT_ID,
@@ -245,9 +242,8 @@ describe('querySessionsQuery', () => {
     expect(query.indexOf('ORDER BY')).toBeLessThan(query.indexOf('LIMIT'));
   });
 
-  // `query_sessions` is reached from MCP with bare `YYYY-MM-DD`, which bound
-  // straight through as midnight and dropped the whole last day — 7,245
-  // sessions on the seeded 31 Aug (ISSUES.md H8a, missed in 908bf0d1).
+  // `query_sessions` is reached from MCP with bare `YYYY-MM-DD`, which bound straight
+  // through as midnight and dropped the whole last day.
   test('widens a bare end date to the end of that day', () => {
     const { query_params } = querySessionsQuery({
       projectId: PROJECT_ID,

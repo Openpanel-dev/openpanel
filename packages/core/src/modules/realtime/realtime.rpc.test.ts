@@ -1,8 +1,4 @@
-// Only the "is anyone logged in" boundary is exercised here — no database. The
-// query bodies run on `deps.ch` (statically imported `sql` fragments, no
-// @openpanel/db client anywhere in the module); wiring this router end-to-end
-// against a real ClickHouse is protectedProcedure's job, not this one's — see
-// realtime.rpc.ts's header. Same shape as cohort.rpc.test.ts.
+// Only the "is anyone logged in" boundary is exercised here; no database.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -18,8 +14,7 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape matters: `TrpcContext.session` is never literally
-// `null`, only its `userId` is.
+// `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
 async function anonCaller() {

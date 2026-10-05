@@ -1,7 +1,6 @@
-// Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
-// (`SessionEndDeps`), bound in `session.jobs.ts` from the job's own `ctx`, so
-// the requestId that opened the session still labels the rows this close
-// writes.
+// Everything touching Redis, ClickHouse, a buffer or a queue is injected
+// (`SessionEndDeps`), bound in `session.jobs.ts` from the job's own `ctx`, so the
+// requestId that opened the session still labels the rows this close writes.
 
 import type { CoreConfig } from '../../../config';
 import type { EnqueueOptions } from '../../../jobs/define';
@@ -58,7 +57,7 @@ export interface EnqueueSessionEndInput {
   closedSession: IClickhouseSession;
 }
 
-/** What rides on the `sessions` queue (legacyCompat.sessions: `{ event, snapshot }`). */
+/** What rides on the `sessions` queue. */
 export interface SessionEndJobData {
   event: IServiceCreateEventPayload;
   snapshot: IClickhouseSession;
@@ -92,10 +91,7 @@ export function sessionEndJobPayload({
   };
 }
 
-/**
- * What the emission needs beyond the shared runtime. `session.jobs.ts` binds
- * it from the job's own ctx; the tests hand in stubs.
- */
+/** What the emission needs beyond the shared runtime; tests hand in stubs. */
 export interface SessionEndDeps extends SessionRuntime {
   logger: Logger;
   createEvent(
@@ -116,8 +112,7 @@ export interface SessionEndDeps extends SessionRuntime {
   notifications: {
     getRules(projectId: string): Promise<INotificationRuleCached[]>;
     hasFunnelRules(rules: INotificationRuleCached[]): boolean;
-    /** notification/src/notification-dispatch.ts — it enqueues through the
-     *  notification queue. */
+    /** Enqueues through the notification queue. */
     checkFunnelRules(events: IServiceEvent[]): Promise<unknown>;
   };
 }

@@ -1,9 +1,5 @@
-// Only the "is anyone logged in" boundary is exercised here — no database.
-// `list` has no access check of its own, so it is not exercised here either —
-// the access-check + mutation bodies ride on @openpanel/db (lazy-loaded
-// through ./src/access and client.service.ts); wiring this router end-to-end
-// against a real Postgres is protectedProcedure's job, not this one's — see
-// client.rpc.ts's header.
+// Only the "is anyone logged in" boundary is exercised here; no database. `list` has
+// no access check of its own, so it is not exercised either.
 
 import { expect, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
@@ -19,8 +15,7 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// EMPTY_SESSION's shape matters: `TrpcContext.session` is never literally
-// `null`, only its `userId` is.
+// `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
 async function anonCaller() {

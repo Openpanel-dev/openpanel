@@ -1,14 +1,5 @@
-// `createNotification` / `triggerNotification` /
-// `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
-// the BullMQ-producer orchestration around a rule match — live in this
-// module's own `src/notification-dispatch.ts`, built on the rule matching,
-// templates, cache and constants exported below. They are a separate file
-// only so the enqueue side is not dragged into every import of this one.
-//
-// Postgres is `deps.db` and `Prisma.DbNull` is `deps.prisma.DbNull`: nothing
-// here imports @openpanel/db as a value, which is what keeps constructing a
-// client out of the eager barrel chain that jobs.registry.ts and services.ts
-// pull this module into.
+// Nothing here imports @openpanel/db as a value, so constructing a client stays
+// out of the eager barrel chain (jobs.registry.ts, services.ts) that pulls this module in.
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
@@ -66,12 +57,8 @@ export type INotificationPayload =
   | { type: 'event'; event: IServiceCreateEventPayload }
   | { type: 'funnel'; funnel: IServiceEvent[] };
 
-// `getNotificationRulesByProjectId` is `cacheablePerDeps` — `cacheable` keys on
-// the call's ARGUMENTS (packages/redis/cachable.ts), so the caller's deps
-// travel beside the key rather than inside it and the Redis key stays
-// byte-identical. Every function in this file reads `deps.db`.
-
-// -- Rule cache --------------------------------------------------------
+// `cacheable` keys on the call's arguments, so deps travel beside the key and
+// the Redis key stays unchanged.
 
 export type INotificationRuleCached = Awaited<
   ReturnType<typeof getNotificationRulesByProjectId>
@@ -95,8 +82,6 @@ export const getNotificationRulesByProjectId = cacheablePerDeps(
   60 * 24,
   { cacheEmptyArray: true }
 );
-
-// -- Rule matching (pure) -----------------------------------------------
 
 export function matchEventFilters(
   payload: IServiceCreateEventPayload,
@@ -192,8 +177,6 @@ export function getFunnelRules(
   return rules.filter(isFunnelRule);
 }
 
-// -- Templates (pure) -----------------------------------------------------
-
 export function notificationTemplateEvent({
   payload,
   rule,
@@ -240,13 +223,7 @@ export function notificationTemplateFunnel({
     .replaceAll('$RULE_NAME', rule.name);
 }
 
-// -- Dispatch (the delivery job body) --------------------------------------
-
-/**
- * `Prisma.JsonNull`/`Prisma.DbNull` sentinels don't narrow away from a union
- * through plain `!==` control flow — an explicit type predicate is what makes
- * `payload` usable as `INotificationPayload` afterward.
- */
+/** `Prisma.JsonNull`/`DbNull` don't narrow through `!==`; this predicate does. */
 function isValidPayload<T>(
   value: T | Prisma.NullableJsonNullValueInput | null | undefined,
   jsonNull: unknown,
@@ -260,7 +237,6 @@ function isValidPayload<T>(
   );
 }
 
-/** apps/worker/src/jobs/notification.ts's `sendNotification` job body. */
 /** Where a notification email links when DASHBOARD_URL is not set. */
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
@@ -270,11 +246,8 @@ export async function deliverNotification(
 ): Promise<unknown> {
   const db = deps.db;
 
-  // App + email are pseudo-integrations dispatched by flags, not real rows.
-  // Lazy: @openpanel/redis is otherwise pulled in eagerly through this
-  // module's place in the barrel (services.ts, jobs.registry.ts), and a
-  // static import here would demand `publishEvent` from every core test
-  // file's `@openpanel/redis` mock, not just this module's own.
+  // Lazy: a static @openpanel/redis import would force every core test's redis
+  // mock to provide `publishEvent`.
   if (notification.sendToApp) {
     const { publishEvent } = await import('@openpanel/redis');
     publishEvent('notification', 'created', notification);
@@ -299,8 +272,6 @@ export async function deliverNotification(
       )
     );
     for (const to of emails) {
-      // Per-recipient unsubscribe (product_alerts category) is handled
-      // inside sendEmail.
       await sendEmail('notification-rule', {
         to,
         data: {
@@ -323,12 +294,8 @@ export async function deliverNotification(
   });
 
   const payload = notification.payload;
-  // Returning rather than throwing here (and in the missing-config branch
-  // below) resolves `notificationQueueJobs.sendNotification`'s promise
-  // normally, so BullMQ records the job as completed instead of failed —
-  // the delivery is silently dropped. Left as-is deliberately: flipping the
-  // job outcome from success to failure is a behavior change, and no test
-  // exercises either branch today.
+  // Returning (rather than throwing) completes the BullMQ job, so the delivery
+  // is dropped silently instead of failing.
   if (
     !isValidPayload<INotificationPayload>(
       payload,
@@ -347,8 +314,6 @@ export async function deliverNotification(
     return;
   }
 
-  // Generic registry dispatch — no per-type switch. A new notification
-  // integration just registers a `notification.deliver` plugin.
   const plugin = getServerIntegration(config.type);
   if (!plugin.notification) {
     throw new Error(`Integration ${config.type} is not a notification sink`);
@@ -363,8 +328,6 @@ export async function deliverNotification(
     payload,
   });
 }
-
-// -- RPC-facing CRUD --------------------------------------------------------
 
 export function listNotifications(deps: ServiceDeps, projectId: string) {
   return Promise.resolve(deps.db).then((db) =>
@@ -416,10 +379,9 @@ export async function getNotificationRuleByIdOrThrow(
 }
 
 /**
- * Authorization (`requireProjectAccess`) is the caller's job — same split as
- * reference.service.ts. This validates that every connected integration
- * belongs to `input.projectId` or is a legacy org-wide one in the same org,
- * then writes the rule.
+ * Authorization (`requireProjectAccess`) is the caller's job. Validates that every
+ * connected integration belongs to `input.projectId` or is a legacy org-wide one
+ * in the same org, then writes the rule.
  */
 export async function createOrUpdateNotificationRule(
   deps: ServiceDeps,
@@ -511,12 +473,7 @@ export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
   return await deps.db.notificationRule.delete({ where: { id } });
 }
 
-// -- Services surface --------------------------------------------------
-
-// This wraps only `dispatch` (what notification.jobs.ts needs). Every other
-// function above and in ./src/notification-dispatch.ts is called directly —
-// by notification.rpc.ts, by session/ingest as siblings, and by index.ts's
-// barrel — not through ctx.services.notification.
+// Only `dispatch` goes through ctx.services; everything else is called directly.
 export function createNotificationService(
   deps: ServiceDeps,
   _services: () => Services
