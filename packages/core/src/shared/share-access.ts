@@ -1,5 +1,3 @@
-// Proof that a viewer entered the password of a password-protected share.
-
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export type ShareType = 'overview' | 'dashboard' | 'report';
@@ -31,11 +29,10 @@ function requireSecret(secret: string): string {
 }
 
 /**
- * An HMAC over the share type, share id and the *current* password hash, so
- * the cookie cannot be forged without the secret, cannot be replayed against
- * another share, and stops working the moment the owner changes or removes
- * the password. Checking only that the cookie existed is what let anyone
- * bypass the password (GHSA-p6c2-mq9r-cx3r).
+ * An HMAC over the share type, share id and the *current* password hash, so the
+ * cookie cannot be forged, replayed against another share, or outlive a
+ * password change. Checking only that the cookie existed let anyone bypass the
+ * password (GHSA-p6c2-mq9r-cx3r).
  */
 export function createShareAccessToken(
   secret: string,

@@ -1,14 +1,6 @@
-// The shape of everything core needs from the environment; only the config
-// loader (`apps/api/src/config/env.ts`) reads `process.env` — it parses,
-// validates and derives, and hands the result down as `AppDeps.config` /
-// `Ctx.config`, so nothing below this file re-derives a value or reaches for
-// `process.env` again.
-//
-// Two conventions hold throughout: - `undefined` means "not set", never
-// "blank". A blank `KEY=` is absent. - a field that only ever had one spelling
-// of a default keeps that default next to the code that documents WHY (e.g. the
-// buffers' batch sizes), so the loader parses and the module decides. Anything
-// DERIVED from more than one variable is resolved here and arrives finished.
+// Only the config loader (`apps/api/src/config/env.ts`) reads `process.env`.
+// `undefined` means "not set", never "blank": a blank `KEY=` is absent. Anything
+// derived from more than one variable is resolved by the loader and arrives finished.
 
 /** Which pino transport ships the logs, and how the service name is built. */
 export interface LoggingConfig {
@@ -94,11 +86,9 @@ export const KAFKA_SASL_MECHANISMS = [
 export type KafkaSaslMechanism = (typeof KAFKA_SASL_MECHANISMS)[number];
 
 /**
- * TLS/SASL for an external broker. Unauthenticated plaintext when nothing is
- * set. The loader has already checked the combination is coherent (a full
- * credential pair, a known mechanism, TLS options only with TLS); the CA file
- * itself is read where the client is built, so an unreadable path fails there
- * with its own message.
+ * TLS/SASL for an external broker; unauthenticated plaintext when nothing is
+ * set. The CA file is read where the client is built, so an unreadable path
+ * fails there with its own message.
  */
 export interface KafkaSecurityConfig {
   ssl: {
@@ -189,9 +179,8 @@ export interface SessionConfig {
 }
 
 /**
- * Sizing knobs on read and write paths. Every one is a positive integer or
- * `undefined`: a malformed value is not a boot failure, it keeps the default,
- * which is what the modules did when they parsed these themselves.
+ * Sizing knobs on read and write paths. Each is a positive integer or
+ * `undefined`; a malformed value keeps the default instead of failing boot.
  */
 export interface QueryConfig {
   eventPropertyValueAutocompleteLimit: number | undefined;

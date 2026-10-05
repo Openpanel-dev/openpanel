@@ -36,7 +36,7 @@ import { createShareService } from './modules/share/share.service';
 import { createSubscriptionService } from './modules/subscription/subscription.service';
 import { createUserService } from './modules/user/user.service';
 
-/** What every service factory receives — derived from Ctx, so it cannot drift. */
+/** What every service factory receives, derived from Ctx so it cannot drift. */
 export type ServiceDeps = Pick<
   Ctx,
   | 'db'
@@ -50,15 +50,11 @@ export type ServiceDeps = Pick<
   | 'config'
 >;
 
-// Two type rules the compiler enforces but cannot explain:
-//
-// 1. `Services` must stay an INTERFACE. A type alias over
-//    `ReturnType<typeof createServices>` is circular — resolving it needs
-//    every factory's signature and every factory's signature names
-//    `Services`. Interface members resolve lazily, which breaks the loop.
-// 2. Every service method needs an explicit return type, or a factory's
-//    return type cannot be computed from signatures alone. Omit one and
-//    typecheck fails with ts7022/ts7023 naming the method.
+// `Services` must stay an INTERFACE: a type alias over
+// `ReturnType<typeof createServices>` is circular (every factory's signature
+// names `Services`), and interface members resolve lazily. Every service
+// method also needs an explicit return type or typecheck fails with
+// ts7022/ts7023.
 export interface Services {
   auth: ReturnType<typeof createAuthService>;
   insight: ReturnType<typeof createInsightService>;
@@ -75,11 +71,9 @@ export interface Services {
   profile: ReturnType<typeof createProfileService>;
   group: ReturnType<typeof createGroupService>;
   chart: ReturnType<typeof createChartService>;
-  // One key per `*.service.ts`: the chart module is four files besides
-  // `chart.service.ts`, so each is bound here too. `chart` keeps the composed
-  // facade its own callers already use — the factories build stateless closures
-  // over `deps`, so binding a sub-module twice binds the same functions, not a
-  // second piece of state.
+  // One key per `*.service.ts`. `chart` keeps the composed facade its callers
+  // use; the factories build stateless closures over `deps`, so binding a
+  // sub-module twice binds the same functions, not a second piece of state.
   funnel: ReturnType<typeof createFunnelService>;
   conversion: ReturnType<typeof createConversionService>;
   sankey: ReturnType<typeof createSankeyService>;
@@ -103,13 +97,12 @@ export interface Services {
   mcp: ReturnType<typeof createMcpService>;
 }
 
-// Stays a hoisted `function` declaration, not a `const` arrow: a `const`
-// here would put any future ESM cycle through this file in a temporal dead
-// zone that no typecheck reports and that fails at process boot.
+// A hoisted `function` declaration, not a `const` arrow: a `const` would put
+// any future ESM cycle through this file in a temporal dead zone that no
+// typecheck reports and that fails at boot.
 export function createServices(deps: ServiceDeps): Services {
   // The thunk is captured, not copied, so two services may call each other
-  // without a cycle: `container` is assigned before any thunk body can run,
-  // because every sibling reach lives inside a method body.
+  // without a cycle: `container` is assigned before any thunk body can run.
   const services = (): Services => container;
   const container: Services = {
     auth: createAuthService(deps, services),

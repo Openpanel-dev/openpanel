@@ -1,15 +1,8 @@
-// The root chain, as named Elysia plugins.
-//
-// The order is cors -> requestId -> timestamp -> ip, and it precedes every
-// route-level hook including the rate limiters. `requestContext` composes
-// these three in that order, and `main.ts` mounts `@elysiajs/cors` ahead of
-// it. The cors position is structural rather than conventional — it runs at
-// `onRequest`, a strictly earlier lifecycle phase than `derive`, so it cannot
-// be reordered by accident.
-//
-// The request-logging hook lives with `requestContext` in ./context.ts: it
-// reads the request logger off `ctx` and would otherwise import this file's
-// consumer.
+// The root chain: cors -> requestId -> timestamp -> ip, before every route-level
+// hook including the rate limiters. cors runs at `onRequest`, an earlier phase
+// than `derive`, so its position cannot be reordered by accident. The
+// request-logging hook lives in ./context.ts because it reads the request
+// logger off `ctx`.
 
 import { generateId } from '@openpanel/shared';
 import { Elysia } from 'elysia';
@@ -19,9 +12,8 @@ import { getClientIpFromHeaders } from '../shared/get-client-ip';
 import { sanitizeRequestId } from '../shared/request-id';
 
 /**
- * First of the three. `requestIdFromCaller` is not decoration: it keeps a
- * caller-supplied id out of per-event log sampling, so the support case that
- * supplied one still resolves.
+ * `requestIdFromCaller` keeps a caller-supplied id out of per-event log
+ * sampling, so the support case that supplied one still resolves.
  */
 export function requestIdHook() {
   return new Elysia({ name: 'core/http/request-id' }).derive(
@@ -47,10 +39,8 @@ export function timestampHook() {
 }
 
 /**
- * Resolves the *attribution* ip, including the empty-string fallback: it
- * prefers client-forwarded headers, which is right for analytics and fatal
- * for a rate-limit bucket. The limiter keys on `openpanel-client-id` and then
- * `getTrustedIpFromHeaders`, and must never read this.
+ * Resolves the *attribution* ip, which prefers client-forwarded headers: right
+ * for analytics, fatal for a rate-limit bucket. Limiters must never read this.
  */
 export function clientIpHook(ipHeaders: IpHeaderConfig) {
   return new Elysia({ name: 'core/http/client-ip' }).derive(

@@ -1,12 +1,7 @@
-// Caller authentication, declared once and requested per route. A macro
-// authenticates the CALLER and stops — a missing authorization check is
-// silent: a broken chart throws, a dropped access check returns 200 with
-// somebody else's data.
-//
-// Elysia's option-bearing macro shape makes `clientAuth: { allow: [...] }`
-// type the resolved client onto the handler, so a route that skips the
-// macro has no `client` binding at all — "did this route authenticate?" is
-// a type question, verified by http/auth.test.ts and `tsc --noEmit`.
+// A macro authenticates the CALLER and stops. A missing authorization check is
+// silent (a dropped access check returns 200 with somebody else's data), so the
+// option-bearing macro types the resolved client onto the handler: a route that
+// skips it has no `client` binding at all.
 
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
@@ -15,15 +10,10 @@ import { authenticateClient, type ClientAuthOptions } from './client-auth';
 import { requestContext } from './context';
 
 const UNAUTHORIZED = 401;
-/** Allow-list routes answer a 401 with a JSON envelope; ingest routes answer
- *  with the refusal message as plain text — both forms are intentional. */
+/** Allow-list routes answer a 401 with a JSON envelope; ingest routes with plain text. */
 const UNAUTHORIZED_ERROR = 'Unauthorized';
 
-/**
- * The named plugin every module reaches through `defineRoutes`. It brings
- * `requestContext(deps)` with it, so `ctx` and the tiers arrive together and a
- * route cannot request a tier without the context that resolves it.
- */
+/** The named plugin every module reaches through `defineRoutes`; it brings `requestContext(deps)` so a route cannot request a tier without its context. */
 export function authMacros(deps: AppDeps) {
   return new Elysia({ name: 'core/auth-macros' })
     .use(requestContext(deps))

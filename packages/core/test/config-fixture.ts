@@ -1,10 +1,7 @@
-// The `CoreConfig` a test hands to a service, a buffer or a route: every
-// variable unset, so each module's own documented default applies. This is not
-// a second config loader — it holds no defaults of its own; `undefined` and
-// the "not set" spelling of every flag is exactly what `apps/api`'s
-// `loadConfig({})` produces for an empty environment.
-//
-// A test that cares about one knob spreads an override over it.
+// The `CoreConfig` a test hands to a service, buffer or route: every variable
+// unset, so each module's own default applies. It holds no defaults of its own;
+// it is what `apps/api`'s `loadConfig({})` produces for an empty environment. A
+// test that cares about one knob spreads an override over it.
 
 import type { CoreConfig } from '../src/config';
 

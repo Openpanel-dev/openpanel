@@ -1,13 +1,10 @@
-// Postgres and ClickHouse failures that are really BAD INPUT, classified once
-// so every transport answers the same way.
+// Postgres and ClickHouse failures that are really BAD INPUT, classified once so
+// every transport answers the same way instead of a 500 carrying the driver's
+// words (Prisma's invocation text, or ClickHouse's echo of the generated SQL).
 //
-// Without this a malformed id reached the caller as a 500 carrying the
-// driver's own words — Prisma's full invocation text, or a ClickHouse message
-// that echoes the generated SQL including its scope clause (ISSUES.md H12).
-//
-// Both drivers label their failures, so nothing here parses a message:
-// Prisma sets `code` to `P####`, and @clickhouse/client sets `code` to the
-// numeric error and `type` to its name.
+// Both drivers label their failures, so nothing here parses a message: Prisma
+// sets `code` to `P####`, and @clickhouse/client sets `code` to the numeric
+// error and `type` to its name.
 
 export interface DriverFailure {
   /** tRPC's code; the HTTP status follows from it. */
@@ -22,16 +19,14 @@ const NOT_FOUND = 404;
 
 /** https://www.prisma.io/docs/orm/reference/error-reference */
 const PRISMA_FAILURES: Record<string, DriverFailure> = {
-  // "Inconsistent column data" — what an `@db.Uuid` column raises for an id
-  // that is not a UUID at all. It fires BEFORE any findUnique null check, so
-  // procedures with a correct not-found guard still answered 500.
+  // What an `@db.Uuid` column raises for a non-UUID id. It fires BEFORE any
+  // findUnique null check, so a correct not-found guard never gets to run.
   P2023: {
     trpc: 'BAD_REQUEST',
     status: BAD_REQUEST,
     message: 'Malformed id',
   },
-  // "An operation failed because it depends on one or more records that were
-  // required but not found" — every `findUniqueOrThrow` miss.
+  // Every `findUniqueOrThrow` miss.
   P2025: {
     trpc: 'NOT_FOUND',
     status: NOT_FOUND,
@@ -40,9 +35,8 @@ const PRISMA_FAILURES: Record<string, DriverFailure> = {
 };
 
 /**
- * ClickHouse `type` values that can only come from caller input. Deliberately
- * a short allowlist: anything unlisted stays a 500, because a query bug must
- * not be reported to the caller as their mistake.
+ * ClickHouse `type` values that can only come from caller input. A short
+ * allowlist: a query bug must not be reported as the caller's mistake.
  */
 const CLICKHOUSE_BAD_INPUT: Record<string, string> = {
   CANNOT_PARSE_UUID: 'Malformed id',
@@ -63,7 +57,7 @@ function readLabels(error: unknown): { code?: string; type?: string } {
   };
 }
 
-/** `null` when the failure is not the caller's fault — leave those as 500s. */
+/** `null` when the failure is not the caller's fault; those stay 500s. */
 export function classifyDriverError(error: unknown): DriverFailure | null {
   const { code, type } = readLabels(error);
 

@@ -1,10 +1,3 @@
-// IP rate limiting with an exponentially growing lockout. Implements the seam
-// declared in `rpc/base.ts` (`EnforceRateLimit`, `createRateLimitMiddleware`).
-//
-// The enforcer takes headers, the socket address and a logger rather than a
-// framework request object, which is what lets a procedure be tested without
-// a server.
-
 import { getRedisCache, LRUCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
 import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
@@ -14,18 +7,13 @@ const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 
-/**
- * The block handed out the first time a fingerprint blows through its window.
- * It doubles on every further strike, so a client that keeps knocking walks
- * 5m -> 10m -> 20m -> ... -> BLOCK_MAX_MS.
- */
+/** The first block; it doubles on every further strike, up to BLOCK_MAX_MS. */
 const BLOCK_BASE_MS = 5 * MINUTE;
 const BLOCK_MAX_MS = 24 * HOUR;
 
 /**
- * Strikes only decay after a full quiet day, and every new strike pushes the
- * expiry out again. Sustained abuse therefore stays at the 24h block: the
- * attacker has to actually stop to climb back down.
+ * Strikes decay only after a full quiet day and every new strike pushes the
+ * expiry out, so sustained abuse stays at the 24h block.
  */
 const STRIKE_TTL_MS = 24 * HOUR;
 
@@ -33,9 +21,9 @@ const STRIKE_TTL_MS = 24 * HOUR;
 const MAX_STRIKES = Math.ceil(Math.log2(BLOCK_MAX_MS / BLOCK_BASE_MS)) + 1;
 
 /**
- * A blocked client that keeps hammering earns further strikes, but at most one
- * per cooldown. A human clicking "sign in" three more times in frustration
- * adds one strike; a bot at 5 req/s reaches the 24h cap in under ten minutes.
+ * A blocked client earns further strikes at most once per cooldown: a human
+ * clicking "sign in" in frustration adds one, a bot at 5 req/s reaches the cap
+ * in under ten minutes.
  */
 const ESCALATION_COOLDOWN_MS = MINUTE;
 
@@ -46,20 +34,13 @@ const FALLBACK_CACHE_MAX = 10_000;
 const KEY_MISSING = -2;
 const KEY_WITHOUT_EXPIRY = -1;
 
-/**
- * Per-process fallback used only while Redis is unreachable. Without it a
- * Redis blip would leave sign-in completely unthrottled.
- */
+/** Per-process fallback while Redis is unreachable, so sign-in is not left unthrottled. */
 const fallbackCounters = new LRUCache<string, number>({
   max: FALLBACK_CACHE_MAX,
   ttl: 5 * MINUTE,
 });
 
-/**
- * The trusted-header defaults. A limiter must never key on the ATTRIBUTION
- * address: that one prefers client-forwarded headers, so every request would
- * get its own bucket.
- */
+/** The trusted-header defaults: the attribution address is client-forgeable. */
 const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
 
 const keyFor = (kind: string, path: string, fingerprint: string) =>
@@ -88,10 +69,7 @@ function tooManyRequests(blockMs: number): TRPCError {
   });
 }
 
-/**
- * Record a strike and (re)arm the block. Returns the new strike count and how
- * long the client is locked out for.
- */
+/** Record a strike and (re)arm the block. */
 async function escalate(
   strikeKey: string,
   blockKey: string,
@@ -120,11 +98,9 @@ async function escalate(
 }
 
 /**
- * Blocks are keyed per procedure, so an office NAT that trips the sign-in
- * limit does not lose the rest of the dashboard.
- *
- * Every block is logged as `rate limit blocked` with the resolved IP, so
- * repeat offenders can be pulled out of the logs and blackholed at the edge.
+ * Blocks are keyed per procedure, so an office NAT that trips the sign-in limit
+ * does not lose the rest of the dashboard. Every block is logged with the
+ * resolved IP so repeat offenders can be blackholed at the edge.
  */
 export const enforceRateLimit: EnforceRateLimit = async ({
   headers,

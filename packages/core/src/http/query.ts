@@ -1,15 +1,8 @@
-// The querystring pre-pass: the `parseQueryString` pre-pass as an Elysia
-// lifecycle hook running BEFORE schema validation on `/export` and
-// `/insights`.
-//
-// It exists because ~31 query schemas on those two surfaces are written
-// against already-coerced values — `z.number`, `z.boolean`, `z.array(...)` —
-// while a querystring only ever carries strings. Rewriting those schemas with
-// `z.coerce` instead would change the contract.
-//
-// `transform` is Elysia's pre-validation phase, and the hook MUTATES `query` in
-// place: reassigning the destructured binding would not reach the object the
-// validator then reads.
+// A pre-validation hook that coerces `/export` and `/insights` querystrings: ~31
+// query schemas there expect already-coerced values (`z.number`, `z.boolean`,
+// `z.array`) while a querystring only carries strings, and `z.coerce` would
+// change the contract. It MUTATES `query` in place: reassigning the destructured
+// binding would not reach the object the validator reads.
 
 import { getSafeJson } from '@openpanel/shared';
 
@@ -45,9 +38,7 @@ export function parseQueryString(
   );
 }
 
-/** The `transform` hook itself. Registered LOCAL on the two route surfaces
- *  that need it — never globally, or `/track` and `/manage` would start
- *  coercing values their handlers read as strings. */
+/** Registered LOCAL on the two surfaces that need it, or `/track` and `/manage` would coerce values their handlers read as strings. */
 export function parseQueryStringTransform({
   query,
 }: {

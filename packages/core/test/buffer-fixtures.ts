@@ -1,5 +1,4 @@
-// Stubs shared by the buffer tests. Not a test file (no `*.test.ts` suffix),
-// so the runner does not pick it up.
+// Stubs shared by the buffer tests.
 
 import type { BufferDeps } from '../src/buffers/base-buffer';
 import type { Logger } from '../src/logger';
@@ -17,14 +16,10 @@ const silentLogger: Logger = {
 
 /**
  * A buffer's boot scope, silent and never paused. Silent matters: the real
- * `createLogger` spawns a pino transport worker thread per buffer, and these
- * suites build one buffer per test.
+ * `createLogger` spawns a pino transport worker thread per buffer.
  *
- * `BufferDeps.ch` is the boot scope's ClickHouse client, so a suite that
- * exercises a flush hands in its own fake here rather than mocking
- * `@openpanel/db`'s module. `stubBufferDeps` hands in a client that throws on
- * first touch — a buffer that reaches ClickHouse without one is a bug this stub
- * should surface, not hide.
+ * `stubBufferDeps` hands in a ClickHouse client that throws on first touch, so
+ * a buffer reaching ClickHouse without a suite's own fake is surfaced.
  */
 const throwingClickHouse = new Proxy({} as BufferDeps['ch'], {
   get() {

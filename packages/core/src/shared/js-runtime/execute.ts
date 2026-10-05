@@ -12,32 +12,22 @@ const EXECUTION_TIMEOUT_MS = 250;
 /** Cap on the serialized output so a template cannot balloon a webhook body. */
 const MAX_OUTPUT_BYTES = 1_000_000;
 
-/**
- * Executes a JavaScript function template
- * @param code - JavaScript function code (arrow function or function expression)
- * @param payload - Payload object to pass to the function
- * @returns The result of executing the function
- */
 export function execute(
   code: string,
   payload: Record<string, unknown>
 ): unknown {
-  // Templates are checked when they are saved, but the stored string is what
-  // ends up being run here. Check it again at run time rather than trusting
-  // whatever passed validation at save time.
+  // Re-check at run time: the stored string is what runs, not what passed
+  // validation at save time.
   const validation = validate(code);
   if (!validation.valid) {
     throw new Error(`Invalid JavaScript template: ${validation.error}`);
   }
 
   try {
-    // The template runs in a fresh V8 context with its own globals, with
-    // eval/new Function disabled there. The payload crosses in as JSON and
-    // the result crosses out as JSON, so the template never holds a
-    // reference to a host-realm object and nothing it returns carries a host
-    // prototype or function back into the worker. This is not a security
-    // boundary on its own (the validator is), but it means a validator miss
-    // lands in an empty realm instead of the worker process.
+    // A fresh V8 context with its own globals and eval/new Function disabled.
+    // Payload and result cross as JSON, so the template never holds a host-realm
+    // reference. Not a security boundary on its own (the validator is), but a
+    // validator miss lands in an empty realm instead of the worker process.
     const script = `'use strict'; JSON.stringify((${code})(JSON.parse(payloadJson)));`;
     const resultJson: unknown = runInNewContext(
       script,

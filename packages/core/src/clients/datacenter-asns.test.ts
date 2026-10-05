@@ -1,12 +1,8 @@
 /**
- * Tests for the generated datacenter/hosting ASN list used to flag likely-bot
- * traffic. These exercise the pure list membership (no MaxMind db needed, which
- * is git-ignored and only present after `pnpm codegen`), plus the parser that
- * generates the list. They guard two things:
- *   1. Known hosting providers (AWS, GCP, Azure, OVH, …) stay classified as
- *      datacenters, so a regen from upstream can never silently drop them.
- *   2. Residential ISPs (Comcast, AT&T, …) are NOT in the list, so we never
- *      mark real end users as bots.
+ * Tests for the generated datacenter/hosting ASN list, exercising list
+ * membership (no MaxMind db needed) and the parser. Known hosting providers must
+ * stay classified as datacenters, and residential ISPs must NOT be in the list,
+ * so real end users are never marked as bots.
  */
 
 import { describe, expect, it } from 'bun:test';

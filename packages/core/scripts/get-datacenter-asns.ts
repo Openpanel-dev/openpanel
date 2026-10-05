@@ -5,13 +5,10 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Upstream list of Autonomous System Numbers that belong to datacenters /
-// hosting providers (AWS, GCP, Azure, OVH, Hetzner, DigitalOcean, …). Traffic
-// originating from these ASNs is almost never a real end user browsing a site;
-// it is scrapers, monitors and automated clients running on rented compute.
-// We resolve an IP's ASN with MaxMind's GeoLite2-ASN db and check membership in
-// this set. The list is regenerated (never hand-edited) so upstream additions
-// flow in on every `pnpm codegen`.
+// Upstream list of ASNs belonging to datacenters / hosting providers. Traffic
+// from them is almost never a real end user, so an IP's ASN (MaxMind GeoLite2-ASN)
+// is checked for membership in this set. The list is regenerated, never
+// hand-edited, so upstream additions flow in on every `pnpm codegen`.
 const SOURCE_URL =
   'https://raw.githubusercontent.com/X4BNet/lists_vpn/main/input/datacenter/ASN.txt';
 
@@ -57,8 +54,7 @@ async function main(): Promise<void> {
   console.log(`✅ Generated datacenter-asns.ts with ${asns.length} ASNs`);
 }
 
-// Only fetch + regenerate when run directly, so `parseAsnList` can be imported
-// and unit-tested without a network call.
+// Only fetch when run directly, so `parseAsnList` can be unit-tested without a network call.
 if (process.argv[1] === __filename) {
   main().catch((error) => {
     console.error('Error generating datacenter ASN list:', error);

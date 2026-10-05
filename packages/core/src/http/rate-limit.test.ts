@@ -1,6 +1,5 @@
-// The prefix table IS the contract: it has to match what
-// docs/api-reference/rate-limits.mdx publishes, and the paths that page calls
-// unlimited must stay absent from it (ISSUES.md H4).
+// The prefix table IS the contract: it must match the published rate limits,
+// and the paths the docs call unlimited must stay absent from it.
 
 import { describe, expect, test } from 'bun:test';
 import { HTTP_RATE_LIMITS, limitFor } from './rate-limit';

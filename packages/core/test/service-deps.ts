@@ -1,16 +1,13 @@
-// A real `ServiceDeps` for integration tests: the same singletons `main.ts`
-// hands to `AppDeps`, pointed at the isolated `openpanel_test` databases by
-// preload.ts. `clients`, `buffers` and `queues` are unused by the read-path
-// services these tests exercise, so they stay unbuilt and a test that reaches
-// one gets a named error rather than silently working against a half-built
-// container.
+// A real `ServiceDeps` for integration tests, pointed at the isolated
+// `openpanel_test` databases by preload.ts. `clients`, `buffers` and `queues`
+// stay unbuilt, so a test that reaches one gets a named error instead of
+// silently working against a half-built container.
 
 import type { Logger } from '../src/logger';
 import type { ServiceDeps, Services } from '../src/services';
 import { testCoreConfig } from './config-fixture';
 
-/** Records what the ClickHouse/Postgres call was logged with — the requestId
- *  chain's observation point. */
+/** Records what the ClickHouse/Postgres call was logged with: the requestId chain's observation point. */
 export function recordingLogger(
   bindings: Record<string, unknown> = {},
   lines: Array<{ bindings: Record<string, unknown>; message: string }> = []
@@ -40,9 +37,7 @@ function unavailable(name: string): never {
   throw new Error(`${name} is not built in this test`);
 }
 
-/** The `services()` thunk every factory takes. No suite here
- *  reaches a sibling, so calling it is a named error rather than a silently
- *  half-built container; a suite that needs one passes its own thunk. */
+/** The `services()` thunk every factory takes; calling it is a named error unless a suite passes its own. */
 export function testServices(): () => Services {
   return () => unavailable('services()');
 }

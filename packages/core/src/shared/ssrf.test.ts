@@ -1,7 +1,5 @@
-// Subject moved to @openpanel/shared; the suite did not follow it. Nothing
-// runs a `test` script in packages/shared yet — the root `test` script names
-// its four workspaces explicitly — so moving this file would take it out of
-// every gate. Move it when that line can gain the filter.
+// Tests @openpanel/shared's SSRF guard from here because the root `test` script
+// does not run packages/shared.
 import { describe, expect, it, mock } from 'bun:test';
 import {
   assertSafeUrl,
@@ -10,8 +8,7 @@ import {
   createPinnedLookup,
 } from '@openpanel/shared/server';
 
-// SELF_HOSTED arrives as `config.selfHosted`; the loader is what decides that
-// only `true`/`1` mean self-hosted (`apps/api/src/config/env.test.ts`).
+// SELF_HOSTED arrives as `config.selfHosted`; only `true`/`1` mean self-hosted.
 const CLOUD = false;
 const SELF_HOSTED = true;
 
@@ -103,8 +100,8 @@ describe('createPinnedLookup', () => {
 
 describe('createPinnedAgent', () => {
   // Under Bun the bare `undici` specifier resolves to a built-in shim whose
-  // Agent has no `close()` and ignores `dispatcher`; that broke every
-  // safeFetch call (favicons, OG images) and silently dropped the pinning.
+  // Agent has no `close()` and ignores `dispatcher`, which silently dropped the
+  // pinning.
   it('returns a real undici Agent, not the runtime shim', () => {
     const agent = createPinnedAgent('93.184.216.34');
     expect(typeof agent.close).toBe('function');

@@ -2,8 +2,7 @@ import { expect, test } from 'bun:test';
 import { PING_SCHEDULE, schedulersFromRegistry } from './jobs/schedulers';
 import { queues } from './jobs.registry';
 
-// Byte-identity snapshot — see `jobs/schedulers.test.ts` for the matching
-// id-level check.
+// Byte-identity snapshot; `jobs/schedulers.test.ts` has the matching id-level check.
 const GOLDEN_SCHEDULER_IDS = [
   'cohortRefresh',
   'dataHealth',
@@ -27,8 +26,8 @@ const GOLDEN_SCHEDULER_IDS = [
   'windDown',
 ].sort();
 
-// Retry and retention values kept as-is, defects included — five queues
-// that never retry, four with unbounded failed sets.
+// Retry and retention values pinned as they are: five queues never retry and
+// four have unbounded failed sets.
 const PINNED_DEFAULTS = {
   sessions: { removeOnComplete: true },
   cron: { removeOnComplete: 10 },
@@ -90,9 +89,8 @@ test('every queue has a compat hook — the cutover has no drain step', () => {
   }
 });
 
-// The insight module's job — the BullMQ job *name* IS the registry key
-// (defineQueue stamps it), and legacyCompat.insights already discriminates on
-// this exact name (jobs/compat.ts), so this pins the two in agreement.
+// The BullMQ job *name* IS the registry key (defineQueue stamps it) and
+// legacyCompat.insights discriminates on it (jobs/compat.ts); this pins the two.
 test('the insights queue carries the insight module job', () => {
   expect(Object.keys(queues.insights.jobs)).toEqual(['insightsProject']);
   expect(queues.insights.jobs.insightsProject).toMatchObject({
@@ -101,11 +99,9 @@ test('the insights queue carries the insight module job', () => {
   });
 });
 
-// The insight module's cron fragment (insight.jobs.ts), spread into the one
-// cron queue. `ping` (misc.jobs.ts) is the only conditional scheduler — it's
-// added by `startSchedulers` only when SELF_HOSTED && production
-// (jobs/schedulers.ts's `PING_SCHEDULE`), but its job HANDLER is always
-// registered here so a scheduled run always has somewhere to land.
+// `ping` (misc.jobs.ts) is the only conditional scheduler: `startSchedulers`
+// adds it only when SELF_HOSTED && production, but its HANDLER is always
+// registered so a scheduled run always has somewhere to land.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
@@ -138,9 +134,7 @@ test('the cron queue carries the insight module cron fragment', () => {
   }
 });
 
-// The gsc module's own queue job, plus its cron fan-out fragment.
-// legacyCompat.gsc already discriminates on these exact names (jobs/compat.ts),
-// so this pins the two in agreement.
+// legacyCompat.gsc discriminates on these exact names (jobs/compat.ts).
 test('the gsc queue carries the gsc module jobs', () => {
   expect(Object.keys(queues.gsc.jobs).sort()).toEqual(
     ['gscProjectBackfill', 'gscProjectSync'].sort()
@@ -159,9 +153,7 @@ test('the cron queue carries the gsc module cron fragment', () => {
   });
 });
 
-// The cohort module's own queue job, plus its cron fan-out fragment.
-// legacyCompat.cohortCompute already discriminates on a bare `{cohortId}`
-// (jobs/compat.ts), so this pins the two in agreement.
+// legacyCompat.cohortCompute discriminates on a bare `{cohortId}` (jobs/compat.ts).
 test('the cohortCompute queue carries the cohort module job', () => {
   expect(Object.keys(queues.cohortCompute.jobs)).toEqual(['cohortCompute']);
   expect(queues.cohortCompute.jobs.cohortCompute).toMatchObject({
@@ -177,7 +169,6 @@ test('the cron queue carries the cohort module cron fragment', () => {
   });
 });
 
-// The organization module's `delete` cron fragment.
 test('the cron queue carries the organization module cron fragment', () => {
   expect(queues.cron.jobs.delete).toMatchObject({
     queue: 'cron',
@@ -185,7 +176,6 @@ test('the cron queue carries the organization module cron fragment', () => {
   });
 });
 
-// The onboarding module's own cron fragment.
 test('the cron queue carries the onboarding module cron fragment', () => {
   expect(queues.cron.jobs.onboarding).toMatchObject({
     queue: 'cron',
@@ -193,9 +183,8 @@ test('the cron queue carries the onboarding module cron fragment', () => {
   });
 });
 
-// The session module's own job (legacyCompat.sessions maps the legacy
-// `createSessionEnd` job onto this exact name) and its reaper/vacuum cron
-// fragment — the scheduler ids double as the job names.
+// legacyCompat.sessions maps the legacy `createSessionEnd` job onto this name;
+// the scheduler ids double as the job names.
 test('the sessions queue carries the session module job', () => {
   expect(Object.keys(queues.sessions.jobs)).toEqual(['session']);
   expect(queues.sessions.jobs.session).toMatchObject({
@@ -212,10 +201,8 @@ test('the cron queue carries the session module cron fragment', () => {
   }
 });
 
-// The import module's own job. No cron fragment — imports are always
-// user-triggered (import.rpc.ts's create/retry), unlike gsc/cohort/insight.
-// legacyCompat.import already discriminates on this exact name
-// (jobs/compat.ts), so this pins the two in agreement.
+// No cron fragment: imports are always user-triggered. legacyCompat.import
+// discriminates on this name (jobs/compat.ts).
 test('the import queue carries the import module job', () => {
   expect(Object.keys(queues.import.jobs)).toEqual(['import']);
   expect(queues.import.jobs.import).toMatchObject({
@@ -224,10 +211,8 @@ test('the import queue carries the import module job', () => {
   });
 });
 
-// The notification module's own job. No cron fragment — notifications are
-// always triggered by a rule match, never scheduled. legacyCompat.notification
-// already discriminates on this exact name (jobs/compat.ts), so this pins the
-// two in agreement.
+// No cron fragment: notifications are triggered by a rule match. legacyCompat.notification
+// discriminates on this name (jobs/compat.ts).
 test('the notification queue carries the notification module job', () => {
   expect(Object.keys(queues.notification.jobs)).toEqual(['sendNotification']);
   expect(queues.notification.jobs.sendNotification).toMatchObject({
@@ -236,11 +221,6 @@ test('the notification queue carries the notification module job', () => {
   });
 });
 
-// The join between a cron job and its schedule is enforced by the type
-// system (`defineQueue`'s overload for the `cron` queue requires every job
-// on it to declare `cron`, a schedule or explicit `null`), so this property
-// can no longer drift — it is true by construction, not by a test walking
-// both registries.
 test('the cron queue derives the golden 20 scheduler ids', () => {
   const derivedIds = [
     ...schedulersFromRegistry(queues.cron).map((s) => s.id),

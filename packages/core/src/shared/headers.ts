@@ -1,13 +1,8 @@
-// A lowercase header record — Fastify's `IncomingHttpHeaders`, or a `Headers`
-// flattened with `Object.fromEntries`. No transport has to build a real
-// `Headers` object from a raw record, which throws on a malformed name where
-// a plain record would not.
-//
-// Both auth macros in `http/` convert Elysia's `Headers` here before anything
-// else runs, and a transport may not deep-import a module's `src/`. The names
-// keep the `Ingest` prefix because the record shape is the ingest wire
-// contract; the three declarations are dependency-free and belong below every
-// layer.
+// A lowercase header record, or a `Headers` flattened with `Object.fromEntries`,
+// so no transport has to build a real `Headers` from a raw record (which throws
+// on a malformed name). A transport may not deep-import a module's `src/`, so
+// both auth macros convert Elysia's `Headers` here. The `Ingest` prefix stays
+// because the record shape is the ingest wire contract.
 
 export type IngestHeaders = Record<string, string | string[] | undefined>;
 
@@ -19,8 +14,7 @@ export function headerValue(
   return Array.isArray(value) ? value[0] : value;
 }
 
-/** `Headers` -> the record shape the ingest path reads. Duplicated values are
- *  joined by `Headers` itself, exactly as a Fastify record would hold them. */
+/** `Headers` -> the record shape the ingest path reads; duplicated values are joined by `Headers` itself. */
 export function toIngestHeaders(headers: Headers): IngestHeaders {
   const record: IngestHeaders = {};
   for (const [name, value] of headers) {

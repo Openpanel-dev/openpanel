@@ -1,14 +1,5 @@
-// The curated public surface of @openpanel/core.
-//
-// Never `export *`. What leaves this package is exactly what is named here
-// plus the `*.constants` subpaths in package.json's exports map — see
-// AGENTS.md. Everything below is what `apps/api` needs to build `AppDeps`
-// once and mount the three route surfaces plus the tRPC router over it; a
-// service, a client or a buffer is not reachable from here by design.
+// Never `export *`: what leaves this package is exactly what is named here.
 
-// packages/db reads ClickHouse row JSON through this; the barrel is how a
-// package outside core reaches it, since the exports map has no ./shared/*
-// entry.
 export {
   generateId,
   generateSecureId,
@@ -46,28 +37,15 @@ export {
   safeFetchStream,
   verifyPassword,
 } from '@openpanel/shared/server';
-// The seven buffers. Only the FACTORY is on the barrel: they are boot
-// singletons on `AppDeps`, built once by `main.ts`, never module singletons.
 export type { BufferDeps } from './buffers/base-buffer';
 export { registerBufferMetrics } from './buffers/buffer.metrics';
 export type { Buffers } from './buffers/create-buffers';
 export { createBuffers } from './buffers/create-buffers';
-// Only `createClients` leaves the package; every AI call, the Slack/Discord
-// senders, the geo lookups, the object-store adapters and the integration
-// registry are reached by relative import inside it.
-//
-// `pino-logger` is the concrete implementation of `./logger`'s structural
-// interface; main.ts builds its own named logger from it and mirrors a fatal
-// to the real stderr with the write captured before `interceptProcessOutput`
-// wrapped the stream.
 export { createClients } from './clients/create-clients';
 export {
   isRetryableStatus,
   ProviderError,
 } from './clients/provider-error';
-// The one config VALUE the loader needs from core: the accepted SASL
-// mechanisms, so `KAFKA_SASL_MECHANISM` is validated against the list the
-// client actually supports rather than a second copy of it.
 export { KAFKA_SASL_MECHANISMS, type KafkaSaslMechanism } from './config';
 export type {
   AppDeps,
@@ -78,18 +56,10 @@ export type {
   Session,
 } from './context';
 export { createCtx, extendCtx } from './context';
-// The role-conditional HTTP surfaces main.ts mounts over the three in
-// rest.routes.ts. `bullBoardRoutes` is async because the adapter reads its own
-// UI assets off disk before it can register.
 export { BULL_BOARD_BASE_PATH, bullBoardRoutes } from './http/bull-board';
 export { requestContext, requestLogging } from './http/context';
-// The root chain `main.ts` hangs every surface on. Both take their
-// deployment-derived values as arguments.
 export { corsDelegator } from './http/cors';
 export { errorHandler } from './http/errors';
-// The two runtime seams over the registry. `main.ts` builds producers in every
-// role and workers only where the role consumes; both take the registry as
-// data, so neither opens a connection until it is called.
 export type {
   AnyJob,
   QueueDefinition,
@@ -118,22 +88,12 @@ export {
   REQUEST_ID_LENGTH,
   REQUEST_ID_LOG_FIELD,
 } from './logger';
-// The one registry's own boot-time registrars. `registry` itself is NOT
-// exported: a caller that can reach it can start a second collector graph
-// outside a module.
+// `registry` itself is not exported: a caller that can reach it could start a
+// second collector graph outside a module.
 export { registerDefaultMetrics } from './metrics';
-// The chat app, the run context and the filter command take the API's `deps`,
-// so the barrel carries the factory and the types only; `assistant.routes.ts`
-// and `overview.rpc.ts` reach them through `ctx.services.assistant`.
-//
-// `ChatApp` is the one type past `AppRouter` that crosses into apps/start
-// (`src/agents/client.ts`); it stays a TYPE, so no value of this module
-// reaches a browser bundle.
+// `ChatApp` stays a type so no value of the assistant module reaches a browser bundle.
 export type { ChatApp } from './modules/assistant/assistant.service';
 export { createAssistantService } from './modules/assistant/assistant.service';
-// apps/api's OAuth callbacks call these. `hashPassword` is renamed on the way
-// out: `@openpanel/shared/server` already owns that name for the (unrelated)
-// scrypt hash client secrets use.
 export {
   Arctic,
   cookieOptions,
@@ -148,7 +108,6 @@ export type { AccessLookups } from './modules/auth/src/access';
 export { createAccessChecks } from './modules/auth/src/access';
 export { validateSessionToken } from './modules/auth/src/login-session';
 export { getIsRegistrationAllowed } from './modules/auth/src/registration';
-// The chart engine and the field/filter compilers.
 export type {
   AggregateChartSqlInput,
   ChartSqlInput,
@@ -169,8 +128,6 @@ export { toSeries } from './modules/chart/funnel.service';
 export type { IRetentionCohortRow } from './modules/chart/retention.service';
 export { processCohortData } from './modules/chart/retention.service';
 export { getRawWhereClause } from './modules/chart/sankey.service';
-// The sessions/profiles/events-table filter compiler, distinct from
-// `getEventFiltersWhereClause` above.
 export type { FilterTableContext } from './modules/chart/src/table-filter-where';
 export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 export type { IPublicClient } from './modules/client/client.service';
@@ -184,12 +141,7 @@ export type {
   IServiceDashboard,
   IServiceDashboards,
 } from './modules/dashboard/dashboard.service';
-// R + C only: the router's three bodies are three small `db.emailUnsubscribe`
-// calls, small enough to live inline in `email.rpc.ts` rather than a dedicated
-// `email.service.ts` — see that file's header.
 export { emailCategories } from './modules/email/email.constants';
-// Shared by the onboarding module and the organization module's wind-down
-// track.
 export type {
   SequenceStep,
   SequenceSubject,
@@ -209,7 +161,6 @@ export {
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
 export { setShuttingDown } from './modules/health/src/shutdown';
-// The ingestion pipeline: the same functions core's own `ingestRoutes` calls.
 export type {
   BotMatch,
   IncomingEventPayload,
@@ -229,8 +180,6 @@ export {
   summarizeBotSignals,
   validateIngestRequest,
 } from './modules/ingest/ingest.service';
-// The Kafka consumer and its per-message handler, which take the kafkajs
-// client, the topic/group names and the retry bounds as arguments.
 export type {
   DeadLetterMessage,
   EventsBatchHandlerDeps,
@@ -241,8 +190,6 @@ export {
   startKafkaEventsConsumer,
 } from './modules/ingest/src/consumer';
 export { createIncomingEventHandler } from './modules/ingest/src/consumer-handler';
-// The readiness probe's two inputs. `markEventsActivity` is the consumer's
-// `onActivity`; `setShuttingDown` is main.ts's signal handler.
 export {
   enableEventsHeartbeat,
   markEventsActivity,
@@ -253,9 +200,6 @@ export type {
 } from './modules/ingest/src/incoming-event-handler';
 export { incomingEvent } from './modules/ingest/src/incoming-event-handler';
 export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
-// The Kafka transport: producer, consumer factory, admin/lag sampling and every
-// topic/group/retry constant. It constructs no client at import time, so the
-// barrel stays offline-importable.
 export type {
   Admin,
   ConsumerGroupLag,
@@ -273,17 +217,8 @@ export {
   sampleConsumerGroupLag,
 } from './modules/ingest/src/kafka';
 export { explainInsight } from './modules/insight/insight.service';
-// Slack's OAuth token-exchange wire contract — not integration config (stays
-// out of the `*.constants` subpath, see
-// modules/integration/src/slack-contract.ts's header), but apps/api's webhook
-// controller still needs it to validate Slack's `oauth.v2.access` response.
 export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
-// Stateless-only, so there is no SessionManager to manage. The barrel carries
-// the factory and the two types; `handleStatelessMcpRequest` needs the API's
-// `deps`, so MCP is reached through `rest.routes.ts`'s `.use(mcpRoutes(deps))`
-// and `ctx.services.mcp`.
 export type { McpAuthContext } from './modules/mcp/mcp.service';
-// `GET /misc/og/clear` and `/misc/favicon/clear` are deliberately absent.
 export type { INotificationPayload } from './modules/notification/notification.service';
 export {
   createNotificationService,
@@ -295,11 +230,7 @@ export {
   notificationTemplateEvent,
   notificationTemplateFunnel,
 } from './modules/notification/notification.service';
-// The BullMQ-producer orchestration around a rule match lives in this module's
-// own src/notification-dispatch.ts. Only the one the Kafka message handler is
-// bound to at boot needs to leave the package.
 export { checkNotificationRulesForEvent } from './modules/notification/src/notification-dispatch';
-// The onboarding-project mutation and the onboarding email drip.
 export { createOnboardingService } from './modules/onboarding/onboarding.service';
 export type {
   IServiceMember,
@@ -323,8 +254,6 @@ export type {
   IServiceProjectWithClients,
 } from './modules/project/project.service';
 export { createProjectService } from './modules/project/project.service';
-// The realtime ClickHouse queries. The `/live` websocket glue stays internal
-// to realtime.routes.ts.
 export type { IServiceReference } from './modules/reference/reference.service';
 export { createReferenceService } from './modules/reference/reference.service';
 export {
@@ -362,15 +291,10 @@ export {
   mergeGlobalFilters,
   onlyReportEvents,
 } from './modules/report/src/series';
-// `main.ts` calls `createInitialSalts(deps)` directly at boot; `salt.jobs.ts`'s
-// cron handler and everything else reach `rotateSalt`/`getSalts` through
-// `ctx.services.salt`.
 export {
   createInitialSalts,
   createSaltService,
 } from './modules/salt/salt.service';
-// The `sessions` queue's own job and the reaper/vacuum cron fragments are
-// registered in jobs.registry.ts, not exported.
 export type {
   IClickhouseSession,
   IServiceSession,
@@ -410,9 +334,6 @@ export {
   opsRoutes,
   publicApiRoutes,
 } from './rest.routes';
-// The RPC base is on the barrel because it is the seam every module's own
-// `<name>.rpc.ts` builds its router on: ONE tRPC instance, mounted by
-// `createTrpcFetchHandler`.
 export type {
   Meta,
   TrpcContext,
@@ -454,6 +375,5 @@ export {
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
-// Below the transports: `rpc/base.ts` needs the empty shape and may not
-// deep-import a module to get it.
+// Shared by `rpc/base.ts`, which may not deep-import a module.
 export { EMPTY_SESSION } from './shared/session';

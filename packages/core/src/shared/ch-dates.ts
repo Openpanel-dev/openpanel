@@ -1,19 +1,10 @@
-// ClickHouse's date literal format, shared across modules.
-//
-// `@openpanel/db/src/clickhouse/client.ts` owns these too, but importing it
-// constructs a real ClickHouse client and a real pino logger at module load and
-// is a value import of `@openpanel/db` from core — see ch-tables.ts's header
-// for the full reasoning. Five modules already carry a byte-identical private
-// copy in their own `src/dates.ts` (chart, event, group, profile, session).
-// `ch-dates.parity.test.ts` asserts this file and @openpanel/db's agree on
-// every input, so the copy cannot drift silently.
+// ClickHouse's date literal format. Duplicated from `@openpanel/db` because
+// importing it constructs a real ClickHouse client at module load;
+// `ch-dates.parity.test.ts` asserts the two agree on every input.
 
 const CLICKHOUSE_DATE_SUFFIX = /(\.\d{3})?Z+$/;
 
-/**
- * `YYYY-MM-DD HH:mm:ss` in UTC. `skipTime` narrows it to `YYYY-MM-DD`, for
- * the date-only column comparisons the billing counters build.
- */
+/** `YYYY-MM-DD HH:mm:ss` in UTC; `skipTime` narrows it to `YYYY-MM-DD`. */
 export function formatClickhouseDate(
   date: Date | string,
   skipTime = false
@@ -40,15 +31,12 @@ const END_OF_DAY = '23:59:59';
 /**
  * A range boundary as a ClickHouse `DateTime` literal.
  *
- * Two shapes reach the query builders. The dashboard sends
- * `YYYY-MM-DD HH:mm:ss` already widened to the day's edges by
- * `getChartStartEndDate`; the MCP tools send a bare `YYYY-MM-DD`. A bare date
- * names a whole DAY, so an end boundary has to widen to 23:59:59 — left at
- * midnight it drops the last day of every range.
+ * The dashboard sends `YYYY-MM-DD HH:mm:ss` already widened to the day's edges;
+ * the MCP tools send a bare `YYYY-MM-DD`, which names a whole DAY, so an end
+ * boundary must widen to 23:59:59 or the last day of every range is dropped.
  *
- * An already-ClickHouse-shaped literal is returned untouched rather than sent
- * through `new Date()`, which reads it in the server's local zone and shifts
- * it by the offset.
+ * An already-ClickHouse-shaped literal is returned untouched: `new Date()`
+ * would read it in the server's local zone and shift it by the offset.
  */
 export function toRangeBoundaryLiteral(
   value: string,

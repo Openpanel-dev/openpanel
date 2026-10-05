@@ -8,15 +8,13 @@ import { queues } from './jobs.registry';
 import type { Logger } from './logger';
 import type { ServiceDeps, Services } from './services';
 
-// Snapshotted BEFORE `mock.module` below, not after — restoring by re-`import`ing
-// './services' later would resolve the already-mocked registry entry, not the
-// real module (bare `bun test` shares one module registry across every file).
+// Snapshotted BEFORE `mock.module`: re-`import`ing later would resolve the
+// already-mocked registry entry (bare `bun test` shares one module registry).
 const realServicesModule = { ...(await import('./services')) };
 
-// mock.module is not hoisted, so the subject is imported inside beforeAll —
-// see AGENTS.md. Mocking createServices is what makes "not built yet"
-// observable at all — this suite cares about WHEN the factory runs, not what
-// it returns, so the stub container is cast rather than built for real.
+// mock.module is not hoisted, so the subject is imported inside beforeAll.
+// Mocking createServices makes "not built yet" observable: this suite cares
+// about WHEN the factory runs, not what it returns.
 const serviceDeps: ServiceDeps[] = [];
 const createServices = mock((deps: ServiceDeps): Services => {
   serviceDeps.push(deps);
@@ -31,10 +29,9 @@ beforeAll(async () => {
   ({ createCtx, extendCtx } = await import('./context'));
 });
 
-// Without this, bare `bun test` (one shared module registry, no --isolate)
-// leaks the stub `createServices` — returning `{}` with no `.auth` — into
-// every OTHER file that later imports './context', which is most of the rpc
-// test suite via test/rpc-fixtures.ts's `stubHttpCtx`.
+// Without this, bare `bun test` (one shared module registry) leaks the stub
+// `createServices` (`{}`, no `.auth`) into every other file that imports
+// './context', including most rpc tests via `stubHttpCtx`.
 afterAll(() => {
   mock.module('./services', () => realServicesModule);
 });

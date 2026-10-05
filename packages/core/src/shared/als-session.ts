@@ -1,11 +1,8 @@
-// Both transports open the scope and nothing in the session module reads it, so
-// it is request scoping, not session domain logic. Dependency-free —
-// `node:async_hooks` and nothing else — so it sits at the bottom, where a
-// transport may reach it.
-//
-// The ALS scopes a request's dashboard session id so anything downstream —
-// today only the Prisma read-replica consistency extension — can read it
-// without threading a parameter.
+// Request scoping, not session domain logic: both transports open the scope and
+// nothing in the session module reads it. It holds a request's dashboard session
+// id so downstream code (today the Prisma read-replica consistency extension)
+// can read it without threading a parameter. Dependency-free, so a transport
+// may reach it.
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 

@@ -1,8 +1,5 @@
-// Subject moved to @openpanel/shared; the suite did not follow it. Nothing runs
-// a `test` script in packages/shared yet — the root `test` script names its
-// four workspaces explicitly and hasn't picked up the new one — so moving this
-// file would take it out of every gate. Move it when that line can gain the
-// filter.
+// Tests @openpanel/shared's encryption from here because the root `test` script
+// does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
 import {
   decrypt,
@@ -12,8 +9,7 @@ import {
   isEncrypted,
 } from '@openpanel/shared/server';
 
-// Deterministic key for the round-trips — the value the config loader would
-// hand down as `config.encryptionKey`.
+// Deterministic key for the round-trips.
 const KEY = 'a'.repeat(64);
 
 describe('encryption (single ENCRYPTION_KEY)', () => {
@@ -50,9 +46,8 @@ describe('encryption (single ENCRYPTION_KEY)', () => {
   });
 
   it('decrypt throws a guarded error for a too-short/malformed ciphertext', () => {
-    // Shorter than IV_LENGTH + AUTH_TAG_LENGTH: the tag slice comes back
-    // empty. Bun's setAuthTag validates the length up front and throws a
-    // bare TypeError before this guard existed; the guard normalizes that
+    // Shorter than IV_LENGTH + AUTH_TAG_LENGTH: the tag slice comes back empty.
+    // Bun's setAuthTag throws a bare TypeError on that; the guard normalizes it
     // to the same descriptive error on both runtimes.
     const tooShort = Buffer.from('short').toString('base64');
     expect(() => decrypt(KEY, tooShort)).toThrow(

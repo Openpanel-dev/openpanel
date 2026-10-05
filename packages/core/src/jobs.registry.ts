@@ -1,14 +1,7 @@
-// The seven BullMQ queues, statically composed. Adding a module's jobs is one
-// spread into the queue that owns them; there is no auto-discovery, because
-// static composition is what keeps `QueueProducers` typed.
-//
-// Registry key === Redis name for all seven, `cohortCompute` included: the key
-// is deliberately not renamed, so `COHORTCOMPUTE_CONCURRENCY` keeps working.
+// The seven BullMQ queues, statically composed: static composition is what
+// keeps `QueueProducers` typed. Registry key === Redis name for all seven
+// (`cohortCompute` included), so `COHORTCOMPUTE_CONCURRENCY` keeps working;
 // `queueKey` decides what actually reaches Redis.
-//
-// Retry and retention values are preserved as-is, defects included — five
-// queues that never retry, four whose failed sets are unbounded. Changing
-// them is a behaviour change, not a cleanup, and is a separate decision.
 
 import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
@@ -65,14 +58,11 @@ const sessions = defineQueue('sessions', {
 });
 
 // One queue, one worker at concurrency 1, every scheduled job in the system.
-// Pausing it from bull-board halts all buffer flushing — preserved deliberately
-// — an accepted trade-off.
+// Pausing it from bull-board halts all buffer flushing.
 const cron = defineQueue('cron', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.cron },
   compat: legacyCompat.cron,
-  // Every module's cron fragment spreads in here — there is no separate cron
-  // module.
   jobs: {
     ...saltCronJobs,
     ...eventCronJobs,
@@ -154,15 +144,12 @@ export const queues = {
 export type Queues = typeof queues;
 
 // Derived from the `cron` queue's own jobs so a job and its schedule cannot
-// drift apart. It is computed HERE, in the registry, and not in
-// `jobs/schedulers.ts`: that file is transport infrastructure and may not
-// import a registry. `ping` is conditional — see `PING_SCHEDULE` and
-// `startSchedulers`.
+// drift apart. Computed here because `jobs/schedulers.ts` may not import a registry.
 export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
   schedulersFromRegistry(cron);
 
 /** What `ctx.queues` is: `ctx.queues.import.run.add({ importId })`. */
 export type QueueProducers = Producers<Queues>;
 
-/** What `AppDeps.producers` is — built once at boot, scoped per unit of work. */
+/** What `AppDeps.producers` is: built once at boot, scoped per unit of work. */
 export type QueueProducerHandle = ProducerHandle<Queues>;

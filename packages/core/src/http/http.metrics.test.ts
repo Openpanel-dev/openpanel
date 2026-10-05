@@ -88,9 +88,9 @@ test('an unmatched request produces no series (registeredRoutesOnly)', async () 
   expect(await samples(SUMMARY)).not.toContain('status_code="404"');
 });
 
-// The 2026-09-08 crash: a global `onAfterResponse` fires for a request whose
-// `derive` never ran, `performance.now() - undefined` is NaN, prom-client
-// throws on it, and in an async hook that throw exits the process.
+// A global `onAfterResponse` fires for a request whose `derive` never ran;
+// `performance.now() - undefined` is NaN, prom-client throws on it, and in an
+// async hook that exits the process.
 test('a duration that is not a finite number >= 0 is dropped, not thrown on', async () => {
   const unobservable = [
     Number.NaN,

@@ -1,14 +1,9 @@
-// Bull-board is mounted on the main port, behind the dashboard session
-// guard. This avoids `@bull-board/express` and a second express server —
-// nothing named `@bull-board/fastify` ever existed. `@bull-board/api` +
-// `@bull-board/elysia` are both pinned exact at 9.6.0.
+// Mounted on the main port behind the dashboard session guard. Two things a
+// reader must not mistake for accidents:
 //
-// TWO things a reader must not mistake for accidents:
-//
-// 1. **The base path is `/bullboard`, not `/`.** One port serves everything
-// here, so `/` would shadow every other route; the deploy-note is
-// `packages/core/docs/OPS_GRAFANA_MIGRATION.md`. 2. **Pausing `cron` from
-// this UI halts ALL buffer flushing.** Preserved deliberately.
+// 1. The base path is `/bullboard`, not `/`: one port serves everything, so
+//    `/` would shadow every other route.
+// 2. Pausing `cron` from this UI halts ALL buffer flushing.
 
 import type { Queue as BullQueue } from 'bullmq';
 import { Elysia } from 'elysia';
@@ -22,28 +17,20 @@ const UNAUTHORIZED = 401;
 const BULL_BOARD_REALM = 'OpenPanel ops';
 
 /**
- * Mounted only where the role consumes and `DISABLE_BULLBOARD` is unset
- * (main.ts owns both conditions — core reads no environment).
- *
  * The guard is `{ as: 'global' }` and re-checks the path itself rather than
  * leaning on Elysia's hook scoping: `.use()`-ing a NAMED plugin
  * (`@bull-board/elysia`) puts its routes in their own scope, where a `local`
- * hook of the mounting instance would not run at all — and a guard that
- * silently does not run is precisely the failure this must not have. The cost
- * on every other route is one `startsWith`.
+ * hook of the mounting instance would not run at all. The cost on every other
+ * route is one `startsWith`.
  */
 export async function bullBoardRoutes(
   deps: AppDeps,
   queues: BullQueue[]
 ): Promise<Elysia> {
-  // Imported here, not at module scope. `@bull-board/elysia` is CommonJS, so
-  // it `require()`s Elysia's CJS build, which `require()`s memoirist — and
-  // under Bun 1.4.0 that throws "require() async module ... is unsupported"
-  // if it happens while this package's module graph is still evaluating.
-  // Deferring it to the one call site that needs it puts the require after
-  // evaluation, where it resolves cleanly. Proven by
-  // `bun run apps/api/e2e/boot-proof.sh`'s ROLE=worker/all legs, which 401
-  // on /bullboard rather than failing to boot.
+  // Imported here, not at module scope: `@bull-board/elysia` is CommonJS and
+  // `require()`s Elysia's CJS build, which under Bun 1.4.0 throws "require()
+  // async module ... is unsupported" while this package's module graph is
+  // still evaluating.
   const [{ createBullBoard }, { BullMQAdapter }, { ElysiaAdapter }] =
     await Promise.all([
       import('@bull-board/api'),
@@ -73,8 +60,7 @@ export async function bullBoardRoutes(
         }
         // Two gates, both required: a dashboard session proves a human, the
         // operator credentials prove an operator. The queue UI can add, retry
-        // and clean jobs, so being any signed-up user is not enough
-        // (main #511, GHSA-r627-6vrh-65p9).
+        // and clean jobs, so any signed-up user is not enough (GHSA-r627-6vrh-65p9).
         if (!(await ctx.session())) {
           return status(UNAUTHORIZED);
         }

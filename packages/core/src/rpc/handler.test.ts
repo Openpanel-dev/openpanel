@@ -24,8 +24,6 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/',
 };
 
-// ---------------------------------------------------------------- onError
-
 function report(overrides: Partial<TrpcErrorReport> = {}): TrpcErrorReport {
   return {
     error: new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'boom' }),
@@ -163,8 +161,6 @@ test('an untrusted forwarded ip is ignored', () => {
   expect(payload.ipHeader).toBe('');
 });
 
-// ------------------------------------------------------- the mounted handler
-
 const router = createTRPCRouter({
   ping: procedure.query(() => ({ pong: true })),
   signIn: procedure
@@ -278,8 +274,6 @@ test('a batched request resolves every procedure in the segment', async () => {
     { result: { data: { json: { pong: true } } } },
   ]);
 });
-
-// ------------------------------------------------- deadline and disconnect
 
 const SHORT_DEADLINE_MS = 20;
 const NEVER_FINISHES_MS = 60_000;

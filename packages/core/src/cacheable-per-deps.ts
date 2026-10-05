@@ -1,26 +1,14 @@
-// `cacheable` for a function that needs the caller's `ServiceDeps`.
+// `cacheable` for a function that needs the caller's `ServiceDeps`. Passing
+// `deps` to `cacheable` directly would key on every argument through
+// `stringify`, serializing the whole Prisma client into the Redis key.
 //
-// The three cross-module caches on the runtime path (`getEventMetasCached`,
-// `getProfilesCached`, `getProfilePropertyKeysCached`) wrap a function that now
-// reaches Postgres/ClickHouse through `deps`. Passing `deps` to `cacheable`
-// directly is not an option: it keys on EVERY argument through `stringify`,
-// which walks an object's entries recursively — it would serialize the whole
-// Prisma client into the Redis key.
+// `deps` is not cache identity, so the cacheable is built once per `deps` in a
+// WeakMap. The explicit `name` is part of the Redis key (an inline arrow has no
+// `fn.name`).
 //
-// `deps` is not cache identity anyway. It is the scope a call runs in (the
-// process's clients plus this request's logger); two calls with the same
-// arguments are the same call whichever scope makes them. So the cacheable is
-// built once per `deps` and remembered in a WeakMap, and the Redis key stays
-// byte-identical to what the module-scope `cacheable(fn, ttl)` this replaces
-// produced — hence the EXPLICIT `name`, which is what `fn.name` used to supply
-// and what an inline arrow would silently drop.
-//
-// Consequence, stated: `createCtx` builds a fresh deps object per request
-// (context.ts's `installLazyServices`), so the L1 LRU inside `cacheable` is per
-// scope rather than per process. The L2 Redis cache — the shared one, the one
-// that actually saves the query — is unchanged, so a repeat call costs one
-// Redis GET where it used to cost none. A cache that must be process-lived
-// takes `cacheablePerDb` below instead.
+// `createCtx` builds a fresh deps per request, so the L1 LRU is per scope, not
+// per process; the shared L2 Redis cache is unaffected. A cache that must be
+// process-lived takes `cacheablePerDb` below.
 
 import { type CacheableOptions, cacheable } from '@openpanel/redis';
 import type { ServiceDeps } from './services';
@@ -71,8 +59,7 @@ export function cacheablePerDeps<A extends unknown[], R>(
   return run;
 }
 
-/** What a cache keyed on the Postgres client needs from a scope. `AppDeps`,
- *  `Ctx` and `ServiceDeps` all satisfy it. */
+/** What a cache keyed on the Postgres client needs from a scope. */
 export type DbScope = Pick<ServiceDeps, 'db'>;
 
 export type CacheablePerDb<A extends unknown[], R> = ((
@@ -84,19 +71,13 @@ export type CacheablePerDb<A extends unknown[], R> = ((
 };
 
 /**
- * `cacheablePerDeps` for a cache that must be PROCESS-lived, not scope-lived.
+ * `cacheablePerDeps` for a cache that must be PROCESS-lived. Keying on the scope
+ * would give every request an empty L1 LRU and split `.clear()` across as many
+ * instances. Keying on `deps.db` (one client per process) keeps one instance to
+ * read and invalidate.
  *
- * The three ingest-path caches (`getClientByIdCached`, `getProjectByIdCached`,
- * `getSalts`) used to live inside a factory that was only ever built once.
- * Keying them on the scope like `cacheablePerDeps` does would hand every
- * request a fresh, empty L1 LRU and split `.clear()`
- * across as many instances as there are requests. Keying on `deps.db` — one
- * Postgres client per process — keeps one instance to read and one to
- * invalidate under any scope.
- *
- * Safe precisely because `fn` can see nothing but `db`: the closure captures
- * the first caller's scope, and `db` is the key, so there is nothing else in
- * it that could differ between sharers.
+ * Safe because `fn` can see nothing but `db`: the closure captures the first
+ * caller's scope, and nothing else in it could differ between sharers.
  */
 export function cacheablePerDb<A extends unknown[], R>(
   name: string,

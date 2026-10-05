@@ -1,6 +1,3 @@
-/**
- * Simple recursive AST walker that doesn't require @babel/traverse
- */
 export function walkNode(
   node: unknown,
   visitor: (
@@ -35,9 +32,6 @@ export function walkNode(
   }
 }
 
-/**
- * Track declared variables/parameters to know what identifiers are "local"
- */
 export function collectDeclaredIdentifiers(ast: unknown): Set<string> {
   const declared = new Set<string>();
 
@@ -114,9 +108,6 @@ function collectPatternIdentifiers(
   }
 }
 
-/**
- * Check if an identifier is used as a property key (not a value reference)
- */
 export function isPropertyKey(
   node: Record<string, unknown>,
   parent?: Record<string, unknown>

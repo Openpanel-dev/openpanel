@@ -1,5 +1,4 @@
-// Stubs shared by the http tests. Not a test file (no `*.test.ts` suffix), so
-// the runner does not pick it up.
+// Stubs shared by the http tests.
 
 import type { AppDeps, Buffers } from '../src/context';
 import { createRecordingProducers } from '../src/jobs/testing';
@@ -10,7 +9,7 @@ import { type CapturedLogger, capturingLogger } from './rpc-fixtures';
 export interface AppDepsStub {
   deps: AppDeps;
   logger: CapturedLogger;
-  /** One per `createCtx` — it scopes the producers exactly once. */
+  /** One per `createCtx`. */
   scopeCalls: () => number;
   childCalls: () => Record<string, unknown>[];
 }

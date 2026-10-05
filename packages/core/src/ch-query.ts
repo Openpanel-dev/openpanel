@@ -1,18 +1,9 @@
-// Core's ClickHouse read path, bound to the scope's client.
+// Core's ClickHouse read path, bound to the scope's client; it logs through
+// `deps.logger` so the `query info` line carries the request's id.
 //
-// `chQuery` / `chQueryWithMeta` wrap `deps.ch` — the same round-robin/retry
-// proxy `main.ts` builds and hands to every scope — and log through
-// `deps.logger`, so the `query info` line carries the request's id.
-//
-// `deps.ch.query` IS `withRetry(client => client.query(...))`. The Int-meta
-// coercion below exists because ClickHouse's JSON format returns every
-// Int*/UInt* column as a string, so a caller's `count: number` only holds if
-// it is parsed back out here. The one field that cannot survive the retry
-// proxy is `host`: it does not report which replica served the query.
-// chart/src/run-query.ts makes the same trade.
-//
-// `@openpanel/db/src/clickhouse/sql` is a value import and stays one: it is a
-// compile-time template tag with no client and no request scope.
+// The Int-meta coercion below exists because ClickHouse's JSON format returns
+// every Int*/UInt* column as a string. `host` cannot survive the retry proxy:
+// it does not report which replica served the query.
 
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import {
@@ -21,8 +12,7 @@ import {
 } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from './services';
 
-/** All these two need is the scope's client and its logger — narrowed so the
- *  buffers, whose `BufferDeps` is not a `ServiceDeps`, can call them too. */
+/** Narrowed so the buffers, whose `BufferDeps` is not a `ServiceDeps`, can call these too. */
 export type ChScope = Pick<ServiceDeps, 'ch' | 'logger'>;
 
 /** A raw statement or a SqlFragment carrying its own bound params. */

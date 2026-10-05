@@ -1,8 +1,6 @@
-// The composition root's two runtime invariants. Neither is visible to
-// `tooling/gates/conformance.sh`, which reads signatures only.
-//
-// Deliberately mock-free: this suite exists to run the REAL 36 factories, so a
-// `mock.module` here would test the stub instead of the composition root.
+// The composition root's two runtime invariants, which signatures alone do not
+// show. Deliberately mock-free: it runs the REAL factories, since a
+// `mock.module` would test the stub instead of the composition root.
 
 import { expect, test } from 'bun:test';
 import type { Logger } from './logger';

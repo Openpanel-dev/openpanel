@@ -1,5 +1,4 @@
-// Stubs shared by the rpc tests. Not a test file (no `*.test.ts` suffix), so
-// the runner does not pick it up.
+// Stubs shared by the rpc tests.
 
 import {
   type AppDeps,
@@ -116,8 +115,8 @@ export function stubHttpCtx(
       ...rest,
     }
   );
-  // `services` is a getter with no setter on the prototype, so assigning it
-  // through extendCtx's Object.assign throws. Shadow it instead.
+  // `services` is a getter with no setter on the prototype, so extendCtx's
+  // Object.assign would throw. Shadow it instead.
   if (services) {
     Object.defineProperty(ctx, 'services', {
       value: services,
@@ -136,13 +135,9 @@ export function stubHttpCtx(
 }
 
 /**
- * `services` with the permission ladder already granted.
- *
- * `protectedProcedure` runs `enforceAccess` BEFORE the input parser, so a test
- * that wants to assert on a zod rejection has to get past the ladder first —
- * and the real one reaches Postgres. Everything a procedure does after the
- * parser is out of these tests' scope, so only the two lookups `enforceAccess`
- * makes are stubbed.
+ * `services` with the permission ladder already granted: `protectedProcedure`
+ * runs `enforceAccess` BEFORE the input parser, and the real one reaches
+ * Postgres. Only the two lookups it makes are stubbed.
  */
 export function servicesWithProjectAccess(): Services {
   return {

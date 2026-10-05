@@ -1,9 +1,7 @@
-// Proof that the midnight fixture flake is gone: runs the two suites it hit
-// (see test/fixture-clock.ts) in child processes whose wall clock is frozen
-// inside the 00:00-00:25 UTC window where they used to fail.
-//
-// The children share the suites' fixture project ids, so they run one at a
-// time; bun runs test files sequentially, so no sibling file overlaps them.
+// Runs the two suites that used to flake at midnight (see test/fixture-clock.ts)
+// in child processes whose wall clock is frozen inside the 00:00-00:25 UTC
+// window. The children share fixture project ids, so they run one at a time.
+
 import { describe, expect, it } from 'bun:test';
 import { spawnSync } from 'bun';
 import { join } from 'node:path';
@@ -15,17 +13,15 @@ const MIDNIGHT_FLAKE_SUITES = [
   'src/modules/chart/chart.service.test.ts',
   'src/modules/mcp/src/integration/tools.test.ts',
 ];
-// A floor, not an exact count: this asserted `54 pass` and went red the moment
-// someone added a test to either child suite, which says nothing about the
-// midnight window. The floor still proves both suites actually ran.
+// A floor, not an exact count, so adding a test to a child suite does not break
+// this; it still proves both suites ran.
 const MIDNIGHT_FLAKE_SUITE_MIN_TESTS = 54;
 const PASS_COUNT = /(\d+) pass/;
 // 00:01 is inside the chart pair's window, 00:10 and 00:19 inside charlie's.
-// Only the TIME of day is the subject here; the date must track the calendar.
+// Only the TIME of day is the subject; the date must track the calendar because
 // `inactiveDays` and the last-seen buckets compare against ClickHouse's own
-// `now()`, which `setSystemTime` cannot fake (test/fixture-clock.ts says so),
-// so a hardcoded date drifts further from it every day until the suites fail.
-// Measured on the current fixtures: 26 h of drift still passes, 30 h does not.
+// `now()`, which `setSystemTime` cannot fake. Measured: 26 h of drift still
+// passes, 30 h does not.
 const IN_WINDOW_UTC_TIMES = ['00:01', '00:10', '00:19'] as const;
 
 /**
@@ -81,8 +77,7 @@ describe('mcp/chart fixture suites inside the midnight window', () => {
   }
 });
 
-// The rot this replaced was a hardcoded date, so the derivation itself is
-// asserted rather than left to the calendar to disprove a year from now.
+// The derivation itself is asserted, so a hardcoded date cannot creep back.
 const HOURS_IN_A_DAY = 24;
 const MS_PER_HOUR = 3_600_000;
 

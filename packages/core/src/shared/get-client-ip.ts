@@ -1,9 +1,4 @@
-/**
- * Get client IP from headers
- *
- * Both orders are configurable per deployment (IP_HEADER_ORDER,
- * TRUSTED_IP_HEADER_ORDER); the parsed lists arrive as `config.ipHeaders`.
- */
+/** Both header orders are configurable per deployment; the parsed lists arrive as `config.ipHeaders`. */
 import type { IpHeaderConfig } from '../config';
 
 // Order matters: client-forwarded headers (set explicitly by SDKs/upstream

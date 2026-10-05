@@ -1,12 +1,7 @@
-// The per-request plugins: one derive builds `ctx`, one hook logs the request.
-//
-// `requestContext` is a NAMED plugin, and the name is load-bearing. Elysia
-// deduplicates by it, so all 35 modules can start from
-// `.use(requestContext(deps))` and the derive still runs exactly once per
-// request — one `createCtx`, one child logger, one scoped producer set. The
-// corollary is that the first registration wins: every module must be built
-// from the same `AppDeps`, which `defineRoutes` and `rest.routes.ts` enforce
-// by construction.
+// `requestContext` is a NAMED plugin and the name is load-bearing: Elysia
+// deduplicates by it, so every module can start from `.use(requestContext(deps))`
+// and the derive still runs once per request. The first registration wins, so
+// every module must be built from the same `AppDeps`.
 
 import { Elysia } from 'elysia';
 import {
@@ -56,9 +51,7 @@ export function requestContext(deps: AppDeps) {
           ? cancelOnDisconnect(request.signal)
           : undefined;
 
-        // `resolveSession` reads `ctx.services.auth`, so the resolver closes
-        // over the ctx it is installed on. Safe because it is lazy: nothing
-        // calls it during the derive.
+        // The resolver is lazy, so closing over the ctx it is installed on is safe.
         const ctx: HttpCtx = extendCtx(
           createCtx(deps, { requestId, logger, signal: cancellation?.signal }),
           {
@@ -79,17 +72,10 @@ export function requestContext(deps: AppDeps) {
 }
 
 export interface RequestLoggingOptions {
-  /**
-   * Core reads no environment; the parsed client-id list arrives from
-   * `apps/api`'s config instead.
-   */
   verboseClientIds?: string[];
 }
 
-/**
- * One `info` line per request, named `request done` — the `requestId`
- * field rides in from the child logger.
- */
+/** One `info` line per request, named `request done`. */
 export function requestLogging(
   deps: AppDeps,
   options: RequestLoggingOptions = {}
@@ -101,9 +87,8 @@ export function requestLogging(
     .onAfterResponse(
       { as: 'global' },
       ({ ctx, request, path, query, body, timestamp, clientIpHeader }) => {
-        // The same shape as `httpMetrics`' guard: this hook is global and also
-        // runs for a request that matched no route, whose `derive` never ran.
-        // There is no request logger and no arrival timestamp to log with.
+        // This global hook also runs for a request that matched no route, whose
+        // `derive` never ran: no request logger and no arrival timestamp.
         if (!ctx) {
           return;
         }
@@ -149,8 +134,8 @@ export function requestLogging(
     );
 }
 
-// Bun aborts `request.signal` when the client goes away — a disconnect, the
-// server's idle timeout, or a closed websocket — but not after a response.
+// Bun aborts `request.signal` when the client goes away (disconnect, idle
+// timeout, closed websocket) but not after a response.
 function cancelOnDisconnect(requestSignal: AbortSignal): AbortController {
   const cancellation = new AbortController();
   requestSignal.addEventListener(
@@ -170,10 +155,8 @@ function wrapCookies(cookie: ElysiaCookies): CookieJar {
   };
 }
 
-// `signed` is deliberately not forwarded: Elysia signs by app-level
-// `cookie: { secrets, sign: [...] }` config, not per write, so
-// apps/api/src/main.ts lists the signed names. Everything else maps
-// one-to-one.
+// `signed` is not forwarded: Elysia signs by app-level `cookie: { secrets, sign }`
+// config, so apps/api/src/main.ts lists the signed names.
 function writeCookie(
   cookie: ElysiaCookies,
   name: string,
@@ -191,8 +174,7 @@ function writeCookie(
   });
 }
 
-// The dashboard sends the tRPC input as a JSON query param; a batched or
-// malformed one is not worth an error inside a logging hook.
+// A batched or malformed tRPC input is not worth an error inside a logging hook.
 function parseTrpcInput(input: string | undefined): unknown {
   if (typeof input !== 'string') {
     return input;

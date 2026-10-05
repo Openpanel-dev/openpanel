@@ -1,18 +1,9 @@
-// @openpanel/email stays its own package — the react-email JSX toolchain
-// doesn't belong in core; core wraps it as clients/email.
-//
-// Loaded lazily, deliberately: @openpanel/email depends on @openpanel/db (to
-// check email-unsubscribe rows before sending), and @openpanel/db still
-// depends on @openpanel/core for shared crypto/logging utilities that
-// haven't moved yet. A static top-level import here would make core's own
-// barrel eagerly load @openpanel/db while core is still mid-evaluation — the
-// cycle resolves core's own exports as undefined partway through. Deferring
-// the import to call time sidesteps it: by the time anything actually sends
-// an email, core has finished loading.
+// Loaded lazily: @openpanel/email depends on @openpanel/db, which depends on
+// @openpanel/core, so a static import would make core's barrel load
+// @openpanel/db mid-evaluation and resolve core's own exports as undefined.
 //
 // No `ProviderError`: `@openpanel/email` swallows every Resend and SMTP failure
-// itself and returns `null`, so nothing reaches this wrapper to classify.
-// Classifying it means changing that package, which is outside this seam.
+// and returns `null`, so nothing reaches this wrapper to classify.
 
 import type { EmailData, EmailTemplate } from '@openpanel/email';
 

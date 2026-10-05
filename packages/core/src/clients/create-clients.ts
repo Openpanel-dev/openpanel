@@ -1,13 +1,8 @@
-// The `clients` handle on `AppDeps`: a NAMING of what already exists under
-// `src/clients/`, not a new abstraction — every member below is the exact
-// function this package already exports, gathered so a service can reach an
-// outbound client through its scoped `Ctx` instead of importing the module
-// directly. Nothing is constructed here — the geo readers open their mmdb
-// lazily and the email / Discord transports read their own credentials — so
-// building it costs one object literal per process.
-//
-// No `slack` or `ai` member here: a client handle cannot reach up into a
-// module, and those transports live in the single module that calls each.
+// The `clients` handle on `AppDeps`: the functions already exported from
+// `src/clients/`, gathered so a service reaches an outbound client through its
+// scoped `Ctx`. Nothing is constructed here (the geo readers open their mmdb
+// lazily). No `slack` or `ai` member: a client handle cannot reach up into a
+// module, and those transports live in the module that calls each.
 
 import { sendEmail } from './email';
 import { getAsnInfo, getGeoLocation } from './geo';

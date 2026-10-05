@@ -1,24 +1,16 @@
-// Local-only: `main.ts` mounts this surface only outside production AND only
-// in a consuming role. Those two facts are what keep an unauthenticated "run
-// any cron job now" endpoint off a production box.
+// Local-only: `main.ts` mounts this only outside production AND only in a
+// consuming role, which keeps an unauthenticated "run any cron job now"
+// endpoint off a production box.
 //
-// The job list is the `cron` queue's own `jobs`, not a hand-written array of
-// cron type strings — the array could drift from the registry; the registry
-// cannot drift from itself. The queue arrives as an argument (`rest.routes.ts`
-// binds it) because transport may not import a registry.
-//
-// A trigger runs through `runJob` with `{ type }` data — the same entry point
-// the real worker uses — so what this exercises is the production path, not a
-// second dispatcher. `/debug/insights/:projectId?inline=1` summarises with the
-// insight service's own `listAllInsights`, because core reaches Postgres
-// through its services, not through a Prisma client of its own.
+// The job list is the `cron` queue's own `jobs`, so it cannot drift from the
+// registry; the queue arrives as an argument because transport may not import
+// a registry. A trigger runs through `runJob`, the real worker's entry point.
 
 import { z } from 'zod';
 import type { AnyJob, QueueDefinition } from '../jobs/define';
 import { runJob } from '../jobs/workers';
 import { defineRoutes } from './define';
 
-/** The `cron` queue, as this surface reads it. */
 export type CronQueue = QueueDefinition<Record<string, AnyJob>>;
 
 const BAD_REQUEST = 400;
@@ -96,7 +88,6 @@ export const createDebugRoutes = (cronQueue: CronQueue) => {
             jobs,
           };
         },
-        // Hidden from the OpenAPI document, like every other ops-surface route.
         { detail: HIDDEN }
       )
       .all(
@@ -148,9 +139,8 @@ export const createDebugRoutes = (cronQueue: CronQueue) => {
         },
         { detail: HIDDEN }
       )
-      // The insights pipeline for ONE project, bypassing the daily cron's
-      // eligibility filter. Default enqueues a real job so it shows up in
-      // bull-board; `?inline=1` runs it here and returns a summary.
+      // One project's insights pipeline, bypassing the daily cron's eligibility
+      // filter. Default enqueues a real job; `?inline=1` runs it here.
       .get(
         '/debug/insights/:projectId',
         async ({ params, query, set, ctx }) => {
@@ -200,7 +190,7 @@ export const createDebugRoutes = (cronQueue: CronQueue) => {
         },
         { params: projectIdParams, detail: HIDDEN }
       )
-      // Weekly digest for ONE project, bypassing eligibility.
+      // Weekly digest for one project, bypassing eligibility.
       //   ?to=you@example.com  → send only to that address
       //   (no ?to)             → return the assembled payload without sending
       //   ?force=1             → build even with 0 visitors this week

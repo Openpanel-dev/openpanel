@@ -1,5 +1,4 @@
-// This is the transport-agnostic type HttpCtx.setCookie exposes to every
-// module, so a module depends on this instead of Elysia's cookie type directly.
+// Transport-agnostic, so modules do not depend on Elysia's cookie type.
 
 export interface CookieOptions {
   maxAge?: number;
@@ -24,12 +23,9 @@ const SAME_SITE_ATTRIBUTE = {
 } as const;
 
 /**
- * Serializes one `Set-Cookie` header value.
- *
- * Attribute order is fixed and deliberate, so a header produced here stays
- * byte-comparable across implementations. `signed` is deliberately not
- * emitted: it is not a cookie attribute, it is an instruction to the
- * caller's signer.
+ * Serializes one `Set-Cookie` header value. Attribute order is fixed so output
+ * stays byte-comparable across implementations. `signed` is not emitted: it is
+ * an instruction to the caller's signer, not a cookie attribute.
  */
 export function serializeCookie(
   name: string,
@@ -60,13 +56,7 @@ export function serializeCookie(
   return header;
 }
 
-/**
- * The read half of a request's cookies, transport-agnostic.
- *
- * `HttpCtx.cookies` is this and not Elysia's cookie record: a module reads a
- * cookie by name and nothing else, so the framework's proxy stays behind
- * `http/context.ts` and a `Ctx` never carries an Elysia type.
- */
+/** The read half of a request's cookies; keeps Elysia's proxy behind `http/context.ts`. */
 export interface CookieJar {
   get(name: string): string | undefined;
 }

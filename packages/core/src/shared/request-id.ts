@@ -1,8 +1,7 @@
-// An inbound request-id is honoured but never trusted verbatim — it reaches log
-// storage and a log search. Two transports are handed one from outside the
-// process — the HTTP edge (`http/hooks.ts`) and the Kafka consumer, which reads
-// the id the producer stamped into the envelope — so the rule that decides what
-// is safe to bind to a logger lives here rather than in either.
+// An inbound request-id is honoured but never trusted verbatim: it reaches log
+// storage and log search. Both the HTTP edge and the Kafka consumer receive one
+// from outside the process, so the rule for what is safe to bind to a logger
+// lives here.
 
 import { generateId } from '@openpanel/shared';
 import { REQUEST_ID_LENGTH } from '../logger';

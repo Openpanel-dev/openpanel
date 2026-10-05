@@ -1,9 +1,7 @@
-// Two pagination shapes: numeric-page offsets and opaque keyset cursors
-// (generalized to any JSON-serializable cursor).
+// Numeric-page offsets and opaque keyset cursors (any JSON-serializable cursor).
 
 export const DEFAULT_PAGE_SIZE = 50;
 
-// Page 0 (or no page) is the first page — offset 0.
 export function offsetFromPage(
   page: number | undefined,
   pageSize: number = DEFAULT_PAGE_SIZE

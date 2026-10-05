@@ -7,25 +7,20 @@ const __dirname = dirname(__filename);
 
 import yaml from 'js-yaml';
 
-// Regex special characters that indicate we need actual regex
 const regexSpecialChars = /[|^$.*+?(){}[\]\\]/;
 
-// User agents that must NEVER be treated as bots, even though the upstream
-// device-detector list flags them. Its "Generic Bot" pattern lumps bare
-// runtime/client identifiers (e.g. `node`, `Node.js`) into an anchored
-// alternation because browsers never send them — but legitimate server-side
-// traffic does. We only want to flag traffic whose user agent *explicitly*
-// identifies itself as a bot (handled by the separate `bot|crawler|spider...`
-// heuristic), so these plain identifiers are stripped out of the generated
-// patterns here. This runs on every regen, so upstream can never re-introduce
-// the false positives. Values are matched against single alternation branches,
-// so regex metacharacters must be escaped exactly as they appear upstream.
+// User agents that must NEVER be treated as bots even though the upstream
+// device-detector list flags them: its "Generic Bot" pattern lumps bare runtime
+// identifiers (`node`, `Node.js`) into an anchored alternation, but legitimate
+// server-side traffic sends them. Only user agents that explicitly identify as
+// a bot (the separate `bot|crawler|spider...` heuristic) are flagged. Values are
+// matched against single alternation branches, so metacharacters must be
+// escaped exactly as upstream spells them.
 export const ALLOWLISTED_BOT_UA_TOKENS = new Set(['node', 'Node\\.js']);
 
-// Removes allowlisted identifiers from anchored exact-match groups such as
-// `^(?:chrome|node|Node\.js|url)$`, leaving the genuinely suspicious branches
-// intact. If a group ends up empty it is dropped together with a trailing `|`
-// so the surrounding alternation stays valid.
+// Removes allowlisted identifiers from anchored groups such as
+// `^(?:chrome|node|Node\.js|url)$`. An emptied group is dropped with its
+// trailing `|` so the alternation stays valid.
 export function stripAllowlistedTokens(regex: string): string {
   return regex.replace(
     /\^\(\?:([^)]+)\)\$\|?/g,
@@ -92,8 +87,7 @@ async function main() {
   }
 }
 
-// Only fetch + regenerate when run directly (e.g. `pnpm gen:bots`), so the
-// transformation helpers can be imported and unit-tested without a network call.
+// Only fetch when run directly, so the helpers can be unit-tested without a network call.
 if (process.argv[1] === __filename) {
   main();
 }

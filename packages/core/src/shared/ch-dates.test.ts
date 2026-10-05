@@ -1,6 +1,6 @@
-// The range boundaries the query builders bind. Two shapes arrive: the
-// dashboard's `YYYY-MM-DD HH:mm:ss` (already widened to the day's edges by
-// report/src/chart-dates.ts) and the MCP tools' bare `YYYY-MM-DD`.
+// The range boundaries the query builders bind: the dashboard's
+// `YYYY-MM-DD HH:mm:ss` (already widened to the day's edges) and the MCP tools'
+// bare `YYYY-MM-DD`.
 
 import { describe, expect, test } from 'bun:test';
 import { toRangeBoundaryDate, toRangeBoundaryLiteral } from './ch-dates';

@@ -1,9 +1,3 @@
-// Concrete pino implementation. `../logger.ts` is the structural interface
-// every module and service codes against; this file is what actually
-// instantiates pino, and it is deliberately the only place in core that
-// imports it — apps/api builds its named logger by calling `createLogger`
-// from here rather than owning a copy.
-
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
 import type { CoreConfig } from './config';
@@ -15,9 +9,8 @@ import {
 
 export type ILogger = PinoLogger;
 
-// Originals captured before interceptProcessOutput wraps the streams. Code
-// that must bypass capture (e.g. crash handlers mirroring fatals to stderr)
-// uses these so the line isn't re-ingested and shipped twice.
+// Captured before interceptProcessOutput wraps the streams, so code that must
+// bypass capture (crash handlers mirroring fatals) is not re-ingested twice.
 export const rawStdoutWrite = process.stdout.write.bind(process.stdout);
 export const rawStderrWrite = process.stderr.write.bind(process.stderr);
 
@@ -61,8 +54,7 @@ export function redactSensitive(value: unknown, depth = 0): unknown {
   return result;
 }
 
-// Shared by logs and traces so both signals land under the same service
-// name in ClickStack (e.g. new-api-production).
+// Shared by logs and traces so both signals land under one service name.
 export function getServiceName(config: CoreConfig, name: string): string {
   const { serviceNamePrefix, serviceNameEnvironment } = config.logging;
   return [serviceNamePrefix, name, serviceNameEnvironment]
@@ -70,13 +62,10 @@ export function getServiceName(config: CoreConfig, name: string): string {
     .join('-');
 }
 
-// pino-pretty's transport runs in a worker thread that pino locates via
-// require.resolve at the CALLING module's location. Under Bun that
-// resolution is broken for a transitive dependency (a caller outside
-// @openpanel/core, e.g. apps/api/src/main.ts's own `createLogger` call)
-// and crashes the process instead of the log line — deterministic on this
-// box, not a flake. Node has no such issue, so this only turns pretty
-// printing off when booted under Bun.
+// pino-pretty's worker-thread transport is located via require.resolve at the
+// CALLING module's location, which is broken under Bun for a transitive
+// dependency (a caller outside @openpanel/core) and crashes the process.
+// Pretty printing is therefore off under Bun.
 const isBun = !!process.versions.bun;
 
 export function createLogger({
@@ -132,14 +121,12 @@ let intercepted = false;
  * console.*, Node warnings) still reaches the OTLP pipeline. Call it before
  * anything else runs in the app entry.
  *
- * No feedback loop: pino writes via sonic-boom straight to the file
- * descriptor (and transports write from a worker thread), so pino's own
- * output never passes through these wrappers. A reentrancy guard covers any
- * exotic transport that does.
+ * No feedback loop: pino writes straight to the file descriptor, never through
+ * these wrappers; a reentrancy guard covers any exotic transport that does.
  *
- * In otlp mode raw lines are also passed through to the original stream so
- * `docker logs` stays useful. In stdout mode pino's JSON line on stdout IS
- * the container output — teeing would print everything twice.
+ * In otlp mode raw lines are also passed to the original stream so `docker
+ * logs` stays useful. In stdout mode pino's JSON line IS the container output,
+ * so teeing would print everything twice.
  */
 export function interceptProcessOutput(
   config: CoreConfig,
@@ -148,7 +135,6 @@ export function interceptProcessOutput(
   if (intercepted) {
     return;
   }
-  // Keep local dev output untouched.
   if (!config.logging.interceptProcessOutput) {
     return;
   }

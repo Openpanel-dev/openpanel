@@ -1,12 +1,7 @@
 // A module's plain-HTTP half: a factory over `AppDeps` returning an Elysia
-// instance. Deps flow top-down as plain arguments, the same way
-// `createXService(deps, services)` does — no decorators at a distance, no
-// options bag.
-//
-// Identity with a name. It fixes the factory signature and guarantees every
-// module starts from the auth plugin, which brings `requestContext(deps)` with
-// it: `ctx` is typed in handlers and `session` / `clientAuth` are requestable
-// without each module re-wiring either.
+// instance. It fixes the factory signature and guarantees every module starts
+// from the auth plugin, which brings `requestContext(deps)` with it, so `ctx` is
+// typed in handlers and `session` / `clientAuth` are requestable.
 
 import type { AppDeps } from '../context';
 import { authMacros } from './auth';

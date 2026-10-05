@@ -1,7 +1,5 @@
-// Subject moved to @openpanel/shared; the suite did not follow it. Nothing runs
-// a `test` script in packages/shared yet — the root `test` script names its
-// four workspaces explicitly, so moving this file would take it out of every
-// gate. Move it when that line can gain the filter.
+// Tests @openpanel/shared's safeFetch from here because the root `test` script
+// does not run packages/shared.
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -156,9 +154,8 @@ describe('safeFetchStream', () => {
     await new Promise<void>((resolve) => redirectServer.close(() => resolve()));
   });
 
-  // The streaming variant is what the importer uses, so it has to hold the
-  // same line as safeFetch - a second implementation that forgot one of these
-  // is exactly how the importer ended up unguarded in the first place.
+  // The streaming variant must hold the same line as safeFetch; a second
+  // implementation that forgot a check left the importer unguarded once.
   it('refuses to fetch a loopback address directly', async () => {
     await expect(
       safeFetchStream(`http://127.0.0.1:${secretPort}/export.csv`, {

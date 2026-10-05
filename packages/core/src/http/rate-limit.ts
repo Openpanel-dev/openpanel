@@ -1,6 +1,5 @@
-// The HTTP limiter. Deliberately simpler than the tRPC one in
-// rpc/rate-limit.ts: a fixed window with no escalation, matching what
-// docs/api-reference/rate-limits.mdx publishes (ISSUES.md H4).
+// The HTTP limiter: a fixed window with no escalation, matching the published
+// rate-limit docs.
 
 import { getRedisCache } from '@openpanel/redis';
 import { Elysia } from 'elysia';
@@ -13,7 +12,7 @@ const TOO_MANY_REQUESTS = 429;
 const KEY_MISSING = -2;
 const KEY_WITHOUT_EXPIRY = -1;
 
-/** Exact response body, matching what api-reference/rate-limits.mdx documents. */
+/** Exact response body the rate-limit docs publish. */
 const TOO_MANY_REQUESTS_BODY = {
   statusCode: TOO_MANY_REQUESTS,
   error: 'Too Many Requests',
@@ -82,12 +81,9 @@ export async function isRateLimited(
 }
 
 /**
- * The first matching prefix wins, so order matters only where one prefix
- * contains another — none do today.
- *
- * `/export`, `/insights` and `/manage` are what
- * docs/api-reference/rate-limits.mdx publishes. `/track`, `/profile` and
- * `/import` are absent on purpose: the same page promises they are unlimited.
+ * The first matching prefix wins. `/export`, `/insights` and `/manage` are the
+ * published limits; `/track`, `/profile` and `/import` are absent on purpose:
+ * the docs promise they are unlimited.
  */
 export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
   prefix: string;
@@ -102,11 +98,7 @@ export function limitFor(pathname: string): HttpRateLimit | undefined {
   return HTTP_RATE_LIMITS.find((limit) => pathname.startsWith(limit.prefix));
 }
 
-/**
- * Mounted once per route surface rather than per module, so a new `/manage`
- * route cannot quietly arrive without a limit. The prefix table above is
- * that mapping in one place.
- */
+/** Mounted once per route surface so a new `/manage` route cannot arrive without a limit. */
 export function httpRateLimit(deps: AppDeps) {
   return new Elysia({ name: 'core/http/rate-limit' })
     .use(requestContext(deps))
@@ -120,10 +112,8 @@ export function httpRateLimit(deps: AppDeps) {
       if (!ctx) {
         return;
       }
-      // No socket address at this layer — `HttpCtx` carries none, and the
-      // tRPC context passes `undefined` too (rpc/base.ts). The trusted
-      // headers are the fingerprint; without one, callers share the
-      // fail-closed `unknown` bucket.
+      // No socket address at this layer; without a trusted header, callers
+      // share the fail-closed `unknown` bucket.
       const limited = await isRateLimited(
         limit,
         request.headers,

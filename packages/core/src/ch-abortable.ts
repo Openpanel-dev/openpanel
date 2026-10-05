@@ -1,13 +1,10 @@
-// A work scope's ClickHouse reads, bound to that scope's AbortSignal, so a read
-// whose answer nobody can receive stops on the server instead of running to
-// completion.
-//
-// Aborting the HTTP call alone does not stop the query: ClickHouse only cancels
-// on client close for a READ-ONLY query with
+// A work scope's ClickHouse reads, bound to that scope's AbortSignal so an
+// abandoned read stops on the server. Aborting the HTTP call alone does not:
+// ClickHouse cancels on client close only for a READ-ONLY query with
 // `cancel_http_readonly_queries_on_client_close` set (measured on 26.1).
-// `readonly: 2` still allows per-query settings and temporary tables, which
+// `readonly: 2` still allows per-query settings and the temporary tables
 // `GLOBAL IN` needs. Only `query` is bound: writes go through `insert` and
-// `command`, and must never be stopped halfway.
+// `command` and must never be stopped halfway.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import type { ClickHouseClient } from './context';

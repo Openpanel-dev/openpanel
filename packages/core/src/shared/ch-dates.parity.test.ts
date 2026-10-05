@@ -1,9 +1,5 @@
-// Guards the second duplication this creates: core owns its own copies of
-// @openpanel/db's ClickHouse date helpers (see ch-dates.ts's header for why),
-// and a divergence would show up as silently wrong date literals in a query
-// rather than as a failing test.
-//
-// This is a test file, which `core-uses-ctx-not-db-internals` exempts.
+// core keeps its own copies of @openpanel/db's ClickHouse date helpers; a
+// divergence would show up as silently wrong date literals in a query.
 
 import { describe, expect, it } from 'bun:test';
 import * as dbClient from '@openpanel/db/src/clickhouse/client';

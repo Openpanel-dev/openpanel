@@ -1,14 +1,7 @@
 // Upper bounds for user-supplied strings, shared so modules stop inventing a
-// literal each.
-//
-// Named `*.constants.ts` deliberately: `constants-stay-isomorphic` lets a
-// constants file import zod, another constants file, or nothing, so this is the
-// only shape the rule allows a shared limit to take.
-//
-// These are ceilings, not product rules. A ceiling exists so an input cannot
-// reach work that scales with its length — argon2 in `auth/src/password.ts`,
-// a `Set-Cookie` write, a database column — and is set far above any honest
-// value so it never fires for a real user.
+// literal each. These are ceilings, not product rules: they stop an input
+// reaching work that scales with its length (argon2, a `Set-Cookie` write, a
+// database column) and sit far above any honest value.
 
 /** Argon2 hashes this; 128 is well past any password a person types. */
 export const MAX_PASSWORD = 128;

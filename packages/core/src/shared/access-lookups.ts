@@ -1,34 +1,20 @@
-// The concrete, Prisma-backed access lookups. Deliberately a sibling of
-// modules/auth/src/access.ts rather than living inside it: the ladder must
-// stay importable with no database (see its own header), while this file is
-// the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
-// to it.
+// The Prisma-backed access lookups, a sibling of `modules/auth/src/access.ts`
+// so that ladder stays importable with no database. Two lookups are `cacheable`
+// on their ARGUMENTS and so cannot take a `ServiceDeps` parameter; Postgres
+// comes from `context.ts`'s `unscopedDb` (the same client as `ctx.db`).
 //
-// Postgres comes from `context.ts`'s `unscopedDb`. Two of the three lookups
-// here are `cacheable`, whose key is derived from the call's ARGUMENTS
-// (packages/redis/cachable.ts), so they cannot take a `ServiceDeps` leading
-// parameter at all; the third (`getClientAccess`) delegates to them and stays
-// symmetric. It is the same client `ctx.db` is, not a second one.
-//
-// `getProjectById` is spelled here rather than imported from
-// `project.service.ts`: `shared/` sits below `modules/` and the ladder reads
-// one field off the row.
+// `getProjectById` is spelled here because `shared/` sits below `modules/`.
 
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 
-// Lazy: `context.ts` value-imports `services.ts`, so a static import here
-// would drag the whole 36-service graph into the import graph of everything
-// that reaches this file.
+// Lazy: `context.ts` value-imports `services.ts`, and a static import would
+// drag the whole services graph into everything that reaches this file.
 function unscopedDb() {
   return import('../context').then((m) => m.unscopedDb());
 }
 
-/**
- * The project row the ladder reads (`modules/auth/src/access.ts`'s `AccessLookups`).
- * Same query as `project.service.ts`'s `getProjectById`, without the scope
- * that file's callers have and this one does not.
- */
+/** The project row the access ladder reads. */
 export async function getProjectById(
   projectId: string
 ): Promise<{ organizationId: string | null } | null> {
@@ -53,15 +39,13 @@ export function canWriteProject(access: IProjectAccess | null): boolean {
 /**
  * Resolve a user's access to one project.
  *
- * Returns a single shape - `{ level }` or `null` - on purpose. This used to
- * return `true` for members with no explicit ProjectAccess rows and the row
- * itself otherwise, which forced every caller into a `typeof access !==
- * 'boolean'` dance. 26 of 29 mutating procedures skipped the level check
- * entirely as a result (GHSA-f9rx-pxgw-c6rg); with one shape, omitting the
- * check is a type error rather than a silent grant.
+ * Returns a single shape, `{ level }` or `null`, on purpose: returning `true`
+ * for some members forced callers into a `typeof access !== 'boolean'` dance
+ * and 26 of 29 mutating procedures skipped the level check (GHSA-f9rx-pxgw-c6rg).
+ * With one shape, omitting the check is a type error.
  *
- * NOTE: the cache key is versioned. Changing the return shape without renaming
- * it would serve old-shape entries for up to 5 minutes across a rolling deploy.
+ * The cache key is versioned: changing the return shape without renaming it
+ * would serve old-shape entries for up to 5 minutes across a rolling deploy.
  */
 export const getProjectAccess = cacheable(
   'getProjectAccessV2',

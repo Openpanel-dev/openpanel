@@ -1,8 +1,5 @@
-// Subject moved to @openpanel/shared; the suite did not follow it. Nothing runs
-// a `test` script in packages/shared yet — the root `test` script names its
-// four workspaces explicitly and hasn't picked up the new one — so moving this
-// file would take it out of every gate. Move it when that line can gain the
-// filter.
+// Tests @openpanel/shared's slug helper from here because the root `test` script
+// does not run packages/shared.
 import { describe, expect, it } from 'bun:test';
 import { slug } from '@openpanel/shared';
 

@@ -1,6 +1,3 @@
-/**
- * Allowed global identifiers - super restricted allowlist
- */
 export const ALLOWED_GLOBALS = new Set([
   // Basic values for comparisons
   'undefined',
@@ -18,9 +15,6 @@ export const ALLOWED_GLOBALS = new Set([
   'JSON',
 ]);
 
-/**
- * Allowed methods on built-in objects (static methods)
- */
 export const ALLOWED_METHODS: Record<string, Set<string>> = {
   // Math methods
   Math: new Set(['abs', 'ceil', 'floor', 'round', 'min', 'max', 'random']),
@@ -32,10 +26,6 @@ export const ALLOWED_METHODS: Record<string, Set<string>> = {
   Date: new Set(['now']),
 };
 
-/**
- * Allowed instance methods (methods called on values, not on global objects)
- * These are safe methods that can be called on any value
- */
 export const ALLOWED_INSTANCE_METHODS = new Set([
   // Array instance methods
   'map',

@@ -1,9 +1,6 @@
-// The one client with no `ProviderError`: there is no third party on the other
-// end. Both lookups read a bundled MaxMind `.mmdb`, so an IP the database does
-// not carry is a missing thing and comes back as the default value, and a
-// database that will not load fails identically on every retry.
-// `ingest.service.ts` therefore has no failure to classify — it reads a value,
-// never a throw.
+// The one client with no `ProviderError`: both lookups read a bundled MaxMind
+// `.mmdb`, so an IP the database does not carry comes back as the default value
+// and a database that will not load fails identically on every retry.
 
 import { readFile } from 'node:fs/promises';
 import path, { dirname } from 'node:path';
@@ -16,16 +13,13 @@ import datacenterAsns from './datacenter-asns';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Resolve a bundled `.mmdb` file, trying the bundled-dist layout first and the
-// local package layout second (mirrors how the file ships via `pnpm codegen`).
-// apps/api's build still bundles every `@openpanel/*` package into one file
-// (tsdown `noExternal`), so `import.meta.url` there resolves to
-// `apps/api/dist/index.js` regardless of this file's nesting under
-// `src/clients/` — three levels up from dist is the repo root.
+// Resolve a bundled `.mmdb` file, bundled-dist layout first, local package
+// second. apps/api bundles every `@openpanel/*` package into one file, so there
+// `import.meta.url` is `apps/api/dist/index.js` and three levels up is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
-  // From the api dist bundle
+  // The api dist bundle
   const dbPath = path.join(__dirname, `../../../packages/core/${filename}`);
-  // From local package (e.g. running core's own tests, unbundled)
+  // The local package (core's own tests, unbundled)
   const dbPathLocal = path.join(__dirname, `../../${filename}`);
   try {
     const dbBuffer = await readFile(dbPath);
@@ -43,7 +37,6 @@ async function loadDatabase(filename: string): Promise<ReaderModel | null> {
   }
 }
 
-// Singleton promises - initialized once, awaited on every call
 let readerPromise: Promise<ReaderModel | null> | null = null;
 let asnReaderPromise: Promise<ReaderModel | null> | null = null;
 
@@ -109,8 +102,8 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
     cache.set(ip, res);
     return res;
   } catch {
-    // Cache negative lookups too — the reader throws AddressNotFoundError for
-    // IPs absent from the db, and re-throwing on every event is wasted work.
+    // Cache negative lookups too: the reader throws AddressNotFoundError for
+    // absent IPs and re-throwing on every event is wasted work.
     cache.set(ip, DEFAULT_GEO);
     return DEFAULT_GEO;
   }
@@ -119,8 +112,7 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
 export interface AsnInfo {
   asn: number | undefined;
   org: string | undefined;
-  // True when the ASN belongs to a datacenter / hosting provider (see
-  // `datacenter-asns.ts`). Such traffic is unlikely to be a real end user.
+  // True when the ASN belongs to a datacenter / hosting provider.
   isHosting: boolean;
 }
 
@@ -138,8 +130,6 @@ const asnCache = new LRUCache<string, AsnInfo>({
   ttlAutopurge: true,
 });
 
-// Resolve the Autonomous System an IP belongs to and whether it is a known
-// datacenter / hosting network. Used to flag (not block) likely-bot traffic.
 export async function getAsnInfo(ip?: string): Promise<AsnInfo> {
   if (!ip || ignore.includes(ip)) {
     return DEFAULT_ASN;
@@ -163,8 +153,8 @@ export async function getAsnInfo(ip?: string): Promise<AsnInfo> {
     asnCache.set(ip, res);
     return res;
   } catch {
-    // Cache negative lookups too — the reader throws AddressNotFoundError for
-    // IPs absent from the db, and re-throwing on every event is wasted work.
+    // Cache negative lookups too: the reader throws AddressNotFoundError for
+    // absent IPs and re-throwing on every event is wasted work.
     asnCache.set(ip, DEFAULT_ASN);
     return DEFAULT_ASN;
   }

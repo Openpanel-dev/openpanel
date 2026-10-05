@@ -1,8 +1,3 @@
-// One boot scope, one work scope, one builder. HTTP routes, tRPC procedures,
-// job handlers and the Kafka consumer all extend the same `Ctx`, so a service
-// written once works under every transport and the requestId minted at the
-// edge reaches the query, the enqueue and the job that enqueue causes.
-
 import type { Buffers } from './buffers/create-buffers';
 import { bindReadsToSignal } from './ch-abortable';
 import type { CoreConfig } from './config';
@@ -12,10 +7,9 @@ import type { SessionValidationResult } from './modules/auth/src/login-session';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
-// The four boot handles. Each is a TYPE QUERY over the module that
-// constructs the client, so the alias cannot drift from what `main.ts`
-// actually passes; all four are type-only, so core still imports no database
-// at runtime and `bun test` still runs offline.
+// Type queries over the modules that construct the clients, so the aliases
+// cannot drift from what `main.ts` passes. Type-only: core imports no database
+// at runtime and `bun test` runs offline.
 export type Db = typeof import('@openpanel/db/src/prisma-client').db;
 export type ClickHouseClient =
   typeof import('@openpanel/db/src/clickhouse/client').ch;
@@ -24,28 +18,18 @@ export type RedisClient = ReturnType<
 >;
 export type ServiceClients = import('./clients/create-clients').ServiceClients;
 
-// The two `@openpanel/db` VALUES core cannot reach through a scope, and the
-// one file allowed to name them: `core-uses-ctx-not-db-internals` exempts
-// this module by path, and it is already where core declares its handles.
-// Both are LAZY, so importing core still constructs no database and
-// `bun test` still runs offline, and neither memoizes its result — the module
-// registry already caches the import, and a second memo is exactly what let
-// the deleted compat seam hand one suite's mocked Prisma client to every
-// later file in the process.
+// `unscopedDb` and the Prisma namespace are lazy so importing core constructs no
+// database. Neither memoizes: the module registry already caches the import, and
+// a second memo once handed one suite's mocked Prisma client to later files.
 
 export type PrismaNamespace =
   typeof import('@openpanel/db/src/prisma-client').Prisma;
 
 /**
- * Prisma's JSON sentinels (`DbNull`, `JsonNull`): frozen constants that write
- * an explicit SQL NULL — or a JSON `null` — onto a nullable `Json?` column.
- * They are values on the namespace, not a client, so nothing about them is
- * per-request — but they are still `@openpanel/db` VALUES, so the scope
- * carries them rather than each writer reaching the namespace directly:
- * `main.ts` reads the two off the namespace once and puts them on `AppDeps`;
- * every writer reads `deps.prisma.DbNull`. Two named fields, not the namespace
- * itself — nothing else on it belongs in a request scope, and `Prisma` is a
- * very large type for every consumer's `tsc` to walk.
+ * Prisma's JSON sentinels (`DbNull`, `JsonNull`) that write an explicit SQL NULL
+ * or JSON `null` onto a nullable `Json?` column. The scope carries just these
+ * two instead of the `Prisma` namespace, a very large type for every
+ * consumer's `tsc` to walk.
  */
 export interface PrismaSentinels {
   DbNull: PrismaNamespace['DbNull'];
@@ -54,34 +38,20 @@ export interface PrismaSentinels {
 
 /**
  * The process's Postgres client, for the one path that cannot be handed a
- * scope: `shared/access-lookups.ts`. Its lookups are `cacheable` on their
- * ARGUMENTS, so they cannot take a leading `deps`, and their bare signature is
- * pinned by imports through `packages/db/src/services/access.service.ts` with
- * no app boot at all. It is the same client `main.ts` puts on `AppDeps.db`.
- * Every other caller in core reaches Postgres as `deps.db`.
+ * scope: `shared/access-lookups.ts`, whose lookups are `cacheable` on their
+ * arguments and so cannot take a leading `deps`. Everything else uses `deps.db`.
  */
 export function unscopedDb(): Promise<Db> {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
 }
 
-// Built once by `createBuffers(deps)` in main.ts, never a module singleton.
 export type { Buffers } from './buffers/create-buffers';
 
-// The resolved session. `SessionValidationResult` is Prisma-shaped (Session +
-// User) but the import above is type-only, so nothing of `@openpanel/db` is
-// loaded at runtime — core stays importable with no database, which is what
-// lets `bun test` run offline. It stays defined next to the Prisma-touching
-// session CRUD in `./modules/auth/src/login-session.ts` rather than here, which
-// is the same file that CRUD lazily reaches `@openpanel/db`'s Prisma client
-// from.
 export type Session = SessionValidationResult;
 
-// The parsed environment. `apps/api`'s config/env.ts is the sole reader of
-// process.env and core reads none, so the shape of what core needs is
-// declared in `./config.ts` and arrives here.
 export type { CoreConfig } from './config';
 
-/** Boot scope. Built once in apps/api's main.ts, closed once in shutdown. */
+/** Boot scope. Built once at startup, closed once in shutdown. */
 export interface AppDeps {
   db: Db;
   prisma: PrismaSentinels;
@@ -109,7 +79,7 @@ export interface Ctx {
   requestId: string;
 }
 
-/** What HTTP and tRPC add. No req/res in core, from day one. */
+/** What HTTP and tRPC add. */
 export interface HttpCtx extends Ctx {
   headers: Headers;
   ip: string;
@@ -118,9 +88,8 @@ export interface HttpCtx extends Ctx {
   session: () => Promise<Session | null>;
   setCookie(name: string, value: string, options?: CookieOptions): void;
   /**
-   * Aborting it stops this request's ClickHouse reads. The request-context
-   * derive aborts it when the client disconnects; a transport with a deadline
-   * aborts it when the deadline passes. Set only on read (GET/HEAD) requests.
+   * Aborting it stops this request's ClickHouse reads: on client disconnect or,
+   * for a transport with a deadline, when it passes. Set only on GET/HEAD.
    */
   cancellation?: AbortController;
 }
@@ -138,10 +107,7 @@ export interface ScopeMeta {
   signal?: AbortSignal;
 }
 
-/**
- * The single builder. When something new must reach every handler it is added
- * here once and all four transports have it.
- */
+/** The single builder: anything every handler needs is added here once. */
 export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
   const ctx: Ctx = {
     db: deps.db,
@@ -154,7 +120,6 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     queues: deps.producers.scope({ requestId: scope.requestId }),
     config: deps.config,
     requestId: scope.requestId,
-    // Installed as a getter immediately below.
     services: undefined as unknown as Services,
   };
 
@@ -193,8 +158,6 @@ function installLazyServices(ctx: Ctx): void {
       });
       return built;
     },
-    // Enumerable so a transport that copies a Ctx keeps the field at all;
-    // configurable so one may reinstall it.
     enumerable: true,
     configurable: true,
   });

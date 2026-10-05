@@ -7,9 +7,8 @@ import type {
   ClientAuthResult,
 } from './client-auth';
 
-// mock.module is not hoisted, so the subject is imported inside beforeAll —
-// see AGENTS.md. Both principals are stubs until P6/P8; mocking them is what
-// lets the macro's two branches be exercised at all.
+// mock.module is not hoisted, so the subject is imported inside beforeAll.
+// Both principals are stubs, which lets the macro's two branches be exercised.
 const CLIENT: AuthenticatedClient = {
   id: 'client-1',
   projectId: 'proj-1',
@@ -103,10 +102,9 @@ test('clientAuth passes the allow list through to the authenticator', async () =
   });
 });
 
-// This has TWO 401 bodies and both are a wire contract: the allow-list
-// routers (/export, /insights, /import, /manage) answer with a JSON envelope
-// carrying the validator's own message, and the ingest routers (/track,
-// /event, /profile) answer with that message as plain text.
+// Two 401 bodies, both a wire contract: allow-list routers (/export, /insights,
+// /import, /manage) answer a JSON envelope carrying the validator's message;
+// ingest routers (/track, /event, /profile) answer it as plain text.
 test('clientAuth answers 401 with the allow-list body when nothing authenticates', async () => {
   result = REFUSAL;
 

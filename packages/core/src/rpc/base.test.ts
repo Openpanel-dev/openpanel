@@ -13,7 +13,6 @@ import {
 } from './base';
 import { createTrpcFetchHandler } from './handler';
 
-// Base cookie options for these tests, with a domain filled in.
 const COOKIE_OPTIONS: CookieOptions = {
   domain: '.openpanel.dev',
   secure: true,
@@ -38,8 +37,7 @@ function build(options: Partial<Parameters<typeof makeTrpcContext>[2]> = {}) {
 test('setCookie writes through resHeaders with the documented option precedence', async () => {
   const { trpcCtx, resHeaders } = build();
 
-  // Only maxAge and signed are caller-controlled; COOKIE_OPTIONS is spread
-  // last, so everything a caller sends for the rest is ignored.
+  // Only maxAge and signed are caller-controlled; the rest is ignored.
   (await trpcCtx).setCookie('session', 'the-token', {
     maxAge: 600,
     domain: 'evil.example',
@@ -116,9 +114,8 @@ test('a signed cookie with no signer throws instead of going out unsigned', asyn
   expect(resHeaders.getSetCookie()).toHaveLength(0);
 });
 
-// The context builder resolves the session once, since every procedure reads
-// `ctx.session` as a plain value - and it is what lets `onError` log the
-// session without awaiting.
+// The session is resolved eagerly because every procedure reads `ctx.session`
+// as a plain value and `onError` logs it without awaiting.
 test('the session is resolved once, before any procedure runs', async () => {
   const stub = stubHttpCtx();
   expect(stub.sessionCalls).toBe(0);
@@ -131,10 +128,9 @@ test('the session is resolved once, before any procedure runs', async () => {
   expect(ctx.session).toEqual(TEST_SESSION);
 });
 
-// tRPC merges middleware context with `{...ctx, ...next.ctx}` — a spread,
-// which copies own enumerable properties ONLY. A prototype-chained context
-// would lose every inherited field the first time a middleware called
-// `next({ ctx })`, and the next read would be a TypeError inside a mutation.
+// tRPC merges middleware context with a spread, which copies own enumerable
+// properties ONLY: a prototype-chained context would lose every inherited
+// field the first time a middleware called `next({ ctx })`.
 test('the HttpCtx is flattened onto own properties, and services stay lazy', async () => {
   const { ctx } = stubHttpCtx();
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
@@ -185,8 +181,6 @@ test('simulateLatency delays the context, and is off by default', async () => {
     Math.random = random;
   }
 });
-
-// ------------------------------------------------------- middleware factories
 
 function mountWith(
   build: (

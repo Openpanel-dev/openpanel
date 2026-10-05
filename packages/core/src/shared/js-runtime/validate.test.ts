@@ -191,9 +191,9 @@ describe('validate', () => {
   });
 
   describe('Reads that reach the Function constructor', () => {
-    // Every form here stores or forwards a reference instead of calling it
-    // as a member, which the call checks alone never see. See
-    // GHSA-mc99-9jf5-22cq / GHSA-fmf9-23m7-xg84.
+    // Every form here stores or forwards a reference instead of calling it as a
+    // member, which the call checks alone never see (GHSA-mc99-9jf5-22cq,
+    // GHSA-fmf9-23m7-xg84).
     it('should block reading .constructor into a local', () => {
       const result = validate(
         '(payload) => { const F = payload.constructor.constructor; return F; }'

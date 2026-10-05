@@ -1,10 +1,8 @@
 import { expect, test } from 'bun:test';
 import * as core from './index';
 
-// The curated barrel is the package's real public API: what apps/api needs to
-// build AppDeps once and mount the three route surfaces plus the tRPC router.
-// A name missing here is a name apps/api cannot reach — there is no `./*`
-// wildcard to fall back on.
+// The curated barrel is the package's real public API: there is no `./*`
+// wildcard to fall back on, so a name missing here is unreachable from apps/api.
 test('the mount surface is curated', () => {
   expect(core.appRouter).toBeDefined();
   expect(core.publicApiRoutes).toBeTypeOf('function');
@@ -18,9 +16,7 @@ test('the mount surface is curated', () => {
   expect(core.queues).toBeDefined();
 });
 
-// ONE tRPC instance: `initTRPC` is called in rpc/base.ts and nowhere else. All
-// 28 routers build on this barrel's builder, router factory and the two
-// injected middleware factories.
+// ONE tRPC instance: `initTRPC` is called in rpc/base.ts and nowhere else.
 test('the rpc base is on the barrel, so there is one tRPC instance', () => {
   expect(core.procedure).toBeDefined();
   expect(core.middleware).toBeTypeOf('function');
@@ -35,9 +31,7 @@ test('a service, a client or a buffer is not on the barrel', () => {
   expect(Object.keys(core)).not.toContain('createServices');
 });
 
-// The buffers are boot singletons on AppDeps, so main.ts needs the FACTORY and
-// nothing else. A named instance here would be the module singleton the design
-// refuses.
+// Buffers are boot singletons on AppDeps, so main.ts needs only the FACTORY.
 test('buffers reach the barrel as a factory, never as instances', () => {
   expect(core.createBuffers).toBeTypeOf('function');
   expect(core.registerBufferMetrics).toBeTypeOf('function');

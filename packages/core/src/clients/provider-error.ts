@@ -1,43 +1,32 @@
-// The one failure type every outbound client raises.
-//
-// A client classifies ONCE, at the edge where it still holds the provider's own
-// status code; a handler then reads `retryable` instead of re-deriving it from
-// a message string. The rule the flag encodes: a retryable failure is rethrown
-// so the queue runs the unit of work again, a permanent refusal is logged and
-// swallowed, because a retry cannot change it.
+// A client classifies once, where it still holds the provider's status code. A
+// retryable failure is rethrown so the queue retries; a permanent refusal is
+// logged and swallowed, because a retry cannot change it.
 
-/** Too Many Requests — the provider is asking for the same call, later. */
+/** Too Many Requests. */
 export const RATE_LIMITED_STATUS = 429;
 
-/** The first status in the "the provider is broken, not the request" range. */
+/** The first status in the "provider is broken, not the request" range. */
 const SERVER_ERROR_STATUS_FLOOR = 500;
 
 /**
  * 429 and 5xx are worth another attempt; every other 4xx is the provider
- * refusing THIS request (bad credential, unknown bucket, malformed body) and
- * will refuse it identically next time.
+ * refusing THIS request and will refuse it identically next time.
  */
 export function isRetryableStatus(status: number): boolean {
   return status === RATE_LIMITED_STATUS || status >= SERVER_ERROR_STATUS_FLOOR;
 }
 
 export interface ProviderErrorOptions {
-  /** Provider status, when the call got far enough to have one. */
   status?: number;
   /**
-   * Overrides the status classification. Only for failures that never reached
-   * the provider — DNS, connect, TLS, timeout — where there is no status to
-   * read and another attempt genuinely can succeed.
+   * Overrides the status classification, for failures that never reached the
+   * provider (DNS, connect, TLS, timeout) where another attempt can succeed.
    */
   retryable?: boolean;
   cause?: unknown;
 }
 
-/**
- * A third party refused or failed a call. `provider` names the transport
- * ('slack', 'gcs', 'openai') so a log line identifies the hop without the
- * handler knowing which client it called.
- */
+/** A third party refused or failed a call. `provider` names the transport ('slack', 'gcs', 'openai'). */
 export class ProviderError extends Error {
   readonly provider: string;
   readonly retryable: boolean;
@@ -63,9 +52,9 @@ export function isProviderError(value: unknown): value is ProviderError {
 }
 
 /**
- * Every SDK we call reports its HTTP status somewhere different: the AWS SDK
- * under `$metadata.httpStatusCode`, the Google SDK and most fetch wrappers as
- * `code`/`status`/`statusCode`. Read all of them here so no client has to.
+ * Every SDK reports its HTTP status somewhere different: the AWS SDK under
+ * `$metadata.httpStatusCode`, the Google SDK and most fetch wrappers as
+ * `code`/`status`/`statusCode`.
  */
 export function providerStatusOf(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) {
@@ -91,11 +80,7 @@ export function providerStatusOf(error: unknown): number | undefined {
   return undefined;
 }
 
-/**
- * Wrap whatever an SDK threw. A `ProviderError` passes through unchanged —
- * it was already classified by the client that raised it, and reclassifying
- * would throw away the one place that had the provider's own answer.
- */
+/** Wrap whatever an SDK threw. A `ProviderError` passes through: it was already classified where the provider's own answer was available. */
 export function providerErrorFrom(
   provider: string,
   error: unknown,
@@ -110,11 +95,7 @@ export function providerErrorFrom(
   return new ProviderError(provider, detail, { status, cause: error });
 }
 
-/**
- * Run one outbound call and classify whatever it throws. Every `catch`
- * upstream of it can then read `retryable` instead of inspecting an
- * SDK-specific error shape.
- */
+/** Run one outbound call and classify whatever it throws. */
 export async function callProvider<T>(
   provider: string,
   call: () => Promise<T>

@@ -1,13 +1,10 @@
-// The clock that seeds and queries the shared test/fixtures.ts dataset.
-//
-// The seeder places events at `now - N days - M minutes` and several tests
-// bucket by calendar day, so a `now` within minutes of UTC midnight splits one
-// seeded day across two buckets. Pinning `now` to a fixed time of day keeps
-// every seeded offset inside its own day, whatever time the suite runs.
-//
-// The anchor is a time of day rather than a fixed calendar date because some
-// services under test compare against ClickHouse's own `now()` (the 3-month
-// project card, `inactiveDays`, last-seen buckets), which this cannot fake.
+// The clock that seeds and queries the shared test/fixtures.ts dataset. The
+// seeder places events at `now - N days - M minutes` and tests bucket by
+// calendar day, so a `now` near UTC midnight would split one seeded day across
+// two buckets; pinning the time of day avoids that. The anchor is a time of day,
+// not a date, because some services compare against ClickHouse's own `now()`
+// (the 3-month project card, `inactiveDays`, last-seen buckets), which this
+// cannot fake.
 import { setSystemTime } from 'bun:test';
 
 const FIXTURE_ANCHOR_HOUR_UTC = 12;

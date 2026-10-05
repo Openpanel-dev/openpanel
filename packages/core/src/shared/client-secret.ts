@@ -12,10 +12,9 @@ export function hashClientSecret(secret: string): Promise<string> {
 }
 
 /**
- * Reads both formats: scrypt, and the argon2 rows the client, project and
- * onboarding services minted while they imported the user-password hasher by
- * mistake. A malformed stored hash is a failed verification, never a 500 on
- * the ingest path.
+ * Reads both formats: scrypt, and the argon2 rows some services minted by
+ * mistake with the user-password hasher. A malformed stored hash is a failed
+ * verification, never a 500 on the ingest path.
  */
 export async function verifyClientSecret(
   secret: string,

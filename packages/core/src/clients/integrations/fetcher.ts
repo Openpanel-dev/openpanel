@@ -1,15 +1,9 @@
 /**
- * Webhook delivery is reachable from two very different places:
- *
- *  - the dashboard's "send test notification" button, which runs in the
- *    browser and is just the user calling their own webhook, and
- *  - the worker, which sends from inside our network and therefore must not be
- *    usable as an SSRF probe.
- *
- * Injecting the transport keeps this module browser-safe (a plain `fetch`) while
- * letting server callers pass the SSRF-guarded one from the integration
- * module's `src/safe-fetcher.ts`, which
- * pulls in `node:dns`/`undici` and must never reach a client bundle.
+ * Webhook delivery runs both in the browser (the dashboard's "send test
+ * notification" button) and in the worker, which must not be usable as an SSRF
+ * probe. The injected transport keeps this module browser-safe: server callers
+ * pass the SSRF-guarded fetcher, which pulls in `node:dns`/`undici` and must
+ * never reach a client bundle.
  */
 
 import { isRetryableStatus } from '../provider-error';
@@ -30,10 +24,9 @@ export interface WebhookResult {
   ok: boolean;
   status: number;
   /**
-   * Classified once here so no caller re-derives it: 429 and 5xx are worth
-   * another delivery attempt, every other 4xx is the destination refusing this
-   * exact request. A transport failure that produced no response (DNS, connect,
-   * TLS, timeout) is retryable — nothing about the request was rejected.
+   * Classified once here: 429 and 5xx are worth another delivery attempt, any
+   * other 4xx is the destination refusing this exact request. A failure with no
+   * response (DNS, connect, TLS, timeout) is retryable.
    */
   retryable: boolean;
 }

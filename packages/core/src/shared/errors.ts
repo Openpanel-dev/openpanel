@@ -1,6 +1,5 @@
-// Transport-agnostic: HTTP, jobs and the Kafka consumer all throw and
-// normalize through this, not through an rpc/-specific error type (see
-// rpc/errors.ts for the TRPCError family).
+// Transport-agnostic: HTTP, jobs and the Kafka consumer normalize errors here.
+// The TRPCError family is in rpc/errors.ts.
 
 import { classifyDriverError } from './driver-errors';
 
@@ -55,8 +54,8 @@ export interface NormalizedError {
 
 export function normalizeError(error: unknown): NormalizedError {
   // A driver failure the CALLER caused answers with its own status and a
-  // message that is not the driver's — Prisma's invocation text and
-  // ClickHouse's scope clause are not the caller's business (ISSUES.md H12).
+  // message that is not the driver's (Prisma's invocation text, ClickHouse's
+  // scope clause).
   const driverFailure = classifyDriverError(error);
   if (driverFailure) {
     return {

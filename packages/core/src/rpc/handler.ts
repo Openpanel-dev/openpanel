@@ -1,7 +1,3 @@
-// The tRPC mount: the official fetch adapter, one handler, one `onError`.
-// The `onError` fields come from `ctx` and the `Request`, because under a
-// fetch adapter `req` is a `Request` and has neither `socket` nor a logger.
-
 import type { AnyRouter, TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import type { IpHeaderConfig } from '../config';
@@ -17,8 +13,8 @@ import { armDeadline, RPC_DEADLINE_MS } from './deadline';
 
 /**
  * The fetch adapter derives the procedure path with
- * `pathname.slice(endpoint.length)`, and a batched request puts commas in that
- * segment — so the route it mounts on is `.all('/trpc/*')`, not `/trpc/:path`.
+ * `pathname.slice(endpoint.length)` and a batched request puts commas in that
+ * segment, so the route is `.all('/trpc/*')`, not `/trpc/:path`.
  */
 export const TRPC_ENDPOINT = '/trpc';
 
@@ -43,9 +39,8 @@ const SILENCED_UNAUTHORIZED_PATH = 'organization.list';
 const DEADLINE_HTTP_STATUS = 504;
 
 /**
- * `bootLogger` is the fallback for when `createContext` itself threw — there is
- * no `ctx` then, and a naive `ctx.logger.error(...)` would turn a
- * context-construction failure into a second throw inside the error handler.
+ * `bootLogger` is the fallback for when `createContext` itself threw: there is
+ * no `ctx` then, and `ctx.logger.error(...)` would throw inside the handler.
  */
 export function createTrpcOnError(
   bootLogger: Logger,
@@ -59,9 +54,7 @@ export function createTrpcOnError(
       return;
     }
 
-    // The IP is resolved from trusted headers only (see
-    // `getTrustedIpFromHeaders`), so it is the address to hand to
-    // Cloudflare when an abuser needs blocking at the edge.
+    // Trusted headers only, so this is the address to block at the edge.
     const { ip, header } = getTrustedIpFromHeaders(
       ipHeaders,
       report.req.headers
@@ -79,8 +72,7 @@ export function createTrpcOnError(
 
     const logger = report.ctx?.logger ?? bootLogger;
 
-    // Being rate limited is the system working, not an error - logging it
-    // as one buried the real errors under 15k lines a day.
+    // Being rate limited is the system working, not an error.
     if (report.error.code === 'TOO_MANY_REQUESTS') {
       logger.warn(payload, 'trpc rate limited');
       return;
@@ -98,19 +90,13 @@ export function createTrpcOnError(
 
 export interface TrpcFetchHandlerOptions extends TrpcContextOptions {
   router: AnyRouter;
-  /** Used only when `createContext` threw. Every other line goes to `ctx.logger`. */
   logger: Logger;
-  /** `onError` resolves the abuser's IP from trusted headers only. */
   ipHeaders: IpHeaderConfig;
   endpoint?: string;
-  /** How long one call may run before it is stopped. */
   deadlineMs?: number;
 }
 
-/**
- * The handler `app.ts` hangs on `.all('/trpc/*')`. It returns a raw
- * `Response`, so `/trpc` sits outside Elysia's response lifecycle.
- */
+/** Returns a raw `Response`, so `/trpc` sits outside Elysia's response lifecycle. */
 export function createTrpcFetchHandler(options: TrpcFetchHandlerOptions) {
   const {
     router,

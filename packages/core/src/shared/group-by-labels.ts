@@ -1,4 +1,3 @@
-// Sole consumer: modules/chart/src/engine/fetch.ts.
 export interface ISerieDataItem {
   label_0: string | null | undefined;
   label_1?: string | null | undefined;
@@ -60,10 +59,9 @@ export function groupByLabels(data: ISerieDataItem[]): GroupedResult[] {
   }));
 
   // Every group is padded to the full set of dates so all series share an
-  // x-axis. The lookup is a Map rather than a `.find()` per date: that scan
-  // was O(groups x dates x points), and a 12-month chart with three
-  // breakdowns reaches 4,640 groups over 365 dates. The OUTPUT is unchanged —
-  // same dates, same order, same zero-filled points.
+  // x-axis. A Map lookup instead of a `.find()` per date: that scan was
+  // O(groups x dates x points), and a 12-month chart with three breakdowns
+  // reaches 4,640 groups over 365 dates.
   const allDates = Array.from(timestamps);
   return result
     .filter((group) => group.name.length > 0)

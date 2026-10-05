@@ -1,6 +1,4 @@
-// The one prom-client registry for the whole process. Every collector a core
-// module registers from here on registers on THIS registry, and only this
-// one.
+// The one prom-client registry for the whole process.
 
 import client from 'prom-client';
 

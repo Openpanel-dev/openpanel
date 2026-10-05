@@ -1,7 +1,5 @@
-// Subject moved to @openpanel/shared; the suite did not follow it, since
-// nothing runs a `test` script in packages/shared yet and the root `test`
-// script names its four workspaces explicitly. Move this file once that
-// script can include packages/shared.
+// Tests @openpanel/shared's JSON helpers from here because the root `test` script
+// does not run packages/shared.
 import { describe, expect, test } from 'bun:test';
 import { getSafeJson, getSuperJson, setSuperJson } from '@openpanel/shared';
 

@@ -55,8 +55,8 @@ test('the auth tiers are requestable from a module without extra wiring', async 
     new Request('http://localhost/manage/projects', { method: 'POST' })
   );
 
-  // The P2 authenticator resolves nobody; what is proven here is that the
-  // macro ran and typed `client` onto the handler.
+  // The authenticator stub resolves nobody; what is proven is that the macro
+  // ran and typed `client` onto the handler.
   expect(response.status).toBe(401);
 });
 

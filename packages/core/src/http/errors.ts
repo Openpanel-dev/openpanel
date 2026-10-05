@@ -1,13 +1,9 @@
-// The one error handler for the whole app.
-//
 // The response body is the `{status, error, message}` shape API consumers
-// already parse, so it is preserved deliberately rather than left to
-// whatever Elysia would produce on its own. Elysia's own `VALIDATION`
-// failures are mapped onto it too, at 400 — a caller sending a bad `/track`
-// body must keep seeing 400, not Elysia's own 422.
+// parse. Elysia's own `VALIDATION` failures map onto it at 400: a bad `/track`
+// body must keep seeing 400, not Elysia's 422.
 //
-// There is deliberately NO not-found handler: an unmatched route keeps
-// whatever the framework answers.
+// There is deliberately no not-found handler: an unmatched route keeps the
+// framework's answer.
 
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
@@ -21,22 +17,15 @@ const SKIP_LOG_ERROR_CODES = [
   'UNAUTHORIZED',
   'FORBIDDEN',
   'FST_ERR_CTP_INVALID_MEDIA_TYPE',
-  // Every request for a route that does not exist logged a warning with a
-  // stack trace. A 404 is the caller's business, not an incident.
+  // A 404 is the caller's business, not an incident.
   'NOT_FOUND',
 ];
 
 const VALIDATION_STATUS = 400;
-/** The validation error name callers see is the literal string `'Error'` in
- *  the response body — a stable part of the API contract regardless of what
- *  actually threw. */
+/** The `error` name in the response body is the literal string `'Error'`: a stable API contract. */
 const VALIDATION_ERROR_NAME = 'Error';
 
-/**
- * Fastify names the request part it validated; Elysia names the same thing in
- * its own vocabulary. The response body carries Fastify's word, because that
- * string is what callers have been parsing.
- */
+/** Elysia's name for the validated request part, mapped to the word the response body has always carried (callers parse it). */
 const VALIDATION_SLOT_NAMES: Record<string, string> = {
   query: 'querystring',
   body: 'body',
@@ -47,7 +36,6 @@ const VALIDATION_SLOT_NAMES: Record<string, string> = {
 };
 
 export interface ErrorHandlerOptions {
-  /** `NODE_ENV === 'production'` at the call site — core reads no environment. */
   production: boolean;
 }
 
@@ -78,8 +66,7 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
         SKIP_LOG_ERROR_CODES.includes(normalized.code);
 
       if (!skipLog) {
-        // 4xx are client-side problems (bad payloads, missing fields, etc.) —
-        // log as warn so they don't drown out real server errors.
+        // 4xx are client-side problems; warn so they don't drown real errors.
         const label =
           error instanceof HttpError
             ? 'internal server error'
@@ -105,9 +92,8 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
 
       return {
         status,
-        // HttpError carries an explicit `error` payload (the underlying
-        // cause); for everything else we surface the error name so the body is
-        // always a stable JSON shape, regardless of what was thrown.
+        // HttpError carries an explicit `error` payload; otherwise surface the
+        // error name so the body is always a stable JSON shape.
         error: errorField(error, isValidation, normalized.errorName),
         message,
       };
@@ -115,16 +101,14 @@ export function errorHandler(deps: AppDeps, options: ErrorHandlerOptions) {
 }
 
 /**
- * Produces the `"<slot>/<path> <zod message>"` format that's part of the
- * response body on `/export` and `/insights` — an established part of the API
- * contract. Elysia's own message is a multi-line JSON dump, which is why this
- * reads the structured error fields instead of reformatting it.
+ * Produces the `"<slot>/<path> <zod message>"` format that is part of the
+ * response body on `/export` and `/insights`. Elysia's own message is a
+ * multi-line JSON dump, so this reads the structured error fields instead.
  */
 function validationMessage(error: unknown): string {
-  // Measured on Elysia 1.4.30 with a zod (Standard Schema) validator: the
-  // instance carries `type` (the request part) and `all` (one entry per issue,
-  // with a slash-joined `path` string). `message` is the whole report
-  // pretty-printed, which is the fallback, not the answer.
+  // With a zod (Standard Schema) validator the instance carries `type` (the
+  // request part) and `all` (one entry per issue, slash-joined `path`).
+  // `message` is the whole pretty-printed report: the fallback.
   const detail = error as {
     type?: string;
     all?: { path?: string; message?: string }[];

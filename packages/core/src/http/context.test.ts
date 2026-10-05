@@ -12,19 +12,16 @@ import { stubAppDeps } from '../../test/http-fixtures';
 import type { HttpCtx } from '../context';
 import type { Services } from '../services';
 
-// Snapshotted BEFORE `mock.module` below, not after — restoring by
-// re-`import`ing later would resolve the already-mocked registry entry, not
-// the real module (bare `bun test` shares one module registry across every
-// file). Without the `afterAll` restore, the stub `createServices` (`{}`,
-// no `.auth`) leaks into every OTHER file that later imports '../context' or
-// './session'.
+// Snapshotted BEFORE `mock.module`: re-`import`ing later would resolve the
+// already-mocked registry entry (bare `bun test` shares one module registry).
+// Without the `afterAll` restore, the stub `createServices` (`{}`, no `.auth`)
+// leaks into every other file that imports '../context' or './session'.
 const realServicesModule = { ...(await import('../services')) };
 const realSessionModule = { ...(await import('./session')) };
 
-// mock.module is not hoisted, so the subjects are imported inside beforeAll —
-// see AGENTS.md. Mocking createServices is what makes "not built yet"
-// observable at all — this suite cares about WHEN the factory runs, not what
-// it returns, so the stub container is cast rather than built for real.
+// mock.module is not hoisted, so the subjects are imported inside beforeAll.
+// Mocking createServices makes "not built yet" observable: this suite cares
+// about WHEN the factory runs, not what it returns.
 const createServices = mock((): Services => ({}) as Services);
 mock.module('../services', () => ({ createServices }));
 
@@ -51,8 +48,7 @@ beforeEach(() => {
   resolveSession.mockClear();
 });
 
-// onAfterResponse runs after `handle` resolves — the response is already on
-// its way out, which is the point of logging there.
+// onAfterResponse runs after `handle` resolves, when the response is already on its way out.
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // One request builds exactly one Ctx no matter how many modules each start
@@ -61,9 +57,8 @@ test('derives one ctx per request however many modules use the plugin', async ()
   const { deps, scopeCalls, childCalls } = stubAppDeps();
   const seen: HttpCtx[] = [];
 
-  // Each observer records the ctx it was handed; the route is registered on
-  // the parent AFTER them, because an Elysia hook only applies to routes
-  // declared after it.
+  // Each observer records the ctx it was handed; the route is registered AFTER
+  // them because an Elysia hook only applies to routes declared after it.
   const observing = () =>
     new Elysia()
       .use(requestContext(deps))
@@ -264,10 +259,9 @@ describe('requestLogging', () => {
     });
   });
 
-  // The 2026-09-08 crash class: this hook is global, so it also fires for a
-  // request that matched no route — whose `derive` never ran. Reading
-  // `ctx.logger` off that missing ctx throws out of a hook nobody awaits, so
-  // it lands on the process, not on the request.
+  // This hook is global, so it also fires for a request that matched no route,
+  // whose `derive` never ran. Reading `ctx.logger` off the missing ctx throws
+  // out of a hook nobody awaits, so it lands on the process, not the request.
   test('skips a request that matched no route instead of crashing', async () => {
     const stub = build();
     const crashes: unknown[] = [];

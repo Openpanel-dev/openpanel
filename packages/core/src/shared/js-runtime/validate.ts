@@ -11,22 +11,15 @@ import {
 } from './constants';
 
 /**
- * The template language is an allowlist, not a denylist.
+ * The template language is an allowlist: every AST node type the walker meets
+ * must be in ALLOWED_NODE_TYPES or the template is refused, so a syntax form
+ * nobody thought about is rejected by default.
  *
- * Every AST node type the walker meets must be in ALLOWED_NODE_TYPES or the
- * template is refused, so a syntax form nobody thought about (a tagged
- * template, a sequence expression, a class field, ...) is rejected by
- * default instead of walking past the checks. What is left is deliberately
- * small: build an object from the payload with property access, literals,
- * template strings, ternaries, and the allowlisted built-in methods.
- *
- * There is no way to call a function the template defined itself. Callbacks
- * to .map() and friends are the only place an inline arrow may appear, and
- * only allowlisted methods can invoke them. That removes recursion, IIFEs and
- * every "store a reference now, call it later" escape in one rule.
+ * A function the template defined itself can never be called: inline arrows
+ * appear only as callbacks to allowlisted methods. That removes recursion,
+ * IIFEs and every "store a reference now, call it later" escape.
  */
 const ALLOWED_NODE_TYPES = new Set([
-  // Structure
   'File',
   'Program',
   'ExpressionStatement',
@@ -38,7 +31,6 @@ const ALLOWED_NODE_TYPES = new Set([
   'VariableDeclaration',
   'VariableDeclarator',
 
-  // Values
   'Identifier',
   'NumericLiteral',
   'StringLiteral',
@@ -52,31 +44,25 @@ const ALLOWED_NODE_TYPES = new Set([
   'ArrayExpression',
   'SpreadElement',
 
-  // Access and calls
   'MemberExpression',
   'OptionalMemberExpression',
   'CallExpression',
   'OptionalCallExpression',
   'NewExpression',
 
-  // Operators
   'BinaryExpression',
   'LogicalExpression',
   'UnaryExpression',
   'ConditionalExpression',
   'AssignmentExpression',
 
-  // Destructuring in const declarations and callback parameters
   'ObjectPattern',
   'ArrayPattern',
   'RestElement',
   'AssignmentPattern',
 ]);
 
-/**
- * Friendlier messages for the things people are most likely to try. Anything
- * not listed here or in ALLOWED_NODE_TYPES gets a generic refusal.
- */
+/** Friendlier messages for what people are most likely to try. */
 const REJECTION_MESSAGES: Record<string, string> = {
   ImportDeclaration: 'import/export statements are not allowed',
   ExportNamedDeclaration: 'import/export statements are not allowed',
@@ -122,10 +108,9 @@ const REJECTION_MESSAGES: Record<string, string> = {
 };
 
 /**
- * Property names that must never be read or written through. Reading
- * 'constructor' off any value walks up to the Function constructor, and
- * assigning through '__proto__' or 'prototype' reaches objects shared with
- * the rest of the process. A template never needs any of them.
+ * Property names that must never be read or written through: 'constructor'
+ * walks up to the Function constructor, '__proto__' and 'prototype' reach
+ * objects shared with the rest of the process.
  */
 const FORBIDDEN_PROPERTIES = new Set([
   '__proto__',
@@ -135,7 +120,6 @@ const FORBIDDEN_PROPERTIES = new Set([
   'callee',
 ]);
 
-/** Globals that may be called directly, as in parseInt(payload.count). */
 const ALLOWED_GLOBAL_FUNCTIONS = new Set([
   'parseInt',
   'parseFloat',
@@ -158,20 +142,15 @@ const ALLOWED_ASSIGNMENT_OPERATORS = new Set([
 
 type Node = Record<string, unknown>;
 
-/**
- * The static name of a member expression's property, or undefined when the key
- * is only known at run time (obj[someVariable]).
- */
+/** The static name of a member expression's property, or undefined when computed. */
 function staticPropertyName(member: Node): string | undefined {
   const prop = member.property as Node | undefined;
   if (!prop) {
     return undefined;
   }
   if (member.computed) {
-    // A literal key can be resolved. Babel has already decoded any \u / \x
-    // escapes into StringLiteral.value by this point. A template literal
-    // with no substitutions (`__proto__`) is just as static as a string
-    // literal and must resolve the same way.
+    // Babel has already decoded \u / \x escapes; a substitution-free template
+    // literal (`__proto__`) is as static as a string and must resolve the same.
     if (prop.type === 'StringLiteral') {
       return prop.value as string;
     }
@@ -191,10 +170,7 @@ function staticPropertyName(member: Node): string | undefined {
   return prop.type === 'Identifier' ? (prop.name as string) : undefined;
 }
 
-/**
- * The static key of a property inside an object literal or destructuring
- * pattern, or undefined when it is computed from an expression.
- */
+/** The static key of an object literal or destructuring property, or undefined when computed. */
 function staticObjectPropertyKey(prop: Node): string | undefined {
   const key = prop.key as Node | undefined;
   if (!key) {
@@ -210,9 +186,8 @@ function staticObjectPropertyKey(prop: Node): string | undefined {
 }
 
 /**
- * Walk an assignment target back down its member chain and return the first
- * forbidden property name it passes through, if any. payload.__proto__.x is a
- * write to 'x' but goes through '__proto__', so the whole chain matters.
+ * The first forbidden property name an assignment target passes through:
+ * payload.__proto__.x writes 'x' but goes through '__proto__'.
  */
 function forbiddenPropertyInChain(target: Node): string | undefined {
   let current: Node | undefined = target;
@@ -232,7 +207,6 @@ function forbiddenPropertyInChain(target: Node): string | undefined {
   return undefined;
 }
 
-/** The identifier at the root of a member chain: payload in payload.a.b. */
 function chainRoot(target: Node): Node | undefined {
   let current: Node | undefined = target;
   while (
@@ -245,7 +219,6 @@ function chainRoot(target: Node): Node | undefined {
   return current;
 }
 
-/** Validate the one statement at the root: a single arrow function. */
 function validateRoot(program: Node): string | undefined {
   const body = program.body as Node[];
 
@@ -280,7 +253,6 @@ function validateRoot(program: Node): string | undefined {
   return undefined;
 }
 
-/** Check a call's callee names something on the allowlist. */
 function validateCall(
   callee: Node,
   declaredIdentifiers: Set<string>
@@ -289,9 +261,8 @@ function validateCall(
     return 'Dynamic import() is not allowed';
   }
 
-  // parseInt(x) and friends. A local variable is never callable: the only
-  // functions a template can hold are inline arrows, and those are only ever
-  // invoked by the allowlisted array methods they are passed to.
+  // A local variable is never callable: the only functions a template can hold
+  // are inline arrows, invoked only by the allowlisted methods they are passed to.
   if (callee.type === 'Identifier') {
     const name = callee.name as string;
     if (declaredIdentifiers.has(name)) {
@@ -310,7 +281,6 @@ function validateCall(
     return 'Calling the result of an expression is not allowed. Call a named function or method directly.';
   }
 
-  // A computed key (obj[expr]()) cannot be matched against the allowlist.
   if (callee.computed) {
     return 'Computed property access on a call target is not allowed. Use a literal method name, e.g. value.toUpperCase().';
   }
@@ -322,9 +292,8 @@ function validateCall(
   }
   const methodName = prop.name as string;
 
-  // Static method on an allowed global: Math.round(), JSON.parse(). A local
-  // that shadows the global name is an ordinary value and takes the instance
-  // branch below.
+  // A local that shadows the global name is an ordinary value and takes the
+  // instance branch below.
   if (
     obj.type === 'Identifier' &&
     ALLOWED_GLOBALS.has(obj.name as string) &&
@@ -337,7 +306,6 @@ function validateCall(
     return undefined;
   }
 
-  // Instance method on a value: arr.map(), str.toLowerCase(), arr?.map()
   if (!ALLOWED_INSTANCE_METHODS.has(methodName)) {
     return `Method '.${methodName}()' is not allowed. Only safe methods are permitted.`;
   }
@@ -378,8 +346,6 @@ export function validate(code: string): {
 
       const type = node.type as string;
 
-      // Anything outside the allowlist is refused, with a friendlier message
-      // where we have one.
       if (!ALLOWED_NODE_TYPES.has(type)) {
         validationError =
           REJECTION_MESSAGES[type] ??
@@ -392,10 +358,9 @@ export function validate(code: string): {
           validationError = 'async/await is not allowed';
           return;
         }
-        // Besides the root, an arrow may only be a callback handed straight
-        // to a call, e.g. arr.map((x) => ...). One stored in a variable or
-        // assigned onto a global is never callable and is only useful for
-        // wrapping a built-in in itself.
+        // Besides the root, an arrow may only be a callback handed straight to
+        // a call. One stored in a variable is never callable and is only useful
+        // for wrapping a built-in in itself.
         const isDirectCallback =
           (parent?.type === 'CallExpression' ||
             parent?.type === 'OptionalCallExpression') &&
@@ -435,10 +400,9 @@ export function validate(code: string): {
         }
       }
 
-      // Every property read is checked, not only the ones that are called or
-      // assigned: a read of 'constructor' can be stored and used later. A key
-      // that is only known at run time (obj[expr]) could be any of these
-      // names, so it is refused too; literal keys and numeric indexes work.
+      // Every read is checked, not only calls and assignments: a read of
+      // 'constructor' can be stored and used later. A run-time key could be
+      // any forbidden name, so it is refused too.
       if (type === 'MemberExpression' || type === 'OptionalMemberExpression') {
         const name = staticPropertyName(node);
         if (name === undefined) {
@@ -452,7 +416,6 @@ export function validate(code: string): {
         }
       }
 
-      // Object literal keys must be static too; { [expr]: v } is refused.
       if (
         type === 'ObjectProperty' &&
         parent?.type === 'ObjectExpression' &&
@@ -463,7 +426,6 @@ export function validate(code: string): {
         return;
       }
 
-      // Destructuring is a read too: const { constructor: C } = payload.
       if (type === 'ObjectPattern') {
         const properties = node.properties as Node[];
         for (const prop of properties) {
@@ -515,8 +477,6 @@ export function validate(code: string): {
         }
       }
 
-      // Plain assignments to locals and to static properties of locals are
-      // fine; anything that reaches the prototype chain is not.
       if (type === 'AssignmentExpression') {
         const operator = node.operator as string;
         if (!ALLOWED_ASSIGNMENT_OPERATORS.has(operator)) {
@@ -537,8 +497,7 @@ export function validate(code: string): {
           validationError = `Assigning through '${reached}' is not allowed.`;
           return;
         }
-        // Math.round = ..., JSON.parse = ...: writing to a global replaces a
-        // built-in for the rest of the run. Only locals may be written.
+        // Writing to a global replaces a built-in for the rest of the run.
         const root = chainRoot(target);
         if (
           root?.type !== 'Identifier' ||
