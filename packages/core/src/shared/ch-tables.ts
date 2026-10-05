@@ -47,10 +47,8 @@ export const TABLE_NAMES = {
 
 /**
  * The mutation target as a SQL fragment: `<name>_replicated ON CLUSTER
- * '{cluster}'` when clustered, the plain name otherwise. Clustered mode =
- * production (not self-hosted); non-clustered = self-hosted. The verdict is
- * `config.clickhouseClustered`, resolved once by the config loader from
- * CLICKHOUSE_CLUSTER and SELF_HOSTED.
+ * '{cluster}'` when clustered, the plain name otherwise. The verdict is
+ * `config.clickhouseClustered`, which is CLICKHOUSE_CLUSTER and nothing else.
  *
  * Built here rather than fed through `sql.id` because the clustered form is
  * not an identifier: the `ON CLUSTER` clause is literal template text, and
