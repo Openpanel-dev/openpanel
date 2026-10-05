@@ -4,7 +4,6 @@ import inquirer from 'inquirer';
 import inquirerAutocomplete from 'inquirer-autocomplete-prompt';
 import { getSuccessUrl } from '..';
 
-// Register the autocomplete prompt
 inquirer.registerPrompt('autocomplete', inquirerAutocomplete);
 
 interface Answers {
@@ -14,7 +13,6 @@ interface Answers {
 }
 
 async function promptForInput(polar: Polar) {
-  // Get all organizations first
   const organizations = await db.organization.findMany({
     select: {
       id: true,
@@ -22,7 +20,6 @@ async function promptForInput(polar: Polar) {
     },
   });
 
-  // Fetch all products from Polar
   let products: any[] = [];
   try {
     const productsResponse = await polar.products.list({
@@ -143,7 +140,6 @@ async function main() {
   try {
     console.log('Creating checkout link...');
 
-    // First, get environment and API key to initialize Polar client
     const { isProduction, polarApiKey } = await inquirer.prompt([
       {
         type: 'list',

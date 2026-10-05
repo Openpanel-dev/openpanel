@@ -47,7 +47,6 @@ export async function up() {
   }
 
   const dumppath = path.join(__dirname, 'users-dump.csv');
-  // check if file exists
   if (!(await checkFileExists(dumppath))) {
     printBoxMessage('⚠️  Missing Required File  ⚠️', [
       `File not found: ${dumppath}`,

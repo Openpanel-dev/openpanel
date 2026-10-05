@@ -1,9 +1,5 @@
-// packages/redis and apps/start each carried a copy, and redis' copy carried
-// the "keep in sync with packages/core" comment that is the whole argument for
-// a package below both. Same semantics: getSafeJson never throws, and
-// getSuperJson only hands off to superjson's parser when the payload looks like
-// superjson's own `{ json, meta }` envelope — a plain JSON payload round-trips
-// through JSON.parse instead.
+// getSafeJson never throws; getSuperJson only uses superjson's parser when the payload looks like its `{ json, meta }`
+// envelope, so a plain JSON payload goes through JSON.parse.
 import superjson from 'superjson';
 
 export function getSafeJson<T>(str: string): T | null {

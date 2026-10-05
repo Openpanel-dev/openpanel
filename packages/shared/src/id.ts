@@ -1,5 +1,4 @@
-// apps/start had copied `shortId` into its own utils/math.ts. nanoid/non-secure
-// is deliberate: these are correlation/display ids, not secrets.
+// nanoid/non-secure is deliberate: correlation/display ids, not secrets.
 
 // Regular `nanoid`, not the non-secure variant above: these ids back
 // password-reset tokens and invite links, so they must stay cryptographically

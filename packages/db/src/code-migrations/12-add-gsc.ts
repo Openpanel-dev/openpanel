@@ -32,7 +32,6 @@ export async function up(env: CodeMigrationEnv) {
       isClustered,
     }),
 
-    // Per-page breakdown
     ...createTable({
       name: 'gsc_pages_daily',
       columns: [
@@ -49,7 +48,6 @@ export async function up(env: CodeMigrationEnv) {
       isClustered,
     }),
 
-    // Per-query breakdown
     ...createTable({
       name: 'gsc_queries_daily',
       columns: [

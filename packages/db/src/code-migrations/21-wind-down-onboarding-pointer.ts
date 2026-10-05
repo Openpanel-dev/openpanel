@@ -1,10 +1,8 @@
 /**
  * Retire the 'onboarding-trial-ended' pointer.
  *
- * The onboarding drip used to end with a day-30 'onboarding-trial-ended'
- * email. That moment now belongs to the wind-down sequence (step 0,
- * 'wind-down-expired'), which is anchored on trial expiry rather than signup,
- * so the step was removed from ONBOARDING_EMAILS.
+ * The step was removed from ONBOARDING_EMAILS; the wind-down sequence
+ * ('wind-down-expired') covers that moment, anchored on trial expiry.
  *
  * Organizations whose `onboarding` column still holds the removed name are
  * left pointing at a step that no longer exists. The sequence runner treats an

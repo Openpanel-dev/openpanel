@@ -1,13 +1,5 @@
-// The isomorphic entrypoint of @openpanel/shared.
-//
-// What may live behind this file: pure functions and types with no workspace
-// import, no db/redis/env/logger/services and no domain vocabulary. Anything
-// that needs one of those stays in the package that owns it.
-//
-// Nothing reachable from here may import a `node:*` builtin or `./server` —
-// this is a browser bundle's entrypoint too, and the leak would be invisible at
-// the call site. The `shared-root-stays-isomorphic` cruiser rule is what
-// enforces it.
+// Nothing reachable from here may import a `node:*` builtin or `./server`: this is a browser bundle's entrypoint too.
+// Enforced by the `shared-root-stays-isomorphic` cruiser rule.
 export {
   DateTime,
   getChartPrevStartEndDate,

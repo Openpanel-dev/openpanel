@@ -144,7 +144,6 @@ const parseCache = (cached: string) => {
 const CACHEABLE_LRU_TTL_MS = 60 * 1000;
 const CACHEABLE_LRU_MAX = 1000;
 
-// Overload 1: cacheable(fn, expireInSec, options?)
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
   expireInSec: number,
@@ -157,7 +156,6 @@ export function cacheable<T extends (...args: any) => any>(
   ) => (payload: Awaited<ReturnType<T>>) => Promise<'OK'>;
 };
 
-// Overload 2: cacheable(name, fn, expireInSec, options?)
 export function cacheable<T extends (...args: any) => any>(
   name: string,
   fn: T,
@@ -190,13 +188,11 @@ export function cacheable<T extends (...args: any) => any>(
   let options: CacheableOptions = {};
 
   if (typeof fnOrName === 'function') {
-    // Overload 1: cacheable(fn, expireInSec, options?)
     expireInSec = typeof fnOrExpireInSec === 'number' ? fnOrExpireInSec : null;
     if (expireInSecOrOptions && typeof expireInSecOrOptions === 'object') {
       options = expireInSecOrOptions;
     }
   } else {
-    // Overload 2: cacheable(name, fn, expireInSec, options?)
     expireInSec =
       typeof expireInSecOrOptions === 'number' ? expireInSecOrOptions : null;
     if (maybeOptions) {

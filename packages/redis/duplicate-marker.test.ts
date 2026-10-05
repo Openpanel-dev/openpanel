@@ -1,16 +1,4 @@
-/**
- * The event-keyed duplicate marker, at the Redis boundary.
- *
- * What the ingest handler does with the answer is `packages/core`'s
- * `incoming-event-handler.test.ts`; what this file pins is the command: one
- * `SET key NX PX`, the key shape, and which reply means "seen before".
- *
- * No real Redis here: an in-memory stand-in with real `NX` and expiry
- * semantics. The same four answers were driven through THIS marker against the
- * local Redis (`redis://127.0.0.1:6379/14`) on 2026-09-14 before this file was
- * written, at an 800 ms TTL — first sighting false, `PTTL` 800, second sighting
- * true, a distinct id false, and the same id false again 900 ms later.
- */
+/** The event-keyed duplicate marker at the Redis boundary: one `SET key NX PX`, the key shape, and which reply means "seen before". Uses an in-memory stand-in with real `NX` and expiry semantics. */
 
 import { describe, expect, it } from 'vitest';
 import {

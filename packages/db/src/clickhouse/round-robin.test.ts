@@ -173,7 +173,6 @@ describe('isRetriableConnectionError', () => {
       err: unknown;
       expected: ErrorClass;
     }> = [
-      // ── transient: don't sin-bin the node ────────────────────────────
       {
         label: 'ECONNRESET (stale keep-alive race — the common case)',
         err: Object.assign(new Error('read ECONNRESET'), {
@@ -210,7 +209,6 @@ describe('isRetriableConnectionError', () => {
         }),
         expected: 'transient',
       },
-      // ── node-down: sin-bin the node ──────────────────────────────────
       {
         label: 'ECONNREFUSED (node not listening)',
         err: Object.assign(new Error('connect ECONNREFUSED 10.1.0.18:8123'), {
@@ -246,7 +244,6 @@ describe('isRetriableConnectionError', () => {
         }),
         expected: 'node-down',
       },
-      // ── ch-server: propagate ────────────────────────────────────────
       {
         label: 'CH server SQL error',
         err: new Error('Code: 47, DB::Exception: Unknown identifier'),
@@ -257,7 +254,6 @@ describe('isRetriableConnectionError', () => {
         err: new Error('Code: 159, DB::Exception: Timeout exceeded'),
         expected: 'ch-server',
       },
-      // ── ch-server allow-list: overload rejections retry ──────────────
       // TOO_MANY_SIMULTANEOUS_QUERIES means the node hit its concurrency
       // cap at that instant, not that the query is wrong — another node
       // (or a backoff) absorbs it. Transient, so the node is NOT
@@ -291,7 +287,6 @@ describe('isRetriableConnectionError', () => {
         ),
         expected: 'ch-server',
       },
-      // ── cause-chain preserves classification ─────────────────────────
       {
         label: 'wrapped error: outer is opaque, cause is ECONNRESET',
         err: Object.assign(new Error('Request failed'), {
@@ -335,9 +330,8 @@ describe('isRetriableConnectionError', () => {
       },
       {
         label: 'Error mentioning "connect" in a non-network context',
-        // This is the kind of false-positive the old "Connect" substring
-        // match was at risk of. Ensure the new matcher doesn't take the
-        // bait — there's no system code and no precise transport keyword.
+        // No system code and no precise transport keyword: a bare "connect"
+        // substring must not classify as node-down.
         err: new Error('Cannot connect the dots in this query plan'),
       },
     ];

@@ -1,11 +1,9 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-// `shortId` is COPIED from @openpanel/shared's id.ts rather than imported, on
-// the same ruling as constants.ts: code-migrations stays isolated, and a
-// one-shot script is not worth a dependency edge. This is nanoid/non-secure's
-// alphabet and algorithm at the length `shortId()` uses, so the ids these
-// migrations write are the same shape the app writes.
+// `shortId` is copied from @openpanel/shared's id.ts to keep code-migrations
+// isolated (see constants.ts). Same nanoid/non-secure alphabet and length, so
+// migration-written ids match the app's.
 const SHORT_ID_ALPHABET =
   'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict';
 const SHORT_ID_ALPHABET_SIZE = 64;
@@ -36,9 +34,7 @@ export function printBoxMessage(title: string, lines: (string | unknown)[]) {
 }
 
 /**
- * The environment this script needs, read by its shell
- * (`packages/db/scripts/migrate-code.ts`) rather than here, so no migration
- * file reads `process.env`.
+ * The environment migrations need, read by `packages/db/scripts/migrate-code.ts`.
  */
 export interface CodeMigrationEnv {
   clickhouseCluster: boolean;
@@ -104,9 +100,8 @@ const STATEMENT_SEPARATOR = '\n\n---\n\n';
  * an operator can read what a run will do. The dumps are build artifacts, not
  * tracked files.
  *
- * Pass `import.meta.url`: it is the one file-location technique that needs
- * neither Bun's ESM `__filename` polyfill nor Node >= 20.11's
- * `import.meta.filename`, both of which this directory used to mix.
+ * Pass `import.meta.url`: it works without Bun's `__filename` polyfill or
+ * Node >= 20.11's `import.meta.filename`.
  */
 export function writeSqlDump(migrationUrl: string, sqls: string[]) {
   fs.writeFileSync(

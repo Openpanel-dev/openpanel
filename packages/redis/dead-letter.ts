@@ -1,24 +1,15 @@
 /**
  * The ingest consumer's dead-letter destination: a capped Redis list.
  *
- * It replaces `produceDeadLetterEvent`, which produced to a Kafka DLQ topic
- * that was never created — that failure left the offset unresolved, which
- * caused an unbounded handler-error redelivery loop (dozens of laps per
- * message). The Kafka producer is still exported from `@openpanel/core`, and
- * the consumer's `sendToDeadLetter` seam is unchanged, so swapping back is
- * one line in `apps/api`'s wiring.
+ * It exists because a Kafka DLQ topic that was never created left the offset unresolved and caused an unbounded
+ * handler-error redelivery loop.
  *
- * THE RECORD IS A DEBUGGING SAMPLE, NOT A RECOVERY MECHANISM. The list keeps
- * the last N and nothing more; the event itself is gone from the pipeline. The
- * volume lives in `kafka_events_dead_lettered_total` /
- * `_dead_letter_failed_total`, because a capped list makes 50,000 drops look
- * exactly like 12.
+ * THE RECORD IS A DEBUGGING SAMPLE, NOT A RECOVERY MECHANISM. The list keeps the last N; the event itself is gone.
+ * The volume lives in `kafka_events_dead_lettered_total` / `_dead_letter_failed_total`, because a capped list makes
+ * 50,000 drops look exactly like 12.
  *
- * Why here and not in `packages/core`'s ingest module: the whole of it is
- * Redis mechanics — one MULTI, one LPUSH, one LTRIM — and core's only export
- * door is its barrel. The input type is structural, so `DeadLetterMessage`
- * (kafkajs `Buffer`s and `IHeaders`) satisfies it without this package
- * depending on kafkajs or on core.
+ * The input type is structural, so kafkajs `Buffer`s and `IHeaders` satisfy it without this package depending on
+ * kafkajs or core.
  */
 
 /** The one list. Not configurable: an operator has to be able to find it. */
@@ -29,11 +20,7 @@ interface BinaryLike {
   toString(): string;
 }
 
-/**
- * Structurally what `@openpanel/core`'s `DeadLetterMessage` is — the same
- * fields `produceDeadLetterEvent` put in its DLQ headers, so a record carries
- * everything needed to find the message on the source topic.
- */
+/** Structurally `@openpanel/core`'s `DeadLetterMessage`: enough to find the message on the source topic. */
 export interface DeadLetterInput {
   key: BinaryLike | null;
   value: BinaryLike | null;

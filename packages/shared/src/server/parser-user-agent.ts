@@ -12,7 +12,6 @@ const parsedServerUa = {
   model: '',
 } as const;
 
-// Pre-compile all regex patterns for better performance
 const IPHONE_MODEL_REGEX = /(iPhone|iPad)\s*([0-9,]+)/i;
 const IOS_MODEL_REGEX = /(iOS)\s*([0-9.]+)/i;
 const IPAD_OS_VERSION_REGEX = /iPadOS\s*([0-9_]+)/i;
@@ -22,7 +21,6 @@ const SINGLE_NAME_VERSION_REGEX = /^[^/]+\/[\d.]+$/;
 const APP_MODEL_REGEX = /Model=([^;)]+)/i;
 const APP_MANUFACTURER_REGEX = /Manufacturer=([^;)]+)/i;
 
-// Device detection regexes
 const SAMSUNG_MOBILE_REGEX = /SM-[ABDEFGJMNRWZ][0-9]+/i;
 const SAMSUNG_TABLET_REGEX = /SM-T[0-9]+/i;
 const LG_MOBILE_REGEX = /LG-[A-Z0-9]+/i;
@@ -37,36 +35,24 @@ const MOBILE_KEYWORD_REGEX = /mobile/i;
 // Known phone model patterns from top brands (for device type detection)
 // These patterns indicate mobile phones, not tablets
 const KNOWN_PHONE_PATTERNS = [
-  // Xiaomi / Redmi / POCO
   /redmi\s*(note|k|[0-9])/i,
   /poco\s*[a-z0-9]/i,
   /mi\s*([0-9]|note|mix|max)/i,
-  // Samsung Galaxy phones (not tablets)
   /galaxy\s*(s|a|m|note)[0-9]/i,
   /galaxy\s*z\s*(fold|flip)/i, // Foldables
-  // Huawei / Honor
   /huawei\s*(p|mate|nova|y)[0-9]/i,
   /honor\s*[0-9a-z]/i,
-  // OPPO
   /oppo\s*(a|f|find|reno|k)\s*[a-z0-9]/i,
-  // Vivo
   /vivo\s*(v|y|x|s|t|iqoo)[0-9]/i,
   /iqoo\s*[0-9a-z]/i,
-  // OnePlus
   /oneplus\s*[0-9]/i,
   /one\s*plus\s*[0-9]/i,
-  // Google Pixel
   /pixel\s*[0-9]/i,
-  // Realme
   /realme\s*[0-9a-z]/i,
-  // Motorola
   /moto\s*(g|e|x|z|edge|razr)/i,
   /motorola\s*(edge|razr)/i,
-  // Nokia
   /nokia\s*[0-9]/i,
-  // Sony Xperia
   /xperia\s*[0-9a-z]/i,
-  // Nothing
   /nothing\s*phone/i,
 ];
 
@@ -104,7 +90,6 @@ const BRAND_PATTERNS: Array<{ pattern: RegExp; brand: string }> = [
   { pattern: /tcl/i, brand: 'TCL' },
 ];
 
-// Cache for parsed results - stores up to 1000 unique user agents
 const parseCache = new LRUCache<string, UAParser.IResult>({
   ttl: 1000 * 60 * 5,
   ttlAutopurge: true,
@@ -123,7 +108,6 @@ const isIphone = (ua: string) => {
     : null;
 };
 
-// Extract app-style UA info (e.g., "Model=Redmi Note 8 Pro; Manufacturer=Xiaomi")
 function extractAppStyleInfo(ua: string): {
   model?: string;
   manufacturer?: string;
@@ -137,7 +121,6 @@ function extractAppStyleInfo(ua: string): {
   };
 }
 
-// Detect brand from UA string or model name
 function detectBrand(ua: string, model?: string): string | undefined {
   const searchString = `${ua} ${model || ''}`;
   for (const { pattern, brand } of BRAND_PATTERNS) {
@@ -148,7 +131,6 @@ function detectBrand(ua: string, model?: string): string | undefined {
   return undefined;
 }
 
-// Check if a model name indicates a phone (not tablet)
 function isKnownPhoneModel(model?: string): boolean {
   if (!model) {
     return false;
@@ -323,8 +305,6 @@ function isServer(res: UAParser.IResult) {
 }
 
 export function getDevice(ua: string, model?: string) {
-  // Check for known phone models first (from top brands)
-  // This handles app-style UAs where the model is explicitly stated
   if (isKnownPhoneModel(model) || isKnownPhoneModel(ua)) {
     return 'mobile';
   }
@@ -353,8 +333,6 @@ export function getDevice(ua: string, model?: string) {
     return 'mobile';
   }
 
-  // Check for tablet patterns
-  // Note: We already checked for Samsung mobile/tablet and LG mobile above
   const isAndroid = ANDROID_REGEX.test(ua);
   const hasMobileKeyword = MOBILE_KEYWORD_REGEX.test(ua);
 

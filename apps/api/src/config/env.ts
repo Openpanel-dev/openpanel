@@ -1,22 +1,7 @@
-// The sole `process.env` reader on the boot path: `packages/core` reads none,
-// so every variable it needs is parsed here and travels down as
-// `AppDeps.config` (`CoreConfig`). `packages/db` and `packages/redis` still
-// read their own connection env directly — an accepted pragmatic deviation.
-//
-// Every cross-field invariant runs as a `.superRefine` BEFORE the `.transform`,
-// so a contradiction is named at boot rather than discovered at runtime.
-// `loadConfig(source = process.env)` takes the environment as a parameter so a
-// test can hand in a minimal object.
-//
-// A blank `KEY=` is absent everywhere: `blankToUndefined` runs in front of
-// every field, so `.default` fires on an empty value exactly as it does on an
-// unset one.
-//
-// Invalid config fails boot loudly, with every issue reported at once — never a
-// fail-fast on the first bad var. Two classes, deliberately different:
-// boot-critical values (roles, queues, Kafka wiring) FAIL; tuning knobs
-// (batch sizes, limits, TTLs) fall back to the module's own documented default
-// on a malformed value.
+// The sole `process.env` reader on the boot path; `packages/db` and `packages/redis` read their own
+// connection env. Cross-field invariants run as `.superRefine` before the `.transform` so a
+// contradiction fails at boot. A blank `KEY=` counts as unset. Every issue is reported at once:
+// boot-critical values (roles, queues, Kafka wiring) fail, tuning knobs fall back to the module's default.
 
 import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
@@ -88,12 +73,7 @@ const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
  */
 const DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS = 120_000;
 
-/**
- * The Kafka events consumer's token. Renamed from `events_kafka` — there is
- * one events transport now, so there is one token for it. The old spelling
- * gets its own error message below (`RENAMED_QUEUE_TOKENS`) rather than being
- * silently aliased, since a deployment's env is updated at its own pace.
- */
+/** The Kafka events consumer's token. The old `events_kafka` spelling gets its own error (`RENAMED_QUEUE_TOKENS`), not an alias. */
 export const KAFKA_QUEUE_TOKEN = 'events';
 
 /** `events` plus the seven registry keys, read from the registry itself so
@@ -137,8 +117,6 @@ function splitTokens(value: string | undefined): string[] {
     .map((token) => token.trim())
     .filter(Boolean);
 }
-
-// --- field schemas ----------------------------------------------------------
 
 const optionalString = z.preprocess(blankToUndefined, z.string().optional());
 
@@ -340,7 +318,6 @@ const concurrencyShape = Object.fromEntries(
 const rawSchema = z.object({
   ...concurrencyShape,
 
-  // --- process / boot ---
   ROLE: roleSchema,
   NODE_ENV: optionalString,
   LOG_LEVEL: stringWithDefault(DEFAULT_LOG_LEVEL),
@@ -366,7 +343,6 @@ const rawSchema = z.object({
     z.coerce.number().int().positive().default(DEFAULT_SHUTDOWN_FORCE_EXIT_MS)
   ),
 
-  // --- queues ---
   /**
    * Redis Cluster hash-tags every queue key (`cron` -> `{cron}`). It decides a
    * Redis key name: set it on a deployment whose queues already exist
@@ -386,7 +362,6 @@ const rawSchema = z.object({
   ADMIN_USERNAME: optionalString,
   ADMIN_PASSWORD: optionalString,
 
-  // --- HTTP surface ---
   /**
    * The CORS delegator's allowlist: the dashboard's own origin plus any extra
    * comma-separated ones. Read once at boot — changing an origin needs a
@@ -405,7 +380,6 @@ const rawSchema = z.object({
   /** The client ids whose requests log ip/UA. */
   ENABLE_VERBOSE_LOGGING: optionalString,
 
-  // --- logging ---
   LOG_SILENT: trueOrOneSchema,
   LOG_EXPORTER: z.preprocess(
     blankToUndefined,
@@ -414,11 +388,9 @@ const rawSchema = z.object({
   LOG_PREFIX: optionalString,
   HYPERDX_API_KEY: optionalString,
 
-  // --- storage / crypto ---
   CLICKHOUSE_CLUSTER: trueOrOneSchema,
   ENCRYPTION_KEY: optionalString,
 
-  // --- auth ---
   ALLOW_REGISTRATION: optionalString,
   ALLOW_INVITATION: optionalString,
   GITHUB_CLIENT_ID: stringWithDefault(''),
@@ -431,7 +403,6 @@ const rawSchema = z.object({
   COOKIE_TLDS: tokenList,
   CUSTOM_COOKIE_DOMAIN: optionalString,
 
-  // --- outbound providers ---
   OPENAI_API_KEY: optionalString,
   OPENAI_BASE_URL: optionalString,
   OPENAI_PROJECT: optionalString,
@@ -449,7 +420,6 @@ const rawSchema = z.object({
   GCS_API_ENDPOINT: optionalString,
   DISABLE_PING: definedIsTrueSchema,
 
-  // --- kafka ---
   KAFKA_CLIENT_ID: stringWithDefault(DEFAULT_KAFKA_CLIENT_ID),
   KAFKA_BROKERS: tokenList,
   KAFKA_EVENTS_TOPIC: stringWithDefault(DEFAULT_KAFKA_EVENTS_TOPIC),
@@ -511,17 +481,14 @@ const rawSchema = z.object({
   KAFKA_MAX_MESSAGE_BYTES: optionalPositiveInt,
   KAFKA_SASL_MECHANISM: kafkaSaslMechanismSchema,
 
-  // --- ingest dead-letter ---
   INGEST_DEAD_LETTER_MAX_ENTRIES: positiveIntWithDefault(
     DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES
   ),
 
-  // --- ingest duplicate marker ---
   INGEST_DUPLICATE_MARKER_TTL_MS: positiveIntWithDefault(
     DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS
   ),
 
-  // --- buffers ---
   BUFFER_ASYNC_INSERTS: definedIsTrueSchema,
   BUFFER_CH_INSERT_CONCURRENCY: optionalPositiveInt,
   BOT_BUFFER_BATCH_SIZE: optionalPositiveInt,
@@ -543,7 +510,6 @@ const rawSchema = z.object({
   SESSION_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   SESSION_BUFFER_SQUASH: onUnlessDisabledSchema,
 
-  // --- sessions ---
   SESSION_TIMEOUT_MS: optionalPositiveInt,
   SESSION_REAPER: onUnlessZeroSchema,
   SESSION_REAPER_BATCH_SIZE: optionalPositiveInt,
@@ -560,7 +526,6 @@ const rawSchema = z.object({
   ),
   EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS: tokenList,
 
-  // --- query sizing ---
   EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT: optionalPositiveInt,
   COHORT_MATERIALIZE_LIMIT: optionalPositiveInt,
   COHORT_QUERY_MEMORY_LIMIT_BYTES: optionalPositiveInt,
@@ -571,20 +536,16 @@ const rawSchema = z.object({
   INSIGHTS_RETENTION_DAYS: optionalPositiveInt,
   WIND_DOWN_MAX_PER_RUN: optionalPositiveInt,
 
-  // --- object-store export ---
   EXPORT_LAG_SECONDS: optionalPositiveInt,
   EXPORT_BATCH_SIZE: optionalPositiveInt,
   EXPORT_MAX_BATCHES_PER_RUN: optionalPositiveInt,
   EXPORT_CONCURRENCY: optionalPositiveInt,
 
-  // --- request IP resolution ---
   IP_HEADER_ORDER: optionalTokenList,
   TRUSTED_IP_HEADER_ORDER: optionalTokenList,
 });
 
 type RawEnv = z.infer<typeof rawSchema>;
-
-// --- cross-field invariants -------------------------------------------------
 
 /** A role that consumes must have something to consume. */
 function checkRoleConsumesSomething(raw: RawEnv, ctx: z.RefinementCtx): void {
@@ -731,8 +692,6 @@ function checkProfileBackfillProjectsHaveAFlag(
       'EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS is set while EXPERIMENTAL_PROFILE_BACKFILL is not 1 — the allowlist has no effect.',
   });
 }
-
-// --- derivations ------------------------------------------------------------
 
 function deriveDashboardUrl(raw: RawEnv): string {
   return raw.DASHBOARD_URL ?? '';
@@ -958,19 +917,9 @@ export interface Config {
   DISABLE_BULLBOARD: boolean;
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
-  /**
-   * The dead-letter list's cap. It sits here rather than in `core.kafka`
-   * because the destination is no longer Kafka: `apps/api` chooses the
-   * dead-letter sink, and `packages/core` only knows the `sendToDeadLetter`
-   * seam it is handed.
-   */
+  /** Sits here, not in `core.kafka`: `apps/api` picks the dead-letter sink and core only gets the `sendToDeadLetter` seam. */
   INGEST_DEAD_LETTER_MAX_ENTRIES: number;
-  /**
-   * How long the ingest consumer's duplicate marker key lives. Same reason it
-   * is not on `core.kafka`: the marker is keyed on the EVENT, not on a Kafka
-   * coordinate, and `packages/core` only knows the `markDuplicateEvent` seam
-   * it is handed.
-   */
+  /** Sits here, not in `core.kafka`: the marker is keyed on the event, not a Kafka coordinate. */
   INGEST_DUPLICATE_MARKER_TTL_MS: number;
   /** The CORS delegator's origin allowlist, order-sensitive. */
   dashboardOrigins: string[];

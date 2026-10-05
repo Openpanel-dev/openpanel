@@ -56,7 +56,6 @@ export async function createCheckout({
   ipAddress: string | undefined;
 }) {
   return polar.checkouts.create({
-    // productPriceId: priceId,
     products: [productId],
     successUrl: getSuccessUrl(
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,

@@ -7,18 +7,10 @@ const options: RedisOptions = {
 };
 
 /**
- * The cache client's tail bound, for the fault the offline queue cannot see: a
- * server whose socket is UP and which answers nothing (a frozen or partitioned
- * node). Nothing else in the request path sets a deadline there — `/track`
- * never answered inside 30 s in that fault before this.
- *
- * It has to clear the heaviest legitimate command by a wide margin, or a busy
- * event-buffer flush would start failing as if Redis were down, and a failed
- * flush refuses to commit Kafka offsets. 500 ms is roughly 15x the measured
- * p99 of that flush's worst case (`apps/api/e2e/redis-command-cost.ts`), so it
- * will not fire under normal load.
- *
- * Full numbers: `apps/api/e2e/redis-fail-fast.md`.
+ * The cache client's tail bound, for the fault the offline queue cannot see: a server whose socket is UP and which
+ * answers nothing. It has to clear the heaviest legitimate command by a wide margin, or a busy event-buffer flush
+ * would fail as if Redis were down and refuse to commit Kafka offsets. 500 ms is roughly 15x the measured p99 of
+ * that flush's worst case (`apps/api/e2e/redis-command-cost.ts`). Full numbers: `apps/api/e2e/redis-fail-fast.md`.
  */
 export const CACHE_COMMAND_TIMEOUT_MS = 500;
 
@@ -106,28 +98,17 @@ const createRedisClient = (
 };
 
 /**
- * The CACHE client fails fast. On ioredis's defaults, a command issued while
- * Redis is down is queued and waits out the reconnect backoff before
- * `MaxRetriesPerRequestError`, which measured as multi-second `/track`
- * blocking on a stopped Redis. Everything on the ingest path already treats
- * these reads as optional — `device-id.ts` catches the session-buffer failure
- * and mints the deterministic session id — so that wait bought nothing but a
- * slower failure.
+ * The CACHE client fails fast: on ioredis's defaults a command issued while Redis is down waits out the reconnect
+ * backoff, which measured as multi-second `/track` blocking. Everything on the ingest path treats these reads as
+ * optional, so that wait bought nothing.
  *
- * Two mechanisms, because there are two faults: the offline queue is turned
- * off once connected, so a command issued while the socket is known-down is
- * rejected in microseconds rather than queued; `commandTimeout` bounds the
- * case the offline queue cannot see, where the socket is up and the server
- * answers nothing. `commandTimeout` alone is not enough — ioredis arms the
- * deadline before the writable check, so a queued command still pays it in
- * full. Numbers and the case for 500 ms specifically:
+ * Two mechanisms: the offline queue is turned off once connected (a command on a known-down socket is rejected in
+ * microseconds), and `commandTimeout` bounds the case where the socket is up and the server answers nothing.
+ * `commandTimeout` alone is not enough: ioredis arms the deadline before the writable check. Numbers:
  * `apps/api/e2e/redis-fail-fast.md`.
  *
- * The offline queue stays on until the client has connected once: ioredis
- * rejects every command issued before the first connect completes when the
- * queue is off, which would make boot order decide whether a command works. A
- * process that has never reached Redis falls back to `commandTimeout`
- * instead; one that has connected fails instantly.
+ * The offline queue stays on until the first connect: with it off, ioredis rejects every command issued before the
+ * first connect completes, so boot order would decide whether a command works.
  */
 export function createFailFastCacheClient(
   name: string,

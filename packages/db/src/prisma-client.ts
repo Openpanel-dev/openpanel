@@ -15,11 +15,8 @@ const getPrismaClient = () => {
   // emit: 'event' keeps the engine from writing prisma:error lines straight
   // to stderr, so they flow through pino to the OTLP pipeline instead.
   const client = new PrismaClient({
-    // Callsite-free error messages: running from source (not a compiled
-    // bundle), Prisma's default error format would splice the file, the line
-    // and a source snippet into a message that reaches API clients verbatim
-    // (three golden error responses caught exactly that). `minimal` keeps the
-    // short `Invalid \`prisma.model.action()\` invocation:` form and keeps our
+    // Prisma's default error format splices file, line and a source snippet
+    // into messages that reach API clients verbatim. `minimal` keeps our
     // source layout out of a 500.
     errorFormat: 'minimal',
     log: [
@@ -100,7 +97,6 @@ const getPrismaClient = () => {
               return org.subscriptionEndsAt;
             }
 
-            // Hedge against edge cases :D
             return new Date(Date.now() + 1000 * 60 * 60 * 24);
           },
         },

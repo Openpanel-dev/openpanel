@@ -10,9 +10,6 @@ import { type CodeMigrationEnv, getIsCluster, writeSqlDump } from './helpers';
 // Per-property breakdown of profile events, used when cohort event criteria
 // filter on properties.<key> AND as a future fast path for property breakdowns
 // in chart queries. populate: false — backfill ad-hoc.
-//
-// NOTE: fork references this MV but never shipped a migration for it; we own
-// the authoritative DDL.
 export async function up(env: CodeMigrationEnv) {
   const replicatedVersion = '1';
   const existingTables = await getExistingTables();

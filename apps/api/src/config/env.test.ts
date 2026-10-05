@@ -127,8 +127,6 @@ describe('the boot flags main.ts branches on', () => {
   });
 });
 
-// -- Blank-value parsing the config loader does for itself ------------------
-
 describe('blank KEY= is absent, not empty', () => {
   it('falls through to the default on every field, not just the preprocessed ones', () => {
     const config = loadConfig({ ...base, API_PORT: '', LOG_LEVEL: '   ' });
@@ -337,8 +335,6 @@ describe('derived values, computed once in the transform', () => {
   });
 
   it('the dead-letter list cap defaults to 1000 and takes a positive integer', () => {
-    // The Kafka DLQ topic above is no longer the dead-letter destination — it
-    // is kept only so the seam can be swapped back.
     expect(loadConfig(base).INGEST_DEAD_LETTER_MAX_ENTRIES).toBe(1000);
     expect(
       loadConfig({ ...base, INGEST_DEAD_LETTER_MAX_ENTRIES: '25' })

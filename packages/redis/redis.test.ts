@@ -1,15 +1,4 @@
-/**
- * The CACHE client must reject promptly when Redis is unreachable.
- *
- * Without this, `/track` could block for tens of seconds on a stopped Redis
- * (some requests never answering at all) because the command was queued and
- * waited out ioredis's 20-attempt reconnect cycle. These tests pin the three
- * properties that fixed it, and the one that must NOT change (the queue
- * client).
- *
- * No real Redis: an unreachable port covers "never connected", and a fake
- * RESP server covers "connected, then gone".
- */
+/** The CACHE client must reject promptly when Redis is unreachable, while the queue client keeps BullMQ's retry settings. An unreachable port covers "never connected", a fake RESP server covers "connected, then gone". */
 
 import net from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -25,8 +14,6 @@ const PROMPT_WHEN_NEVER_CONNECTED_MS = CACHE_COMMAND_TIMEOUT_MS * 4;
 /** A known-down socket must not wait for the timeout at all. */
 const INSTANT_WHEN_DISCONNECTED_MS = 100;
 const READY_TIMEOUT_MS = 5000;
-
-// ── A fake Redis, just enough of RESP for ioredis to reach `ready` ──────────
 
 const INFO_BODY = '# Server\r\nredis_version:7.4.0\r\nloading:0\r\n';
 

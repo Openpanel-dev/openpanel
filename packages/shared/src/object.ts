@@ -39,7 +39,6 @@ export function toDots(
     }
 
     if (typeof value === 'string' && isMalformedJsonString(value)) {
-      // Skip it
       return acc;
     }
 
@@ -51,7 +50,6 @@ export function toDots(
           ...toDots(JSON.parse(value), `${path}${key}.`),
         };
       } catch {
-        // Skip it
         return acc;
       }
     }
@@ -84,7 +82,6 @@ type AnyObject = Record<string, any>;
 
 export function deepMergeObjects<T>(target: AnyObject, source: AnyObject): T {
   const merged: AnyObject = {};
-  // Include all keys from both objects
   const allKeys = new Set([...Object.keys(target), ...Object.keys(source)]);
 
   allKeys.forEach((key) => {
@@ -97,20 +94,16 @@ export function deepMergeObjects<T>(target: AnyObject, source: AnyObject): T {
         typeof targetValue === 'string' &&
         targetValue !== '')
     ) {
-      // Keep target value if source value is null or undefined
       merged[key] = targetValue;
     } else if (
       sourceValue !== undefined &&
       isObject(targetValue) &&
       isObject(sourceValue)
     ) {
-      // Recursively merge objects
       merged[key] = deepMergeObjects(targetValue, sourceValue);
     } else if (sourceValue !== undefined) {
-      // Directly assign any non-undefined source values
       merged[key] = sourceValue;
     } else if (sourceValue === undefined && target[key] !== undefined) {
-      // Keep target value if source value is undefined
       merged[key] = targetValue;
     }
   });
@@ -118,7 +111,6 @@ export function deepMergeObjects<T>(target: AnyObject, source: AnyObject): T {
   return merged as T;
 }
 
-// Helper function to check if a value is an object (but not null or an array)
 function isObject(value: any): boolean {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

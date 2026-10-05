@@ -45,7 +45,6 @@ export async function up(env: CodeMigrationEnv) {
 
   const sqls: string[] = [];
 
-  // Move tables to old names if they exists
   if (isSelfHostingOld) {
     sqls.push(
       ...existingTables
@@ -66,7 +65,6 @@ export async function up(env: CodeMigrationEnv) {
 
   sqls.push(
     createDatabase(migrationDatabase(), isClustered),
-    // Create new tables
     ...createTable({
       name: 'self_hosting',
       columns: ['`created_at` Date', '`domain` String', '`count` UInt64'],
@@ -189,7 +187,6 @@ export async function up(env: CodeMigrationEnv) {
       isClustered,
     }),
 
-    // Create materialized views
     ...createMaterializedView({
       name: 'dau_mv',
       tableName: 'events',
@@ -268,7 +265,6 @@ export async function up(env: CodeMigrationEnv) {
 
   if (isSelfHostingPostCluster) {
     sqls.push(
-      // Move data between tables
       ...(hasSelfHosting
         ? moveDataBetweenTables({
             from: 'self_hosting_replicated_tmp',

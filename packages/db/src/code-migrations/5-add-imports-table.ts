@@ -12,7 +12,6 @@ export async function up(env: CodeMigrationEnv) {
     ...createTable({
       name: 'events_imports',
       columns: [
-        // Same columns as events table
         '`id` UUID DEFAULT generateUUIDv4()',
         '`name` LowCardinality(String)',
         '`sdk_name` LowCardinality(String)',
@@ -43,7 +42,6 @@ export async function up(env: CodeMigrationEnv) {
         '`model` LowCardinality(String)',
         '`imported_at` Nullable(DateTime) CODEC(Delta(4), LZ4)',
 
-        // Additional metadata columns for import tracking
         '`import_id` String CODEC(ZSTD(3))',
         "`import_status` LowCardinality(String) DEFAULT 'pending'",
         '`imported_at_meta` DateTime DEFAULT now()',

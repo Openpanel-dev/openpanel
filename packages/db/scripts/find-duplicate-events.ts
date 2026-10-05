@@ -1,10 +1,8 @@
 /**
- * find-duplicate-events.ts
- *
  * Reports (and optionally deletes) duplicate rows in the ClickHouse `events`
  * table. A "duplicate" is two or more rows that are logically the same event
  * but have different `id`s — the signature of the event being processed more
- * than once (see the Kafka consumer offset-handling fix).
+ * than once.
  *
  * Duplicates are matched by a content hash over the meaningful columns
  * (everything that identifies the event, excluding `id`), so genuinely
@@ -33,10 +31,6 @@ import {
   getReplicatedTableName,
   TABLE_NAMES,
 } from '../src/clickhouse/client';
-
-// ---------------------------------------------------------------------------
-// Arg parsing
-// ---------------------------------------------------------------------------
 
 type Bucket = 'day' | 'hour';
 
@@ -92,10 +86,6 @@ function parseArgs(): Args {
   };
 }
 
-// ---------------------------------------------------------------------------
-// SQL helpers
-// ---------------------------------------------------------------------------
-
 // Format a JS Date as a ClickHouse DateTime64(3) literal (UTC).
 function chDateTime(date: Date): string {
   return date.toISOString().replace('T', ' ').replace('Z', '').slice(0, 23);
@@ -132,10 +122,6 @@ async function query<T>(sql: string): Promise<T[]> {
     .query({ query: sql, format: 'JSONEachRow' })
     .then((res) => res.json<T>());
 }
-
-// ---------------------------------------------------------------------------
-// Report
-// ---------------------------------------------------------------------------
 
 async function report(args: Args): Promise<void> {
   const bucketFn = args.bucket === 'day' ? 'toStartOfDay' : 'toStartOfHour';
@@ -236,16 +222,11 @@ async function report(args: Args): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Delete
-// ---------------------------------------------------------------------------
-
 function* bucketRanges(
   since: Date,
   bucket: Bucket
 ): Generator<{ start: Date; end: Date }> {
   const stepMs = bucket === 'day' ? 86_400_000 : 3_600_000;
-  // Align the first bucket to the start of the day/hour.
   const start = new Date(since);
   if (bucket === 'day') {
     start.setUTCHours(0, 0, 0, 0);
@@ -309,7 +290,6 @@ async function deleteDuplicates(args: Args): Promise<void> {
           `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
           `${projectClause(args.project)} AND id IN (${idList})`,
       });
-      // Avoid piling up mutations.
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
@@ -320,8 +300,6 @@ async function deleteDuplicates(args: Args): Promise<void> {
       '  SELECT * FROM system.mutations WHERE is_done = 0\n'
   );
 }
-
-// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   const args = parseArgs();

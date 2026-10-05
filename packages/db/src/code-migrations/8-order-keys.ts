@@ -52,8 +52,6 @@ export async function up(env: CodeMigrationEnv) {
       'INDEX idx_origin origin TYPE bloom_filter(0.05) GRANULARITY 1',
       'INDEX idx_path path TYPE bloom_filter(0.01) GRANULARITY 1',
     ],
-    // New ORDER BY: project_id, toDate(created_at), created_at, name
-    // Removed profile_id, added created_at for better ordering within same day
     orderBy: ['project_id', 'toDate(created_at)', 'created_at', 'name'],
     partitionBy: 'toYYYYMM(created_at)',
     settings: {
@@ -68,8 +66,6 @@ export async function up(env: CodeMigrationEnv) {
     isClustered,
   });
 
-  // Step 1: Create temporary tables with new ORDER BY keys
-  // Events table with new ORDER BY
   sqls.push(...eventTables);
 
   const sessionTables = createTable({
@@ -114,8 +110,6 @@ export async function up(env: CodeMigrationEnv) {
       '`sign` Int8',
       '`version` UInt64',
     ],
-    // New ORDER BY: project_id, toDate(created_at), created_at, id
-    // Removed profile_id, reordered to match query patterns (date first, then id)
     orderBy: ['project_id', 'toDate(created_at)', 'created_at'],
     partitionBy: 'toYYYYMM(created_at)',
     settings: {
@@ -127,7 +121,6 @@ export async function up(env: CodeMigrationEnv) {
     isClustered,
   });
 
-  // Sessions table with new ORDER BY
   sqls.push(...sessionTables);
 
   const firstEventDateResponse = await chMigrationClient.query({
@@ -142,8 +135,7 @@ export async function up(env: CodeMigrationEnv) {
     !firstEventDateJson[0]?.created_at.startsWith('1970')
   ) {
     const firstEventDate = new Date(firstEventDateJson[0]?.created_at);
-    // Step 2: Copy data from old tables to new tables (partitioned by month for efficiency)
-    // Set endDate to first of next month to ensure we capture all data in the current month
+    // First of next month, so the current month is fully captured.
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
     endDate.setDate(1);
@@ -182,7 +174,7 @@ export async function up(env: CodeMigrationEnv) {
     const firstSessionDate = new Date(
       firstSessionDateJson[0]?.created_at ?? ''
     );
-    // Set endDate to first of next month to ensure we capture all data in the current month
+    // First of next month, so the current month is fully captured.
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
     endDate.setDate(1);
@@ -254,15 +246,12 @@ export async function up(env: CodeMigrationEnv) {
 
   if (isClustered && sessionTables[1] && eventTables[1]) {
     sqls.push(
-      // Drop temporary DISTRIBUTED tables (will be recreated)
       `DROP TABLE IF EXISTS events_new_20251123 ON CLUSTER '{cluster}'`,
       `DROP TABLE IF EXISTS sessions_new_20251123 ON CLUSTER '{cluster}'`,
-      // Rename new tables to correct names
       `RENAME TABLE events_new_20251123_replicated TO events_replicated ON CLUSTER '{cluster}'`,
       `RENAME TABLE sessions_new_20251123_replicated TO sessions_replicated ON CLUSTER '{cluster}'`,
-      // Create new distributed tables
-      eventTables[1].replaceAll('events_new_20251123', 'events'), // creates a new distributed table
-      sessionTables[1].replaceAll('sessions_new_20251123', 'sessions') // creates a new distributed table
+      eventTables[1].replaceAll('events_new_20251123', 'events'),
+      sessionTables[1].replaceAll('sessions_new_20251123', 'sessions')
     );
   } else {
     sqls.push(

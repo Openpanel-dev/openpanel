@@ -175,7 +175,7 @@ describe('local function-scoped builder fallback (R5)', () => {
   const PROFILE_COLUMNS = ['first_name', 'country'] as const;
 
   /**
-   * The shape R5 sanctions: assembly is imperative and local, but the return
+   * Assembly is imperative and local, but the return
    * type is a fragment, so every value still leaves as a bound `{pN:Type}`
    * and every identifier still goes through `sql.id`'s whitelist.
    */

@@ -1,10 +1,4 @@
-/**
- * Regression test: both halves below matter, and the happy path alone would
- * not catch the bug — (a) the event buffer is flushed to Redis BEFORE the
- * Kafka consumer is stopped, and (b) a FAILED flush stops the sequence
- * there: the consumer is never stopped and the process exits non-zero, so
- * Kafka redelivers instead of dropping the events for good.
- */
+/** Both halves matter: the buffer is flushed to Redis BEFORE the consumer stops, and a FAILED flush stops the sequence there (exit non-zero, so Kafka redelivers instead of dropping events). */
 
 import { describe, expect, it, mock } from 'bun:test';
 import {

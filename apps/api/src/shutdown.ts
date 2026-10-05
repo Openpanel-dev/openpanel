@@ -1,25 +1,13 @@
-// The graceful-shutdown sequence, lifted out of `main.ts` so its ORDER is a
-// thing a test can assert rather than a property of how a `Promise.all` was
-// typed.
+// The graceful-shutdown sequence, kept out of `main.ts` so its ORDER can be asserted by a test.
 //
-// A SIGTERM restart once permanently lost accepted events (2 of 44,075)
-// while a SIGKILL restart lost none. Graceful shutdown lost them BECAUSE
-// it was graceful: the
-// event buffer's in-process `pendingEvents` array was never flushed to Redis,
-// and the offsets for those events had already been committed, so nothing was
-// redelivered. A crash commits nothing, so Kafka replays the same window.
+// A SIGTERM restart once permanently lost accepted events: the event buffer's in-process `pendingEvents`
+// was never flushed to Redis and the offsets for those events were already committed, so nothing was
+// redelivered. A crash commits nothing, so Kafka replays the window.
 //
-// The commit itself is NOT here: kafkajs auto-commits the offsets a batch
-// resolved as soon as `eachBatch` returns, so the events a Kafka batch buffered
-// are made durable inside the batch handler, before it resolves anything
-// (`consumer.ts`'s `flushBufferedEvents`). What is left for this sequence is
-// everything buffered OUTSIDE a Kafka batch — a session-end job's event, an
-// import — which no offset covers and which a `process.exit` would simply drop.
-//
-// Either way it is one rpush of at most `microBatchMaxSize` events —
-// milliseconds, well inside `SHUTDOWN_FORCE_EXIT_MS`. It is NOT a Redis ->
-// ClickHouse drain: the Redis list is durable and the next process, or another
-// replica, drains it.
+// kafkajs commits a batch's offsets as soon as `eachBatch` returns, so events buffered inside a batch are made
+// durable in the batch handler (`flushBufferedEvents`). What is left here is everything buffered OUTSIDE a
+// Kafka batch (a session-end job's event, an import): one rpush of at most `microBatchMaxSize` events,
+// well inside `SHUTDOWN_FORCE_EXIT_MS`. It is not a Redis -> ClickHouse drain; the next process drains the list.
 
 /** Everything succeeded; the offsets are committed and the events are durable. */
 export const SHUTDOWN_EXIT_OK = 0;
@@ -70,11 +58,8 @@ export async function runShutdownSequence(
     // Only if THIS process consumes cron: waiting on a queue another replica
     // owns would stall the whole shutdown budget on someone else's jobs.
     await steps.drainCron();
-    // After this line nothing new can enter the event buffer: BullMQ has
-    // stopped taking jobs and the Kafka consumer has stopped fetching, and
-    // both have let their in-flight handlers finish. The two are unrelated
-    // teardowns, so they still run concurrently — what changed is that the
-    // consumer's DISCONNECT no longer runs here, alongside them.
+    // After this line nothing new can enter the event buffer: BullMQ stopped taking jobs and the Kafka consumer
+    // stopped fetching. The two teardowns are unrelated, so they run concurrently.
     await Promise.all([steps.closeWorkers(), steps.stopConsuming()]);
   } catch (error) {
     logger.error({ err: error }, 'Error during graceful shutdown');

@@ -64,9 +64,9 @@ export const chMigrationClient = createClient({
   },
   clickhouse_settings: {
     wait_end_of_query: 1,
-    // Ask ClickHouse to periodically send query execution progress in HTTP headers, creating some activity in the connection.
+    // Progress headers keep the connection active so long queries are not idled out by proxies.
     send_progress_in_http_headers: 1,
-    // The interval of sending these progress headers. Here it is less than 60s,
+    // Under 60s, the usual proxy idle timeout.
     http_headers_progress_interval_ms: '50000',
   },
 });
@@ -79,10 +79,7 @@ export function createDatabase(name: string, isClustered: boolean) {
   return `CREATE DATABASE IF NOT EXISTS ${name}`;
 }
 
-/**
- * Creates SQL statements for table creation in ClickHouse
- * Handles both clustered and non-clustered scenarios
- */
+/** Creates SQL statements for table creation, clustered or not. */
 export function createTable({
   name: tableName,
   columns,
@@ -106,7 +103,6 @@ export function createTable({
   const partitionByClause = partitionBy ? `PARTITION BY ${partitionBy}` : '';
 
   if (!isClustered) {
-    // Non-clustered scenario: single table
     return [
       `CREATE TABLE IF NOT EXISTS ${tableName} (
   ${columnDefinitions}
@@ -119,7 +115,6 @@ ${settingsClause}`.trim(),
   }
 
   return [
-    // Local replicated table
     `CREATE TABLE IF NOT EXISTS ${replicated(tableName)} ON CLUSTER '{cluster}' (
   ${columnDefinitions}
 )
@@ -127,7 +122,6 @@ ENGINE = Replicated${engine.replace(/^(.+?)\((.+?)?\)/, `$1('${CLUSTER_REPLICA_P
 ${partitionByClause}
 ORDER BY (${orderBy.join(', ')})
 ${settingsClause}`.trim(),
-    // Distributed table
     `CREATE TABLE IF NOT EXISTS ${tableName} ON CLUSTER '{cluster}' AS ${replicated(tableName)}
 ENGINE = Distributed('{cluster}', currentDatabase(), ${replicated(tableName)}, ${distributionHash})`,
   ];
@@ -149,9 +143,6 @@ export const modifyTTL = ({
   return `ALTER TABLE ${tableName} MODIFY TTL ${ttl}`;
 };
 
-/**
- * Generates ALTER TABLE statements for adding columns
- */
 export function addColumns(
   tableName: string,
   columns: string[],
@@ -169,9 +160,6 @@ export function addColumns(
   );
 }
 
-/**
- * Generates ALTER TABLE statements for dropping columns
- */
 export function dropColumns(
   tableName: string,
   columnNames: string[],
@@ -258,10 +246,10 @@ export function moveDataBetweenTables({
     return [`INSERT INTO ${to} SELECT ${selectClause} FROM ${from}`];
   }
 
-  // Start from today and go back 3 years
+  // Default window: 3 years back from tomorrow, so today is included.
   const endDate = batch.endDate || new Date();
   if (!batch.endDate) {
-    endDate.setDate(endDate.getDate() + 1); // Add 1 day to include today
+    endDate.setDate(endDate.getDate() + 1);
   }
   const startDate = batch.startDate || new Date();
   if (!batch.startDate) {
@@ -271,13 +259,12 @@ export function moveDataBetweenTables({
   let currentDate = endDate;
   const interval = batch.interval || 'day';
 
-  // Start of the week (Monday) for a given date
   const getWeekStart = (date: Date): Date => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
-    d.setHours(0, 0, 0, 0); // Normalize to start of day
+    d.setHours(0, 0, 0, 0);
     return d;
   };
 
@@ -310,8 +297,7 @@ export function moveDataBetweenTables({
     switch (interval) {
       case 'month':
         previousDate.setMonth(previousDate.getMonth() - 1);
-        // If we've gone below startDate's month, adjust to start of startDate's month
-        // This ensures we generate SQL for the month containing startDate
+        // Clamp to the month containing startDate so it is still covered.
         if (
           previousDate.getFullYear() < startDate.getFullYear() ||
           (previousDate.getFullYear() === startDate.getFullYear() &&
@@ -324,7 +310,6 @@ export function moveDataBetweenTables({
         break;
       case 'week': {
         previousDate.setDate(previousDate.getDate() - 7);
-        // If we've gone below startDate's week, adjust to start of startDate's week
         const startWeekStart = getWeekStart(startDate);
         const prevWeekStart = getWeekStart(previousDate);
         if (prevWeekStart < startWeekStart) {
@@ -332,17 +317,13 @@ export function moveDataBetweenTables({
         }
         break;
       }
-      // day
       default:
         previousDate.setDate(previousDate.getDate() - 1);
         break;
     }
 
-    // For monthly/weekly intervals with transform, upperBoundDate should be currentDate
-    // because currentDate already represents the start of the period we're processing
-    // The WHERE clause uses > previousDate AND <= currentDate to get exactly one period
+    // The WHERE clause uses > previousDate AND <= upperBoundDate to get exactly one period.
     let upperBoundDate = currentDate;
-    // Don't exceed the endDate
     if (upperBoundDate > endDate) {
       upperBoundDate = endDate;
     }
@@ -353,7 +334,6 @@ export function moveDataBetweenTables({
       AND ${batch.column} <= '${batch.transform ? batch.transform(upperBoundDate) : formatClickhouseDate(upperBoundDate, true)}'`;
     sqls.push(sql);
 
-    // For monthly/weekly intervals, stop if we've reached the start period
     if (interval === 'month') {
       const prevYear = previousDate.getFullYear();
       const prevMonth = previousDate.getMonth();
@@ -396,7 +376,6 @@ export function createMaterializedView({
 
   const partitionByClause = partitionBy ? `PARTITION BY ${partitionBy}` : '';
 
-  // Transform query to use replicated table names in clustered mode
   const transformedQuery = query.replace(/\{(\w+)\}/g, (_, tableName) =>
     isClustered ? replicated(tableName) : tableName
   );
@@ -414,7 +393,6 @@ AS ${transformedQuery}`.trim(),
   }
 
   return [
-    // Replicated materialized view
     `CREATE MATERIALIZED VIEW IF NOT EXISTS ${replicated(tableName)} ON CLUSTER '{cluster}'
 ENGINE = Replicated${engine.replace(/^(.+?)\((.+?)?\)/, `$1('${CLUSTER_REPLICA_PATH.replace('{replicatedVersion}', replicatedVersion)}', '{replica}', $2)`).replace(/, \)$/, ')')}
 ${partitionByClause}
@@ -422,7 +400,6 @@ ORDER BY (${orderBy.join(', ')})
 ${settingsClause}
 ${populate ? 'POPULATE' : ''}
 AS ${transformedQuery}`.trim(),
-    // Distributed materialized view
     `CREATE TABLE IF NOT EXISTS ${tableName} ON CLUSTER '{cluster}' AS ${replicated(tableName)}
 ENGINE = Distributed('{cluster}', currentDatabase(), ${replicated(tableName)}, ${distributionHash})`,
   ];

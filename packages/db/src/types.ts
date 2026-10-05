@@ -1,7 +1,4 @@
-// `@openpanel/db` takes a type-only `db -> core` dependency edge here,
-// accepted deliberately: `@openpanel/db` already depends on `@openpanel/core`,
-// the edge is `import type` only so it creates no runtime cycle, and it is
-// the same shape as this repo's existing type-only `db -> queue` cycle.
+// Type-only `db -> core` edge: `import type` creates no runtime cycle.
 import type {
   IClickhouseBotEvent,
   IClickhouseEvent,

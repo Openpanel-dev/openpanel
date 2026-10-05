@@ -1,14 +1,4 @@
-// `isFloat` does NOT come along: no importer, anywhere.
-//
-// `getPreviousMetric` left with the report vocabulary it returns — it is
-// `packages/core/src/modules/report/src/previous-metric.ts` now.
-//
-// What was left is generic arithmetic, so it is @openpanel/shared's. apps/start
-// had copied all six of these functions verbatim; that copy is deleted and the
-// dashboard imports them from here.
-//
-// `isNumber` is mathjs's, not `typeof n === 'number'` — it is the filter
-// predicate for every chart aggregate below, so it stays exactly as it was.
+// `isNumber` is mathjs's, not `typeof n === 'number'`: it is the filter predicate for every chart aggregate below.
 import { isNumber } from 'mathjs';
 
 export const round = (num: number, decimals = 2) => {

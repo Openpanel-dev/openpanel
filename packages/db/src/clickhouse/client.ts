@@ -14,12 +14,10 @@ export { createClient } from '@clickhouse/client';
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
-// Reached by relative path, not the `@openpanel/core` barrel: core depends on
-// this package (@openpanel/db), so importing the barrel here would pull core's
-// entire module graph into packages/db for one leaf JSON helper.
+// Relative path, not the `@openpanel/core` barrel: core depends on this
+// package, so the barrel would pull core's module graph in for one helper.
 import { getSafeJson } from '../../../core/src/shared/json';
 
-// All three LogParams types are exported by the client
 interface LogParams {
   module: string;
   message: string;
@@ -68,12 +66,9 @@ export const TABLE_NAMES = {
   groups: 'groups',
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
-  // Superseded by the two event_*_summary_mv entries below and dropped in
-  // migration 24. Kept because migrations 13, 14 and 15 still name them.
+  // Dropped in migration 24; kept because migrations 13, 14 and 15 still name them.
   profile_event_summary_mv: 'profile_event_summary_mv',
-  // Same content as the two MVs above, keyed for the cohort criteria that
-  // read them (event + window first, profile last) rather than by profile.
-  // See migration 20.
+  // Keyed for the cohort criteria (event + window first, profile last) rather than by profile.
   event_profile_summary_mv: 'event_profile_summary_mv',
   event_property_profile_summary_mv: 'event_property_profile_summary_mv',
   profile_event_property_summary_mv: 'profile_event_property_summary_mv',
@@ -116,19 +111,14 @@ function getClickhouseSettings(): ClickHouseSettings {
   };
 }
 
-// Request gzip is on by default — pays CPU on the worker to send less data
-// over the wire. For payload-heavy buffers (replay) the gzip step happens on
-// the single Node main thread and can block the event loop, so it's worth
-// being able to flip it off to test. Set CLICKHOUSE_REQUEST_COMPRESSION=false
-// to disable.
+// Gzip runs on the main thread and can block the event loop for payload-heavy
+// buffers (replay), so CLICKHOUSE_REQUEST_COMPRESSION=false turns it off.
 const requestCompressionEnabled =
   process.env.CLICKHOUSE_REQUEST_COMPRESSION !== 'false' &&
   process.env.CLICKHOUSE_REQUEST_COMPRESSION !== '0';
 
-// Pool size per worker process. With parallel chunk inserts (cap 5 per
-// flush) and a few buffers potentially flushing concurrently across cluster
-// nodes, the previous 30 left headroom but might be tight at peak. Set
-// CLICKHOUSE_MAX_OPEN_CONNECTIONS to override.
+// Pool size per worker process: parallel chunk inserts (cap 5 per flush)
+// from several buffers flushing at once.
 const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
   ? Math.max(
       1,
@@ -136,10 +126,8 @@ const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
     )
   : 50;
 
-// Per-request timeout, lowered from 300_000 (5 min) — too long for fast
-// failover against a dead node. Stuck inserts should fail and retry on a
-// different node well before 5 min. 30s is enough for any legitimate batch
-// insert in this codebase. Bumpable via env if needed.
+// Short enough that a stuck insert fails over to another node quickly; 30s is
+// enough for any legitimate batch insert.
 const requestTimeoutMs = process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS
   ? Math.max(
       1000,
@@ -236,10 +224,8 @@ logger.info(
   'ClickHouse clients initialized'
 );
 
-// Backwards-compat export. Some callers (notably gsc.service.ts) use
-// `originalCh` directly to bypass the retry/round-robin layer for one-off
-// DDL or for places where retry semantics aren't wanted. Points at the
-// first node.
+// Bypasses the retry/round-robin layer, for one-off DDL or where retries
+// aren't wanted. Points at the first node.
 export const originalCh = clients[0]!;
 
 const cleanQuery = (query?: string) =>
@@ -277,16 +263,13 @@ function urlHostname(url: string | undefined): string | undefined {
 }
 
 const INSERT_DEFAULT_SETTINGS: ClickHouseSettings = {
-  // Increase insert timeouts and buffer sizes for large batches
   max_execution_time: 300,
   max_insert_block_size: '500000',
   max_http_get_redirects: '0',
-  // Ensure JSONEachRow stays efficient
   input_format_parallel_parsing: 1,
   // Keep long-running inserts/queries from idling out at proxies by sending progress headers
   send_progress_in_http_headers: 1,
   http_headers_progress_interval_ms: '50000',
-  // Ensure server holds the connection until the query is finished
   wait_end_of_query: 1,
 };
 

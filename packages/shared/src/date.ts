@@ -1,9 +1,5 @@
 // Generic date helpers: pure Date/Luxon math, no ClickHouse or Postgres
 // access. This is the one place core re-exports luxon's DateTime from.
-//
-// `getDatesFromRange` and `getChartStartEndDate` are not here: they read
-// report vocabulary (`IChartRange`, `IReportInput`), so they live in
-// `packages/core/src/modules/report/src/chart-dates.ts`.
 import { DateTime } from 'luxon';
 
 export { DateTime } from 'luxon';

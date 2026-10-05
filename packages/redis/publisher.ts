@@ -57,13 +57,8 @@ type ChannelMessageListener = (message: string) => void;
  * process and dispatches by channel name, which also keeps the connection off
  * Node's max-listeners warning as sockets accumulate.
  *
- * RECONNECT NEEDS NO HANDLING HERE. ioredis re-issues SUBSCRIBE for every
- * channel it believes it holds when the connection comes back
- * (`ioredis/built/redis/event_handler.js:254`, gated on `autoResubscribe`,
- * which defaults to `true` in `redis/RedisOptions.js:45` and is not overridden
- * for this client). Since the wire commands stay one-to-one with the 0 -> 1 and
- * 1 -> 0 edges, ioredis's own set stays exactly the set of channels with a
- * non-zero count.
+ * RECONNECT NEEDS NO HANDLING HERE: ioredis re-issues SUBSCRIBE for every channel it holds (`autoResubscribe`,
+ * default true), and the wire commands stay one-to-one with the 0 -> 1 and 1 -> 0 edges.
  */
 const listenersByChannel = new Map<string, Set<ChannelMessageListener>>();
 

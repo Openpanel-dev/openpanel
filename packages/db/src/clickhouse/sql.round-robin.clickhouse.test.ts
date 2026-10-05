@@ -112,8 +112,7 @@ describeAgainstClickhouse(
     });
 
     it('leaves the plain-string path unchanged', async () => {
-      // The 122 existing `chQuery(string)` call sites must be unaffected by the
-      // params slot: no params in, no params on the wire.
+      // No params in, no params on the wire.
       const rows = await chQuery<{ value: number }>('SELECT 1 AS value');
       expect(rows[0]?.value).toBe(1);
     });

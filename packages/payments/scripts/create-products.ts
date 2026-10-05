@@ -172,7 +172,6 @@ async function main() {
         ) {
           productCreate.prices[0]!.priceAmount = price.price * 100 * 10;
         }
-        // console.log('CREATE YEARLY', productCreate);
         const yearlyProduct = await polar.products.create(productCreate);
         console.log('Yearly product created:');
         console.log(' - ID:', yearlyProduct.id);

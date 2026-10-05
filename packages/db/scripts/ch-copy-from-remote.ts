@@ -80,11 +80,10 @@ async function main() {
     for (const table of tables) {
       console.log(`Processing table: ${table}`);
 
-      // Every remote() argument is a bound param, so the credentials never
-      // enter the query text — which is what makes the log line below safe to
-      // print. `dbName` and `table` are identifiers: bound as {x:Identifier}
-      // inside remote(), validated by sql.id() in the INSERT target, where a
-      // param is not accepted.
+      // Every remote() argument is a bound param, so credentials never enter
+      // the query text and the log line below is safe. `dbName` and `table` are
+      // bound as {x:Identifier} inside remote() and validated by sql.id() in
+      // the INSERT target, where a param is not accepted.
       const remoteTable = sql`remote(${sql.string(host)}, ${sql.identifier(dbName)}, ${sql.identifier(table)}, ${sql.string(user)}, ${sql.string(password)})`;
 
       const projectFilter =
@@ -98,16 +97,6 @@ async function main() {
         sql`INSERT INTO ${sql.id(dbName)}.${sql.id(table)} ${selectQuery}`.toStatement();
 
       console.log(`Executing: ${insertQuery.query}`);
-
-      // try {
-      //   await ch.command({
-      //     query: insertQuery.query,
-      //     query_params: insertQuery.query_params,
-      //   });
-      //   console.log(`✅ Copied ${table} successfully`);
-      // } catch (error) {
-      //   console.error(`❌ Failed to copy ${table}:`, error);
-      // }
     }
 
     console.log('\nDone!');

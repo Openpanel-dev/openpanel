@@ -1,15 +1,4 @@
-/**
- * The capped dead-letter list, at the Redis boundary.
- *
- * What the consumer does with a rejection is `packages/core`'s
- * `consumer.test.ts`; what this file pins is the write itself: one MULTI, the
- * record's shape, and the two ways a MULTI can fail without rejecting.
- *
- * No real Redis: an in-memory stand-in with real list semantics. The same
- * assertions were run against a local Redis (`redis://127.0.0.1:6379/15`) on
- * 2026-09-14 before this file was written — LLEN 3 after 7 pushes at N=3,
- * newest first, and a key holding a string rejecting with `WRONGTYPE`.
- */
+/** The capped dead-letter list at the Redis boundary: one MULTI, the record's shape, and the two ways a MULTI can fail without rejecting. Uses an in-memory stand-in with real list semantics. */
 
 import { describe, expect, it } from 'vitest';
 import {

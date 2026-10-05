@@ -12,7 +12,6 @@ import {
   redactConnectionUrls,
 } from './helpers';
 
-// The numbered migration files live beside this runner.
 const MIGRATIONS_DIR = dirname(fileURLToPath(import.meta.url));
 
 export async function runCodeMigrations(env: CodeMigrationEnv) {

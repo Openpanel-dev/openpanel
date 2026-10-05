@@ -6,84 +6,53 @@ import {
 import { type CodeMigrationEnv, getIsCluster } from './helpers';
 
 /**
- * Aggregating projection for the property-key autocomplete dropdown.
+ * Aggregating projection `epv_keys` for the property-key autocomplete dropdown.
  *
- * The key picker reads event_property_values_mv, which is ORDER BY
- * (project_id, name, property_key, property_value). Two shapes exist:
+ * event_property_values_mv is ORDER BY (project_id, name, property_key,
+ * property_value), so listing keys either aggregates a project's whole slice
+ * (no event selected) or still reads every key and value of one event
+ * (event selected; p95 15.9s on a 1.6B-row deployment). A projection on
+ * (project_id, name, property_key) serves both shapes: with an event the
+ * (project_id, name) prefix is seekable, without one the query's GROUP BY is
+ * a subset of the projection's, so the optimizer still substitutes it.
+ * A projection is only substitutable when it contains every column the query
+ * references, so `name` must be part of it.
  *
- *   no event selected  -> WHERE project_id ... GROUP BY property_key
- *   event selected     -> WHERE project_id AND name ... GROUP BY property_key
- *
- * Neither is cheap on that sort key. The first can seek only to project_id
- * and must then aggregate the project's whole slice (on our deployment,
- * 1.57B rows to return ~6.4K distinct keys). The second prunes to the
- * event's slice, but that slice still holds every key AND every value for
- * the event — measured 120M rows read on average, p95 15.9s.
- *
- * One aggregating projection answers both:
- *
- *   epv_keys -> (project_id, name, property_key), max(created_at)
- *
- * With an event selected, (project_id, name) is a seekable prefix, so the
- * read prunes to that event's keys. With no event, the query's GROUP BY is
- * a subset of the projection's, so the optimizer still substitutes it and
- * aggregates over the (tiny) projection instead of the table — verified
- * with EXPLAIN for both shapes. The optimizer rewrites the existing picker
- * queries transparently; no application change.
- *
- * Sizing: the projection is one row per (project, event, key) — 30,212 rows
- * against a 1.637B-row MV on our deployment. Including `name` costs ~3.4x
- * the rows of a (project_id, property_key)-only projection while covering
- * the event-selected shape that one cannot serve at all (a projection is
- * only substitutable when it contains EVERY column the query references,
- * so any filter on `name` disqualifies a projection that lacks it).
- *
- * NOT included: a (project_id, property_key, property_value) projection for
- * the value picker. Its grain is 95.4% of the MV's row count — a near-
- * complete second copy of the table — and it can only serve value lookups
- * with no event selected, since the event-selected shape already gets a
- * full three-column prefix seek on the base table. Measured on our
- * deployment: 2 such queries in 30 days.
+ * A (project_id, property_key, property_value) projection for the value
+ * picker is deliberately absent: its grain is 95% of the MV's row count, and
+ * it would only serve value lookups with no event selected (rare).
  *
  * Notes:
- *  - The projection lives on the MV's STORAGE table — the implicit
- *    `.inner_id.<uuid>` table — in every topology. Clustered, neither
- *    created name is alterable: `<mv>` is a Distributed table and
- *    `<mv>_replicated` is itself a MaterializedView, which rejects
- *    MODIFY SETTING / ADD PROJECTION with NOT_IMPLEMENTED.
+ *  - The projection lives on the MV's storage table, the implicit
+ *    `.inner_id.<uuid>` table, in every topology. Clustered, `<mv>` is a
+ *    Distributed table and `<mv>_replicated` is itself a MaterializedView,
+ *    which rejects MODIFY SETTING / ADD PROJECTION with NOT_IMPLEMENTED.
  *  - AggregatingMergeTree refuses ADD PROJECTION while
  *    deduplicate_merge_projection_mode is 'throw' (the default);
  *    'rebuild' keeps projections correct across dedup merges.
- *  - The migration ADDs the projection and submits MATERIALIZE PROJECTION
- *    for existing parts by default. The mutation is asynchronous (the
- *    migration doesn't block on it) and idempotent; queries stay correct
- *    over mixed parts while it runs — ClickHouse reads the projection from
- *    parts that have it and the base table from those that don't (observed
- *    in EXPLAIN as two read nodes). Fresh installs no-op. Progress:
+ *  - MATERIALIZE PROJECTION is an asynchronous, idempotent mutation the
+ *    migration does not wait for. Queries stay correct over mixed parts while
+ *    it runs. Progress (mutations are recorded against `.inner_id.<uuid>`,
+ *    not the MV name):
  *
  *      SELECT * FROM system.mutations WHERE command LIKE '%epv_%';
  *
- *    (mutations are recorded against `.inner_id.<uuid>`, not the MV name)
- *
- *  - The mutation rewrites projection data for every part, so deployments
- *    with a very large MV that want to control WHEN the backfill runs can
- *    apply the setting + ADD PROJECTION + MATERIALIZE PROJECTION statements
- *    manually before upgrading (off-peak), against the storage table —
- *    the `.inner_id.<uuid>` table, resolvable with
+ *  - The mutation rewrites projection data for every part. Deployments with a
+ *    very large MV can run the setting + ADD PROJECTION + MATERIALIZE
+ *    PROJECTION statements manually off-peak before upgrading, against the
+ *    storage table:
  *
  *      SELECT concat('.inner_id.', toString(uuid)) FROM system.tables
  *      WHERE database = currentDatabase()
  *        AND name = 'event_property_values_mv_replicated'; -- drop the
  *                    suffix when not clustered
  *
- *    The migration skips re-materializing only when the projection
- *    already exists AND system.mutations records a completed MATERIALIZE —
- *    presence alone could be a crashed earlier attempt's ADD, and if
- *    mutation state can't be read the migration materializes anyway
- *    (idempotent; redundant work beats a silent skip). Note that because
- *    ADD uses IF NOT EXISTS, a manual pre-apply must use the definition
- *    below verbatim — a same-named projection with a different grain would
- *    be kept as-is.
+ *    The migration skips re-materializing only when the projection exists AND
+ *    system.mutations records a completed MATERIALIZE; presence alone could
+ *    be a crashed earlier attempt's ADD. If mutation state can't be read it
+ *    materializes anyway (redundant work beats a silent skip). Because ADD
+ *    uses IF NOT EXISTS, a manual pre-apply must use the definition below
+ *    verbatim; a same-named projection with a different grain is kept as-is.
  */
 
 const MV = TABLE_NAMES.event_property_values_mv;
@@ -95,12 +64,6 @@ const PROJECTIONS = [
   },
 ];
 
-// The projection lives on the MV's storage table, which is always the
-// implicit `.inner_id.<uuid>` table — never the name we CREATE'd. Clustered,
-// `<mv>_replicated` is itself a MATERIALIZED VIEW (and `<mv>` a Distributed
-// table), so ALTERing either fails with NOT_IMPLEMENTED. Resolve the view's
-// uuid and address its inner table instead.
-//
 // `CREATE ... ON CLUSTER` propagates the initiator's uuid, so the inner
 // table has the same name on every node and a single ON CLUSTER ALTER
 // reaches all of them.

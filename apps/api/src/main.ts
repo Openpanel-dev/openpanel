@@ -1,10 +1,5 @@
-// The boot entrypoint. Runs on Bun; this is the only way the API starts, and
-// `buildHttpApp` below mounts the whole HTTP surface.
-//
-// An unknown ROLE fails boot loudly, naming the value — `config/env.ts`.
-// Inside a consuming role, ENABLED_QUEUES narrows *which* consumers start
-// (cloud runs 4 replicas on `events` and 6 on the rest), and an unknown token
-// there fails boot the same way.
+// The boot entrypoint. ENABLED_QUEUES narrows which consumers start inside a consuming role
+// (cloud runs 4 replicas on `events` and 6 on the rest).
 
 // The only `process.env` touch outside config/env.ts, and a WRITE: it sets the
 // process timezone. Every value the app READS comes from `loadConfig` below.
@@ -93,11 +88,6 @@ const HTTP_IDLE_TIMEOUT_MARGIN_SECONDS = 10;
 const HTTP_IDLE_TIMEOUT_SECONDS =
   RPC_DEADLINE_MS / MS_PER_SECOND + HTTP_IDLE_TIMEOUT_MARGIN_SECONDS;
 
-/**
- * `config/env.ts` is the sole `process.env` reader on this path; an invalid
- * value fails boot loudly, naming every offending value at once (never just
- * the first), instead of being silently ignored or misinterpreted.
- */
 function loadConfigOrExit(): Config {
   try {
     return loadConfig();
@@ -120,12 +110,7 @@ const roleConsumes = config.ROLE !== 'api';
 const roleServesHttp = config.ROLE !== 'worker';
 const workersEnabled = roleConsumes && !config.DISABLE_WORKERS;
 
-/**
- * The connection is `packages/redis`'s dedicated queue client: separate from
- * cache/pub/sub, with `maxRetriesPerRequest: null`, which BullMQ requires. It
- * stays that package's singleton to close; `producers.close` closes the
- * queues over it.
- */
+/** The dedicated queue client of `packages/redis`: BullMQ requires its `maxRetriesPerRequest: null`. `producers.close` closes the queues over it. */
 function buildProducerHandle(): QueueProducerHandle {
   return createProducers(queues, {
     connection: getRedisQueue(),
@@ -147,9 +132,6 @@ function bufferDeps(producers: QueueProducerHandle): BufferDeps {
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => (cron ? await cron.isPaused() : false),
     config: config.core,
-    // The boot scope's ClickHouse client, so a buffer flush logs under the same
-    // client every service reaches as `deps.ch` instead of constructing its
-    // own.
     ch,
   };
 }
@@ -166,11 +148,7 @@ function findBullQueue(producers: QueueProducerHandle, name: string) {
 function buildDeps(): AppDeps {
   const producers = buildProducerHandle();
   return {
-    // The four boot handles. `packages/db` and `packages/redis` still own
-    // their own singletons and read their own env, so these are references
-    // to those, not new connections: one Prisma client, one round-robin
-    // ClickHouse client and the cache Redis, handed down so a service reaches
-    // them through its request-scoped `Ctx` instead of importing them.
+    // References to the `packages/db` and `packages/redis` singletons, not new connections.
     db,
     // Prisma's two JSON sentinels, so the four modules that write a nullable
     // `Json?` column read them off the scope instead of importing the client.
@@ -225,12 +203,7 @@ function warnOnUnhandledSchedulers(schedulerIds: string[]): void {
   }
 }
 
-/**
- * The Kafka events consumer. The kafkajs client, the topic, the consumer group,
- * the DLQ producer and the retry bounds all come from core's own
- * `modules/ingest/src/kafka.ts` — still passed in as arguments, so
- * `consumer.ts` spells none of those names itself.
- */
+/** The Kafka events consumer. */
 async function startIngestConsumer(
   deps: AppDeps
 ): Promise<KafkaConsumerHandle> {
@@ -259,12 +232,9 @@ async function startIngestConsumer(
           ttlMs: config.INGEST_DUPLICATE_MARKER_TTL_MS,
         }),
       }),
-      // A capped Redis list, and the event is DROPPED whether or not the
-      // record lands. The Kafka DLQ it replaced (`produceDeadLetterEvent`,
-      // still exported from core) produced to a topic nothing creates, and
-      // every failure held the offset back — a redelivery loop. The CACHE
-      // client, not the queue client: only that one fails fast, and failing
-      // fast is the point here.
+      // A capped Redis list, and the event is DROPPED whether or not the record lands: a Kafka DLQ topic nothing creates
+      // held the offset back in a redelivery loop. The CACHE client, not the queue client: only that one fails fast, and
+      // failing fast is the point here.
       sendToDeadLetter: createDeadLetterRecorder({
         client: deps.redis,
         maxEntries: config.INGEST_DEAD_LETTER_MAX_ENTRIES,
@@ -323,12 +293,7 @@ function registerConsumerMetrics(deps: AppDeps): void {
   );
 }
 
-/**
- * The three cookies the GSC OAuth flow signs (gsc.rpc.ts's `signed: true`).
- * `signCookie` below produces the same `value.<b64 hmac>` form on the tRPC
- * side, which writes cookies through the fetch adapter's `resHeaders` rather
- * than through Elysia.
- */
+/** The three cookies the GSC OAuth flow signs. `signCookie` produces the same `value.<b64 hmac>` form on the tRPC side. */
 const SIGNED_COOKIE_NAMES = [
   'gsc_oauth_state',
   'gsc_code_verifier',
@@ -418,14 +383,9 @@ async function buildHttpApp(deps: AppDeps) {
 }
 
 /**
- * uncaughtException / unhandledRejection: the process state is corrupt, so log
- * and exit fast rather than draining through a poisoned process.
- *
- * Fatals are mirrored to the REAL stderr, bypassing the output interceptor:
- * the OTLP flush window is often lost on the way down, and `docker logs` must
- * always show why we died.
- *
- * Installed in every role, always.
+ * uncaughtException / unhandledRejection: the process state is corrupt, so log and exit fast.
+ * Fatals are mirrored to the REAL stderr, bypassing the output interceptor: the OTLP flush window is often lost
+ * on the way down, and `docker logs` must always show why we died.
  */
 function installFatalHandlers(): void {
   process.on('uncaughtException', (error) => {
@@ -450,7 +410,6 @@ async function main() {
   const role = config.ROLE;
   const deps = buildDeps();
 
-  // HTTP and default metrics register everywhere.
   registerDefaultMetrics();
   if (roleConsumes) {
     registerConsumerMetrics(deps);

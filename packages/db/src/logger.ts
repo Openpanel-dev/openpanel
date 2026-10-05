@@ -1,11 +1,5 @@
-// Self-contained pino instantiation. packages/db is a leaf package and must
-// not reach into @openpanel/core just to build a logger — that direction is
-// backwards, since core itself depends on db.
-//
-// This is the same implementation @openpanel/core's `src/pino-logger.ts`
-// carries, duplicated here deliberately rather than shared: there is no home
-// narrower than "the package itself" that both can reach without
-// reintroducing the db <-> core cycle this file exists to avoid.
+// Duplicates @openpanel/core's `src/pino-logger.ts` on purpose: core depends
+// on db, so db importing it would create a cycle.
 
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
@@ -91,9 +85,8 @@ function getServiceName(name: string): string {
     .join('-');
 }
 
-// Same Bun/pino-pretty incompatibility as @openpanel/core's
-// `src/pino-logger.ts`'s `isBun` guard — see its comment. Kept in sync by
-// hand, like the rest of this file.
+// Same Bun/pino-pretty incompatibility as the `isBun` guard in
+// @openpanel/core's `src/pino-logger.ts`; keep in sync by hand.
 const isBun = !!process.versions.bun;
 
 export function createLogger({ name }: { name: string }): ILogger {

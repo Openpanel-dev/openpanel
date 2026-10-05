@@ -1,9 +1,4 @@
 // Local fixture script: give a couple of sessions per hour a random revenue.
-//
-// Took it off `clix` (since deleted) and onto the `sql` tag.
-// Both statements bind every value as a `{pN:Type}` param instead of splicing
-// it into the text, which is also what removes the hand-rolled `'${id}'`
-// quoting the ALTER used to do.
 import { ch, chQuery, TABLE_NAMES } from '../src/clickhouse/client';
 import { sql } from '../src/clickhouse/sql';
 
@@ -24,7 +19,7 @@ function getRandomRevenue() {
   );
 }
 
-/** `YYYY-MM-DD HH:mm:ss` — the literal form clix escaped a `Date` to. */
+/** `YYYY-MM-DD HH:mm:ss` */
 function datetime(date: Date): string {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 }
@@ -40,7 +35,6 @@ async function main() {
     const nextHour = new Date(currentDate.getTime() + MS_PER_HOUR);
     console.log(`Processing hour: ${currentDate.toISOString()}`);
 
-    // 1. Pick random sessions for this hour
     const sessions = await chQuery<{ id: string }>(sql`
       SELECT id
       FROM ${sql.id(TABLE_NAMES.sessions)}
@@ -87,7 +81,7 @@ async function main() {
       });
       console.log('Update command sent.');
 
-      // Wait a bit to not overload mutations if running on a large range
+      // Avoid piling up mutations on a large range.
       await new Promise((resolve) =>
         setTimeout(resolve, PAUSE_BETWEEN_MUTATIONS_MS)
       );

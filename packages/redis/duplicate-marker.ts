@@ -11,20 +11,13 @@
  * positive on a suppressing check is silent data loss, so whether the events
  * table ever gets real dedupe is a separate decision from this marker.
  *
- * ONE round trip, `SET key NX PX`: the set and the "did it already exist"
- * answer are the same command, and there is no clean seam to fold it into —
- * the session buffer's own GET and Lua EVAL live in `packages/core`'s
- * `buffers/`, which this module does not own.
+ * ONE round trip, `SET key NX PX`: the set and the "did it already exist" answer are the same command.
  *
  * IT MUST BE GIVEN THE CACHE CLIENT. That one fails fast: offline queue off
  * once connected, `commandTimeout` 500 ms. `getRedisQueue` keeps
  * `maxRetriesPerRequest: null` for BullMQ and would block a handler for tens
  * of seconds, risking exactly the kind of consumer eviction — past its Kafka
  * session timeout — that produces duplicate rows.
- *
- * Why here and not in `packages/core`'s ingest module: the whole of it is
- * Redis mechanics, and core's only export door is its barrel — the same
- * reason `dead-letter.ts` lives here.
  */
 
 /** Live key prefix. An operator has to be able to find these. */

@@ -5,7 +5,6 @@ import { printBoxMessage, shortId } from './helpers';
 export async function up() {
   printBoxMessage('🔄 Migrating Events to Series Format', []);
 
-  // Get all reports
   const reports = await db.report.findMany({
     select: {
       id: true,
@@ -25,7 +24,6 @@ export async function up() {
     >;
     const oldFormula = report.formula;
 
-    // Check if any event is missing the 'type' field (old format)
     const needsEventMigration =
       Array.isArray(events) &&
       events.length > 0 &&
@@ -33,7 +31,6 @@ export async function up() {
         (event) => !event || typeof event !== 'object' || !('type' in event)
       );
 
-    // Check if formula exists and isn't already in the series
     const hasFormulaInSeries =
       Array.isArray(events) &&
       events.some(
@@ -46,13 +43,11 @@ export async function up() {
 
     const needsFormulaMigration = !!oldFormula && !hasFormulaInSeries;
 
-    // Skip if no migration needed
     if (!(needsEventMigration || needsFormulaMigration)) {
       skippedCount++;
       continue;
     }
 
-    // Transform events to new format: add type: 'event' to each event
     const migratedSeries: IChartEventItem[] = Array.isArray(events)
       ? events.map((event) => {
           if (event && typeof event === 'object' && 'type' in event) {
@@ -66,7 +61,6 @@ export async function up() {
         })
       : [];
 
-    // Add formula to series if it exists and isn't already there
     if (needsFormulaMigration && oldFormula) {
       const formulaItem: IChartFormula = {
         type: 'formula',
@@ -80,7 +74,6 @@ export async function up() {
     console.log(
       `Updating report ${report.name} (${report.id}) with ${migratedSeries.length} series`
     );
-    // Update the report with migrated series
     await db.report.update({
       where: { id: report.id },
       data: {

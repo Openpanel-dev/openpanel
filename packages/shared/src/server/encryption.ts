@@ -32,11 +32,7 @@ function getEncryptionKey(keyHex: EncryptionKey): Buffer {
   return Buffer.from(keyHex, 'hex');
 }
 
-// ---------------------------------------------------------------------------
-// Plain encrypt/decrypt — base64(iv + authTag + ciphertext), no prefix.
-// Used for TOTP secrets and GSC tokens. (Kept format-stable so existing
-// ciphertext keeps decrypting; this is the implementation db re-exports.)
-// ---------------------------------------------------------------------------
+// Plain variant: base64(iv + authTag + ciphertext), no prefix, for TOTP secrets and GSC tokens. Format-stable so existing ciphertext keeps decrypting.
 
 export function encrypt(key: EncryptionKey, plaintext: string): string {
   const encryptionKey = getEncryptionKey(key);
@@ -74,12 +70,8 @@ export function decrypt(key: EncryptionKey, ciphertext: string): string {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Credential variant — enc:base64(iv + ciphertext + authTag). The enc: prefix
-// makes it idempotent (skip already-encrypted values) and lets a plaintext
-// value pass through unchanged, which the integration test-connection flow
-// relies on (it builds adapters from the raw, unsaved config).
-// ---------------------------------------------------------------------------
+// Credential variant: enc:base64(iv + ciphertext + authTag). The prefix makes it idempotent and lets a plaintext value pass
+// through unchanged, which the integration test-connection flow relies on (it builds adapters from the raw, unsaved config).
 
 export function isEncrypted(value: string): boolean {
   return value.startsWith(ENCRYPTION_PREFIX);
@@ -92,7 +84,6 @@ export function encryptCredential(
   if (!plaintext) {
     return plaintext;
   }
-  // Don't double-encrypt
   if (isEncrypted(plaintext)) {
     return plaintext;
   }
@@ -131,7 +122,6 @@ export function decryptCredential(
 
   const encryptionKey = getEncryptionKey(key);
 
-  // Remove prefix and decode base64
   const combined = Buffer.from(
     ciphertext.slice(ENCRYPTION_PREFIX.length),
     'base64'
@@ -141,7 +131,6 @@ export function decryptCredential(
     throw new Error('Invalid encrypted credential: too short');
   }
 
-  // Extract components
   const iv = combined.subarray(0, IV_LENGTH);
   const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
   const encryptedData = combined.subarray(
