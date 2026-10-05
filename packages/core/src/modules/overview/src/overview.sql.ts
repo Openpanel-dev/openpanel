@@ -1,14 +1,9 @@
 // Every ClickHouse query OverviewService runs, as pure `sql` fragments.
 //
-// Both filter compilers and the field resolver return fragments and are
-// interpolated directly. `compiledText` is left with one job here: the
-// `INTERVAL <n> <unit>` step keyword in a WITH FILL clause, which is SQL
-// syntax, not a value.
-//
-// `toStartOf`/`toInterval`/`datetime` deliberately never pass a timezone
-// into `toStartOfWeek`/`toStartOfMonth` — ClickHouse resolves those from the
-// query's `session_timezone` setting instead, which every statement here
-// still sets (see src/run-query.ts).
+// `toStartOf`/`toInterval`/`datetime` deliberately never pass a timezone into
+// `toStartOfWeek`/`toStartOfMonth`: ClickHouse resolves those from the query's
+// `session_timezone` setting, which every statement here sets (see
+// src/run-query.ts).
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import {
@@ -118,8 +113,6 @@ function rawWhere(where: SqlFragment | null): SqlFragment {
   return where ? sql`AND ${where}` : sql.empty;
 }
 
-// --- revenue -----------------------------------------------------------------
-
 export interface RevenueQueryInput {
   projectId: string;
   startDate: string;
@@ -143,8 +136,6 @@ export function revenueQuery(input: RevenueQueryInput): SqlFragment {
     WITH ROLLUP
   `;
 }
-
-// --- metrics: sessions-only path ----------------------------------------------
 
 export interface SessionMetricsQueryInput {
   projectId: string;
@@ -178,8 +169,6 @@ export function sessionMetricsQuery(
     ${fillClause(input.interval, input.startDate, input.endDate)}
   `;
 }
-
-// --- metrics: page-filtered path -----------------------------------------------
 
 export interface PageFilterMetricsQueryInput {
   projectId: string;
@@ -329,8 +318,6 @@ export function metricsWithPageFilterQuery(
   `;
 }
 
-// --- top pages -----------------------------------------------------------------
-
 export interface TopPagesQueryInput {
   projectId: string;
   startDate: string;
@@ -358,8 +345,6 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
     LIMIT ${sql.uint64(input.limit)}
   `;
 }
-
-// --- top entry/exit --------------------------------------------------------------
 
 export interface DistinctSessionsQueryInput {
   projectId: string;
@@ -436,8 +421,6 @@ export function topEntryExitQuery(input: TopEntryExitQueryInput): SqlFragment {
     LIMIT ${sql.uint64(input.limit)}
   `;
 }
-
-// --- top generic (breakdown by a single dimension) ------------------------------
 
 /** `column`/`prefixColumn` are drawn from a closed zod enum upstream — bound
  * as identifiers here rather than trusted as pre-validated text. */
@@ -564,8 +547,6 @@ export function topGenericSeriesTimeSeriesQuery(
   `;
 }
 
-// --- user journey (sankey of screen_view paths) ----------------------------------
-
 export interface OrderedEventsQueryInput {
   projectId: string;
   startDate: string;
@@ -589,9 +570,8 @@ function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
 
 /**
  * `arrayCompact` drops consecutive repeats in linear time. An `arrayFilter`
- * spelling is Theta(n^2) in the longest session's pageview count and could not
- * answer for a tenant with one very long session — the same defect, and the
- * same fix, as sankey.sql.ts's DEDUPE_CONSECUTIVE.
+ * answer for a tenant with one very long session (see sankey.sql.ts's
+ * DEDUPE_CONSECUTIVE).
  */
 function pathsDedupedCte(
   input: OrderedEventsQueryInput,
@@ -675,8 +655,6 @@ export function transitionsQuery(input: TransitionsQueryInput): SqlFragment {
   `;
 }
 
-// --- top events ------------------------------------------------------------------
-
 export interface TopEventsQueryInput {
   projectId: string;
   startDate: string;
@@ -703,8 +681,6 @@ export function topEventsQuery(input: TopEventsQueryInput): SqlFragment {
   `;
 }
 
-// --- top link-out ------------------------------------------------------------------
-
 export interface TopLinkOutQueryInput {
   projectId: string;
   startDate: string;
@@ -727,8 +703,6 @@ export function topLinkOutQuery(input: TopLinkOutQueryInput): SqlFragment {
     LIMIT 1000
   `;
 }
-
-// --- map data ------------------------------------------------------------------
 
 export interface MapDataQueryInput {
   projectId: string;
@@ -754,8 +728,6 @@ export function mapDataQuery(input: MapDataQueryInput): SqlFragment {
     LIMIT 1000
   `;
 }
-
-// --- live data (dashboard's 30-minute rolling window) ---------------------------
 
 export interface LiveTotalSessionsQueryInput {
   projectId: string;

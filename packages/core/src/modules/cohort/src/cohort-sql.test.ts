@@ -1,25 +1,11 @@
-// SQL-shape tests for property-based cohort queries. Minus its itCH
-// ClickHouse-reachability EXPLAIN check: `mock.module` substitutions apply
-// process-wide, not per file, so a sibling file's
-// `@openpanel/db/src/clickhouse/client` mock (cohort.service.test.ts) can
-// silently replace this file's "real" import too, making a reachability check
-// meaningless. No module in core's suite ports that pattern for the same
-// reason; the generated SQL was verified against local ClickHouse by hand
-// instead.
+// SQL-shape tests for property-based cohort queries. There is deliberately no
+// ClickHouse EXPLAIN check: `mock.module` substitutions apply process-wide, so a
+// sibling file's client mock can silently replace this file's "real" import.
 //
-// String assertions need no mocking at all: cohort.service.ts's db/ch access is
-// lazy, and buildPropertyBasedCohortQuery / deriveCohortQuerySettings touch
-// neither — see cohort.service.ts's header.
-//
-// The builders return `SqlFragment`s, so every assertion below runs against
-// the rendered statement plus its bound params rather than a finished
-// string. The property-key quoting test below asserts a binding, not
-// escaped text, because the key never appears in the SQL text at all.
-//
-// bun:test shares one module registry per file even under `--isolate`, so
-// re-importing under different env vars would not re-evaluate a
-// module-level const. `deriveCohortQuerySettings` exists so the different
-// settings combinations below are exercised as direct calls instead.
+// The builders return `SqlFragment`s, so assertions run against the rendered
+// statement plus bound params. `deriveCohortQuerySettings` is called directly
+// because bun:test shares one module registry per file, so env-var variants
+// cannot be re-imported.
 
 import { expect, test } from 'bun:test';
 import {
@@ -266,6 +252,3 @@ test('deriveCohortQuerySettings never derives a zero spill threshold (0 would DI
     ).toBeGreaterThanOrEqual(1);
   }
 });
-
-// A malformed COHORT_QUERY_* value is rejected by the config loader now, not
-// here — `apps/api/src/config/env.test.ts` owns that case.

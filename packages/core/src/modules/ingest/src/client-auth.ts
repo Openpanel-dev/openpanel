@@ -1,7 +1,3 @@
-// The ingest tier of caller authentication. Core's `clientAuth` macro reaches
-// it through http/client-auth.ts, which a route hands this function to as
-// `clientAuth: { ingest: validateIngestRequest }`.
-//
 // None of the behaviour below is decoration: the `ignoreCorsAndSecret`
 // short-circuit, the unanchored wildcard origin regex, CORS-before-secret
 // ordering, the ip and profile_id project filters, the `__revenue` gate, the

@@ -31,8 +31,7 @@ test('five gauges per queue, named from the Redis key so dashboards keep working
   for (const suffix of COUNT_SUFFIXES) {
     expect(names).toContain(`sessions_${suffix}_count`);
     expect(names).toContain(`cron_${suffix}_count`);
-    // Acceptance note: the registry key stays `cohortCompute`, so the series
-    // name does too.
+    // The series name follows the registry key, `cohortCompute`.
     expect(names).toContain(`cohortCompute_${suffix}_count`);
   }
 });

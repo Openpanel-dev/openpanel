@@ -1,7 +1,5 @@
 // SQL-shape tests for the cohort detail page's `mostEvents` / `popularRoutes`
-// statements. Both are bounded to a window: without it they read the
-// project's whole event history however small the cohort was. Pure builders —
-// no ClickHouse.
+// statements, which are bounded to a window.
 
 import { describe, expect, test } from 'bun:test';
 import {

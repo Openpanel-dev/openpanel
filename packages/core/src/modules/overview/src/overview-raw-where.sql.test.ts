@@ -1,19 +1,13 @@
 /**
  * SQL-syntax tests for the overview module's `getRawWhereClause` (the UTM
- * remapping). Same pattern as the chart module's SQL-syntax tests.
- * `getRawWhereClause` sits on the `sql` tag, so these assertions read the
- * rendered statement AND its bound params instead of one escaped string; the
- * rest of the overview module's queries already run through
- * overview.sql.ts, covered by overview.sql.test.ts. It is a plain module
- * function, not a class method — it never needed a client, being pure
- * fragment building.
+ * remapping). It sits on the `sql` tag, so these assertions read the rendered
+ * statement AND its bound params instead of one escaped string.
  *
- * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local
- * ClickHouse instance. EXPLAIN parses the query, resolves columns, and builds
- * the query plan without executing it — so we catch UNKNOWN_IDENTIFIER,
- * AMBIGUOUS_IDENTIFIER and bad JOIN ON expressions without needing seeded data.
- * WITH FILL TO < FROM is a runtime check, so it's covered by a plain string
- * assertion instead.
+ * Strategy: build the SQL, then run `EXPLAIN <sql>` against the local ClickHouse.
+ * EXPLAIN resolves columns and builds the plan without executing, so
+ * UNKNOWN_IDENTIFIER, AMBIGUOUS_IDENTIFIER and bad JOIN ON expressions surface
+ * without seeded data. WITH FILL TO < FROM is a runtime check, so it's covered
+ * by a plain string assertion instead.
  *
  * Requires a locally reachable CH at http://localhost:23123/openpanel. All
  * `itCH` tests auto-skip if CH is unreachable.

@@ -157,7 +157,6 @@ export function getEventFiltersWhereClause(
       return;
     }
 
-    // Handle group. prefixed filters (requires ARRAY JOIN + _g JOIN in query)
     if (name.startsWith('group.') && projectId) {
       const whereFrom = getGroupPropertySql(name);
       if (hasTypedCast(filter.type) && isTypedOperator(operator)) {

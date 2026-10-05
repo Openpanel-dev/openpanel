@@ -1,11 +1,5 @@
-// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch`
-// ARE the fakes below. The one module still mocked is core's own
-// `ch-query`, which is what the subject calls.
-//
-// The pure SQL-shape builders (buildEventCriteriaQuery,
-// buildPropertyBasedCohortQuery, deriveCohortQuerySettings) have their own
-// file, src/cohort-sql.test.ts, and need none of this — they take no ClickHouse
-// connection.
+// Every function under test takes `ServiceDeps`, so `deps.db` and `deps.ch` are
+// the fakes below. The one module still mocked is core's own `ch-query`.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -56,12 +50,9 @@ const chQuery = mock(async () => [] as unknown[]);
 const chInsert = mock(async (_args: { table: string }) => undefined);
 const chCommand = mock(async (_args: { query: string }) => undefined);
 
-// The subject reaches ClickHouse through core's own `chQuery(deps, ...)`
-// (ch-query.ts) — mocking that one module keeps this file off
-// @openpanel/db's live-bound client singleton entirely. `mock.module` still
-// has no per-file scope under bare `bun test` (AGENTS.md), so snapshot the
-// real module into a plain object FIRST and restore it in afterAll —
-// restoring via the live import binding would just re-apply the mock.
+// `mock.module` has no per-file scope under bare `bun test`, so snapshot the
+// real module into a plain object first and restore it in afterAll; restoring
+// via the live import binding would re-apply the mock.
 const realChQuery = { ...(await import('../../ch-query')) };
 mock.module('../../ch-query', () => ({
   ...realChQuery,
@@ -215,8 +206,7 @@ test('createCohortService() delegates updateMembership and listRefreshableCohort
   seedCohort({ id: 'c2', isStatic: true });
   const service = subject.createCohortService(deps, testServices());
 
-  // The container's members are closures over `deps`, not the bare functions,
-  // so identity is no longer the observable — delegation is.
+  // The container's members are closures over `deps`; delegation is observable.
   expect((await service.listRefreshableCohortIds()).sort()).toEqual(['c1']);
 
   chCommand.mockClear();

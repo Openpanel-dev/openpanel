@@ -1,16 +1,7 @@
-// The chart module's one ClickHouse entry point.
-//
-// The client is `deps.ch` — the same round-robin/retry proxy `main.ts` builds
-// and hands to every scope — instead of a lazy
-// `import('@openpanel/db/src/clickhouse/client')`. Reaching it through the
-// scope is what puts the request's `requestId` on the query's log line; the
-// lazy loader had no request scope to carry.
-//
-// `deps.ch.query` is `chQuery`'s own transport (`withRetry(client =>
-// client.query(...))`), and the Int-meta coercion below is the same one
-// `chQuery` applies — ClickHouse's JSON format returns every Int*/UInt* column
-// as a string, so a caller's `count: number` only holds if it is parsed back
-// out here. Same shape as the overview module's run-query.ts.
+// The chart module's one ClickHouse entry point. The client is `deps.ch`, which
+// puts the request's `requestId` on the query's log line. ClickHouse's JSON
+// format returns every Int*/UInt* column as a string, so a caller's
+// `count: number` only holds if it is parsed back out here, as `chQuery` does.
 
 import {
   type SqlFragment,

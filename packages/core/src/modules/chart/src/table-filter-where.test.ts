@@ -1,16 +1,10 @@
 /**
- * Unit tests for `buildFilterWhere`.
- *
- * No ClickHouse needed. The compiler returns bound `SqlFragment`s, so each
- * clause is rendered through `toStatement` and its params substituted back
- * in: what the assertions say is unchanged, a value that used to appear as
- * an escaped literal now appears in `query_params`. The
- * interesting part is the `profile.*` branch: the field name arrives from the
- * caller (saved report, URL state, raw API call) and used to be concatenated
- * into the SQL text as-is, so a name that was not a column produced whatever
- * SQL the caller wrote. It now resolves against the known profiles columns and
- * the filter is dropped when it does not, which is what the `group.*` and
- * `session.*` branches already did.
+ * Unit tests for `buildFilterWhere`. No ClickHouse needed: the compiler returns
+ * bound `SqlFragment`s, so each clause is rendered through `toStatement` and its
+ * params substituted back in. The interesting part is the `profile.*` branch:
+ * the field name arrives from the caller (saved report, URL state, raw API
+ * call), so it resolves against the known profiles columns and the filter is
+ * dropped when it does not, as the `group.*` and `session.*` branches do.
  */
 
 import { describe, expect, it } from 'bun:test';

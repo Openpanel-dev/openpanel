@@ -9,18 +9,12 @@ function loadClickHouse() {
 }
 
 /**
- * The deliberate ECONNREFUSED to a dead ClickHouse node must be caught and
- * retried (sin-binning) on the client the buffers are handed as
- * `BufferDeps.ch`, exactly as packages/db's
- * `sql.round-robin.clickhouse.test.ts` proves for `chQuery`/`chQueryWithMeta`
- * directly. That file is NOT touched here; this extends the same proof onto
- * `ch.insert` reached via the core buffer seam.
+ * An ECONNREFUSED from a dead ClickHouse node must be retried (sin-binned) on
+ * the client the buffers are handed as `BufferDeps.ch`, including `ch.insert`.
  *
- * Setup mirrors that file exactly: a two-node `CLICKHOUSE_URL` whose first node
- * (port 1, privileged and unbindable without root) is reliably refused. The
- * picker starts at index 0, so every call here fails over to node 1 — if the
- * seam let the rejection escape instead of retrying, this file would throw or
- * hang rather than pass.
+ * `CLICKHOUSE_URL` is a two-node list whose first node (port 1, unbindable
+ * without root) is reliably refused. The picker starts at index 0, so every
+ * call fails over to node 1; a rejection that escaped would throw or hang.
  */
 
 const CLICKHOUSE_TEST_DATABASE = 'openpanel_test';

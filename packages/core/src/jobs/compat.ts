@@ -1,7 +1,5 @@
-// There is no dual-write window, no drain and no queue rename: a legacy job
-// already in the queue is read back through these hooks. A wrong one is
-// silent job loss, which is why the tests next to this file were written
-// before it.
+// A legacy job already in the queue is read back through these hooks. A wrong
+// one is silent job loss.
 
 import type { CompatHook } from './define';
 import { isEnvelope, type JobMeta } from './envelope';

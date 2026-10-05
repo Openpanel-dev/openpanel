@@ -2,11 +2,11 @@
  * Tests for `isIngestionWoundDown` — the gate that stops ingestion for
  * organizations blocked by the wind-down sequence.
  *
- * Same three behaviours matter: it gates on the wind-down STEP rather than the
+ * Three behaviours matter: it gates on the wind-down STEP rather than the
  * subscription state (so an expired trial keeps ingesting until it has actually
  * been warned), the caller answers 202 rather than a 4xx (the SDKs retry
  * everything except 401 and 2xx), and it fails open. `SELF_HOSTED` is a
- * `selfHosted` argument now — core reads no environment.
+ * `selfHosted` argument: core reads no environment.
  */
 
 import {
@@ -125,7 +125,7 @@ describe('isIngestionWoundDown', () => {
   it('accepts ingestion from an expired trial that has not been warned yet', async () => {
     // The reason the gate reads windDownStep and not subscriptionState: every
     // lapsed trial is already trial_expired, so gating on state would block
-    // thousands of orgs the moment this ships.
+    // thousands of orgs at once.
     getOrganizationByProjectIdCached.mockResolvedValue({
       id: 'org-1',
       subscriptionState: 'trial_expired',

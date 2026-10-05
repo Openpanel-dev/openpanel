@@ -72,11 +72,8 @@ export class ReplayBuffer extends BaseBuffer {
       return;
     }
 
-    // Raw passthrough: each Redis entry is already a valid JSONEachRow
-    // line (we JSON.stringify a single chunk before rpush). Streaming the
-    // raw strings to CH skips JSON.parse × N on the worker AND the
-    // client's internal JSON.stringify × N — significant because each
-    // rrweb chunk's `payload` is 10–100KB.
+    // Raw passthrough: each Redis entry is already a JSONEachRow line, and an
+    // rrweb chunk's `payload` is 10–100KB, so skipping parse/stringify matters.
     const ch = this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>

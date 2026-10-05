@@ -1,5 +1,4 @@
-// Job/cron-fragment wiring — no ClickHouse/Postgres touched. The service
-// methods themselves are exercised in cohort.service.test.ts.
+// Job/cron-fragment wiring; no ClickHouse/Postgres touched.
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
@@ -131,9 +130,7 @@ test('cohortRefresh fans out one enqueueCompute per non-static cohort', async ()
   expect(calls).toEqual(['c1', 'c2']);
 });
 
-// Byte-identity with the id/cadence schedulers.test.ts's golden snapshot
-// pins. The cadence now lives on the job itself, so this reads it straight
-// off the registry.
+// Reads the cadence straight off the registry.
 test('the cohort cron fragment keeps its scheduler id and cadence', () => {
   expect(queues.cron.jobs.cohortRefresh.cron).toEqual({
     pattern: '*/30 * * * *',

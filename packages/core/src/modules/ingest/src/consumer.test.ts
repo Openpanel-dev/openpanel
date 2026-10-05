@@ -371,15 +371,9 @@ describe('unparseable messages', () => {
 });
 
 /**
- * Deleted the offset watermark, whose only outputs were the `reprocessed`
- * counter and a warn line — live duplicates occurred but none of those lines
- * fired, because `resetWatermarks` fired on GROUP_JOIN and a failed
- * durability flush never advanced it.
- *
- * These are the regression tests for the half of that claim that matters: the
- * functional statement in the resolve loop was always `resolveOffset(m.offset)`
- * and never read the watermark, so a redelivery must resolve and commit exactly
- * what it did before.
+ * A redelivery must resolve and commit exactly what the resolve loop marks:
+ * no watermark suppresses or alters it, so duplicates are never silently
+ * skipped.
  */
 describe('a redelivery after the watermark was deleted', () => {
   test('resolves every offset again, in ascending order', async () => {
@@ -404,9 +398,9 @@ describe('a redelivery after the watermark was deleted', () => {
     await handler.eachBatch(makeBatch(messages).payload);
     await handler.eachBatch(makeBatch(messages).payload);
 
-    // At-least-once, unchanged: the consumer does not suppress a redelivery,
-    // and nothing in this file now decides whether one is a duplicate — the
-    // marker on the event id does (incoming-event-handler.ts).
+    // At-least-once: the consumer does not suppress a redelivery. Whether one
+    // is a duplicate is decided by the marker on the event id
+    // (incoming-event-handler.ts).
     expect(handleEvent).toHaveBeenCalledTimes(2);
   });
 

@@ -1,7 +1,5 @@
-// `cohortCompute` is this module's own queue — registry key `cohortCompute`
-// EXACTLY (no env rename, so COHORTCOMPUTE_CONCURRENCY keeps working).
-// `cohortRefresh` is a cron fragment, spread into the ONE `cron` queue by
-// jobs.registry.ts.
+// `cohortCompute` is this module's own queue; `cohortRefresh` is a cron fragment
+// spread into the shared `cron` queue by jobs.registry.ts.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';

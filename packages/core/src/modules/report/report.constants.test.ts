@@ -1,7 +1,6 @@
 /**
- * Locks down `getDefaultIntervalByDates`'s rewrite from date-fns
- * (differenceInDays/isSameDay) to plain Date math (see file header) against
- * the exact boundaries the original branches used.
+ * Locks down `getDefaultIntervalByDates`'s plain Date math against the exact
+ * boundaries of the date-fns branches it replaces.
  */
 import { describe, expect, it } from 'bun:test';
 import { getDefaultIntervalByDates } from './report.constants';

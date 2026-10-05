@@ -2,10 +2,6 @@
 // offset walk, at-least-once, bounded in-consumer retry, and a dead-letter on
 // exhaustion. The dead-letter destination is a capped Redis list, and the
 // event is dropped whether or not that write lands.
-//
-// The kafkajs client, the topic/consumer-group names, the DLQ producer and the
-// retry bounds are all injected — this file never spells any of them, which is
-// what keeps them testable without a broker.
 
 import type {
   Consumer,
@@ -57,11 +53,9 @@ export type DeadLetterReason = 'parse_error' | 'handler_error';
  * What the consumer hands to the dead-letter sink. The value stays the
  * producer's original bytes, so the record is a faithful copy of what arrived.
  *
- * Two implementations satisfy this, and the seam exists so the choice is one
- * line in `apps/api`'s wiring: `@openpanel/redis`'s `createDeadLetterRecorder`
- * (the capped list) and `./kafka.ts`'s `produceDeadLetterEvent` (the DLQ
- * topic, kept as an explicit "for now" choice; a DLQ message produced from
- * these bytes is replayable onto the events topic unchanged).
+ * Implemented by `@openpanel/redis`'s `createDeadLetterRecorder` (the capped
+ * list) and `./kafka.ts`'s `produceDeadLetterEvent` (the DLQ topic; a message
+ * produced from these bytes is replayable onto the events topic unchanged).
  */
 export interface DeadLetterMessage {
   key: Buffer | null;
@@ -112,11 +106,10 @@ export interface EventsBatchHandlerDeps {
    * not at `consumer.stop`.
    *
    * The gate MUST reject when the events THIS batch buffered are not in
-   * Redis: a graceful restart previously lost events whose offsets were
-   * committed even though the events existed only in the event buffer's
-   * in-process array. The window is what makes "this batch's events are
-   * durable" answerable at all, now that a failed write drops the events
-   * instead of keeping them for the broker to redeliver.
+   * Redis: events that exist only in the event buffer's in-process array
+   * would otherwise be lost with their committed offsets. The window is what
+   * makes "this batch's events are durable" answerable, since a failed write
+   * drops events instead of keeping them for the broker to redeliver.
    */
   openDurabilityWindow: () => () => Promise<void>;
   logger: ConsumerLogger;
@@ -169,10 +162,9 @@ export function createEventsBatchHandler(
    *
    * There is deliberately no retry, no backoff and no unresolved offset here.
    * The dead-letter destination is Redis, and Redis being unavailable is
-   * exactly when handlers fail — so a failed write that held the offset back
-   * would rebuild the redelivery loop this replaced: once something else owns
-   * the outcome, a safety net underneath it is the bug.
-   *
+   * exactly when handlers fail, so a failed write that held the offset back
+   * would recreate the redelivery loop: once something else owns the outcome,
+   * a safety net underneath it is the bug.
    * The two counters are what carry the volume, since a capped list makes
    * 50,000 drops look like 12: `deadLettered` = recorded and dropped,
    * `deadLetterFailed` = dropped WITHOUT being recorded. Neither means "will be
@@ -476,9 +468,8 @@ export async function startKafkaEventsConsumer(
 
   consumer.on(consumer.events.HEARTBEAT, deps.batch.onActivity);
 
-  // ---- Lifecycle / rebalance ("re-election") visibility ----
-  // Without this logging, a rebalance storm (a common source of
-  // at-least-once duplicates) would be invisible.
+  // Lifecycle / rebalance logging: a rebalance storm (a common source of
+  // at-least-once duplicates) would otherwise be invisible.
   consumer.on(consumer.events.GROUP_JOIN, ({ payload }) => {
     // A new assignment means partitions may have moved between members, so a
     // consecutive-failure count carried over from the old one would pick the

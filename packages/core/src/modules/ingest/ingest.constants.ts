@@ -1,7 +1,3 @@
-// The ingestion wire contract. All three enforce the same thing (what a
-// caller may name an event and what a track body may contain), so they are
-// one file here.
-
 import { z } from 'zod';
 
 /** Event names the ingestion pipeline mints itself; a caller may not send them. */
@@ -130,16 +126,10 @@ export function isBlockedEventName(name: string): boolean {
   return false;
 }
 
-// ----- Hand-written types (source of truth) -----
-//
-// These interfaces are duplicated in code that ships in our SDK type
-// declarations. We hand-write them (instead of using `z.infer<…>`) so:
-//   1. Generated `.d.ts` files for the SDKs are readable plain TypeScript
-//      with no `import type { ITrackPayload }` line pointing at a workspace
-//      package (none of them are published).
-//   2. The interfaces stay clean — no zod internals leaking through.
-// Each schema below has `satisfies z.ZodType<…>` attached so a drift
-// between the interface and the schema fails to compile.
+// Hand-written (not `z.infer`) because these interfaces ship in the SDK type
+// declarations, which must read as plain TypeScript with no import of an
+// unpublished workspace package. Each schema `satisfies` its interface so
+// drift fails to compile.
 
 export type IProfileId = string | number;
 
@@ -209,8 +199,6 @@ export type ITrackHandlerPayload =
   | { type: 'replay'; payload: IReplayPayload }
   | { type: 'group'; payload: IGroupPayload }
   | { type: 'assign_group'; payload: IAssignGroupPayload };
-
-// ----- Schemas (each `satisfies` its hand-written interface) -----
 
 export const zProfileId = z.union([
   z.string().min(1),

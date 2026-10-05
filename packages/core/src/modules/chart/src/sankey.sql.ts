@@ -1,9 +1,5 @@
 // Every ClickHouse statement the sankey (user-flow) service runs, as pure `sql`
 // fragments.
-//
-// The filter compiler renders text (see compiled.ts); only its output is
-// spliced.
-//
 // Cluster note: `events` is Distributed on Cloud, and the `session_id IN
 // (SELECT session_id FROM start_event_sessions)` HAVING clauses are plain `IN
 // (subquery)` over a CTE. Whether these should be `GLOBAL IN` on a cluster is
@@ -23,8 +19,7 @@ export const TOP_ENTRY_EVENTS = 3;
  * lambda indexes its own captured `groupArray` is Theta(n^2) in the longest
  * session's event count — ClickHouse re-materialises the array once per
  * element, which is fatal for a tenant with one very long session.
- * `arrayCompact` is the built-in for exactly this and is linear; the result
- * is byte-identical.
+ * `arrayCompact` is the built-in for exactly this and is linear.
  */
 const DEDUPE_CONSECUTIVE = compiledText(
   'arrayCompact(groupArray(event_name)) as events_deduped'

@@ -4,9 +4,7 @@
 // needed.
 //
 // The scheduler list is derived from the `cron` queue's own jobs, so a job
-// and its schedule cannot drift apart. `schedulersFromRegistry` takes the
-// registry's `cron` queue as data; the registry itself calls it and exports
-// the result as `CRON_SCHEDULES`, so this file imports nothing above it.
+// and its schedule cannot drift apart.
 
 import type { Logger } from '../logger';
 import type { AnyJob, QueueDefinition, RepeatSchedule } from './define';
@@ -55,8 +53,7 @@ const CONFLICT_JOB_STATES = [
 const CONFLICT_ERROR_SUBSTRING = 'job ID already exists';
 
 /**
- * Derives the scheduler list from the `cron` queue's own jobs — the join is by
- * construction now, not by a second registry kept in sync by a test. A job's
+ * Derives the scheduler list from the `cron` queue's own jobs. A job's
  * `cron` is `RepeatSchedule` (always-on), `null` (on-demand — e.g. `ping`,
  * scheduled conditionally elsewhere), or, on the `cron` queue, never simply
  * absent: `defineQueue`'s overload for that queue name makes omitting it a type
@@ -171,7 +168,6 @@ async function upsertWithConflictRetry(
       'job scheduler conflict detected, attempting cleanup'
     );
     await removeConflictingJobs(queue, scheduler.id, logger);
-    // Also try removing the scheduler itself to start fresh.
     await queue.removeJobScheduler(scheduler.id).catch(() => undefined);
 
     try {

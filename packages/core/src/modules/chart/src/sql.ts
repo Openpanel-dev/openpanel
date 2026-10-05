@@ -116,8 +116,6 @@ function assertCohortId(cohortId: string): string {
   return cohortId;
 }
 
-// --- breakdown resolution ---------------------------------------------------
-
 /**
  * Drop breakdowns whose field name doesn't resolve to a known events column,
  * properties path, profile path, group path, or cohort — saved reports with
@@ -152,8 +150,6 @@ export function withoutEmptyAllCohortsBreakdown(
     (breakdown) => !isAllCohortsBreakdown(breakdown.name)
   );
 }
-
-// --- clause rendering -------------------------------------------------------
 
 function clauses(parts: Parts): SqlFragment[] {
   return Object.values(parts);
@@ -201,8 +197,6 @@ function orderByClause(orderBy: Parts): SqlFragment {
   }
   return sql`ORDER BY ${sql.join(keys, ', ')}`;
 }
-
-// --- shared chart body ------------------------------------------------------
 
 function profileCteSelectField(
   field: string,
@@ -423,11 +417,9 @@ function countExpression(
   return sql`count(*) as count`;
 }
 
-// Aliased `e`, not `subQuery`: breakdown SELECT expressions are always built
-// with the events alias, so `e.properties` was out of scope in the outer
-// query and any chart combining this segment with a property breakdown failed
-// with UNKNOWN_IDENTIFIER. The subquery already does `SELECT * FROM events e`,
-// so every `e.`-qualified reference outside it resolves unchanged.
+// Aliased `e`, not `subQuery`: breakdown SELECT expressions are built with the
+// events alias, so `e.properties` must be in scope in the outer query. The
+// subquery does `SELECT * FROM events e`, so `e.`-qualified references resolve.
 function oneEventPerUserFrom(body: ChartBody): SqlFragment {
   return sql`(
       SELECT DISTINCT ON (profile_id) * from ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} WHERE ${sql.join(clauses(body.where), ' AND ')}
@@ -447,8 +439,6 @@ function dateRangeWhere(
     where.endDate = sql`created_at <= toDateTime(${sql.string(formatClickhouseDate(endDate))})`;
   }
 }
-
-// --- series chart -----------------------------------------------------------
 
 function intervalBucket(
   interval: IInterval,
@@ -538,8 +528,6 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   return sql`${withClause(body.ctes)}SELECT * EXCEPT (_uc_state), ${totalCount} FROM (${selectClause(body.select)} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)}) ${orderByClause(orderBy)} ${fill}`;
 }
 
-// --- aggregate chart --------------------------------------------------------
-
 /** One row per breakdown combination over the whole range. */
 export function aggregateChartQuery(
   input: AggregateChartQueryInput
@@ -573,13 +561,10 @@ export function aggregateChartQuery(
   return sql`${head} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)} ${orderByClause(orderBy)} ${limitClause}`;
 }
 
-// --- router queries ---------------------------------------------------------
-
 /**
  * projectCard: three months of daily unique visitors + revenue, filled.
  * The timezone travels as `clickhouse_settings.session_timezone` (the caller
- * passes it) rather than an inline `SETTINGS` clause — same setting, same
- * query scope, and a bindable position.
+ * passes it) rather than an inline `SETTINGS` clause.
  */
 export function projectCardChartQuery(projectId: string): SqlFragment {
   return sql`SELECT
@@ -646,8 +631,6 @@ export function groupPropertyValuesQuery(
 ): SqlFragment {
   return sql`SELECT distinct ${expression} as values FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND deleted = 0 AND ${expression} != '' AND ${expression} IS NOT NULL ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
-
-// --- getProfiles ------------------------------------------------------------
 
 export interface ChartBucketProfilesInput {
   projectId: string;

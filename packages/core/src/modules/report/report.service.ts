@@ -1,7 +1,5 @@
 // Every function takes `ServiceDeps` and reaches Postgres as `deps.db`; the
 // Prisma row types below are `import type`, erased at runtime.
-// `onlyReportEvents`/`mergeGlobalFilters` live in ./src/series.ts — see that
-// file for why.
 
 import type {
   Report as DbReport,
@@ -49,7 +47,6 @@ export function transformReportEventItem(
   index: number
 ): IChartEventItem {
   if (item.type === 'formula') {
-    // Transform formula
     return {
       type: 'formula',
       id: item.id ?? alphabetIds[index]!,
@@ -59,7 +56,6 @@ export function transformReportEventItem(
     };
   }
 
-  // Transform event with type field
   return {
     type: 'event',
     segment: item.segment ?? 'event',
@@ -231,10 +227,8 @@ export async function getReportDataCore(
   return { ...meta, data: result };
 }
 
-// -----------------------------------------------------------------------
-// Mutations. Each takes the resource already fetched by report.rpc.ts for the
-// access check, so this does exactly one fewer Prisma round trip than
-// re-fetching.
+// Mutations take the resource already fetched by report.rpc.ts for the access
+// check, saving a second Prisma round trip.
 
 type IReportInputForWrite = Omit<IReport, 'projectId'>;
 
@@ -450,8 +444,6 @@ export async function resetReportLayouts(
     },
   });
 }
-
-// --- service ------------------------------------------------------------
 
 export function createReportService(
   deps: ServiceDeps,

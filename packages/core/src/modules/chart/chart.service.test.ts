@@ -27,7 +27,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PROJECT_CARD_DAYS = 90;
 
 // Bypass Redis caching so a stale entry from another run cannot gate an
-// assertion. Captured before mock.module runs — see mcp's tools.test.ts.
+// assertion. Captured before mock.module runs.
 const actualRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...actualRedis,
@@ -264,8 +264,8 @@ describe('picker queries', () => {
   it('lists event names with counts, `*` first', async () => {
     const events = await service.listChartEvents(TEST_PROJECT_ID);
 
-    // Counts are `sum(event_count)` over distinct_event_names_mv, so they are
-    // real event totals. `count(name)` would count insert parts (ISSUES.md M1).
+    // Counts are `sum(event_count)` over distinct_event_names_mv, i.e. real event
+    // totals; `count(name)` would count insert parts.
     expect(events[0]?.name).toBe('*');
     expect(events[0]?.count).toBe(
       events.slice(1).reduce((total, event) => total + event.count, 0)
@@ -284,10 +284,8 @@ describe('picker queries', () => {
     ]);
   });
 
-  // The picker used to show `count(name)` over distinct_event_names_mv, which
-  // counts one row per name PER INSERT PART, not per event (ISSUES.md M1). On
-  // the large seed that showed 52 for an event with 974,387 occurrences. The
-  // only assertion that catches it is one against the events table itself.
+  // `count(name)` over distinct_event_names_mv counts one row per name PER INSERT
+  // PART, not per event, so only an assertion against the events table catches it.
   it('counts real events, not materialized-view rows', async () => {
     const events = await service.listChartEvents(TEST_PROJECT_ID);
     const actual = await ch.query({

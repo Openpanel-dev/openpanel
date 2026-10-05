@@ -356,9 +356,7 @@ describe('SessionBuffer', () => {
 
     chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    // Errors now propagate to tryFlush (which handles them by resyncing the
-    // counter). processBuffer no longer swallows — we still verify the
-    // safety property: the queue is preserved.
+    // Errors propagate to tryFlush; the queue is preserved.
     await expect(sessionBuffer.processBuffer()).rejects.toThrow(
       'ClickHouse unavailable'
     );

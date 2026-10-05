@@ -6,23 +6,13 @@ import { BaseBuffer, type BufferDeps } from './base-buffer';
 const PROJECT_ID_NEEDLE = '"project_id":"';
 
 /**
- * Extract the top-level `project_id` from a single JSONEachRow event
- * line without doing a full JSON.parse.
+ * Extract the top-level `project_id` from a JSONEachRow event line without a
+ * full JSON.parse. Returns `null` if absent or malformed.
  *
- * Fast path: scan with `indexOf`. If the needle appears exactly once,
- * we know it's the top-level field (any `project_id` nested in a JSON
- * string value would be escaped as `\"project_id\":\"...`, which the
- * indexOf scan can't match because of the `\` in front).
- *
- * Slow path: if the needle appears two or more times, the line has a
- * legitimate nested `project_id` key (e.g. inside `properties` if a
- * user happens to set one with that name). The regex/indexOf can't
- * tell which is the top-level one — at that point we fall back to a
- * real JSON.parse for correctness. This is rare in practice but
- * removes the silent-attribution failure mode entirely.
- *
- * Returns `null` if no top-level project_id is present or the row is
- * malformed.
+ * Fast path: `indexOf` on the needle. A nested `project_id` inside a string
+ * value is escaped (`\"project_id\"`), so it cannot match; exactly one hit is
+ * the top-level field. Two or more hits mean a real nested key (a user
+ * property of that name), so fall back to JSON.parse rather than misattribute.
  */
 export function extractProjectId(line: string): string | null {
   const first = line.indexOf(PROJECT_ID_NEEDLE);
@@ -45,9 +35,8 @@ export function extractProjectId(line: string): string | null {
 
   const valueStart = first + PROJECT_ID_NEEDLE.length;
   const valueEnd = line.indexOf('"', valueStart);
-  // valueEnd === valueStart means the value is empty (`"project_id":""`)
-  // — treat as missing so we don't pollute pub/sub counts with an empty
-  // key. Matches the old regex's `[^"]+` (one-or-more) behavior.
+  // An empty value is treated as missing so it does not pollute pub/sub
+  // counts with an empty key.
   if (valueEnd <= valueStart) {
     return null;
   }
@@ -138,8 +127,6 @@ export class EventBuffer extends BaseBuffer {
   }
 
   add(event: IClickhouseEvent) {
-    // Event-buffer's add() is synchronous (in-memory push). Measured anyway
-    // for consistency with the other buffers' add-latency tracking.
     const start = performance.now();
     this.lastQueuedSeq += 1;
     this.pendingEvents.push(event);
@@ -426,11 +413,9 @@ export class EventBuffer extends BaseBuffer {
       return;
     }
 
-    // The queued lines are already valid JSONEachRow (one stringified event
-    // per Redis entry), and the client's custom `json.stringify`
-    // (CLICKHOUSE_OPTIONS) passes strings through unchanged — so skipping
-    // JSON.parse here sends the bytes straight from Redis to the CH HTTP
-    // body, with no parse, no re-stringify and no intermediate allocations.
+    // The queued lines are already JSONEachRow, and the client's custom
+    // `json.stringify` (CLICKHOUSE_OPTIONS) passes strings through unchanged,
+    // so the bytes go from Redis to the CH HTTP body without a parse.
     const countByProject = new Map<string, number>();
     const yieldEvery = this.getYieldInterval(queueEvents.length, {
       min: 1000,
@@ -453,8 +438,6 @@ export class EventBuffer extends BaseBuffer {
       (chunk) =>
         ch.insert({
           table: 'events',
-          // Stream the raw JSONEachRow lines straight through — already
-          // serialized in Redis, no client-side parse/stringify needed.
           values: this.jsonEachRowStream(chunk),
           format: 'JSONEachRow',
           clickhouse_settings: this.getClickhouseSettings(),

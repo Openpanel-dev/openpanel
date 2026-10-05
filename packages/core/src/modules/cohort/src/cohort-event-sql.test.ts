@@ -1,5 +1,4 @@
-// SQL-shape tests for event-based cohort criteria. The "never did this event"
-// assertions are unchanged in what they claim.
+// SQL-shape tests for event-based cohort criteria.
 
 import { describe, expect, test } from 'bun:test';
 import type {

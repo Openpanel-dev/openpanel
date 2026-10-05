@@ -467,9 +467,8 @@ describe('incomingEvent', () => {
 });
 
 /**
- * The marker replaces the offset watermark, which cannot see every
- * duplicate. MARK MEANS COUNT AND LOG: every test below asserts the event
- * was still INSERTED.
+ * MARK MEANS COUNT AND LOG: the marker does not suppress, so every test below
+ * asserts the event was still INSERTED.
  */
 describe('duplicate marker', () => {
   const TTL_MS = 120_000;

@@ -1,7 +1,5 @@
-// The twelve `buffer_*` series (names and labels reproduced exactly).
-// Registered per boot rather than per import, because the buffers themselves
-// are per boot — and only where a role consumes queues, since the LLEN
-// gauges cost one Redis round trip per buffer per scrape.
+// Registered per boot only where a role consumes queues: the LLEN gauges cost
+// one Redis round trip per buffer per scrape.
 
 import client from 'prom-client';
 import { registry } from '../metrics';
@@ -82,8 +80,6 @@ export function registerBufferMetrics(
     })
   );
 
-  // ---- Flush metrics (populated via flushObserver hooks) ----
-
   const flushDuration = new client.Histogram({
     name: 'buffer_flush_duration_ms',
     help: 'Wall time of a tryFlush call, including lock acquisition',
@@ -141,8 +137,6 @@ export function registerBufferMetrics(
     buckets: LLEN_BUCKETS,
   });
   register.registerMetric(flushLlenAtStart);
-
-  // ---- Add-path metrics ----
 
   const addDurationMs = new client.Histogram({
     name: 'buffer_add_duration_ms',

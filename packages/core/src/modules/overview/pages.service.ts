@@ -1,15 +1,6 @@
-// The ClickHouse queries moved to src/pages.sql.ts.
-//
-// `PagesService` is no longer a class and there is no `pagesService` module
-// singleton. It is registered as its OWN service (`services.pages`) rather than
-// folded into `overview`, because both expose a `getTopPages` and they are
-// different queries with different inputs — one over `events` scoped by search,
-// one over `sessions` scoped by filters. Folding them would have had to rename
-// one, which is a call-site contract this wave does not change. The
-// caller-supplied `constructor(client)` slot is gone: the mcp
-// `get_page_performance` tool constructed a fresh instance per call only to
-// dodge a module-singleton mocking hazard, and there is no singleton left to
-// dodge.
+// `services.pages` is its own service rather than folded into `overview`: both
+// expose a `getTopPages`, over different tables (`events` scoped by search,
+// `sessions` scoped by filters) with different inputs.
 
 import type { ServiceDeps, Services } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';

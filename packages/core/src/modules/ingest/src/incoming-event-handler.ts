@@ -1,14 +1,10 @@
-// The Kafka consumer's per-message handler — the step that turns one topic
-// payload into session lifecycle decisions and ClickHouse rows.
+// The Kafka consumer's per-message handler: turns one topic payload into
+// session lifecycle decisions and ClickHouse rows.
 //
-// Everything that touches Redis, Postgres, ClickHouse or a queue is INJECTED
-// (`IncomingEventDeps`), the way session-end.ts does it, so the tests drive the
-// real code with recording doubles instead of `mock.module`.
-// `createIncomingEventDeps` binds it to ONE MESSAGE'S ctx: the buffers, the
-// Postgres client and the session-end enqueue all ride the scope carrying that
-// envelope's requestId, so the id the producer stamped reaches the row the
-// consumer writes. The two lookups a work scope cannot supply arrive as
-// `IncomingEventBindings` from the composition root.
+// Everything that touches Redis, Postgres, ClickHouse or a queue is injected
+// (`IncomingEventDeps`) so tests drive the real code with recording doubles.
+// `createIncomingEventDeps` binds it to one message's ctx, so the requestId the
+// producer stamped reaches the row the consumer writes.
 
 import { getTime, isSameDomain, parsePath } from '@openpanel/shared';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
@@ -245,11 +241,9 @@ const parseRevenue = (revenue: unknown): number | undefined => {
  * its answer. A false positive on a suppressing check would be silent data
  * loss, and whether the events table ever gets dedupe is not decided here.
  *
- * It replaces the offset watermark, which could not see a duplicate across a
- * rebalance, an eviction, a durability redelivery or a restart. It catches
- * redeliveries of the SAME id: crash, eviction, durability redelivery. It
- * does NOT catch a lost ACK, where the SDK re-sends and the producer mints a
- * fresh id per request; SDK-supplied ids are what closes that, later.
+ * Catches redeliveries of the SAME id (crash, eviction, durability redelivery,
+ * rebalance, restart). It does NOT catch a lost ACK, where the SDK re-sends and
+ * the producer mints a fresh id per request.
  *
  * FAILS OPEN, AND NEVER REJECTS. Redis being away is exactly when redeliveries
  * happen, so an observability counter must not be the thing that delays or

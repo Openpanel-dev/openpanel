@@ -2,9 +2,6 @@
  * Tests for the legacy `POST /event` compat route: the route is KEPT,
  * produces to Kafka exactly like /track, and is measured per client so a
  * future removal decision has data.
- *
- * The `mixan-*` header fallback moved with the validator itself — see
- * `src/client-auth.test.ts`.
  */
 
 import {

@@ -213,11 +213,8 @@ export class ProfileBuffer extends BaseBuffer {
           ', '
         );
         try {
-          // Table alias `p` is required: without it, WHERE's `last_seen_at`
-          // resolves to the SELECT-list aggregate alias `max(last_seen_at) AS
-          // last_seen_at`, which is an aggregate function and illegal in WHERE
-          // (CH ILLEGAL_AGGREGATION). Qualifying with `p.` bypasses the alias
-          // lookup and binds to the raw column.
+          // Qualify with `p.`: a bare `last_seen_at` resolves to the aggregate
+          // alias and is illegal in WHERE (ILLEGAL_AGGREGATION).
           const rows = await this.chQuery<IClickhouseProfile>(
             sql`SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
             FROM ${sql.id(TABLE_NAMES.profiles)} AS p
@@ -263,16 +260,10 @@ export class ProfileBuffer extends BaseBuffer {
       return;
     }
 
-    // Parse + merge within batch in a single pass. Yields back to the
-    // event loop periodically so concurrent add() calls and BullMQ
-    // heartbeats can make progress while the merge churns through
-    // profiles. The merge step is the hottest CPU stage of any buffer —
-    // deepMergeObjects recursively combines nested `properties` objects
-    // and was previously responsible for ~500ms event-loop blocks.
-    //
-    // Heavy loop (parse + deep merge): narrow band so we yield often
-    // even with smaller batches but don't yield every-few-items on
-    // very small ones.
+    // Yields to the event loop periodically so concurrent add() calls and
+    // BullMQ heartbeats progress: deepMergeObjects on nested `properties` is
+    // the hottest CPU stage of any buffer. Narrow band: parse + deep merge
+    // is a heavy loop.
     const mergeYieldEvery = this.getYieldInterval(rawProfiles.length, {
       min: 100,
       max: 1000,
@@ -317,10 +308,8 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    // Fetch cache misses from ClickHouse in bounded chunks. Timed separately
-    // from the ch.insert phase because it can dominate flush time for
-    // profile-buffer specifically (FINAL replaced with argMax + GROUP BY in
-    // batchFetchFromClickhouse, but worth measuring directly).
+    // Fetch cache misses from ClickHouse in bounded chunks, timed apart from
+    // ch.insert because the fetch can dominate flush time.
     let chFetchMs: number | undefined;
     if (cacheMisses.length > 0) {
       const chFetchStart = performance.now();
@@ -332,9 +321,8 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    // Final merge: in-batch profile + existing (from cache or ClickHouse).
-    // Second heavy stage — same deepMergeObjects call per unique profile.
-    // Same band as the in-batch merge above.
+    // Final merge: in-batch profile + existing (cache or ClickHouse), same
+    // band as the in-batch merge.
     const finalYieldEvery = this.getYieldInterval(uniqueProfiles.length, {
       min: 100,
       max: 1000,

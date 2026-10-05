@@ -88,7 +88,6 @@ export function format(
     return {
       id: slug(cs.id),
       names: displayName,
-      // TODO: Do we need this now?
       event: {
         id: definition?.id,
         name: eventName,

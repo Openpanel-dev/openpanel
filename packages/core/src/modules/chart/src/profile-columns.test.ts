@@ -1,8 +1,6 @@
-// The JOIN column list used to be built by splitting raw `profile.*` filter
-// names, so a crafted name could close the subquery (GHSA-pc3q-gw7f-p2x2). The
-// rewrite binds every identifier through `sql.id`, so injection is impossible;
-// what these assert is that the list is also an allowlist, so a filter cannot
-// name a column it has no business reading.
+// Every identifier binds through `sql.id`, so injection is impossible
+// (GHSA-pc3q-gw7f-p2x2); these assert the list is also an allowlist, so a filter
+// cannot name a column it has no business reading.
 import { describe, expect, it } from 'bun:test';
 import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
 import { profileJoinFields } from './funnel.sql';

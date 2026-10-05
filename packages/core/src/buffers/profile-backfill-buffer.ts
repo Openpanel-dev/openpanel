@@ -72,8 +72,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
 
     const ch = this.resolveCh();
     // `replicatedTarget`, not `sql.id`: the clustered form carries an
-    // `ON CLUSTER` clause and is not a bare identifier, so `sql.id` refused it
-    // and every backfill flush threw before reaching ClickHouse.
+    // `ON CLUSTER` clause and is not a bare identifier.
     const target = replicatedTarget(
       this.deps.config.clickhouseClustered,
       TABLE_NAMES.events

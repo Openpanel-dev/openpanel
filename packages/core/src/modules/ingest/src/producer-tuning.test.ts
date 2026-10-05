@@ -1,8 +1,7 @@
 /**
  * Batching is ON at the shipped defaults (size 25, linger 5 ms) and
- * `maxInFlightRequests` stays 1. There are no fallbacks left to test — the
- * three knobs are required `KafkaConfig` fields, so a config that omits one
- * does not compile.
+ * `maxInFlightRequests` stays 1. The three knobs are required `KafkaConfig`
+ * fields, so there are no fallbacks to test.
  */
 
 import { describe, expect, test } from 'bun:test';

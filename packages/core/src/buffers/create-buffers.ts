@@ -1,5 +1,3 @@
-// Built ONCE at boot and hung on `AppDeps.buffers` — never module singletons.
-
 import type { BufferDeps } from './base-buffer';
 import { BotBuffer } from './bot-buffer';
 import { EventBuffer } from './event-buffer';

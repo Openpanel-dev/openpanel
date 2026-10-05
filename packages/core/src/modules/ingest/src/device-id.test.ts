@@ -18,7 +18,7 @@ import {
 const NOW = new Date('2026-06-08T12:00:00.000Z').getTime();
 const MINUTE = 60 * 1000;
 const SALTS = { current: 'salt-current', previous: 'salt-previous' };
-/** SESSION_TIMEOUT_MS's default: the caller resolves it from config now. */
+/** SESSION_TIMEOUT_MS's default; the caller resolves it from config. */
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 /** The caller's request logger. Inputs here are an IP and a salt, so a
@@ -136,12 +136,11 @@ describe('getDeviceId — session resolution', () => {
   });
 
   /**
-   * Made the cache client fail fast, so this read now rejects in microseconds
-   * instead of after ioredis's 20-attempt reconnect cycle. The degradation
-   * itself must be untouched: the api and the worker only agree on a session
-   * because they derive the SAME id from project/device/time bucket, so a
-   * faster failure that changed the id would split every session an outage
-   * touched.
+   * The cache client fails fast, so this read rejects in microseconds instead
+   * of after ioredis's 20-attempt reconnect cycle. The degradation must not
+   * change the id: the api and the worker only agree on a session because they
+   * derive the SAME id from project/device/time bucket, so a different id on
+   * failure would split every session an outage touched.
    */
   it('mints the SAME deterministic id whether the session read misses or rejects', async () => {
     const { buffer: emptyStore } = stubBuffer(null);

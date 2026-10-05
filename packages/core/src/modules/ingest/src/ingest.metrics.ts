@@ -6,10 +6,9 @@ import type { ConsumerMetrics, DeadLetterReason } from './consumer';
 
 // Events whose producer-minted id had already been seen. This is a MARKER, not
 // a dedupe: the event is inserted either way and this counter is the whole
-// point of the check. It replaces `kafka_events_reprocessed_total`, which was
-// keyed on a Kafka offset in one process's heap and therefore blind to every
-// duplicate that mattered (measured: 161 real duplicates, 0 reprocessed
-// increments).
+// point of the check. The older offset-keyed counter lived in one process's
+// heap and was blind to every duplicate that mattered (161 real duplicates,
+// 0 reprocessed increments).
 //
 // It UNDERCOUNTS by design: a duplicate whose marker could not be written
 // (Redis away) is not counted, because the check fails open rather than
@@ -33,8 +32,7 @@ export const kafkaHandlerFailuresTotal = new client.Counter({
 // Messages recorded in the dead-letter list after their attempts were exhausted
 // (or after they failed to parse), then DROPPED. One increment per message. The
 // list is capped at the last N, so this counter — not the list — is the only
-// thing that tells 50,000 drops apart from 12. The series name is unchanged:
-// the destination moved, the meaning did not.
+// thing that tells 50,000 drops apart from 12.
 export const kafkaDeadLetteredTotal = new client.Counter({
   name: 'kafka_events_dead_lettered_total',
   help: 'Kafka event messages recorded in the dead-letter list and dropped',

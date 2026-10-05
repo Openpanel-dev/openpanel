@@ -102,9 +102,8 @@ const getProducer = async (config: CoreConfig): Promise<Producer> => {
       // OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
       // Raising it gained only a couple percent of throughput and was
       // rejected; batching is what amortises the round-trip.
-      // KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it for a measurement run —
-      // read docs/KAFKA_PRODUCER_OPTIONS.md first: it is coupled to the retry
-      // policy.
+      // KAFKA_PRODUCER_MAX_IN_FLIGHT still raises it for a measurement run, but it
+      // is coupled to the retry policy.
       maxInFlightRequests: tuning.maxInFlight,
       allowAutoTopicCreation: true,
       retry: {
@@ -277,7 +276,7 @@ export const createKafkaEventsConsumer = (
   return consumer;
 };
 
-// ── Consumer-group lag (backpressure visibility) ────────────────────────────
+// Consumer-group lag (backpressure visibility)
 // A fast producer can hide a lagging consumer entirely — throughput numbers
 // alone don't show it. `sampleConsumerGroupLag` reads the same end-offset-
 // minus-committed-offset a broker-side tool (e.g. `rpk group describe`) would

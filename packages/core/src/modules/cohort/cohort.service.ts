@@ -1,10 +1,8 @@
 // Cohort definitions, membership computation and the compute enqueue.
 //
-// Table names are a local literal map (`TABLE`, below) rather than
-// @openpanel/db's `TABLE_NAMES`: that lives in the same module as `ch` /
-// `chQuery` (clickhouse/client.ts), which constructs a real pino logger at
-// import time, and this module's SQL builders are pure sync functions the
-// shape tests call with no ClickHouse connection at all.
+// Table names are a local literal map (`TABLE`) rather than @openpanel/db's
+// `TABLE_NAMES`: importing that builds a pino logger, and the SQL builders here
+// are pure functions the shape tests call without a ClickHouse connection.
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
@@ -25,8 +23,7 @@ import type {
   Timeframe,
 } from './cohort.constants';
 
-// Physical ClickHouse table names this module reads/writes. Literal, not
-// imported from @openpanel/db's TABLE_NAMES — see the header comment.
+// Physical ClickHouse table names this module reads/writes.
 const TABLE = {
   profiles: 'profiles',
   events: 'events',
@@ -36,15 +33,10 @@ const TABLE = {
   eventPropertyProfileSummaryMv: 'event_property_profile_summary_mv',
 } as const;
 
-// Max members materialized into cohort_members per compute. Cohorts larger
-// than this are silently truncated to an arbitrary subset, so deployments
-// with bigger cohorts need to raise it — env-tunable to avoid an image
-// rebuild for what is really a sizing knob.
-//
-// Strictly a positive safe integer, which is what the config loader's
-// `optionalPositiveInt` guarantees: '5000junk', '-1' and '0' all arrive as
-// undefined, and 0 is falsy at the `limit ? LIMIT ... : ''` call sites, which
-// would silently remove the cap entirely.
+// Max members materialized into cohort_members per compute. Larger cohorts are
+// silently truncated to an arbitrary subset, so raise it for big deployments.
+// Must be a positive safe integer: 0 is falsy at the `limit ? LIMIT ... : ''`
+// call sites and would silently remove the cap.
 const DEFAULT_COHORT_MATERIALIZE_LIMIT = 10_000;
 
 export function cohortMaterializeLimit(config: CoreConfig): number {
@@ -53,24 +45,17 @@ export function cohortMaterializeLimit(config: CoreConfig): number {
   );
 }
 
-// Property cohorts aggregate every profile row for the project, so they are the
-// one cohort query that can outgrow the server's memory headroom. Two opt-in
-// knobs bound them; with NEITHER set, no per-query settings are applied and the
-// server's own defaults govern — upstream behavior is unchanged.
+// Property cohorts aggregate every profile row for the project, so they can
+// outgrow the server's memory. Two opt-in knobs bound them; with neither set the
+// server defaults govern.
 //
 // COHORT_QUERY_MEMORY_LIMIT_BYTES hard cap for these queries
 // COHORT_QUERY_SPILL_BYTES GROUP BY spills to disk past this
 //
-// A GROUP BY only starts spilling once it crosses the threshold, so the spill
-// threshold must sit BELOW the memory limit — inverted, the query is killed
-// before it ever writes to disk (ClickHouse Cloud ships exactly that inversion
-// by default, which is how these queries OOM'd instead of spilling). When only
-// the limit is set — or the pair is inverted — the threshold derives as
-// limit/3. Spilling early costs little: the volume spilled is set by the data,
-// not the threshold.
-//
-// A standalone function of its two parsed inputs (not a module-level read), so
-// a test can exercise every branch by calling it directly.
+// A GROUP BY only spills once it crosses the threshold, so the threshold must
+// sit BELOW the memory limit: inverted, the query is killed before it writes to
+// disk (ClickHouse Cloud ships that inversion by default). When only the limit
+// is set, or the pair is inverted, the threshold derives as limit/3.
 export function deriveCohortQuerySettings({
   memoryLimitBytes,
   spillBytes: spillBytesParsed,
@@ -233,10 +218,6 @@ export function buildEventCriteriaQuery(
   const timeConstraint = buildTimeConstraint(timeframe, sql.id('event_date'));
   const project = sql.string(projectId);
   const eventName = sql.string(name);
-  // No filter name can start with both 'properties.' and
-  // 'profile.properties.' (they diverge at the 4th character), so the
-  // 'profile.properties.' exclusion this used to carry was always true here
-  // and is dropped rather than kept as dead weight.
   const hasEventPropertyFilters = filters.some((f) =>
     f.name.startsWith('properties.')
   );
@@ -327,8 +308,7 @@ export function buildEventCriteriaQuery(
 
 // The bare profiles columns a cohort filter may reach. Every name is
 // qualified by the time it gets here, and anything outside the list is a
-// filter naming a column that is not the caller's to read (main #512,
-// GHSA-gvwr-5684-wjqc).
+// filter naming a column that is not the caller's to read (GHSA-gvwr-5684-wjqc).
 const COHORT_PROFILE_COLUMNS = PROFILE_SELECT_COLUMNS.map(
   (column) => `profiles.${column}`
 );
@@ -357,16 +337,12 @@ function buildProfileCohortHavingClause(
 ): SqlFragment | null {
   const { properties, operator } = definition.criteria;
 
-  // Every argMax below must order the candidate rows IDENTICALLY, or
-  // equal-version rows with conflicting fields could each win a different
-  // column — matching an AND cohort against a synthetic combination no
-  // stored row contains. One shared key — the version column, tie-broken by
-  // a hash of every referenced column — makes all aggregates pick their
-  // value from the same winning row, deterministically. The hash (rather
-  // than the raw value tuple) keeps the per-group comparison state at a
-  // fixed 8 bytes, cheaper than comparing the raw tuple. A wrong tie-break
-  // would need a version tie AND a 64-bit collision between different rows —
-  // and even then every aggregate in the query still elects the same row.
+  // Every argMax below must order candidate rows IDENTICALLY, or equal-version
+  // rows with conflicting fields could each win a different column and match an
+  // AND cohort against a combination no stored row contains. One shared key (the
+  // version column, tie-broken by a hash of every referenced column) makes all
+  // aggregates pick the same winning row. The hash keeps comparison state at a
+  // fixed 8 bytes.
   const referencedColumns = Array.from(
     new Set(properties.map((f) => normalizeProfileColumn(f.name)))
   ).map(profileColumnAccess);
@@ -449,12 +425,8 @@ export async function computeEventBasedCohort(
   const combinedQuery = buildEventBasedCohortQuery(projectId, definition);
 
   // The LIMIT has to wrap the combination, not trail it: appended to an
-  // INTERSECT / UNION chain, ClickHouse applies it to the last SELECT alone.
-  // That was survivable while every operand was a narrow event-derived set;
-  // a "never did X" operand is most of the project's profiles, so limiting it
-  // before the INTERSECT would cut the cohort down to an arbitrary slice —
-  // and at the preview's limit of 10, almost always to nothing. The count
-  // query below already wraps for the same reason.
+  // INTERSECT / UNION chain, ClickHouse applies it to the last SELECT alone, and
+  // a "never did X" operand is most of the project's profiles.
   const finalQuery = limit
     ? sql`SELECT profile_id FROM (${combinedQuery}) LIMIT ${sql.uint64(limit)}`
     : combinedQuery;
@@ -496,16 +468,10 @@ function getProfileFiltersWhereClause(
     let columnAccess = profileColumnAccess(normalizeProfileColumn(name));
 
     if (latestPerProfileKey) {
-      // Resolve the profile's newest row inside a GROUP BY instead of
-      // reading through FINAL. The key is shared by every wrapped column
-      // (see buildProfileCohortHavingClause), so all aggregates read the
-      // SAME winning row: last_seen_at is the table's version column but is
-      // not unique, and per-column tie-breaking would let equal-version
-      // rows with conflicting fields produce a synthetic combination no
-      // stored row contains. FINAL breaks the same ties by part order,
-      // which is not derivable from the data and can shift under a
-      // background merge — the shared value-tuple tie-break is
-      // deterministic instead.
+      // Resolve the newest row inside a GROUP BY instead of FINAL. The key is
+      // shared by every wrapped column (see buildProfileCohortHavingClause), so all
+      // aggregates read the SAME winning row; FINAL breaks version ties by part
+      // order, which can shift under a background merge.
       columnAccess = sql`argMax(${columnAccess}, ${latestPerProfileKey})`;
     }
 
@@ -953,8 +919,7 @@ export async function listCohortMemberProfiles(
 }
 
 /**
- * The window `mostEvents` / `popularRoutes` read. Both had no date filter, so
- * they scanned the project's whole event history however small the cohort.
+ * The window `mostEvents` / `popularRoutes` read, bounding the event scan.
  * `YYYY-MM-DD HH:mm:ss`, as `getChartStartEndDate` returns it.
  */
 export interface CohortActivityWindow {
@@ -964,7 +929,6 @@ export interface CohortActivityWindow {
 
 const DEFAULT_COHORT_ACTIVITY_LIMIT = 10;
 
-/** Spelled as `overview/src/pages.sql.ts` and `profile/src/sql.ts` spell it. */
 function createdAtWithin({
   startDate,
   endDate,
@@ -989,9 +953,6 @@ export function cohortMemberEventsQuery(
   window: CohortActivityWindow,
   limit: number
 ): SqlFragment {
-  // This plain `IN (subquery)` on `cohort_members` is left as-is — changing
-  // how the subquery binds its values would not change anything about
-  // distribution semantics.
   return sql`
     SELECT name, count() AS count
     FROM ${sql.id(TABLE.events)}

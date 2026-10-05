@@ -1,16 +1,9 @@
 /**
- * Unit tests for the event-field resolution helpers.
- *
- * Background — these helpers exist because the chart, funnel, and conversion
- * services used to inline whatever field name the dashboard sent (saved report,
- * autocomplete picker, raw API call) directly into SQL. That worked for the
- * common case but produced UNKNOWN_IDENTIFIER errors when:
- *
- * Older clients sent camelCase names (`referrerName`) that don't match the
- * snake_case ClickHouse schema; - users picked utm_* in the property filter UI
- * without realising those live in the `properties` map on the events table; - a
- * saved report referenced a custom property (`temple_name`) as if it were a
- * top-level column.
+ * Unit tests for the event-field resolution helpers. Field names from the
+ * dashboard (saved report, autocomplete picker, raw API call) must not reach SQL
+ * verbatim: older clients send camelCase names (`referrerName`), users pick
+ * utm_* without realising they live in the `properties` map, and saved reports
+ * reference custom properties (`temple_name`) as if they were top-level columns.
  */
 import { describe, expect, it } from 'bun:test';
 import { isKnownEventField, normalizeEventField } from './field-resolution';

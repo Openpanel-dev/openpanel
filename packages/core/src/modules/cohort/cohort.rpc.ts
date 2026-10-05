@@ -1,14 +1,6 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// The per-project access ladder itself is bound once, in auth.service.ts; every
-// procedure here reaches it through `ctx.services.auth`.
-//
-// CRUD (list/get/create/update/delete) reads/writes Prisma's `cohort` table
-// directly — cohort.service.ts owns only the compute-heavy and
-// ClickHouse-touching operations.
+// `protectedProcedure` runs `enforceAccess` BEFORE the input parser, and it only
+// sees a TOP-LEVEL `projectId` / `organizationId`, so handlers that resolve a
+// project from another id keep their own explicit check.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
@@ -37,9 +29,8 @@ const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
 
 /**
- * `mostEvents` and `popularRoutes` read the project's whole history before this
- * window existed. The default is the one `profile.powerUsers` got for the same
- * cause; the cohort page passes no range, so this is what it shows.
+ * Bounds the event scan behind `mostEvents` and `popularRoutes`. The cohort page
+ * passes no range, so this is what it shows.
  */
 const COHORT_ACTIVITY_DEFAULT_RANGE = '3m';
 

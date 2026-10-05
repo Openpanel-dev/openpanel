@@ -1,13 +1,8 @@
-// The ONE place the chart module splices pre-compiled SQL text.
-//
-// Both filter compilers (./filter-where.ts, ./table-filter-where.ts) and the
-// field resolver (./field-resolution.ts) return `SqlFragment`s, so nothing
-// crosses `compiledText` from them. What is left are the places the chart
-// builders splice a name they generated themselves — CTE names, `b_<n>` /
-// `label_<n>` aliases, a `toStartOf*` keyword, the backtick-quoted
-// `profile.properties.<key>` CTE alias — none of which is a value and none of
-// which `sql.id` can express. It stays a named export in one file, not a
-// `sql.raw()`, so the census is a grep.
+// The ONE place the chart module splices pre-compiled SQL text: names the chart
+// builders generate themselves (CTE names, `b_<n>` / `label_<n>` aliases, a
+// `toStartOf*` keyword, the backtick-quoted `profile.properties.<key>` CTE
+// alias), none of which is a value and none of which `sql.id` can express. It
+// stays a named export in one file, not a `sql.raw()`, so the census is a grep.
 
 import {
   isSqlFragment,
@@ -55,10 +50,9 @@ function narrowableKey(slot: SqlSlot, keys: string[]): string | null {
 }
 
 /**
- * Splice nested fragments into one flat (literals, params) interleaving. The
- * rendered statement is unchanged — this only makes "the literal immediately
- * before this param" a question with an answer, which is what the rewrite
- * below needs now that `sql.id` contributes a nested fragment of its own.
+ * Splice nested fragments into one flat (literals, params) interleaving, so
+ * "the literal immediately before this param" is answerable, which the rewrite
+ * below needs because `sql.id` contributes a nested fragment of its own.
  */
 function flatten(
   fragment: SqlFragment,
@@ -84,16 +78,11 @@ function flatten(
 }
 
 /**
- * The same rewrite over a fragment. It runs on the literal parts, and on the
- * one shape the field resolver now emits instead of text — the literal
+ * The same rewrite over a fragment: on the literal parts, and on the literal
  * `profile.properties[` followed by the key as a bound `String` param and a
- * closing `]`. Collapsing those three pieces is what keeps a narrowed
- * `profile.properties.<key>` ref pointing at the CTE's scalar column once the
- * key stopped being part of the SQL text.
- *
- * A value can no longer be rewritten even in principle: only a param the
- * resolver placed in that exact position is eligible, and it is replaced by an
- * identifier rather than edited.
+ * closing `]`. Collapsing those pieces keeps a narrowed ref pointing at the
+ * CTE's scalar column. Only a param in that exact position is eligible, and it
+ * is replaced by an identifier rather than edited.
  */
 export function fragmentWithProfileRefs(
   fragment: SqlFragment,

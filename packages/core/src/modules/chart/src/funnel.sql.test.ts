@@ -1,18 +1,13 @@
 /**
- * SQL-shape tests for the funnel statements.
+ * SQL-shape tests for the funnel statements: render, then `EXPLAIN <sql>` with the
+ * bound params against the isolated `openpanel_test` ClickHouse (pinned by
+ * test/preload.ts). EXPLAIN resolves columns without executing, so a breakdown
+ * expression referencing a join alias that was never added fails here as
+ * UNKNOWN_IDENTIFIER.
  *
- * Strategy, same as sql.test.ts: render the statement, then run `EXPLAIN <sql>`
- * with its bound params against the isolated `openpanel_test` ClickHouse
- * (pinned by test/preload.ts). EXPLAIN parses and resolves columns without
- * executing, so a breakdown expression referencing a join alias that was never
- * added fails here as UNKNOWN_IDENTIFIER — which is exactly the class of bug
- * that made funnel "View Users" return "No users found" for profile-property
- * and cohort breakdowns.
- *
- * Text assertions look at the rendered `query` with placeholder NUMBERS
- * normalised away: a fragment reused in two clauses renders `{p3:String}` in
- * one and `{p11:String}` in the other, and the property under test is that the
- * same condition appears twice, not what its slots were numbered.
+ * Text assertions normalise placeholder NUMBERS away: a fragment reused in two
+ * clauses renders `{p3:String}` in one and `{p11:String}` in the other, and the
+ * property under test is that the same condition appears twice.
  *
  * The statements' only Postgres read (the breakdown's cohort names) is stubbed,
  * so this file is independent of whichever partial `prisma-client` mock a
@@ -236,7 +231,7 @@ describe('funnel.sql / buildFunnelBase — cohort breakdowns', () => {
     const alias = `cohort_${COHORT_ID.replace(/-/g, '_')}`;
     expect(sql).toContain(`${alias}.profile_id`);
     expect(sql).toContain(`AS ${alias}`);
-    // The cohort label is a bound value now.
+    // The cohort label is a bound value.
     expect(text).toContain('Power users');
     await explain(statement);
   });

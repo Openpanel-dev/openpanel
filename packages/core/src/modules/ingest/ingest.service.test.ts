@@ -94,7 +94,7 @@ const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>
 
 // Back-dating is documented and deliberate, so the guard here is a FLOOR, not
 // a window: historical imports must keep working, and only values that cannot
-// be a real event time fall back to the server clock (ISSUES.md H6).
+// be a real event time fall back to the server clock.
 describe('getTimestamp', () => {
   const ARRIVED_AT = Date.UTC(2026, 8, 27, 12, 0, 0);
   const withTimestamp = (value: unknown) =>
@@ -112,8 +112,8 @@ describe('getTimestamp', () => {
   });
 
   it('falls back to the server clock for a value that lands in 1970', () => {
-    // `new Date(12345)` is 1970-01-01T00:00:12.345Z. One such row reached
-    // ClickHouse during the QA run and every WITH FILL series then began there.
+    // `new Date(12345)` is 1970-01-01T00:00:12.345Z. One such row once reached
+    // ClickHouse and every WITH FILL series then began there.
     expect(withTimestamp(12_345).timestamp).toBe(ARRIVED_AT);
     expect(withTimestamp(0).timestamp).toBe(ARRIVED_AT);
   });

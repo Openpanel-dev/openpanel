@@ -2,8 +2,6 @@
 // ONE `send` carrying MANY messages, instead of one awaited `send` per
 // /track request.
 //
-// It is OFF unless the config loader says otherwise — see `producer-tuning.ts`.
-//
 // Two invariants the tests hold this file to:
 //
 // 1. ORDER. Messages leave in the order they were enqueued: within a batch

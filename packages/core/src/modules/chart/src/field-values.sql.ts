@@ -28,7 +28,7 @@ export const SESSION_LEVEL_VALUE_COLUMNS: ReadonlySet<string> = new Set([
 
 /**
  * A value picker only needs recently-seen values, so the `events` fallback is
- * clamped to this window instead of the old 6-month full scan.
+ * clamped to this window.
  */
 export const EVENT_FIELD_VALUES_LOOKBACK_DAYS = 30;
 

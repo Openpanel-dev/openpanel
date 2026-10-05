@@ -1,11 +1,4 @@
-// The overview module's one ClickHouse entry point.
-//
-// The client is `deps.ch` — the same round-robin/retry proxy `main.ts` builds
-// and hands to every scope — instead of a lazy
-// `import('@openpanel/db/src/clickhouse/client')`. `OverviewService` /
-// `PagesService` were classes carrying a caller-supplied client precisely
-// because there was no scope to reach one through; there is now, so both are
-// factories over `ServiceDeps` and this file just forwards.
+// The overview module's one ClickHouse entry point; the client is `deps.ch`.
 //
 // `timezone` is mandatory here (every overview query sends one, several as a
 // literal 'UTC') where the shared helper leaves it optional, which is why this

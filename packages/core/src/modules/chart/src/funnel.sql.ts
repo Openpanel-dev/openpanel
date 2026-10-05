@@ -2,13 +2,8 @@
 //
 // The chart and the profile list are built from ONE base: a breakdown
 // expression only works if the join it references was added, and the joins
-// depend on the breakdowns, so building the selects in one place and the joins
-// in another is exactly the bug that made funnel "View Users" return "No users
-// found" for profile-property and cohort breakdowns.
-//
-// The field resolver and filter compiler render text (see compiled.ts); their
-// output — filter clauses, breakdown expressions, the profile CTE columns and
-// the cohort joins — is spliced, everything else is bound.
+// depend on the breakdowns, so building them apart made funnel "View Users"
+// return no users for profile-property and cohort breakdowns.
 //
 // Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
 // Distributed on Cloud. Every join runs under the client's
@@ -218,10 +213,8 @@ function profileCteColumns(
 
   const fields = new Set(profileJoinFields(profileFilters, profileBreakdowns));
 
-  // Both the breakdown- and the filter-derived names are vetted above; the
-  // allowlist here is the backstop that makes `sql.id` throw rather than
-  // inline if either loop ever lets something else through (main #512,
-  // GHSA-pc3q-gw7f-p2x2).
+  // The allowlist is the backstop that makes `sql.id` throw rather than inline
+  // if either loop above lets something else through (GHSA-pc3q-gw7f-p2x2).
   const columns: SqlFragment[] = Array.from(fields).map((field) =>
     sql.id(field, FUNNEL_JOIN_COLUMNS)
   );
@@ -405,10 +398,6 @@ export function funnelProfilesQuery(
   return sql`${base.ctes}SELECT DISTINCT profile_id FROM funnel WHERE ${sql.join(where, ' AND ')} LIMIT ${sql.uint64(input.limit)}`;
 }
 
-/**
- * No in-repo caller. Reachable only through `packages/core/src/index.ts`,
- * which still publishes the wrapper.
- */
 export function funnelSessionsQuery(input: {
   projectId: string;
   startDate: string;

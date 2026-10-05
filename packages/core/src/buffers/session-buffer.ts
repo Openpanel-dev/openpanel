@@ -6,7 +6,7 @@ import type { IClickhouseSession } from '../modules/session/session.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
-// 30min of idle in event-time → session ends. Matches industry default.
+// 30min of idle in event-time → session ends.
 const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
 
 /**
@@ -227,9 +227,9 @@ export class SessionBuffer extends BaseBuffer {
    * call is a no-op — the new session still needs its blob and sorted-set
    * entry.
    *
-   * Blobs no longer have a Redis TTL — this is the only path that removes
-   * them. The daily vacuum cron is a backstop for the rare case where this
-   * fails (worker crash, network partition).
+   * Blobs have no Redis TTL, so this is the only path that removes them. The
+   * daily vacuum cron is a backstop for when it fails (worker crash, network
+   * partition).
    */
   async cleanup({
     projectId,
@@ -552,12 +552,10 @@ export class SessionBuffer extends BaseBuffer {
       parsed.push(s);
     }
 
-    // A single high-activity session produces many (sign=-1, sign=+1)
-    // pairs within one flush window — every extend appends a pair. The
-    // VersionedCollapsingMergeTree collapses them at merge time, so the
-    // final state is correct either way, but inserting all the
-    // intermediate rows costs network bytes, gzip CPU, and CH ingest +
-    // merge work. Squash per-version to insert only the boundary rows.
+    // A busy session appends a (-1, +1) pair per extend within one flush.
+    // VersionedCollapsingMergeTree would collapse them at merge time anyway,
+    // but inserting them all costs network, gzip CPU and merge work. Squash
+    // per version to insert only the boundary rows.
     //
     // Set SESSION_BUFFER_SQUASH=false to disable as a safety hatch.
     const sessions = this.squashEnabled

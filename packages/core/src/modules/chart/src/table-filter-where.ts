@@ -104,7 +104,7 @@ function integerLiteralDigits(value: number): bigint | null {
  * have had. Declaring `Float64` for every number would bind a *different constant*
  * — visible wherever the comparand's type takes part in type resolution, and
  * in the `NO_COMMON_TYPE` message when a numeric filter lands on a String
- * property (the proof's two error cases).
+ * property.
  *
  * `filter-cast.ts`'s twin needs none of this: there every value is wrapped in
  * `toFloat64OrNull(toString(…))` or a sibling cast, which erases the declared
@@ -122,7 +122,7 @@ function numericLiteralType(value: number): string {
 }
 
 /**
- * Bind one filter value the way `sqlstring.escape` rendered it: a string is a
+ * Bind one filter value: a string is a
  * trimmed quoted literal, a number a numeric literal of the type ClickHouse
  * would have inferred for it, a boolean `true`/`false` and `null` the SQL
  * keyword NULL — which only `Nullable` reproduces, since a `String` param

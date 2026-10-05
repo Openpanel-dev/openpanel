@@ -1,12 +1,7 @@
-// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// Most of this router's inputs carry a reportId or a dashboardId rather than a
-// projectId, so `enforceAccess` is blind to them and the in-handler
-// `requireProjectAccess` through `ctx.services.auth` is the only check that
-// fires.
+// `protectedProcedure` runs `enforceAccess` BEFORE the input parser, and it only
+// sees a TOP-LEVEL `projectId` / `organizationId`. Most inputs here carry a
+// reportId or dashboardId instead, so the in-handler `requireProjectAccess`
+// through `ctx.services.auth` is the only check that fires.
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';

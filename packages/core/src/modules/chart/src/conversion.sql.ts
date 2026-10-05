@@ -1,10 +1,5 @@
 // The conversion statement as a pure `sql` fragment.
 //
-// The field resolver and both filter compilers return fragments; their output —
-// breakdown expressions, per-step filter clauses and the cohort joins — is
-// interpolated directly. `compiledText` is left with the `b_<index>` aliases
-// this file generates itself.
-//
 // Cluster note: `events`, `profiles` and `groups` are Distributed on Cloud. The
 // profile / group / cohort joins are LEFT ANY JOIN and run under the client's
 // `distributed_product_mode: 'allow'`; no `IN (subquery)` is involved.

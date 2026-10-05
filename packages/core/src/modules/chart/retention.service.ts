@@ -1,6 +1,5 @@
-// The cohort matrix here is the single source of truth for retention cohorts:
-// it powers the dashboard retention chart (via the tRPC `cohort` procedure) as
-// well as the MCP / agent / REST retention endpoints.
+// The cohort matrix is shared by the dashboard retention chart and the MCP /
+// agent / REST retention endpoints.
 
 import { DateTime, round } from '@openpanel/shared';
 import { range } from 'ramda';
@@ -194,17 +193,13 @@ export async function getEngagementCore(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Cohort retention matrix
-//
-// Definition: every user is assigned to exactly ONE cohort, the interval of
-// their FIRST `firstEvent` within the window (first-touch). For each cohort we
+// Cohort retention matrix: every user is assigned to exactly ONE cohort, the
+// interval of their FIRST `firstEvent` within the window. For each cohort we
 // count how many of those users performed `secondEvent` 0..N intervals later.
-//   - criteria 'on'           -> active exactly k intervals after  (=)
-//   - criteria 'on_or_after'  -> active at least k intervals after  (>=, cumulative)
-// When `firstEvent` / `secondEvent` is empty the name filter is dropped and the
-// query measures retention on ANY activity (active-user retention).
-// ---------------------------------------------------------------------------
+//   - criteria 'on'           -> active exactly k intervals after (=)
+//   - criteria 'on_or_after'  -> active at least k intervals after (>=, cumulative)
+// An empty `firstEvent` / `secondEvent` drops the name filter, measuring
+// active-user retention.
 
 const LUXON_UNIT: Record<IRetentionInterval, 'days' | 'weeks' | 'months'> = {
   minute: 'days',

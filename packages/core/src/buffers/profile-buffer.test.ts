@@ -187,8 +187,7 @@ describe('ProfileBuffer', () => {
 
     chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    // Errors propagate to tryFlush (which resyncs the counter). The safety
-    // property — queue preserved on CH failure — still holds.
+    // Errors propagate to tryFlush; the queue is preserved on CH failure.
     await expect(profileBuffer.processBuffer()).rejects.toThrow(
       'ClickHouse unavailable'
     );

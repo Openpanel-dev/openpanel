@@ -1,23 +1,16 @@
 /**
- * SQL-shape tests for the chart statements.
- *
- * Strategy: render the statement, then run `EXPLAIN <sql>` with its bound
- * params against the isolated `openpanel_test` ClickHouse (pinned by
- * test/preload.ts). EXPLAIN parses, resolves columns and builds the plan
- * without executing, so UNKNOWN_IDENTIFIER / AMBIGUOUS_IDENTIFIER / bad JOIN ON
+ * SQL-shape tests for the chart statements: render, then `EXPLAIN <sql>` with the
+ * bound params against the isolated `openpanel_test` ClickHouse (pinned by
+ * test/preload.ts). EXPLAIN resolves columns and builds the plan without
+ * executing, so UNKNOWN_IDENTIFIER / AMBIGUOUS_IDENTIFIER / bad JOIN ON
  * expressions surface without seeded data. WITH FILL TO < FROM is a runtime
  * check, so it is covered by a plain string assertion instead.
  *
- * Text assertions look at the rendered `query`; chart-level values are
- * `{pN:Type}` placeholders there, filter/breakdown expressions are inlined
- * verbatim (see field-resolution.ts's header).
- *
  * The statements' only Postgres read (the project's cohorts, for the
- * all-cohorts breakdown) is stubbed to "no cohorts": that is the precondition
- * the all-cohorts cases assert on, and it keeps this file independent of
- * whichever partial `prisma-client` mock a module-root service test left behind
- * (bun runs every file in one shared registry without `--isolate`). The real
- * Postgres cohort path runs in../chart.service.test.ts.
+ * all-cohorts breakdown) is stubbed to "no cohorts", which is the precondition
+ * the all-cohorts cases assert on, and keeps this file independent of
+ * whichever partial `prisma-client` mock a module-root service test left behind.
+ * The real Postgres cohort path runs in ../chart.service.test.ts.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
@@ -29,8 +22,8 @@ import type {
 import type { AggregateChartSqlInput, ChartSqlInput } from './statement';
 
 const cohortFindMany = mock(async () => []);
-// Plain-object snapshot, not the live binding — restoring from the namespace
-// import in afterAll would just re-apply the mock (see cohort.service.test.ts).
+// Plain-object snapshot, not the live binding: restoring from the namespace
+// import in afterAll would just re-apply the mock.
 const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 const realPrismaClient = { ...actualPrismaClient };
 mock.module('@openpanel/db/src/prisma-client', () => ({
@@ -320,9 +313,8 @@ describe('getChartSql', () => {
     );
   });
 
-  // main a2cbf2e8: the subquery was aliased `subQuery`, so the `e` every
-  // breakdown SELECT is built with was out of scope and the chart failed
-  // with UNKNOWN_IDENTIFIER on `e.properties`.
+  // The subquery must not be aliased `subQuery`: the `e` every breakdown SELECT
+  // is built with would be out of scope (UNKNOWN_IDENTIFIER on `e.properties`).
   it('one_event_per_user + a property breakdown resolves the events alias', async () => {
     const rendered = await getChartSql({
       event: event({ segment: 'one_event_per_user' }),
@@ -335,8 +327,7 @@ describe('getChartSql', () => {
   });
 
   // Saved reports / older clients can send field names that don't match the
-  // events schema; the chart service used to inline them verbatim, crashing
-  // parse.
+  // events schema; they must not be inlined verbatim.
   it('normalizes camelCase filter alias (referrerName → referrer_name)', async () => {
     const rendered = await getChartSql({
       event: event({
@@ -365,9 +356,9 @@ describe('getChartSql', () => {
   });
 
   it('drops unknown breakdown rather than emitting invalid identifier', async () => {
-    // `temple_name` is a custom property (lives in properties map) but got
-    // saved as a top-level breakdown. The old code path emitted
-    // `SELECT temple_name as _uc_label_1 FROM events`, failing parse.
+    // `temple_name` is a custom property (lives in properties map) saved as a
+    // top-level breakdown; it must not be emitted as
+    // `SELECT temple_name as _uc_label_1 FROM events`.
     const rendered = await getChartSql({
       event: event(),
       breakdowns: [breakdown('temple_name')],

@@ -1,9 +1,5 @@
-// Every ClickHouse statement this module runs is a `sql` fragment from
-// src/sql.ts. Funnel, conversion, sankey and retention are dispatched to the
-// sibling `*.service.ts` files. The one thing still value-imported from
-// `@openpanel/db` under `./src/` is the `sql` tag, which stays in
-// `packages/db` by name: a compile-time template tag, no client and no
-// request scope.
+// Every ClickHouse statement here is a `sql` fragment from src/sql.ts. Funnel,
+// conversion, sankey and retention dispatch to the sibling `*.service.ts` files.
 
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
@@ -110,17 +106,15 @@ export {
   type ChartBucketProfilesInput,
   ChartCohortIdError,
 } from './src/sql';
-// Types only: `packages/core/src/index.ts` re-exports these two. The four
-// statement functions beside them had no consumer through this file — the
-// engine and the sibling services import ./src/statement directly.
+// Types only: `packages/core/src/index.ts` re-exports these two.
 export type {
   AggregateChartSqlInput,
   ChartSqlInput,
 } from './src/statement';
 
 /**
- * Cap on distinct event property keys returned to the picker. Projects in the
- * 8k range exist, so the previous 10k was reachable in normal use.
+ * Cap on distinct event property keys returned to the picker. Projects with
+ * ~8k keys exist.
  */
 const EVENT_PROPERTY_KEY_LIMIT = 50_000;
 
@@ -144,12 +138,10 @@ const BUCKET_PROFILES_BATCH_SIZE = 200;
 const BUCKET_PROFILES_FETCH_CONCURRENCY = 4;
 
 /**
- * Cap on the ids one chart data point hands the drill-down modal. The bucket
- * query used to be unbounded, so a busy project's point returned a 31,447-id
- * tail that the modal renders
- * through a virtualizer and nobody scrolls to, after paying for every one of
- * them in `profiles FINAL` batches. Same number as FUNNEL_PROFILES_LIMIT: both
- * feed the same modal, so the two drill-downs should not disagree on depth.
+ * Cap on the ids one chart data point hands the drill-down modal. A busy point
+ * can hold tens of thousands of ids nobody scrolls to, each paid for in
+ * `profiles FINAL` batches. Same number as FUNNEL_PROFILES_LIMIT: both feed the
+ * same modal.
  */
 const BUCKET_PROFILES_LIMIT = 1000;
 
@@ -202,8 +194,6 @@ async function getProfilesInBatches(
   return perBatch.flat();
 }
 
-// --- shared report input -----------------------------------------------------
-
 export type ShareableReportInput = IReportInput & {
   shareId?: string;
   id?: string;
@@ -228,8 +218,6 @@ export function resolveReportInput(
     interval: input.interval ?? report.interval,
   };
 }
-
-// --- projectCard -------------------------------------------------------------
 
 export interface ProjectCardChartRow {
   value: number;
@@ -298,8 +286,6 @@ export async function getProjectCard(
     trend: projectCardTrend(metrics),
   };
 }
-
-// --- events / properties / values -------------------------------------------
 
 export interface ChartEventOption {
   name: string;
@@ -447,8 +433,6 @@ export async function getChartPropertyValues(
     )(rows),
   };
 }
-
-// --- funnel / conversion / sankey / retention --------------------------------
 
 async function currentAndPreviousPeriod(
   deps: ServiceDeps,
@@ -629,8 +613,6 @@ export async function getRetentionChart(
   });
 }
 
-// --- drill-down profiles -----------------------------------------------------
-
 export interface ChartBucketProfilesRequest {
   projectId: string;
   /** ISO string of the data point's bucket. */
@@ -736,30 +718,22 @@ export async function getFunnelStepProfiles(
   return getProfilesInBatches(deps, ids, projectId, FUNNEL_PROFILES_BATCH_SIZE);
 }
 
-// --- service -----------------------------------------------------------------
-
-// The funnel, conversion, sankey and retention services live in this module's
-// own sibling files rather than in modules of their own, so they FOLD INTO
-// `chart` rather than becoming four more `Services` members: chart.service.ts
-// is already the dispatcher every caller goes through (`getFunnelChart` /
-// `getConversionChart` / `getSankeyChart` / `getRetentionChart`), and a
-// `Services` key per file would name four things that are not modules.
+// The funnel, conversion, sankey and retention services fold into `chart`
+// rather than becoming `Services` members: chart.service.ts is the dispatcher
+// every caller goes through.
 
 export function createChartService(
   deps: ServiceDeps,
   services: () => Services
 ) {
-  // The four chart sub-modules each expose their own `create*Service(deps)`.
-  // `services.ts` binds each under its own key; `chart` composes them as well,
-  // so the callers that reach a funnel/retention method through the chart
-  // facade keep working. Both bind the same stateless closures.
+  // Each sub-module exposes its own `create*Service(deps)`; chart composes them
+  // too so callers reaching them through the chart facade keep working.
   const funnel = createFunnelService(deps, services);
   const conversion = createConversionService(deps, services);
   const sankey = createSankeyService(deps, services);
   const retention = createRetentionService(deps, services);
 
   return {
-    // chart
     execute: (input: IReportInput): Promise<FinalChart> =>
       executeChart(deps, input),
     executeAggregate: (input: IReportInput): Promise<FinalChart> =>
@@ -781,7 +755,6 @@ export function createChartService(
     funnelStepProfiles: (
       input: FunnelStepProfilesRequest
     ): Promise<IServiceProfile[]> => getFunnelStepProfiles(deps, input),
-    // funnel
     getFunnelGroup: funnel.getFunnelGroup,
     /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
     toFunnelSeries: funnel.toSeries,
@@ -792,19 +765,16 @@ export function createChartService(
     getFunnelCore: funnel.getFunnelCore,
     buildFunnelBase: funnel.buildFunnelBase,
     getFunnelProfileIds: funnel.getFunnelProfileIds,
-    // conversion
     getConversionChart: (
       chartInput: IReportInput
     ): ReturnType<typeof getConversionChart> =>
       getConversionChart(deps, chartInput),
     getConversion: conversion.getConversion,
-    // sankey
     getRawWhereClause: sankey.getRawWhereClause,
     getSankeyChart: (input: IReportInput): ReturnType<typeof getSankeyChart> =>
       getSankeyChart(deps, input),
     getSankey: sankey.getSankey,
     getUserFlowCore: sankey.getUserFlowCore,
-    // retention
     processCohortData: retention.processCohortData,
     getRetentionChart: (
       report: NonNullable<IServiceReport> | null,

@@ -1,17 +1,7 @@
-// The queue-side collectors, on the one core registry.
-//
-// Three deliberate differences from the metric set this replaces, written up
-// for dashboard owners in `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:
-//
-// 1. Registers the five `<queue>_*_count` gauges for all seven BullMQ
-// queues, not just two — ten new series appear; none of the existing ten
-// changes. 2. They register only where the role consumes (main.ts), because
-// each gauge is one Redis round trip per scrape and ten api replicas
-// exposing them would multiply that for no new information. 3. A gauge whose
-// Redis read throws is skipped rather than failing the whole scrape, so one
-// Redis blip does not turn into a 500 on /metrics and a gap in every panel;
-// core's buffer gauges already swallow the same way
-// (buffers/buffer.metrics.ts).
+// The `<queue>_*_count` gauges register only where the role consumes: each is
+// one Redis round trip per scrape, and api replicas would multiply that for no
+// new information. A gauge whose Redis read throws is skipped rather than
+// failing the whole scrape.
 
 import type { Queue as BullQueue } from 'bullmq';
 import client from 'prom-client';

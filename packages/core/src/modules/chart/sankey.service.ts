@@ -35,8 +35,6 @@ const MIN_LINK_PERCENT = 0.25;
 const PERCENT = 100;
 const FIRST_STEP = 1;
 
-// `packages/core/src/index.ts` names this file as the schema's source; the
-// schema itself lives in chart.constants.ts.
 export { type IGetSankeyInput, zGetSankeyInput } from './chart.constants';
 
 export interface SankeyNode {
@@ -134,12 +132,10 @@ function toSankeyEvent(
  * so. An unparseable date is left alone — the statement itself is where a
  * malformed range is rejected.
  *
- * Applied by `getSankeyChart`, the `chart.sankey` entry point, and not by
- * `getSankey` itself: it bounds that procedure specifically, because it is
- * the range picker that offers `12m`/`lastYear`. The REST
- * `/insights/:projectId/user_flow` route, the MCP `get_user_flow` tool and the
- * assistant tool take caller-supplied dates, so they are not covered by the
- * range picker's cap.
+ * Applied by `getSankeyChart` (the `chart.sankey` entry point) and not by
+ * `getSankey`: the REST `/insights/:projectId/user_flow` route, the MCP
+ * `get_user_flow` tool and the assistant tool take caller-supplied dates and
+ * are not covered by the range picker's cap.
  */
 export function assertSankeyWindowIsAnswerable(
   startDate: string,
@@ -388,7 +384,7 @@ function mergeFinalNodes(
     return b.value - a.value;
   });
 
-  // Links can now point at the same merged target; sum them.
+  // Links can point at the same merged target; sum them.
   const linkMap = new Map<string, number>();
   for (const link of remappedLinks) {
     const key = `${link.source}->${link.target}`;

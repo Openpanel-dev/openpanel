@@ -100,7 +100,7 @@ export async function getDeviceId({
  * Returns true when an existing session is recent enough that the incoming
  * event should EXTEND it rather than start a new session.
  *
- * Critical: blobs no longer have a Redis TTL (so the reaper can always find
+ * Critical: blobs have no Redis TTL (so the reaper can always find
  * them), which means an existing session blob may linger past its idle
  * window. We must NOT blindly reuse `existing.id` — if we did, the worker's
  * boundary detection would open a "new" session with the same id as the

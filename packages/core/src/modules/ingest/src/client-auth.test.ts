@@ -5,9 +5,9 @@
  * usage metric confirms `/event` callers have moved off it.
  *
  * `secretVerified` is the side channel the bot check reads. The `secret
- * verification` block guards main #481: `secretVerified` and revenue
- * ingestion follow whether the secret verified against the stored hash, not
- * whether a secret string was on the request.
+ * verification` block guards that it and revenue ingestion follow whether the
+ * secret verified against the stored hash, not whether a secret string was on
+ * the request.
  */
 
 import {

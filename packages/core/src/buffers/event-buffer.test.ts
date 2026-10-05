@@ -20,11 +20,9 @@ const chQuery = mock(
   async (_query: string | SqlFragment): Promise<unknown[]> => []
 );
 
-// The client comes in as `BufferDeps.ch` and reads go through core's own
-// `chQuery` (ch-query.ts) — so the insert path needs no module mock at all, and
-// the read path mocks one core module instead of
-// `@openpanel/db/src/clickhouse/client` (whose import builds a real client and
-// a pino transport worker thread per test file).
+// Inserts go through `BufferDeps.ch` (no module mock needed); reads go through
+// core's `chQuery`, mocked here instead of `@openpanel/db`'s client, whose
+// import builds a real client and a pino transport thread per test file.
 mock.module('../ch-query', () => ({
   ...realChQuery,
   chQuery: (_scope: unknown, query: string | SqlFragment) => chQuery(query),
@@ -216,15 +214,9 @@ describe('EventBuffer', () => {
     };
     expect(callArgs.format).toBe('JSONEachRow');
     expect(callArgs.table).toBe('events');
-    // After the raw-passthrough optimisation, `values` is an
-    // object-mode Readable stream that yields pre-serialized
-    // JSONEachRow lines as strings. The client (configured with
-    // `json.stringify: (v) => typeof v === 'string' ? v : JSON.stringify(v)`)
-    // then passes the strings through unchanged — no JSON.parse on
-    // our side, no JSON.stringify on the client's side. Object mode
-    // is mandatory: @clickhouse/client rejects byte streams for
-    // JSON* formats with "expected Readable Stream with enabled
-    // object mode".
+    // `values` is an object-mode Readable of pre-serialized JSONEachRow lines.
+    // Object mode is mandatory: @clickhouse/client rejects byte streams for
+    // JSON* formats.
     const stream = callArgs.values as Readable;
     expect(stream.readableObjectMode).toBe(true);
     const lines = await streamToLines(stream);
@@ -653,8 +645,7 @@ describe('EventBuffer', () => {
 
     chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    // Errors propagate to tryFlush (which resyncs the counter). The safety
-    // property — queue preserved on CH failure — still holds.
+    // Errors propagate to tryFlush; the queue is preserved on CH failure.
     await expect(eventBuffer.processBuffer()).rejects.toThrow(
       'ClickHouse unavailable'
     );
@@ -702,11 +693,8 @@ describe('extractProjectId', () => {
   });
 
   it('falls back to JSON.parse when properties has project_id BEFORE top-level', () => {
-    // This is the bug case the regex couldn't handle. If a future
-    // refactor swaps the field order in the event constructor, the
-    // fast path would attribute counts to the wrong project. The
-    // fallback fixes that: as soon as we see two occurrences we
-    // resolve via real JSON.parse and pick the top-level key.
+    // If the field order in the event constructor ever changes, the fast path
+    // would misattribute counts; two occurrences must resolve via JSON.parse.
     const line = JSON.stringify({
       properties: { project_id: 'user-supplied' },
       project_id: 'real-project',

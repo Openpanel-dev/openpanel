@@ -92,9 +92,8 @@ describe('getRetentionCohort', () => {
   });
 
   it('counts retention across the year boundary (week interval)', async () => {
-    // The old toWeek() implementation returned week-of-year (resets each Jan),
-    // so a 2024-W52 -> 2025-W01 return produced a negative diff and was dropped.
-    // This locks the year-aware behavior.
+    // Week-of-year resets each Jan, so a 2024-W52 -> 2025-W01 return must still
+    // count (year-aware diff).
     const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
@@ -140,9 +139,9 @@ describe('getRetentionCohort', () => {
     // fired app_open on D2 (RU1, RU2, RU4) already belongs to an earlier cohort.
     expect(rows.map((row) => row.cohort_interval)).toEqual([day.d0, day.d1]);
 
-    // Characterize the bug we fixed: the legacy "every-occurrence" cohorting
-    // (no GROUP BY profile_id dedup) places recurring users in every day they
-    // were active, producing a spurious D2 cohort and inflated sizes.
+    // Without the GROUP BY profile_id dedup, every-occurrence cohorting places
+    // recurring users in every day they were active, producing a spurious D2
+    // cohort and inflated sizes.
     const legacy = await chQuery<{ cohort_interval: string; size: number }>(`
       SELECT toDate(created_at) AS cohort_interval, COUNT(DISTINCT profile_id) AS size
       FROM ${TABLE_NAMES.cohort_events_mv}
@@ -335,7 +334,7 @@ describe('processCohortData weighted average (pure)', () => {
     expect(avg.values[0]).toBe(80);
     expect(avg.percentages[0]).toBe(1);
     // Period 2 pools C0+C1 only (C2 is immature). C1's genuine zero is included,
-    // so it's 25/180 = 0.14 — NOT 25/100 = 0.25 (the old "exclude zeros" bug).
+    // so it's 25/180 = 0.14, not 25/100 = 0.25.
     expect(avg.percentages[2]).toBe(0.14);
     // Period 3 pools only C0 (C1, C2 immature): 10/100 = 0.10.
     expect(avg.percentages[3]).toBe(0.1);

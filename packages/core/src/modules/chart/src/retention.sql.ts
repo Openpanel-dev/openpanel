@@ -1,8 +1,5 @@
 // Every ClickHouse query the retention service runs, as pure `sql` fragments.
 //
-// The filter compiler renders text (see compiled.ts); its output is the only
-// thing spliced into the cohort statement.
-//
 // Cluster note: `events`, `dau_mv` and `cohort_events_mv` are Distributed on
 // Cloud. None of these statements contains an `IN (subquery)` — the cohort
 // matrix is a CTE self-join — so no `IN` / `GLOBAL IN` decision arises.
@@ -50,7 +47,6 @@ export interface RetentionSeriesQueryInput {
   endDate?: string;
 }
 
-/** Same spelling as `overview/src/pages.sql.ts` and `profile/src/sql.ts`. */
 function createdAtWithin({
   startDate,
   endDate,

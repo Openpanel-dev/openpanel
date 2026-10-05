@@ -1,10 +1,8 @@
 // `getDefaultIntervalByDates` uses plain Date math instead of date-fns. Every
 // process that constructs these Dates runs under TZ=UTC, so Date's local
-// getters (getFullYear/getMonth/getDate) already read UTC — the helpers below
-// reproduce date-fns's local-calendar semantics under that invariant. The
-// only inputs this function ever receives are date-only strings (midnight
+// getters already read UTC, and the inputs are date-only strings (midnight
 // boundaries), where date-fns's exact-duration-vs-calendar-day nuance cannot
-// diverge from a plain ms division anyway.
+// diverge from a plain ms division.
 
 import { z } from 'zod';
 
@@ -328,7 +326,7 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
   );
 }
 
-/** date-fns's differenceInDays without the dependency — see file header. */
+/** date-fns's differenceInDays without the dependency. */
 function differenceInDays(dateLeft: Date, dateRight: Date): number {
   return Math.trunc((dateLeft.getTime() - dateRight.getTime()) / MS_PER_DAY);
 }
@@ -636,10 +634,7 @@ export const chartColors = [
  */
 const CHART_FORMULA_PATTERN = /^[A-Za-z0-9_ .,+\-*/()%^]*$/;
 
-// Helper, not vocabulary: every consumer copies these 4 lines locally instead
-// of importing them (apps/start/src/utils/object-to-zod-enums.ts is the
-// frontend's copy). Kept private here, for this file's own use building the
-// enums below.
+// Private helper for the enums below; consumers keep their own copy.
 function objectToZodEnums<K extends string>(
   obj: Record<K, unknown>
 ): [K, ...K[]] {
@@ -939,10 +934,7 @@ export const zReport = zReportInput.extend({
 // Alias for backward compatibility
 export const zChartInput = zReportInput;
 
-// --------------------------------------------------------------------------
-// `UnionOmit` has no owning module; it is kept here, with the report types it
-// is only ever applied to (apps/start's reportSlice).
-// ---------------------------------------------------------------------------
+// `UnionOmit` has no owning module; it lives with the report types it is applied to.
 
 export type UnionOmit<T, K extends keyof any> = T extends any
   ? Omit<T, K>

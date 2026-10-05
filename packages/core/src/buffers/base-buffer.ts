@@ -7,11 +7,7 @@ import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
 
-/**
- * What a buffer needs from the boot scope. Buffers are built once by
- * `createBuffers(deps)` and hung on `AppDeps` — never module singletons, so a
- * test constructs its own and closes nothing shared.
- */
+/** What a buffer needs from the boot scope; a test constructs its own. */
 export interface BufferDeps {
   /**
    * Each buffer logs under its own name. Injected rather than built here so
@@ -30,10 +26,8 @@ export interface BufferDeps {
    */
   isCronPaused(): Promise<boolean>;
   /**
-   * The parsed environment. Every buffer's batch/chunk/TTL knob used to be a
-   * module-scope `process.env` read; they arrive here instead, which is also
-   * what lets a test build a buffer with a different sizing without touching
-   * the process environment.
+   * The parsed environment: every buffer's batch/chunk/TTL knob, so a test can
+   * size a buffer without touching the process environment.
    */
   config: CoreConfig;
 }
@@ -316,10 +310,8 @@ export class BaseBuffer {
   }
 
   /**
-   * Ground-truth size of the buffer (LLEN of the Redis list). O(1). The
-   * previous implementation kept a shadow counter to "avoid" LLEN — but
-   * LLEN and GET are both O(1) single-roundtrip ops in Redis, so the
-   * counter was free complexity that silently drifted. Always use this.
+   * Ground-truth size of the buffer (LLEN of the Redis list), O(1). No shadow
+   * counter: it silently drifts.
    */
   async getBufferSize(): Promise<number> {
     return await getRedisCache().llen(this.getRedisListKey());

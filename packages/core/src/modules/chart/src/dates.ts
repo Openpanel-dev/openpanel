@@ -1,7 +1,6 @@
-// @openpanel/db's clickhouse/client.ts owns these, but importing it constructs
-// a client and a pino logger at import time (see insight.service.ts's header),
-// and the fragment builders here must stay pure and synchronous. Same choice
-// cohort.service.ts made for its table map.
+// Importing @openpanel/db's clickhouse/client constructs a client and a pino
+// logger at import time, and the fragment builders here must stay pure and
+// synchronous.
 
 const CLICKHOUSE_DATE_SUFFIX = /(\.\d{3})?Z+$/;
 

@@ -1,20 +1,14 @@
 // THE HOOK ORDER IS THE CONTRACT: duplicate -> clientAuth -> isBot ->
-// subscription. It holds by lifecycle phase rather than by registration order
-// — verified against Elysia 1.4.30, where a route declaring all three runs
-// `derive -> transform -> macro resolve -> beforeHandle`. So the duplicate
-// check is a `transform`, `clientAuth` is the macro, and the bot check is a
-// `beforeHandle`, which is what lets it read `client.secretVerified` after
-// the macro resolves the principal.
+// subscription. It holds by lifecycle phase rather than registration order
+// (verified against Elysia 1.4.30: `derive -> transform -> macro resolve ->
+// beforeHandle`). So the duplicate check is a `transform`, `clientAuth` is the
+// macro, and the bot check is a `beforeHandle`, which lets it read
+// `client.secretVerified` after the macro resolves the principal.
 //
-// Both routes carry the duplicate check because the guard wrapping them below
-// is scoped to both, so `GET /track/device-id` goes through it too.
-//
-// `POST /event` — a legacy compat route kept because production still posts
-// to it — sits beside `/track` with the same hook chain, plus a per-client
-// usage counter recorded after authentication (so a label can only ever be a
-// client id that exists) and before the hooks that can short-circuit (so a
-// client whose events are dropped as bot/wind-down traffic still counts as
-// one that would break if `/event` disappeared).
+// `POST /event`, a legacy route production still posts to, has the same hook
+// chain plus a per-client usage counter recorded after authentication (so a
+// label is always a real client id) and before the hooks that can
+// short-circuit (so a client whose events are dropped still counts).
 
 import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
@@ -32,9 +26,6 @@ import {
 } from './ingest.service';
 import { validateIngestRequest } from './src/client-auth';
 import { recordLegacyEventRequest } from './src/ingest.metrics';
-// The Kafka producer is a sibling now, not an `AppDeps` field: kafka.ts moved
-// into this module, so there is nothing left for main.ts to inject. It still
-// constructs no client at import time.
 import { produceIncomingEvent } from './src/kafka';
 
 const TAGS = ['Track'];
@@ -165,8 +156,6 @@ function windDownGuard(deps: AppDeps) {
 }
 
 export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
-  // One closure over `deps` for all three routes: this is route-definition
-  // work, and three identical closures read as if it were per-request.
   const blockWhenWoundDown = windDownGuard(deps);
 
   return app.guard(

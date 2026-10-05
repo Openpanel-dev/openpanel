@@ -294,7 +294,7 @@ describe('overview.sql — sql.id() identifier whitelists (R3)', () => {
 
 // The MCP tools send a bare `YYYY-MM-DD`; the dashboard sends the day's edges
 // already. Both have to end up bounding the same last day, or every MCP range
-// silently loses it (ISSUES.md H8a).
+// silently loses it.
 describe('overview.sql — date-only range boundaries', () => {
   function boundsOf(fragment: SqlFragment): string[] {
     const { query_params } = fragment.toStatement();

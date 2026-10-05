@@ -1,10 +1,5 @@
-// The ingestion pipeline for POST /track and POST /event.
-//
 // Nothing here throws for a caller error: each transport owns its own status
 // codes and bodies, so the pipeline returns a `TrackOutcome` instead.
-//
-// The Kafka producer is injected as an argument, not read from a module
-// singleton, so a test can assert on what was produced without a broker.
 
 import { generateId } from '@openpanel/shared';
 import { parseUserAgent } from '@openpanel/shared/server';
@@ -80,8 +75,6 @@ export type IngestBuffers = Pick<Buffers, 'session' | 'replay' | 'group'>;
 export interface IngestTransport {
   buffers: IngestBuffers;
   produceIncomingEvent: IncomingEventProducer;
-  /** The profile writes below reach ClickHouse and the profile buffer
-   *  through the scope, not a module singleton. */
   deps: ServiceDeps;
 }
 
@@ -548,7 +541,7 @@ export async function ingestTrack(
  *
  * It gates on `windDownStep`, not on `subscriptionState`. Every expired trial
  * is already in `trial_expired`, so gating on the state would block thousands
- * of orgs the moment this ships, skipping the four warning emails entirely.
+ * of orgs at once, skipping the four warning emails entirely.
  *
  * It answers 202, not 402 or 403 (the caller does; this returns the verdict).
  * The SDKs treat only 401 and 2xx as terminal, so a "correct" status code

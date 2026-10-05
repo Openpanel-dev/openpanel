@@ -1,9 +1,6 @@
 // `overviewProcedure` is `publicProcedure` plus one middleware that resolves
 // share-or-membership off the raw `projectId`/`shareId`, BEFORE the input
 // parser.
-//
-// There is no per-range cache middleware yet; `createCacheMiddleware` in
-// rpc/base.ts is the seam that will carry it.
 
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { format } from 'date-fns';

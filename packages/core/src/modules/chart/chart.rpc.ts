@@ -1,11 +1,10 @@
-// The six member-only procedures use `protectedProcedure`, so
-// `enforceAccess` reads the top-level `projectId` before the input is parsed.
+// The six member-only procedures use `protectedProcedure`, so `enforceAccess`
+// reads the top-level `projectId` before the input is parsed.
 //
 // `chartProcedure` (funnel, conversion, sankey, chart, aggregate, cohort) is the
-// share-aware builder: `publicProcedure` plus one middleware that admits an
-// anonymous caller holding a valid share — `shareId` + `id` resolve the saved
-// report, and the request renders that report (the caller may only move the
-// date window). The resolved report rides on `ctx.report`, so a handler
+// share-aware builder: an anonymous caller holding a valid share resolves the
+// saved report, and the request renders that report (the caller may only move
+// the date window). The resolved report rides on `ctx.report`, so a handler
 // cannot forget to resolve it.
 
 import { z } from 'zod';

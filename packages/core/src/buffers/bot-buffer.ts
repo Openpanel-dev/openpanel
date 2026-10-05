@@ -58,9 +58,7 @@ export class BotBuffer extends BaseBuffer {
       return;
     }
 
-    // Raw passthrough: each Redis entry is already a valid JSONEachRow
-    // line. Streaming raw strings skips JSON.parse + the client's
-    // re-stringify on the hot path.
+    // Raw passthrough: each Redis entry is already a JSONEachRow line.
     const ch = this.resolveCh();
     const chStart = performance.now();
     await ch.insert({

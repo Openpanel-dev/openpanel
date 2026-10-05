@@ -2,17 +2,10 @@
 // Chart field resolution: how a report's field name (`referrerName`,
 // `utm_source`, `properties.x.*`, `profile.email`, `group.name`,
 // `cohort:<id>`, `has_profile`) becomes a ClickHouse expression, plus the
-// profile-CTE narrowing helpers.
-//
-// Each resolver returns a `SqlFragment` whose values — cohort ids, cohort
-// labels, project ids and the `properties[...]` map keys — bind as
-// `{pN:Type}` params, and whose identifiers go through `sql.id`.
-//
-// The one piece of text this file still builds is the backtick-quoted CTE alias
-// `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`), which is
-// an identifier `sql.id` cannot express — three dot-separated parts — and which
-// `collectProfilePropertyKeys` already guards. It goes through `compiled.ts`,
-// the module's one text seam.
+// profile-CTE narrowing helpers. Values bind as params and identifiers go
+// through `sql.id`; the one exception is the backtick-quoted CTE alias
+// `` `profile.properties.<key>` `` (see `profilePropertiesCteSelect`), which
+// `sql.id` cannot express and which goes through `compiled.ts`.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartBreakdown } from '../../report/report.constants';
@@ -31,11 +24,8 @@ export const CHART_TABLE = {
   cohortEventsMv: 'cohort_events_mv',
 } as const;
 
-// Top-level columns on the events table. Derived from the migration in
-// @openpanel/db's code-migrations/3-init-ch.ts (+ revenue added in
-// 6-add-revenue-column.ts).
-// Used to distinguish real columns from property keys and reject unknown
-// identifiers before they reach ClickHouse.
+// Top-level columns on the events table, used to tell real columns from property
+// keys and to reject unknown identifiers before they reach ClickHouse.
 export const EVENT_TOP_LEVEL_COLUMNS = new Set<string>([
   'id',
   'name',
@@ -257,8 +247,7 @@ export function cohortBreakdownLabelExpr(
 
 /**
  * The membership subselect both filter compilers use for `inCohort` /
- * `notInCohort`. Uses a plain `IN (subquery)`, not `GLOBAL IN` — preserved
- * deliberately as an accepted trade-off, not an oversight.
+ * `notInCohort`. A plain `IN (subquery)`, not `GLOBAL IN`: an accepted trade-off.
  */
 export function buildCohortMembersSubselect(
   cohortIds: string[],
@@ -395,8 +384,7 @@ function matchPropertyMapPrefix(property: string): string | undefined {
  * scalar, decided by testing the rendered TEXT for a `%`. That's reachable
  * two ways: the wildcard branch emits `transformPropertyKey`'s pattern, and a
  * NON-wildcard key containing a literal `%` also matches — a known defect
- * (`properties.a%b` is treated as an array and fails at ClickHouse), kept for
- * behavioral parity.
+ * (`properties.a%b` is treated as an array and fails at ClickHouse).
  */
 export function isWildcardPropertyKey(rawProperty: string): boolean {
   const property = normalizeEventField(rawProperty);
@@ -423,12 +411,9 @@ export function getSelectPropertyKey(
    */
   eventsAlias?: string
 ): SqlFragment {
-  // Map camelCase aliases (`referrerName` → `referrer_name`) and bare UTM
-  // names (`utm_source` → `properties.__query.utm_source`) into their
-  // canonical form before doing any pattern matching. The fallback at the
-  // bottom of this function returns `property` verbatim, so without this
-  // normalization an alias would leak into the generated SQL and fail with
-  // UNKNOWN_IDENTIFIER.
+  // Normalize aliases (`referrerName`, bare `utm_source`) first: the fallback at
+  // the bottom returns `property` verbatim, so an alias would leak into the SQL
+  // and fail with UNKNOWN_IDENTIFIER.
   const property = normalizeEventField(rawProperty);
   const extractedCohortId = cohortId || extractCohortId(property);
 
@@ -440,7 +425,7 @@ export function getSelectPropertyKey(
     return sql`if(profile_id != device_id, 'true', 'false')`;
   }
 
-  // Handle group properties — requires ARRAY JOIN + _g JOIN to be present in query
+  // Group properties need the ARRAY JOIN + _g JOIN to be present in the query.
   if (property.startsWith('group.') && projectId) {
     return getGroupPropertySql(property);
   }
@@ -468,7 +453,6 @@ export function getSelectPropertyKey(
   return sql`${map}[${sql.string(property.replace(new RegExp(`^${match}.`), ''))}]`;
 }
 
-// --- profile-property CTE narrowing (perf) ---------------------------------
 // profile.properties.<key> refs render as Map lookups `profile.properties['<key>']`.
 // Pulling the whole `properties` Map into the profile CTE makes the LEFT ANY
 // JOIN hash carry the full Map per profile — roughly a kilobyte each on real

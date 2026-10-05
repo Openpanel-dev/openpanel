@@ -25,8 +25,7 @@ beforeAll(async () => {
 
 describe('rollingActiveUsersQuery', () => {
   // `date + n` smears every active day forward, so without an upper bound the
-  // series runs up to `days - 1` days past today. On the seeded acme-web at
-  // days=7 that drew two points into the future (ISSUES.md H8c).
+  // series runs up to `days - 1` days past today.
   it('never projects past today', () => {
     for (const days of [1, 7, 30]) {
       const { query } = RET.rollingActiveUsersQuery(
