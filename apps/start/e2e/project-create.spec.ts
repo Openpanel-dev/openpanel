@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { openMenu } from './org-helpers';
 
 test('a project can be created from the organization page', async ({
   page,
@@ -7,8 +8,10 @@ test('a project can be created from the organization page', async ({
   const projectName = `E2E project ${Date.now()}`;
   await page.goto(`/${seed.organizationId}`);
   await page.waitForLoadState('networkidle');
-  // The sidebar action button cycles its label; the menu behind it is stable.
-  await page.getByRole('button', { name: /Create a project/ }).click();
+  await openMenu(
+    page,
+    page.getByRole('button', { name: /Create a project|Invite a user/ })
+  );
   await page.getByRole('menuitem', { name: 'Create a project' }).click();
 
   const dialog = page.getByRole('dialog');
