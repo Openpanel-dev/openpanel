@@ -18,10 +18,6 @@ import {
   type InsightExplanation,
 } from './src/explain';
 import {
-  createLegacyInsightsScanner,
-  type Insight as LegacyInsight,
-} from './src/legacy-scan';
-import {
   devicesModule,
   entryPagesModule,
   geoModule,
@@ -647,14 +643,6 @@ export async function getReferrerSpikes(
   return getReferrerSpikesQuery(deps, input);
 }
 
-/** Legacy pre-engine detector — no live callers today. */
-export async function scanLegacyInsights(
-  deps: ServiceDeps,
-  projectId: string
-): Promise<LegacyInsight[]> {
-  return createLegacyInsightsScanner(deps).generateInsights(projectId);
-}
-
 // Re-exported at each type's own import site (noExportedImports): a type
 // that is also used locally still gets `export type {} from '<module>'`
 // rather than a second `import`-then-`export` pair gathered here.
@@ -708,7 +696,5 @@ export function createInsightService(
     getReferrerSpikes: (
       input: GetReferrerSpikesInput
     ): Promise<ReferrerSpikeCluster[]> => getReferrerSpikes(deps, input),
-    scanLegacyInsights: (projectId: string): Promise<LegacyInsight[]> =>
-      scanLegacyInsights(deps, projectId),
   };
 }

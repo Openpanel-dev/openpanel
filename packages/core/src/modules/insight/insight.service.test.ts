@@ -1,6 +1,6 @@
 // The subject's functions take `ServiceDeps`, so `deps.db` is the fake below and
 // no Prisma module mock is needed. The intra-package modules (store,
-// referrer-spikes, legacy-scan) are `mock.module`'d, registered before the
+// referrer-spikes, explain) are `mock.module`'d, registered before the
 // subject's first call.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
@@ -47,25 +47,6 @@ const spikesQuery = mock(async () => [
 ]);
 mock.module('./src/referrer-spikes', () => ({
   getReferrerSpikes: spikesQuery,
-}));
-
-const LEGACY_SPIKE = {
-  type: 'traffic_spike',
-  message: 'test',
-  // A `TrafficSpikeResult` — `Insight.data` is the union of the ten detector
-  // result shapes, not `any`.
-  data: {
-    referrer_name: 'instagram.com',
-    date: '2026-09-01',
-    visitor_count: 120,
-    avg_previous_7_days: 30,
-  },
-};
-const legacyGenerateInsights = mock(async () => [LEGACY_SPIKE]);
-mock.module('./src/legacy-scan', () => ({
-  createLegacyInsightsScanner: () => ({
-    generateInsights: legacyGenerateInsights,
-  }),
 }));
 
 const generateInsightExplanation = mock(async () => ({
@@ -129,13 +110,6 @@ test('getReferrerSpikes delegates to the ClickHouse query', async () => {
 
   expect(spikesQuery).toHaveBeenCalledWith(deps, input);
   expect(result).toEqual([{ anchorDate: '2026-09-01', spikes: [] }]);
-});
-
-test('scanLegacyInsights delegates to the pre-engine detector, kept for parity', async () => {
-  const result = await subject.scanLegacyInsights(deps, 'p1');
-
-  expect(legacyGenerateInsights).toHaveBeenCalledWith('p1');
-  expect(result).toEqual([LEGACY_SPIKE]);
 });
 
 test('explainInsight is a cache-aside over the AI call, keyed by the caller-supplied cacheKey', async () => {
@@ -204,7 +178,6 @@ test('createInsightService binds every InsightService method', () => {
     'listAllInsights',
     'explainInsight',
     'getReferrerSpikes',
-    'scanLegacyInsights',
   ] as const) {
     expect(typeof service[method]).toBe('function');
   }

@@ -5,6 +5,7 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
+import { getSafeJson } from '@openpanel/shared';
 import { createLogger } from '../logger';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
 import { type SqlFragment, toStatement } from './sql';
@@ -14,9 +15,6 @@ export { createClient } from '@clickhouse/client';
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
-// Relative path, not the `@openpanel/core` barrel: core depends on this
-// package, so the barrel would pull core's module graph in for one helper.
-import { getSafeJson } from '../../../core/src/shared/json';
 
 interface LogParams {
   module: string;

@@ -21,6 +21,7 @@
     "@openpanel/core": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/redis": "workspace:*",
+    "@openpanel/shared": "workspace:*",
     "@prisma/client": "6.14.0",
     "pino": "catalog:",
     "pino-pretty": "catalog:",

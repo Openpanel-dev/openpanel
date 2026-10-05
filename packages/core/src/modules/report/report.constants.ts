@@ -931,9 +931,6 @@ export const zReport = zReportInput.extend({
     .describe('The visual style of the line in the chart'),
 });
 
-// Alias for backward compatibility
-export const zChartInput = zReportInput;
-
 // `UnionOmit` has no owning module; it lives with the report types it is applied to.
 
 export type UnionOmit<T, K extends keyof any> = T extends any
@@ -986,7 +983,7 @@ export type PreviousValue =
     }
   | undefined;
 
-export type Metrics = {
+export interface Metrics {
   sum: number;
   average: number;
   min: number;
@@ -999,9 +996,9 @@ export type Metrics = {
     max: PreviousValue;
     count: PreviousValue;
   };
-};
+}
 
-export type IChartSerie = {
+export interface IChartSerie {
   id: string;
   names: string[];
   event: {
@@ -1021,9 +1018,9 @@ export type IChartSerie = {
      */
     previous?: PreviousValue;
   }[];
-};
+}
 
-export type FinalChart = {
+export interface FinalChart {
   series: IChartSerie[];
   metrics: Metrics;
-};
+}

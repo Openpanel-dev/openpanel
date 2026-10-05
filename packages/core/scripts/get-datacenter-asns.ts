@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 // Upstream list of ASNs belonging to datacenters / hosting providers. Traffic
 // from them is almost never a real end user, so an IP's ASN (MaxMind GeoLite2-ASN)
 // is checked for membership in this set. The list is regenerated, never
-// hand-edited, so upstream additions flow in on every `pnpm codegen`.
+// hand-edited, so upstream additions flow in on every `bun run codegen`.
 const SOURCE_URL =
   'https://raw.githubusercontent.com/X4BNet/lists_vpn/main/input/datacenter/ASN.txt';
 

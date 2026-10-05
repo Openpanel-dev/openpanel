@@ -23,12 +23,10 @@ async function loadDatabase(filename: string): Promise<ReaderModel | null> {
   const dbPathLocal = path.join(__dirname, `../../${filename}`);
   try {
     const dbBuffer = await readFile(dbPath);
-    console.log(`${filename} loaded (dist)`, dbPath);
     return Reader.openBuffer(dbBuffer);
   } catch {
     try {
       const dbBuffer = await readFile(dbPathLocal);
-      console.log(`${filename} loaded (local)`, dbPathLocal);
       return Reader.openBuffer(dbBuffer);
     } catch {
       console.error(`${filename} not found`, { dbPath, dbPathLocal });

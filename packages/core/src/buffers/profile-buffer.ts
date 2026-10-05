@@ -6,12 +6,6 @@ import type { IClickhouseProfile } from '../modules/profile/profile.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
-// Inlined to avoid a circular value-import with `profile.service.ts`
-// (which imports `profileBuffer` from `../buffers`). Keep this in sync
-// with the `PROFILE_COLUMNS` constant there.
-const PROFILE_COLUMNS =
-  'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups';
-
 // Equivalent of `SELECT ... FROM profiles FINAL` but expressed via GROUP BY +
 // argMax. ReplicatedReplacingMergeTree uses `last_seen_at` as the version
 // column, so argMax(col, last_seen_at) yields the same value FINAL would
