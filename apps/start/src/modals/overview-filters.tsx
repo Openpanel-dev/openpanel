@@ -143,7 +143,7 @@ export default function OverviewFilters({
             return (
               <PureFilterItem
                 className="border-t p-4 first:border-0"
-                eventName="screen_view"
+                eventName="*"
                 filter={filter}
                 key={filter.name}
                 onChangeOperator={(operator) => {

@@ -131,7 +131,7 @@ export default function TableFilters({
             return (
               <PureFilterItem
                 className="border-t p-4 first:border-0"
-                eventName="screen_view"
+                eventName="*"
                 filter={filter}
                 key={filter.id ?? filter.name}
                 onChangeOperator={(operator, original) =>
