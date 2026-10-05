@@ -1,49 +1,20 @@
-# Dashboard image.
+# Dashboard image. The build runs on bun; the runtime deliberately stays Node.
 #
-# Rewritten for M15-203 against docs/DOCKER_SLIMMING.md (M14-203) §1.2 and
-# §4.2. That document measured this image layer by layer and found almost
-# nothing of it is ours: 84.5% is `node:${NODE_VERSION}-slim`, of which one
-# layer (the Node runtime itself) is 53%, and the application `.output` is
-# 9,024,064 B — 9.5%. So the only cuts available here are the two apt ones
-# below, and the base is DECIDED and stays put (§9.1, §9.2 — Carl, 2026-09-08).
+# Almost nothing of this image is ours: 84.5% is `node:${NODE_VERSION}-slim` (the Node runtime alone is 53%) and the
+# application `.output` is 9 MB, so the only cuts available are the two apt ones below.
 #
-# THE TWO ROOT CAUSES THIS FILE FIXES, carried forward from M13-003 because
-# both are still the reason it is shaped this way:
-#
-#   1. STALE COPIES OF THE DELETED `@openpanel/auth` PACKAGE. ADR-007 dissolved
-#      that package into `@openpanel/core` and P11 deleted its directory, so
-#      the COPYs that named it referenced a path that no longer exists. The
-#      grep gate for this file asserts that neither the old installer nor that
-#      path is named anywhere in it.
-#
-#   2. THE WORKSPACE-SUBSET INSTALL. The old base stage copied ~10 of the
-#      workspace's ~20 member manifests and none of `packages/core`. P11 made
-#      `apps/start` import `@openpanel/core/modules/*.constants`, and
-#      `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
-#      `"extends": "@openpanel/tsconfig/base.json"` cannot resolve when
-#      `tooling/typescript` was never installed as a workspace member. The fix
-#      is not another manifest in the list — it is ONE FULL WORKSPACE INSTALL,
-#      which is the shape ADR-014 Problems §4 rules for a bun-base image
-#      anyway.
-#
-# ADR-014 scopes P13 to the INSTALLER only. The build runs on bun; the runtime
-# deliberately stays Node — nothing here decides otherwise.
+# The install is ONE FULL WORKSPACE INSTALL, not a list of member manifests: `apps/start` imports
+# `@openpanel/core/modules/*.constants`, and `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
+# `"extends": "@openpanel/tsconfig/base.json"` cannot resolve unless `tooling/typescript` is installed as a workspace member.
 ARG BUN_VERSION=1.4.0
 ARG NODE_VERSION=24.19.0
 
-# INSTALL — one full workspace install, exactly what bun.lock was resolved
-# against. `bunfig.toml` rides along with the tree and carries
-# `[install] ignoreScripts = true` (ADR-014 amendment 2) and
-# `linker = "isolated"`; `--linker=isolated` is named here too so the layout is
-# a property of the command, not only of a file.
+# INSTALL — one full workspace install, exactly what bun.lock was resolved against. `bunfig.toml` rides along with the
+# tree and carries `[install] ignoreScripts = true` and `linker = "isolated"`; `--linker=isolated` is named here too so
+# the layout is a property of the command, not only of a file.
 #
-# NO apt BLOCK. There used to be one here mirroring the runner's. It shipped
-# nothing — the runner starts `FROM node:${NODE_VERSION}-slim`, a fresh base,
-# and copies only `.output` — so it bought build time and nothing else.
-# Measured (§4.2): deleting it changes the image by -74 B and the build still
-# succeeds. `bun install` needs TLS and `oven/bun:${BUN_VERSION}-slim` already
-# ships `ca-certificates`; nothing in `bun install` or `vite build` calls
-# `curl`, `openssl` or `libssl3`.
+# No apt block: the runner starts `FROM node:${NODE_VERSION}-slim` and copies only `.output`, so an apt block here
+# shipped nothing. `bun install` needs TLS and `oven/bun:${BUN_VERSION}-slim` already ships `ca-certificates`.
 FROM oven/bun:${BUN_VERSION}-slim AS install
 
 WORKDIR /app
@@ -58,10 +29,8 @@ RUN bun install --frozen-lockfile --linker=isolated
 # BUILD — Nitro's standalone server output. NITRO=1 selects the node-server
 # preset over the Cloudflare one; SELF_HOSTED=1 is read at build time.
 #
-# No codegen step: verified on this tree (2026-09-07) that the build succeeds
-# with `packages/db/src/generated` absent — every `@openpanel/db` import in
-# apps/start is `import type`, and the `@openpanel/core` imports are all
-# `*.constants` subpaths.
+# No codegen step: the build succeeds with `packages/db/src/generated` absent, because every `@openpanel/db` import in
+# apps/start is `import type` and the `@openpanel/core` imports are all `*.constants` subpaths.
 FROM install AS build
 
 ENV NITRO=1
@@ -71,19 +40,12 @@ RUN cd apps/start && NITRO=1 SELF_HOSTED=1 bun run build
 
 # RUNNER — node:${NODE_VERSION}-slim, and only `.output`.
 #
-# The Nitro output is standalone: it ships its own `.output/server/node_modules`
-# and `.output/public` holds every asset `/login` references. So the workspace
-# `node_modules` and the per-package source copies the previous image carried
-# are dead weight, and dropping them is what removes the last reference to the
-# deleted `@openpanel/auth` tree.
+# The Nitro output is standalone: it ships its own `.output/server/node_modules` and `.output/public` holds every asset
+# `/login` references, so the workspace `node_modules` and source copies are dead weight.
 #
-# apt: `curl` for the CMD-SHELL HEALTHCHECKs, `ca-certificates` for it. The
-# `openssl` and `libssl3` names that used to be here were inert (§4.2, 47 B):
-# `curl` pulls libssl3 through libcurl4 and `ca-certificates` pulls openssl,
-# and Node needs neither — it bundles its own OpenSSL (`ldd node` shows no
-# libssl) and its own CA store. `ca-certificates` itself is 1,113,308 B and is
-# KEPT: §8's dashboard row 3 files removing it as Carl's call, since it would
-# break any HTTPS `curl` inside the container.
+# apt: `curl` for the CMD-SHELL HEALTHCHECKs, `ca-certificates` for it. `openssl` and `libssl3` are not named: `curl`
+# pulls libssl3 and `ca-certificates` pulls openssl, and Node bundles its own OpenSSL and CA store.
+# `ca-certificates` is kept because removing it would break any HTTPS `curl` inside the container.
 FROM node:${NODE_VERSION}-slim AS runner
 
 ENV NODE_ENV=production

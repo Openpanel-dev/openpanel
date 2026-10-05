@@ -1,29 +1,15 @@
 /**
  * `bun test` preload for `packages/db` and `apps/api`.
  *
- * Two jobs, in this order:
+ * 1. Pin the infrastructure URLs at the ISOLATED test databases (`test/databases.ts`): no test may reach the
+ *    application's own `openpanel` databases, where fixture teardown would mutate real data.
+ * 2. Bootstrap those databases and load the shared fixture, tearing it down when the file's tests finish.
  *
- * 1. **Pin the infrastructure URLs at the ISOLATED test databases.** This is
- *    a safety property, not a convenience: no test may reach the
- *    application's own `openpanel` databases, which on this box hold a copy
- *    of production — fixture teardown there mutates the dataset the
- *    migration goldens are diffed against, and a delete against a 318M-row
- *    table does not finish inside a test timeout. `test/databases.ts` is the
- *    single source of truth for the strings.
- * 2. **Bootstrap those databases and load the shared fixture**, tearing it
- *    down again when the file's tests finish.
+ * `preload` runs once per test FILE under `--isolate`; neither `globalThis` nor `process.env` survives between files,
+ * so everything here is idempotent and setup/teardown are paired around one file's tests.
  *
- * `preload` runs once per test FILE under `--isolate`, strictly sequential
- * within one process — neither `globalThis` nor `process.env` survives
- * between files, so there is no in-process channel to dedupe through.
- * Everything here is therefore written to be idempotent and is serialised by
- * that sequencing: `bootstrapTestDatabases` is idempotent by construction,
- * and setup/teardown are paired around a single file's tests so no file can
- * observe another's teardown.
- *
- * The imports below are deliberately dynamic and deliberately below the env
- * pins: `packages/db`'s ClickHouse module constructs its clients at import
- * time, so a static import would capture the pre-pin `CLICKHOUSE_URL`.
+ * The imports below are deliberately dynamic and below the env pins: `packages/db`'s ClickHouse module constructs its
+ * clients at import time, so a static import would capture the pre-pin `CLICKHOUSE_URL`.
  */
 
 import { afterAll } from 'bun:test';

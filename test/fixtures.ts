@@ -33,10 +33,6 @@ function getDb() {
   return new PrismaClient({ datasources: { db: { url } } });
 }
 
-// ---------------------------------------------------------------------------
-// Well-known fixture IDs — import these in tests instead of hard-coding strings
-// ---------------------------------------------------------------------------
-
 export const FIXTURE = {
   profiles: {
     alice: 'profile-alice',
@@ -63,10 +59,6 @@ export const FIXTURE = {
     },
   },
 } as const;
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
 
 type ChClient = ReturnType<typeof createClient>;
 
@@ -386,10 +378,6 @@ async function deleteFixtures(client: ChClient, projectId: string) {
     }),
   ]);
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 export async function setupPostgresFixtures(
   projectId: string,

@@ -71,8 +71,6 @@ const sorted = (offenders: Offender[]): Offender[] =>
 const isUnder = (path: string, roots: readonly string[]): boolean =>
   roots.some((root) => path === root || path.startsWith(root));
 
-// --- R3 -----------------------------------------------------------------------
-
 const typeText = (node: ts.TypeNode | undefined): string =>
   node ? node.getText().replace(/\s+/g, ' ') : '<untyped>';
 
@@ -147,8 +145,6 @@ export function checkFactorySignatures(sources: ParsedSource[]): Metric {
     offenders: sorted(offenders),
   };
 }
-
-// --- R5 -----------------------------------------------------------------------
 
 /** R5a — no hand-written `export interface XService` outside services.ts. */
 export function checkServiceInterfaces(sources: ParsedSource[]): Metric {
@@ -245,8 +241,6 @@ export function checkServicesMembers(sources: ParsedSource[]): Metric {
   };
 }
 
-// --- R6 -----------------------------------------------------------------------
-
 /** R6a — `createServices(` only at the sanctioned construction sites. */
 export function checkCreateServicesCallSites(sources: ParsedSource[]): Metric {
   const offenders: Offender[] = [];
@@ -340,8 +334,6 @@ export function checkDependencyLoaders(sources: ParsedSource[]): Metric {
   };
 }
 
-// --- R7 -----------------------------------------------------------------------
-
 const isProcessEnv = (node: ts.Node): boolean =>
   ts.isPropertyAccessExpression(node) &&
   ts.isIdentifier(node.expression) &&
@@ -414,8 +406,6 @@ export function checkEnvReads(sources: ParsedSource[]): Metric[] {
   ];
 }
 
-// --- R10 ----------------------------------------------------------------------
-
 /** R10 — the access checks live in the auth service and the builders only. */
 export function checkAccessChecks(sources: ParsedSource[]): Metric {
   const offenders: Offender[] = [];
@@ -444,8 +434,6 @@ export function checkAccessChecks(sources: ParsedSource[]): Metric {
     offenders: sorted(offenders),
   };
 }
-
-// --- R14 ----------------------------------------------------------------------
 
 export interface ResidueScanInput {
   path: string;
@@ -525,8 +513,6 @@ export function checkResidue(files: ResidueScanInput[]): Metric[] {
   return metrics;
 }
 
-// --- R15 ----------------------------------------------------------------------
-
 /**
  * The name a `new` expression actually constructs, however it is qualified.
  *
@@ -596,8 +582,6 @@ export function checkModuleScopeConstruction(sources: ParsedSource[]): Metric {
     offenders: sorted(offenders),
   };
 }
-
-// --- R21 ----------------------------------------------------------------------
 
 const utilKey = (path: string): string | undefined => {
   if (!UTIL_DIRECTORY_PATTERNS.some((pattern) => pattern.test(path))) {
@@ -690,8 +674,6 @@ export function checkSharedPackageIsolation(repoRoot: string): Metric {
     offenders: sorted(offenders),
   };
 }
-
-// --- reported-only hints ------------------------------------------------------
 
 /** R1 — a module's root files carry the `<name>.` prefix and stop at `src/`. */
 export function checkModuleLayout(

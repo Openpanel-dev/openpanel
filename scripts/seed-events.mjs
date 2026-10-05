@@ -12,10 +12,6 @@
  *   --clientId=ID  Client ID to use (required or set CLIENT_ID env var)
  */
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
     const [k, v] = a.replace(/^--/, '').split('=');
@@ -36,10 +32,6 @@ if (!CLIENT_ID) {
 }
 
 const TRACK_URL = `${BASE_URL}/track`;
-
-// ---------------------------------------------------------------------------
-// Deterministic seeded random (mulberry32) — keeps identities stable across runs
-// ---------------------------------------------------------------------------
 
 function mulberry32(seed) {
   return () => {
@@ -65,10 +57,6 @@ function randInt(min, max, rng = eventRng) {
 function randFloat(min, max, rng = eventRng) {
   return rng() * (max - min) + min;
 }
-
-// ---------------------------------------------------------------------------
-// Fake data pools
-// ---------------------------------------------------------------------------
 
 const FIRST_NAMES = [
   'Alice',
@@ -174,10 +162,6 @@ function makeIP(index) {
   return `${a}.${b}.${c}.${d}`;
 }
 
-// ---------------------------------------------------------------------------
-// Products & categories
-// ---------------------------------------------------------------------------
-
 const PRODUCTS = [
   {
     id: 'prod_001',
@@ -221,10 +205,6 @@ const CATEGORIES = [
   'Furniture',
 ];
 
-// ---------------------------------------------------------------------------
-// Groups (3 pre-defined companies)
-// ---------------------------------------------------------------------------
-
 const GROUPS = [
   {
     id: 'org_acme',
@@ -245,10 +225,6 @@ const GROUPS = [
     properties: { plan: 'starter', industry: 'Consulting', employees: 45 },
   },
 ];
-
-// ---------------------------------------------------------------------------
-// Scenarios — 20 distinct user journeys
-// ---------------------------------------------------------------------------
 
 /**
  * Each scenario returns a list of event descriptors.
@@ -1123,10 +1099,6 @@ const SCENARIOS = [
   ],
 ];
 
-// ---------------------------------------------------------------------------
-// Identity generation (deterministic by session index)
-// ---------------------------------------------------------------------------
-
 function generateIdentity(sessionIndex, sessionRng) {
   const firstName = pick(FIRST_NAMES, sessionRng);
   const lastName = pick(LAST_NAMES, sessionRng);
@@ -1154,10 +1126,6 @@ function getGroupForSession(sessionIndex) {
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// HTTP helper
-// ---------------------------------------------------------------------------
-
 async function sendEvent(payload, ua, ip) {
   const headers = {
     'Content-Type': 'application/json',
@@ -1182,10 +1150,6 @@ async function sendEvent(payload, ua, ip) {
   return res;
 }
 
-// ---------------------------------------------------------------------------
-// Build session event list
-// ---------------------------------------------------------------------------
-
 function buildSession(sessionIndex) {
   const sessionRng = mulberry32(sessionIndex * 9973 + 1337); // deterministic per session
 
@@ -1199,10 +1163,6 @@ function buildSession(sessionIndex) {
 
   return { identity, group, ua, ip, events };
 }
-
-// ---------------------------------------------------------------------------
-// Schedule events across timeline
-// ---------------------------------------------------------------------------
 
 function scheduleSession(session, sessionIndex, totalSessions) {
   const timelineMs = TIMELINE_MINUTES * 60 * 1000;
@@ -1226,10 +1186,6 @@ function scheduleSession(session, sessionIndex, totalSessions) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Concurrency limiter
-// ---------------------------------------------------------------------------
-
 async function withConcurrency(tasks, limit) {
   const results = [];
   const executing = [];
@@ -1244,10 +1200,6 @@ async function withConcurrency(tasks, limit) {
   }
   return Promise.all(results);
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log(

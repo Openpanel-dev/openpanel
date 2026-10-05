@@ -1,58 +1,17 @@
 #!/usr/bin/env bash
 #
-# P13 image gate (ADR-014, M13-003) — do BOTH images build on `bun install`,
-# and does what they build actually BOOT?
+# Image gate: do both images build on `bun install`, and does what they build actually boot?
+# A green build is not enough (a build once pushed green while every dashboard route returned 500), so this
+# starts each image and asserts /healthz/ready = 200 on the api and a server-rendered /login on the dashboard
+# (HTTP 200, an `<html`, at least 1000 bytes), then checks the container logs for module-resolution errors.
 #
-# ADR-014's own gate line is "all Dockerfiles build", and `.github/smoke/smoke.sh:6-11`
-# is the repo's record of why that is not enough: main-8e60 built green, pushed
-# green, and every dashboard route returned 500. So this gate does the same two
-# things that script does — start the image and assert a real server-rendered
-# page — rather than stopping at a successful build.
+# Uses the isolated `openpanel_test` databases. The repo `.env` is sourced only for ENCRYPTION_KEY and
+# COOKIE_SECRET; everything else the containers get is explicit, so a developer's `.env` cannot leak in.
+# `--env-file` is not used: `.env` contains `DATABASE_URL_DIRECT="$DATABASE_URL"`, which docker does not expand.
 #
-# What it does:
-#   1. builds apps/api/Dockerfile (with a dummy DATABASE_URL build arg — the
-#      build stage's `bun run codegen` only needs the variable to exist, it
-#      never connects) and apps/start/Dockerfile;
-#   2. runs the api image with `--network host` against this box's already
-#      running Postgres/ClickHouse/Redis/Redpanda and asserts /healthz/ready = 200;
-#   3. runs the dashboard image the same way and asserts smoke.sh's
-#      assert_ssr_route conditions for /login — HTTP 200, an `<html`, at least
-#      1000 bytes — plus assert_no_server_errors on the container log;
-#   4. stops and removes both containers, always;
-#   5. prunes the build cache.
-#
-# The prune also runs BETWEEN the two builds. Measured on this box on
-# 2026-09-07: one from-scratch build leaves ~6GB of cache and the box had 12GB
-# free, so building both without an intermediate prune fills the disk. The two
-# builds share no cache anyway — they start from different base layers.
-#
-# DATABASES: the isolated `openpanel_test` Postgres and ClickHouse, never the
-# prod-copy `openpanel` ones — both containers are read-only against them in
-# practice (a session lookup and a readiness probe), but the rule is the rule.
-#
-# ENVIRONMENT: the repo `.env` is sourced into this shell for the two values a
-# gate must not invent — ENCRYPTION_KEY and COOKIE_SECRET — and every other
-# variable the containers get is written out explicitly below, so the api's
-# database URLs and ports cannot be inherited from a developer's `.env`
-# (which pins API_PORT=3333 and points CLICKHOUSE_URL at the prod copy).
-# `--env-file` is deliberately not used: `.env` contains
-# `DATABASE_URL_DIRECT="$DATABASE_URL"`, a shell expansion docker does not
-# perform.
-#
-# DISK is the operational risk here: two from-scratch workspace installs
-# produce several GB of build cache on a box that has ~15G free, so the prune
-# runs on success, on failure and on an interrupt. It is a
-# `docker builder prune -f --all` — build cache only; it does not touch images
-# or the containers already running on this box.
-#
-# `--all` is not decoration. Measured on this box on 2026-09-07, immediately
-# after a full gate run: a plain `docker builder prune -f` reclaimed **0B** and
-# left **22.91GB** of cache (buildkit's default policy keeps recent records);
-# `docker builder prune -af` on the same state reclaimed **20.89GB** and took
-# the disk from 3.4G to 23G free. Without `--all` this gate fills the box in
-# two or three runs, which is the exact failure it is supposed to prevent.
-# Nothing else on this box builds images, so discarding all cache costs only
-# rebuild time — one from-scratch build of either image is ~1.5-3 min.
+# Disk is the operational risk: a from-scratch build leaves ~6GB of cache, so the cache is pruned between the
+# builds and on exit (success, failure or interrupt). `docker builder prune -f --all` is deliberate: without
+# `--all`, buildkit's default policy kept 22GB of cache and reclaimed 0B.
 #
 #   bash tooling/gates/p13-images.sh
 
@@ -87,8 +46,6 @@ readonly DASHBOARD_READY_TIMEOUT_SECONDS=120
 readonly READY_POLL_INTERVAL_SECONDS=2
 
 FAILED=0
-
-# --- lifecycle ---------------------------------------------------------------
 
 remove_container() {
   local name="$1"
@@ -141,8 +98,6 @@ wait_ready() {
   echo "  $name ready at $url (${waited}s)"
 }
 
-# --- assertions --------------------------------------------------------------
-
 assert_ssr_route() {
   local path="$1" status bytes
 
@@ -182,8 +137,6 @@ assert_no_server_errors() {
   fi
   echo "  $name log clean"
 }
-
-# --- run ---------------------------------------------------------------------
 
 mkdir -p "$RUN_DIR"
 command -v docker >/dev/null || die 'docker is not available'

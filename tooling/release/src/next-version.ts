@@ -4,8 +4,7 @@ import { git, gitOrNull, lines } from './git';
 
 export type Bump = 'patch' | 'minor' | 'major';
 
-// v3 is the first release numbered this way. Anything computed below it (the
-// baseline tag is v2.3.0) is lifted to it, so v3 code can never ship as 2.3.x.
+// v3 is the first release numbered this way: anything computed below it (the baseline tag is v2.3.0) is lifted to it.
 export const MINIMUM_VERSION = '3.0.0';
 export const TAG_PREFIX = 'v';
 const TAG_PATTERN = 'v[0-9]*';

@@ -39,8 +39,7 @@ const volumeIds = async (project: string, key: string): Promise<string[]> => {
   return stdout.split('\n').filter(Boolean);
 };
 
-// Scoped to this install on purpose: the old script also ran host-wide
-// `docker volume prune` / `image prune`, which deletes other projects' data.
+// Scoped to this install on purpose: a host-wide `docker volume prune` / `image prune` deletes other projects' data.
 export const reset = async ({ dir, yes }: ResetFlags): Promise<number> => {
   if (!isInstallDir(dir)) {
     clackLog.error(`${dir} is not an OpenPanel install.`);

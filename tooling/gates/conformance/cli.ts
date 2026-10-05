@@ -1,5 +1,5 @@
 /**
- * Assembles every ADR-022 check into one report and decides --assert.
+ * Assembles every conformance check into one report and decides --assert.
  *
  * Output contract: one block per rule, offenders as `file:line`, a TOTAL
  * line per rule and one overall, stable ordering and no timestamps in the
@@ -70,8 +70,6 @@ const SEPARATOR_WIDTH = 80;
 
 const heavy = '='.repeat(SEPARATOR_WIDTH);
 const light = '-'.repeat(SEPARATOR_WIDTH);
-
-// --- collection ---------------------------------------------------------------
 
 interface Tree {
   repoRoot: string;
@@ -270,8 +268,6 @@ function collectRouters(tree: Tree) {
 
   return routers.sort((a, b) => a.routerKey.localeCompare(b.routerKey));
 }
-
-// --- rules --------------------------------------------------------------------
 
 const reviewOnly = (label: string, hint: string): Metric => ({
   label,
@@ -545,12 +541,9 @@ function buildRules(tree: Tree): RuleBlock[] {
         ? "M14-002 landed these rules and verified cruiser resolves its typescript peer, so R22 is the cruiser rule, not ADR-022's grep fallback. A bare ../ depth grep is forbidden: a module importing defineJob at ../../jobs/define is importing DOWNWARD."
         : undefined,
     },
-    // R20 (test shapes) is deferred by Carl, 2026-09-08, and is deliberately
-    // absent from this gate. Do not add it.
+    // R20 (test shapes) is deliberately absent from this gate.
   ];
 }
-
-// --- formatting ---------------------------------------------------------------
 
 const offenderLine = (offender: Offender): string =>
   offender.line > 0
@@ -737,8 +730,6 @@ export function renderAssert(rules: RuleBlock[]): {
   lines.push(heavy);
   return { output: lines.join('\n'), failed: true };
 }
-
-// --- entrypoint ---------------------------------------------------------------
 
 /**
  * `conformance.sh --report | grep -q 36` closes the pipe on the first match and

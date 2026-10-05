@@ -20,7 +20,6 @@ const ROOT = path.resolve(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT, 'apps/public/content');
 const TODAY = '2026-02-07';
 
-// ── Feature definitions ─────────────────────────────────────────────
 // Patterns are tried in order; first match wins for each feature.
 // Longer / more specific patterns come first to avoid partial matches.
 const FEATURES = [
@@ -100,8 +99,6 @@ const DIRS = ['articles', 'guides', 'docs', 'pages'];
 // Only these dirs get the `updated` frontmatter field
 const DIRS_WITH_UPDATED = ['articles', 'guides'];
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
 /** Return an array of { start, end } ranges that should NOT be modified. */
 function getSkipZones(text) {
   const zones = [];
@@ -172,8 +169,6 @@ function overlapsSkipZone(pos, len, zones) {
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
-// ── Core processing ──────────────────────────────────────────────────
 
 function processFile(filePath, dir) {
   let content = fs.readFileSync(filePath, 'utf8');
@@ -269,8 +264,6 @@ function processFile(filePath, dir) {
   return changes;
 }
 
-// ── Walk directories ─────────────────────────────────────────────────
-
 function walk(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files = [];
@@ -284,8 +277,6 @@ function walk(dir) {
   }
   return files;
 }
-
-// ── Main ─────────────────────────────────────────────────────────────
 
 const results = [];
 

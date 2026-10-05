@@ -1,13 +1,7 @@
 /**
- * `typecheck` across every workspace package that declares one.
- *
- * pnpm's `-r --no-bail` typechecked all of them and reported every failure.
- * `bun run --filter <pattern> typecheck` has no `--no-bail` equivalent, so the
- * "keep going and report all of them" half is done here by construction: a
- * failing package is recorded and the run continues. A gate that stops at the
- * first failure silently narrows to "the first package that fails".
- *
- * The root package is skipped — its own `typecheck` is this script.
+ * `typecheck` across every workspace package that declares one. `bun run --filter` has no `--no-bail` equivalent, so a
+ * failing package is recorded and the run continues; stopping at the first failure would silently narrow the gate.
+ * The root package is skipped: its own `typecheck` is this script.
  */
 
 import { spawn } from 'node:child_process';

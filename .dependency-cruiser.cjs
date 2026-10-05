@@ -1,129 +1,34 @@
 'use strict';
 /**
- * ADR-008 (constants isomorphism) and ADR-022 R22 (layers only import downward)
- * enforcement. See decisions/ADR-008-constants.md and
- * decisions/ADR-022-core-conventions.md in the controller repo.
- *
- * The rules, in the order they appear below:
- *  - core-uses-ctx-not-db-internals: packages/core reaches Postgres/ClickHouse
- *    through ctx.db / ctx.ch, never by acquiring its own client.
- *  - core-no-self-barrel: a file under packages/core/src imports its siblings
- *    relatively, never through @openpanel/core.
- *  - core-layers-*: ADR-022 R22, one rule per layer boundary (see below).
- *  - constants-stay-isomorphic: a `*.constants.ts` file may depend on nothing
- *    but zod, another `*.constants.ts` file, or a type-only specifier.
- *  - frontend-values-only-constants: a web app (apps/start, apps/public,
- *    packages/sdks/*) may only VALUE-import @openpanel/core or @openpanel/db
- *    through a `*.constants.ts` path.
- *  - shared-root-stays-isomorphic: nothing reachable from @openpanel/shared's
- *    root entrypoint imports a node: builtin or the server/ subtree.
+ * Architecture enforcement: constants stay isomorphic, layers only import downward, web bundles never reach
+ * server code. Rules, in order below:
+ *  - core-uses-ctx-not-db-internals: packages/core reaches Postgres/ClickHouse through ctx.db / ctx.ch.
+ *  - core-no-self-barrel: a file under packages/core/src imports its siblings relatively, never via @openpanel/core.
+ *  - core-layers-*: one rule per layer boundary.
+ *  - constants-stay-isomorphic: a `*.constants.ts` file depends on nothing but zod, another constants file or a
+ *    type-only specifier.
+ *  - frontend-values-only-constants: a web app (apps/start, apps/public, packages/sdks/*) may only VALUE-import
+ *    @openpanel/core or @openpanel/db through a `*.constants.ts` path.
+ *  - shared-root-stays-isomorphic: nothing reachable from @openpanel/shared's root imports a node: builtin or server/.
  *  - no-web-to-server: a web app may not import @openpanel/shared/server.
  *
- * Both rules match by filename pattern, not by a hardcoded package.json
- * "exists" check, so they hold vacuously (0 matches, exit 0) today, while
- * `packages/core` does not exist yet, and start firing the moment the first
- * `*.constants.ts` file (or a stray value-import of one) lands.
+ * Do NOT set `options.exclude: { path: 'node_modules' }`: it drops every npm dependency before the rules run, so
+ * constants-stay-isomorphic would only catch builtins. The zod allow-list entry matches the RESOLVED path, not
+ * the bare specifier, because `path` conditions match against `resolved`.
  *
- * ADR-008 Benchmark 1 ("prove dependency-cruiser resolves @openpanel/*, both
- * rules must FAIL on a deliberate violation"), rerun 2026-09-01 with fixtures
- * placed in `packages/trpc` (a real package that already depends on zod,
- * date-fns AND @openpanel/db, so resolution is real, not the couldNotResolve
- * fallback — see the two review notes below for why that distinction matters)
- * plus `apps/start`:
- *
- *   Fixture A: packages/trpc/src/__dc_fixture__/tmp.constants.ts
- *     import { formatISO } from 'date-fns';           // real npm package
- *     export const TMP_FIXTURE_TIMESTAMP = formatISO(new Date());
- *
- *   Fixture B: apps/start/src/__dc_fixture__.ts
- *     import { db } from '@openpanel/db';
- *     export const tmpDb = db;
- *
- *   $ pnpm run check:deps
- *     error frontend-values-only-constants: apps/start/src/__dc_fixture__.ts → packages/db/index.ts
- *     error constants-stay-isomorphic: packages/trpc/src/__dc_fixture__/tmp.constants.ts → node_modules/.pnpm/date-fns@3.3.1/node_modules/date-fns/index.js
- *     x 2 dependency violations (2 errors, 0 warnings). 1684 modules, 6462 dependencies cruised.
- *     (exit 2)
- *
- * The node:crypto builtin case (no node_modules involved at all) was checked
- * too, as a regression guard, and also fires:
- *
- *     error constants-stay-isomorphic: packages/trpc/src/__dc_fixture__/tmp.constants.ts → crypto
- *
- * The allow-list side was checked in the same location: a constants file
- * importing zod, a sibling `*.constants.ts`, and an `import type { ... } from
- * '@openpanel/db'` together produced zero violations. All fixtures were then
- * deleted (never committed) and the run went green:
- *
- *   $ pnpm run check:deps
- *     ✔ no dependency violations found (1681 modules, 6460 dependencies cruised)
- *     (exit 0)
- *
- * Two things this rerun corrects from the first pass at this task, both
- * caught by choosing a fixture location where resolution actually succeeds
- * instead of one where it silently fails closed:
- *
- *  1. `options.exclude: { path: 'node_modules' }` must NOT be set (see the
- *     comment on `doNotFollow` below) — with it, dependency-cruiser drops
- *     every real npm-package dependency (zod, date-fns, …) out of
- *     getDependencies() before any rule runs, because they resolve through
- *     pnpm's `.pnpm/.../node_modules/...` store layout. constants-stay-isomorphic
- *     would then only ever catch node:crypto-style builtin violations, never
- *     the npm-package case ADR-008 Risk #6 names. The very first fixture
- *     attempt used `packages/common` (a package that declares neither zod
- *     nor @openpanel/db as a dependency), so both imports failed to resolve
- *     for the unrelated reason of not being installed there, fell back to
- *     the raw specifier string, and coincidentally still matched the
- *     `exclude`-broken config — hiding the bug instead of catching it.
- *  2. The zod allow-list entry must match the *resolved* path
- *     (`(^|/)node_modules/zod/`), not the bare specifier (`^zod$`). `path`
- *     conditions match against `resolved`, and once zod actually resolves
- *     that's a real file path, never the literal string "zod" — `^zod$`
- *     only ever matched the couldNotResolve fallback, which is the same
- *     wrong-package artifact as point 1, not a legitimate isomorphic import.
- *
- * Resolution across the real `@openpanel/db` workspace symlink (not just the
- * `packages/trpc` fixture) was also exercised for free: apps/start already
- * has dozens of `import type { ... } from '@openpanel/db'` sites today, all
- * type-only, and all correctly passed by `dependencyTypesNot: ['type-only']`
- * — i.e. resolution AND type-only detection both work, ADR-008 risk 1 does
- * not apply, Option A (deep paths + this config) stands.
- *
- * `check:deps` runs the DECLARED `dependency-cruiser` devDependency
- * (M14-002; ADR-017's exception register reopened after P13, Carl 2026-09-08),
- * replacing `tooling/scripts/check-deps.ts`, which existed only because neither
- * `bunx` nor `pnpm dlx` could be relied on to put `typescript` where the tool
- * looks for it. dependency-cruiser classifies an edge as `type-only` only when
- * it can load the TypeScript compiler, and it resolves `typescript` — its own
- * optional peer — from ITS OWN directory, an ESM lookup `NODE_PATH` cannot
- * influence. Under `bunx` that failed: `depcruise --info` reported
- * `typescript … -`, and the cruise returned 82 false
- * `core-uses-ctx-not-db-internals` violations, every one an `import type` line
- * the rule explicitly allows.
- *
- * Measured on this box on 2026-09-08, with the tool declared and
- * `bunfig.toml`'s `linker = "isolated"` in force: `bunx --no-install depcruise
- * --info` reports `✔ typescript >=2.0.0 <7.0.0  typescript@5.9.3`, and the
- * cruise reproduces the runner's numbers exactly — 2700 modules, 18121
- * dependencies, 0 errors. The isolated layout is WHY it works: bun's store
- * lives at `node_modules/.bun/` INSIDE the repo, so node's upward walk from
- * `node_modules/.bun/dependency-cruiser@18.2.0/node_modules/dependency-cruiser`
- * still reaches the repo root `node_modules/typescript`. A global `bunx` cache
- * directory never could.
+ * `check:deps` runs the declared `dependency-cruiser` devDependency, not `bunx`: it classifies an edge as
+ * type-only only when it can load `typescript` from its own directory, and under `bunx` it could not, producing
+ * false `core-uses-ctx-not-db-internals` violations on every `import type`. bun's isolated linker keeps the store
+ * inside the repo, so the lookup reaches the root `node_modules/typescript`.
  */
-// ADR-022 R22 — layers only import downward. The order, lowest first:
+// Layers only import downward. The order, lowest first:
 //
 //   shared < clients < transport infrastructure (rpc/, http/, jobs/)
 //          < modules < services.ts < registries < index.ts
 //
-// It is a LAYER order, not path depth: a module importing `../../jobs/define`
-// is going DOWN, and must not be flagged. rpc/, http/ and jobs/ are ONE layer
-// (rpc/base.ts, http/define.ts and jobs/define.ts are peers), so edges among
-// them are sideways, not up. Cross-module edges are likewise sideways — every
-// module is the same layer — so they are out of R22's scope; R1/R3 own those.
-//
-// One dependency-cruiser rule is a single from × to rectangle, and "every layer
-// may import every LOWER layer" is a triangle, so R22 lands as one rule per
+// It is a LAYER order, not path depth: a module importing `../../jobs/define` is going DOWN. rpc/, http/ and jobs/ are ONE
+// layer, so edges among them are sideways, as are cross-module edges. A dependency-cruiser rule is one from x to
+// rectangle while "every layer may import every lower layer" is a triangle, hence one rule per layer boundary.
 // layer boundary. All six share the `core-layers-` prefix and this comment.
 const R22_COMMENT =
   'ADR-022 R22: layers only import downward — shared < clients < transport ' +
@@ -145,9 +50,7 @@ const R22_COMMENT =
   'macro instead of imported by it, and the two registry reads moved into the ' +
   'registry. A rule that fires is the only durable fix.';
 
-// ADR-022 R12/R21 — the web tier: everything that ends up in a browser bundle.
-// apps/public and packages/sdks/* joined apps/start in M15-010; before that
-// only apps/start was named, so R12 was unguarded for the other two.
+// The web tier: everything that ends up in a browser bundle.
 const FRONTENDS = '^(apps/(start|public)|packages/sdks/)';
 
 // The composition root and everything above it.
@@ -288,14 +191,9 @@ module.exports = {
       },
       to: {
         path: COMPOSITION_AND_ABOVE,
-        // R8 blesses `<name>.constants.ts` as the one file that may be imported
-        // as a VALUE across a boundary, so a module reaching one is never a
-        // layering violation.
+        // `<name>.constants.ts` is the one file that may be imported as a VALUE across a boundary.
         pathNot: '\\.constants\\.ts$',
-        // R3 REQUIRES this edge: every one of the 36 factories is
-        // `createXService(deps: ServiceDeps, services: () => Services)`, and
-        // both names live in services.ts. All 47 such imports in the tree today
-        // are `import type`, which is what keeps the edge type-only and legal.
+        // Every service factory takes `(deps: ServiceDeps, services: () => Services)`, both names from services.ts: those imports must stay type-only.
         dependencyTypesNot: ['type-only'],
       },
     },
@@ -326,11 +224,7 @@ module.exports = {
       from: { path: '\\.constants\\.ts$' },
       to: {
         // zod is matched by resolved path, not the raw specifier: once
-        // pnpm actually resolves it (package declares it as a dependency),
-        // `resolved` is a real file under `node_modules/(.pnpm/.../)?zod/`,
-        // never the bare string "zod" — `^zod$` only ever matched the
-        // fallback value dependency-cruiser uses when resolution fails
-        // entirely, which isn't the case ADR-008 needs covered here.
+        // Matched by resolved path: `^zod$` only matched the fallback dependency-cruiser uses when resolution fails.
         pathNot: ['\\.constants\\.ts$', '(^|/)node_modules/zod/'],
         dependencyTypesNot: ['type-only'],
       },
@@ -395,7 +289,7 @@ module.exports = {
     // Only stops the crawl from recursing INTO node_modules (so we don't
     // cruise zod/date-fns internals); it still leaves the edge FROM our file
     // TO the npm package in that file's dependency list, so rules still see
-    // it. Do NOT add `options.exclude` here — see header comment point 1.
+    // it. Do NOT add `options.exclude` here — see the header.
     doNotFollow: { path: 'node_modules' },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 # Boots the app images against real Postgres/Redis/ClickHouse and asserts they
-# actually serve traffic. Two images, three services: since M9-003 the worker
-# is the api image run as ROLE=worker.
+# actually serve traffic. Two images, three services: the worker is the api image run as ROLE=worker.
 #
 # Why this exists: main-8e60 built green, pushed green, and every dashboard
 # route returned 500 (`r.createEffectfulFunction is not a function`) because a
@@ -84,8 +83,7 @@ assert_ssr_route() {
 # The api container's start command runs `prisma migrate deploy` before it
 # boots, and `sh -c` does not stop on a failed line — so a broken migration
 # step is invisible: the api starts anyway and every probe stays green. That is
-# exactly how the rewrite shipped an image whose start command could not find
-# the Prisma CLI at all. Assert the step's own success line instead.
+# exactly how an image whose start command could not find the Prisma CLI once shipped. Assert the step's own success line instead.
 assert_migrations_ran() {
   local logs
   logs=$(docker compose logs --no-color op-api 2>/dev/null || true)

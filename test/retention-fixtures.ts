@@ -36,10 +36,6 @@
 import { createClient } from '../packages/db/src/clickhouse/client';
 import { TEST_CLICKHOUSE_URL } from './databases';
 
-// ---------------------------------------------------------------------------
-// Well-known ids + absolute dates
-// ---------------------------------------------------------------------------
-
 export const RETENTION_FIXTURE = {
   users: {
     ru1: 'retention-ru1',
@@ -110,10 +106,6 @@ export const RETENTION_BLUEPRINT = {
   ],
 } as const;
 
-// ---------------------------------------------------------------------------
-// Builders
-// ---------------------------------------------------------------------------
-
 type ChClient = ReturnType<typeof createClient>;
 
 function getClient(): ChClient {
@@ -173,7 +165,6 @@ function buildEvents(projectId: string) {
   const se = { country: 'SE' };
 
   return [
-    // --- DAY scenario: app_open (self-retention) ---
     buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d0), us),
     buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d1), us),
     buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d2), us),
@@ -184,21 +175,15 @@ function buildEvents(projectId: string) {
     buildEvent(projectId, users.ru4, 'app_open', dayAt(day.d2), us),
     buildEvent(projectId, users.ru5, 'app_open', dayAt(day.d1), us),
 
-    // --- DAY scenario: purchase (cross-event retention) ---
     buildEvent(projectId, users.ru1, 'purchase', dayAt(day.d1), us),
     buildEvent(projectId, users.ru2, 'purchase', dayAt(day.d2), us),
 
-    // --- WEEK scenario: app_open crossing the 2024->2025 boundary ---
     // 2024-12-30 (Mon) falls in the Sunday-aligned week starting 2024-12-29.
     buildEvent(projectId, users.wu1, 'app_open', '2024-12-30 12:00:00'),
     buildEvent(projectId, users.wu1, 'app_open', '2025-01-06 12:00:00'),
     buildEvent(projectId, users.wu2, 'app_open', '2024-12-30 12:00:00'),
   ];
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 function buildCohortMembers(projectId: string) {
   return RETENTION_FIXTURE.cohort.members.map((profileId) => ({

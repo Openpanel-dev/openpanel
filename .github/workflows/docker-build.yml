@@ -87,9 +87,8 @@ jobs:
       - name: Install bun
         uses: oven-sh/setup-bun@v2
         with:
-          # .bun-version is the pin's home (ADR-016 rule 5) and
-          # apps/api/src/config/bun-version.test.ts asserts an exact match, so read
-          # it rather than keeping a second copy here.
+          # .bun-version is the pin's home and apps/api/src/config/bun-version.test.ts asserts an exact match, so read it
+          # rather than keeping a second copy here.
           bun-version-file: ".bun-version"
 
       - name: Setup bun cache
@@ -106,20 +105,16 @@ jobs:
       - name: Codegen
         run: bun run codegen
 
-      # Formatting and import order only. `bun run lint` (the full rule set) still
-      # reports 595 errors / 45 warnings, ~328 of which need a human decision, so
-      # it is not a gate yet; this half is green and catches drift today.
+      # Formatting and import order only. `bun run lint` (the full rule set) still reports errors that need a human
+      # decision, so it is not a gate yet; this half is green and catches drift today.
       - name: Check formatting
         run: bun run lint:format
 
       - name: Run TypeScript checks
         run: bun run typecheck
 
-      # ADR-008: dependency-cruiser is the second layer keeping the dissolved
-      # validation/constants/common/json packages from growing back (M11-009).
-      # Run standalone, not via `bun run check`, so a lint error cannot mask a
-      # dependency-boundary break: `check` is `ultracite check && check:deps`, and
-      # the full rule set is not green yet (see the formatting step above).
+      # dependency-cruiser keeps the dissolved validation/constants/common/json packages from growing back. Run standalone,
+      # not via `bun run check`, so a lint error cannot mask a dependency-boundary break.
       - name: Check dependency boundaries
         run: bun run check:deps
 
@@ -135,12 +130,9 @@ jobs:
           CLICKHOUSE_URL: http://localhost:23123/openpanel
           SELF_HOSTED: "true"
 
-      # No env block, deliberately. Every workspace's test preload pins
-      # DATABASE_URL / CLICKHOUSE_URL / REDIS_URL itself and creates and migrates
-      # the isolated `openpanel_test` databases (test/bun-preload.ts,
-      # packages/core/test/preload.ts). Env set here would be silently overwritten,
-      # which is how the old 5432/8123 block came to look correct while every
-      # database-backed test failed.
+      # No env block, deliberately. Every workspace's test preload pins DATABASE_URL / CLICKHOUSE_URL / REDIS_URL itself and
+      # creates and migrates the isolated `openpanel_test` databases (test/bun-preload.ts, packages/core/test/preload.ts).
+      # Env set here would be silently overwritten.
       - name: Run tests
         run: bun run test
 

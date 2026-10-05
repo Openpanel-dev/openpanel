@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Developer preflight (ADR-016 rule 5) — checks the Bun actually running on
-# this machine against the version this repo pins, and fails loudly rather
-# than silently drifting the way `bootstrap.sh`'s unversioned install could.
-#
-# NOT a gate: nothing under verification/ calls this script, and it must stay
-# that way (ADR-016 rule 5 asserts the pin at three places — this is one of
-# them, not the mechanism that enforces the other two).
+# Developer preflight: checks the Bun actually running on this machine against the version this repo pins, and fails
+# loudly rather than silently drifting. Not a CI gate.
 #
 # Run from anywhere: `bash scripts/doctor.sh`.
 
