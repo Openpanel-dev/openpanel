@@ -1,6 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getProfileMetrics } from '../../../../profile/profile.service';
+import {
+  getProfileMetrics,
+  summarizeProfileMetrics,
+} from '../../../../profile/profile.service';
 import {
   type McpToolDeps,
   projectIdSchema,
@@ -26,22 +29,7 @@ export function registerProfileMetricTools(
         if (!raw) {
           return { error: 'Profile not found or has no events', profileId };
         }
-        return {
-          profileId,
-          firstSeen: raw.firstSeen,
-          lastSeen: raw.lastSeen,
-          sessions: raw.sessions,
-          screenViews: raw.screenViews,
-          totalEvents: raw.totalEvents,
-          conversionEvents: raw.conversionEvents,
-          uniqueDaysActive: raw.uniqueDaysActive,
-          avgSessionDurationMin: raw.durationAvg,
-          p90SessionDurationMin: raw.durationP90,
-          avgEventsPerSession: raw.avgEventsPerSession,
-          avgTimeBetweenSessionsSec: raw.avgTimeBetweenSessions,
-          bounceRate: raw.bounceRate,
-          revenue: raw.revenue,
-        };
+        return summarizeProfileMetrics(profileId, raw);
       })
   );
 }

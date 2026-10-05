@@ -2,7 +2,7 @@
 // `buildFilterWhere`, the shared filter compiler; src/filter-clauses.ts is the
 // bridge to it.
 
-import { strip, toObject } from '@openpanel/shared';
+import { round, strip, toObject } from '@openpanel/shared';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
@@ -10,7 +10,10 @@ import type { ServiceDeps, Services } from '../../services';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IChartEventFilter } from '../report/report.constants';
-import type { IClickhouseSession } from '../session/session.service';
+import {
+  type IClickhouseSession,
+  withReadableCountry,
+} from '../session/session.service';
 import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
@@ -49,6 +52,7 @@ const RECENT_EVENTS_DEFAULT_LIMIT = 10;
 const SESSIONS_DEFAULT_LIMIT = 20;
 const FIND_PROFILES_DEFAULT_LIMIT = 20;
 const FIND_PROFILES_MAX_LIMIT = 100;
+const SECONDS_PER_MINUTE = 60;
 
 // clix always sent `session_timezone: 'UTC'`; the queries converted from clix
 // keep sending it so their result sets stay identical.
@@ -68,13 +72,16 @@ export interface IProfileMetrics {
   firstSeen: Date | null;
   screenViews: number;
   sessions: number;
+  /** Seconds. */
   durationAvg: number;
+  /** Seconds. */
   durationP90: number;
   totalEvents: number;
   uniqueDaysActive: number;
   bounceRate: number;
   avgEventsPerSession: number;
   conversionEvents: number;
+  /** Seconds. */
   avgTimeBetweenSessions: number;
   revenue: number;
 }
@@ -418,7 +425,10 @@ export async function getProfileWithEvents(
     ),
   ]);
 
-  return { profile: profiles[0] ?? null, recent_events };
+  return {
+    profile: profiles[0] ?? null,
+    recent_events: recent_events.map(withReadableCountry),
+  };
 }
 
 export async function getProfileSessionsCore(
@@ -427,11 +437,12 @@ export async function getProfileSessionsCore(
   profileId: string,
   limit = SESSIONS_DEFAULT_LIMIT
 ): Promise<IClickhouseSession[]> {
-  return chQuery<IClickhouseSession>(
+  const sessions = await chQuery<IClickhouseSession>(
     deps,
     profileSessionsQuery({ projectId, profileId, limit }),
     CLIX_SESSION_TIMEZONE
   );
+  return sessions.map(withReadableCountry);
 }
 
 export async function getProfileMetricsCore(
@@ -445,8 +456,16 @@ export async function getProfileMetricsCore(
   if (!raw) {
     throw new Error(`Profile not found or has no events: ${input.profileId}`);
   }
+  return summarizeProfileMetrics(input.profileId, raw);
+}
+
+/** The profile metrics as the assistant and MCP tools report them. */
+export function summarizeProfileMetrics(
+  profileId: string,
+  raw: IProfileMetrics
+) {
   return {
-    profileId: input.profileId,
+    profileId,
     firstSeen: raw.firstSeen,
     lastSeen: raw.lastSeen,
     sessions: raw.sessions,
@@ -454,8 +473,8 @@ export async function getProfileMetricsCore(
     totalEvents: raw.totalEvents,
     conversionEvents: raw.conversionEvents,
     uniqueDaysActive: raw.uniqueDaysActive,
-    avgSessionDurationMin: raw.durationAvg,
-    p90SessionDurationMin: raw.durationP90,
+    avgSessionDurationMin: round(raw.durationAvg / SECONDS_PER_MINUTE),
+    p90SessionDurationMin: round(raw.durationP90 / SECONDS_PER_MINUTE),
     avgEventsPerSession: raw.avgEventsPerSession,
     avgTimeBetweenSessionsSec: raw.avgTimeBetweenSessions,
     bounceRate: raw.bounceRate,

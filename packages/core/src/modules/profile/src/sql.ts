@@ -86,12 +86,20 @@ export function profileSearchCondition(
   return sql`(${sql.join(perToken, ' AND ')})`;
 }
 
+/**
+ * Session figures come from `sessions`, not from `session_start` events: the
+ * events sent before `identify()` carry the device id as `profile_id`, while
+ * the session row is rewritten to the final profile id. Durations are seconds.
+ */
 export function profileMetricsQuery(query: {
   profileId: string;
   projectId: string;
 }): SqlFragment {
   const profileId = sql.string(query.profileId);
   const projectId = sql.string(query.projectId);
+  // FINAL turns off automatic PREWHERE. Both PREWHERE columns are in the sort
+  // key, so a -1 and its +1 pass together; `sign` stays in WHERE so the
+  // collapse happens first.
   return sql`
     WITH profileSeen AS (
       SELECT created_at as firstSeen, last_seen_at as lastSeen
@@ -102,16 +110,22 @@ export function profileMetricsQuery(query: {
     eventStats AS (
       SELECT
         countIf(name = 'screen_view') as screenViews,
-        countIf(name = 'session_start') as sessions,
-        round(avgIf(duration, name = 'session_end' AND duration != 0) / 1000 / 60, 2) as durationAvg,
-        round(quantilesExactInclusiveIf(0.9)(duration, name = 'session_end' AND duration != 0)[1] / 1000 / 60, 2) as durationP90,
         count(*) as totalEvents,
         count(DISTINCT toDate(created_at)) as uniqueDaysActive,
-        round(avgIf(properties['__bounce'] = '1', name = 'session_end') * 100, 4) as bounceRate,
         countIf(name NOT IN ('screen_view', 'session_start', 'session_end')) as conversionEvents,
         sumIf(revenue, name = 'revenue') as revenue
       FROM ${sql.id(TABLE.events)}
       WHERE profile_id = ${profileId} AND project_id = ${projectId}
+    ),
+    sessionStats AS (
+      SELECT
+        count() as sessions,
+        round(ifNotFinite(avgIf(duration, duration != 0), 0) / 1000, 2) as durationAvg,
+        round(ifNotFinite(quantilesExactInclusiveIf(0.9)(duration, duration != 0)[1], 0) / 1000, 2) as durationP90,
+        round(ifNotFinite(avg(is_bounce), 0) * 100, 4) as bounceRate
+      FROM ${sql.id(TABLE.sessions)} FINAL
+      PREWHERE project_id = ${projectId} AND profile_id = ${profileId}
+      WHERE sign = 1
     )
     SELECT
       (SELECT lastSeen FROM profileSeen) as lastSeen,
@@ -130,7 +144,7 @@ export function profileMetricsQuery(query: {
         ELSE round(dateDiff('second', (SELECT firstSeen FROM profileSeen), (SELECT lastSeen FROM profileSeen)) / nullIf(sessions - 1, 0), 1)
       END as avgTimeBetweenSessions,
       revenue
-    FROM eventStats
+    FROM eventStats CROSS JOIN sessionStats
   `;
 }
 

@@ -68,11 +68,25 @@ describe('profileMetricsQuery', () => {
     expect(query).toContain(
       'WHERE profile_id = {p3:String} AND project_id = {p4:String}'
     );
+    expect(query).toContain(
+      'PREWHERE project_id = {p5:String} AND profile_id = {p6:String}'
+    );
     expect(query_params).toEqual({
       p1: hostileProfile,
       p2: hostileProject,
       p3: hostileProfile,
       p4: hostileProject,
+      p5: hostileProject,
+      p6: hostileProfile,
     });
+  });
+
+  // Events sent before `identify()` carry the device id, so counting
+  // `session_start` events under the profile id missed the first session.
+  test('takes session figures from the collapsed sessions table', () => {
+    const { query } = render();
+    expect(query).toContain('FROM sessions FINAL');
+    expect(query).not.toContain("'session_start') as sessions");
+    expect(query).not.toContain('/ 60');
   });
 });

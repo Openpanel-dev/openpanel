@@ -455,7 +455,7 @@ describe('get_profile_metrics', () => {
     // No error — bug was getProfileMetrics returns single object, not array
     expect(res.error).toBeUndefined();
     expect(res.profileId).toBe(FIXTURE.profiles.charlie);
-    expect(res.sessions).toBe(1); // 1 session_start event
+    expect(res.sessions).toBe(2); // sess-charlie-1 and sess-charlie-2 in the sessions table
     expect(res.screenViews).toBe(1); // 1 screen_view event
     expect(res.totalEvents).toBe(5); // session_start + screen_view + page_view + purchase + session_end
     expect(res.conversionEvents).toBe(2); // page_view + purchase (excludes session_start/screen_view/session_end)
