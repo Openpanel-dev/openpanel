@@ -16,6 +16,7 @@ import { cn } from '@/utils/cn';
 import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
 
 const PRIMARY_COLOR = 'var(--chart-0)';
+const METRIC_ERROR_LABEL = 'Could not load';
 
 export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
@@ -36,6 +37,8 @@ interface MetricCardProps {
   active?: boolean;
   inverted?: boolean;
   isLoading?: boolean;
+  /** The metric failed to load: show that instead of a value that reads as real. */
+  isError?: boolean;
   /** Interval drives the hover-label date format. */
   interval?: IInterval;
   /** Range drives the default label ("Last 30 days") and dashed-tail logic. */
@@ -43,7 +46,6 @@ interface MetricCardProps {
 }
 
 export function OverviewMetricCard({
-  id,
   data,
   metric,
   unit,
@@ -52,6 +54,7 @@ export function OverviewMetricCard({
   active,
   inverted = false,
   isLoading = false,
+  isError = false,
   interval = 'day',
   range,
 }: MetricCardProps) {
@@ -70,6 +73,7 @@ export function OverviewMetricCard({
     : (range ? timeWindows[range]?.label : 'Total') || 'Total';
 
   const diff = getPreviousMetric(displayValue, displayPrev);
+  const hasValue = !(isLoading || isError);
 
   return (
     <MetricCardShell active={active} onClick={onClick}>
@@ -78,7 +82,7 @@ export function OverviewMetricCard({
           <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
-          {isLoading ? null : (
+          {hasValue && (
             <PreviousDiffIndicatorPure
               {...diff}
               inverted={inverted}
@@ -87,14 +91,12 @@ export function OverviewMetricCard({
           )}
         </div>
         <div className="mt-1 flex items-baseline gap-0.5 leading-none">
-          {isLoading ? (
-            <Skeleton className="h-5 w-20" />
-          ) : (
-            <MetricValue unit={unit} value={displayValue} />
-          )}
+          {isLoading && <Skeleton className="h-5 w-20" />}
+          {isError && <span className={VALUE_CLASS}>—</span>}
+          {hasValue && <MetricValue unit={unit} value={displayValue} />}
         </div>
         <div className="mt-0.5 truncate text-[11px] text-muted-foreground leading-none">
-          {displayLabel}
+          {isError ? METRIC_ERROR_LABEL : displayLabel}
         </div>
       </div>
 

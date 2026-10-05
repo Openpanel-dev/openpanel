@@ -1,7 +1,7 @@
 import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { curveMonotoneX } from '@visx/curve';
-import { DollarSignIcon } from 'lucide-react';
+import { DollarSignIcon, RotateCwIcon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Area } from '../charts/area';
 import { ComposedChart } from '../charts/composed-chart';
@@ -16,6 +16,7 @@ import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
 import { Skeleton } from '../skeleton';
+import { Button } from '../ui/button';
 import { OverviewLiveHistogram } from './overview-live-histogram';
 import { OverviewMetricCard } from './overview-metric-card';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -124,6 +125,7 @@ export default function OverviewMetrics({
             id={title.key}
             interval={interval}
             inverted={title.inverted}
+            isError={overviewQuery.isError}
             isLoading={overviewQuery.isLoading}
             key={title.key}
             label={title.title}
@@ -164,7 +166,21 @@ export default function OverviewMetrics({
         </div>
         <div className="h-[190px] w-full">
           {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
-          {!overviewQuery.isLoading && data.length > 0 && (
+          {overviewQuery.isError && (
+            <div className="center-center h-full flex-col gap-3 text-center text-muted-foreground text-sm">
+              We could not load this data. Try again in a moment.
+              <Button
+                icon={RotateCwIcon}
+                loading={overviewQuery.isFetching}
+                onClick={() => overviewQuery.refetch()}
+                size="sm"
+                variant="outline"
+              >
+                Try again
+              </Button>
+            </div>
+          )}
+          {overviewQuery.isSuccess && data.length > 0 && (
             <Chart
               activeMetric={activeMetric}
               data={data}

@@ -1,7 +1,30 @@
+import type { IServiceSession } from '@openpanel/core';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import type { Table } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
+import { Loader2Icon, RotateCwIcon } from 'lucide-react';
+import { last } from 'ramda';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useInViewport } from 'react-in-viewport';
 import { useLocalStorage } from 'usehooks-ts';
 import { useColumns } from './columns';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { FullPageErrorState } from '@/components/full-page-error-state';
+import { Skeleton } from '@/components/skeleton';
+import { Button } from '@/components/ui/button';
+import {
+  AnimatedSearchInput,
+  DataTableToolbarContainer,
+} from '@/components/ui/data-table/data-table-toolbar';
+import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 
 // Custom hook for persistent column visibility
 const usePersistentColumnVisibility = (columns: any[]) => {
@@ -35,29 +58,7 @@ const usePersistentColumnVisibility = (columns: any[]) => {
   };
 };
 
-import type { IServiceSession } from '@openpanel/core';
-import { useNavigate } from '@tanstack/react-router';
-import type { Table } from '@tanstack/react-table';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
-import { Loader2Icon } from 'lucide-react';
-import { last } from 'ramda';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useInViewport } from 'react-in-viewport';
-import { TableFilterPills } from '@/components/filters/TableFilterPills';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Skeleton } from '@/components/skeleton';
-import {
-  AnimatedSearchInput,
-  DataTableToolbarContainer,
-} from '@/components/ui/data-table/data-table-toolbar';
-import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useSearchQueryState } from '@/hooks/use-search-query-state';
-import { cn } from '@/utils/cn';
-
-type Props = {
+interface Props {
   query: UseInfiniteQueryResult<
     TRPCInfiniteData<
       RouterInputs['session']['list'],
@@ -65,7 +66,7 @@ type Props = {
     >,
     unknown
   >;
-};
+}
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceSession[];
 const ROW_HEIGHT = 40;
@@ -288,7 +289,7 @@ export const SessionsTable = ({ query }: Props) => {
     }
 
     return query.data?.pages?.flatMap((p) => p.items) ?? [];
-  }, [query.data]);
+  }, [query.data, isLoading]);
 
   // const { setPage, state: pagination } = useDataTablePagination();
   const { columnVisibility, setColumnVisibility } =
@@ -331,6 +332,28 @@ export const SessionsTable = ({ query }: Props) => {
       query.fetchNextPage();
     }
   }, [inViewport, enterCount, hasNextPage]);
+
+  const hasFailedWithoutData = query.isError && !query.data;
+  if (hasFailedWithoutData) {
+    return (
+      <>
+        <SessionTableToolbar table={table} />
+        <FullPageErrorState
+          description="We could not load this data. Try again in a moment."
+          title="Something went wrong"
+        >
+          <Button
+            icon={RotateCwIcon}
+            loading={query.isFetching}
+            onClick={() => query.refetch()}
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </FullPageErrorState>
+      </>
+    );
+  }
 
   return (
     <>
