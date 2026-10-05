@@ -31,7 +31,7 @@ require_analyzer() {
     exit 2
   }
   command -v bun >/dev/null 2>&1 || {
-    echo "FAIL: bun is not on PATH; the analyzer runs under bun (ADR-010)." >&2
+    echo "FAIL: bun is not on PATH; the analyzer runs under bun." >&2
     exit 2
   }
   # A delegated check that silently reports zero because its tool is absent is worse than no check.

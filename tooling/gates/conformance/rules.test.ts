@@ -151,7 +151,7 @@ describe('R6 — the asset-loader carve-out is an allowlist, not a pattern', () 
     expect(metric.label).toContain('0 of 2 load* functions');
   });
 
-  test('the allowlist is exactly the two ADR-022 names, each with a reason', () => {
+  test('the allowlist is exactly the two sanctioned files, each with a reason', () => {
     expect(ASSET_LOADER_ALLOWLIST.map((entry) => entry.file)).toEqual([
       'packages/core/src/clients/geo.ts',
       'packages/core/src/modules/integration/src/flush-exports.ts',

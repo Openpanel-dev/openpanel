@@ -15,7 +15,7 @@ export interface ClientSlot {
 }
 
 /**
- * Three buckets of error:
+ * Four classes of error:
  *
  * - `node-down`: TCP/DNS/CONNECT-level failure. The node is genuinely
  *   unreachable from this worker right now. **Retry on next node AND

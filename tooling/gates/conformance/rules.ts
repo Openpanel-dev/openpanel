@@ -237,7 +237,7 @@ export function checkServicesMembers(sources: ParsedSource[]): Metric {
     count: offenders.length,
     target: 0,
     offenders: sorted(offenders),
-    note: `${conforming} conforming member(s) of ${members}; baseline 2026-09-08 was 0`,
+    note: `${conforming} conforming member(s) of ${members}`,
   };
 }
 
@@ -259,7 +259,7 @@ export function checkCreateServicesCallSites(sources: ParsedSource[]): Metric {
           file: source.path,
           line: lineOf(source, node.getStart(source.sourceFile)),
           detail:
-            'createServices( outside the five sanctioned construction sites (ADR-022 R15)',
+            'createServices( outside the five sanctioned construction sites (R15)',
         });
       }
     });
@@ -388,11 +388,7 @@ export function checkEnvReads(sources: ParsedSource[]): Metric[] {
       count: dotted.length,
       target: 0,
       offenders: dotted,
-      note:
-        'ADR-022 baseline 2026-09-08: 172 occurrences across 50 files, measured with `rg process\\.env\\.`.\n' +
-        "That grep's file count is one high: rpc/base.ts:246 is a COMMENT saying core reads no process.env,\n" +
-        'and it misses shared/get-client-ip.ts:83, a real read written `process.env?.`. The two errors cancel\n' +
-        'in the occurrence count and do not in the file count, so the AST reads 172 across 49 files.',
+      note: 'Counted on the AST: a comment that mentions process.env is not a read, and `process.env?.` is.',
     },
     {
       label: `process.env[...] reads in packages/core/src (non-test) — across ${bracketedFiles.size} files`,
@@ -645,7 +641,7 @@ export function checkSharedPackageIsolation(repoRoot: string): Metric {
       count: 0,
       target: 0,
       offenders: [],
-      note: `${SHARED_PACKAGE_ROOT} does not exist yet — ADR-022's C7 chore creates it. Nothing to check.`,
+      note: `${SHARED_PACKAGE_ROOT} does not exist. Nothing to check.`,
     };
   }
 

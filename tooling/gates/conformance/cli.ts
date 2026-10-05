@@ -384,7 +384,7 @@ function buildRules(tree: Tree): RuleBlock[] {
         checkDependencyLoaders(tree.core),
       ],
       note: v1Compat
-        ? `v1-compat.ts: ${v1Compat.text.replace(/\n$/, '').split('\n').length} lines, ${v1CompatImporters} importers (tests included) — the headline numbers for fix-wave step 2. ADR-022 measured 2,104 lines / 69 importers at 6694c5b7 on 2026-09-07.`
+        ? `v1-compat.ts: ${v1Compat.text.replace(/\n$/, '').split('\n').length} lines, ${v1CompatImporters} importers (tests included).`
         : undefined,
     },
     {
@@ -401,7 +401,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'client shape',
-          'Review rule (ADR-022 check line: "review"). Read packages/core/src/clients/*: no logger, built once at boot, a missing thing is null.'
+          'Review rule. Read packages/core/src/clients/*: no logger, built once at boot, a missing thing is null.'
         ),
       ],
     },
@@ -418,7 +418,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'job file shape',
-          'Review rule (ADR-022 check line: "review + ADR-021"). See R18 below for the one mechanical half.'
+          'Review rule. See R18 below for the one mechanical half.'
         ),
       ],
     },
@@ -442,7 +442,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'index.ts and main.ts shape',
-          'Review rule (ADR-022 check line: "review of index.ts and main.ts").'
+          'Review rule: read index.ts and main.ts.'
         ),
       ],
     },
@@ -465,7 +465,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'lifecycle',
-          'Review rule (ADR-022 check line: "main.ts shutdown order vs open order; core does not close handed-in connections").'
+          'Review rule: main.ts shuts down in the reverse of the order it opens; core does not close connections handed to it.'
         ),
       ],
     },
@@ -488,7 +488,7 @@ function buildRules(tree: Tree): RuleBlock[] {
       metrics: [
         reviewOnly(
           'provider error handling',
-          'Review rule (ADR-022 check line: "review of every job-handler catch around a client call").'
+          'Review rule: read every job-handler catch around a client call.'
         ),
       ],
     },
@@ -519,7 +519,7 @@ function buildRules(tree: Tree): RuleBlock[] {
         // the same edges twice.
         asView(
           cruiserMetric(
-            'ADR-022 baseline slice: shared/ -> above it',
+            'upward imports: shared/ -> above it',
             R22_SHARED_UPWARD_RULE,
             cruiser,
             tree
@@ -527,7 +527,7 @@ function buildRules(tree: Tree): RuleBlock[] {
         ),
         asView(
           cruiserMetric(
-            'ADR-022 baseline slice: http/*, rpc/base.ts -> modules/*/src/*',
+            'upward imports: http/*, rpc/base.ts -> modules/*/src/*',
             R22_TRANSPORT_UPWARD_RULE,
             cruiser,
             tree,
@@ -538,7 +538,7 @@ function buildRules(tree: Tree): RuleBlock[] {
         ),
       ],
       note: cruiser.available
-        ? "M14-002 landed these rules and verified cruiser resolves its typescript peer, so R22 is the cruiser rule, not ADR-022's grep fallback. A bare ../ depth grep is forbidden: a module importing defineJob at ../../jobs/define is importing DOWNWARD."
+        ? 'Counted by dependency-cruiser on resolved imports, not by grepping ../ depth: a module importing defineJob at ../../jobs/define is importing DOWNWARD.'
         : undefined,
     },
     // R20 (test shapes) is deliberately absent from this gate.
@@ -624,7 +624,7 @@ const BASELINE_METRICS: readonly {
 ];
 
 function renderBaseline(rules: RuleBlock[], lines: string[]): void {
-  lines.push('BASELINE REPRODUCTION (ADR-022 / CONFORMANCE_GATE_SPEC.md)');
+  lines.push('HEADLINE NUMBERS');
   lines.push('');
   for (const entry of BASELINE_METRICS) {
     const metric = rules.find((rule) => rule.id === entry.rule)?.metrics[
@@ -644,12 +644,12 @@ function renderBaseline(rules: RuleBlock[], lines: string[]): void {
 export function renderReport(rules: RuleBlock[]): string {
   const lines: string[] = [
     heavy,
-    'OpenPanel conformance gate (ADR-022) — report',
+    'OpenPanel conformance gate — report',
     heavy,
     '',
     'Rules R1..R22 in order. ASSERT rules fail `--assert` above their target;',
-    'REPORT rules are review rules and are printed as hints only. R20 is',
-    'deferred by Carl (2026-09-08) and is absent by design.',
+    'REPORT rules are review rules and are printed as hints only. R20 (test',
+    'shapes) is not checked by this gate.',
     '',
   ];
 
@@ -714,19 +714,14 @@ export function renderAssert(rules: RuleBlock[]): {
 
   if (failures === 0) {
     return {
-      output: 'OK: every asserted ADR-022 rule is at its target.',
+      output: 'OK: every asserted rule is at its target.',
       failed: false,
     };
   }
 
-  lines.unshift(
-    heavy,
-    'OpenPanel conformance gate (ADR-022) — assert FAILED',
-    heavy,
-    ''
-  );
+  lines.unshift(heavy, 'OpenPanel conformance gate — assert FAILED', heavy, '');
   lines.push(heavy);
-  lines.push(`FAIL: ${failures} asserted ADR-022 violation(s).`);
+  lines.push(`FAIL: ${failures} asserted violation(s).`);
   lines.push(heavy);
   return { output: lines.join('\n'), failed: true };
 }

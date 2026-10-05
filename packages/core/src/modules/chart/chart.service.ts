@@ -756,7 +756,7 @@ export function createChartService(
       input: FunnelStepProfilesRequest
     ): Promise<IServiceProfile[]> => getFunnelStepProfiles(deps, input),
     getFunnelGroup: funnel.getFunnelGroup,
-    /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
+    /** Groups funnel rows into one serie per breakdown combination. */
     toFunnelSeries: funnel.toSeries,
     getFunnelChart: (
       chartInput: IReportInput
