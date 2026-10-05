@@ -191,6 +191,7 @@ export default function OverviewTopGeo({
             onClick={() =>
               pushModal('OverviewTopGenericModal', {
                 projectId,
+                shareId,
                 column: widget.key,
               })
             }

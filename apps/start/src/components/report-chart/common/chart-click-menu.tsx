@@ -207,7 +207,7 @@ export const ChartClickMenu = forwardRef<
     <div className="relative h-full w-full" ref={containerRef}>
       <DropdownMenu
         onOpenChange={handleOpenChange}
-        open={clickPosition !== null}
+        open={clickPosition !== null && menuItems.length > 0}
       >
         <DropdownMenuTrigger asChild>
           <div

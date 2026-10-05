@@ -53,6 +53,7 @@ function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
 export function Chart({ data }: Props) {
   const {
     isEditMode,
+    shareId,
     report: {
       previous,
       interval,
@@ -100,7 +101,8 @@ export function Chart({ data }: Props) {
     (e: any, clickedData: any): ChartClickMenuItem[] => {
       const items: ChartClickMenuItem[] = [];
 
-      if (!clickedData?.date) {
+      // Both actions need a signed-in member, which a share visitor is not.
+      if (shareId || !clickedData?.date) {
         return items;
       }
 
@@ -145,6 +147,7 @@ export function Chart({ data }: Props) {
       return items;
     },
     [
+      shareId,
       projectId,
       data,
       reportSeries,

@@ -19,8 +19,10 @@ export function ReportSankeyChart() {
       startDate,
       endDate,
       breakdowns,
+      id,
     },
     isLazyLoading,
+    shareId,
   } = useReportChartContext();
 
   const input: IReportInput = {
@@ -40,9 +42,12 @@ export function ReportSankeyChart() {
   };
   const trpc = useTRPC();
   const res = useQuery(
-    trpc.chart.sankey.queryOptions(input, {
-      enabled: !isLazyLoading && !!options && input.series.length > 0,
-    })
+    trpc.chart.sankey.queryOptions(
+      { ...input, id, shareId },
+      {
+        enabled: !isLazyLoading && !!options && input.series.length > 0,
+      }
+    )
   );
 
   if (!options) {

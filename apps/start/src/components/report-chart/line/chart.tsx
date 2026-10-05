@@ -55,6 +55,7 @@ export function Chart({ data }: Props) {
       visibleSeries: savedVisibleSeries,
     },
     isEditMode,
+    shareId,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
   const dispatch = useDispatch();
@@ -142,7 +143,8 @@ export function Chart({ data }: Props) {
     (e: any, clickedData: any): ChartClickMenuItem[] => {
       const items: ChartClickMenuItem[] = [];
 
-      if (!clickedData?.date) {
+      // Both actions need a signed-in member, which a share visitor is not.
+      if (shareId || !clickedData?.date) {
         return items;
       }
 
@@ -198,6 +200,7 @@ export function Chart({ data }: Props) {
       return items;
     },
     [
+      shareId,
       projectId,
       data,
       reportSeries,

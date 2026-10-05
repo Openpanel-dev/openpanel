@@ -120,7 +120,9 @@ export default function OverviewTopPages({
         </WidgetBody>
         <WidgetFooter>
           <OverviewDetailsButton
-            onClick={() => pushModal('OverviewTopPagesModal', { projectId })}
+            onClick={() =>
+              pushModal('OverviewTopPagesModal', { projectId, shareId })
+            }
           />
           <div className="flex-1" />
           <Button

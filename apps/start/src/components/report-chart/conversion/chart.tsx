@@ -52,6 +52,7 @@ export function Chart({ data }: Props) {
       visibleSeries: savedVisibleSeries,
     },
     isEditMode,
+    shareId,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
   const dispatch = useDispatch();
@@ -157,7 +158,10 @@ export function Chart({ data }: Props) {
     >
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <LineChart data={rechartData} onClick={handleChartClick}>
+          <LineChart
+            data={rechartData}
+            onClick={shareId ? undefined : handleChartClick}
+          >
             <CartesianGrid
               className="stroke-border"
               horizontal={true}

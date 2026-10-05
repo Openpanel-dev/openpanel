@@ -1,7 +1,7 @@
-// The seven member-only procedures use `protectedProcedure`, so
+// The six member-only procedures use `protectedProcedure`, so
 // `enforceAccess` reads the top-level `projectId` before the input is parsed.
 //
-// `chartProcedure` (funnel, conversion, chart, aggregate, cohort) is the
+// `chartProcedure` (funnel, conversion, sankey, chart, aggregate, cohort) is the
 // share-aware builder: `publicProcedure` plus one middleware that admits an
 // anonymous caller holding a valid share — `shareId` + `id` resolve the saved
 // report, and the request renders that report (the caller may only move the
@@ -15,7 +15,11 @@ import {
   publicProcedure,
   type TrpcContext,
 } from '../../rpc/base';
-import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import {
+  TRPCBadRequestError,
+  TRPCForbiddenError,
+  TRPCNotFoundError,
+} from '../../rpc/errors';
 import {
   zChartEventFilter,
   zChartSeries,
@@ -50,7 +54,7 @@ async function resolveShare(
     return null;
   }
   if (!input.id) {
-    throw new Error('reportId required with shareId');
+    throw new TRPCBadRequestError('reportId required with shareId');
   }
 
   const shareValidation = await ctx.services.share.validateShareAccess(
@@ -67,7 +71,7 @@ async function resolveShare(
 
   const report = await ctx.services.report.getReportById(input.id);
   if (!report) {
-    throw new TRPCAccessError('Report not found');
+    throw new TRPCNotFoundError('Report not found');
   }
   return report;
 }
@@ -155,16 +159,13 @@ export const chartRouter = createTRPCRouter({
       )
     ),
 
-  sankey: protectedProcedure
-    .input(zReportInput)
-    .query(async ({ input, ctx }) => {
-      await ctx.services.auth.requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: input.projectId,
-        level: 'read',
-      });
-      return ctx.services.chart.getSankeyChart(input);
-    }),
+  sankey: chartProcedure
+    .input(zShareableReportInput)
+    .query(({ input, ctx }) =>
+      ctx.services.chart.getSankeyChart(
+        ctx.services.chart.resolveReportInput(ctx.report, input)
+      )
+    ),
 
   chart: chartProcedure
     .input(zShareableReportInput)

@@ -140,6 +140,7 @@ export function Tables({
       previous,
       options,
     },
+    shareId,
   } = useReportChartContext();
 
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
@@ -282,23 +283,24 @@ export function Tables({
             },
             {
               name: '',
-              render: (item) => (
-                <Button
-                  className="h-8 w-8 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const stepIndex = steps.findIndex(
-                      (s) => s.event.id === item.event.id
-                    );
-                    handleInspectStep(item, stepIndex);
-                  }}
-                  size="sm"
-                  title="View users who completed this step"
-                  variant="ghost"
-                >
-                  <UsersIcon size={16} />
-                </Button>
-              ),
+              render: (item) =>
+                shareId ? null : (
+                  <Button
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const stepIndex = steps.findIndex(
+                        (s) => s.event.id === item.event.id
+                      );
+                      handleInspectStep(item, stepIndex);
+                    }}
+                    size="sm"
+                    title="View users who completed this step"
+                    variant="ghost"
+                  >
+                    <UsersIcon size={16} />
+                  </Button>
+                ),
               className: 'text-right',
               width: '48px',
             },

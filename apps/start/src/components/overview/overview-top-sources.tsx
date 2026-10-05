@@ -180,6 +180,7 @@ export default function OverviewTopSources({
             onClick={() =>
               pushModal('OverviewTopGenericModal', {
                 projectId,
+                shareId,
                 column: widget.key,
               })
             }

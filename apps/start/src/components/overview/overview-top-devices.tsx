@@ -424,6 +424,7 @@ export default function OverviewTopDevices({
             onClick={() =>
               pushModal('OverviewTopGenericModal', {
                 projectId,
+                shareId,
                 column: widget.key,
               })
             }

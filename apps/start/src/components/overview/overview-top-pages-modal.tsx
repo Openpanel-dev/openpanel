@@ -9,10 +9,12 @@ import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewTopPagesProps {
   projectId: string;
+  shareId?: string;
 }
 
 export default function OverviewTopPagesModal({
   projectId,
+  shareId,
 }: OverviewTopPagesProps) {
   const [filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range } = useOverviewOptions();
@@ -20,6 +22,7 @@ export default function OverviewTopPagesModal({
   const query = useQuery(
     trpc.overview.topPages.queryOptions({
       projectId,
+      shareId,
       filters,
       startDate,
       endDate,

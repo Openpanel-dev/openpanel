@@ -13,11 +13,13 @@ import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewTopGenericModalProps {
   projectId: string;
+  shareId?: string;
   column: IGetTopGenericInput['column'];
 }
 
 export default function OverviewTopGenericModal({
   projectId,
+  shareId,
   column,
 }: OverviewTopGenericModalProps) {
   const [_filters, setFilter] = useEventQueryFilters();
@@ -26,6 +28,7 @@ export default function OverviewTopGenericModal({
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
+      shareId,
       filters: _filters,
       startDate,
       endDate,
