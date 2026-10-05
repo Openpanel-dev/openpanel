@@ -19,20 +19,32 @@ interface GroupedResult {
   data: GroupedDataPoint[];
 }
 
+const LABEL_PREFIX = 'label_';
+const DECIMAL_RADIX = 10;
+
+function labelIndex(key: string): number {
+  return Number.parseInt(key.slice(LABEL_PREFIX.length), DECIMAL_RADIX);
+}
+
+// An unset value keeps its slot as '' while a later label is set, so name[i]
+// is always label_i and the chart engine can map it back to breakdown i.
+function rowLabels(row: ISerieDataItem): string[] {
+  const labels = Object.entries(row)
+    .filter(([key]) => key.startsWith(LABEL_PREFIX))
+    .sort(([a], [b]) => labelIndex(a) - labelIndex(b))
+    .map(([, value]) => (typeof value === 'string' ? value : ''));
+  while (labels.length > 0 && labels.at(-1) === '') {
+    labels.pop();
+  }
+  return labels;
+}
+
 export function groupByLabels(data: ISerieDataItem[]): GroupedResult[] {
   const groupedMap = new Map<string, GroupedResult>();
   const timestamps = new Set<string>();
   data.forEach((row) => {
     timestamps.add(row.date);
-    const labels = Object.keys(row)
-      .filter((key) => key.startsWith('label_'))
-      .sort((a, b) => {
-        const numA = Number.parseInt(a.replace('label_', ''));
-        const numB = Number.parseInt(b.replace('label_', ''));
-        return numA - numB;
-      })
-      .map((key) => (row as any)[key])
-      .filter((label): label is string => !!label);
+    const labels = rowLabels(row);
 
     const labelKey = labels.join(':::');
 
