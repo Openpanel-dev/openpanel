@@ -261,6 +261,7 @@ export const createKafkaEventsConsumer = (
     groupId: options?.groupId || config.kafka.consumerGroup,
     sessionTimeout: config.kafka.sessionTimeoutMs,
     heartbeatInterval: config.kafka.heartbeatIntervalMs,
+    rebalanceTimeout: config.kafka.rebalanceTimeoutMs,
     minBytes: config.kafka.minMessages * KAFKA_BYTES_PER_MESSAGE,
     maxWaitTimeInMs: config.kafka.maxWaitMs,
     maxBytesPerPartition:

@@ -29,6 +29,7 @@ const kafkaConfig = (tuning: Partial<KafkaConfig> = {}): KafkaConfig =>
     maxMessagesPerPartition: 256,
     sessionTimeoutMs: 30_000,
     heartbeatIntervalMs: 3000,
+    rebalanceTimeoutMs: 60_000,
     requestTimeoutMs: 5000,
     connectionTimeoutMs: 2000,
     producerRetries: 2,

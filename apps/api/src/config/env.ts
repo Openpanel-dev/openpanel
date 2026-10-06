@@ -30,6 +30,8 @@ const DEFAULT_KAFKA_MAX_WAIT_MS = 500;
 const DEFAULT_KAFKA_MAX_MESSAGES_PER_PARTITION = 256;
 const DEFAULT_KAFKA_SESSION_TIMEOUT_MS = 30_000;
 const DEFAULT_KAFKA_HEARTBEAT_INTERVAL_MS = 3000;
+/** kafkajs's own default, so leaving the variable unset changes nothing. */
+const DEFAULT_KAFKA_REBALANCE_TIMEOUT_MS = 60_000;
 const DEFAULT_KAFKA_REQUEST_TIMEOUT_MS = 5000;
 const DEFAULT_KAFKA_CONNECTION_TIMEOUT_MS = 2000;
 /** Kafka's and Redpanda's own default `max.message.bytes`: 1 MiB. */
@@ -439,6 +441,9 @@ const rawSchema = z.object({
   KAFKA_HEARTBEAT_INTERVAL_MS: positiveIntWithDefault(
     DEFAULT_KAFKA_HEARTBEAT_INTERVAL_MS
   ),
+  KAFKA_REBALANCE_TIMEOUT_MS: positiveIntWithDefault(
+    DEFAULT_KAFKA_REBALANCE_TIMEOUT_MS
+  ),
   KAFKA_REQUEST_TIMEOUT_MS: positiveIntWithDefault(
     DEFAULT_KAFKA_REQUEST_TIMEOUT_MS
   ),
@@ -716,6 +721,7 @@ function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
     maxMessagesPerPartition: raw.KAFKA_MAX_MESSAGES_PER_PARTITION,
     sessionTimeoutMs: raw.KAFKA_SESSION_TIMEOUT_MS,
     heartbeatIntervalMs: raw.KAFKA_HEARTBEAT_INTERVAL_MS,
+    rebalanceTimeoutMs: raw.KAFKA_REBALANCE_TIMEOUT_MS,
     requestTimeoutMs: raw.KAFKA_REQUEST_TIMEOUT_MS,
     connectionTimeoutMs: raw.KAFKA_CONNECTION_TIMEOUT_MS,
     producerRetries: raw.KAFKA_PRODUCER_RETRIES,

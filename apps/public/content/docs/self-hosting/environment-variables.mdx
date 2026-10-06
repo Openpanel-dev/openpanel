@@ -1151,6 +1151,19 @@ How often, in milliseconds, the consumer sends background heartbeats to the brok
 KAFKA_HEARTBEAT_INTERVAL_MS=3000
 ```
 
+### KAFKA_REBALANCE_TIMEOUT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `60000`
+
+How long, in milliseconds, the consumer group waits for every member to rejoin during a rebalance. No consumer processes events while it waits, so a member that stopped without leaving the group stalls ingestion for up to this long. Raise it only if a single batch can take longer than this to finish.
+
+**Example**:
+```bash
+KAFKA_REBALANCE_TIMEOUT_MS=60000
+```
+
 ## Buffers
 
 ### SESSION_BUFFER_BATCH_SIZE

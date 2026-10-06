@@ -117,6 +117,8 @@ export interface KafkaConfig {
   maxMessagesPerPartition: number;
   sessionTimeoutMs: number;
   heartbeatIntervalMs: number;
+  /** How long the group waits for every member to rejoin during a rebalance. */
+  rebalanceTimeoutMs: number;
   requestTimeoutMs: number;
   connectionTimeoutMs: number;
   producerRetries: number;

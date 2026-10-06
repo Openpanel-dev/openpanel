@@ -403,6 +403,14 @@ describe('cross-field invariants, checked before the transform', () => {
     ).toThrow(/must be below KAFKA_SESSION_TIMEOUT_MS/);
   });
 
+  it('passes KAFKA_REBALANCE_TIMEOUT_MS to the consumer, defaulting to kafkajs', () => {
+    expect(loadConfig(base).core.kafka.rebalanceTimeoutMs).toBe(60_000);
+    expect(
+      loadConfig({ ...base, KAFKA_REBALANCE_TIMEOUT_MS: '30000' }).core.kafka
+        .rebalanceTimeoutMs
+    ).toBe(30_000);
+  });
+
   it('refuses a reaper deadman below the session idle window', () => {
     expect(() =>
       loadConfig({
