@@ -22,6 +22,7 @@ import {
   createIncomingEventHandler,
   createInitialSalts,
   createKafkaEventsConsumer,
+  createLogger,
   createProducers,
   createTrpcFetchHandler,
   dashboardRoutes,
@@ -31,6 +32,7 @@ import {
   errorHandler,
   type HttpCtx,
   ingestConsumerMetrics,
+  interceptProcessOutput,
   type KafkaConsumerHandle,
   kafkaLogger,
   markEventsActivity,
@@ -75,6 +77,8 @@ const CRON_QUEUE_NAME = 'cron';
 // Used only to report a config error itself — the real level isn't known
 // until `config/env.ts` has validated `LOG_LEVEL`.
 const BOOTSTRAP_LOG_LEVEL = 'info';
+const API_LOGGER_NAME = 'api';
+const WORKER_LOGGER_NAME = 'worker';
 const CRON_DRAIN_TIMEOUT_MS = 60_000;
 const CRON_DRAIN_POLL_MS = 500;
 const FATAL_EXIT_DELAY_MS = 1000;
@@ -101,7 +105,13 @@ function loadConfigOrExit(): Config {
 }
 
 const config = loadConfigOrExit();
-const logger = pino({ name: 'api', level: config.LOG_LEVEL });
+// Workers keep the `worker` service name they shipped logs under before roles
+// shared one image, so existing log searches and alerts still match.
+const logger = createLogger({
+  name: config.ROLE === 'worker' ? WORKER_LOGGER_NAME : API_LOGGER_NAME,
+  config: config.core,
+});
+interceptProcessOutput(config.core, logger);
 
 /** ROLE=api produces and serves; it never consumes. */
 const roleConsumes = config.ROLE !== 'api';
