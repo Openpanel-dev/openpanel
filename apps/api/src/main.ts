@@ -50,6 +50,7 @@ import {
   registerSessionScrapeMetrics,
   requestLogging,
   type SessionMetricsRedis,
+  setBooting,
   setShuttingDown,
   startKafkaEventsConsumer,
   startSchedulers,
@@ -427,6 +428,29 @@ async function main() {
 
   const app = await buildHttpApp(deps);
 
+  // Listen before the consumers start: joining the Kafka group can take most
+  // of a minute, and a liveness probe that cannot connect meanwhile gets the
+  // container killed. Readiness stays 503 until boot finishes.
+  setBooting(true);
+  const listenOptions = {
+    ...config.listen,
+    idleTimeout: HTTP_IDLE_TIMEOUT_SECONDS,
+  };
+  app.listen(listenOptions, () => {
+    logger.info(
+      {
+        role,
+        port: config.API_PORT,
+        hostname: config.listen.hostname ?? '0.0.0.0',
+        // The running Bun version, asserted against .bun-version by
+        // scripts/doctor.sh — logged so a wrong-runtime incident is one log
+        // line away rather than an inference.
+        bunVersion: Bun.version,
+      },
+      'API listening'
+    );
+  });
+
   let workers: WorkerHandle | undefined;
   let consumer: KafkaConsumerHandle | undefined;
 
@@ -529,24 +553,8 @@ async function main() {
     shutdown('SIGINT');
   });
 
-  const listenOptions = {
-    ...config.listen,
-    idleTimeout: HTTP_IDLE_TIMEOUT_SECONDS,
-  };
-  app.listen(listenOptions, () => {
-    logger.info(
-      {
-        role,
-        port: config.API_PORT,
-        hostname: config.listen.hostname ?? '0.0.0.0',
-        // The running Bun version, asserted against .bun-version by
-        // scripts/doctor.sh — logged so a wrong-runtime incident is one log
-        // line away rather than an inference.
-        bunVersion: Bun.version,
-      },
-      'API listening'
-    );
-  });
+  setBooting(false);
+  logger.info({ role }, 'Boot complete');
 
   // The expiry notifications only matter where something subscribes.
   if (role !== 'worker') {

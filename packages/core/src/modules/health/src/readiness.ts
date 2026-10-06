@@ -7,7 +7,7 @@
 // readiness on a heartbeat that was never real.
 
 import { getEventsHeartbeat } from '../../ingest/src/heartbeat';
-import { isShuttingDown } from './shutdown';
+import { isBooting, isShuttingDown } from './shutdown';
 
 export const EVENTS_HEARTBEAT_STALE_MS = 60_000;
 
@@ -16,6 +16,7 @@ export type ReadinessResult =
   | { ready: false; reason: string; idleMs?: number; thresholdMs?: number };
 
 export interface ReadinessInputs {
+  booting: boolean;
   shuttingDown: boolean;
   heartbeat: { enabled: boolean; lastActivityAt: number };
   now: number;
@@ -23,12 +24,17 @@ export interface ReadinessInputs {
 
 /** Pure: every branch is a value, so the probe's rules are unit-testable. */
 export function evaluateReadiness({
+  booting,
   shuttingDown,
   heartbeat,
   now,
 }: ReadinessInputs): ReadinessResult {
   if (shuttingDown) {
     return { ready: false, reason: 'shutting down' };
+  }
+
+  if (booting) {
+    return { ready: false, reason: 'booting' };
   }
 
   if (!heartbeat.enabled) {
@@ -50,6 +56,7 @@ export function evaluateReadiness({
 
 export function currentReadiness(): ReadinessResult {
   return evaluateReadiness({
+    booting: isBooting(),
     shuttingDown: isShuttingDown(),
     heartbeat: getEventsHeartbeat(),
     now: Date.now(),

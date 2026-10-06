@@ -160,7 +160,7 @@ export {
 } from './modules/event/event.service';
 export type { IServiceGroup } from './modules/group/group.service';
 export { getGscCannibalization } from './modules/gsc/gsc.service';
-export { setShuttingDown } from './modules/health/src/shutdown';
+export { setBooting, setShuttingDown } from './modules/health/src/shutdown';
 export type {
   BotMatch,
   IncomingEventPayload,
