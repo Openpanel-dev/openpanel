@@ -67,10 +67,14 @@ export class ReplayBuffer extends BaseBuffer {
   private chunkSize: number;
   // Hard cap on the Redis list, enforced on BOTH paths (see processBuffer
   // and add). Bounds the memory a wedged consumer can pin on a SHARED Redis
-  // instance: worst case maxBufferSize × maxEntryBytes = 5,000 × 512KiB ≈
-  // 2.4GiB, under the 2560mb maxmemory of the shared prod instance; at the
-  // ~240KB/entry observed in the incident it is ≈1.2GB. The shared-instance
-  // memory-pressure page alert (used/maxmemory at 90%) is the outer backstop.
+  // instance: worst case maxBufferSize × maxEntryBytes = 2,500 × 512KiB ≈
+  // 1.22GiB — under half of the 2560mb maxmemory of the shared prod
+  // instance, leaving the majority of headroom for the other tenants
+  // (Harbor queues, oauth2-proxy sessions, Atlantis locks) plus Redis
+  // overhead. Typical footprint is far smaller (~580MB at the ~240KB/entry
+  // observed in the incident). Self-hosted dedicated instances can raise
+  // both via env. The shared-instance memory-pressure page alert
+  // (used/maxmemory at 90%) remains the outer backstop.
   private maxBufferSize: number;
   // Per-entry cap: one giant chunk must not dominate the buffer budget.
   // Typical rrweb chunks are 10–100KB; 512KiB is ~5x the largest observed
@@ -88,7 +92,7 @@ export class ReplayBuffer extends BaseBuffer {
     });
     this.batchSize = parsePositiveIntEnv('REPLAY_BUFFER_BATCH_SIZE', 500, this.logger);
     this.chunkSize = parsePositiveIntEnv('REPLAY_BUFFER_CHUNK_SIZE', 500, this.logger);
-    this.maxBufferSize = parsePositiveIntEnv('REPLAY_BUFFER_MAX_SIZE', 5_000, this.logger);
+    this.maxBufferSize = parsePositiveIntEnv('REPLAY_BUFFER_MAX_SIZE', 2_500, this.logger);
     this.maxEntryBytes = parsePositiveIntEnv('REPLAY_BUFFER_MAX_ENTRY_BYTES', 512 * 1024, this.logger);
   }
 
