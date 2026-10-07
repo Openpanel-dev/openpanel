@@ -1,5 +1,6 @@
 import { getRedisCache } from '@openpanel/redis';
 import { ch, TABLE_NAMES } from '../clickhouse/client';
+import type { ILogger } from '@openpanel/logger';
 import { BaseBuffer } from './base-buffer';
 
 export interface IClickhouseSessionReplayChunk {
@@ -13,14 +14,17 @@ export interface IClickhouseSessionReplayChunk {
   payload: string;
 }
 
-// JSONEachRow rejects raw control characters (U+0000–U+0008, U+000B, U+000C,
-// U+000E–U+001F) inside strings. `JSON.stringify` always escapes them, so a
-// raw one means the entry was corrupted in Redis. A single such entry fails
-// the ENTIRE batch insert and, because the LTRIM below only runs on success,
-// permanently wedges the buffer: it never drains, grows unbounded, and (prod
-// 2026-10-07) filled shared Redis to maxmemory, taking down ingestion for
-// every tenant until the poisoned rows were repaired by hand.
-const RAW_CONTROL_CHARS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/;
+// JSONEachRow rejects raw control characters (U+0000–U+001F) inside strings —
+// including newlines and tabs: a "pretty-printed" multi-line object parses
+// fine via JSON.parse but is multiple lines to the JSONEachRow reader and
+// fails the whole insert. `JSON.stringify` always escapes control characters,
+// so a raw one anywhere in the row proves the entry was corrupted in Redis.
+// A single such entry fails the ENTIRE batch insert and, because the LTRIM
+// below only runs on success, permanently wedges the buffer: it never drains,
+// grows unbounded, and (prod 2026-10-07) filled shared Redis to maxmemory,
+// taking down ingestion for every tenant until the poisoned rows were
+// repaired by hand.
+const RAW_CONTROL_CHARS = /[\u0000-\u001f]/;
 
 function isValidChunkRow(row: string): boolean {
   if (RAW_CONTROL_CHARS.test(row)) {
@@ -38,22 +42,38 @@ function isValidChunkRow(row: string): boolean {
   }
 }
 
+// Strict env parsing: `Number.parseInt('10_000')` is 10 (it stops at the
+// underscore) and `Number.parseInt('abc')` is NaN — the latter silently
+// disables every `>=`/`>` comparison it feeds, the former would trim 99.9%
+// of the buffer on the next flush. Accept only positive safe integers
+// (underscores allowed for readability) and fall back with a warning.
+function parsePositiveIntEnv(name: string, fallback: number, logger: ILogger): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') {
+    return fallback;
+  }
+  const value = Number(raw.trim().replaceAll('_', ''));
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    logger.warn(`Invalid ${name}='${raw}', falling back to ${fallback}`, { name, raw, fallback });
+    return fallback;
+  }
+  return value;
+}
+
 export class ReplayBuffer extends BaseBuffer {
-  private batchSize = process.env.REPLAY_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.REPLAY_BUFFER_BATCH_SIZE, 10)
-    : 500;
-  private chunkSize = process.env.REPLAY_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.REPLAY_BUFFER_CHUNK_SIZE, 10)
-    : 500;
-  // Hard cap on the Redis list. If the consumer cannot drain (ClickHouse
-  // outage, crashed worker, wedged flush), the buffer grows until it fills
-  // Redis itself — with maxmemory-policy=noeviction that turns one tenant's
-  // stuck queue into write failures for every tenant on the instance. The
-  // oldest entries are dropped first: stale replays are the least valuable
-  // data on the whole server.
-  private maxBufferSize = process.env.REPLAY_BUFFER_MAX_SIZE
-    ? Number.parseInt(process.env.REPLAY_BUFFER_MAX_SIZE, 10)
-    : 10_000;
+  private batchSize: number;
+  private chunkSize: number;
+  // Hard cap on the Redis list, enforced on the flush path (see
+  // processBuffer). Bounds the memory a wedged consumer can pin on a SHARED
+  // Redis instance: at the ~240KB/entry observed in the prod incident,
+  // 5,000 entries ≈ 1.2GB. The count cap plus the per-entry cap below give
+  // a practical byte budget; the shared-instance memory-pressure page alert
+  // (used/maxmemory at 90%) is the outer backstop.
+  private maxBufferSize: number;
+  // Per-entry cap: one giant chunk must not dominate the buffer budget.
+  // Typical rrweb chunks are 10–100KB; 1MiB is ~4x the largest observed
+  // legit entry while still bounding a hostile/broken writer.
+  private maxEntryBytes: number;
 
   private readonly redisKey = 'replay-buffer';
 
@@ -64,28 +84,32 @@ export class ReplayBuffer extends BaseBuffer {
         await this.processBuffer();
       },
     });
+    this.batchSize = parsePositiveIntEnv('REPLAY_BUFFER_BATCH_SIZE', 500, this.logger);
+    this.chunkSize = parsePositiveIntEnv('REPLAY_BUFFER_CHUNK_SIZE', 500, this.logger);
+    this.maxBufferSize = parsePositiveIntEnv('REPLAY_BUFFER_MAX_SIZE', 5_000, this.logger);
+    this.maxEntryBytes = parsePositiveIntEnv('REPLAY_BUFFER_MAX_ENTRY_BYTES', 1024 * 1024, this.logger);
   }
 
   async add(chunk: IClickhouseSessionReplayChunk) {
     return this.timeAdd(async () => {
       try {
         const redis = getRedisCache();
+        const serialized = JSON.stringify(chunk);
+        if (serialized.length > this.maxEntryBytes) {
+          this.logger.warn('Dropped oversized replay chunk', {
+            bytes: serialized.length,
+            maxEntryBytes: this.maxEntryBytes,
+            session_id: chunk.session_id,
+          });
+          return;
+        }
         const result = await redis
           .multi()
-          .rpush(this.redisKey, JSON.stringify(chunk))
+          .rpush(this.redisKey, serialized)
           .llen(this.redisKey)
           .exec();
 
         const bufferLength = (result?.[1]?.[1] as number) ?? 0;
-        if (bufferLength > this.maxBufferSize) {
-          const dropped = bufferLength - this.maxBufferSize;
-          await redis.ltrim(this.redisKey, dropped, -1);
-          this.logger.warn('Replay buffer exceeded max size, dropped oldest entries', {
-            bufferLength,
-            maxBufferSize: this.maxBufferSize,
-            dropped,
-          });
-        }
         if (bufferLength >= this.batchSize) {
           await this.tryFlush({ trigger: 'add' });
         }
@@ -164,8 +188,27 @@ export class ReplayBuffer extends BaseBuffer {
 
     // Trim the consumed batch (including the dropped rows) — but only after a
     // successful insert, so a ClickHouse outage still retains everything.
+    // ALL head-trims live here, under the flush lock taken by tryFlush: an
+    // add-side LTRIM between this method's LRANGE and LTRIM would shift
+    // indexes and make the flush drop an entry it read but never inserted.
+    // add() only RPUSHes (tail), so indexes are stable for this window.
     const trimStart = performance.now();
     await redis.ltrim(this.redisKey, items.length, -1);
+
+    // Enforce the buffer cap here as well — over-limit entries can only be
+    // dropped safely under the same lock. A burst of adds may overshoot the
+    // cap between flushes; the next flush (cron ~10s or add-triggered) trims
+    // back down.
+    const llen = await redis.llen(this.redisKey);
+    if (llen > this.maxBufferSize) {
+      const dropped = llen - this.maxBufferSize;
+      await redis.ltrim(this.redisKey, dropped, -1);
+      this.logger.warn('Replay buffer exceeded max size, dropped oldest entries', {
+        bufferLength: llen,
+        maxBufferSize: this.maxBufferSize,
+        dropped,
+      });
+    }
     const trimMs = performance.now() - trimStart;
 
     this.reportFlushStats({
