@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 import { getRedisCache } from '@openpanel/redis';
 import { ch, TABLE_NAMES } from '../clickhouse/client';
 import type { ILogger } from '@openpanel/logger';
@@ -63,15 +65,15 @@ function parsePositiveIntEnv(name: string, fallback: number, logger: ILogger): n
 export class ReplayBuffer extends BaseBuffer {
   private batchSize: number;
   private chunkSize: number;
-  // Hard cap on the Redis list, enforced on the flush path (see
-  // processBuffer). Bounds the memory a wedged consumer can pin on a SHARED
-  // Redis instance: at the ~240KB/entry observed in the prod incident,
-  // 5,000 entries ≈ 1.2GB. The count cap plus the per-entry cap below give
-  // a practical byte budget; the shared-instance memory-pressure page alert
-  // (used/maxmemory at 90%) is the outer backstop.
+  // Hard cap on the Redis list, enforced on BOTH paths (see processBuffer
+  // and add). Bounds the memory a wedged consumer can pin on a SHARED Redis
+  // instance: worst case maxBufferSize × maxEntryBytes = 5,000 × 512KiB ≈
+  // 2.4GiB, under the 2560mb maxmemory of the shared prod instance; at the
+  // ~240KB/entry observed in the incident it is ≈1.2GB. The shared-instance
+  // memory-pressure page alert (used/maxmemory at 90%) is the outer backstop.
   private maxBufferSize: number;
   // Per-entry cap: one giant chunk must not dominate the buffer budget.
-  // Typical rrweb chunks are 10–100KB; 1MiB is ~4x the largest observed
+  // Typical rrweb chunks are 10–100KB; 512KiB is ~5x the largest observed
   // legit entry while still bounding a hostile/broken writer.
   private maxEntryBytes: number;
 
@@ -87,7 +89,7 @@ export class ReplayBuffer extends BaseBuffer {
     this.batchSize = parsePositiveIntEnv('REPLAY_BUFFER_BATCH_SIZE', 500, this.logger);
     this.chunkSize = parsePositiveIntEnv('REPLAY_BUFFER_CHUNK_SIZE', 500, this.logger);
     this.maxBufferSize = parsePositiveIntEnv('REPLAY_BUFFER_MAX_SIZE', 5_000, this.logger);
-    this.maxEntryBytes = parsePositiveIntEnv('REPLAY_BUFFER_MAX_ENTRY_BYTES', 1024 * 1024, this.logger);
+    this.maxEntryBytes = parsePositiveIntEnv('REPLAY_BUFFER_MAX_ENTRY_BYTES', 512 * 1024, this.logger);
   }
 
   async add(chunk: IClickhouseSessionReplayChunk) {
@@ -95,21 +97,44 @@ export class ReplayBuffer extends BaseBuffer {
       try {
         const redis = getRedisCache();
         const serialized = JSON.stringify(chunk);
-        if (serialized.length > this.maxEntryBytes) {
+        // Measure in UTF-8 bytes (what Redis stores), not UTF-16 code units:
+        // multibyte payload text can make .length undercount substantially.
+        const bytes = Buffer.byteLength(serialized, 'utf8');
+        if (bytes > this.maxEntryBytes) {
           this.logger.warn('Dropped oversized replay chunk', {
-            bytes: serialized.length,
+            bytes,
             maxEntryBytes: this.maxEntryBytes,
             session_id: chunk.session_id,
           });
           return;
         }
-        const result = await redis
-          .multi()
-          .rpush(this.redisKey, serialized)
-          .llen(this.redisKey)
-          .exec();
-
-        const bufferLength = (result?.[1]?.[1] as number) ?? 0;
+        // Admission control, atomic on the Redis side: RPUSH only while the
+        // list is below the cap, else refuse the NEW chunk. During a
+        // ClickHouse outage every flush throws before its trim, and this is
+        // what stops the list from growing past the cap — the pending
+        // backlog keeps its head, and no LTRIM runs here (head-trims stay
+        // under the flush lock, see processBuffer). The EVAL also keeps
+        // RPUSH+LLEN atomic, so the flush trigger below sees an exact LLEN.
+        const bufferLength = (await redis.eval(
+          `local l = redis.call('LLEN', KEYS[1])
+if l >= tonumber(ARGV[1]) then
+  return -1
+end
+redis.call('RPUSH', KEYS[1], ARGV[2])
+return l + 1`,
+          1,
+          this.redisKey,
+          String(this.maxBufferSize),
+          serialized,
+        )) as number;
+        if (bufferLength === -1) {
+          this.logger.warn('Replay buffer full, dropped new chunk', {
+            maxBufferSize: this.maxBufferSize,
+            bytes,
+            session_id: chunk.session_id,
+          });
+          return;
+        }
         if (bufferLength >= this.batchSize) {
           await this.tryFlush({ trigger: 'add' });
         }
