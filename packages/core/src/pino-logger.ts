@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import pino, { type Logger as PinoLogger } from 'pino';
 import type { CoreConfig } from './config';
@@ -68,6 +69,24 @@ export function getServiceName(config: CoreConfig, name: string): string {
 // Pretty printing is therefore off under Bun.
 const isBun = !!process.versions.bun;
 
+const requireFromCore = createRequire(import.meta.url);
+
+/**
+ * The HyperDX transport with its target resolved from this package, which
+ * depends on HyperDX. Left as a package name, pino resolves it from the caller,
+ * and an app that does not install HyperDX itself crashes at boot.
+ */
+export function hyperdxTransport(
+  level: string,
+  service: string
+): ReturnType<typeof HyperDX.getPinoTransport> {
+  const transport = HyperDX.getPinoTransport(level, {
+    detectResources: true,
+    service,
+  });
+  return { ...transport, target: requireFromCore.resolve(transport.target) };
+}
+
 export function createLogger({
   name,
   config,
@@ -94,10 +113,7 @@ export function createLogger({
     // correlation survives when a collector does the shipping.
     mixin: hyperdxApiKey ? HyperDX.getPinoMixinFunction : undefined,
     transport: useHyperDX
-      ? HyperDX.getPinoTransport(level, {
-          detectResources: true,
-          service,
-        })
+      ? hyperdxTransport(level, service)
       : usePretty
         ? {
             target: 'pino-pretty',

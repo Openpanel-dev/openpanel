@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { redactSensitive } from './pino-logger';
+import { existsSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
+import { hyperdxTransport, redactSensitive } from './pino-logger';
 
 describe('redactSensitive', () => {
   it('filters the query of a string url value', () => {
@@ -25,5 +27,15 @@ describe('redactSensitive', () => {
       authorization: '[REDACTED]',
       page: 2,
     });
+  });
+});
+
+describe('hyperdxTransport', () => {
+  // pino resolves a bare target from the module that called pino(), which
+  // in the api image is apps/api — a package that does not install HyperDX.
+  it('hands pino an absolute path that exists, not a package name', () => {
+    const { target } = hyperdxTransport('info', 'test-service');
+    expect(isAbsolute(target)).toBe(true);
+    expect(existsSync(target)).toBe(true);
   });
 });

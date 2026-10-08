@@ -150,6 +150,10 @@ services:
     environment:
       <<: *app_env
       ROLE: worker
+      # Boots with HyperDX log shipping on, which loads its transport at
+      # startup; nothing listens on the endpoint, the export just fails.
+      HYPERDX_API_KEY: smoke
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://127.0.0.1:9
     # The api serves /healthz/ready.
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
