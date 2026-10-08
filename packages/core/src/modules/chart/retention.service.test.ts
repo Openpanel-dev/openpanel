@@ -226,6 +226,27 @@ describe('getRetentionCohort', () => {
 
     expect(cohortsOnly(rows)).toEqual(mutable(RETENTION_BLUEPRINT.cohortOn));
   });
+
+  it('applies a group filter through the groups join', async () => {
+    const rows = await getRetentionCohort(deps, {
+      projectId: PROJECT_ID,
+      firstEvent: ['app_open'],
+      secondEvent: ['app_open'],
+      criteria: 'on',
+      interval: 'day',
+      startDate: day.start,
+      endDate: day.end,
+      filters: [
+        {
+          name: 'group.name',
+          operator: 'is',
+          value: [RETENTION_FIXTURE.group.name],
+        },
+      ],
+    });
+
+    expect(cohortsOnly(rows)).toEqual(mutable(RETENTION_BLUEPRINT.groupNameOn));
+  });
 });
 
 describe('getRetentionSeries', () => {

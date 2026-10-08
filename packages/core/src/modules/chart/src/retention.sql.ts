@@ -8,7 +8,7 @@ import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IChartEventFilter } from '../../report/report.constants';
 import { compiledText } from './compiled';
 import { formatClickhouseDate } from './dates';
-import { CHART_TABLE } from './field-resolution';
+import { buildGroupsQuery, CHART_TABLE } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';
 
 export type IRetentionInterval = 'minute' | 'hour' | 'day' | 'week' | 'month';
@@ -162,15 +162,18 @@ export interface RetentionCohortQueryInput {
   filters: IChartEventFilter[];
 }
 
+/** Qualifies the events columns that the groups join's `_g` also has (`name`, `properties`). */
+const EVENTS_ALIAS = 'e';
+
 /** `name = …` / `name IN (…)`; `sql.empty` means "any event". */
 function eventNameWhere(events: string[] | undefined): SqlFragment {
   if (!events || events.length === 0) {
     return sql.empty;
   }
   if (events.length === 1) {
-    return sql`AND name = ${sql.string(events[0] as string)}`;
+    return sql`AND e.name = ${sql.string(events[0] as string)}`;
   }
-  return sql`AND name IN ${sql.array('String', events)}`;
+  return sql`AND e.name IN ${sql.array('String', events)}`;
 }
 
 /**
@@ -204,9 +207,15 @@ export function retentionCohortQuery(
     (filter) =>
       filter.operator !== 'inCohort' && filter.operator !== 'notInCohort'
   );
-  const source = sql.id(
-    needRawEvents ? CHART_TABLE.events : CHART_TABLE.cohortEventsMv
+  const needsGroupJoin = filters.some((filter) =>
+    filter.name.startsWith('group.')
   );
+  const groupJoin = needsGroupJoin
+    ? sql`ARRAY JOIN groups AS _group_id LEFT ANY JOIN (${buildGroupsQuery(projectId)}) AS _g ON _g.id = _group_id`
+    : sql.empty;
+  const source = sql`${sql.id(
+    needRawEvents ? CHART_TABLE.events : CHART_TABLE.cohortEventsMv
+  )} AS ${compiledText(EVENTS_ALIAS)} ${groupJoin}`;
 
   const baseConditions: SqlFragment[] = [
     sql`project_id = ${sql.string(projectId)}`,
@@ -217,7 +226,13 @@ export function retentionCohortQuery(
   }
   if (filters.length > 0) {
     baseConditions.push(
-      ...Object.values(getEventFiltersWhereClause(filters, projectId))
+      ...Object.values(
+        getEventFiltersWhereClause(
+          filters,
+          projectId,
+          needsGroupJoin ? EVENTS_ALIAS : undefined
+        )
+      )
     );
   }
   const baseWhere = sql.join(baseConditions, ' AND ');
