@@ -20,6 +20,8 @@ const DEVELOPMENT = 'development';
 /** pino's own service-name suffix when NODE_ENV is unset. */
 const DEFAULT_SERVICE_ENVIRONMENT = 'dev';
 const DEFAULT_SHUTDOWN_FORCE_EXIT_MS = 20_000;
+/** Matches `packages/redis`'s own default, so leaving the variable unset changes nothing. */
+const DEFAULT_REDIS_CACHE_COMMAND_TIMEOUT_MS = 5000;
 
 const DEFAULT_KAFKA_CLIENT_ID = 'openpanel';
 const DEFAULT_KAFKA_EVENTS_TOPIC = 'events';
@@ -343,6 +345,9 @@ const rawSchema = z.object({
   SHUTDOWN_FORCE_EXIT_MS: z.preprocess(
     blankToUndefined,
     z.coerce.number().int().positive().default(DEFAULT_SHUTDOWN_FORCE_EXIT_MS)
+  ),
+  REDIS_CACHE_COMMAND_TIMEOUT_MS: positiveIntWithDefault(
+    DEFAULT_REDIS_CACHE_COMMAND_TIMEOUT_MS
   ),
 
   /**
@@ -923,6 +928,8 @@ export interface Config {
   DISABLE_BULLBOARD: boolean;
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
+  /** Sits here, not in `core`: the cache client is `packages/redis`'s singleton, configured once at boot. */
+  REDIS_CACHE_COMMAND_TIMEOUT_MS: number;
   /** Sits here, not in `core.kafka`: `apps/api` picks the dead-letter sink and core only gets the `sendToDeadLetter` seam. */
   INGEST_DEAD_LETTER_MAX_ENTRIES: number;
   /** Sits here, not in `core.kafka`: the marker is keyed on the event, not a Kafka coordinate. */
@@ -969,6 +976,7 @@ const envSchema = rawSchema
       DISABLE_BULLBOARD: raw.DISABLE_BULLBOARD,
       COOKIE_SECRET: raw.COOKIE_SECRET,
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
+      REDIS_CACHE_COMMAND_TIMEOUT_MS: raw.REDIS_CACHE_COMMAND_TIMEOUT_MS,
       INGEST_DEAD_LETTER_MAX_ENTRIES: raw.INGEST_DEAD_LETTER_MAX_ENTRIES,
       INGEST_DUPLICATE_MARKER_TTL_MS: raw.INGEST_DUPLICATE_MARKER_TTL_MS,
       dashboardOrigins: [

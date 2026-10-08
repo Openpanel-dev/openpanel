@@ -3,14 +3,16 @@
 import net from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  CACHE_COMMAND_TIMEOUT_MS,
   createFailFastCacheClient,
+  DEFAULT_CACHE_COMMAND_TIMEOUT_MS,
   type ExtendedRedis,
   QUEUE_CLIENT_OPTIONS,
 } from './redis';
 
+/** Short enough for the default test timeout; the default is too long to wait out here. */
+const TEST_COMMAND_TIMEOUT_MS = 500;
 /** ioredis's own cycle is tens of seconds; anything near it is the bug back. */
-const PROMPT_WHEN_NEVER_CONNECTED_MS = CACHE_COMMAND_TIMEOUT_MS * 4;
+const PROMPT_WHEN_NEVER_CONNECTED_MS = TEST_COMMAND_TIMEOUT_MS * 4;
 /** A known-down socket must not wait for the timeout at all. */
 const INSTANT_WHEN_DISCONNECTED_MS = 100;
 const READY_TIMEOUT_MS = 5000;
@@ -169,7 +171,8 @@ describe('cache client fail-fast (M18-003)', () => {
     const client = track(
       createFailFastCacheClient(
         'test-never-reachable',
-        `redis://127.0.0.1:${port}`
+        `redis://127.0.0.1:${port}`,
+        { commandTimeoutMs: TEST_COMMAND_TIMEOUT_MS }
       )
     );
 
@@ -226,6 +229,24 @@ describe('cache client fail-fast (M18-003)', () => {
     expect(error).toBeInstanceOf(Error);
     // Not "within the timeout" — a known-down socket must not wait at all.
     expect(ms).toBeLessThan(INSTANT_WHEN_DISCONNECTED_MS);
+  });
+
+  it('bounds commands at the default timeout unless told otherwise', () => {
+    const defaulted = track(
+      createFailFastCacheClient('test-default-timeout', 'redis://127.0.0.1:1', {
+        commandTimeoutMs: undefined,
+      })
+    );
+    const overridden = track(
+      createFailFastCacheClient('test-custom-timeout', 'redis://127.0.0.1:1', {
+        commandTimeoutMs: 2000,
+      })
+    );
+
+    expect(defaulted.options.commandTimeout).toBe(
+      DEFAULT_CACHE_COMMAND_TIMEOUT_MS
+    );
+    expect(overridden.options.commandTimeout).toBe(2000);
   });
 
   it('leaves the queue client on BullMQ’s mandated settings', () => {

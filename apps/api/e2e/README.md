@@ -357,7 +357,7 @@ spawns its own API on `:3399` pointed at a TCP proxy it can stop (`docker stop`)
 or freeze (`docker pause`), and measures what `/track` costs while the Redis
 **cache** is unreachable — sustained outage, 1 s blip under load, frozen server,
 and a boot with Redis already down. `redis-command-cost.ts` measures the cost of
-a *legitimate* command, which is what bounds `CACHE_COMMAND_TIMEOUT_MS`.
+a *legitimate* command, which is what bounds `DEFAULT_CACHE_COMMAND_TIMEOUT_MS`.
 
 ```bash
 cd apps/api

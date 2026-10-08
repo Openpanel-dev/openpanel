@@ -74,6 +74,19 @@ REDIS_URL=redis://localhost:6379
 REDIS_URL=redis://:password@localhost:6379
 ```
 
+### REDIS_CACHE_COMMAND_TIMEOUT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `5000`
+
+How long, in milliseconds, a Redis command used for caching, buffers and ingest may take before it fails. Commands still fail immediately while Redis is unreachable; this only bounds a connection that is up but slow. Too low a value turns brief network stalls into failed requests and duplicate events.
+
+**Example**:
+```bash
+REDIS_CACHE_COMMAND_TIMEOUT_MS=5000
+```
+
 ### CLICKHOUSE_URL
 
 **Type**: `string`

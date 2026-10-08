@@ -8,11 +8,11 @@ const options: RedisOptions = {
 
 /**
  * The cache client's tail bound, for the fault the offline queue cannot see: a server whose socket is UP and which
- * answers nothing. It has to clear the heaviest legitimate command by a wide margin, or a busy event-buffer flush
- * would fail as if Redis were down and refuse to commit Kafka offsets. 500 ms is roughly 15x the measured p99 of
- * that flush's worst case (`apps/api/e2e/redis-command-cost.ts`). Full numbers: `apps/api/e2e/redis-fail-fast.md`.
+ * answers nothing. It has to clear the heaviest legitimate command by a wide margin. 500 ms did not: in production,
+ * short network stalls and large buffer reads failed as if Redis were down, which stalled the replay buffer and left
+ * Kafka batches unresolved (redelivered as duplicates). `REDIS_CACHE_COMMAND_TIMEOUT_MS` overrides it.
  */
-export const CACHE_COMMAND_TIMEOUT_MS = 500;
+export const DEFAULT_CACHE_COMMAND_TIMEOUT_MS = 5000;
 
 /**
  * Fail-fast makes the RECONNECT BACKOFF user-visible. While ioredis is waiting
@@ -112,11 +112,12 @@ const createRedisClient = (
  */
 export function createFailFastCacheClient(
   name: string,
-  url: string
+  url: string,
+  { commandTimeoutMs = DEFAULT_CACHE_COMMAND_TIMEOUT_MS } = {}
 ): ExtendedRedis {
   const client = createRedisClient(name, url, {
     ...options,
-    commandTimeout: CACHE_COMMAND_TIMEOUT_MS,
+    commandTimeout: commandTimeoutMs,
     retryStrategy: (attempt) =>
       Math.min(
         attempt * CACHE_RECONNECT_DELAY_STEP_MS,
@@ -130,9 +131,23 @@ export function createFailFastCacheClient(
 }
 
 let redisCache: ExtendedRedis;
+let cacheCommandTimeoutMs = DEFAULT_CACHE_COMMAND_TIMEOUT_MS;
+
+/** Must run before the first `getRedisCache()`: the singleton is built once with whatever is set then. */
+export function configureRedisCache(settings: { commandTimeoutMs: number }) {
+  if (redisCache) {
+    throw new Error(
+      'configureRedisCache() called after the cache client was created'
+    );
+  }
+  cacheCommandTimeoutMs = settings.commandTimeoutMs;
+}
+
 export function getRedisCache() {
   if (!redisCache) {
-    redisCache = createFailFastCacheClient('redis-cache', REDIS_URL);
+    redisCache = createFailFastCacheClient('redis-cache', REDIS_URL, {
+      commandTimeoutMs: cacheCommandTimeoutMs,
+    });
   }
 
   return redisCache;

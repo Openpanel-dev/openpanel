@@ -61,6 +61,7 @@ import {
 import { ch } from '@openpanel/db/src/clickhouse/client';
 import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import {
+  configureRedisCache,
   createDeadLetterRecorder,
   createDuplicateEventMarker,
   getRedisCache,
@@ -106,6 +107,9 @@ function loadConfigOrExit(): Config {
 }
 
 const config = loadConfigOrExit();
+configureRedisCache({
+  commandTimeoutMs: config.REDIS_CACHE_COMMAND_TIMEOUT_MS,
+});
 // Workers keep the `worker` service name they shipped logs under before roles
 // shared one image, so existing log searches and alerts still match.
 const logger = createLogger({

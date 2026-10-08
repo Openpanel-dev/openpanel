@@ -411,6 +411,17 @@ describe('cross-field invariants, checked before the transform', () => {
     ).toBe(30_000);
   });
 
+  it('reads REDIS_CACHE_COMMAND_TIMEOUT_MS, defaulting to 5000', () => {
+    expect(loadConfig(base).REDIS_CACHE_COMMAND_TIMEOUT_MS).toBe(5000);
+    expect(
+      loadConfig({ ...base, REDIS_CACHE_COMMAND_TIMEOUT_MS: '2000' })
+        .REDIS_CACHE_COMMAND_TIMEOUT_MS
+    ).toBe(2000);
+    expect(() =>
+      loadConfig({ ...base, REDIS_CACHE_COMMAND_TIMEOUT_MS: 'soon' })
+    ).toThrow();
+  });
+
   it('refuses a reaper deadman below the session idle window', () => {
     expect(() =>
       loadConfig({
