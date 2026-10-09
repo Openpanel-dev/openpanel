@@ -111,9 +111,21 @@ export class SessionBuffer extends BaseBuffer {
     const deviceId = await this.redis.get(
       profileIndexKey(options.projectId, options.profileId)
     );
-    if (!deviceId) return null;
-    const hit = await this.redis.get(sessionKey(options.projectId, deviceId));
-    return hit ? getSafeJson<IClickhouseSession>(hit) : null;
+    if (deviceId) {
+      const hit = await this.redis.get(sessionKey(options.projectId, deviceId));
+      return hit ? getSafeJson<IClickhouseSession>(hit) : null;
+    }
+
+    const hit = await this.redis.get(
+      sessionKey(options.projectId, options.profileId)
+    );
+    if (!hit) return null;
+
+    const session = getSafeJson<IClickhouseSession>(hit);
+    return session.profile_id === options.profileId &&
+      session.device_id === options.profileId
+      ? session
+      : null;
   }
 
   /**
