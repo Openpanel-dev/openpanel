@@ -355,7 +355,7 @@ describe('validateIngestRequest — secret verification (main #481)', () => {
       deps,
       headers: {
         'openpanel-client-id': CLIENT_ID,
-        'openpanel-client-secret': 'correct',
+        'openpanel-client-secret': 'verified-by-another-process',
       },
       clientIp: '1.2.3.4',
       body,
@@ -364,6 +364,30 @@ describe('validateIngestRequest — secret verification (main #481)', () => {
     expect(redisGet).toHaveBeenCalled();
     expect(result.ok).toBe(true);
     expect(result.secretVerified).toBe(true);
+    expect(verifyPassword).not.toHaveBeenCalled();
+  });
+
+  it('a verified secret is remembered in process, without Redis or re-hashing', async () => {
+    guarded();
+    verifyPassword.mockResolvedValue(true);
+    const request = {
+      deps,
+      headers: {
+        'openpanel-client-id': CLIENT_ID,
+        'openpanel-client-secret': 'remembered',
+      },
+      clientIp: '1.2.3.4',
+      body,
+    };
+
+    await validateIngestRequest(request);
+    redisGet.mockClear();
+    verifyPassword.mockClear();
+    guarded();
+    const result = await validateIngestRequest(request);
+
+    expect(result.secretVerified).toBe(true);
+    expect(redisGet).not.toHaveBeenCalled();
     expect(verifyPassword).not.toHaveBeenCalled();
   });
 

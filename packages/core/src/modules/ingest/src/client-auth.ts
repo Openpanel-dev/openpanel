@@ -5,7 +5,7 @@
 // 5-minute verify cache whose key holds base64(<plaintext secret>) are all
 // deliberate.
 
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache, LRUCache } from '@openpanel/redis';
 import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
 import { verifyClientSecret as verifyClientSecretHash } from '../../../shared/client-secret';
@@ -24,6 +24,14 @@ export type { IngestHeaders } from '../../../shared/headers';
 const CLIENT_ID_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const VERIFY_CACHE_SECONDS = 60 * 5;
+const VERIFY_LOCAL_CACHE_TTL_MS = 60 * 1000;
+const VERIFY_LOCAL_CACHE_MAX_ENTRIES = 1000;
+
+/** Server SDKs send their secret on every event; this spares Redis that read. */
+const verifiedInProcess = new LRUCache<string, true>({
+  max: VERIFY_LOCAL_CACHE_MAX_ENTRIES,
+  ttl: VERIFY_LOCAL_CACHE_TTL_MS,
+});
 const REDACTED_SECRET_EDGE_LENGTH = 5;
 const DOMAIN_PROTOCOL = /https?:\/\//;
 const DOMAIN_TRAILING_SLASH = /\/$/;
@@ -110,13 +118,19 @@ async function verifyClientSecret(
 
   const cacheKey = `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`;
 
+  if (verifiedInProcess.has(cacheKey)) {
+    return true;
+  }
+
   if ((await getRedisCache().get(cacheKey)) === 'true') {
+    verifiedInProcess.set(cacheKey, true);
     return true;
   }
 
   const isVerified = await verifyClientSecretHash(clientSecret, storedSecret);
 
   if (isVerified) {
+    verifiedInProcess.set(cacheKey, true);
     getRedisCache()
       .setex(cacheKey, VERIFY_CACHE_SECONDS, 'true')
       .catch(() => {
