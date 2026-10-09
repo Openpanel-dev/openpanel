@@ -81,8 +81,6 @@ function pickUtm(
 
 const DEFAULT_BATCH_SIZE = 1000;
 const DEFAULT_CHUNK_SIZE = 1000;
-/** One cron run drains as many batches as fit before the next run is due. */
-const DRAIN_TIME_BUDGET_MS = 8000;
 
 export class SessionBuffer extends BaseBuffer {
   private readonly batchSize =
@@ -501,18 +499,7 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
-    const deadline = performance.now() + DRAIN_TIME_BUDGET_MS;
-    let rowsProcessed = 0;
-
-    while (performance.now() < deadline) {
-      const processed = await this.processBatch();
-      rowsProcessed += processed;
-      if (processed < this.batchSize) {
-        break;
-      }
-    }
-
-    this.reportFlushStats({ rowsProcessed });
+    await this.drainBatches(this.batchSize, () => this.processBatch());
   }
 
   /** Inserts and trims one batch from the head of the list; returns its size. */
@@ -561,6 +548,7 @@ export class SessionBuffer extends BaseBuffer {
     // (and the next flush retries the still-queued rows).
     await this.redis.ltrim(this.redisKey, events.length, -1);
 
+    this.reportFlushStats({ rowsProcessed: events.length });
     this.logger.debug({ count: events.length }, 'Processed sessions');
     return events.length;
   }

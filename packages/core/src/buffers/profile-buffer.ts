@@ -119,21 +119,7 @@ export class ProfileBuffer extends BaseBuffer {
           }
         }
 
-        const result = await this.redis
-          .multi()
-          .rpush(this.redisKey, JSON.stringify(profile))
-          .llen(this.redisKey)
-          .exec();
-
-        if (!result) {
-          this.logger.error({ profile }, 'Failed to add profile to Redis');
-          return;
-        }
-
-        const bufferLength = (result?.[1]?.[1] as number) ?? 0;
-        if (bufferLength >= this.batchSize) {
-          await this.tryFlush({ trigger: 'add' });
-        }
+        await this.redis.rpush(this.redisKey, JSON.stringify(profile));
       } catch (error) {
         this.logger.error({ err: error, profile }, 'Failed to add profile');
       }
@@ -241,6 +227,10 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  private async processBatch(): Promise<number> {
     const lrangeStart = performance.now();
     const rawProfiles = await this.redis.lrange(
       this.redisKey,
@@ -251,7 +241,7 @@ export class ProfileBuffer extends BaseBuffer {
 
     if (rawProfiles.length === 0) {
       this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
-      return;
+      return 0;
     }
 
     // Yields to the event loop periodically so concurrent add() calls and
@@ -367,5 +357,6 @@ export class ProfileBuffer extends BaseBuffer {
       rowsProcessed: rawProfiles.length,
       phases: { lrangeMs, chFetchMs, chInsertMs, trimMs },
     });
+    return rawProfiles.length;
   }
 }

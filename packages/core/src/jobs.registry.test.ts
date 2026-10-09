@@ -7,6 +7,7 @@ const GOLDEN_SCHEDULER_IDS = [
   'cohortRefresh',
   'dataHealth',
   'delete',
+  'flushBots',
   'flushEvents',
   'flushExports',
   'flushGroups',
@@ -108,6 +109,7 @@ test('the cron queue carries the insight module cron fragment', () => {
       'cohortRefresh',
       'dataHealth',
       'delete',
+      'flushBots',
       'flushExports',
       'flushEvents',
       'flushGroups',
@@ -221,7 +223,7 @@ test('the notification queue carries the notification module job', () => {
   });
 });
 
-test('the cron queue derives the golden 20 scheduler ids', () => {
+test('the cron queue derives the golden 21 scheduler ids', () => {
   const derivedIds = [
     ...schedulersFromRegistry(queues.cron).map((s) => s.id),
     PING_SCHEDULE.id,

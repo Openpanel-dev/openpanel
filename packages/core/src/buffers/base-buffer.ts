@@ -42,6 +42,9 @@ export interface BufferDeps {
  */
 const DEFAULT_CH_INSERT_CONCURRENCY = 5;
 
+/** One cron run drains as many batches as fit before the next run is due. */
+const DRAIN_TIME_BUDGET_MS = 8000;
+
 const releaseLockScript = defineRedisScript(`
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("del", KEYS[1])
@@ -61,6 +64,14 @@ export type FlushPhaseTimings = {
   /** Total time spent inside onFlush (subclass-specific processing) */
   onFlushMs?: number;
 };
+
+const FLUSH_PHASES = [
+  'lrangeMs',
+  'chFetchMs',
+  'chInsertMs',
+  'trimMs',
+  'onFlushMs',
+] as const satisfies readonly (keyof FlushPhaseTimings)[];
 
 export type FlushTrigger = 'add' | 'cron';
 
@@ -302,19 +313,43 @@ export class BaseBuffer {
   /**
    * Subclasses call this from within onFlush to record what they actually
    * did. The base class includes these in the FlushObservation it emits.
+   * Repeated calls in one flush (one per drained batch) add up.
    */
   protected reportFlushStats(stats: {
     rowsProcessed?: number;
     phases?: FlushPhaseTimings;
   }) {
     if (stats.rowsProcessed !== undefined) {
-      this.inflightStats.rowsProcessed = stats.rowsProcessed;
+      this.inflightStats.rowsProcessed =
+        (this.inflightStats.rowsProcessed ?? 0) + stats.rowsProcessed;
     }
     if (stats.phases) {
-      this.inflightStats.phases = {
-        ...(this.inflightStats.phases ?? {}),
-        ...stats.phases,
-      };
+      const phases: FlushPhaseTimings = { ...this.inflightStats.phases };
+      for (const phase of FLUSH_PHASES) {
+        const ms = stats.phases[phase];
+        if (ms !== undefined) {
+          phases[phase] = (phases[phase] ?? 0) + ms;
+        }
+      }
+      this.inflightStats.phases = phases;
+    }
+  }
+
+  /**
+   * Flushes batch after batch until one comes back short of `batchSize` or the
+   * cron run's time budget is spent. Buffers only append on ingest, so the cron
+   * has to keep up with a list that grows faster than one batch per run.
+   */
+  protected async drainBatches(
+    batchSize: number,
+    processBatch: () => Promise<number>
+  ): Promise<void> {
+    const deadline = performance.now() + DRAIN_TIME_BUDGET_MS;
+    while (performance.now() < deadline) {
+      const processed = await processBatch();
+      if (processed < batchSize) {
+        return;
+      }
     }
   }
 

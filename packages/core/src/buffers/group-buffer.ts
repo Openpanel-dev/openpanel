@@ -49,7 +49,7 @@ export class GroupBuffer extends BaseBuffer {
   private readonly redisKey = 'group-buffer';
   private readonly redisCachePrefix = 'group-cache:';
 
-  private redis: Redis;
+  private readonly redis: Redis;
 
   constructor(deps: BufferDeps) {
     super(deps, {
@@ -140,17 +140,10 @@ export class GroupBuffer extends BaseBuffer {
           .multi()
           .set(cacheKey, JSON.stringify(cacheEntry), 'EX', this.ttlInSeconds)
           .rpush(this.redisKey, JSON.stringify(entry))
-          .llen(this.redisKey)
           .exec();
 
         if (!result) {
           this.logger.error({ input }, 'Failed to add group to Redis');
-          return;
-        }
-
-        const bufferLength = (result?.[2]?.[1] as number) ?? 0;
-        if (bufferLength >= this.batchSize) {
-          await this.tryFlush({ trigger: 'add' });
         }
       } catch (error) {
         this.logger.error({ err: error, input }, 'Failed to add group');
@@ -163,13 +156,17 @@ export class GroupBuffer extends BaseBuffer {
   }
 
   async processBuffer(): Promise<void> {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  private async processBatch(): Promise<number> {
     const lrangeStart = performance.now();
     const items = await this.redis.lrange(this.redisKey, 0, this.batchSize - 1);
     const lrangeMs = performance.now() - lrangeStart;
 
     if (items.length === 0) {
       this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
-      return;
+      return 0;
     }
 
     // Raw passthrough: each Redis entry is already a JSONEachRow line.
@@ -193,5 +190,6 @@ export class GroupBuffer extends BaseBuffer {
       rowsProcessed: items.length,
       phases: { lrangeMs, chInsertMs, trimMs },
     });
+    return items.length;
   }
 }

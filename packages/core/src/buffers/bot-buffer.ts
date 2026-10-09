@@ -10,7 +10,7 @@ export class BotBuffer extends BaseBuffer {
     this.deps.config.buffers.bot.batchSize ?? DEFAULT_BATCH_SIZE;
 
   private readonly redisKey = 'bot-events-buffer';
-  private redis: Redis;
+  private readonly redis: Redis;
   constructor(deps: BufferDeps) {
     super(deps, {
       name: 'bot',
@@ -28,16 +28,7 @@ export class BotBuffer extends BaseBuffer {
   async add(event: IClickhouseBotEvent) {
     return this.timeAdd(async () => {
       try {
-        const result = await this.redis
-          .multi()
-          .rpush(this.redisKey, JSON.stringify(event))
-          .llen(this.redisKey)
-          .exec();
-
-        const bufferLength = (result?.[1]?.[1] as number) ?? 0;
-        if (bufferLength >= this.batchSize) {
-          await this.tryFlush({ trigger: 'add' });
-        }
+        await this.redis.rpush(this.redisKey, JSON.stringify(event));
       } catch (error) {
         this.logger.error({ err: error }, 'Failed to add bot event');
       }
@@ -45,6 +36,10 @@ export class BotBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  private async processBatch(): Promise<number> {
     const lrangeStart = performance.now();
     const events = await this.redis.lrange(
       this.redisKey,
@@ -55,7 +50,7 @@ export class BotBuffer extends BaseBuffer {
 
     if (events.length === 0) {
       this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
-      return;
+      return 0;
     }
 
     // Raw passthrough: each Redis entry is already a JSONEachRow line.
@@ -77,5 +72,6 @@ export class BotBuffer extends BaseBuffer {
       rowsProcessed: events.length,
       phases: { lrangeMs, chInsertMs, trimMs },
     });
+    return events.length;
   }
 }

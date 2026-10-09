@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
+import { testCoreConfig } from '../../test/config-fixture';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 
 // The client comes in as `BufferDeps.ch` and reads go through core's own
@@ -78,6 +79,24 @@ describe('ProfileBuffer', () => {
     const sizeAfter = await profileBuffer.getBufferSize();
 
     expect(sizeAfter).toBe(sizeBefore + 1);
+  });
+
+  it('add never flushes; a cron flush drains past one batch', async () => {
+    const config = testCoreConfig();
+    config.buffers.profile.batchSize = 2;
+    const buffer = new ProfileBuffer(
+      bufferDepsWithCh({ insert: chInsert }, config)
+    );
+
+    for (let i = 0; i < 5; i++) {
+      await buffer.add(makeProfile({ id: `profile-${i}` }));
+    }
+    expect(chInsert).not.toHaveBeenCalled();
+
+    await buffer.tryFlush({ trigger: 'cron' });
+
+    expect(chInsert).toHaveBeenCalledTimes(3);
+    expect(await buffer.getBufferSize()).toBe(0);
   });
 
   it('concurrent adds: both raw profiles are queued', async () => {
