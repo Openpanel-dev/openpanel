@@ -1,6 +1,5 @@
-// The two `cacheable` wrappers are `cacheablePerDeps`: `cacheable` keys on the
-// call's arguments, so the caller's deps travel beside the key rather than
-// inside it, or the Redis key would change per request.
+// `cacheable` keys on the call's arguments, so the caller's deps travel beside
+// the key rather than inside it, or the Redis key would change per request.
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
@@ -10,7 +9,11 @@ import type {
   User,
 } from '@openpanel/db/src/prisma-client';
 import { DateTime, generateSecureId } from '@openpanel/shared';
-import { cacheablePerDeps } from '../../cacheable-per-deps';
+import {
+  cacheablePerDb,
+  cacheablePerDeps,
+  type DbScope,
+} from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
@@ -79,7 +82,7 @@ export async function getOrganizationById(
 }
 
 export async function getOrganizationByProjectId(
-  deps: ServiceDeps,
+  deps: DbScope,
   projectId: string
 ) {
   const db = deps.db;
@@ -100,9 +103,10 @@ export async function getOrganizationByProjectId(
 }
 
 const ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC = 60 * 5;
-export const getOrganizationByProjectIdCached = cacheablePerDeps(
+// Per process, not per request: ingest reads it on every event.
+export const getOrganizationByProjectIdCached = cacheablePerDb(
   'getOrganizationByProjectId',
-  (deps: ServiceDeps, projectId: string) =>
+  (deps: DbScope, projectId: string) =>
     getOrganizationByProjectId(deps, projectId),
   ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC
 );

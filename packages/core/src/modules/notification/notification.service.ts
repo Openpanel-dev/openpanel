@@ -4,7 +4,7 @@
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
 import { pathOr } from 'ramda';
-import { cacheablePerDeps } from '../../cacheable-per-deps';
+import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -64,9 +64,10 @@ export type INotificationRuleCached = Awaited<
   ReturnType<typeof getNotificationRulesByProjectId>
 >[number];
 
-export const getNotificationRulesByProjectId = cacheablePerDeps(
+// Per process, not per request: checked on every ingested event.
+export const getNotificationRulesByProjectId = cacheablePerDb(
   'getNotificationRulesByProjectId',
-  (deps: ServiceDeps, projectId: string) =>
+  (deps: DbScope, projectId: string) =>
     deps.db.notificationRule.findMany({
       where: { projectId },
       select: {
