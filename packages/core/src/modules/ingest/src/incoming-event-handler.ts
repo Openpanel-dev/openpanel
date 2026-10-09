@@ -28,7 +28,7 @@ import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
 import type { IncomingEventPayload } from './incoming-event';
-import { duplicateEventsMarkedTotal, sessionsStarted } from './ingest.metrics';
+import { sessionsStarted } from './ingest.metrics';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
@@ -65,8 +65,6 @@ export interface IncomingEventSessions {
 export interface IncomingEventMetrics {
   sessionStarted(kind: 'new' | 'boundary'): void;
   sessionEndEnqueued(source: 'boundary'): void;
-  /** One event whose producer-minted id had already been seen. */
-  duplicateMarked(): void;
 }
 
 export interface IncomingEventDeps {
@@ -86,14 +84,6 @@ export interface IncomingEventDeps {
     markFirstEvent(projectId: string): Promise<unknown>;
   };
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<unknown>;
-  /**
-   * Claim the producer-minted event id. Resolves true when the id has been
-   * seen before — a redelivery — and false on its first sighting.
-   *
-   * MARK, NOT DEDUPE: the caller counts and logs, and inserts the event
-   * either way. It may reject; the caller then processes the event normally.
-   */
-  markDuplicate(eventId: string): Promise<boolean>;
   metrics: IncomingEventMetrics;
 }
 
@@ -115,12 +105,6 @@ export interface IncomingEventBindings {
     deps: Ctx,
     payload: IServiceCreateEventPayload
   ): Promise<unknown>;
-  /**
-   * `@openpanel/redis`'s `createDuplicateEventMarker`, already bound to the TTL
-   * `apps/api` parsed. Injected rather than built here so the key prefix and
-   * TTL stay out of the per-message path.
-   */
-  markDuplicateEvent(eventId: string): Promise<boolean>;
 }
 
 /**
@@ -148,11 +132,9 @@ export function createIncomingEventDeps(
       },
     },
     enqueueSessionEnd: (input) => ctx.services.session.enqueueSessionEnd(input),
-    markDuplicate: (eventId) => bindings.markDuplicateEvent(eventId),
     metrics: {
       sessionStarted: (kind) => sessionsStarted.inc({ kind }),
       sessionEndEnqueued: (source) => sessionEndsEnqueued.inc({ source }),
-      duplicateMarked: () => duplicateEventsMarkedTotal.inc(),
     },
   };
 }
@@ -235,50 +217,6 @@ const parseRevenue = (revenue: unknown): number | undefined => {
   return undefined;
 };
 
-/**
- * Claim the event id and report a redelivery. THE EVENT IS INSERTED EITHER
- * WAY — this counts and logs, it does not drop, and nothing downstream reads
- * its answer. A false positive on a suppressing check would be silent data
- * loss, and whether the events table ever gets dedupe is not decided here.
- *
- * Catches redeliveries of the SAME id (crash, eviction, durability redelivery,
- * rebalance, restart). It does NOT catch a lost ACK, where the SDK re-sends and
- * the producer mints a fresh id per request.
- *
- * FAILS OPEN, AND NEVER REJECTS. Redis being away is exactly when redeliveries
- * happen, so an observability counter must not be the thing that delays or
- * loses an event — a handler blocked on Redis risks being evicted past its
- * session timeout, which itself causes duplicate rows.
- */
-function startDuplicateMark(
-  eventId: string | undefined,
-  projectId: string,
-  logger: Logger,
-  deps: IncomingEventDeps
-): Promise<void> {
-  if (!eventId) {
-    return Promise.resolve();
-  }
-  return deps
-    .markDuplicate(eventId)
-    .then((seenBefore) => {
-      if (!seenBefore) {
-        return;
-      }
-      deps.metrics.duplicateMarked();
-      logger.warn(
-        { eventId, projectId },
-        'DUPLICATE event id — already ingested, inserting it anyway'
-      );
-    })
-    .catch((error) => {
-      logger.warn(
-        { err: error, eventId },
-        'could not mark duplicate — this event is unchecked'
-      );
-    });
-}
-
 export async function incomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,
@@ -294,21 +232,7 @@ export async function incomingEvent(
         kafkaOffset: meta.offset,
       })
     : deps.logger;
-  // Started BEFORE the handler's own Redis work and awaited AFTER it, so the
-  // marker's round trip overlaps the session buffer's GET and EVAL on the same
-  // client: healthy it costs the handler nothing measurable, and under a
-  // frozen Redis its bound is one the handler was already paying.
-  const duplicateMark = startDuplicateMark(
-    jobPayload.id,
-    jobPayload.projectId,
-    logger,
-    deps
-  );
-  try {
-    return await ingestIncomingEvent(jobPayload, deps, logger);
-  } finally {
-    await duplicateMark;
-  }
+  return await ingestIncomingEvent(jobPayload, deps, logger);
 }
 
 async function ingestIncomingEvent(

@@ -63,7 +63,6 @@ import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import {
   configureRedisCache,
   createDeadLetterRecorder,
-  createDuplicateEventMarker,
   getRedisCache,
   getRedisPub,
   getRedisQueue,
@@ -238,14 +237,6 @@ async function startIngestConsumer(
       // here, once: the notification dispatch has no Ctx slot in its signature.
       handleEvent: createIncomingEventHandler(deps, {
         checkNotificationRulesForEvent,
-        // MARKS a redelivery, never drops one — the event is inserted either
-        // way. The CACHE client, again, and for the same reason: a handler
-        // that blocks on Redis risks evicting the consumer past its session
-        // timeout, and an eviction is what causes duplicate rows.
-        markDuplicateEvent: createDuplicateEventMarker({
-          client: deps.redis,
-          ttlMs: config.INGEST_DUPLICATE_MARKER_TTL_MS,
-        }),
       }),
       // A capped Redis list, and the event is DROPPED whether or not the record lands: a Kafka DLQ topic nothing creates
       // held the offset back in a redelivery loop. The CACHE client, not the queue client: only that one fails fast, and

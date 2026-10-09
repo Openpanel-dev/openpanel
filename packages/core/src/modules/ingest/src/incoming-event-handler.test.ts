@@ -7,7 +7,6 @@
 // mapping are still pinned here, not re-implemented by the test.
 
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createDuplicateEventMarker } from '@openpanel/redis';
 import { formatClickhouseDate } from '../../event/src/dates';
 import type { IClickhouseSession } from '../../session/session.service';
 import {
@@ -154,10 +153,6 @@ function makeDeps() {
   const enqueueSessionEnd = mock<IncomingEventDeps['enqueueSessionEnd']>(
     async () => undefined
   );
-  const markDuplicate = mock<IncomingEventDeps['markDuplicate']>(
-    async () => false
-  );
-  const duplicateMarked = mock(() => undefined);
   const deps: IncomingEventDeps = {
     logger: noopLogger,
     sessions: { getExistingSession, ingest },
@@ -168,11 +163,9 @@ function makeDeps() {
       markFirstEvent: mock(async () => undefined),
     },
     enqueueSessionEnd,
-    markDuplicate,
     metrics: {
       sessionStarted: mock(() => undefined),
       sessionEndEnqueued: mock(() => undefined),
-      duplicateMarked,
     },
   };
   return {
@@ -181,8 +174,6 @@ function makeDeps() {
     getExistingSession,
     ingest,
     enqueueSessionEnd,
-    markDuplicate,
-    duplicateMarked,
   };
 }
 
@@ -463,167 +454,5 @@ describe('incomingEvent', () => {
     );
     expect(sessionStartCalls).toHaveLength(1);
     expect(enqueueSessionEnd).not.toHaveBeenCalled();
-  });
-});
-
-/**
- * MARK MEANS COUNT AND LOG: the marker does not suppress, so every test below
- * asserts the event was still INSERTED.
- */
-describe('duplicate marker', () => {
-  const TTL_MS = 120_000;
-  const OTHER_EVENT_ID = '99999999-8888-4777-8666-555555555555';
-
-  /**
-   * Enough of Redis for `SET key NX PX`, with a hand-driven clock so the
-   * expiry is asserted rather than slept through. The REAL marker runs against
-   * it, so the key shape and the `NX` semantics are under test too.
-   */
-  function fakeRedis() {
-    const keys = new Map<string, number>();
-    let nowMs = 0;
-    return {
-      advance: (ms: number) => {
-        nowMs += ms;
-      },
-      keyCount: () => {
-        for (const [key, expiresAt] of keys) {
-          if (expiresAt <= nowMs) {
-            keys.delete(key);
-          }
-        }
-        return keys.size;
-      },
-      set: (key: string, _value: string, _px: 'PX', ttlMs: number) => {
-        const expiresAt = keys.get(key);
-        if (expiresAt !== undefined && expiresAt > nowMs) {
-          return Promise.resolve(null);
-        }
-        keys.set(key, nowMs + ttlMs);
-        return Promise.resolve('OK');
-      },
-    };
-  }
-
-  function depsWithRealMarker() {
-    const redis = fakeRedis();
-    const built = makeDeps();
-    built.deps.markDuplicate = createDuplicateEventMarker({
-      client: redis,
-      ttlMs: TTL_MS,
-    });
-    return { ...built, redis };
-  }
-
-  test('marks the second delivery of one id, and inserts BOTH', async () => {
-    const { deps, createEvent, ingest, duplicateMarked } = depsWithRealMarker();
-    ingest.mockResolvedValue({ kind: 'extend', current: makeSession() });
-    const envelope = buildJobData({ id: producedEventId });
-
-    await incomingEvent(envelope, deps);
-    expect(duplicateMarked).not.toHaveBeenCalled();
-
-    await incomingEvent(envelope, deps);
-    expect(duplicateMarked).toHaveBeenCalledTimes(1);
-
-    // The whole point: the redelivery is COUNTED, not suppressed. Two
-    // inserts, both carrying the producer's id.
-    const inserted = createdEvents(createEvent);
-    expect(inserted).toHaveLength(2);
-    expect(inserted.every((event) => event.id === producedEventId)).toBe(true);
-  });
-
-  test('never marks distinct ids', async () => {
-    const { deps, createEvent, ingest, duplicateMarked } = depsWithRealMarker();
-    ingest.mockResolvedValue({ kind: 'extend', current: makeSession() });
-
-    await incomingEvent(buildJobData({ id: producedEventId }), deps);
-    await incomingEvent(buildJobData({ id: OTHER_EVENT_ID }), deps);
-
-    expect(duplicateMarked).not.toHaveBeenCalled();
-    expect(createdEvents(createEvent)).toHaveLength(2);
-  });
-
-  test('the key expires, so a replay past the TTL is unmarked', async () => {
-    const { deps, ingest, duplicateMarked, redis } = depsWithRealMarker();
-    ingest.mockResolvedValue({ kind: 'extend', current: makeSession() });
-    const envelope = buildJobData({ id: producedEventId });
-
-    await incomingEvent(envelope, deps);
-    expect(redis.keyCount()).toBe(1);
-
-    redis.advance(TTL_MS + 1);
-    expect(redis.keyCount()).toBe(0);
-
-    await incomingEvent(envelope, deps);
-    expect(duplicateMarked).not.toHaveBeenCalled();
-  });
-
-  test('a payload with no producer-minted id costs no Redis call', async () => {
-    const { deps, createEvent, ingest, markDuplicate } = ctx;
-    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
-
-    await incomingEvent(buildJobData(), deps);
-
-    expect(markDuplicate).not.toHaveBeenCalled();
-    expect(createdEvents(createEvent)).toHaveLength(1);
-  });
-
-  /**
-   * THE REGRESSION TEST THAT MATTERS. A blocking Redis call in this path
-   * previously evicted the consumer past its 30s session timeout — an
-   * eviction is the only reassignment that costs duplicate rows. This must
-   * not happen again.
-   */
-  test('Redis unavailable: the event is processed normally and nothing throws', async () => {
-    const { deps, createEvent, ingest, markDuplicate, duplicateMarked } = ctx;
-    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
-    markDuplicate.mockImplementation(() =>
-      Promise.reject(
-        new Error(
-          "Stream isn't writeable and enableOfflineQueue options is false"
-        )
-      )
-    );
-
-    const event = await incomingEvent(
-      buildJobData({ id: producedEventId }),
-      deps
-    );
-
-    expect(event).not.toBeNull();
-    expect(createdEvents(createEvent)).toHaveLength(1);
-    expect(createdEvents(createEvent)[0]!.id).toBe(producedEventId);
-    // Fail open means fail SILENT to the counter: an unwritten marker is not
-    // evidence of a duplicate.
-    expect(duplicateMarked).not.toHaveBeenCalled();
-  });
-
-  test('the marker runs alongside the handler, never in front of it', async () => {
-    // "Not slowed" asserted structurally rather than with a stopwatch: the
-    // marker is started BEFORE the handler's own Redis work and awaited AFTER
-    // it, so a slow marker overlaps a slow session read instead of adding to
-    // it. A serial check would give mark:start, mark:end, ingest:start — which
-    // is the shape that would put the eviction trigger back.
-    const timeline: string[] = [];
-    const slow = () => new Promise((resolve) => setTimeout(resolve, 20));
-    const { deps, ingest, markDuplicate } = ctx;
-    markDuplicate.mockImplementation(async () => {
-      timeline.push('mark:start');
-      await slow();
-      timeline.push('mark:end');
-      return false;
-    });
-    ingest.mockImplementation(async () => {
-      timeline.push('ingest:start');
-      await slow();
-      timeline.push('ingest:end');
-      return { kind: 'extend', current: makeSession() };
-    });
-
-    await incomingEvent(buildJobData({ id: producedEventId }), deps);
-
-    expect(timeline.slice(0, 2)).toEqual(['mark:start', 'ingest:start']);
-    expect(timeline).toContain('mark:end');
   });
 });

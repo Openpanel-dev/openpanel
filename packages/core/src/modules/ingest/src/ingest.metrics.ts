@@ -4,21 +4,6 @@ import client from 'prom-client';
 import { registry } from '../../../metrics';
 import type { ConsumerMetrics, DeadLetterReason } from './consumer';
 
-// Events whose producer-minted id had already been seen. This is a MARKER, not
-// a dedupe: the event is inserted either way and this counter is the whole
-// point of the check. The older offset-keyed counter lived in one process's
-// heap and was blind to every duplicate that mattered (161 real duplicates,
-// 0 reprocessed increments).
-//
-// It UNDERCOUNTS by design: a duplicate whose marker could not be written
-// (Redis away) is not counted, because the check fails open rather than
-// delaying the event.
-export const duplicateEventsMarkedTotal = new client.Counter({
-  name: 'ingest_duplicate_events_marked_total',
-  help: 'Events whose producer-minted id had already been seen (marked, still inserted)',
-  registers: [registry],
-});
-
 // Handler exceptions on the Kafka ingest path, counted per attempt — retries
 // included, so the series shows real failure pressure and not just the
 // messages that ran out of attempts.

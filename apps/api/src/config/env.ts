@@ -65,18 +65,6 @@ const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
 
-/**
- * How long a duplicate marker outlives its event — it only needs to outlive
- * the replay window, not the data. Two minutes gives comfortable margin over
- * observed redelivery windows (a consumer-eviction rejoin lands in seconds; a
- * lost-ACK replay lands ~30s out) and covers a process restart resuming from
- * its last committed offset.
- *
- * It also sets the live key count (`events/s x TTL`), so raising it is a
- * direct Redis-memory cost, not a free knob.
- */
-const DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS = 120_000;
-
 /** The Kafka events consumer's token. The old `events_kafka` spelling gets its own error (`RENAMED_QUEUE_TOKENS`), not an alias. */
 export const KAFKA_QUEUE_TOKEN = 'events';
 
@@ -493,10 +481,6 @@ const rawSchema = z.object({
 
   INGEST_DEAD_LETTER_MAX_ENTRIES: positiveIntWithDefault(
     DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES
-  ),
-
-  INGEST_DUPLICATE_MARKER_TTL_MS: positiveIntWithDefault(
-    DEFAULT_INGEST_DUPLICATE_MARKER_TTL_MS
   ),
 
   BUFFER_ASYNC_INSERTS: definedIsTrueSchema,
@@ -933,7 +917,6 @@ export interface Config {
   /** Sits here, not in `core.kafka`: `apps/api` picks the dead-letter sink and core only gets the `sendToDeadLetter` seam. */
   INGEST_DEAD_LETTER_MAX_ENTRIES: number;
   /** Sits here, not in `core.kafka`: the marker is keyed on the event, not a Kafka coordinate. */
-  INGEST_DUPLICATE_MARKER_TTL_MS: number;
   /** The CORS delegator's origin allowlist, order-sensitive. */
   dashboardOrigins: string[];
   /** `ENABLE_VERBOSE_LOGGING`, already split. */
@@ -978,7 +961,6 @@ const envSchema = rawSchema
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
       REDIS_CACHE_COMMAND_TIMEOUT_MS: raw.REDIS_CACHE_COMMAND_TIMEOUT_MS,
       INGEST_DEAD_LETTER_MAX_ENTRIES: raw.INGEST_DEAD_LETTER_MAX_ENTRIES,
-      INGEST_DUPLICATE_MARKER_TTL_MS: raw.INGEST_DUPLICATE_MARKER_TTL_MS,
       dashboardOrigins: [
         dashboardUrl,
         ...splitTokens(raw.API_CORS_ORIGINS),
