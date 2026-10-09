@@ -323,26 +323,13 @@ export class EventBuffer extends BaseBuffer {
     coversSeq: number
   ): Promise<unknown> {
     try {
-      const redis = getRedisCache();
-      const multi = redis.multi();
-
-      for (const event of eventsToFlush) {
-        multi.rpush(this.queueKey, JSON.stringify(event));
-      }
-
-      const results = await multi.exec();
-      // Ioredis RESOLVES a MULTI whose individual commands failed, handing the
-      // error back per entry — so a WRONGTYPE or an out-of-memory rpush would
-      // otherwise read as a successful flush and the events would be dropped
-      // silently. The batch handler decides whether to resolve Kafka offsets on
-      // this answer, so it has to be the truth.
-      if (results === null) {
-        throw new Error('event buffer rpush transaction was aborted');
-      }
-      const rejected = results.find(([commandError]) => commandError !== null);
-      if (rejected?.[0]) {
-        throw rejected[0];
-      }
+      // One RPUSH for the whole batch: atomic on its own, and it rejects on
+      // WRONGTYPE or out-of-memory, which the batch handler relies on before
+      // resolving Kafka offsets.
+      await getRedisCache().rpush(
+        this.queueKey,
+        ...eventsToFlush.map((event) => JSON.stringify(event))
+      );
 
       // The durability boundary: past this point the events survive any
       // process death, so everyone waiting on a sequence in this write is done.
