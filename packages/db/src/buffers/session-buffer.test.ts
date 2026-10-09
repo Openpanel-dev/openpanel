@@ -124,6 +124,58 @@ describe('SessionBuffer', () => {
     );
   });
 
+  it('resolves an anonymous session using its device id as the profile id', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: '' }));
+
+    expect(
+      await redis.get(`session:profile:${projectId}:${deviceId}`)
+    ).toBeNull();
+    expect(
+      await sessionBuffer.getExistingSession({ projectId, profileId: deviceId })
+    ).toMatchObject({
+      id: sessionId,
+      device_id: deviceId,
+      profile_id: deviceId,
+    });
+  });
+
+  it('prefers the profile index over a device with the same id', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: '' }));
+    await sessionBuffer.ingest(
+      makePayload({
+        deviceId: 'identified-device',
+        profileId: deviceId,
+        sessionId: 'identified-session',
+      })
+    );
+
+    expect(
+      await sessionBuffer.getExistingSession({ projectId, profileId: deviceId })
+    ).toMatchObject({
+      id: 'identified-session',
+      device_id: 'identified-device',
+    });
+  });
+
+  it('does not match a device session belonging to another profile', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: 'another-profile' }));
+
+    expect(
+      await sessionBuffer.getExistingSession({ projectId, profileId: deviceId })
+    ).toBeNull();
+  });
+
+  it('does not resolve an anonymous session from another project', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: '' }));
+
+    expect(
+      await sessionBuffer.getExistingSession({
+        projectId: 'another-project',
+        profileId: deviceId,
+      })
+    ).toBeNull();
+  });
+
   it('skips session_start and session_end events', async () => {
     const sizeBefore = await sessionBuffer.getBufferSize();
     expect(

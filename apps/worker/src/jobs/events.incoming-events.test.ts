@@ -19,7 +19,10 @@ vi.mock('@openpanel/db', async () => {
     ...actual,
     createEvent: vi.fn(),
     checkNotificationRulesForEvent: vi.fn().mockResolvedValue(true),
-    getProjectByIdCached: vi.fn().mockResolvedValue({ filters: [] }),
+    getProjectByIdCached: vi.fn().mockResolvedValue({
+      filters: [],
+      firstEventAt: new Date('2026-01-01T00:00:00.000Z'),
+    }),
     matchEvent: vi.fn().mockReturnValue(false),
     sessionBuffer: {
       // name/getBufferSize keep metrics.ts happy (it registers a per-buffer
@@ -316,6 +319,30 @@ describe('incomingEvent', () => {
       sessionId: '',
       profileId: 'profile-123',
     });
+  });
+
+  it('passes the anonymous profile session id to event storage for server events', async () => {
+    const jobData = buildJobData({ uaInfo: uaInfoServer });
+    jobData.event.profileId = deviceId;
+    vi.mocked(sessionBuffer.getExistingSession).mockResolvedValueOnce(
+      makeSession({ profile_id: deviceId })
+    );
+
+    await incomingEvent(jobData);
+
+    expect(sessionBuffer.getExistingSession).toHaveBeenCalledExactlyOnceWith({
+      projectId,
+      profileId: deviceId,
+    });
+    expect(createEvent).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        profileId: deviceId,
+        deviceId,
+        sessionId: 'session-existing',
+      })
+    );
+    expect(sessionBuffer.ingest).not.toHaveBeenCalled();
+    expect(sessionsQueue.add).not.toHaveBeenCalled();
   });
 
   it('emits session_start only once across 3 rapid events (new → extend → extend)', async () => {
