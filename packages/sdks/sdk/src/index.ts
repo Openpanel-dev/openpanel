@@ -286,7 +286,10 @@ export class OpenPanel {
     item: TrackHandlerPayload
   ): TrackHandlerPayload['payload'] {
     if (item.type === 'replay') {
-      return item.payload;
+      return {
+        ...item.payload,
+        sessionId: item.payload.sessionId ?? this.sessionId,
+      };
     }
     if (item.type === 'track') {
       const queuedGroups =
