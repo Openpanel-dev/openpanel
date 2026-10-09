@@ -6,6 +6,7 @@ import { type ChQueryInput, type ChScope, chQuery } from '../ch-query';
 import type { CoreConfig } from '../config';
 import type { Logger } from '../logger';
 import type { ServiceDeps } from '../services';
+import { defineRedisScript } from './redis-script';
 
 /** What a buffer needs from the boot scope; a test constructs its own. */
 export interface BufferDeps {
@@ -40,6 +41,14 @@ export interface BufferDeps {
  * in-flight inserts well under the pool.
  */
 const DEFAULT_CH_INSERT_CONCURRENCY = 5;
+
+const releaseLockScript = defineRedisScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+else
+  return 0
+end
+`);
 
 export type FlushPhaseTimings = {
   lrangeMs?: number;
@@ -349,14 +358,7 @@ export class BaseBuffer {
   }
 
   private async releaseLock(lockId: string): Promise<void> {
-    const script = `
-      if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end
-    `;
-    await getRedisCache().eval(script, 1, this.lockKey, lockId);
+    await releaseLockScript(getRedisCache(), [this.lockKey], [lockId]);
   }
 
   /**

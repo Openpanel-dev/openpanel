@@ -5,6 +5,7 @@ import type { IServiceCreateEventPayload } from '../modules/event/event.service'
 import type { IClickhouseSession } from '../modules/session/session.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { defineRedisScript } from './redis-script';
 
 // 30min of idle in event-time → session ends.
 const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
@@ -30,7 +31,7 @@ const PROJECTS_SET_KEY = 'session:projects';
 // profile pointer if the live blob's session id matches the one we're
 // closing. Prevents races where a boundary has already overwritten the slot
 // with a new session.
-const CLEANUP_LUA = `
+const cleanupScript = defineRedisScript(`
 local cur = redis.call('GET', KEYS[1])
 if cur then
   local ok, parsed = pcall(cjson.decode, cur)
@@ -44,53 +45,7 @@ if KEYS[3] ~= '' then
   redis.call('DEL', KEYS[3])
 end
 return 1
-`;
-
-const PERSIST_KEY_COUNT = 5;
-
-// Atomic session write-back: blob + wallclock entry + project registration +
-// optional profile pointer + the ClickHouse rows, in one round trip. Returns
-// the buffer list length so the caller can decide on a flush without a second
-// call.
-//
-// Redis does not undo a script's completed writes when a later command fails,
-// so every key is type-checked before the first write — a wrong-type key then
-// aborts the script with nothing written, rather than half of it.
-const PERSIST_LUA = `
-local blobKey, wallclockKey, projectsKey, profileKey, bufferKey =
-  KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5]
-local session, wallclockScore, deviceId, projectId =
-  ARGV[1], ARGV[2], ARGV[3], ARGV[4]
-
-local function assertType(key, expected)
-  if key == '' then
-    return
-  end
-  local actual = redis.call('TYPE', key)['ok']
-  if actual ~= 'none' and actual ~= expected then
-    error({ err = 'WRONGTYPE ' .. key .. ' holds ' .. actual .. ', expected ' .. expected })
-  end
-end
-
-assertType(blobKey, 'string')
-assertType(wallclockKey, 'zset')
-assertType(projectsKey, 'set')
-assertType(profileKey, 'string')
-assertType(bufferKey, 'list')
-
-redis.call('SET', blobKey, session)
-redis.call('ZADD', wallclockKey, wallclockScore, deviceId)
-redis.call('SADD', projectsKey, projectId)
-if profileKey ~= '' then
-  redis.call('SET', profileKey, deviceId)
-end
-
-local bufferLength = redis.call('LLEN', bufferKey)
-for i = 5, #ARGV do
-  bufferLength = redis.call('RPUSH', bufferKey, ARGV[i])
-end
-return bufferLength
-`;
+`);
 
 export type SessionIngestResult =
   | { kind: 'new'; current: IClickhouseSession }
@@ -126,6 +81,8 @@ function pickUtm(
 
 const DEFAULT_BATCH_SIZE = 1000;
 const DEFAULT_CHUNK_SIZE = 1000;
+/** One cron run drains as many batches as fit before the next run is due. */
+const DRAIN_TIME_BUDGET_MS = 8000;
 
 export class SessionBuffer extends BaseBuffer {
   private readonly batchSize =
@@ -137,7 +94,7 @@ export class SessionBuffer extends BaseBuffer {
   private readonly idleTimeoutMs = resolveSessionTimeoutMs(this.deps.config);
 
   private readonly redisKey = 'session-buffer';
-  private redis: Redis;
+  private readonly redis: Redis;
   constructor(deps: BufferDeps) {
     super(deps, {
       name: 'session',
@@ -247,14 +204,10 @@ export class SessionBuffer extends BaseBuffer {
         ? profileIndexKey(projectId, profileId)
         : '';
 
-    await this.redis.eval(
-      CLEANUP_LUA,
-      3,
-      sessionKey(projectId, deviceId),
-      wallclockSetKey(projectId),
-      pointerKey,
-      sessionId,
-      deviceId
+    await cleanupScript(
+      this.redis,
+      [sessionKey(projectId, deviceId), wallclockSetKey(projectId), pointerKey],
+      [sessionId, deviceId]
     );
   }
 
@@ -396,8 +349,9 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   /**
-   * Atomic write-back: session blob + wallclock ZSET + projects SET +
-   * profile index + ClickHouse buffer rows, in a single Lua script.
+   * Write-back in one MULTI: session blob + wallclock ZSET + projects SET +
+   * profile index + ClickHouse buffer rows. Append only; the cron drains the
+   * buffer, so ingest never waits on a ClickHouse insert.
    *
    * No TTLs on the blob or profile index — they are removed exclusively by
    * `cleanup()` after `session_end` emission. This guarantees the reaper
@@ -410,28 +364,27 @@ export class SessionBuffer extends BaseBuffer {
   ) {
     const projectId = current.project_id;
     const deviceId = current.device_id;
-    const pointerKey =
-      current.profile_id && current.profile_id !== current.device_id
-        ? profileIndexKey(projectId, current.profile_id)
-        : '';
+    const hasProfilePointer =
+      current.profile_id && current.profile_id !== current.device_id;
 
-    const bufferLength = (await this.redis.eval(
-      PERSIST_LUA,
-      PERSIST_KEY_COUNT,
-      sessionKey(projectId, deviceId),
-      wallclockSetKey(projectId),
-      PROJECTS_SET_KEY,
-      pointerKey,
-      this.redisKey,
-      JSON.stringify(current),
-      Date.now().toString(),
-      deviceId,
-      projectId,
-      ...chRows.map((row) => JSON.stringify(row))
-    )) as number;
+    const multi = this.redis
+      .multi()
+      .set(sessionKey(projectId, deviceId), JSON.stringify(current))
+      .zadd(wallclockSetKey(projectId), Date.now(), deviceId)
+      .sadd(PROJECTS_SET_KEY, projectId);
+    if (hasProfilePointer) {
+      multi.set(profileIndexKey(projectId, current.profile_id), deviceId);
+    }
+    multi.rpush(this.redisKey, ...chRows.map((row) => JSON.stringify(row)));
 
-    if (bufferLength >= this.batchSize) {
-      await this.tryFlush();
+    // Ioredis resolves a MULTI whose commands failed, with the error per entry.
+    const results = await multi.exec();
+    if (results === null) {
+      throw new Error('session write-back transaction was aborted');
+    }
+    const rejected = results.find(([commandError]) => commandError !== null);
+    if (rejected?.[0]) {
+      throw rejected[0];
     }
   }
 
@@ -532,13 +485,29 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
+    const deadline = performance.now() + DRAIN_TIME_BUDGET_MS;
+    let rowsProcessed = 0;
+
+    while (performance.now() < deadline) {
+      const processed = await this.processBatch();
+      rowsProcessed += processed;
+      if (processed < this.batchSize) {
+        break;
+      }
+    }
+
+    this.reportFlushStats({ rowsProcessed });
+  }
+
+  /** Inserts and trims one batch from the head of the list; returns its size. */
+  private async processBatch(): Promise<number> {
     const events = await this.redis.lrange(
       this.redisKey,
       0,
       this.batchSize - 1
     );
     if (events.length === 0) {
-      return;
+      return 0;
     }
 
     const parsed: IClickhouseSession[] = [];
@@ -577,6 +546,7 @@ export class SessionBuffer extends BaseBuffer {
     await this.redis.ltrim(this.redisKey, events.length, -1);
 
     this.logger.debug({ count: events.length }, 'Processed sessions');
+    return events.length;
   }
 
   protected getRedisListKey(): string {

@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
+import { testCoreConfig } from '../../test/config-fixture';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 
@@ -363,52 +364,69 @@ describe('SessionBuffer', () => {
     expect(await sessionBuffer.getBufferSize()).toBe(1);
   });
 
-  // persist() is one Lua script, so a failure part-way through must leave the
-  // four session keys and the buffer list exactly as they were. A wrong-type
-  // key is the cheapest way to force that failure from outside.
-  describe('persist atomicity', () => {
-    // These tests poison shared keys on the local Redis on purpose. Clear them
-    // here too — beforeEach only protects this file, not a concurrently
-    // running stack.
-    afterEach(async () => {
-      await redis.del('session-buffer', `session:wallclock:${projectId}`);
+  // The write-back runs once per client event, so every extra command on it is
+  // multiplied by the whole ingest rate.
+  it('ingest sends no TYPE, EVAL or EVALSHA to Redis', async () => {
+    const monitor = await redis.duplicate().monitor();
+    const commands: string[] = [];
+    let sentinelSeen = false;
+    // A dev stack may share this Redis, so only commands on this test's
+    // project count.
+    monitor.on('monitor', (_time: string, args: string[]) => {
+      if (args.includes(MONITOR_SENTINEL)) {
+        sentinelSeen = true;
+      } else if (args.some((arg) => arg.includes(projectId))) {
+        commands.push(String(args[0]).toLowerCase());
+      }
     });
 
-    async function expectNothingWritten() {
-      expect(await redis.get(`session:${projectId}:${deviceId}`)).toBeNull();
-      expect(
-        await redis.get(`session:profile:${projectId}:profile-1`)
-      ).toBeNull();
-      expect(await redis.sismember('session:projects', projectId)).toBe(0);
+    const t0 = Date.now();
+    await sessionBuffer.ingest(makePayload({ createdAt: new Date(t0) }));
+    await sessionBuffer.ingest(makePayload({ createdAt: new Date(t0 + 1000) }));
+    await redis.ping(MONITOR_SENTINEL);
+    while (!sentinelSeen) {
+      await Bun.sleep(MONITOR_POLL_MS);
+    }
+    monitor.disconnect();
+
+    expect(commands).toContain('rpush');
+    expect(commands).not.toContain('type');
+    expect(commands).not.toContain('eval');
+    expect(commands).not.toContain('evalsha');
+  });
+
+  it('ingest never flushes, even past the batch size', async () => {
+    const buffer = bufferWithBatchSize(2);
+    const t0 = Date.now();
+    for (let i = 0; i < 5; i++) {
+      await buffer.ingest(makePayload({ createdAt: new Date(t0 + i * 1000) }));
     }
 
-    it('writes no key when the wallclock set holds the wrong type', async () => {
-      await redis.set(`session:wallclock:${projectId}`, 'not-a-zset');
+    expect(chInsert).not.toHaveBeenCalled();
+    expect(await buffer.getBufferSize()).toBe(9);
+  });
 
-      const result = await sessionBuffer.ingest(makePayload());
-
-      expect(result).toBeNull();
-      await expectNothingWritten();
-      expect(await redis.llen('session-buffer')).toBe(0);
-      expect(await redis.get(`session:wallclock:${projectId}`)).toBe(
-        'not-a-zset'
+  it('a flush drains a backlog larger than one batch', async () => {
+    const buffer = bufferWithBatchSize(3);
+    const t0 = Date.now();
+    for (let i = 0; i < 10; i++) {
+      await buffer.ingest(
+        makePayload({ deviceId: `device-${i}`, createdAt: new Date(t0) })
       );
-    });
+    }
 
-    it('writes no key when the buffer list holds the wrong type', async () => {
-      // The buffer list is written last, so without an up-front type check
-      // the blob, wallclock entry and project registration would already be
-      // committed by the time this fails — Redis does not roll them back.
-      await redis.set('session-buffer', 'not-a-list');
+    await buffer.tryFlush({ trigger: 'cron' });
 
-      const result = await sessionBuffer.ingest(makePayload());
-
-      expect(result).toBeNull();
-      await expectNothingWritten();
-      expect(
-        await redis.zscore(`session:wallclock:${projectId}`, deviceId)
-      ).toBeNull();
-      expect(await redis.get('session-buffer')).toBe('not-a-list');
-    });
+    expect(chInsert).toHaveBeenCalledTimes(4);
+    expect(await buffer.getBufferSize()).toBe(0);
   });
 });
+
+const MONITOR_SENTINEL = 'session-buffer-test-done';
+const MONITOR_POLL_MS = 5;
+
+function bufferWithBatchSize(batchSize: number) {
+  const config = testCoreConfig();
+  config.buffers.session.batchSize = batchSize;
+  return new SessionBuffer(bufferDepsWithCh({ insert: chInsert }, config));
+}
