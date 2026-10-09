@@ -122,6 +122,8 @@ export class SessionBuffer extends BaseBuffer {
     if (!hit) return null;
 
     const session = getSafeJson<IClickhouseSession>(hit);
+    if (!session) return null;
+
     return session.profile_id === options.profileId &&
       session.device_id === options.profileId
       ? session
