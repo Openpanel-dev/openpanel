@@ -750,16 +750,10 @@ export async function fetchDeviceIdentity(
   });
 
   try {
-    const [current, previous] = await Promise.all([
-      buffers.session.getExistingSession({
-        projectId,
-        deviceId: currentDeviceId,
-      }),
-      buffers.session.getExistingSession({
-        projectId,
-        deviceId: previousDeviceId,
-      }),
-    ]);
+    const [current, previous] = await buffers.session.getExistingSessions(
+      projectId,
+      [currentDeviceId, previousDeviceId]
+    );
 
     // Blob has no TTL — only treat the session as "current" if its last
     // event is within the idle window. Otherwise the SDK should ask the

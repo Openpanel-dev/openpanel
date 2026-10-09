@@ -220,14 +220,16 @@ describe('handleReplay', () => {
 const PROJECT_ID = 'proj-kafka';
 const DEVICE_ID = 'device-kafka-1';
 
-const getExistingSession = mock(async () => null);
+const getExistingSessions = mock(
+  async (_projectId: string, deviceIds: string[]) => deviceIds.map(() => null)
+);
 
 const transport = (
   produceIncomingEvent: ReturnType<typeof mock>
 ): Parameters<typeof ingestTrack>[1] =>
   ({
     buffers: {
-      session: { getExistingSession },
+      session: { getExistingSessions },
       replay: { add: mock(async () => undefined) },
       group: { add: mock(async () => undefined) },
     },
@@ -246,7 +248,7 @@ const request = (body: ITrackHandlerPayload) => ({
 
 describe('ingestTrack — events transport', () => {
   beforeEach(() => {
-    getExistingSession.mockClear();
+    getExistingSessions.mockClear();
     identifyProfile.mockClear();
   });
 

@@ -79,9 +79,12 @@ const produceIncomingEvent = async (
 };
 
 // The legacy route resolves a device id, which is the only buffer read on
-// this path (`getExistingSession`, once per salt candidate).
+// this path (`getExistingSessions`, one read for both salt candidates).
 const buffers = {
-  session: { getExistingSession: async () => null },
+  session: {
+    getExistingSessions: async (_projectId: string, deviceIds: string[]) =>
+      deviceIds.map(() => null),
+  },
   replay: {},
   group: {},
 } as unknown as Buffers;

@@ -98,6 +98,25 @@ describe('SessionBuffer', () => {
     expect(parsed.device_id).toBe(deviceId);
   });
 
+  it('getExistingSessions reads several devices in order, null when absent', async () => {
+    await sessionBuffer.ingest(makePayload({ deviceId: 'device-A' }));
+    await sessionBuffer.ingest(
+      makePayload({ deviceId: 'device-C', sessionId: 'session-C' })
+    );
+
+    const sessions = await sessionBuffer.getExistingSessions(projectId, [
+      'device-A',
+      'device-B',
+      'device-C',
+    ]);
+
+    expect(sessions.map((session) => session?.id ?? null)).toEqual([
+      sessionId,
+      null,
+      'session-C',
+    ]);
+  });
+
   it('registers the device in the wallclock sorted set and the projects set', async () => {
     await sessionBuffer.ingest(makePayload());
 

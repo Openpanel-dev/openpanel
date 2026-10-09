@@ -46,10 +46,13 @@ const fakeSession = (id: string, endedAtMs: number): IClickhouseSession =>
   }) as unknown as IClickhouseSession;
 
 function stubBuffer(session: IClickhouseSession | null) {
-  const getExistingSession = mock(async () => session);
+  const getExistingSessions = mock(
+    async (_projectId: string, deviceIds: string[]) =>
+      deviceIds.map(() => session)
+  );
   return {
-    getExistingSession,
-    buffer: { getExistingSession } as unknown as SessionBufferReader,
+    getExistingSessions,
+    buffer: { getExistingSessions } satisfies SessionBufferReader,
   };
 }
 
@@ -59,7 +62,7 @@ afterEach(() => {
 
 describe('getDeviceId — session resolution', () => {
   it('mints a deterministic, stable id when no session exists', async () => {
-    const { getExistingSession, buffer } = stubBuffer(null);
+    const { getExistingSessions, buffer } = stubBuffer(null);
 
     const a = await getDeviceId({
       ...BASE,
@@ -75,7 +78,7 @@ describe('getDeviceId — session resolution', () => {
     expect(a.sessionId).toBeTruthy();
     expect(b.sessionId).toBe(a.sessionId); // same window → same id
     expect(a.deviceId).toBe('cookie-abc');
-    expect(getExistingSession).toHaveBeenCalled();
+    expect(getExistingSessions).toHaveBeenCalled();
   });
 
   it('reuses the live session id when within the idle window', async () => {
@@ -106,8 +109,8 @@ describe('getDeviceId — session resolution', () => {
     expect(result.sessionId).not.toBe('sess-stale'); // a fresh id, not the stale one
   });
 
-  it('reads the store once for an override (no redundant previous lookup)', async () => {
-    const { getExistingSession, buffer } = stubBuffer(null);
+  it('reads only the override device (no redundant previous lookup)', async () => {
+    const { getExistingSessions, buffer } = stubBuffer(null);
 
     await getDeviceId({
       ...BASE,
@@ -115,23 +118,17 @@ describe('getDeviceId — session resolution', () => {
       sessionBuffer: buffer,
     });
 
-    expect(getExistingSession).toHaveBeenCalledTimes(1);
-    expect(getExistingSession).toHaveBeenCalledWith({
-      projectId: 'proj-1',
-      deviceId: 'cookie-abc',
-    });
+    expect(getExistingSessions).toHaveBeenCalledTimes(1);
+    expect(getExistingSessions).toHaveBeenCalledWith('proj-1', ['cookie-abc']);
   });
 
-  it('checks both current and previous salt windows for internal ids', async () => {
-    const { getExistingSession, buffer } = stubBuffer(null);
+  it('checks both salt windows for internal ids in one read', async () => {
+    const { getExistingSessions, buffer } = stubBuffer(null);
 
     await getDeviceId({ ...BASE, sessionBuffer: buffer }); // no override → IP+UA hashing
 
-    expect(getExistingSession).toHaveBeenCalledTimes(2);
-    const deviceIds = getExistingSession.mock.calls.map((call) => {
-      const [args] = call as unknown as [{ deviceId?: string }];
-      return args.deviceId ?? '';
-    });
+    expect(getExistingSessions).toHaveBeenCalledTimes(1);
+    const [, deviceIds] = getExistingSessions.mock.calls[0]!;
     expect(new Set(deviceIds).size).toBe(2); // distinct current/previous hashes
   });
 
@@ -145,7 +142,7 @@ describe('getDeviceId — session resolution', () => {
   it('mints the SAME deterministic id whether the session read misses or rejects', async () => {
     const { buffer: emptyStore } = stubBuffer(null);
     const rejecting = {
-      getExistingSession: mock(() =>
+      getExistingSessions: mock(() =>
         Promise.reject(
           new Error(
             "Stream isn't writeable and enableOfflineQueue options is false"
@@ -173,7 +170,7 @@ describe('getDeviceId — session resolution', () => {
   it('logs a failed session read through the caller logger, not console', async () => {
     const { error, logger } = stubLogger();
     const failing = {
-      getExistingSession: mock(() => {
+      getExistingSessions: mock(() => {
         throw new Error('session store unavailable');
       }),
     } as unknown as SessionBufferReader;

@@ -130,6 +130,22 @@ export class SessionBuffer extends BaseBuffer {
     return hit ? getSafeJson<IClickhouseSession>(hit) : null;
   }
 
+  /** The live sessions of several devices in one MGET, in the given order. */
+  public async getExistingSessions(
+    projectId: string,
+    deviceIds: string[]
+  ): Promise<(IClickhouseSession | null)[]> {
+    if (deviceIds.length === 0) {
+      return [];
+    }
+    const hits = await this.redis.mget(
+      deviceIds.map((deviceId) => sessionKey(projectId, deviceId))
+    );
+    return hits.map((hit) =>
+      hit ? getSafeJson<IClickhouseSession>(hit) : null
+    );
+  }
+
   /**
    * Ingest one event into the session lifecycle. Returns the action taken so
    * the caller can drive session_start / session_end event emission —

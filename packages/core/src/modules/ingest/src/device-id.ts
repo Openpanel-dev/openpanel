@@ -10,7 +10,7 @@ import type { IClickhouseSession } from '../../session/session.service';
 import { convertClickhouseDateToJs } from '../../session/src/dates';
 
 /** Only the read this module needs, so a caller may pass a narrower stub. */
-export type SessionBufferReader = Pick<SessionBuffer, 'getExistingSession'>;
+export type SessionBufferReader = Pick<SessionBuffer, 'getExistingSessions'>;
 
 /** Only the level this module logs at. The inputs here are an IP and a salt,
  *  so it must be the redacting pino logger and never `console`. */
@@ -139,10 +139,9 @@ async function getInfoFromSession({
     // Reading the live blob is the source of truth for an active session — it's
     // what keeps a visit on one id across page reloads and salt rotation. Don't
     // drop this read to "save" a lookup or sessions split at the bucket boundary.
-    const sessions = await Promise.all(
-      candidates.map((deviceId) =>
-        sessionBuffer.getExistingSession({ projectId, deviceId })
-      )
+    const sessions = await sessionBuffer.getExistingSessions(
+      projectId,
+      candidates
     );
 
     for (const [index, session] of sessions.entries()) {
