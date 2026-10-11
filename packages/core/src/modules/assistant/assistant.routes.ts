@@ -11,8 +11,18 @@ import {
   getSettingsForProject,
 } from '../organization/organization.service';
 
+const TITLER_AGENT_NAME = '__titler';
+
 interface RunBody {
+  conversationId?: string;
   context?: { projectId?: string; organizationId?: string };
+}
+
+function readRunBody(request: Request): Promise<RunBody | null> {
+  return request
+    .clone()
+    .json()
+    .catch(() => null) as Promise<RunBody | null>;
 }
 
 export const assistantRoutes = defineRoutes((app) =>
@@ -37,19 +47,32 @@ export const assistantRoutes = defineRoutes((app) =>
       const route = segments[1] ?? '';
       const routeId = segments[2] ?? '';
 
-      // The internal `__titler` agent has no project context — skip the
-      // access check; session auth is enough.
-      if (agentName === '__titler') {
+      // The store loads conversations by id alone, whatever the agent name.
+      const isOwnConversation = async (conversationId: string) => {
+        const conv =
+          await ctx.services.conversation.getConversationById(conversationId);
+        return !conv || conv.userId === userId;
+      };
+
+      // The titler has no project context, so it may only run statelessly:
+      // any other route or a `conversationId` would load a conversation
+      // without the ownership check below.
+      if (agentName === TITLER_AGENT_NAME) {
+        const isStatelessRun =
+          request.method === 'POST' &&
+          route === 'run' &&
+          segments.length === 2 &&
+          !(await readRunBody(request))?.conversationId;
+        if (!isStatelessRun) {
+          return status(404, { message: 'Not found' });
+        }
         return chatApp.handler(request);
       }
 
-      // Conversation hydration: verify ownership if the row already exists.
       // A brand-new chat (no row yet) falls through to the agent handler,
       // whose `ConversationStore.load()` returns null.
       if (route === 'conversations' && routeId) {
-        const conv =
-          await ctx.services.conversation.getConversationById(routeId);
-        if (conv && conv.userId !== userId) {
+        if (!(await isOwnConversation(routeId))) {
           return status(404, { message: 'Conversation not found' });
         }
         return chatApp.handler(request);
@@ -57,10 +80,13 @@ export const assistantRoutes = defineRoutes((app) =>
 
       // Everything else (primarily `POST /:name/run`) is an active run and
       // must carry `context.projectId` + `context.organizationId`.
-      const body = (await request
-        .clone()
-        .json()
-        .catch(() => null)) as RunBody | null;
+      const body = await readRunBody(request);
+      if (
+        body?.conversationId &&
+        !(await isOwnConversation(body.conversationId))
+      ) {
+        return status(404, { message: 'Conversation not found' });
+      }
       const projectId = body?.context?.projectId;
       const organizationIdFromBody = body?.context?.organizationId;
 

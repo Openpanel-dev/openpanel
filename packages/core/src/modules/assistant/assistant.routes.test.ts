@@ -33,8 +33,21 @@ mock.module('./assistant.service', () => ({
 
 const { assistantRoutes } = await import('./assistant.routes');
 
+const OWN_CONVERSATION_ID = 'conv_own';
+const OTHER_USER_CONVERSATION_ID = 'conv_other';
+const conversationsById: Record<string, { userId: string }> = {
+  [OWN_CONVERSATION_ID]: { userId: 'user_1' },
+  [OTHER_USER_CONVERSATION_ID]: { userId: 'user_2' },
+};
+const findConversation = mock(({ where }: { where: { id: string } }) =>
+  Promise.resolve(conversationsById[where.id] ?? null)
+);
+
 function buildApp() {
   const { deps } = stubAppDeps();
+  deps.db = {
+    conversation: { findUnique: findConversation },
+  } as unknown as typeof deps.db;
   return new Elysia().use(requestLogging(deps)).use(assistantRoutes(deps));
 }
 
@@ -44,7 +57,16 @@ beforeEach(() => {
   app = buildApp();
   session = { userId: 'user_1' };
   seenBodies.length = 0;
+  findConversation.mockClear();
 });
+
+function get(path: string) {
+  return app.handle(
+    new Request(`http://localhost${path}`, {
+      headers: { cookie: 'session=s' },
+    })
+  );
+}
 
 function post(path: string, body: unknown) {
   return app.handle(
@@ -75,4 +97,46 @@ test('no session -> 401', async () => {
   session = null;
   const response = await post('/ai/agents/__titler/run', { input: 'hi' });
   expect(response.status).toBe(401);
+});
+
+test("the titler cannot load another user's conversation", async () => {
+  const response = await get(
+    `/ai/agents/__titler/conversations/${OTHER_USER_CONVERSATION_ID}`
+  );
+  expect(response.status).toBe(404);
+  expect(seenBodies).toEqual([]);
+});
+
+test('the titler serves nothing but a stateless run', async () => {
+  const resume = await get(
+    `/ai/agents/__titler/conversations/${OWN_CONVERSATION_ID}/resume`
+  );
+  const abort = await post('/ai/agents/__titler/runs/run_1/abort', {});
+  const withConversation = await post('/ai/agents/__titler/run', {
+    input: 'hi',
+    conversationId: OWN_CONVERSATION_ID,
+  });
+  expect([resume.status, abort.status, withConversation.status]).toEqual([
+    404, 404, 404,
+  ]);
+  expect(seenBodies).toEqual([]);
+});
+
+test("loading another user's conversation is a 404", async () => {
+  const response = await get(
+    `/ai/agents/gpt/conversations/${OTHER_USER_CONVERSATION_ID}`
+  );
+  expect(response.status).toBe(404);
+  expect(findConversation).toHaveBeenCalledTimes(1);
+});
+
+test("a run cannot continue another user's conversation", async () => {
+  const response = await post('/ai/agents/gpt/run', {
+    input: 'hi',
+    conversationId: OTHER_USER_CONVERSATION_ID,
+    context: { projectId: 'p', organizationId: 'o' },
+  });
+  expect(response.status).toBe(404);
+  expect(findConversation).toHaveBeenCalledTimes(1);
+  expect(seenBodies).toEqual([]);
 });
