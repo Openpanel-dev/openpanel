@@ -1,8 +1,10 @@
-// Only the "is anyone logged in" boundary is exercised here; no database.
+// The auth boundaries only; no database.
 
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 import { stubHttpCtx } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
+import { TRPCForbiddenError } from '../../rpc/errors';
+import type { Services } from '../../services';
 import type { CookieOptions } from '../../shared/cookie';
 import { onboardingRouter } from './onboarding.rpc';
 
@@ -45,4 +47,38 @@ test('project rejects an unauthenticated caller before creating anything', async
       backend: false,
     })
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+});
+
+test('project refuses an organization member who is not an admin', async () => {
+  const requireOrganizationAdmin = mock(() =>
+    Promise.reject(
+      new TRPCForbiddenError('Only organization admins can create projects')
+    )
+  );
+  const services = {
+    auth: {
+      getOrganizationAccess: () => Promise.resolve({ role: 'org:member' }),
+      requireOrganizationAdmin,
+    },
+  } as unknown as Services;
+  const { ctx } = stubHttpCtx({ services });
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  const caller = onboardingRouter.createCaller(trpcCtx);
+
+  await expect(
+    caller.project({
+      organizationId: 'org_1',
+      project: 'website',
+      domain: null,
+      cors: [],
+      website: false,
+      app: false,
+      backend: true,
+    })
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(requireOrganizationAdmin).toHaveBeenCalledWith(
+    expect.objectContaining({ userId: 'user_1', organizationId: 'org_1' })
+  );
 });

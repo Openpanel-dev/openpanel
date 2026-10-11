@@ -1,19 +1,14 @@
 // `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE the
-// input parser. The explicit checks in the handlers below stay: `enforceAccess`
-// only sees a TOP-LEVEL `projectId` / `organizationId`, so anything resolved
-// from another id needs its own.
-//
-// `project`'s input can carry an existing `organizationId`, which
-// `enforceAccess` gates on membership (not admin — joining an org you already
-// belong to needs no more than that); this router repeats the check explicitly
-// through the organization module's own lookup.
+// input parser. `enforceAccess` gates a top-level `organizationId` on
+// membership only, but adding a project and a write client to an existing
+// organization is what `project.create` and `client.create` reserve for
+// organization admins, so this router requires the same.
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
-import { TRPCForbiddenError } from '../../rpc/errors';
 import { zOnboardingProject } from './onboarding.constants';
 import {
   canSkipOnboarding,
@@ -31,18 +26,11 @@ export const onboardingRouter = createTRPCRouter({
       const userId = ctx.session.userId;
 
       if (input.organizationId) {
-        // The auth service owns every access lookup; this procedure is
-        // protected but the organization is an input, so the builder cannot
-        // decide it.
-        const access = await ctx.services.auth.getOrganizationAccess({
+        await ctx.services.auth.requireOrganizationAdmin({
           userId,
           organizationId: input.organizationId,
+          message: 'Only organization admins can create projects',
         });
-        if (!access) {
-          throw new TRPCForbiddenError(
-            'You do not have access to this organization'
-          );
-        }
       }
 
       return createOnboardingProject(ctx, input, userId);
