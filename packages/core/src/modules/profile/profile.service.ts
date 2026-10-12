@@ -36,7 +36,7 @@ import {
   profileValuesQuery,
 } from './src/sql';
 
-export { profileSearchCondition } from './src/sql';
+export { latestProfileColumn, profileSearchCondition } from './src/sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;
@@ -166,12 +166,16 @@ export function transformProfile({
 
 async function compileProfileFilters(
   filters: IChartEventFilter[] | undefined,
-  projectId: string
+  projectId: string,
+  latestVersion = false
 ): Promise<CompiledFilterClauses> {
   if (!filters?.length) {
     return {};
   }
-  return buildFilterWhere(filters, projectId, PROFILE_FILTER_TARGET);
+  return buildFilterWhere(filters, projectId, {
+    ...PROFILE_FILTER_TARGET,
+    latestVersion,
+  });
 }
 
 /**
@@ -287,6 +291,11 @@ export async function getProfileList(
       startDate,
       endDate,
       filterClauses: await compileProfileFilters(filters, projectId),
+      latestFilterClauses: await compileProfileFilters(
+        filters,
+        projectId,
+        true
+      ),
     })
   );
   return data.map(transformProfile);
@@ -312,6 +321,11 @@ export async function getProfileListCount(
       startDate,
       endDate,
       filterClauses: await compileProfileFilters(filters, projectId),
+      latestFilterClauses: await compileProfileFilters(
+        filters,
+        projectId,
+        true
+      ),
     })
   );
   return data[0]?.count ?? 0;
@@ -389,6 +403,11 @@ export async function findProfilesCore(
       filterClauses: await compileProfileFilters(
         input.filters,
         input.projectId
+      ),
+      latestFilterClauses: await compileProfileFilters(
+        input.filters,
+        input.projectId,
+        true
       ),
       sortOrder: input.sortOrder === 'asc' ? 'asc' : 'desc',
       limit: Math.min(

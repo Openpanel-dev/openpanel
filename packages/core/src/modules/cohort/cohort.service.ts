@@ -865,40 +865,56 @@ export async function listCohortMemberProfiles(
   }
 ): Promise<{ data: IServiceProfile[]; count: number }> {
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
-  const { getProfiles, profileSearchCondition } = await import(
-    '../profile/profile.service'
-  );
+  const { getProfiles, latestProfileColumn, profileSearchCondition } =
+    await import('../profile/profile.service');
 
   const offset = Math.max(0, (cursor ?? 0) * take);
-  const searchClause = profileSearchCondition(search);
-  const searchCondition = searchClause ? sql`AND ${searchClause}` : sql.empty;
-
-  const extraConditions = filters?.length
-    ? Object.values(
-        buildFilterWhere(filters, projectId, {
-          selfTable: 'profiles',
-          profileIdExpr: 'id',
-          groupsExpr: 'groups',
-        })
-      )
-    : [];
-  const extraConditionSql = extraConditions.length
-    ? sql`AND ${sql.join(extraConditions, ' AND ')}`
+  // The raw-row conditions only narrow the id set (a superset: the surviving
+  // version is one of the rows), never the rows the aggregate reads; the
+  // HAVING clause decides on the newest version.
+  const conditionsOn = (latestVersion: boolean): SqlFragment[] => {
+    const searchClause = profileSearchCondition(
+      search,
+      latestVersion ? latestProfileColumn : undefined
+    );
+    const filterClauses = filters?.length
+      ? Object.values(
+          buildFilterWhere(filters, projectId, {
+            selfTable: 'profiles',
+            profileIdExpr: 'id',
+            groupsExpr: 'groups',
+            latestVersion,
+          })
+        )
+      : [];
+    return searchClause ? [searchClause, ...filterClauses] : filterClauses;
+  };
+  const anyVersion = conditionsOn(false);
+  const latestVersion = conditionsOn(true);
+  const candidates = anyVersion.length
+    ? sql`AND cityHash64(id) IN (SELECT cityHash64(id) FROM ${sql.id(TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} AND ${sql.join(anyVersion, ' AND ')})`
+    : sql.empty;
+  const having = latestVersion.length
+    ? sql`HAVING ${sql.join(latestVersion, ' AND ')}`
     : sql.empty;
 
   const rows = await chQuery<{ id: string; total_count: number }>(
     deps,
     sql`
     SELECT id, count() OVER () AS total_count
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE project_id = ${sql.string(projectId)}
-      AND id IN (
-        SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
-        WHERE cohort_id = ${sql.string(cohortId)}
-          AND project_id = ${sql.string(projectId)}
-      )
-      ${searchCondition}
-      ${extraConditionSql}
+    FROM (
+      SELECT id, argMax(created_at, last_seen_at) AS created_at
+      FROM ${sql.id(TABLE.profiles)}
+      WHERE project_id = ${sql.string(projectId)}
+        AND id IN (
+          SELECT profile_id FROM ${sql.id(TABLE.cohortMembers)} FINAL
+          WHERE cohort_id = ${sql.string(cohortId)}
+            AND project_id = ${sql.string(projectId)}
+        )
+        ${candidates}
+      GROUP BY id
+      ${having}
+    )
     ORDER BY created_at DESC
     LIMIT ${sql.uint64(take)} OFFSET ${sql.uint64(offset)}
   `

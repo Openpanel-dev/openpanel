@@ -145,21 +145,45 @@ export interface GroupMemberProfilesQuery {
   search?: string;
 }
 
+/**
+ * The profiles whose newest version belongs to the group, with their first
+ * seen. The raw-row `has()` is a superset (the surviving version is one of
+ * the rows), so the GROUP BY only sees candidates, matched on a hash so the
+ * set stays small; `having` adds conditions on the newest version.
+ */
+function groupMembers(
+  projectId: string,
+  groupId: string,
+  having: SqlFragment[] = []
+): SqlFragment {
+  const project = sql`project_id = ${sql.string(projectId)}`;
+  const group = sql.string(groupId);
+  return sql`
+    SELECT id, argMax(created_at, last_seen_at) AS created_at
+    FROM ${sql.id(TABLE.profiles)}
+    WHERE ${project}
+      AND cityHash64(id) IN (SELECT cityHash64(id) FROM ${sql.id(TABLE.profiles)} WHERE ${project} AND has(groups, ${group}))
+    GROUP BY id
+    HAVING ${sql.join([sql`has(argMax(groups, last_seen_at), ${group})`, ...having], ' AND ')}`;
+}
+
 /** Member ids plus the window total, so one round trip pages and counts. */
 export function groupMemberProfilesQuery(
   query: GroupMemberProfilesQuery
 ): SqlFragment {
+  const search = query.search
+    ? [
+        (() => {
+          const pattern = sql.string(`%${query.search}%`);
+          return sql`(argMax(email, last_seen_at) ILIKE ${pattern} OR argMax(first_name, last_seen_at) ILIKE ${pattern} OR argMax(last_name, last_seen_at) ILIKE ${pattern})`;
+        })(),
+      ]
+    : [];
   return sql`
     SELECT
       id,
       count() OVER () AS total_count
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE project_id = ${sql.string(query.projectId)}
-      AND has(groups, ${sql.string(query.groupId)})
-      ${optional(query.search, () => {
-        const pattern = sql.string(`%${query.search}%`);
-        return sql`AND (email ILIKE ${pattern} OR first_name ILIKE ${pattern} OR last_name ILIKE ${pattern})`;
-      })}
+    FROM (${groupMembers(query.projectId, query.groupId, search)})
     ORDER BY created_at DESC
     LIMIT ${sql.uint64(query.take)}
     OFFSET ${sql.uint64(query.offset)}
@@ -187,9 +211,7 @@ export function groupUniqueProfilesQuery(query: {
 }): SqlFragment {
   return sql`
     SELECT count() AS uniqueProfiles
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE project_id = ${sql.string(query.projectId)}
-      AND has(groups, ${sql.string(query.groupId)})
+    FROM (${groupMembers(query.projectId, query.groupId)})
   `;
 }
 
@@ -218,10 +240,8 @@ export function groupMemberGrowthQuery(query: {
     SELECT
       toDate(toStartOfDay(created_at)) AS date,
       count() AS count
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE project_id = ${sql.string(query.projectId)}
-      AND has(groups, ${sql.string(query.groupId)})
-      AND created_at >= now() - INTERVAL ${sql.uint64(MEMBER_GROWTH_WINDOW_DAYS)} DAY
+    FROM (${groupMembers(query.projectId, query.groupId)})
+    WHERE created_at >= now() - INTERVAL ${sql.uint64(MEMBER_GROWTH_WINDOW_DAYS)} DAY
     GROUP BY date
     ORDER BY date ASC WITH FILL
       FROM toDate(now() - INTERVAL ${sql.uint64(MEMBER_GROWTH_FILL_FROM_DAYS_AGO)} DAY)

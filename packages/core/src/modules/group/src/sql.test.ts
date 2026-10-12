@@ -167,18 +167,20 @@ describe('groupMemberProfilesQuery', () => {
     }).toStatement();
     const text = collapse(query);
 
+    // Membership is decided on the newest version of `groups`; the raw-row
+    // `has()` only narrows the candidate ids.
     expect(text).toContain(
-      'count() OVER () AS total_count FROM profiles FINAL'
+      'count() OVER () AS total_count FROM ( SELECT id, argMax(created_at, last_seen_at) AS created_at FROM profiles WHERE project_id = {p1:String} AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p2:String} AND has(groups, {p3:String})) GROUP BY id HAVING has(argMax(groups, last_seen_at), {p4:String})) ORDER BY created_at DESC LIMIT {p5:UInt64} OFFSET {p6:UInt64}'
     );
-    expect(text).toContain(
-      'WHERE project_id = {p1:String} AND has(groups, {p2:String}) ORDER BY created_at DESC LIMIT {p3:UInt64} OFFSET {p4:UInt64}'
-    );
+    expect(text).not.toContain('FINAL');
     expect(text).not.toContain('ILIKE');
     expect(query_params).toEqual({
       p1: PROJECT_ID,
-      p2: GROUP_ID,
-      p3: 50,
-      p4: 0,
+      p2: PROJECT_ID,
+      p3: GROUP_ID,
+      p4: GROUP_ID,
+      p5: 50,
+      p6: 0,
     });
   });
 
@@ -192,23 +194,21 @@ describe('groupMemberProfilesQuery', () => {
     }).toStatement();
 
     expect(collapse(query)).toContain(
-      'AND (email ILIKE {p3:String} OR first_name ILIKE {p4:String} OR last_name ILIKE {p5:String})'
+      'AND (argMax(email, last_seen_at) ILIKE {p5:String} OR argMax(first_name, last_seen_at) ILIKE {p6:String} OR argMax(last_name, last_seen_at) ILIKE {p7:String})'
     );
     expect(query).not.toContain(HOSTILE);
-    expect(query_params.p3).toBe(`%${HOSTILE}%`);
     expect(query_params.p5).toBe(`%${HOSTILE}%`);
+    expect(query_params.p7).toBe(`%${HOSTILE}%`);
   });
 });
 
 describe('the trpc router queries', () => {
   const ref = { projectId: PROJECT_ID, groupId: HOSTILE };
 
-  test('every per-group query binds project then group and interpolates nothing', () => {
+  test('every per-group event query binds project then group and interpolates nothing', () => {
     const builders = [
       groupEventMetricsQuery,
-      groupUniqueProfilesQuery,
       groupActivityQuery,
-      groupMemberGrowthQuery,
       groupMostEventsQuery,
       groupPopularRoutesQuery,
     ];
@@ -222,14 +222,31 @@ describe('the trpc router queries', () => {
     }
   });
 
+  test('every per-group profile query decides membership on the newest version', () => {
+    for (const build of [groupUniqueProfilesQuery, groupMemberGrowthQuery]) {
+      const { query, query_params } = build(ref).toStatement();
+      expect(collapse(query)).toContain(
+        'FROM profiles WHERE project_id = {p1:String} AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p2:String} AND has(groups, {p3:String})) GROUP BY id HAVING has(argMax(groups, last_seen_at), {p4:String})'
+      );
+      expect(query).not.toContain('FINAL');
+      expect(query).not.toContain(HOSTILE);
+      expect(query_params).toMatchObject({
+        p1: PROJECT_ID,
+        p2: PROJECT_ID,
+        p3: HOSTILE,
+        p4: HOSTILE,
+      });
+    }
+  });
+
   test('memberGrowth keeps the 30-day window and the WITH FILL frame', () => {
     const { query, query_params } = groupMemberGrowthQuery(ref).toStatement();
     const text = collapse(query);
 
     expect(text).toContain(
-      'AND created_at >= now() - INTERVAL {p3:UInt64} DAY GROUP BY date ORDER BY date ASC WITH FILL FROM toDate(now() - INTERVAL {p4:UInt64} DAY) TO toDate(now() + INTERVAL 1 DAY) STEP 1'
+      'WHERE created_at >= now() - INTERVAL {p5:UInt64} DAY GROUP BY date ORDER BY date ASC WITH FILL FROM toDate(now() - INTERVAL {p6:UInt64} DAY) TO toDate(now() + INTERVAL 1 DAY) STEP 1'
     );
-    expect(query_params).toMatchObject({ p3: 30, p4: 29 });
+    expect(query_params).toMatchObject({ p5: 30, p6: 29 });
   });
 
   test('mostEvents excludes the lifecycle events; popularRoutes keeps only screen_view', () => {

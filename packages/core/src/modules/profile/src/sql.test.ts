@@ -28,12 +28,24 @@ const PROJECT_ID = 'proj-1';
 const PROFILE_ID = 'prof-1';
 const HOSTILE = "x' OR 1=1 --";
 const NO_FILTERS = {};
+const NO_FILTER_CLAUSES = {
+  filterClauses: NO_FILTERS,
+  latestFilterClauses: NO_FILTERS,
+};
+/** The outer statement of a page: every column from the newest version of the ids inside. */
+const LATEST_COLUMNS_PAGE =
+  'SELECT id, argMax(first_name, p.last_seen_at) AS first_name, argMax(last_name, p.last_seen_at) AS last_name, argMax(email, p.last_seen_at) AS email, argMax(avatar, p.last_seen_at) AS avatar, argMax(properties, p.last_seen_at) AS properties, project_id, argMax(is_external, p.last_seen_at) AS is_external, argMax(created_at, p.last_seen_at) AS created_at, max(p.last_seen_at) AS last_seen_at, argMax(groups, p.last_seen_at) AS groups FROM profiles AS p';
+/** The inner id query of a page or count up to `end`, with its placeholders unnumbered. */
+function innerIdsOf(text: string, end: number): string {
+  return text
+    .slice(text.indexOf('SELECT id FROM profiles WHERE'), end)
+    .replace(/\{p\d+:/g, '{p:');
+}
 const WINDOW = {
   startDate: '2026-06-16 00:00:00',
   endDate: '2026-09-16 23:59:59',
 };
 const COLUMN_LIST = PROFILE_COLUMNS.join(', ');
-const PLAIN_WHERE = /\sWHERE\s/;
 
 function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -141,24 +153,26 @@ describe('single-profile lookups', () => {
 });
 
 describe('profileListQuery', () => {
-  test('plain page: project + window, no OFFSET at offset 0', () => {
+  test('plain page: newest version of the ids in the window, no OFFSET at offset 0', () => {
     const { query, query_params } = profileListQuery({
       projectId: PROJECT_ID,
       take: 50,
       offset: 0,
-      filterClauses: NO_FILTERS,
+      ...NO_FILTER_CLAUSES,
       ...WINDOW,
     }).toStatement();
     const text = collapse(query);
 
     expect(text).toBe(
-      'SELECT * FROM profiles FINAL WHERE project_id = {p1:String} AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String}) ORDER BY created_at DESC LIMIT {p4:UInt64}'
+      `${LATEST_COLUMNS_PAGE} WHERE p.project_id = {p1:String} AND p.id IN (SELECT id FROM profiles WHERE project_id = {p2:String} AND created_at BETWEEN toDateTime({p3:String}) AND toDateTime({p4:String}) GROUP BY id ORDER BY argMax(created_at, last_seen_at) DESC LIMIT {p5:UInt64}) GROUP BY p.id, p.project_id ORDER BY created_at DESC`
     );
+    expect(text).not.toContain('FINAL');
     expect(query_params).toEqual({
       p1: PROJECT_ID,
-      p2: '2026-06-16 00:00:00',
-      p3: '2026-09-16 23:59:59',
-      p4: 50,
+      p2: PROJECT_ID,
+      p3: '2026-06-16 00:00:00',
+      p4: '2026-09-16 23:59:59',
+      p5: 50,
     });
   });
 
@@ -170,52 +184,57 @@ describe('profileListQuery', () => {
       search: 'ann',
       isExternal: true,
       filterClauses: { f0: sql`(properties['plan'] = 'pro')` },
+      latestFilterClauses: {
+        f0: sql`(argMax(properties['plan'], last_seen_at) = 'pro')`,
+      },
       ...WINDOW,
     }).toStatement();
     const text = collapse(query);
 
+    // The raw-row conditions only narrow the id set (a superset); the same
+    // conditions on the newest version decide, in HAVING.
     expect(text).toContain(
-      "WHERE project_id = {p1:String} AND created_at BETWEEN toDateTime({p2:String}) AND toDateTime({p3:String}) AND ((id ILIKE {p4:String} OR email ILIKE {p5:String} OR first_name ILIKE {p6:String} OR last_name ILIKE {p7:String} OR concat(first_name, ' ', last_name) ILIKE {p8:String})) AND is_external = {p9:Bool} AND (properties['plan'] = 'pro') ORDER BY created_at DESC LIMIT {p10:UInt64} OFFSET {p11:UInt64}"
+      "(SELECT id FROM profiles WHERE project_id = {p2:String} AND created_at BETWEEN toDateTime({p3:String}) AND toDateTime({p4:String}) AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p5:String} AND created_at BETWEEN toDateTime({p6:String}) AND toDateTime({p7:String}) AND ((id ILIKE {p8:String} OR email ILIKE {p9:String} OR first_name ILIKE {p10:String} OR last_name ILIKE {p11:String} OR concat(first_name, ' ', last_name) ILIKE {p12:String})) AND is_external = {p13:Bool} AND (properties['plan'] = 'pro')) GROUP BY id HAVING ((id ILIKE {p14:String} OR argMax(email, last_seen_at) ILIKE {p15:String} OR argMax(first_name, last_seen_at) ILIKE {p16:String} OR argMax(last_name, last_seen_at) ILIKE {p17:String} OR concat(argMax(first_name, last_seen_at), ' ', argMax(last_name, last_seen_at)) ILIKE {p18:String})) AND argMax(is_external, last_seen_at) = {p19:Bool} AND (argMax(properties['plan'], last_seen_at) = 'pro') ORDER BY argMax(created_at, last_seen_at) DESC LIMIT {p20:UInt64} OFFSET {p21:UInt64})"
     );
     expect(query_params).toMatchObject({
       p1: PROJECT_ID,
-      p4: '%ann%',
-      p9: true,
-      p10: 50,
-      p11: 100,
+      p8: '%ann%',
+      p13: true,
+      p14: '%ann%',
+      p19: true,
+      p20: 50,
+      p21: 100,
     });
   });
 
-  test('count shares the exact WHERE of the page (minus FINAL)', () => {
+  test('count counts exactly the ids the page selects from', () => {
     const list = {
       projectId: PROJECT_ID,
       search: 'ann',
       isExternal: false,
       filterClauses: { f0: sql`(email != '')` },
+      latestFilterClauses: { f0: sql`(argMax(email, last_seen_at) != '')` },
       ...WINDOW,
     };
     const page = collapse(
       profileListQuery({ ...list, take: 1, offset: 0 }).toStatement().query
     );
     const count = collapse(profileListCountQuery(list).toStatement().query);
-    const whereOf = (text: string) =>
-      text
-        .slice(text.indexOf('WHERE'))
-        .replace(/ ORDER BY.*$/, '')
-        .replace(/ GROUP BY.*$/, '');
 
     expect(count).toStartWith(
-      'SELECT uniqExact(id) as count FROM profiles WHERE'
+      'SELECT count() as count FROM (SELECT id FROM profiles WHERE'
     );
-    expect(count).toEndWith('GROUP BY project_id');
-    expect(whereOf(count)).toBe(whereOf(page));
+    expect(count).not.toContain('FINAL');
+    expect(innerIdsOf(count, count.lastIndexOf(')'))).toBe(
+      innerIdsOf(page, page.indexOf(' ORDER BY'))
+    );
   });
 });
 
 describe('findProfilesQuery', () => {
   const base = {
     projectId: PROJECT_ID,
-    filterClauses: NO_FILTERS,
+    ...NO_FILTER_CLAUSES,
     sortOrder: 'desc' as const,
     limit: 25,
   };
@@ -224,9 +243,9 @@ describe('findProfilesQuery', () => {
     const { query, query_params } = findProfilesQuery(base).toStatement();
 
     expect(collapse(query)).toBe(
-      `SELECT ${COLUMN_LIST} FROM profiles FINAL WHERE project_id = {p1:String} ORDER BY created_at DESC LIMIT {p2:UInt64}`
+      `${LATEST_COLUMNS_PAGE} WHERE p.project_id = {p1:String} AND p.id IN (SELECT id FROM profiles WHERE project_id = {p2:String} GROUP BY id ORDER BY argMax(created_at, last_seen_at) DESC LIMIT {p3:UInt64}) GROUP BY p.id, p.project_id ORDER BY created_at DESC`
     );
-    expect(query_params).toEqual({ p1: PROJECT_ID, p2: 25 });
+    expect(query_params).toEqual({ p1: PROJECT_ID, p2: PROJECT_ID, p3: 25 });
   });
 
   test('every optional condition binds and none interpolates', () => {
@@ -243,36 +262,45 @@ describe('findProfilesQuery', () => {
       minSessions: 3,
       performedEvent: HOSTILE,
       filterClauses: { f0: sql`(1 = 1)` },
+      latestFilterClauses: { f0: sql`(2 = 2)` },
     }).toStatement();
     const text = collapse(query);
 
-    expect(text).toContain('AND email ILIKE {p2:String}');
+    // The id-level conditions filter rows; the column conditions narrow the
+    // candidate ids on the raw rows and decide on the newest version in HAVING.
     expect(text).toContain(
-      'AND properties[{p8:String}] = {p9:String} AND properties[{p10:String}] = {p11:String} AND properties[{p12:String}] = {p13:String} AND properties[{p14:String}] = {p15:String}'
+      "AND id NOT IN ( SELECT DISTINCT profile_id FROM events WHERE project_id = {p3:String} AND profile_id != '' AND created_at >= now() - INTERVAL {p4:UInt64} DAY )"
     );
     expect(text).toContain(
-      "AND id NOT IN ( SELECT DISTINCT profile_id FROM events WHERE project_id = {p16:String} AND profile_id != '' AND created_at >= now() - INTERVAL {p17:UInt64} DAY )"
+      "AND id IN ( SELECT profile_id FROM sessions WHERE project_id = {p5:String} AND sign = 1 AND profile_id != '' GROUP BY profile_id HAVING count() >= {p6:UInt64} )"
     );
     expect(text).toContain(
-      "AND id IN ( SELECT profile_id FROM sessions WHERE project_id = {p18:String} AND sign = 1 AND profile_id != '' GROUP BY profile_id HAVING count() >= {p19:UInt64} )"
+      'AND id IN ( SELECT DISTINCT profile_id FROM events WHERE project_id = {p7:String} AND name = {p8:String} )'
     );
     expect(text).toContain(
-      'AND id IN ( SELECT DISTINCT profile_id FROM events WHERE project_id = {p20:String} AND name = {p21:String} )'
+      'AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p9:String} AND email ILIKE {p10:String} AND ((id ILIKE {p11:String}'
+    );
+    expect(text).toContain(
+      'AND properties[{p16:String}] = {p17:String} AND properties[{p18:String}] = {p19:String} AND properties[{p20:String}] = {p21:String} AND properties[{p22:String}] = {p23:String} AND (1 = 1)) GROUP BY id HAVING argMax(email, last_seen_at) ILIKE {p24:String}'
+    );
+    expect(text).toContain(
+      'AND argMax(properties, last_seen_at)[{p30:String}] = {p31:String}'
     );
     expect(text).toEndWith(
-      'AND (1 = 1) ORDER BY created_at ASC LIMIT {p22:UInt64}'
+      'AND (2 = 2) ORDER BY argMax(created_at, last_seen_at) ASC LIMIT {p38:UInt64}) GROUP BY p.id, p.project_id ORDER BY created_at ASC'
     );
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toMatchObject({
-      p2: `%${HOSTILE}%`,
-      p8: 'country',
-      p9: 'SE',
-      p10: 'city',
-      p11: HOSTILE,
-      p17: 7,
-      p19: 3,
-      p21: HOSTILE,
-      p22: 25,
+      p4: 7,
+      p6: 3,
+      p8: HOSTILE,
+      p10: `%${HOSTILE}%`,
+      p16: 'country',
+      p17: 'SE',
+      p18: 'city',
+      p19: HOSTILE,
+      p24: `%${HOSTILE}%`,
+      p38: 25,
     });
   });
 
@@ -285,8 +313,8 @@ describe('findProfilesQuery', () => {
       }).toStatement().query
     );
     expect(zero).toContain('NOT IN');
-    expect(zero).toContain('INTERVAL {p3:UInt64} DAY');
-    expect(zero).toContain('HAVING count() >= {p5:UInt64}');
+    expect(zero).toContain('INTERVAL {p4:UInt64} DAY');
+    expect(zero).toContain('HAVING count() >= {p6:UInt64}');
   });
 });
 

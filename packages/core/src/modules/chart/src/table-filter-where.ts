@@ -17,7 +17,11 @@ import {
 } from '../../report/report.constants';
 import { PROFILE_SELECT_COLUMNS } from '../chart.constants';
 import { formatClickhouseDate } from './dates';
-import { buildCohortMembersSubselect, CHART_TABLE } from './field-resolution';
+import {
+  buildCohortMembersSubselect,
+  CHART_TABLE,
+  latestProfileValue,
+} from './field-resolution';
 import {
   buildTypedClauseFragment,
   hasTypedCast,
@@ -27,6 +31,11 @@ import {
 export interface FilterTableContext {
   /** Outer query's primary table. */
   selfTable: 'sessions' | 'profiles' | 'events';
+  /**
+   * The outer query groups `profiles` by id, so a `profile.*` predicate reads
+   * the newest version of its column — an aggregate, for a HAVING clause.
+   */
+  latestVersion?: boolean;
   /**
    * Expression on the outer row that yields the owning profile id. For the
    * profiles table this is `id`; for events/sessions it's `profile_id`. Used
@@ -358,7 +367,10 @@ function buildGroupClause(
   if (!inner) {
     return null;
   }
-  return sql`arrayExists(g -> g IN (SELECT id FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${inner}), ${sql.id(ctx.groupsExpr)})`;
+  const groups = ctx.latestVersion
+    ? sql`argMax(${sql.id(ctx.groupsExpr)}, last_seen_at)`
+    : sql.id(ctx.groupsExpr);
+  return sql`arrayExists(g -> g IN (SELECT id FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${inner}), ${groups})`;
 }
 
 function buildProfileClause(
@@ -372,17 +384,37 @@ function buildProfileClause(
     return null;
   }
   const numeric = name === 'created_at' || name === 'last_seen_at';
-  const inner = compileScalarClause(column, filter.operator, filter.value, {
-    numeric,
-    type: filter.type,
-  });
-  if (!inner) {
+  const compile = (expression: SqlFragment) =>
+    compileScalarClause(expression, filter.operator, filter.value, {
+      numeric,
+      type: filter.type,
+    });
+  const latest = latestProfileValue(name, column);
+  if (ctx.selfTable === 'profiles') {
+    return compile(ctx.latestVersion ? latest : column);
+  }
+  const onAnyVersion = compile(column);
+  const onLatestVersion = compile(latest);
+  if (!(onAnyVersion && onLatestVersion)) {
     return null;
   }
-  if (ctx.selfTable === 'profiles') {
-    return inner;
-  }
-  return sql`${sql.id(ctx.profileIdExpr)} IN (SELECT id FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${inner})`;
+  return sql`cityHash64(${sql.id(ctx.profileIdExpr)}) IN (SELECT cityHash64(id) FROM ${latestProfilesMatching(projectId, onAnyVersion, onLatestVersion)})`;
+}
+
+/**
+ * Ids whose newest version satisfies `onLatestVersion`, without `FINAL`. The
+ * raw-row prefilter is a superset — the surviving version is one of the rows
+ * — so the GROUP BY only sees candidates, not the whole project. The set
+ * holds hashes: a String set costs ~300 bytes per id, and a collision only
+ * adds a candidate the HAVING clause rejects.
+ */
+export function latestProfilesMatching(
+  projectId: string,
+  onAnyVersion: SqlFragment,
+  onLatestVersion: SqlFragment
+): SqlFragment {
+  const project = sql`project_id = ${sql.string(projectId)}`;
+  return sql`(SELECT id FROM ${sql.id(CHART_TABLE.profiles)} WHERE ${project} AND cityHash64(id) IN (SELECT cityHash64(id) FROM ${sql.id(CHART_TABLE.profiles)} WHERE ${project} AND ${onAnyVersion}) GROUP BY id HAVING ${onLatestVersion})`;
 }
 
 function buildSessionClause(

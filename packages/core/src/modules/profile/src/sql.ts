@@ -7,7 +7,6 @@ import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import {
   type CompiledFilterClauses,
   compiledFilterFragments,
-  spliceCompiledFilters,
 } from './filter-clauses';
 
 const TABLE = {
@@ -36,6 +35,19 @@ const PROFILE_COLUMNS_FRAGMENT = sql.join(
 );
 
 const PROFILE_KEY_COLUMNS = ['id', 'project_id'] as const;
+
+type ProfileColumn = (typeof PROFILE_COLUMNS)[number];
+
+/** A column on the raw rows, or its newest version per id (for a `GROUP BY id`). */
+export type ProfileColumnAccess = (column: ProfileColumn) => SqlFragment;
+
+export const profileColumn: ProfileColumnAccess = (column) =>
+  sql.id(column, PROFILE_COLUMNS);
+
+export const latestProfileColumn: ProfileColumnAccess = (column) =>
+  column === 'id'
+    ? sql.id(column, PROFILE_COLUMNS)
+    : sql`argMax(${sql.id(column, PROFILE_COLUMNS)}, last_seen_at)`;
 
 /**
  * The newest version of every column, as `profiles FINAL` would return it,
@@ -86,7 +98,8 @@ export interface ProfileWindow {
  * when the search is blank.
  */
 export function profileSearchCondition(
-  search: string | null | undefined
+  search: string | null | undefined,
+  column: ProfileColumnAccess = profileColumn
 ): SqlFragment | null {
   const tokens = (search ?? '')
     .trim()
@@ -98,7 +111,7 @@ export function profileSearchCondition(
   }
   const perToken = tokens.map((token) => {
     const like = sql.string(`%${token}%`);
-    return sql`(id ILIKE ${like} OR email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
+    return sql`(${column('id')} ILIKE ${like} OR ${column('email')} ILIKE ${like} OR ${column('first_name')} ILIKE ${like} OR ${column('last_name')} ILIKE ${like} OR concat(${column('first_name')}, ' ', ${column('last_name')}) ILIKE ${like})`;
   });
   return sql`(${sql.join(perToken, ' AND ')})`;
 }
@@ -197,52 +210,147 @@ export interface ProfileListQuery extends ProfileWindow {
   projectId: string;
   search?: string;
   isExternal?: boolean;
-  /** Pre-compiled by `buildFilterWhere` (src/filter-clauses.ts). */
+  /** Pre-compiled by `buildFilterWhere` on the raw rows (src/filter-clauses.ts). */
   filterClauses: CompiledFilterClauses;
+  /** The same filters compiled on the newest version (`latestVersion: true`). */
+  latestFilterClauses: CompiledFilterClauses;
 }
 
 /**
- * `WHERE project_id =.. [AND search] [AND is_external =..] [AND filters]`,
- * bounded to a window rather than reading every profile the project ever
- * had — otherwise the cost grows with the tenant's lifetime rather than with
- * anything the caller asked for. `created_at` is the column the list already
- * orders by, so the bound and the order agree.
+ * Ids whose newest version satisfies `having`, ranked by first seen.
+ *
+ * `scope` (project, first-seen window) and `where` (id-level subqueries) are
+ * the same for every version of a profile, so they may filter rows.
+ * `candidates` holds the column conditions on the raw rows: they only narrow
+ * the id set, through a subquery, and never the rows the aggregate reads —
+ * otherwise argMax would see nothing but the matching stale version and the
+ * HAVING clause would pass on it. The set is a superset of the answer, since
+ * the surviving version is one of the rows, and holds hashes: a String set
+ * costs ~300 bytes per id, and a collision only adds a candidate.
  */
-function profileListCondition(query: ProfileListQuery): SqlFragment {
-  const search = profileSearchCondition(query.search);
+interface LatestProfileIdsPage {
+  scope: SqlFragment;
+  where?: SqlFragment[];
+  candidates: SqlFragment[];
+  having: SqlFragment[];
+}
+
+function latestProfileIdsWhere(page: LatestProfileIdsPage): SqlFragment {
+  const conditions = [page.scope, ...(page.where ?? [])];
+  if (page.candidates.length) {
+    conditions.push(
+      sql`cityHash64(id) IN (SELECT cityHash64(id) FROM ${sql.id(TABLE.profiles)} WHERE ${page.scope} AND ${sql.join(page.candidates, ' AND ')})`
+    );
+  }
+  const having = page.having.length
+    ? sql` HAVING ${sql.join(page.having, ' AND ')}`
+    : sql.empty;
+  return sql`WHERE ${sql.join(conditions, ' AND ')} GROUP BY id${having}`;
+}
+
+function latestProfileIdsQuery(
+  page: LatestProfileIdsPage & {
+    orderDirection: SqlFragment;
+    limit: number;
+    offset?: number;
+  }
+): SqlFragment {
+  return sql`SELECT id FROM ${sql.id(TABLE.profiles)} ${latestProfileIdsWhere(page)} ORDER BY ${latestProfileColumn('created_at')} ${page.orderDirection} LIMIT ${sql.uint64(page.limit)}${optional(
+    page.offset,
+    () => sql` OFFSET ${sql.uint64(page.offset as number)}`
+  )}`;
+}
+
+/** The page's rows, newest version of every column, in the ids' order. */
+function latestProfilesPage(
+  projectId: string,
+  ids: SqlFragment,
+  orderDirection: SqlFragment
+): SqlFragment {
+  return sql`
+    SELECT ${PROFILE_LATEST_COLUMNS_FRAGMENT}
+    FROM ${sql.id(TABLE.profiles)} AS p
+    WHERE p.project_id = ${sql.string(projectId)} AND p.id IN (${ids})
+    GROUP BY p.id, p.project_id
+    ORDER BY created_at ${orderDirection}
+  `;
+}
+
+/**
+ * `project_id =.. AND created_at BETWEEN ..`: bounded to a window rather than
+ * reading every profile the project ever had — otherwise the cost grows with
+ * the tenant's lifetime rather than with anything the caller asked for.
+ * `created_at` is the column the list already orders by, so the bound and
+ * the order agree; the write path keeps it the same across versions.
+ */
+function profileListScope(query: ProfileListQuery): SqlFragment {
   return sql`project_id = ${sql.string(query.projectId)} AND ${dateRangeWhere(
     'created_at',
     query.startDate,
     query.endDate
-  )}${optional(search, () => sql` AND ${search as SqlFragment}`)}${optional(
-    query.isExternal !== undefined,
-    () => sql` AND is_external = ${sql.bool(query.isExternal as boolean)}`
-  )} ${spliceCompiledFilters(query.filterClauses)}`;
+  )}`;
+}
+
+/**
+ * `[search] [is_external =..] [filters]` as conditions on one version:
+ * the raw rows (candidates) or the newest one per id (the answer).
+ */
+function profileListConditions(
+  query: ProfileListQuery,
+  column: ProfileColumnAccess,
+  filterClauses: CompiledFilterClauses
+): SqlFragment[] {
+  const conditions: SqlFragment[] = [];
+  const search = profileSearchCondition(query.search, column);
+  if (search) {
+    conditions.push(search);
+  }
+  if (query.isExternal !== undefined) {
+    conditions.push(
+      sql`${column('is_external')} = ${sql.bool(query.isExternal)}`
+    );
+  }
+  conditions.push(...compiledFilterFragments(filterClauses));
+  return conditions;
+}
+
+function profileListPage(query: ProfileListQuery): LatestProfileIdsPage {
+  return {
+    scope: profileListScope(query),
+    candidates: profileListConditions(
+      query,
+      profileColumn,
+      query.filterClauses
+    ),
+    having: profileListConditions(
+      query,
+      latestProfileColumn,
+      query.latestFilterClauses
+    ),
+  };
 }
 
 export function profileListQuery(
   query: ProfileListQuery & { take: number; offset: number }
 ): SqlFragment {
-  return sql`
-    SELECT *
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE ${profileListCondition(query)}
-    ORDER BY created_at DESC
-    LIMIT ${sql.uint64(query.take)}
-    ${optional(query.offset, () => sql`OFFSET ${sql.uint64(query.offset)}`)}
-  `;
+  const orderDirection = sql`DESC`;
+  return latestProfilesPage(
+    query.projectId,
+    latestProfileIdsQuery({
+      ...profileListPage(query),
+      orderDirection,
+      limit: query.take,
+      offset: query.offset,
+    }),
+    orderDirection
+  );
 }
 
-// `uniqExact`, not `count`: the page reads `profiles FINAL` so it sees one row
-// per id, while the count deliberately skips FINAL (it is the expensive half
-// on a large tenant). Counting rows therefore counted every unmerged
-// ReplacingMergeTree version and the total ran ahead of the list.
+/** One per profile whose newest version matches: exactly what the page shows. */
 export function profileListCountQuery(query: ProfileListQuery): SqlFragment {
   return sql`
-    SELECT uniqExact(id) as count
-    FROM ${sql.id(TABLE.profiles)}
-    WHERE ${profileListCondition(query)}
-    GROUP BY project_id
+    SELECT count() as count
+    FROM (SELECT id FROM ${sql.id(TABLE.profiles)} ${latestProfileIdsWhere(profileListPage(query))})
   `;
 }
 
@@ -260,6 +368,7 @@ export interface FindProfilesQuery {
   minSessions?: number;
   performedEvent?: string;
   filterClauses: CompiledFilterClauses;
+  latestFilterClauses: CompiledFilterClauses;
   sortOrder: 'asc' | 'desc';
   limit: number;
 }
@@ -271,28 +380,52 @@ const PROFILE_PROPERTY_FILTERS = [
   'browser',
 ] as const;
 
-function findProfilesConditions(query: FindProfilesQuery): SqlFragment[] {
+/**
+ * `where` holds the id-level conditions, the same for every version;
+ * `candidates` every column condition on the raw rows and `having` the same
+ * on the newest version (see latestProfileIdsQuery).
+ */
+function findProfilesConditions(query: FindProfilesQuery): {
+  where: SqlFragment[];
+  candidates: SqlFragment[];
+  having: SqlFragment[];
+} {
   const projectId = sql.string(query.projectId);
-  const conditions: SqlFragment[] = [sql`project_id = ${projectId}`];
+  const where: SqlFragment[] = [];
+  const candidates: SqlFragment[] = [];
+  const having: SqlFragment[] = [];
+  const onBothVersions = (
+    condition: (column: ProfileColumnAccess) => SqlFragment | null
+  ) => {
+    const anyVersion = condition(profileColumn);
+    const latestVersion = condition(latestProfileColumn);
+    if (anyVersion && latestVersion) {
+      candidates.push(anyVersion);
+      having.push(latestVersion);
+    }
+  };
 
   if (query.email) {
-    conditions.push(sql`email ILIKE ${sql.string(`%${query.email}%`)}`);
+    onBothVersions(
+      (column) =>
+        sql`${column('email')} ILIKE ${sql.string(`%${query.email}%`)}`
+    );
   }
-  const nameCondition = profileSearchCondition(query.name);
-  if (query.name && nameCondition) {
-    conditions.push(nameCondition);
+  if (query.name) {
+    onBothVersions((column) => profileSearchCondition(query.name, column));
   }
   for (const key of PROFILE_PROPERTY_FILTERS) {
     const value = query[key];
     if (value) {
-      conditions.push(
-        sql`properties[${sql.string(key)}] = ${sql.string(value)}`
+      onBothVersions(
+        (column) =>
+          sql`${column('properties')}[${sql.string(key)}] = ${sql.string(value)}`
       );
     }
   }
 
   if (query.inactiveDays !== undefined) {
-    conditions.push(sql`id NOT IN (
+    where.push(sql`id NOT IN (
       SELECT DISTINCT profile_id FROM ${sql.id(TABLE.events)}
       WHERE project_id = ${projectId}
         AND profile_id != ''
@@ -301,7 +434,7 @@ function findProfilesConditions(query: FindProfilesQuery): SqlFragment[] {
   }
 
   if (query.minSessions !== undefined) {
-    conditions.push(sql`id IN (
+    where.push(sql`id IN (
       SELECT profile_id FROM ${sql.id(TABLE.sessions)}
       WHERE project_id = ${projectId}
         AND sign = 1
@@ -312,27 +445,34 @@ function findProfilesConditions(query: FindProfilesQuery): SqlFragment[] {
   }
 
   if (query.performedEvent) {
-    conditions.push(sql`id IN (
+    where.push(sql`id IN (
       SELECT DISTINCT profile_id FROM ${sql.id(TABLE.events)}
       WHERE project_id = ${projectId}
         AND name = ${sql.string(query.performedEvent)}
     )`);
   }
 
-  conditions.push(...compiledFilterFragments(query.filterClauses));
+  candidates.push(...compiledFilterFragments(query.filterClauses));
+  having.push(...compiledFilterFragments(query.latestFilterClauses));
 
-  return conditions;
+  return { where, candidates, having };
 }
 
 export function findProfilesQuery(query: FindProfilesQuery): SqlFragment {
   const orderDirection = query.sortOrder === 'asc' ? sql`ASC` : sql`DESC`;
-  return sql`
-    SELECT ${PROFILE_COLUMNS_FRAGMENT}
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    WHERE ${sql.join(findProfilesConditions(query), ' AND ')}
-    ORDER BY created_at ${orderDirection}
-    LIMIT ${sql.uint64(query.limit)}
-  `;
+  const { where, candidates, having } = findProfilesConditions(query);
+  return latestProfilesPage(
+    query.projectId,
+    latestProfileIdsQuery({
+      scope: sql`project_id = ${sql.string(query.projectId)}`,
+      where,
+      candidates,
+      having,
+      orderDirection,
+      limit: query.limit,
+    }),
+    orderDirection
+  );
 }
 
 export function profileRowQuery(query: {

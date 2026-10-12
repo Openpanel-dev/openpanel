@@ -98,11 +98,28 @@ function literal(value: SqlParamValue | undefined): string {
   return String(value);
 }
 
-/** What `buildProfileClause` wraps `inner` in for a given table. */
-const profileWrap = (table: keyof typeof CONTEXTS, inner: string): string =>
+/**
+ * What `buildProfileClause` wraps the predicate in for a given table: on the
+ * profiles table the predicate itself; elsewhere a semi-join that narrows the
+ * candidate ids with it on the raw rows and decides on the newest version.
+ */
+const profileWrap = (
+  table: keyof typeof CONTEXTS,
+  inner: string,
+  onLatest: string
+): string =>
   table === 'profiles'
     ? `(${inner})`
-    : `(profile_id IN (SELECT id FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = 'p' AND ${inner}))`;
+    : `(cityHash64(profile_id) IN (SELECT cityHash64(id) FROM (SELECT id FROM ${TABLE_NAMES.profiles} WHERE project_id = 'p' AND cityHash64(id) IN (SELECT cityHash64(id) FROM ${TABLE_NAMES.profiles} WHERE project_id = 'p' AND ${inner}) GROUP BY id HAVING ${onLatest})))`;
+
+const latestOf = (column: string): string => {
+  if (column === 'id') {
+    return 'id';
+  }
+  return column === 'last_seen_at'
+    ? 'max(last_seen_at)'
+    : `argMax(${column}, last_seen_at)`;
+};
 
 const ALLOWED_STRING_COLUMNS = [
   'id',
@@ -130,7 +147,9 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
       const where = build(table, [
         filter({ name: `profile.${column}`, value: ['a'] }),
       ]);
-      expect(where.f0).toBe(profileWrap(table, `${column} = 'a'`));
+      expect(where.f0).toBe(
+        profileWrap(table, `${column} = 'a'`, `${latestOf(column)} = 'a'`)
+      );
     }
   });
 
@@ -140,7 +159,11 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
         filter({ name: `profile.${column}`, operator: 'gt', value: ['123'] }),
       ]);
       expect(where.f0).toBe(
-        profileWrap(table, `(toFloat64(${column}) > toFloat64('123'))`)
+        profileWrap(
+          table,
+          `(toFloat64(${column}) > toFloat64('123'))`,
+          `(toFloat64(${latestOf(column)}) > toFloat64('123'))`
+        )
       );
     }
   });
@@ -149,7 +172,13 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
     const where = build(table, [
       filter({ name: 'profile.properties.plan', value: ['pro'] }),
     ]);
-    expect(where.f0).toBe(profileWrap(table, "properties['plan'] = 'pro'"));
+    expect(where.f0).toBe(
+      profileWrap(
+        table,
+        "properties['plan'] = 'pro'",
+        "argMax(properties['plan'], last_seen_at) = 'pro'"
+      )
+    );
   });
 
   it('escapes a quote in a properties key', () => {
@@ -157,7 +186,13 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
       filter({ name: "profile.properties.pl'an", value: ['pro'] }),
     ];
     const where = build(table, filters);
-    expect(where.f0).toBe(profileWrap(table, "properties['pl\\'an'] = 'pro'"));
+    expect(where.f0).toBe(
+      profileWrap(
+        table,
+        "properties['pl\\'an'] = 'pro'",
+        "argMax(properties['pl\\'an'], last_seen_at) = 'pro'"
+      )
+    );
     // The key is a bound param now, so the quote never reaches the SQL text.
     expect(Object.values(paramsOf(table, filters)[0]!)).toContain("pl'an");
   });
@@ -177,7 +212,13 @@ describe.each(TABLES)('buildFilterWhere on %s', (table) => {
       filter({ name: 'profile.not a column', value: ['a'] }),
     ]);
     expect(Object.keys(where)).toEqual(['f0']);
-    expect(where.f0).toBe(profileWrap(table, "email = 'a@b.com'"));
+    expect(where.f0).toBe(
+      profileWrap(
+        table,
+        "email = 'a@b.com'",
+        "argMax(email, last_seen_at) = 'a@b.com'"
+      )
+    );
   });
 
   it('keys surviving filters by their original index', () => {
