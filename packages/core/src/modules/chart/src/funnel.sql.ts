@@ -27,6 +27,7 @@ import {
   getSelectPropertyKey,
   isAllCohortsBreakdown,
   isKnownEventField,
+  latestProfileValue,
   profileIdsInWindow,
   profilePropertiesCteSelect,
 } from './field-resolution';
@@ -217,7 +218,9 @@ function profileCteColumns(
   // The allowlist is the backstop that makes `sql.id` throw rather than inline
   // if either loop above lets something else through (GHSA-pc3q-gw7f-p2x2).
   const columns: SqlFragment[] = Array.from(fields).map((field) =>
-    sql.id(field, FUNNEL_JOIN_COLUMNS)
+    field === 'id'
+      ? sql.id(field, FUNNEL_JOIN_COLUMNS)
+      : sql`${latestProfileValue(field, sql.id(field, FUNNEL_JOIN_COLUMNS))} AS ${sql.id(field, FUNNEL_JOIN_COLUMNS)}`
   );
   const referencesProperties =
     profileFilters.some((filter) => filter.startsWith('properties')) ||
@@ -303,8 +306,8 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   });
   const profileJoin =
     columns.length > 0
-      ? sql` LEFT JOIN (SELECT ${sql.join(columns, ', ')} FROM ${sql.id(CHART_TABLE.profiles)} FINAL
-          WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}) as profile ON profile.id = events.profile_id`
+      ? sql` LEFT JOIN (SELECT ${sql.join(columns, ', ')} FROM ${sql.id(CHART_TABLE.profiles)}
+          WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles} GROUP BY id) as profile ON profile.id = events.profile_id`
       : sql.empty;
   const groupJoin = needsGroupArrayJoin
     ? sql` ARRAY JOIN groups AS _group_id LEFT ANY JOIN _g ON _g.id = _group_id`

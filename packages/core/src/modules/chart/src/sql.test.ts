@@ -456,12 +456,14 @@ describe('profile-property narrowing', () => {
     });
 
     // The CTE selects one scalar column per referenced key...
-    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
     expect(text).toContain(
-      "properties['experiment'] as `profile.properties.experiment`"
+      "argMax(properties['plan'], last_seen_at) as `profile.properties.plan`"
+    );
+    expect(text).toContain(
+      "argMax(properties['experiment'], last_seen_at) as `profile.properties.experiment`"
     );
     // ...instead of every profile's whole Map...
-    expect(text).not.toContain('properties as "profile.properties"');
+    expect(text).not.toContain('as "profile.properties"');
     // ...and every ref in the query is rewritten to the scalar alias.
     expect(text).not.toContain("profile.properties['plan']");
     expect(text).not.toContain("profile.properties['experiment']");
@@ -484,7 +486,9 @@ describe('profile-property narrowing', () => {
     });
 
     // mapExtractKeyLike needs the whole Map, so it must stay selected.
-    expect(text).toContain('properties as "profile.properties"');
+    expect(text).toContain(
+      'argMax(properties, last_seen_at) as "profile.properties"'
+    );
   });
 
   it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {
@@ -505,7 +509,9 @@ describe('profile-property narrowing', () => {
 
     // The unsafe key keeps its original Map access against the full Map —
     // it must never be embedded in a backtick-quoted alias.
-    expect(text).toContain('properties as "profile.properties"');
+    expect(text).toContain(
+      'argMax(properties, last_seen_at) as "profile.properties"'
+    );
     expect(text).not.toContain('as `profile.properties.plan`tier`');
   });
 
@@ -522,7 +528,9 @@ describe('profile-property narrowing', () => {
 
     // The metric's key must be narrowed alongside the filter's — otherwise
     // the metric keeps reading the Map that narrowing just removed.
-    expect(text).toContain("properties['age'] as `profile.properties.age`");
+    expect(text).toContain(
+      "argMax(properties['age'], last_seen_at) as `profile.properties.age`"
+    );
     expect(text).not.toContain("profile.properties['age']");
   });
 
@@ -540,7 +548,9 @@ describe('profile-property narrowing', () => {
     });
 
     expect(text).toContain('LEFT ANY JOIN profile ON profile.id = profile_id');
-    expect(text).toContain("properties['age'] as `profile.properties.age`");
+    expect(text).toContain(
+      "argMax(properties['age'], last_seen_at) as `profile.properties.age`"
+    );
   });
 
   it('metric-only profile property parses and resolves', async () => {

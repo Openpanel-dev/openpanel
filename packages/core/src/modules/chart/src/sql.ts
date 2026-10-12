@@ -37,6 +37,7 @@ import {
   isAllCohortsBreakdown,
   isKnownEventField,
   isNumericColumn,
+  latestProfileValue,
   PROFILE_CTE_FIELDS,
   profileIdsInWindow,
   profilePropertiesCteSelect,
@@ -209,17 +210,18 @@ function profileCteSelectField(
   }
   // The alias is `"profile.<field>"` — two dots, so text, not `sql.id`.
   // `collectProfileCteFields` only ever yields a name from its own closed set.
-  return sql`${sql.id(field, PROFILE_CTE_FIELDS)} as ${compiledText(`"profile.${field}"`)}`;
+  return sql`${latestProfileValue(field, sql.id(field, PROFILE_CTE_FIELDS))} as ${compiledText(`"profile.${field}"`)}`;
 }
 
-function profileCte(
+export function profileCte(
   selectFields: SqlFragment[],
   projectId: string,
   activeProfiles: SqlFragment
 ): SqlFragment {
   return sql`SELECT ${sql.join(selectFields, ', ')}
-      FROM ${sql.id(CHART_TABLE.profiles)} FINAL
-      WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}`;
+      FROM ${sql.id(CHART_TABLE.profiles)}
+      WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}
+      GROUP BY id`;
 }
 
 function anyRefOn(prefix: string, refs: { name: string }[]): boolean {
@@ -633,7 +635,7 @@ export function profilePropertyValuesQuery(
   projectId: string,
   expression: SqlFragment
 ): SqlFragment {
-  return sql`SELECT distinct ${expression} as values FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${expression} != '' AND ${expression} IS NOT NULL ORDER BY created_at DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
+  return sql`SELECT values FROM (SELECT argMax(${expression}, last_seen_at) as values, argMax(created_at, last_seen_at) as created_at FROM ${sql.id(CHART_TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} GROUP BY id) WHERE values != '' AND values IS NOT NULL GROUP BY values ORDER BY max(created_at) DESC LIMIT ${sql.uint64(PROPERTY_VALUES_LIMIT)}`;
 }
 
 /** Distinct values of a `group.*` field straight off the groups table. */
@@ -673,17 +675,20 @@ function bucketEquals(interval: IInterval, bucketDate: string): SqlFragment {
   }
 }
 
-/** Top-level profile columns a `profile.*` reference reads, in first-seen order. */
+/** Top-level profile columns a `profile.*` reference reads, in first-seen order, besides `id`. */
 function profileFieldsToSelect(refs: string[]): SqlFragment[] {
   const fields: string[] = [];
   for (const ref of refs) {
     const field = ref.replace('profile.', '').split('.')[0];
-    if (field && !fields.includes(field)) {
+    if (field && field !== 'id' && !fields.includes(field)) {
       fields.push(field);
     }
   }
   // `sql.id` refuses any field not in PROFILE_COLUMNS rather than splicing it.
-  return fields.map((field) => sql.id(field, PROFILE_COLUMNS));
+  return fields.map(
+    (field) =>
+      sql`${latestProfileValue(field, sql.id(field, PROFILE_COLUMNS))} AS ${sql.id(field, PROFILE_COLUMNS)}`
+  );
 }
 
 /** Distinct profile ids behind one chart data point. */
@@ -718,7 +723,7 @@ export function chartBucketProfilesQuery(
       eventNames: [event.name],
       window: [dateRange],
     });
-    joins.profiles = sql`LEFT ANY JOIN (SELECT id, ${fields} FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}) as profile on profile.id = profile_id`;
+    joins.profiles = sql`LEFT ANY JOIN (SELECT id, ${fields} FROM ${sql.id(CHART_TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles} GROUP BY id) as profile on profile.id = profile_id`;
   }
 
   const needsGroupJoin = [

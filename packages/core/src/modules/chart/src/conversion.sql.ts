@@ -10,6 +10,7 @@ import { compiledText } from './compiled';
 import {
   buildGroupsQuery,
   CHART_TABLE,
+  latestProfileValue,
   profileIdsInWindow,
 } from './field-resolution';
 
@@ -74,11 +75,17 @@ function profileJoin(
   if (fields.length === 0) {
     return sql.empty;
   }
-  // Simple column names (not aliased) so profile.properties works directly.
+  // Aliased back to the column name so profile.properties works directly.
+  const columns = fields.map((field) =>
+    field === 'id'
+      ? sql.id(field)
+      : sql`${latestProfileValue(field, sql.id(field))} AS ${sql.id(field)}`
+  );
   return sql`LEFT ANY JOIN (
-        SELECT ${sql.join(fields.map((field) => sql.id(field)))}
-        FROM ${sql.id(CHART_TABLE.profiles)} FINAL
+        SELECT ${sql.join(columns)}
+        FROM ${sql.id(CHART_TABLE.profiles)}
         WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}
+        GROUP BY id
       ) as profile ON profile.id = profile_id`;
 }
 

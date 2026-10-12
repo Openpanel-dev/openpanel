@@ -178,7 +178,7 @@ describe('eventListQuery', () => {
     }).toStatement();
 
     expect(query).toContain(
-      'FROM events e LEFT ANY JOIN (SELECT id, email, properties FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p2:String}) AS _g ON _g.id = _group_id WHERE project_id = {p3:String}'
+      'FROM events e LEFT ANY JOIN (SELECT id, argMax(email, last_seen_at) AS email, argMax(properties, last_seen_at) AS properties FROM profiles WHERE project_id = {p1:String} GROUP BY id) as profile on profile.id = profile_id ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM groups FINAL WHERE project_id = {p2:String}) AS _g ON _g.id = _group_id WHERE project_id = {p3:String}'
     );
     expect(query_params).toMatchObject({ p1: PROJECT_ID, p2: PROJECT_ID });
 
@@ -220,7 +220,7 @@ describe('eventsCountQuery', () => {
     }).toStatement();
 
     expect(query).toContain(
-      'FROM events e LEFT ANY JOIN (SELECT id, email FROM profiles FINAL WHERE project_id = {p1:String}) as profile on profile.id = profile_id WHERE'
+      'FROM events e LEFT ANY JOIN (SELECT id, argMax(email, last_seen_at) AS email FROM profiles WHERE project_id = {p1:String} GROUP BY id) as profile on profile.id = profile_id WHERE'
     );
   });
 });

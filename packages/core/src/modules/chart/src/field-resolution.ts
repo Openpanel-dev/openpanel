@@ -480,6 +480,24 @@ export function getSelectPropertyKey(
   return sql`${map}[${sql.string(property.replace(new RegExp(`^${match}.`), ''))}]`;
 }
 
+/**
+ * `column` as `profiles FINAL` would return it, for a `GROUP BY id` over the
+ * raw rows: `last_seen_at` is the ReplacingMergeTree version column, so the
+ * value from the row with the greatest one is the surviving version's.
+ */
+export function latestProfileValue(
+  name: string,
+  column: SqlFragment
+): SqlFragment {
+  if (name === 'id') {
+    return column;
+  }
+  if (name === 'last_seen_at') {
+    return sql`max(${column})`;
+  }
+  return sql`argMax(${column}, last_seen_at)`;
+}
+
 // profile.properties.<key> refs render as Map lookups `profile.properties['<key>']`.
 // Pulling the whole `properties` Map into the profile CTE makes the LEFT ANY
 // JOIN hash carry the full Map per profile — roughly a kilobyte each on real
@@ -530,10 +548,10 @@ export function profilePropertiesCteSelect(
   // could break out of the backticks.
   const cols = keys.map(
     (k) =>
-      sql`properties[${sql.string(k)}] as ${compiledText(`\`profile.properties.${k}\``)}`
+      sql`argMax(properties[${sql.string(k)}], last_seen_at) as ${compiledText(`\`profile.properties.${k}\``)}`
   );
   if (needsFullMap || cols.length === 0) {
-    cols.push(sql`properties as "profile.properties"`);
+    cols.push(sql`argMax(properties, last_seen_at) as "profile.properties"`);
   }
   return sql.join(cols, ', ');
 }

@@ -175,7 +175,9 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
 
     // The breakdown is narrowed to a scalar alias selected by the profile
     // join, so both the join and the aliased column must exist.
-    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(text).toContain(
+      "argMax(properties['plan'], last_seen_at) as `profile.properties.plan`"
+    );
     expect(sql).toMatch(/as profile/);
     expect(sql).toContain('profile.id = events.profile_id');
     await explain(statement);
@@ -186,7 +188,7 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
       breakdowns: [breakdown('profile.properties.plan')],
     });
     expect(render(statement).sql).toMatch(
-      /SELECT [^)]*properties[^)]*FROM profiles/
+      /SELECT .*properties.*FROM profiles/
     );
     await explain(statement);
   });
@@ -419,9 +421,11 @@ describe('funnel.sql / profile-property narrowing', () => {
     });
     const { text } = render(statement);
 
-    expect(text).toContain("properties['plan'] as `profile.properties.plan`");
     expect(text).toContain(
-      "properties['experiment'] as `profile.properties.experiment`"
+      "argMax(properties['plan'], last_seen_at) as `profile.properties.plan`"
+    );
+    expect(text).toContain(
+      "argMax(properties['experiment'], last_seen_at) as `profile.properties.experiment`"
     );
     expect(text).not.toContain('properties as "profile.properties"');
     // Conditions (windowFunnel + pre-filter) and the breakdown expression are

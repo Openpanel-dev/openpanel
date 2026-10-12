@@ -277,7 +277,7 @@ describe('profile-property narrowing with a quoted key', () => {
       fieldResolution.profilePropertiesCteSelect(keys, needsFullMap)
     );
     expect(cteSelect.query).toBe(
-      "properties[{p1:String}] as `profile.properties.pl'an`"
+      "argMax(properties[{p1:String}], last_seen_at) as `profile.properties.pl'an`"
     );
     expect(cteSelect.query_params).toEqual({ p1: key });
 
@@ -302,7 +302,9 @@ describe('profile-property narrowing with a quoted key', () => {
     expect(
       statement(fieldResolution.profilePropertiesCteSelect(keys, needsFullMap))
         .query
-    ).toBe('properties as "profile.properties"');
+    ).toBe(
+      'argMax(properties, last_seen_at) as "profile.properties"'
+    );
   });
 
   it('leaves ordinary keys narrowing exactly as before', () => {
@@ -314,7 +316,9 @@ describe('profile-property narrowing with a quoted key', () => {
     expect(
       statement(fieldResolution.profilePropertiesCteSelect(keys, needsFullMap))
         .query
-    ).toBe('properties[{p1:String}] as `profile.properties.plan`');
+    ).toBe(
+      'argMax(properties[{p1:String}], last_seen_at) as `profile.properties.plan`'
+    );
     expect(
       statement(
         compiled.fragmentWithProfileRefs(

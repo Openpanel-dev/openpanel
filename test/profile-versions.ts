@@ -56,7 +56,12 @@ function profileVersions(projectId: string, now: Date): Version[][] {
         last_name: 'Kim-Lee',
         email: 'mia@new.example',
         is_external: true,
-        properties: { plan: 'team', country: 'SE', tier: 'gold' },
+        properties: {
+          plan: 'team',
+          country: 'SE',
+          tier: 'gold',
+          'experiments.checkout.name': 'one-page',
+        },
         groups: [VERSIONED.groups.g1, VERSIONED.groups.g2],
         last_seen_at: timeAgo(now, 2),
       },

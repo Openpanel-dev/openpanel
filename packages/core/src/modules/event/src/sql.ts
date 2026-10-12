@@ -83,18 +83,27 @@ export const NO_FILTER_JOINS: EventFilterJoins = {
   groups: false,
 };
 
+/** A column as `profiles FINAL` returns it, over a `GROUP BY id`: `last_seen_at` is the version column. */
+function latestProfileColumn(column: string): SqlFragment {
+  const id = sql.id(column, PROFILE_JOIN_COLUMNS);
+  if (column === 'last_seen_at') {
+    return sql`max(${id}) AS ${id}`;
+  }
+  return sql`argMax(${id}, last_seen_at) AS ${id}`;
+}
+
 /** The joins the compiled filters need; empty = none. */
 function filterJoins(projectId: string, joins: EventFilterJoins): SqlFragment {
   const parts: SqlFragment[] = [];
   if (joins.profileColumns.length > 0) {
     const columns = sql.join(
-      joins.profileColumns.map((column) =>
-        sql.id(column, PROFILE_JOIN_COLUMNS)
-      ),
+      joins.profileColumns
+        .filter((column) => column !== 'id')
+        .map(latestProfileColumn),
       ', '
     );
     parts.push(
-      sql`LEFT ANY JOIN (SELECT id, ${columns} FROM ${sql.id(TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)}) as profile on profile.id = profile_id`
+      sql`LEFT ANY JOIN (SELECT id, ${columns} FROM ${sql.id(TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} GROUP BY id) as profile on profile.id = profile_id`
     );
   }
   if (joins.groups) {
