@@ -15,6 +15,13 @@ const TAGS_API =
   'https://api.github.com/repos/Openpanel-dev/openpanel/tags?per_page=100';
 const VERSION_TAG = /^v(\d+\.\d+\.\d+)$/;
 
+// A preview of an unmerged branch has no vX.Y.Z build tags to follow, so it is
+// compiled with the image tag to install
+// (`bun build --define OPENPANEL_SUPPORTER_TAG='"rewrite-v2-35c2"'`).
+declare const OPENPANEL_SUPPORTER_TAG: string | undefined;
+const PINNED_SUPPORTER_TAG: string | null =
+  typeof OPENPANEL_SUPPORTER_TAG === 'string' ? OPENPANEL_SUPPORTER_TAG : null;
+
 export type Channel = 'public' | 'supporter';
 
 export const supporterImage = (app: string, version: string) =>
@@ -34,6 +41,9 @@ export const publicVersion = (): string =>
 
 // Every push to main is tagged vX.Y.Z; the highest one is the newest build.
 export const latestBuildVersion = async (fetcher: Fetcher): Promise<string> => {
+  if (PINNED_SUPPORTER_TAG !== null) {
+    return PINNED_SUPPORTER_TAG;
+  }
   const response = await fetcher(TAGS_API);
   if (!response.ok) {
     throw new Error(`Could not list versions (HTTP ${response.status})`);
