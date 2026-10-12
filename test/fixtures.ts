@@ -67,7 +67,7 @@ function getClient() {
   return createClient({ url });
 }
 
-function timeAgo(now: Date, days: number, minutesOffset = 0) {
+export function timeAgo(now: Date, days: number, minutesOffset = 0) {
   return (
     new Date(now.getTime() - days * 86_400_000 - minutesOffset * 60_000)
       .toISOString()
@@ -77,7 +77,7 @@ function timeAgo(now: Date, days: number, minutesOffset = 0) {
   );
 }
 
-function buildEvent(
+export function buildEvent(
   now: Date,
   projectId: string,
   id: string,

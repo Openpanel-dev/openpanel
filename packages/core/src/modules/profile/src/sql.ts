@@ -35,6 +35,27 @@ const PROFILE_COLUMNS_FRAGMENT = sql.join(
   ', '
 );
 
+const PROFILE_KEY_COLUMNS = ['id', 'project_id'] as const;
+
+/**
+ * The newest version of every column, as `profiles FINAL` would return it,
+ * for a `GROUP BY id, project_id` over the raw rows. `last_seen_at` is the
+ * ReplacingMergeTree version column; the `p.` prefix keeps it from resolving
+ * to the aggregate alias of the same name.
+ */
+const PROFILE_LATEST_COLUMNS_FRAGMENT = sql.join(
+  PROFILE_COLUMNS.map((column) => {
+    if ((PROFILE_KEY_COLUMNS as readonly string[]).includes(column)) {
+      return sql.id(column, PROFILE_COLUMNS);
+    }
+    if (column === 'last_seen_at') {
+      return sql`max(p.last_seen_at) AS last_seen_at`;
+    }
+    return sql`argMax(${sql.id(column, PROFILE_COLUMNS)}, p.last_seen_at) AS ${sql.id(column, PROFILE_COLUMNS)}`;
+  }),
+  ', '
+);
+
 const SEARCH_MAX_TOKENS = 5;
 const SEARCH_TOKEN_SEPARATOR = /\s+/;
 
@@ -93,14 +114,15 @@ export function profileMetricsQuery(query: {
 }): SqlFragment {
   const profileId = sql.string(query.profileId);
   const projectId = sql.string(query.projectId);
-  // FINAL turns off automatic PREWHERE. Both PREWHERE columns are in the sort
-  // key, so a -1 and its +1 pass together; `sign` stays in WHERE so the
-  // collapse happens first.
+  // FINAL turns off automatic PREWHERE on `sessions`. Both PREWHERE columns
+  // are in the sort key, so a -1 and its +1 pass together; `sign` stays in
+  // WHERE so the collapse happens first.
   return sql`
     WITH profileSeen AS (
       SELECT created_at as firstSeen, last_seen_at as lastSeen
-      FROM ${sql.id(TABLE.profiles)} FINAL
+      FROM ${sql.id(TABLE.profiles)}
       WHERE id = ${profileId} AND project_id = ${projectId}
+      ORDER BY last_seen_at DESC
       LIMIT 1
     ),
     eventStats AS (
@@ -150,8 +172,9 @@ export function profileByIdQuery(query: {
 }): SqlFragment {
   return sql`
     SELECT ${PROFILE_COLUMNS_FRAGMENT}
-    FROM ${sql.id(TABLE.profiles)} FINAL
+    FROM ${sql.id(TABLE.profiles)}
     WHERE id = ${sql.string(query.id)} AND project_id = ${sql.string(query.projectId)}
+    ORDER BY last_seen_at DESC
     LIMIT 1
   `;
 }
@@ -160,15 +183,13 @@ export function profilesByIdsQuery(query: {
   projectId: string;
   ids: readonly string[];
 }): SqlFragment {
-  // FINAL turns off automatic PREWHERE, so without it every column (mostly
-  // `properties`) is read for the whole project range. Safe before the FINAL
-  // merge: both conditions are sort-key columns, shared by every row version.
   return sql`
-    SELECT ${PROFILE_COLUMNS_FRAGMENT}
-    FROM ${sql.id(TABLE.profiles)} FINAL
-    PREWHERE
-      project_id = ${sql.string(query.projectId)} AND
-      id IN ${sql.array('String', query.ids)}
+    SELECT ${PROFILE_LATEST_COLUMNS_FRAGMENT}
+    FROM ${sql.id(TABLE.profiles)} AS p
+    WHERE
+      p.project_id = ${sql.string(query.projectId)} AND
+      p.id IN ${sql.array('String', query.ids)}
+    GROUP BY p.id, p.project_id
   `;
 }
 
@@ -320,8 +341,9 @@ export function profileRowQuery(query: {
 }): SqlFragment {
   return sql`
       SELECT ${PROFILE_COLUMNS_FRAGMENT}
-      FROM ${sql.id(TABLE.profiles)} FINAL
+      FROM ${sql.id(TABLE.profiles)}
       WHERE project_id = ${sql.string(query.projectId)} AND id = ${sql.string(query.profileId)}
+      ORDER BY last_seen_at DESC
       LIMIT 1
     `;
 }

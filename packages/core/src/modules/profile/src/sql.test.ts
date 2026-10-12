@@ -89,25 +89,26 @@ describe('single-profile lookups', () => {
     }).toStatement();
 
     expect(collapse(byId.query)).toBe(
-      `SELECT ${COLUMN_LIST} FROM profiles FINAL WHERE id = {p1:String} AND project_id = {p2:String} LIMIT 1`
+      `SELECT ${COLUMN_LIST} FROM profiles WHERE id = {p1:String} AND project_id = {p2:String} ORDER BY last_seen_at DESC LIMIT 1`
     );
     expect(byId.query_params).toEqual({ p1: HOSTILE, p2: PROJECT_ID });
     expect(collapse(row.query)).toBe(
-      `SELECT ${COLUMN_LIST} FROM profiles FINAL WHERE project_id = {p1:String} AND id = {p2:String} LIMIT 1`
+      `SELECT ${COLUMN_LIST} FROM profiles WHERE project_id = {p1:String} AND id = {p2:String} ORDER BY last_seen_at DESC LIMIT 1`
     );
     expect(row.query_params).toEqual({ p1: PROJECT_ID, p2: HOSTILE });
   });
 
-  test('profilesByIdsQuery filters by sort key in PREWHERE, binding ids as one Array(String)', () => {
+  test('profilesByIdsQuery picks the newest version per id, binding ids as one Array(String)', () => {
     const { query, query_params } = profilesByIdsQuery({
       projectId: PROJECT_ID,
       ids: ['a', HOSTILE],
     }).toStatement();
 
     expect(collapse(query)).toContain(
-      'FROM profiles FINAL PREWHERE project_id = {p1:String} AND id IN {p2:Array(String)}'
+      'FROM profiles AS p WHERE p.project_id = {p1:String} AND p.id IN {p2:Array(String)} GROUP BY p.id, p.project_id'
     );
-    expect(query).not.toMatch(PLAIN_WHERE);
+    expect(query).toContain('argMax(properties, p.last_seen_at) AS properties');
+    expect(query).not.toContain('FINAL');
     expect(query).not.toContain(HOSTILE);
     expect(query_params).toEqual({ p1: PROJECT_ID, p2: ['a', HOSTILE] });
   });
