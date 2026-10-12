@@ -38,6 +38,7 @@ import {
   isKnownEventField,
   isNumericColumn,
   PROFILE_CTE_FIELDS,
+  profileIdsInWindow,
   profilePropertiesCteSelect,
 } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';
@@ -213,11 +214,12 @@ function profileCteSelectField(
 
 function profileCte(
   selectFields: SqlFragment[],
-  projectId: string
+  projectId: string,
+  activeProfiles: SqlFragment
 ): SqlFragment {
   return sql`SELECT ${sql.join(selectFields, ', ')}
       FROM ${sql.id(CHART_TABLE.profiles)} FINAL
-      WHERE project_id = ${sql.string(projectId)}`;
+      WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}`;
 }
 
 function anyRefOn(prefix: string, refs: { name: string }[]): boolean {
@@ -234,19 +236,23 @@ interface ChartBody {
 
 /**
  * The CTEs, JOINs, WHERE and `label_0` both chart shapes share, in a fixed
- * clause order: cohort CTEs/joins, filters + project + event name, group
- * ARRAY JOIN, profile CTE.
+ * clause order: cohort CTEs/joins, filters + project + event name + date
+ * range, group ARRAY JOIN, profile CTE.
  */
 function chartBody({
   event,
   breakdowns,
   allCohorts,
   projectId,
+  startDate,
+  endDate,
 }: {
   event: ChartQueryEvent;
   breakdowns: IChartBreakdown[];
   allCohorts: CohortMetadata[];
   projectId: string;
+  startDate: string;
+  endDate: string;
 }): ChartBody {
   const hasAllCohortsBreakdown =
     requestsAllCohortsBreakdown(breakdowns) && allCohorts.length > 0;
@@ -295,6 +301,8 @@ function chartBody({
   } else {
     select.label_0 = sql`'*' as label_0`;
   }
+  const dateRange = dateRangeWhere(startDate, endDate);
+  Object.assign(where, dateRange);
 
   const profileRefs = [...event.filters, ...breakdowns, ...metricRef];
   const needsProfileJoin = anyRefOn('profile.', profileRefs);
@@ -311,7 +319,15 @@ function chartBody({
     const selectFields = collectProfileCteFields(profileRefs).map((field) =>
       profileCteSelectField(field, profileProps.keys, profileProps.needsFullMap)
     );
-    ctes.profile = profileCte(selectFields, projectId);
+    ctes.profile = profileCte(
+      selectFields,
+      projectId,
+      profileIdsInWindow({
+        projectId,
+        eventNames: [event.name],
+        window: Object.values(dateRange),
+      })
+    );
     joins.profiles = sql`LEFT ANY JOIN profile ON profile.id = profile_id`;
   }
 
@@ -427,17 +443,15 @@ function oneEventPerUserFrom(body: ChartBody): SqlFragment {
       ) as e`;
 }
 
-function dateRangeWhere(
-  where: Parts,
-  startDate: string,
-  endDate: string
-): void {
+function dateRangeWhere(startDate: string, endDate: string): Parts {
+  const where: Parts = {};
   if (startDate) {
     where.startDate = sql`created_at >= toDateTime(${sql.string(formatClickhouseDate(startDate))})`;
   }
   if (endDate) {
     where.endDate = sql`created_at <= toDateTime(${sql.string(formatClickhouseDate(endDate))})`;
   }
+  return where;
 }
 
 function intervalBucket(
@@ -501,7 +515,6 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   groupBy.date = sql`date`;
   orderBy.date = sql`date ASC`;
 
-  dateRangeWhere(body.where, startDate, endDate);
   addBreakdownLabels(input, body, groupBy);
   body.select.count = countExpression(event, body, undefined);
 
@@ -532,12 +545,11 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
 export function aggregateChartQuery(
   input: AggregateChartQueryInput
 ): SqlFragment {
-  const { event, startDate, endDate, projectId, limit } = input;
+  const { event, startDate, projectId, limit } = input;
   const body = chartBody(input);
   const groupBy: Parts = {};
   const orderBy: Parts = {};
 
-  dateRangeWhere(body.where, startDate, endDate);
   // A constant date field: groupByLabels expects one, and the whole range
   // aggregates into it.
   body.select.date = sql`${sql.string(startDate)} as date`;
@@ -688,7 +700,8 @@ export function chartBucketProfilesQuery(
     where[key] = clause;
   }
   where.projectId = sql`project_id = ${sql.string(projectId)}`;
-  where.dateRange = bucketEquals(interval, bucketDate);
+  const dateRange = bucketEquals(interval, bucketDate);
+  where.dateRange = dateRange;
   if (event.name !== '*') {
     where.eventName = sql`name = ${sql.string(event.name)}`;
   }
@@ -700,7 +713,12 @@ export function chartBucketProfilesQuery(
   ].filter((name) => name.startsWith('profile.'));
   if (profileRefs.length > 0) {
     const fields = sql.join(profileFieldsToSelect(profileRefs), ', ');
-    joins.profiles = sql`LEFT ANY JOIN (SELECT id, ${fields} FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)}) as profile on profile.id = profile_id`;
+    const activeProfiles = profileIdsInWindow({
+      projectId,
+      eventNames: [event.name],
+      window: [dateRange],
+    });
+    joins.profiles = sql`LEFT ANY JOIN (SELECT id, ${fields} FROM ${sql.id(CHART_TABLE.profiles)} FINAL WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}) as profile on profile.id = profile_id`;
   }
 
   const needsGroupJoin = [

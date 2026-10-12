@@ -233,6 +233,18 @@ describe('executeChart', () => {
     expect(chart.metrics.sum).toBe(1);
     expect(seriesNamed(chart, 'US')?.metrics.sum).toBe(1);
   });
+
+  it('joins profiles created before the window that have events inside it', async () => {
+    const chart = await service.execute(
+      report({
+        range: '7d',
+        breakdowns: [{ id: 'b', name: 'profile.properties.browser' }],
+      })
+    );
+
+    expect(seriesNamed(chart, 'Chrome')?.metrics.sum).toBe(1);
+    expect(seriesNamed(chart, 'Firefox')?.metrics.sum).toBe(1);
+  });
 });
 
 describe('executeAggregateChart', () => {

@@ -2,12 +2,16 @@
 //
 // Cluster note: `events`, `profiles` and `groups` are Distributed on Cloud. The
 // profile / group / cohort joins are LEFT ANY JOIN and run under the client's
-// `distributed_product_mode: 'allow'`; no `IN (subquery)` is involved.
+// `distributed_product_mode: 'allow'`; the profile join's id set is `GLOBAL IN`.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type { IInterval } from '../../report/report.constants';
 import { compiledText } from './compiled';
-import { buildGroupsQuery, CHART_TABLE } from './field-resolution';
+import {
+  buildGroupsQuery,
+  CHART_TABLE,
+  profileIdsInWindow,
+} from './field-resolution';
 
 /** windowFunnel counts a conversion when both steps fired. */
 const CONVERTED_STEP_COUNT = 2;
@@ -62,7 +66,11 @@ function stepCondition(name: string, where: SqlFragment | null): SqlFragment {
     : sql`events.name = ${sql.string(name)}`;
 }
 
-function profileJoin(fields: string[], projectId: string): SqlFragment {
+function profileJoin(
+  fields: string[],
+  projectId: string,
+  activeProfiles: SqlFragment
+): SqlFragment {
   if (fields.length === 0) {
     return sql.empty;
   }
@@ -70,7 +78,7 @@ function profileJoin(fields: string[], projectId: string): SqlFragment {
   return sql`LEFT ANY JOIN (
         SELECT ${sql.join(fields.map((field) => sql.id(field)))}
         FROM ${sql.id(CHART_TABLE.profiles)} FINAL
-        WHERE project_id = ${sql.string(projectId)}
+        WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}
       ) as profile ON profile.id = profile_id`;
 }
 
@@ -106,6 +114,13 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
   );
   const outerKeys = [sql`event_day`, ...breakdownAliases];
   const converted = sql`countIf(steps >= ${sql.uint64(CONVERTED_STEP_COUNT)})`;
+  const eventNames = [firstEventName, secondEventName];
+  const dateRange = sql`created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})`;
+  const activeProfiles = profileIdsInWindow({
+    projectId,
+    eventNames,
+    window: [dateRange],
+  });
 
   const outerSelect = sql.join([
     sql`event_day`,
@@ -135,12 +150,12 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
             ${stepCondition(secondEventName, secondEventWhere)}
           ) as steps
         FROM ${sql.id(CHART_TABLE.events)}
-        ${profileJoin(profileJoinFields, projectId)}
+        ${profileJoin(profileJoinFields, projectId, activeProfiles)}
         ${groupJoin(needsGroupArrayJoin, projectId)}
         ${sql.join(cohortJoins, ' ')}
         WHERE project_id = ${sql.string(projectId)}
-          AND events.name IN ${sql.array('String', [firstEventName, secondEventName])}
-          AND created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})
+          AND events.name IN ${sql.array('String', eventNames)}
+          AND ${dateRange}
         GROUP BY ${groupKey}${innerBreakdownGroupBy})
       ) WHERE steps > 0 GROUP BY ${sql.join(outerKeys)} ORDER BY ${sql.join(outerKeys.map((key) => sql`${key} ASC`))}`;
 }

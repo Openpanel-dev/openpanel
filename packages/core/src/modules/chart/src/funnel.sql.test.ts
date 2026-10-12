@@ -191,6 +191,16 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
     await explain(statement);
   });
 
+  it('loads only profiles with step events in the funnel range', async () => {
+    const statement = await chartStatement({
+      breakdowns: [breakdown('profile.properties.plan')],
+    });
+    expect(render(statement).text).toContain(
+      `cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM events WHERE project_id = '${PROJECT_ID}' AND created_at BETWEEN toDateTime('${START}') AND toDateTime('${END}') AND name IN ('screen_view', 'sign_up'))`
+    );
+    await explain(statement);
+  });
+
   it('adds the profiles join for a top-level profile breakdown', async () => {
     const statement = await profilesStatement({
       breakdowns: [breakdown('profile.email')],

@@ -14,7 +14,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -588,6 +588,86 @@ describe('profile-property narrowing', () => {
       ...base,
     });
     expect(rendered.sql).not.toContain("profile.properties['plan']");
+    await explain(rendered);
+  });
+});
+
+describe('profile join window', () => {
+  const window =
+    "created_at >= toDateTime('2026-04-14 00:00:00') AND created_at <= toDateTime('2026-05-15 00:00:00')";
+  const profileBreakdown = [breakdown('profile.properties.plan')];
+
+  it('loads only profiles with events of the series in the chart window', async () => {
+    const rendered = await getChartSql({
+      event: event(),
+      breakdowns: profileBreakdown,
+      ...base,
+    });
+    expect(rendered.text).toContain(
+      `cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM events WHERE project_id = '${PROJECT_ID}' AND ${window} AND name IN ('screen_view'))`
+    );
+    await explain(rendered);
+  });
+
+  it('bounds a `*` series by the window alone', async () => {
+    const rendered = await getAggregateChartSql({
+      event: event({ name: '*' }),
+      breakdowns: profileBreakdown,
+      ...base,
+    });
+    expect(rendered.text).toContain(
+      `cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM events WHERE project_id = '${PROJECT_ID}' AND ${window})`
+    );
+    await explain(rendered);
+  });
+
+  it('bounds the drill-down by its bucket', async () => {
+    const { chartBucketProfilesQuery } = await import('./sql');
+    const rendered = render(
+      chartBucketProfilesQuery({
+        projectId: PROJECT_ID,
+        bucketDate: START,
+        interval: 'day',
+        event: { name: 'screen_view', filters: [] },
+        breakdowns: { 'profile.properties.plan': 'pro' },
+        limit: 10,
+      })
+    );
+    expect(rendered.text).toContain(
+      `cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM events WHERE project_id = '${PROJECT_ID}' AND toStartOfDay(created_at) = toDate('${START}') AND name IN ('screen_view'))`
+    );
+    await explain(rendered);
+  });
+
+  it('bounds the conversion join by both steps and the range', async () => {
+    const { conversionQuery } = await import('./conversion.sql');
+    const { getSelectPropertyKey } = await import('./field-resolution');
+    const expression = getSelectPropertyKey(
+      'profile.properties.plan',
+      PROJECT_ID
+    );
+    const rendered = render(
+      conversionQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        interval: 'day',
+        group: 'profile_id',
+        funnelWindowSeconds: 3600,
+        firstEventName: 'screen_view',
+        secondEventName: 'sign_up',
+        firstEventWhere: null,
+        secondEventWhere: null,
+        breakdownSelects: [sql`${expression} as b_0`],
+        breakdownExpressions: [expression],
+        profileJoinFields: ['id', 'properties'],
+        needsGroupArrayJoin: false,
+        cohortJoins: [],
+      })
+    );
+    expect(rendered.text).toContain(
+      `cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM events WHERE project_id = '${PROJECT_ID}' AND created_at BETWEEN toDateTime('${START}') AND toDateTime('${END}') AND name IN ('screen_view', 'sign_up'))`
+    );
     await explain(rendered);
   });
 });

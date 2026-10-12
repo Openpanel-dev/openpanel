@@ -7,7 +7,7 @@
 //
 // Cluster note: `events`, `profiles`, `groups` and `cohort_members` are
 // Distributed on Cloud. Every join runs under the client's
-// `distributed_product_mode: 'allow'`; no `IN (subquery)` is involved.
+// `distributed_product_mode: 'allow'`; the profile join's id set is `GLOBAL IN`.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
@@ -27,6 +27,7 @@ import {
   getSelectPropertyKey,
   isAllCohortsBreakdown,
   isKnownEventField,
+  profileIdsInWindow,
   profilePropertiesCteSelect,
 } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';
@@ -292,11 +293,18 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     }
   });
 
+  const dateRange = sql`created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})`;
+  const eventNames = eventSeries.map((event) => event.name);
   const columns = profileCteColumns(input, profileFilters, profileKeys);
+  const activeProfiles = profileIdsInWindow({
+    projectId,
+    eventNames,
+    window: [dateRange],
+  });
   const profileJoin =
     columns.length > 0
       ? sql` LEFT JOIN (SELECT ${sql.join(columns, ', ')} FROM ${sql.id(CHART_TABLE.profiles)} FINAL
-          WHERE project_id = ${sql.string(projectId)}) as profile ON profile.id = events.profile_id`
+          WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles}) as profile ON profile.id = events.profile_id`
       : sql.empty;
   const groupJoin = needsGroupArrayJoin
     ? sql` ARRAY JOIN groups AS _group_id LEFT ANY JOIN _g ON _g.id = _group_id`
@@ -325,10 +333,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ' OR '
   )})`;
 
-  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)}) AND events.name IN ${sql.array(
-    'String',
-    eventSeries.map((event) => event.name)
-  )} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
+  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange} AND events.name IN ${sql.array('String', eventNames)} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `

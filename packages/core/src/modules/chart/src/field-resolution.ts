@@ -319,6 +319,33 @@ export function buildGroupsQuery(projectId: string): SqlFragment {
   return sql`SELECT id, name, type, properties FROM ${sql.id(CHART_TABLE.groups)} FINAL WHERE project_id = ${sql.string(projectId)}`;
 }
 
+/**
+ * Restricts a `profiles FINAL` join to profiles with events in the statement's
+ * window, so its memory scales with active profiles, not the project's.
+ * `window` must be the outer query's date predicates and no event filters: the
+ * set has to be a superset of every `profile_id` the query joins.
+ * Hashes, because a String `IN` set costs ~300 bytes per id; a collision only
+ * adds a profile the join then ignores. `GLOBAL IN` so the set is built once,
+ * not once per shard from the Distributed `events`.
+ */
+export function profileIdsInWindow({
+  projectId,
+  eventNames,
+  window,
+}: {
+  projectId: string;
+  /** Empty, or containing `'*'`, means every event name. */
+  eventNames: string[];
+  window: SqlFragment[];
+}): SqlFragment {
+  const conditions = [sql`project_id = ${sql.string(projectId)}`, ...window];
+  const isEveryEvent = eventNames.length === 0 || eventNames.includes('*');
+  if (!isEveryEvent) {
+    conditions.push(sql`name IN ${sql.array('String', eventNames)}`);
+  }
+  return sql`cityHash64(id) GLOBAL IN (SELECT cityHash64(profile_id) FROM ${sql.id(CHART_TABLE.events)} WHERE ${sql.join(conditions, ' AND ')})`;
+}
+
 // Returns a SQL expression for a group property via the _g JOIN alias
 // property format: "group.name", "group.type", "group.properties.plan"
 export function getGroupPropertySql(property: string): SqlFragment {
