@@ -169,7 +169,7 @@ describe('aggregate and series charts', () => {
       'argMax(properties, last_seen_at) as "profile.properties"'
     );
     const result = await rows(statement);
-    expect(countsBy(result, 'label_0')).toEqual({ screen_view: 5 });
+    expect(countsBy(result, 'label_1')).toEqual({ 'one-page': 3, '': 2 });
   });
 
   it('series totals agree with the aggregate', async () => {

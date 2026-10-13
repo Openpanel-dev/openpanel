@@ -489,6 +489,9 @@ describe('profile-property narrowing', () => {
     expect(text).toContain(
       'argMax(properties, last_seen_at) as "profile.properties"'
     );
+    // The pattern is a key inside the map, so the map prefix must be gone.
+    expect(text).toContain("'experiments.%.name'");
+    expect(text).not.toContain('profile.properties.experiments');
   });
 
   it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {

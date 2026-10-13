@@ -305,7 +305,7 @@ export function transformPropertyKey(property: string) {
 
   if (property.includes('*')) {
     return property
-      .replace(/^properties\./, '')
+      .replace(new RegExp(`^${match}\\.`), '')
       .replace('.*.', '.%.')
       .replace(/\[\*\]$/, '.%')
       .replace(/\[\*\].?/, '.%.');
