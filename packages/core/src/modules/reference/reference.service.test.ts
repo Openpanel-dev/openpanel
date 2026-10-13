@@ -188,19 +188,13 @@ test('getReferenceByIdOrThrow throws for a missing reference', async () => {
   await expect(subject.getReferenceByIdOrThrow('missing')).rejects.toThrow();
 });
 
-test('listReferences paginates by cursor, 50 per page', async () => {
+test('listReferences returns every reference of the project', async () => {
   const REFERENCE_COUNT = 55;
   for (const i of Array.from({ length: REFERENCE_COUNT }, (_, idx) => idx)) {
     referenceStore.set(`ref_${i}`, makeReference({ id: `ref_${i}` }));
   }
-  const firstPage = await subject.listReferences({ projectId: 'proj_1' });
-  expect(firstPage).toHaveLength(50);
-
-  const secondPage = await subject.listReferences({
-    projectId: 'proj_1',
-    cursor: 1,
-  });
-  expect(secondPage).toHaveLength(5);
+  const all = await subject.listReferences({ projectId: 'proj_1' });
+  expect(all).toHaveLength(REFERENCE_COUNT);
 });
 
 test('createReference stores the date as a Date, not a string', async () => {

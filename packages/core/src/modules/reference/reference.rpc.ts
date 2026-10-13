@@ -15,7 +15,7 @@ import { zCreateReference } from './reference.constants';
 
 export const referenceRouter = createTRPCRouter({
   getReferences: protectedProcedure
-    .input(z.object({ projectId: z.string(), cursor: z.number().optional() }))
+    .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
       const access = await ctx.services.auth.getProjectAccess({

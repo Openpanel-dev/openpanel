@@ -6,11 +6,8 @@ import { getChartStartEndDate } from '../report/src/chart-dates';
 
 export type IServiceReference = Reference;
 
-const REFERENCES_PAGE_SIZE = 50;
-
 export interface ListReferencesInput {
   projectId: string;
-  cursor?: number;
 }
 
 export interface CreateReferenceInput {
@@ -69,8 +66,6 @@ export function listReferences(
 ): Promise<Reference[]> {
   return deps.db.reference.findMany({
     where: { projectId: input.projectId },
-    take: REFERENCES_PAGE_SIZE,
-    skip: input.cursor ? input.cursor * REFERENCES_PAGE_SIZE : 0,
   });
 }
 
