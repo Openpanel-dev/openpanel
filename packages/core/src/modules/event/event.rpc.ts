@@ -13,6 +13,7 @@ import {
   zTimeInterval,
 } from '../report/report.constants';
 import { getChartStartEndDate } from '../report/src/chart-dates';
+import { TOP_PAGES_SORT_COLUMNS } from './event.constants';
 import {
   getBotEventsPage,
   getConversionEventNames,
@@ -25,6 +26,8 @@ import {
 } from './event.service';
 
 const DEFAULT_BOTS_LIMIT = 8;
+const DEFAULT_PAGES_TAKE = 50;
+const MAX_PAGES_TAKE = 1000;
 
 /**
  * `pagesTimeseries` returns every page in the project, so its size is the
@@ -181,9 +184,16 @@ export const eventRouter = createTRPCRouter({
   pages: protectedProcedure
     .input(
       zChartWindow.extend({
-        cursor: z.number().optional(),
-        take: z.number().min(1).optional(),
+        cursor: z.number().int().min(0).optional(),
+        take: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_PAGES_TAKE)
+          .default(DEFAULT_PAGES_TAKE),
         search: z.string().optional(),
+        sortBy: z.enum(TOP_PAGES_SORT_COLUMNS).optional(),
+        sortOrder: z.enum(['asc', 'desc']).optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -195,13 +205,16 @@ export const eventRouter = createTRPCRouter({
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return ctx.services.pages.getTopPages({
+      return ctx.services.pages.getTopPagesPage({
         projectId: input.projectId,
         startDate,
         endDate,
         timezone,
         search: input.search,
+        sortBy: input.sortBy,
+        sortOrder: input.sortOrder,
         limit: input.take,
+        offset: (input.cursor ?? 0) * input.take,
       });
     }),
 
@@ -227,13 +240,23 @@ export const eventRouter = createTRPCRouter({
     }),
 
   previousPages: protectedProcedure
-    .input(zChartWindow)
+    .input(
+      zChartWindow.extend({
+        pages: z
+          .array(z.object({ origin: z.string(), path: z.string() }))
+          .max(MAX_PAGES_TAKE),
+      })
+    )
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,
         projectId: input.projectId,
         level: 'read',
       });
+
+      if (input.pages.length === 0) {
+        return [];
+      }
 
       const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -249,6 +272,7 @@ export const eventRouter = createTRPCRouter({
         startDate: formatClickhouseDateTime(previousStart),
         endDate: formatClickhouseDateTime(previousEnd),
         timezone,
+        pages: input.pages,
       });
     }),
 

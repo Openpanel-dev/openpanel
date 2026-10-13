@@ -12,17 +12,18 @@ import {
 import {
   pageConversionsQuery,
   pageTimeseriesQuery,
+  type TopPagesQueryInput,
   topPagesQuery,
 } from './src/pages.sql';
 import { runQuery } from './src/run-query';
 
-export interface IGetPagesInput {
-  projectId: string;
-  startDate: string;
-  endDate: string;
+export interface IGetPagesInput extends Omit<TopPagesQueryInput, 'offset'> {
   timezone: string;
-  search?: string;
-  limit?: number;
+}
+
+export interface IGetPagesPageInput extends IGetPagesInput {
+  limit: number;
+  offset: number;
 }
 
 export interface IPageTimeseriesRow {
@@ -43,15 +44,32 @@ export interface ITopPage {
   bounce_rate: number;
 }
 
-export function getTopPages(
+type TopPageRow = ITopPage & { total_count: number };
+
+function queryTopPages(
   deps: ServiceDeps,
-  { projectId, startDate, endDate, timezone, search, limit }: IGetPagesInput
+  { timezone, ...query }: IGetPagesInput | IGetPagesPageInput
+): Promise<TopPageRow[]> {
+  return runQuery<TopPageRow>(deps, topPagesQuery(query), timezone);
+}
+
+export async function getTopPages(
+  deps: ServiceDeps,
+  input: IGetPagesInput
 ): Promise<ITopPage[]> {
-  return runQuery<ITopPage>(
-    deps,
-    topPagesQuery({ projectId, startDate, endDate, search, limit }),
-    timezone
-  );
+  const rows = await queryTopPages(deps, input);
+  return rows.map(({ total_count: _total, ...page }) => page);
+}
+
+export async function getTopPagesPage(
+  deps: ServiceDeps,
+  input: IGetPagesPageInput
+): Promise<{ data: ITopPage[]; meta: { count: number; take: number } }> {
+  const rows = await queryTopPages(deps, input);
+  return {
+    data: rows.map(({ total_count: _total, ...page }) => page),
+    meta: { count: rows[0]?.total_count ?? 0, take: input.limit },
+  };
 }
 
 export interface IGetPageTimeseriesInput extends IGetPagesInput {
@@ -222,6 +240,9 @@ export function createPagesService(
   return {
     getTopPages: (input: IGetPagesInput): Promise<ITopPage[]> =>
       getTopPages(deps, input),
+    getTopPagesPage: (
+      input: IGetPagesPageInput
+    ): ReturnType<typeof getTopPagesPage> => getTopPagesPage(deps, input),
     getPageTimeseries: (
       input: IGetPageTimeseriesInput
     ): Promise<IPageTimeseriesRow[]> => getPageTimeseries(deps, input),

@@ -3,6 +3,10 @@
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
+import {
+  TOP_PAGES_SORT_COLUMNS,
+  type TopPagesSortColumn,
+} from '../../event/event.constants';
 import type { IInterval } from '../../report/report.constants';
 import { fillClause, toStartOf } from './overview.sql';
 
@@ -19,7 +23,20 @@ export interface TopPagesQueryInput {
   startDate: string;
   endDate: string;
   search?: string;
+  /** Only these pages; the trend column asks for the previous period of one page of rows. */
+  pages?: readonly { origin: string; path: string }[];
+  sortBy?: TopPagesSortColumn;
+  sortOrder?: 'asc' | 'desc';
   limit?: number;
+  offset?: number;
+}
+
+function pagesClause(pages: TopPagesQueryInput['pages']): SqlFragment {
+  if (!pages) {
+    return sql.empty;
+  }
+  const keys = pages.map((page) => page.origin + page.path);
+  return sql`AND concat(e.origin, e.path) IN ${sql.array('String', keys)}`;
 }
 
 function searchClause(search: string | undefined): SqlFragment {
@@ -70,7 +87,14 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
     input.limit === undefined
       ? sql.empty
       : sql`LIMIT ${sql.uint64(input.limit)}`;
+  const offsetClause = input.offset
+    ? sql`OFFSET ${sql.uint64(input.offset)}`
+    : sql.empty;
+  const sortColumn = sql.id(input.sortBy ?? 'sessions', TOP_PAGES_SORT_COLUMNS);
+  const sortDirection = input.sortOrder === 'asc' ? sql`ASC` : sql`DESC`;
 
+  // `count() OVER ()` runs after GROUP BY and before LIMIT: the number of pages
+  // in the window, so one query both pages and counts.
   return sql`
     WITH
       page_titles AS (${titlesCte}),
@@ -86,15 +110,18 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
         (uniqIf(e.session_id, s.is_bounce = 1) * 100.0) /
         nullIf(uniq(e.session_id), 0),
         2
-      ) as bounce_rate
+      ) as bounce_rate,
+      count() OVER () as total_count
     FROM screen_view_durations e
     LEFT JOIN (${sessionsSubquery}) s ON e.session_id = s.id AND e.project_id = s.project_id
     LEFT JOIN page_titles pt ON concat(e.origin, e.path) = pt.page_key
     WHERE 1
       ${searchClause(input.search)}
+      ${pagesClause(input.pages)}
     GROUP BY e.origin, e.path, pt.title
-    ORDER BY sessions DESC
+    ORDER BY ${sortColumn} ${sortDirection}, origin, path
     ${limitClause}
+    ${offsetClause}
   `;
 }
 

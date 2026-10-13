@@ -85,3 +85,12 @@ export const QUERY_EVENTS_EQUALITY_COLUMNS = [
 
 export type QueryEventsEqualityColumn =
   (typeof QUERY_EVENTS_EQUALITY_COLUMNS)[number];
+
+/** The `event.pages` columns a client may sort by; the query sorts server-side. */
+export const TOP_PAGES_SORT_COLUMNS = [
+  'sessions',
+  'pageviews',
+  'bounce_rate',
+  'avg_duration',
+] as const;
+export type TopPagesSortColumn = (typeof TOP_PAGES_SORT_COLUMNS)[number];

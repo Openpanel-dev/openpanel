@@ -57,9 +57,9 @@ test('every query rejects an unauthenticated caller before touching a database',
   await expect(caller.pagesTimeseries(WINDOW)).rejects.toMatchObject(
     UNAUTHORIZED
   );
-  await expect(caller.previousPages(WINDOW)).rejects.toMatchObject(
-    UNAUTHORIZED
-  );
+  await expect(
+    caller.previousPages({ ...WINDOW, pages: [] })
+  ).rejects.toMatchObject(UNAUTHORIZED);
   await expect(
     caller.pageTimeseries({ ...WINDOW, origin: 'https://a.io', path: '/' })
   ).rejects.toMatchObject(UNAUTHORIZED);

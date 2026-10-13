@@ -12,7 +12,7 @@ import type { RouterOutputs } from '@/trpc/client';
 // `fancyMinutes` takes seconds. Without this every page rendered "0s".
 const SECONDS_PER_MINUTE = 60;
 
-export type PageRow = RouterOutputs['event']['pages'][number] & {
+export type PageRow = RouterOutputs['event']['pages']['data'][number] & {
   gsc?: { clicks: number; impressions: number; ctr: number; position: number };
 };
 
@@ -34,6 +34,7 @@ export function useColumns({
         id: 'page',
         accessorFn: (row) => `${row.origin}${row.path} ${row.title ?? ''}`,
         header: createHeaderColumn('Page'),
+        enableSorting: false,
         size: 400,
         meta: { bold: true },
         cell: ({ row }) => {
@@ -177,6 +178,7 @@ export function useColumns({
           id: 'gsc_impressions',
           accessorFn: (row) => row.gsc?.impressions ?? 0,
           header: createHeaderColumn('Impr.'),
+          enableSorting: false,
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (
@@ -191,6 +193,7 @@ export function useColumns({
           id: 'gsc_ctr',
           accessorFn: (row) => row.gsc?.ctr ?? 0,
           header: createHeaderColumn('CTR'),
+          enableSorting: false,
           size: 70,
           cell: ({ row }) =>
             row.original.gsc ? (
@@ -205,6 +208,7 @@ export function useColumns({
           id: 'gsc_clicks',
           accessorFn: (row) => row.gsc?.clicks ?? 0,
           header: createHeaderColumn('Clicks'),
+          enableSorting: false,
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (

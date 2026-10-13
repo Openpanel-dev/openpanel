@@ -57,6 +57,38 @@ describe('pages.sql — parses against ClickHouse', () => {
     );
   });
 
+  it('topPagesQuery — sorted, offset, restricted to given pages', async () => {
+    const fragment = PG.topPagesQuery({
+      projectId: PROJECT_ID,
+      startDate: START,
+      endDate: END,
+      sortBy: 'bounce_rate',
+      sortOrder: 'asc',
+      limit: 50,
+      offset: 100,
+      pages: [{ origin: 'https://a.test', path: '/pricing' }],
+    });
+    await explain(fragment);
+    const { query, query_params } = fragment.toStatement();
+    expect(query).toContain('ORDER BY bounce_rate ASC, origin, path');
+    expect(query).toMatch(/LIMIT \{p\d+:UInt64\}\s+OFFSET \{p\d+:UInt64\}/);
+    expect(query).toContain('count() OVER () as total_count');
+    expect(Object.values(query_params)).toContainEqual([
+      'https://a.test/pricing',
+    ]);
+  });
+
+  it('topPagesQuery — rejects a sort column outside the whitelist', () => {
+    expect(() =>
+      PG.topPagesQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        sortBy: 'title' as never,
+      })
+    ).toThrow();
+  });
+
   it('topPagesQuery — page_titles is bounded to the requested range', () => {
     const { query, query_params } = PG.topPagesQuery({
       projectId: PROJECT_ID,
