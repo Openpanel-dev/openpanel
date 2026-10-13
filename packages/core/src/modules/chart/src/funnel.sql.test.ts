@@ -187,9 +187,7 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
     const statement = await profilesStatement({
       breakdowns: [breakdown('profile.properties.plan')],
     });
-    expect(render(statement).sql).toMatch(
-      /SELECT .*properties.*FROM profiles/
-    );
+    expect(render(statement).sql).toMatch(/SELECT .*properties.*FROM profiles/);
     await explain(statement);
   });
 

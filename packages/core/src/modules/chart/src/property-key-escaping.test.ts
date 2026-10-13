@@ -302,9 +302,7 @@ describe('profile-property narrowing with a quoted key', () => {
     expect(
       statement(fieldResolution.profilePropertiesCteSelect(keys, needsFullMap))
         .query
-    ).toBe(
-      'argMax(properties, last_seen_at) as "profile.properties"'
-    );
+    ).toBe('argMax(properties, last_seen_at) as "profile.properties"');
   });
 
   it('leaves ordinary keys narrowing exactly as before', () => {
