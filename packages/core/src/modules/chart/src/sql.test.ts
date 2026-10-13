@@ -455,18 +455,34 @@ describe('profile-property narrowing', () => {
       ...base,
     });
 
-    // The CTE selects one scalar column per referenced key...
-    expect(text).toContain(
-      "argMax(properties['plan'], last_seen_at) as `profile.properties.plan`"
-    );
+    // The CTE selects one scalar column per key the join is read for...
     expect(text).toContain(
       "argMax(properties['experiment'], last_seen_at) as `profile.properties.experiment`"
+    );
+    // ...not for the filter, which compiles to its own id subquery.
+    expect(text).not.toContain('as `profile.properties.plan`');
+    expect(text).toContain(
+      "HAVING argMax(properties['plan'], last_seen_at) = 'pro'"
     );
     // ...instead of every profile's whole Map...
     expect(text).not.toContain('as "profile.properties"');
     // ...and every ref in the query is rewritten to the scalar alias.
     expect(text).not.toContain("profile.properties['plan']");
     expect(text).not.toContain("profile.properties['experiment']");
+  });
+
+  it('does not join profiles for a profile filter alone', async () => {
+    const { text } = await getChartSql({
+      event: event({ filters: [profileFilter] }),
+      breakdowns: [],
+      ...base,
+    });
+
+    expect(text).not.toContain('LEFT ANY JOIN profile');
+    expect(text).not.toContain('WITH profile AS');
+    expect(text).toContain(
+      "HAVING argMax(properties['plan'], last_seen_at) = 'pro'"
+    );
   });
 
   it('falls back to the full Map for wildcard refs', async () => {
@@ -496,17 +512,8 @@ describe('profile-property narrowing', () => {
 
   it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {
     const { text } = await getChartSql({
-      event: event({
-        filters: [
-          {
-            id: 'f1',
-            name: 'profile.properties.plan`tier',
-            operator: 'is' as const,
-            value: ['a'],
-          },
-        ],
-      }),
-      breakdowns: [],
+      event: event(),
+      breakdowns: [breakdown('profile.properties.plan`tier')],
       ...base,
     });
 

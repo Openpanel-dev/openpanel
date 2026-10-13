@@ -39,6 +39,16 @@ export type CompiledEventFilters = Record<string, SqlFragment>;
 // anything outside the set by the time it gets here.
 const EVENT_COLUMN_ALLOWLIST = Array.from(EVENT_TOP_LEVEL_COLUMNS);
 
+/**
+ * Whether the compiled clause reads the caller's `profile` join. Only a
+ * wildcard `profile.*` filter does; every other profile filter compiles to
+ * its own id subquery below, so joining profiles for it is wasted work.
+ */
+export function filterReadsProfileJoin(filter: IChartEventFilter): boolean {
+  const name = normalizeEventField(filter.name);
+  return name.startsWith('profile.') && isWildcardPropertyKey(name);
+}
+
 function filterValue(value: unknown) {
   return sql.string(String(value).trim());
 }

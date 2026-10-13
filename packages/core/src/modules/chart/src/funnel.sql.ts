@@ -13,6 +13,7 @@ import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   IChartBreakdown,
   IChartEvent,
+  IChartEventFilter,
 } from '../../report/report.constants';
 import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
@@ -31,7 +32,10 @@ import {
   profileIdsInWindow,
   profilePropertiesCteSelect,
 } from './field-resolution';
-import { getEventFiltersWhereClause } from './filter-where';
+import {
+  filterReadsProfileJoin,
+  getEventFiltersWhereClause,
+} from './filter-where';
 
 /** The two keys windowFunnel may be computed per — a closed set. */
 const FUNNEL_GROUPS = ['session_id', 'profile_id'] as const;
@@ -235,13 +239,10 @@ function profileCteColumns(
   return columns;
 }
 
-/** The `profile.`-prefixed filter names, unprefixed. */
-function profileFilterNames(eventSeries: IChartEvent[]): string[] {
+/** Filters whose compiled clause reads the profile join. */
+function profileJoinFilters(eventSeries: IChartEvent[]): IChartEventFilter[] {
   return eventSeries.flatMap(
-    (event) =>
-      event.filters
-        ?.filter((filter) => filter.name.startsWith('profile.'))
-        .map((filter) => filter.name.replace('profile.', '')) ?? []
+    (event) => event.filters?.filter(filterReadsProfileJoin) ?? []
   );
 }
 
@@ -252,7 +253,10 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     throw new Error('events are required');
   }
 
-  const profileFilters = profileFilterNames(eventSeries);
+  const joinFilters = profileJoinFilters(eventSeries);
+  const profileFilters = joinFilters.map((filter) =>
+    filter.name.replace('profile.', '')
+  );
   const anyFilterOnGroup = eventSeries.some((event) =>
     event.filters?.some((filter) => filter.name.startsWith('group.'))
   );
@@ -263,7 +267,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     anyFilterOnGroup || anyBreakdownOnGroup || input.funnelGroup === 'group';
 
   const profileKeys = collectProfilePropertyKeys([
-    ...eventSeries.flatMap((event) => event.filters ?? []),
+    ...joinFilters,
     ...breakdowns,
   ]);
 

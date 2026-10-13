@@ -435,18 +435,8 @@ describe('getChartBucketProfiles', () => {
         projectId: TEST_PROJECT_ID,
         date: twoDaysAgo,
         interval: 'day',
-        series: [
-          pageView({
-            filters: [
-              {
-                id: 'p',
-                name: 'profile.evil; DROP TABLE profiles',
-                operator: 'is',
-                value: ['x'],
-              },
-            ],
-          }),
-        ],
+        series: [pageView()],
+        breakdowns: { 'profile.evil; DROP TABLE profiles': 'x' },
       })
     ).rejects.toThrow(/Refusing to inline identifier/);
   });

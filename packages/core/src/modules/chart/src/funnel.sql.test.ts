@@ -209,7 +209,7 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
     await explain(statement);
   });
 
-  it('adds the join for a profile filter with no profile breakdown', async () => {
+  it('does not join profiles for a profile filter with no profile breakdown', async () => {
     const statement = await profilesStatement({
       series: [
         event({
@@ -225,7 +225,9 @@ describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {
         event({ id: 'B', name: 'sign_up' }),
       ],
     });
-    expect(render(statement).sql).toContain('profile.id = events.profile_id');
+    const { sql } = render(statement);
+    expect(sql).not.toContain('profile.id = events.profile_id');
+    expect(sql).toContain('HAVING argMax(email, last_seen_at)');
     await explain(statement);
   });
 });
@@ -419,9 +421,9 @@ describe('funnel.sql / profile-property narrowing', () => {
     });
     const { text } = render(statement);
 
-    expect(text).toContain(
-      "argMax(properties['plan'], last_seen_at) as `profile.properties.plan`"
-    );
+    // The filter compiles to its own id subquery, so only the breakdown's
+    // key is joined.
+    expect(text).not.toContain('as `profile.properties.plan`');
     expect(text).toContain(
       "argMax(properties['experiment'], last_seen_at) as `profile.properties.experiment`"
     );

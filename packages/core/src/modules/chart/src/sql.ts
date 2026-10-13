@@ -42,7 +42,10 @@ import {
   profileIdsInWindow,
   profilePropertiesCteSelect,
 } from './field-resolution';
-import { getEventFiltersWhereClause } from './filter-where';
+import {
+  filterReadsProfileJoin,
+  getEventFiltersWhereClause,
+} from './filter-where';
 
 const EVENTS_ALIAS = 'e';
 const ALL_COHORTS_ALIAS = '_all_cohorts';
@@ -263,11 +266,12 @@ function chartBody({
   const metricRef = event.property ? [{ name: event.property }] : [];
   // Math metrics reference event.property too — missing it here would strip
   // the Map the metric still reads from.
-  const profileProps = collectProfilePropertyKeys([
-    ...event.filters,
+  const profileJoinRefs = [
+    ...event.filters.filter(filterReadsProfileJoin),
     ...breakdowns,
     ...metricRef,
-  ]);
+  ];
+  const profileProps = collectProfilePropertyKeys(profileJoinRefs);
   const ctes: Parts = {};
   const joins: Parts = {};
 
@@ -306,10 +310,10 @@ function chartBody({
   const dateRange = dateRangeWhere(startDate, endDate);
   Object.assign(where, dateRange);
 
-  const profileRefs = [...event.filters, ...breakdowns, ...metricRef];
-  const needsProfileJoin = anyRefOn('profile.', profileRefs);
+  const needsProfileJoin = anyRefOn('profile.', profileJoinRefs);
   const needsGroupArrayJoin =
-    anyRefOn('group.', profileRefs) || event.segment === 'group';
+    anyRefOn('group.', [...event.filters, ...breakdowns, ...metricRef]) ||
+    event.segment === 'group';
 
   if (needsGroupArrayJoin) {
     ctes._g = buildGroupsQuery(projectId);
@@ -318,7 +322,7 @@ function chartBody({
   }
 
   if (needsProfileJoin) {
-    const selectFields = collectProfileCteFields(profileRefs).map((field) =>
+    const selectFields = collectProfileCteFields(profileJoinRefs).map((field) =>
       profileCteSelectField(field, profileProps.keys, profileProps.needsFullMap)
     );
     ctes.profile = profileCte(
@@ -713,7 +717,9 @@ export function chartBucketProfilesQuery(
 
   const joins: Parts = {};
   const profileRefs = [
-    ...event.filters.map((filter) => filter.name),
+    ...event.filters
+      .filter(filterReadsProfileJoin)
+      .map((filter) => filter.name),
     ...breakdownKeys,
   ].filter((name) => name.startsWith('profile.'));
   if (profileRefs.length > 0) {
