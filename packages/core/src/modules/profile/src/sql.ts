@@ -69,6 +69,8 @@ const PROFILE_LATEST_COLUMNS_FRAGMENT = sql.join(
 );
 
 const SEARCH_MAX_TOKENS = 5;
+/** Below this the list ignores the search: one letter matches nearly every profile. */
+export const PROFILE_LIST_SEARCH_MIN_LENGTH = 2;
 const SEARCH_TOKEN_SEPARATOR = /\s+/;
 
 function optional(
@@ -276,15 +278,28 @@ function latestProfilesPage(
   `;
 }
 
+function profileListSearch(query: ProfileListQuery): string | undefined {
+  const search = query.search?.trim();
+  return search && search.length >= PROFILE_LIST_SEARCH_MIN_LENGTH
+    ? search
+    : undefined;
+}
+
 /**
- * `project_id =.. AND created_at BETWEEN ..`: bounded to a window rather than
- * reading every profile the project ever had — otherwise the cost grows with
- * the tenant's lifetime rather than with anything the caller asked for.
+ * `project_id =.. [AND created_at BETWEEN ..]`: bounded to a window rather
+ * than reading every profile the project ever had — otherwise the cost grows
+ * with the tenant's lifetime rather than with anything the caller asked for.
  * `created_at` is the column the list already orders by, so the bound and
  * the order agree; the write path keeps it the same across versions.
+ * A search is the exception: looking someone up by name has to find them
+ * however long ago they signed up, and the search itself bounds the rows.
  */
 function profileListScope(query: ProfileListQuery): SqlFragment {
-  return sql`project_id = ${sql.string(query.projectId)} AND ${dateRangeWhere(
+  const projectScope = sql`project_id = ${sql.string(query.projectId)}`;
+  if (profileListSearch(query)) {
+    return projectScope;
+  }
+  return sql`${projectScope} AND ${dateRangeWhere(
     'created_at',
     query.startDate,
     query.endDate
@@ -301,7 +316,7 @@ function profileListConditions(
   filterClauses: CompiledFilterClauses
 ): SqlFragment[] {
   const conditions: SqlFragment[] = [];
-  const search = profileSearchCondition(query.search, column);
+  const search = profileSearchCondition(profileListSearch(query), column);
   if (search) {
     conditions.push(search);
   }

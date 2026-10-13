@@ -233,6 +233,25 @@ describe('profileListQuery / profileListCountQuery', () => {
     expect(await countOf(count({ isExternal: true }))).toBe(3);
     expect(await countOf(count({ isExternal: false }))).toBe(0);
   });
+
+  it('a search finds a profile created before the window, by its newest version', async () => {
+    const recentWindow = {
+      startDate: timeAgo(now, 15),
+      endDate: timeAgo(now, 0),
+    };
+    expect(ids(await fetchRows(ch, list(recentWindow)))).toEqual([
+      VERSIONED.single,
+    ]);
+    expect(
+      ids(await fetchRows(ch, list({ ...recentWindow, search: 'Kim-Lee' })))
+    ).toEqual([VERSIONED.multi]);
+    expect(await countOf(count({ ...recentWindow, search: 'Kim-Lee' }))).toBe(
+      1
+    );
+    expect(
+      ids(await fetchRows(ch, list({ ...recentWindow, search: 'mia@old' })))
+    ).toEqual([]);
+  });
 });
 
 describe('findProfilesQuery', () => {

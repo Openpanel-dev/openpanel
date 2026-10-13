@@ -25,6 +25,9 @@ const DEFAULT_LIST_TAKE = 50;
 /** A list page, not an export. `/export/events` is the bulk path. */
 const MAX_LIST_TAKE = 1000;
 
+/** Longer than any name or email; a search past it is not a lookup. */
+const MAX_LIST_SEARCH_LENGTH = 100;
+
 /**
  * `list` and `powerUsers` need a date window: without one their cost grows with the
  * tenant's lifetime (44.2 M rows read for one page of 50). This is the default when
@@ -134,7 +137,7 @@ export const profileRouter = createTRPCRouter({
           .min(1)
           .max(MAX_LIST_TAKE)
           .default(DEFAULT_LIST_TAKE),
-        search: z.string().optional(),
+        search: z.string().trim().max(MAX_LIST_SEARCH_LENGTH).optional(),
         isExternal: z.boolean().optional(),
         filters: z.array(zChartEventFilter).default([]),
         ...zProfileWindow,

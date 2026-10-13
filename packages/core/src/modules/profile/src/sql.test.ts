@@ -194,17 +194,37 @@ describe('profileListQuery', () => {
     // The raw-row conditions only narrow the id set (a superset); the same
     // conditions on the newest version decide, in HAVING.
     expect(text).toContain(
-      "(SELECT id FROM profiles WHERE project_id = {p2:String} AND created_at BETWEEN toDateTime({p3:String}) AND toDateTime({p4:String}) AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p5:String} AND created_at BETWEEN toDateTime({p6:String}) AND toDateTime({p7:String}) AND ((id ILIKE {p8:String} OR email ILIKE {p9:String} OR first_name ILIKE {p10:String} OR last_name ILIKE {p11:String} OR concat(first_name, ' ', last_name) ILIKE {p12:String})) AND is_external = {p13:Bool} AND (properties['plan'] = 'pro')) GROUP BY id HAVING ((id ILIKE {p14:String} OR argMax(email, last_seen_at) ILIKE {p15:String} OR argMax(first_name, last_seen_at) ILIKE {p16:String} OR argMax(last_name, last_seen_at) ILIKE {p17:String} OR concat(argMax(first_name, last_seen_at), ' ', argMax(last_name, last_seen_at)) ILIKE {p18:String})) AND argMax(is_external, last_seen_at) = {p19:Bool} AND (argMax(properties['plan'], last_seen_at) = 'pro') ORDER BY argMax(created_at, last_seen_at) DESC LIMIT {p20:UInt64} OFFSET {p21:UInt64})"
+      "(SELECT id FROM profiles WHERE project_id = {p2:String} AND cityHash64(id) IN (SELECT cityHash64(id) FROM profiles WHERE project_id = {p3:String} AND ((id ILIKE {p4:String} OR email ILIKE {p5:String} OR first_name ILIKE {p6:String} OR last_name ILIKE {p7:String} OR concat(first_name, ' ', last_name) ILIKE {p8:String})) AND is_external = {p9:Bool} AND (properties['plan'] = 'pro')) GROUP BY id HAVING ((id ILIKE {p10:String} OR argMax(email, last_seen_at) ILIKE {p11:String} OR argMax(first_name, last_seen_at) ILIKE {p12:String} OR argMax(last_name, last_seen_at) ILIKE {p13:String} OR concat(argMax(first_name, last_seen_at), ' ', argMax(last_name, last_seen_at)) ILIKE {p14:String})) AND argMax(is_external, last_seen_at) = {p15:Bool} AND (argMax(properties['plan'], last_seen_at) = 'pro') ORDER BY argMax(created_at, last_seen_at) DESC LIMIT {p16:UInt64} OFFSET {p17:UInt64})"
     );
     expect(query_params).toMatchObject({
       p1: PROJECT_ID,
-      p8: '%ann%',
-      p13: true,
-      p14: '%ann%',
-      p19: true,
-      p20: 50,
-      p21: 100,
+      p4: '%ann%',
+      p9: true,
+      p10: '%ann%',
+      p15: true,
+      p16: 50,
+      p17: 100,
     });
+  });
+
+  test('a search reaches past the window; one shorter than the minimum is ignored', () => {
+    const page = (search: string) =>
+      collapse(
+        profileListQuery({
+          projectId: PROJECT_ID,
+          take: 50,
+          offset: 0,
+          search,
+          ...NO_FILTER_CLAUSES,
+          ...WINDOW,
+        }).toStatement().query
+      );
+    const unsearched = page('');
+
+    expect(page('an')).not.toContain('created_at BETWEEN');
+    expect(page('an')).toContain('ILIKE');
+    expect(page(' a ')).toBe(unsearched);
+    expect(unsearched).toContain('created_at BETWEEN');
   });
 
   test('count counts exactly the ids the page selects from', () => {
