@@ -9,6 +9,7 @@ import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { clientRoutes } from './modules/client/client.routes';
+import { manageDashboardRoutes } from './modules/dashboard/dashboard.routes';
 import { exportRoutes, insightsRoutes } from './modules/export/export.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
@@ -20,6 +21,7 @@ import { miscRoutes } from './modules/misc/misc.routes';
 import { profileRoutes } from './modules/profile/profile.routes';
 import { projectRoutes } from './modules/project/project.routes';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
+import { referenceRoutes } from './modules/reference/reference.routes';
 import { subscriptionRoutes } from './modules/subscription/subscription.routes';
 import { toolsRoutes } from './modules/tools/tools.routes';
 
@@ -48,6 +50,8 @@ export const publicApiRoutes = (deps: AppDeps) =>
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
     .use(clientRoutes(deps))
+    .use(referenceRoutes(deps))
+    .use(manageDashboardRoutes(deps))
     .use(profileRoutes(deps))
     .use(exportRoutes(deps))
     .use(insightsRoutes(deps))

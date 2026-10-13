@@ -37,6 +37,45 @@ test('publicApiRoutes and dashboardRoutes compose, dashboardRoutes carrying gsc'
   expect(response.status).toBe(200);
 });
 
+// The documented /manage surface. A route missing here 404s before auth, which
+// is how the references routes went missing in production.
+const DOCUMENTED_MANAGE_ROUTES = [
+  ['GET', '/manage/projects'],
+  ['GET', '/manage/projects/p1'],
+  ['POST', '/manage/projects'],
+  ['PATCH', '/manage/projects/p1'],
+  ['DELETE', '/manage/projects/p1'],
+  ['GET', '/manage/clients'],
+  ['GET', '/manage/clients/c1'],
+  ['POST', '/manage/clients'],
+  ['PATCH', '/manage/clients/c1'],
+  ['DELETE', '/manage/clients/c1'],
+  ['GET', '/manage/references'],
+  ['GET', '/manage/references/r1'],
+  ['POST', '/manage/references'],
+  ['PATCH', '/manage/references/r1'],
+  ['DELETE', '/manage/references/r1'],
+  ['GET', '/manage/projects/p1/dashboards'],
+  ['GET', '/manage/projects/p1/dashboards/d1/reports'],
+] as const;
+const NOT_FOUND_STATUS = 404;
+
+test('every documented /manage route is mounted', async () => {
+  const { deps } = stubAppDeps();
+  const app = new Elysia().use(requestContext(deps)).use(publicApiRoutes(deps));
+
+  for (const [method, path] of DOCUMENTED_MANAGE_ROUTES) {
+    const response = await app.handle(
+      new Request(`http://localhost${path}`, { method })
+    );
+    expect({ method, path, status: response.status }).not.toEqual({
+      method,
+      path,
+      status: NOT_FOUND_STATUS,
+    });
+  }
+});
+
 // /metrics serves prometheus text exposition from THE core registry — not a
 // route-local one, not the prom-client global default.
 test('/metrics serves the one core registry, prometheus text exposition', async () => {

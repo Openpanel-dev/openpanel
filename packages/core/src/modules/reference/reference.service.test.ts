@@ -15,6 +15,39 @@ interface FakeReference {
 }
 
 const referenceStore = new Map<string, FakeReference>();
+const projectOrganizations = new Map([
+  ['proj_1', 'org_1'],
+  ['proj_other', 'org_2'],
+]);
+
+interface FakeReferenceWhere {
+  id?: string;
+  projectId?: string;
+  date?: { gte: Date; lte: Date };
+  project?: { organizationId: string };
+}
+
+function matchesReference(row: FakeReference, where: FakeReferenceWhere) {
+  const organizationId = projectOrganizations.get(row.projectId);
+  return (
+    (where.id === undefined || row.id === where.id) &&
+    (where.projectId === undefined || row.projectId === where.projectId) &&
+    (where.date === undefined ||
+      (row.date >= where.date.gte && row.date <= where.date.lte)) &&
+    (where.project === undefined ||
+      organizationId === where.project.organizationId)
+  );
+}
+
+const project = {
+  findFirst: mock(
+    async ({
+      where: { id, organizationId },
+    }: {
+      where: { id: string; organizationId: string };
+    }) => (projectOrganizations.get(id) === organizationId ? { id } : null)
+  ),
+};
 
 function makeReference(
   overrides: Partial<FakeReference> & { id: string }
@@ -41,25 +74,24 @@ const reference = {
       return found;
     }
   ),
+  findFirst: mock(
+    async ({ where }: { where: FakeReferenceWhere }) =>
+      [...referenceStore.values()].find((r) => matchesReference(r, where)) ??
+      null
+  ),
   findMany: mock(
     async ({
       where,
       take,
       skip,
     }: {
-      where: { projectId?: string; date?: { gte: Date; lte: Date } };
+      where: FakeReferenceWhere;
       take?: number;
       skip?: number;
     }) => {
-      let rows = [...referenceStore.values()];
-      if (where.projectId) {
-        rows = rows.filter((r) => r.projectId === where.projectId);
-      }
-      if (where.date) {
-        rows = rows.filter(
-          (r) => r.date >= where.date!.gte && r.date <= where.date!.lte
-        );
-      }
+      let rows = [...referenceStore.values()].filter((r) =>
+        matchesReference(r, where)
+      );
       if (skip) {
         rows = rows.slice(skip);
       }
@@ -86,7 +118,11 @@ const reference = {
       if (!existing) {
         throw new Error(`reference ${id} not found`);
       }
-      const next = { ...existing, ...data };
+      // Prisma skips `undefined` fields rather than writing them.
+      const defined = Object.fromEntries(
+        Object.entries(data).filter(([, value]) => value !== undefined)
+      );
+      const next = { ...existing, ...defined };
       referenceStore.set(id, next);
       return next;
     }
@@ -132,7 +168,7 @@ beforeAll(async () => {
   const { createReferenceService } = await import('./reference.service');
   subject = createReferenceService(
     {
-      db: { reference },
+      db: { reference, project },
     } as unknown as import('../../services').ServiceDeps,
     testServices()
   );
@@ -223,4 +259,66 @@ test('getChartReferences filters by the resolved date window', async () => {
     expect.anything(),
     'proj_1'
   );
+});
+
+test('listReferencesForOrganization without a project spans only that organization', async () => {
+  referenceStore.set('ref_1', makeReference({ id: 'ref_1' }));
+  referenceStore.set(
+    'ref_2',
+    makeReference({ id: 'ref_2', projectId: 'proj_other' })
+  );
+  const result = await subject.listReferencesForOrganization('org_1');
+  expect(result?.map((r) => r.id)).toEqual(['ref_1']);
+});
+
+test('listReferencesForOrganization returns null for another organization’s project', async () => {
+  expect(
+    await subject.listReferencesForOrganization('org_1', 'proj_other')
+  ).toBeNull();
+});
+
+test('createReferenceForOrganization refuses another organization’s project', async () => {
+  const result = await subject.createReferenceForOrganization('org_1', {
+    projectId: 'proj_other',
+    title: 'Launch',
+    datetime: '2026-09-03T00:00:00.000Z',
+  });
+  expect(result).toBeNull();
+  expect(referenceStore.size).toBe(0);
+});
+
+test('another organization’s reference cannot be read, updated or deleted', async () => {
+  referenceStore.set(
+    'ref_1',
+    makeReference({ id: 'ref_1', projectId: 'proj_other' })
+  );
+  expect(
+    await subject.getReferenceForOrganization('ref_1', 'org_1')
+  ).toBeNull();
+  expect(
+    await subject.updateReferenceForOrganization('ref_1', 'org_1', {
+      title: 'Renamed',
+    })
+  ).toBeNull();
+  expect(await subject.deleteReferenceForOrganization('ref_1', 'org_1')).toBe(
+    false
+  );
+  expect(referenceStore.get('ref_1')?.title).toBe('Launch');
+});
+
+test('updateReferenceForOrganization changes only the fields sent', async () => {
+  referenceStore.set(
+    'ref_1',
+    makeReference({ id: 'ref_1', description: 'kept' })
+  );
+  const result = await subject.updateReferenceForOrganization(
+    'ref_1',
+    'org_1',
+    { title: 'Renamed' }
+  );
+  expect(result).toMatchObject({
+    title: 'Renamed',
+    description: 'kept',
+    date: new Date('2026-09-01T00:00:00.000Z'),
+  });
 });

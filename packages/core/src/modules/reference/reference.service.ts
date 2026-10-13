@@ -27,6 +27,19 @@ export interface UpdateReferenceInput {
   datetime: string;
 }
 
+export interface CreateReferenceForOrganizationInput {
+  projectId: string;
+  title: string;
+  description?: string;
+  datetime: string;
+}
+
+export interface UpdateReferenceForOrganizationInput {
+  title?: string;
+  description?: string;
+  datetime?: string;
+}
+
 export interface ChartReferencesInput {
   projectId: string;
   startDate?: string | null;
@@ -96,6 +109,93 @@ export function deleteReference(
   return deps.db.reference.delete({ where: { id } });
 }
 
+/** `null` when `projectId` is given but belongs to another organization. */
+export async function listReferencesForOrganization(
+  deps: ServiceDeps,
+  organizationId: string,
+  projectId?: string
+): Promise<Reference[] | null> {
+  if (projectId) {
+    const project = await deps.db.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true },
+    });
+    if (!project) {
+      return null;
+    }
+  }
+  return deps.db.reference.findMany({
+    where: projectId ? { projectId } : { project: { organizationId } },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export function getReferenceForOrganization(
+  deps: ServiceDeps,
+  id: string,
+  organizationId: string
+): Promise<Reference | null> {
+  return deps.db.reference.findFirst({
+    where: { id, project: { organizationId } },
+  });
+}
+
+/** `null` when the project belongs to another organization. */
+export async function createReferenceForOrganization(
+  deps: ServiceDeps,
+  organizationId: string,
+  input: CreateReferenceForOrganizationInput
+): Promise<Reference | null> {
+  const project = await deps.db.project.findFirst({
+    where: { id: input.projectId, organizationId },
+    select: { id: true },
+  });
+  if (!project) {
+    return null;
+  }
+  return deps.db.reference.create({
+    data: {
+      projectId: input.projectId,
+      title: input.title,
+      description: input.description || null,
+      date: new Date(input.datetime),
+    },
+  });
+}
+
+export async function updateReferenceForOrganization(
+  deps: ServiceDeps,
+  id: string,
+  organizationId: string,
+  input: UpdateReferenceForOrganizationInput
+): Promise<Reference | null> {
+  const existing = await getReferenceForOrganization(deps, id, organizationId);
+  if (!existing) {
+    return null;
+  }
+  return deps.db.reference.update({
+    where: { id },
+    data: {
+      title: input.title,
+      description: input.description,
+      date: input.datetime === undefined ? undefined : new Date(input.datetime),
+    },
+  });
+}
+
+export async function deleteReferenceForOrganization(
+  deps: ServiceDeps,
+  id: string,
+  organizationId: string
+): Promise<boolean> {
+  const existing = await getReferenceForOrganization(deps, id, organizationId);
+  if (!existing) {
+    return false;
+  }
+  await deps.db.reference.delete({ where: { id } });
+  return true;
+}
+
 export async function getChartReferences(
   deps: ServiceDeps,
   input: ChartReferencesInput
@@ -140,5 +240,31 @@ export function createReferenceService(
       deleteReference(deps, id),
     getChartReferences: (input: ChartReferencesInput): Promise<Reference[]> =>
       getChartReferences(deps, input),
+    listReferencesForOrganization: (
+      organizationId: string,
+      projectId?: string
+    ): Promise<Reference[] | null> =>
+      listReferencesForOrganization(deps, organizationId, projectId),
+    getReferenceForOrganization: (
+      id: string,
+      organizationId: string
+    ): Promise<Reference | null> =>
+      getReferenceForOrganization(deps, id, organizationId),
+    createReferenceForOrganization: (
+      organizationId: string,
+      input: CreateReferenceForOrganizationInput
+    ): Promise<Reference | null> =>
+      createReferenceForOrganization(deps, organizationId, input),
+    updateReferenceForOrganization: (
+      id: string,
+      organizationId: string,
+      input: UpdateReferenceForOrganizationInput
+    ): Promise<Reference | null> =>
+      updateReferenceForOrganization(deps, id, organizationId, input),
+    deleteReferenceForOrganization: (
+      id: string,
+      organizationId: string
+    ): Promise<boolean> =>
+      deleteReferenceForOrganization(deps, id, organizationId),
   };
 }
