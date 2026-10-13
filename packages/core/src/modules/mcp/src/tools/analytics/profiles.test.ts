@@ -59,8 +59,13 @@ describe('findProfilesCore — SQL conditions', () => {
 
   it('adds email ILIKE condition when email is provided', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', email: 'carl@' });
-    expect(captured().query).toContain('email ILIKE {p2:String}');
-    expect(captured().params.p2).toBe('%carl@%');
+    const { query } = captured();
+    // Raw rows narrow the candidate ids, the newest version decides.
+    expect(query).toMatch(/AND email ILIKE \{p\d+:String\}\)/);
+    expect(query).toMatch(
+      /HAVING argMax\(email, last_seen_at\) ILIKE \{p\d+:String\}/
+    );
+    expect(boundValues()).toContain('%carl@%');
   });
 
   it('searches across first/last/full name for name filter', async () => {
@@ -83,29 +88,34 @@ describe('findProfilesCore — SQL conditions', () => {
 
   it('adds country property condition', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', country: 'SE' });
-    expect(captured().query).toContain('properties[{p2:String}] = {p3:String}');
-    expect(captured().params).toMatchObject({ p2: 'country', p3: 'SE' });
+    const { query } = captured();
+    expect(query).toMatch(/properties\[\{p\d+:String\}\] = \{p\d+:String\}/);
+    expect(query).toMatch(
+      /HAVING argMax\(properties, last_seen_at\)\[\{p\d+:String\}\] = \{p\d+:String\}/
+    );
+    expect(boundValues()).toContain('country');
+    expect(boundValues()).toContain('SE');
   });
 
   it('adds inactiveDays NOT IN subquery', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', inactiveDays: 14 });
-    const { query, params } = captured();
+    const { query } = captured();
     expect(query).toContain('NOT IN');
-    expect(query).toContain('INTERVAL {p3:UInt64} DAY');
-    expect(params.p3).toBe(14);
+    expect(query).toMatch(/INTERVAL \{p\d+:UInt64\} DAY/);
+    expect(boundValues()).toContain(14);
   });
 
   it('floors inactiveDays to integer (prevents SQL injection via floats)', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', inactiveDays: 14.9 });
-    expect(captured().params.p3).toBe(14);
+    expect(boundValues()).toContain(14);
     expect(boundValues()).not.toContain(14.9);
   });
 
   it('adds minSessions HAVING subquery', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', minSessions: 5 });
-    const { query, params } = captured();
-    expect(query).toContain('HAVING count() >= {p3:UInt64}');
-    expect(params.p3).toBe(5);
+    const { query } = captured();
+    expect(query).toMatch(/HAVING count\(\) >= \{p\d+:UInt64\}/);
+    expect(boundValues()).toContain(5);
   });
 
   it('adds performedEvent IN subquery', async () => {
@@ -113,8 +123,8 @@ describe('findProfilesCore — SQL conditions', () => {
       projectId: 'proj-1',
       performedEvent: 'purchase',
     });
-    expect(captured().query).toContain('AND name = {p3:String}');
-    expect(captured().params.p3).toBe('purchase');
+    expect(captured().query).toMatch(/AND name = \{p\d+:String\}/);
+    expect(boundValues()).toContain('purchase');
   });
 
   it('defaults to ORDER BY created_at DESC', async () => {
@@ -129,13 +139,13 @@ describe('findProfilesCore — SQL conditions', () => {
 
   it('defaults limit to 20', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1' });
-    expect(captured().query).toContain('LIMIT {p2:UInt64}');
-    expect(captured().params.p2).toBe(20);
+    expect(captured().query).toMatch(/LIMIT \{p\d+:UInt64\}/);
+    expect(boundValues()).toContain(20);
   });
 
   it('caps limit at 100 regardless of input', async () => {
     await findProfilesCore(deps, { projectId: 'proj-1', limit: 9999 });
-    expect(captured().params.p2).toBe(100);
+    expect(boundValues()).toContain(100);
     expect(boundValues()).not.toContain(9999);
   });
 });
@@ -161,7 +171,7 @@ describe('findProfilesCore — SQL injection protection', () => {
       email: 'test\\@x.com',
     });
     expect(captured().query).not.toContain('test\\@x.com');
-    expect(captured().params.p2).toBe('%test\\@x.com%');
+    expect(boundValues()).toContain('%test\\@x.com%');
   });
 });
 
