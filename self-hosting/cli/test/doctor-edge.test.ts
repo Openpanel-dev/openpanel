@@ -146,6 +146,21 @@ describe('env renames', () => {
     expect(env.has('NEXT_PUBLIC_API_URL')).toBe(false);
   });
 
+  test('BULLBOARD_* credentials become ADMIN_*, so the queue UI keeps mounting', () => {
+    const dir = v1Copy();
+    editEnv(dir, (text) =>
+      text
+        .replace(/^ADMIN_USERNAME=.*\n/m, '')
+        .replace(/^ADMIN_PASSWORD=.*\n/m, '')
+        .concat('BULLBOARD_USERNAME="ops"\nBULLBOARD_PASSWORD="hunter2"\n')
+    );
+    const { env } = fixed(dir);
+    expect(env.get('ADMIN_USERNAME')).toBe('ops');
+    expect(env.get('ADMIN_PASSWORD')).toBe('hunter2');
+    expect(env.has('BULLBOARD_USERNAME')).toBe(false);
+    expect(env.has('BULLBOARD_PASSWORD')).toBe(false);
+  });
+
   test('a missing API_URL is a manual step that suggests the bundled-Caddy address', () => {
     const dir = v1Copy();
     editEnv(dir, (text) => text.replace(/^API_URL=.*\n/m, ''));

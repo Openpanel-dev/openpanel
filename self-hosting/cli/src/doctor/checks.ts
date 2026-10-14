@@ -29,11 +29,15 @@ const REMOVED_ENV_VARS = [
   'CHART_VALUES_LOOKBACK_DAYS',
 ] as const;
 
-// Renamed in 2.0; a pre-2.0 .env may still carry only the old name.
+// An older .env may still carry only the old name. The NEXT_PUBLIC_* trio was
+// renamed in 2.0; BULLBOARD_* became ADMIN_* when the worker merged into the
+// api, and without ADMIN_* the queue UI no longer mounts at all.
 const RENAMED_ENV_VARS = [
   ['NEXT_PUBLIC_DASHBOARD_URL', 'DASHBOARD_URL'],
   ['NEXT_PUBLIC_API_URL', 'API_URL'],
   ['NEXT_PUBLIC_SELF_HOSTED', 'SELF_HOSTED'],
+  ['BULLBOARD_USERNAME', 'ADMIN_USERNAME'],
+  ['BULLBOARD_PASSWORD', 'ADMIN_PASSWORD'],
 ] as const;
 const BUNDLED_KAFKA_HOST = 'op-rp:';
 
@@ -466,7 +470,7 @@ export const renamedEnvVars: Check = (install) => {
     severity: 'error',
     title: `Old variable names in .env: ${present.map(([oldName]) => oldName).join(', ')}`,
     detail:
-      'Renamed in 2.0. Their values are moved to the new names unless those are already set.',
+      'These were renamed. Their values are moved to the new names unless those are already set.',
     fix: (target) => {
       for (const [oldName, newName] of present) {
         const value = target.env.get(oldName);
