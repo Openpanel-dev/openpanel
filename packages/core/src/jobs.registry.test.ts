@@ -28,13 +28,22 @@ const GOLDEN_SCHEDULER_IDS = [
 ].sort();
 
 // Retry and retention values pinned as they are: five queues never retry and
-// four have unbounded failed sets.
+// every queue bounds its failed set.
 const PINNED_DEFAULTS = {
-  sessions: { removeOnComplete: true },
-  cron: { removeOnComplete: 10 },
-  notification: { removeOnComplete: 10 },
+  sessions: {
+    removeOnComplete: true,
+    removeOnFail: { age: 86_400, count: 1000 },
+  },
+  cron: { removeOnComplete: 10, removeOnFail: { age: 86_400, count: 100 } },
+  notification: {
+    removeOnComplete: 10,
+    removeOnFail: { age: 86_400, count: 100 },
+  },
   import: { removeOnComplete: 10, removeOnFail: 50 },
-  insights: { removeOnComplete: 100 },
+  insights: {
+    removeOnComplete: 100,
+    removeOnFail: { age: 86_400, count: 100 },
+  },
   gsc: { removeOnComplete: 50, removeOnFail: 100 },
   cohortCompute: {
     attempts: 3,

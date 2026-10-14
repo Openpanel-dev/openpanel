@@ -48,8 +48,14 @@ const CONCURRENCY = {
   cohortCompute: 2,
 } as const;
 
+// Every queue bounds its failed set: a failed job is a Redis hash with no TTL,
+// and `age` alone only trims when another job in the queue finishes, so each
+// is paired with a count.
 const sessions = defineQueue('sessions', {
-  defaults: { removeOnComplete: true },
+  defaults: {
+    removeOnComplete: true,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 1000 },
+  },
   worker: { concurrency: CONCURRENCY.sessions },
   compat: legacyCompat.sessions,
   jobs: {
@@ -60,7 +66,10 @@ const sessions = defineQueue('sessions', {
 // One queue, one worker at concurrency 1, every scheduled job in the system.
 // Pausing it from bull-board halts all buffer flushing.
 const cron = defineQueue('cron', {
-  defaults: { removeOnComplete: 10 },
+  defaults: {
+    removeOnComplete: 10,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
   worker: { concurrency: CONCURRENCY.cron },
   compat: legacyCompat.cron,
   jobs: {
@@ -80,7 +89,10 @@ const cron = defineQueue('cron', {
 });
 
 const notification = defineQueue('notification', {
-  defaults: { removeOnComplete: 10 },
+  defaults: {
+    removeOnComplete: 10,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
   worker: { concurrency: CONCURRENCY.notification },
   compat: legacyCompat.notification,
   jobs: {
@@ -98,7 +110,10 @@ const importQueue = defineQueue('import', {
 });
 
 const insights = defineQueue('insights', {
-  defaults: { removeOnComplete: 100 },
+  defaults: {
+    removeOnComplete: 100,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
   worker: { concurrency: CONCURRENCY.insights },
   compat: legacyCompat.insights,
   jobs: {
@@ -119,8 +134,6 @@ const cohortCompute = defineQueue('cohortCompute', {
   defaults: {
     attempts: COHORT_ATTEMPTS,
     backoff: { type: 'exponential', delay: COHORT_BACKOFF_MS },
-    // `age` alone only trims when another job in this queue finishes, so it is
-    // paired with a count bound.
     removeOnComplete: { age: HOUR_IN_SECONDS, count: 100 },
     removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
   },

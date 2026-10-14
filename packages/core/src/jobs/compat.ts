@@ -55,8 +55,7 @@ function discriminatedByType(types: readonly string[]): CompatHook {
 
 /**
  * One hook per queue, keyed by registry key. Each is deletable on its own —
- * but not until no legacy-shaped job can still be replayed, and four queues
- * have no `removeOnFail` at all, so their failed sets never lapse.
+ * but not until no legacy-shaped job can still be replayed from a failed set.
  */
 export const legacyCompat = {
   // Job name `'session'`, payload type `'createSessionEnd'` — the one queue
