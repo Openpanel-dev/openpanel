@@ -126,15 +126,50 @@ describe('SessionBuffer', () => {
     expect(await redis.sismember('session:projects', projectId)).toBe(1);
   });
 
-  it('writes no TTL on the session blob or profile pointer', async () => {
+  it('writes no TTL on the session blob, but one on the profile pointer', async () => {
     await sessionBuffer.ingest(
       makePayload({ profileId: 'profile-X', deviceId: 'device-Y' })
     );
 
-    // Blob and profile pointer must survive arbitrarily long reaper outages,
-    // so neither carries a Redis TTL.
+    // The blob must survive arbitrarily long reaper outages. The pointer is
+    // in no index, so its TTL is what collects it when cleanup() misses it.
     expect(await redis.ttl(`session:${projectId}:device-Y`)).toBe(-1);
-    expect(await redis.ttl(`session:profile:${projectId}:profile-X`)).toBe(-1);
+    const pointerTtl = await redis.pttl(
+      `session:profile:${projectId}:profile-X`
+    );
+    expect(pointerTtl).toBeGreaterThan(30 * 60 * 1000);
+    expect(pointerTtl).toBeLessThanOrEqual(60 * 60 * 1000);
+  });
+
+  it('drops the previous profile pointer when a session is re-identified', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: 'profile-A' }));
+    await sessionBuffer.ingest(
+      makePayload({
+        profileId: 'profile-B',
+        createdAt: new Date(Date.now() + 1000),
+      })
+    );
+
+    expect(
+      await redis.get(`session:profile:${projectId}:profile-A`)
+    ).toBeNull();
+    expect(await redis.get(`session:profile:${projectId}:profile-B`)).toBe(
+      deviceId
+    );
+  });
+
+  it('keeps the profile pointer when an extend repeats the same profile', async () => {
+    await sessionBuffer.ingest(makePayload({ profileId: 'profile-A' }));
+    await sessionBuffer.ingest(
+      makePayload({
+        profileId: 'profile-A',
+        createdAt: new Date(Date.now() + 1000),
+      })
+    );
+
+    expect(await redis.get(`session:profile:${projectId}:profile-A`)).toBe(
+      deviceId
+    );
   });
 
   it('writes profile→device pointer when profile_id differs from device_id', async () => {

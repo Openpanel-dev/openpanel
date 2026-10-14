@@ -10,6 +10,11 @@ import { defineRedisScript } from './redis-script';
 // 30min of idle in event-time → session ends.
 const DEFAULT_SESSION_TIMEOUT_MS = 1000 * 60 * 30;
 
+// The profile pointer is refreshed on every persist, so it only has to outlive
+// the idle timeout plus the reaper's lag. It sits in no index, so a TTL is the
+// only thing that collects a pointer `cleanup()` never gets handed.
+const PROFILE_POINTER_TTL_FACTOR = 2;
+
 /**
  * Idle window for a session (boundary detection + the reaper's default
  * deadman). Overridable through SESSION_TIMEOUT_MS so the E2E harness can
@@ -90,6 +95,8 @@ export class SessionBuffer extends BaseBuffer {
 
   private readonly squashEnabled = this.deps.config.buffers.session.squash;
   private readonly idleTimeoutMs = resolveSessionTimeoutMs(this.deps.config);
+  private readonly profilePointerTtlMs =
+    this.idleTimeoutMs * PROFILE_POINTER_TTL_FACTOR;
 
   private readonly redisKey = 'session-buffer';
   private readonly redis: Redis;
@@ -174,7 +181,7 @@ export class SessionBuffer extends BaseBuffer {
 
       if (existing && !isBoundary) {
         const { current, chRows } = this.extendSession(existing, payload);
-        await this.persist(current, chRows);
+        await this.persist(current, chRows, existing);
         return { kind: 'extend', current };
       }
 
@@ -200,7 +207,10 @@ export class SessionBuffer extends BaseBuffer {
    *
    * Blobs have no Redis TTL, so this is the only path that removes them. The
    * daily vacuum cron is a backstop for when it fails (worker crash, network
-   * partition).
+   * partition). The profile pointer additionally expires on its own: it is
+   * indexed nowhere, so a pointer this call is not handed (a boundary that
+   * gated the script out, a session re-identified before it closed) would
+   * otherwise stay forever.
    */
   async cleanup({
     projectId,
@@ -367,27 +377,42 @@ export class SessionBuffer extends BaseBuffer {
    * profile index + ClickHouse buffer rows. Append only; the cron drains the
    * buffer, so ingest never waits on a ClickHouse insert.
    *
-   * No TTLs on the blob or profile index — they are removed exclusively by
-   * `cleanup()` after `session_end` emission. This guarantees the reaper
-   * can always find a session's state regardless of how long the worker
-   * has been down.
+   * No TTL on the blob — it is removed exclusively by `cleanup()` after
+   * `session_end` emission, so the reaper can always find a session's state
+   * regardless of how long the worker has been down. The reaper never goes
+   * through the profile pointer, so that one may expire; the only reader is
+   * server-side ingest looking for a live client session to ride along on.
    */
   private async persist(
     current: IClickhouseSession,
-    chRows: IClickhouseSession[]
+    chRows: IClickhouseSession[],
+    previous?: IClickhouseSession
   ) {
     const projectId = current.project_id;
     const deviceId = current.device_id;
     const hasProfilePointer =
       current.profile_id && current.profile_id !== current.device_id;
+    const previousProfileId = previous?.profile_id;
+    const hasStalePointer =
+      previousProfileId &&
+      previousProfileId !== deviceId &&
+      previousProfileId !== current.profile_id;
 
     const multi = this.redis
       .multi()
       .set(sessionKey(projectId, deviceId), JSON.stringify(current))
       .zadd(wallclockSetKey(projectId), Date.now(), deviceId)
       .sadd(PROJECTS_SET_KEY, projectId);
+    if (hasStalePointer) {
+      multi.del(profileIndexKey(projectId, previousProfileId));
+    }
     if (hasProfilePointer) {
-      multi.set(profileIndexKey(projectId, current.profile_id), deviceId);
+      multi.set(
+        profileIndexKey(projectId, current.profile_id),
+        deviceId,
+        'PX',
+        this.profilePointerTtlMs
+      );
     }
     multi.rpush(this.redisKey, ...chRows.map((row) => JSON.stringify(row)));
 
