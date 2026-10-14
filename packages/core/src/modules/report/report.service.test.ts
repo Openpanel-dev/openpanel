@@ -1,9 +1,11 @@
 /**
- * Unit tests for mergeGlobalFilters, which combines report-level global filters
- * with each event series' own filters (AND semantics). Pure function.
+ * Unit tests for the pure report helpers: mergeGlobalFilters, which combines
+ * report-level global filters with each event series' own filters (AND
+ * semantics), and transformFilter, which normalizes a saved filter.
  */
 import { describe, expect, it } from 'bun:test';
 import type { IChartEventFilter, IChartEventItem } from './report.constants';
+import { transformFilter } from './report.service';
 import { mergeGlobalFilters } from './src/series';
 
 const globalFilter: IChartEventFilter = {
@@ -61,5 +63,50 @@ describe('mergeGlobalFilters', () => {
   it('does not mutate the input series filters', () => {
     mergeGlobalFilters([eventSeries], [globalFilter]);
     expect(eventSeries.filters).toEqual([eventFilter]);
+  });
+});
+
+describe('transformFilter', () => {
+  it('keeps the cast type so a saved date filter stays a date filter', () => {
+    const result = transformFilter(
+      {
+        id: 'f1',
+        name: 'profile.properties.subscription_expire',
+        operator: 'gte',
+        value: ['2026-09-27'],
+        type: 'date',
+      },
+      0
+    );
+    expect(result.type).toBe('date');
+  });
+
+  it('keeps cohort ids', () => {
+    const result = transformFilter(
+      {
+        id: 'f1',
+        name: 'cohort',
+        operator: 'inCohort',
+        value: [],
+        cohortIds: ['c1', 'c2'],
+        cohortId: 'c0',
+      },
+      0
+    );
+    expect(result.cohortIds).toEqual(['c1', 'c2']);
+    expect(result.cohortId).toBe('c0');
+  });
+
+  it('leaves the optional fields off legacy filters', () => {
+    const result = transformFilter(
+      { name: 'path', operator: 'is', value: '/pricing' as never },
+      1
+    );
+    expect(result).toEqual({
+      id: 'B',
+      name: 'path',
+      operator: 'is',
+      value: ['/pricing'],
+    });
   });
 });

@@ -39,6 +39,11 @@ export function transformFilter(
     operator: filter.operator ?? 'is',
     value:
       typeof filter.value === 'string' ? [filter.value] : (filter.value ?? []),
+    // Without these a saved date filter reloads as text and hits the untyped
+    // comparison path, and cohort filters lose their selection.
+    ...(filter.type ? { type: filter.type } : {}),
+    ...(filter.cohortId ? { cohortId: filter.cohortId } : {}),
+    ...(filter.cohortIds ? { cohortIds: filter.cohortIds } : {}),
   };
 }
 
