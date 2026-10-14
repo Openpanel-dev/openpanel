@@ -381,8 +381,17 @@ async function buildHttpApp(deps: AppDeps) {
   }
 
   if (roleConsumes && !config.DISABLE_BULLBOARD) {
-    app.use(await bullBoardRoutes(deps, deps.producers.bullQueues));
-    logger.info({ path: BULL_BOARD_BASE_PATH }, 'bull-board mounted');
+    // The board can add, retry and clean jobs, so a dashboard session alone
+    // is not enough to reach it (GHSA-r627-6vrh-65p9): without operator
+    // credentials it does not mount at all.
+    if (config.core.adminAuth) {
+      app.use(await bullBoardRoutes(deps, deps.producers.bullQueues));
+      logger.info({ path: BULL_BOARD_BASE_PATH }, 'bull-board mounted');
+    } else {
+      logger.warn(
+        'bull-board not mounted: set ADMIN_USERNAME and ADMIN_PASSWORD to enable it, or DISABLE_BULLBOARD=true to silence this'
+      );
+    }
   }
 
   return app;
