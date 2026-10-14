@@ -160,6 +160,16 @@ describe('env renames', () => {
     expect(env.has('BULLBOARD_USERNAME')).toBe(false);
     expect(env.has('BULLBOARD_PASSWORD')).toBe(false);
   });
+});
+
+describe('compose version key', () => {
+  test('the obsolete top-level version key is removed', () => {
+    const dir = v1Copy();
+    expect(ids(dir)).toContain('compose/version-key');
+    const compose = parseDocument(String(fixed(dir).compose)).toJS();
+    expect(compose.version).toBeUndefined();
+    expect(compose.services['op-api']).toBeDefined();
+  });
 
   test('a missing API_URL is a manual step that suggests the bundled-Caddy address', () => {
     const dir = v1Copy();

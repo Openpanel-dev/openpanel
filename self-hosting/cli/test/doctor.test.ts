@@ -39,6 +39,7 @@ describe('doctor on a v1 install', () => {
       'env/enabled-queues',
       'env/removed-vars',
       'caddy/bullboard-redirect',
+      'compose/version-key',
     ]);
   });
 

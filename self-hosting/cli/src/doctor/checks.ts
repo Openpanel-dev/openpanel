@@ -1,5 +1,12 @@
 import { randomBytes } from 'node:crypto';
-import { type Document, isAlias, isMap, isSeq, parseDocument } from 'yaml';
+import {
+  type Document,
+  isAlias,
+  isMap,
+  isNode,
+  isSeq,
+  parseDocument,
+} from 'yaml';
 import { isNewer } from '../self-update';
 import {
   DEFAULT_EVENTS_TOPIC_PARTITIONS,
@@ -616,6 +623,41 @@ export const caddyBullboardRedirect: Check = (install) => {
   };
 };
 
+// The Compose spec dropped the top-level `version` key; Compose v2 warns about
+// it on every command.
+export const composeVersionKey: Check = (install) => {
+  if (!install.compose.has('version')) {
+    return null;
+  }
+  return {
+    id: 'compose/version-key',
+    severity: 'warn',
+    title: 'docker-compose.yml has an obsolete top-level `version` key',
+    detail: 'Docker Compose ignores it and prints a warning on every command.',
+    fix: (target) => {
+      const contents = target.compose.contents;
+      if (!isMap(contents)) {
+        return;
+      }
+      const removedKey = contents.items.find(
+        (pair) => isNode(pair.key) && pair.key.toString() === 'version'
+      )?.key;
+      target.compose.delete('version');
+      // The blank line and any comment that sat above `version` belong to
+      // the new first key, not above it, or the written file never
+      // round-trips identically and doctor keeps rewriting it.
+      const firstKey = contents.items[0]?.key;
+      if (!isNode(firstKey)) {
+        return;
+      }
+      firstKey.spaceBefore = false;
+      if (isNode(removedKey) && removedKey.commentBefore) {
+        firstKey.commentBefore = removedKey.commentBefore;
+      }
+    },
+  };
+};
+
 // Reminder, not a repair: surfaced only while the install still looks like it
 // predates Kafka (old worker image, or no Redpanda while using the bundled one).
 export const drainOldQueue: Check = (install) => {
@@ -660,4 +702,5 @@ export const checks: Check[] = [
   enabledQueues,
   removedEnvVars,
   caddyBullboardRedirect,
+  composeVersionKey,
 ];
