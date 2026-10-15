@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
-export const API_URL = 'https://api.main.local.openpanel.cc';
+export const API_URL =
+  process.env.API_URL ?? 'https://api.main.local.openpanel.cc';
 export const ORGANIZATION_ID = 'acme';
 export const SHOTS_DIR = 'test-results/reports/shots';
 

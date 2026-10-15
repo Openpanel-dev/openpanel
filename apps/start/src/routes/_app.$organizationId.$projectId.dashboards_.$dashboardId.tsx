@@ -9,15 +9,17 @@ import {
   ShareIcon,
   TrashIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import {
-  GrafanaGrid,
+  DashboardGrid,
+  isSameTilePosition,
   type Layout,
-  useReportLayouts,
-} from '@/components/grafana-grid';
+  TILE_MIN_SIZE,
+  useDashboardLayout,
+} from '@/components/dashboard-grid';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -123,8 +125,6 @@ function Component() {
 
   const reports = reportsQuery.data ?? [];
   const dashboard = dashboardQuery.data;
-  const [isGridReady, setIsGridReady] = useState(false);
-  const [enableTransitions, setEnableTransitions] = useState(false);
   const [search, setSearch] = useState('');
 
   const filteredReports = useMemo(() => {
@@ -134,19 +134,6 @@ function Component() {
     }
     return reports.filter((r) => r.name?.toLowerCase().includes(q));
   }, [reports, search]);
-
-  // Wait for initial render to ensure grid has proper dimensions
-  useEffect(() => {
-    if (reports.length > 0 && !isGridReady) {
-      // Small delay to ensure container has rendered with proper width
-      const timer = setTimeout(() => {
-        setIsGridReady(true);
-        // Enable transitions after initial render
-        setTimeout(() => setEnableTransitions(true), 100);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [reports.length, isGridReady]);
 
   const reportDeletion = useMutation(
     trpc.report.delete.mutationOptions({
@@ -173,10 +160,6 @@ function Component() {
   const updateLayout = useMutation(
     trpc.report.updateLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
-      onSuccess() {
-        // Silently refetch reports (which includes layouts)
-        reportsQuery.refetch();
-      },
     })
   );
 
@@ -190,8 +173,7 @@ function Component() {
     })
   );
 
-  // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(filteredReports);
+  const [layout, setLayout] = useDashboardLayout(filteredReports);
 
   const dashboardPrimer = useMemo(
     () => ({
@@ -208,74 +190,35 @@ function Component() {
 
   useDashboardPageContext(dashboardId, dashboardPrimer);
 
-  const handleLayoutChange = useCallback((newLayout: Layout[]) => {
-    // This is called during dragging/resizing, we'll save on drag/resize stop
-  }, []);
-
-  const handleDragStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after drag stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
+  // One refetch after every changed tile is saved, so the grid is re-seeded
+  // from a complete server state instead of jumping per response.
+  const saveLayout = useCallback(
+    async (newLayout: Layout) => {
+      const changed = newLayout.filter((item) => {
+        const saved = reports.find((report) => report.id === item.i)?.layout;
+        return !saved || !isSameTilePosition(item, saved);
       });
+      if (changed.length === 0) {
+        return;
+      }
+      await Promise.allSettled(
+        changed.map((item) =>
+          updateLayout.mutateAsync({
+            reportId: item.i,
+            layout: {
+              x: item.x,
+              y: item.y,
+              w: item.w,
+              h: item.h,
+              minW: item.minW ?? TILE_MIN_SIZE.minW,
+              minH: item.minH ?? TILE_MIN_SIZE.minH,
+            },
+          })
+        )
+      );
+      reportsQuery.refetch();
     },
-    [reports, updateLayout]
-  );
-
-  const handleResizeStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after resize stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
-      });
-    },
-    [reports, updateLayout]
+    [reports, updateLayout, reportsQuery]
   );
 
   if (!dashboard) {
@@ -376,7 +319,7 @@ function Component() {
             Create report
           </LinkButton>
         </FullPageEmptyState>
-      ) : !isGridReady || reportsQuery.isLoading ? (
+      ) : reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ReportItemSkeleton />
           <ReportItemSkeleton />
@@ -390,14 +333,12 @@ function Component() {
           <p>No reports match "{search}". Try a different search.</p>
         </FullPageEmptyState>
       ) : (
-        <GrafanaGrid
-          isDraggable={!search}
-          isResizable={!search}
-          layouts={layouts}
-          onDragStop={handleDragStop}
-          onLayoutChange={handleLayoutChange}
-          onResizeStop={handleResizeStop}
-          transitions={enableTransitions}
+        <DashboardGrid
+          isEditable={!search}
+          layout={layout}
+          onDragStop={saveLayout}
+          onLayoutChange={setLayout}
+          onResizeStop={saveLayout}
         >
           {filteredReports.map((report) => (
             <div key={report.id}>
@@ -421,7 +362,7 @@ function Component() {
               />
             </div>
           ))}
-        </GrafanaGrid>
+        </DashboardGrid>
       )}
     </PageContainer>
   );

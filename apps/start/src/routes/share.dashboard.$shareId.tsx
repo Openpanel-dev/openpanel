@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import { GrafanaGrid, useReportLayouts } from '@/components/grafana-grid';
+import { DashboardGrid, useDashboardLayout } from '@/components/dashboard-grid';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -111,8 +111,7 @@ function RouteComponent() {
 
   const reports = reportsQuery.data ?? [];
 
-  // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(reports);
+  const [layout] = useDashboardLayout(reports);
 
   return (
     <div>
@@ -144,7 +143,7 @@ function RouteComponent() {
         ) : reports.length === 0 ? (
           <FullPageEmptyState title="No reports" />
         ) : (
-          <GrafanaGrid layouts={layouts}>
+          <DashboardGrid layout={layout}>
             {reports.map((report) => (
               <div key={report.id}>
                 <ReportItemReadOnly
@@ -157,7 +156,7 @@ function RouteComponent() {
                 />
               </div>
             ))}
-          </GrafanaGrid>
+          </DashboardGrid>
         )}
       </div>
     </div>
