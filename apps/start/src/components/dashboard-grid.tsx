@@ -5,6 +5,7 @@ import {
   type GridLayoutProps,
   type Layout,
   type LayoutItem,
+  type ResizeHandleAxis,
   useContainerWidth,
   verticalCompactor,
 } from 'react-grid-layout';
@@ -15,6 +16,7 @@ export const GRID_COLUMNS = 12;
 export const GRID_ROW_HEIGHT = 100;
 export const GRID_GAP = 16;
 export const TILE_MIN_SIZE = { minW: 3, minH: 3 } as const;
+const RESIZE_HANDLES: readonly ResizeHandleAxis[] = ['se', 'sw', 'ne', 'nw'];
 const TILE_DEFAULT_SIZE = { w: 6, h: 4 } as const;
 // Narrower than this and tiles stack in one column with no drag, since a
 // drag would hijack scrolling on a phone.
@@ -96,7 +98,7 @@ export function DashboardGrid({
           onDragStop={onDragStop}
           onLayoutChange={canEdit ? onLayoutChange : undefined}
           onResizeStop={onResizeStop}
-          resizeConfig={{ enabled: canEdit }}
+          resizeConfig={{ enabled: canEdit, handles: RESIZE_HANDLES }}
           width={width}
         >
           {children}
