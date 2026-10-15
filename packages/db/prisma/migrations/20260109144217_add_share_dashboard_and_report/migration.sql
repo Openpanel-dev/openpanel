@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."share_dashboards" (
+CREATE TABLE "share_dashboards" (
     "id" TEXT NOT NULL,
     "dashboardId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE "public"."share_dashboards" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."share_reports" (
+CREATE TABLE "share_reports" (
     "id" TEXT NOT NULL,
     "reportId" UUID NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -23,31 +23,31 @@ CREATE TABLE "public"."share_reports" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "share_dashboards_id_key" ON "public"."share_dashboards"("id");
+CREATE UNIQUE INDEX "share_dashboards_id_key" ON "share_dashboards"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "share_dashboards_dashboardId_key" ON "public"."share_dashboards"("dashboardId");
+CREATE UNIQUE INDEX "share_dashboards_dashboardId_key" ON "share_dashboards"("dashboardId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "share_reports_id_key" ON "public"."share_reports"("id");
+CREATE UNIQUE INDEX "share_reports_id_key" ON "share_reports"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "share_reports_reportId_key" ON "public"."share_reports"("reportId");
+CREATE UNIQUE INDEX "share_reports_reportId_key" ON "share_reports"("reportId");
 
 -- AddForeignKey
-ALTER TABLE "public"."share_dashboards" ADD CONSTRAINT "share_dashboards_dashboardId_fkey" FOREIGN KEY ("dashboardId") REFERENCES "public"."dashboards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_dashboards" ADD CONSTRAINT "share_dashboards_dashboardId_fkey" FOREIGN KEY ("dashboardId") REFERENCES "dashboards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_dashboards" ADD CONSTRAINT "share_dashboards_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_dashboards" ADD CONSTRAINT "share_dashboards_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_dashboards" ADD CONSTRAINT "share_dashboards_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_dashboards" ADD CONSTRAINT "share_dashboards_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_reports" ADD CONSTRAINT "share_reports_reportId_fkey" FOREIGN KEY ("reportId") REFERENCES "public"."reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_reports" ADD CONSTRAINT "share_reports_reportId_fkey" FOREIGN KEY ("reportId") REFERENCES "reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_reports" ADD CONSTRAINT "share_reports_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_reports" ADD CONSTRAINT "share_reports_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_reports" ADD CONSTRAINT "share_reports_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_reports" ADD CONSTRAINT "share_reports_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

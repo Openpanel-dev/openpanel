@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "public"."reports" ADD COLUMN     "globalFilters" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "reports" ADD COLUMN     "globalFilters" JSONB NOT NULL DEFAULT '[]';

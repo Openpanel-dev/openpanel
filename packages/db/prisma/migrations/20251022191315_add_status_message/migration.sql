@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "public"."imports" ADD COLUMN     "statusMessage" TEXT;
+ALTER TABLE "imports" ADD COLUMN     "statusMessage" TEXT;

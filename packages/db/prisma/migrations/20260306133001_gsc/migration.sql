@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."gsc_connections" (
+CREATE TABLE "gsc_connections" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "projectId" TEXT NOT NULL,
     "siteUrl" TEXT NOT NULL DEFAULT '',
@@ -17,7 +17,7 @@ CREATE TABLE "public"."gsc_connections" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "gsc_connections_projectId_key" ON "public"."gsc_connections"("projectId");
+CREATE UNIQUE INDEX "gsc_connections_projectId_key" ON "gsc_connections"("projectId");
 
 -- AddForeignKey
-ALTER TABLE "public"."gsc_connections" ADD CONSTRAINT "gsc_connections_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "gsc_connections" ADD CONSTRAINT "gsc_connections_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

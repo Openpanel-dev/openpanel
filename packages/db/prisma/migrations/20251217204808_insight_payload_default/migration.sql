@@ -5,5 +5,5 @@
 
 */
 -- AlterTable
-ALTER TABLE "public"."project_insights" ALTER COLUMN "payload" SET NOT NULL,
+ALTER TABLE "project_insights" ALTER COLUMN "payload" SET NOT NULL,
 ALTER COLUMN "payload" SET DEFAULT '{}';

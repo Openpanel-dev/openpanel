@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "public"."imports" ALTER COLUMN "currentStep" DROP NOT NULL;
+ALTER TABLE "imports" ALTER COLUMN "currentStep" DROP NOT NULL;

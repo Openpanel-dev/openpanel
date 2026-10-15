@@ -1,11 +1,11 @@
 -- DropForeignKey
-ALTER TABLE "public"."chats" DROP CONSTRAINT IF EXISTS "chats_projectId_fkey";
+ALTER TABLE "chats" DROP CONSTRAINT IF EXISTS "chats_projectId_fkey";
 
 -- DropTable
-DROP TABLE IF EXISTS "public"."chats";
+DROP TABLE IF EXISTS "chats";
 
 -- CreateTable
-CREATE TABLE "public"."conversations" (
+CREATE TABLE "conversations" (
     "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
     "projectId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE "public"."conversations" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."chat_messages" (
+CREATE TABLE "chat_messages" (
     "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
     "conversationId" TEXT NOT NULL,
     "role" TEXT NOT NULL,
@@ -29,22 +29,22 @@ CREATE TABLE "public"."chat_messages" (
 );
 
 -- CreateIndex
-CREATE INDEX "conversations_projectId_updatedAt_idx" ON "public"."conversations"("projectId", "updatedAt");
+CREATE INDEX "conversations_projectId_updatedAt_idx" ON "conversations"("projectId", "updatedAt");
 
 -- CreateIndex
-CREATE INDEX "conversations_userId_updatedAt_idx" ON "public"."conversations"("userId", "updatedAt");
+CREATE INDEX "conversations_userId_updatedAt_idx" ON "conversations"("userId", "updatedAt");
 
 -- CreateIndex
-CREATE INDEX "chat_messages_conversationId_createdAt_idx" ON "public"."chat_messages"("conversationId", "createdAt");
+CREATE INDEX "chat_messages_conversationId_createdAt_idx" ON "chat_messages"("conversationId", "createdAt");
 
 -- AddForeignKey
-ALTER TABLE "public"."conversations" ADD CONSTRAINT "conversations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."conversations" ADD CONSTRAINT "conversations_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."conversations" ADD CONSTRAINT "conversations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."chat_messages" ADD CONSTRAINT "chat_messages_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "public"."conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

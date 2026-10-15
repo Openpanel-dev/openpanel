@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."share_widgets" (
+CREATE TABLE "share_widgets" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -10,10 +10,10 @@ CREATE TABLE "public"."share_widgets" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "share_widgets_id_key" ON "public"."share_widgets"("id");
+CREATE UNIQUE INDEX "share_widgets_id_key" ON "share_widgets"("id");
 
 -- AddForeignKey
-ALTER TABLE "public"."share_widgets" ADD CONSTRAINT "share_widgets_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_widgets" ADD CONSTRAINT "share_widgets_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."share_widgets" ADD CONSTRAINT "share_widgets_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "share_widgets" ADD CONSTRAINT "share_widgets_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

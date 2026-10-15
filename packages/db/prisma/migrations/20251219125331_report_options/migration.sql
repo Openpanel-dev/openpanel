@@ -1,5 +1,5 @@
 -- AlterEnum
-ALTER TYPE "public"."ChartType" ADD VALUE 'sankey';
+ALTER TYPE "ChartType" ADD VALUE 'sankey';
 
 -- AlterTable
-ALTER TABLE "public"."reports" ADD COLUMN     "options" JSONB;
+ALTER TABLE "reports" ADD COLUMN     "options" JSONB;

@@ -7,7 +7,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "public"."project_insights" DROP COLUMN "changePct",
+ALTER TABLE "project_insights" DROP COLUMN "changePct",
 DROP COLUMN "compareValue",
 DROP COLUMN "currentValue",
 ADD COLUMN     "displayName" TEXT NOT NULL DEFAULT '';

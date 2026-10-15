@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."export_watermarks" (
+CREATE TABLE "export_watermarks" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "projectId" TEXT NOT NULL,
     "integrationId" UUID NOT NULL,
@@ -12,13 +12,13 @@ CREATE TABLE "public"."export_watermarks" (
 );
 
 -- CreateIndex
-CREATE INDEX "export_watermarks_integrationId_idx" ON "public"."export_watermarks"("integrationId");
+CREATE INDEX "export_watermarks_integrationId_idx" ON "export_watermarks"("integrationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "export_watermarks_projectId_integrationId_key" ON "public"."export_watermarks"("projectId", "integrationId");
+CREATE UNIQUE INDEX "export_watermarks_projectId_integrationId_key" ON "export_watermarks"("projectId", "integrationId");
 
 -- AddForeignKey
-ALTER TABLE "public"."export_watermarks" ADD CONSTRAINT "export_watermarks_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "export_watermarks" ADD CONSTRAINT "export_watermarks_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."export_watermarks" ADD CONSTRAINT "export_watermarks_integrationId_fkey" FOREIGN KEY ("integrationId") REFERENCES "public"."integrations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "export_watermarks" ADD CONSTRAINT "export_watermarks_integrationId_fkey" FOREIGN KEY ("integrationId") REFERENCES "integrations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

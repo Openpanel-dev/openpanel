@@ -1,14 +1,14 @@
 -- CreateEnum
-CREATE TYPE "public"."InsightState" AS ENUM ('active', 'suppressed', 'closed');
+CREATE TYPE "InsightState" AS ENUM ('active', 'suppressed', 'closed');
 
 -- CreateTable
-CREATE TABLE "public"."project_insights" (
+CREATE TABLE "project_insights" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "projectId" TEXT NOT NULL,
     "moduleKey" TEXT NOT NULL,
     "dimensionKey" TEXT NOT NULL,
     "windowKind" TEXT NOT NULL,
-    "state" "public"."InsightState" NOT NULL DEFAULT 'active',
+    "state" "InsightState" NOT NULL DEFAULT 'active',
     "title" TEXT NOT NULL,
     "summary" TEXT,
     "payload" JSONB,
@@ -30,7 +30,7 @@ CREATE TABLE "public"."project_insights" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."insight_events" (
+CREATE TABLE "insight_events" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "insightId" UUID NOT NULL,
     "eventKind" TEXT NOT NULL,
@@ -42,16 +42,16 @@ CREATE TABLE "public"."insight_events" (
 );
 
 -- CreateIndex
-CREATE INDEX "project_insights_projectId_impactScore_idx" ON "public"."project_insights"("projectId", "impactScore" DESC);
+CREATE INDEX "project_insights_projectId_impactScore_idx" ON "project_insights"("projectId", "impactScore" DESC);
 
 -- CreateIndex
-CREATE INDEX "project_insights_projectId_moduleKey_windowKind_state_idx" ON "public"."project_insights"("projectId", "moduleKey", "windowKind", "state");
+CREATE INDEX "project_insights_projectId_moduleKey_windowKind_state_idx" ON "project_insights"("projectId", "moduleKey", "windowKind", "state");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "project_insights_projectId_moduleKey_dimensionKey_windowKin_key" ON "public"."project_insights"("projectId", "moduleKey", "dimensionKey", "windowKind", "state");
+CREATE UNIQUE INDEX "project_insights_projectId_moduleKey_dimensionKey_windowKin_key" ON "project_insights"("projectId", "moduleKey", "dimensionKey", "windowKind", "state");
 
 -- CreateIndex
-CREATE INDEX "insight_events_insightId_createdAt_idx" ON "public"."insight_events"("insightId", "createdAt");
+CREATE INDEX "insight_events_insightId_createdAt_idx" ON "insight_events"("insightId", "createdAt");
 
 -- AddForeignKey
-ALTER TABLE "public"."insight_events" ADD CONSTRAINT "insight_events_insightId_fkey" FOREIGN KEY ("insightId") REFERENCES "public"."project_insights"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "insight_events" ADD CONSTRAINT "insight_events_insightId_fkey" FOREIGN KEY ("insightId") REFERENCES "project_insights"("id") ON DELETE CASCADE ON UPDATE CASCADE;

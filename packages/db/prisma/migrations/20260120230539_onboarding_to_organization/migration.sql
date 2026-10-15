@@ -1,3 +1,3 @@
 -- AlterTable
-ALTER TABLE "public"."organizations"
+ALTER TABLE "organizations"
 ADD COLUMN "onboarding" TEXT NOT NULL DEFAULT 'completed';

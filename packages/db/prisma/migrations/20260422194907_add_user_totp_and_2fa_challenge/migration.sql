@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."user_totp" (
+CREATE TABLE "user_totp" (
     "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
     "userId" TEXT NOT NULL,
     "secret" TEXT NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE "public"."user_totp" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."two_factor_challenges" (
+CREATE TABLE "two_factor_challenges" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
@@ -22,13 +22,13 @@ CREATE TABLE "public"."two_factor_challenges" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_totp_userId_key" ON "public"."user_totp"("userId");
+CREATE UNIQUE INDEX "user_totp_userId_key" ON "user_totp"("userId");
 
 -- CreateIndex
-CREATE INDEX "two_factor_challenges_userId_idx" ON "public"."two_factor_challenges"("userId");
+CREATE INDEX "two_factor_challenges_userId_idx" ON "two_factor_challenges"("userId");
 
 -- AddForeignKey
-ALTER TABLE "public"."user_totp" ADD CONSTRAINT "user_totp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_totp" ADD CONSTRAINT "user_totp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."two_factor_challenges" ADD CONSTRAINT "two_factor_challenges_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "two_factor_challenges" ADD CONSTRAINT "two_factor_challenges_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

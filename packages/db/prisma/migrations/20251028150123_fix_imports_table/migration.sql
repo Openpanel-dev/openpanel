@@ -6,9 +6,9 @@
 
 */
 -- CreateEnum
-CREATE TYPE "public"."ImportStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
+CREATE TYPE "ImportStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
 
 -- AlterTable
-ALTER TABLE "public"."imports" DROP COLUMN "status",
-ADD COLUMN     "status" "public"."ImportStatus" NOT NULL,
+ALTER TABLE "imports" DROP COLUMN "status",
+ADD COLUMN     "status" "ImportStatus" NOT NULL,
 ALTER COLUMN "currentStep" SET NOT NULL;

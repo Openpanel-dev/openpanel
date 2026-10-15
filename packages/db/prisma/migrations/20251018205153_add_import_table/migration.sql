@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."imports" (
+CREATE TABLE "imports" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "projectId" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
@@ -19,4 +19,4 @@ CREATE TABLE "public"."imports" (
 );
 
 -- AddForeignKey
-ALTER TABLE "public"."imports" ADD CONSTRAINT "imports_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "imports" ADD CONSTRAINT "imports_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

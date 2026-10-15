@@ -1,11 +1,11 @@
 -- AlterTable
-ALTER TABLE "public"."integrations" ADD COLUMN     "projectId" TEXT;
+ALTER TABLE "integrations" ADD COLUMN     "projectId" TEXT;
 
 -- CreateIndex
-CREATE INDEX "integrations_organizationId_idx" ON "public"."integrations"("organizationId");
+CREATE INDEX "integrations_organizationId_idx" ON "integrations"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "integrations_projectId_idx" ON "public"."integrations"("projectId");
+CREATE INDEX "integrations_projectId_idx" ON "integrations"("projectId");
 
 -- AddForeignKey
-ALTER TABLE "public"."integrations" ADD CONSTRAINT "integrations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "integrations" ADD CONSTRAINT "integrations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

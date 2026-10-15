@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."cohorts" (
+CREATE TABLE "cohorts" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -15,7 +15,7 @@ CREATE TABLE "public"."cohorts" (
 );
 
 -- CreateIndex
-CREATE INDEX "cohorts_projectId_idx" ON "public"."cohorts"("projectId");
+CREATE INDEX "cohorts_projectId_idx" ON "cohorts"("projectId");
 
 -- AddForeignKey
-ALTER TABLE "public"."cohorts" ADD CONSTRAINT "cohorts_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "cohorts" ADD CONSTRAINT "cohorts_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

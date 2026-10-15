@@ -7,7 +7,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "public"."imports" DROP COLUMN "provider",
+ALTER TABLE "imports" DROP COLUMN "provider",
 DROP COLUMN "sourceLocation",
 DROP COLUMN "sourceType",
 ALTER COLUMN "config" DROP DEFAULT;
