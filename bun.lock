@@ -628,6 +628,7 @@
     },
   },
   "patchedDependencies": {
+    "react-grid-layout@2.3.0": "patches/react-grid-layout@2.3.0.patch",
     "@polar-sh/sdk@0.49.0": "patches/@polar-sh__sdk.patch",
   },
   "overrides": {

@@ -572,3 +572,16 @@ button {
     transition: none;
   }
 }
+
+/* While a tile moves, nothing under the pointer reacts: no chart tooltips,
+   no hover states, no text selection. The gesture itself runs on document
+   listeners, so the tiles need no pointer events until it ends. */
+.react-grid-layout:has(.react-draggable-dragging, .resizing) .react-grid-item
+  > * {
+  pointer-events: none;
+  user-select: none;
+}
+html:has(.react-grid-item.react-draggable-dragging),
+.react-grid-item.react-draggable-dragging {
+  cursor: grabbing;
+}

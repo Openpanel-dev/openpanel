@@ -11,8 +11,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import FullPageLoadingState from '@/components/full-page-loading-state';
 import {
   DashboardGrid,
   isSameTilePosition,
@@ -20,6 +18,8 @@ import {
   TILE_MIN_SIZE,
   useDashboardLayout,
 } from '@/components/dashboard-grid';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -123,7 +123,7 @@ function Component() {
     })
   );
 
-  const reports = reportsQuery.data ?? [];
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const dashboard = dashboardQuery.data;
   const [search, setSearch] = useState('');
 
@@ -158,7 +158,7 @@ function Component() {
   );
 
   const reportsQueryKey = trpc.report.list.queryKey({ dashboardId, projectId });
-  const updateLayouts = useMutation(
+  const { mutate: saveLayouts } = useMutation(
     trpc.report.updateLayouts.mutationOptions({
       onSuccess(savedLayouts) {
         queryClient.setQueryData(reportsQueryKey, (current) =>
@@ -210,7 +210,7 @@ function Component() {
       const items = newLayout
         .filter((item) => {
           const saved = reports.find((report) => report.id === item.i)?.layout;
-          return !saved || !isSameTilePosition(item, saved);
+          return !(saved && isSameTilePosition(item, saved));
         })
         .map((item) => ({
           reportId: item.i,
@@ -226,9 +226,49 @@ function Component() {
       if (items.length === 0) {
         return;
       }
-      updateLayouts.mutate({ dashboardId, projectId, items });
+      saveLayouts({ dashboardId, projectId, items });
     },
-    [reports, updateLayouts, dashboardId, projectId]
+    [reports, saveLayouts, dashboardId, projectId]
+  );
+
+  // The grid re-renders on every drag frame; tiles that keep their element
+  // identity are skipped by the grid's memo, so no chart renders mid-drag.
+  const deleteReport = reportDeletion.mutate;
+  const duplicateReport = reportDuplicate.mutate;
+  const moveReport = useCallback(
+    (reportId: string) => pushModal('MoveReport', { reportId, dashboardId }),
+    [dashboardId]
+  );
+  const tiles = useMemo(
+    () =>
+      filteredReports.map((report) => (
+        <div key={report.id}>
+          <ReportItem
+            endDate={endDate}
+            interval={interval}
+            onDelete={(reportId) => deleteReport({ reportId })}
+            onDuplicate={(reportId) => duplicateReport({ reportId })}
+            onMove={moveReport}
+            organizationId={organizationId}
+            projectId={projectId}
+            range={range}
+            report={report}
+            startDate={startDate}
+          />
+        </div>
+      )),
+    [
+      filteredReports,
+      endDate,
+      interval,
+      range,
+      startDate,
+      organizationId,
+      projectId,
+      deleteReport,
+      duplicateReport,
+      moveReport,
+    ]
   );
 
   if (!dashboard) {
@@ -350,28 +390,7 @@ function Component() {
           onLayoutChange={setLayout}
           onResizeStop={saveLayout}
         >
-          {filteredReports.map((report) => (
-            <div key={report.id}>
-              <ReportItem
-                endDate={endDate}
-                interval={interval}
-                onDelete={(reportId) => {
-                  reportDeletion.mutate({ reportId });
-                }}
-                onDuplicate={(reportId) => {
-                  reportDuplicate.mutate({ reportId });
-                }}
-                onMove={(reportId) => {
-                  pushModal('MoveReport', { reportId, dashboardId });
-                }}
-                organizationId={organizationId}
-                projectId={projectId}
-                range={range}
-                report={report}
-                startDate={startDate}
-              />
-            </div>
-          ))}
+          {tiles}
         </DashboardGrid>
       )}
     </PageContainer>
