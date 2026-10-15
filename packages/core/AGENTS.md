@@ -415,10 +415,9 @@ of `node:fs` and the `fileURLToPath(import.meta.url)` dance. Existing `node:fs`
 call sites are **not** swept — `node:fs` is a builtin under Bun and rewriting
 working I/O deletes nothing.
 
-Everything else Bun-native is a per-row decision, already made: passwords stay
-`@node-rs/argon2`, hashing stays `node:crypto` (a `profileId` is a persisted
-identity), Postgres stays Prisma, and core writes no direct `Bun.serve` call
-because Elysia is one. Do not adopt a `Bun.*` API this file does not name.
+`apps/start`, `@openpanel/email` and `@openpanel/redis` typecheck this source
+without Bun's types, so a `Bun.*` or `bun:*` reference is typed locally (see
+`src/shared/memory.ts`) or those packages stop compiling.
 
 ## Style
 
