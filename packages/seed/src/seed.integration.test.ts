@@ -32,6 +32,8 @@ const SEED = 3;
 const DAYS = 2;
 const SESSIONS_PER_DAY = 120;
 const PROJECT_IDS = ARCHETYPES.map(projectIdFor);
+// Migrating and seeding real databases takes ~6 s locally; bun's hook default is 5 s.
+const SEED_SETUP_TIMEOUT_MS = 60_000;
 
 async function count(query: string): Promise<number> {
   const result = await ch.query({ query, format: 'JSONEachRow' });
@@ -64,7 +66,7 @@ describe('seed against real databases', () => {
       sink,
       ignoreProgress
     );
-  });
+  }, SEED_SETUP_TIMEOUT_MS);
 
   afterAll(async () => {
     await resetProjects(PROJECT_IDS);
