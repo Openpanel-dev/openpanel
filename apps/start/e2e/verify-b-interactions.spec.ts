@@ -215,7 +215,7 @@ test('dashboard grid: drag, resize, persist, reset layout', async ({
     // --- resize card one from its bottom-right handle
     const layoutSaved = () =>
       page.waitForResponse((response) =>
-        response.url().includes('/trpc/report.updateLayout')
+        response.url().includes('/trpc/report.updateLayouts')
       );
     const handle = one.locator('.react-resizable-handle').last();
     const handleBox = await handle.boundingBox();

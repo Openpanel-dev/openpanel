@@ -157,9 +157,24 @@ function Component() {
     })
   );
 
-  const updateLayout = useMutation(
-    trpc.report.updateLayout.mutationOptions({
-      onError: handleErrorToastOptions({}),
+  const reportsQueryKey = trpc.report.list.queryKey({ dashboardId, projectId });
+  const updateLayouts = useMutation(
+    trpc.report.updateLayouts.mutationOptions({
+      onSuccess(savedLayouts) {
+        queryClient.setQueryData(reportsQueryKey, (current) =>
+          current?.map((report) => ({
+            ...report,
+            layout:
+              savedLayouts.find((saved) => saved.reportId === report.id) ??
+              report.layout,
+          }))
+        );
+      },
+      onError(error) {
+        handleErrorToastOptions({})(error);
+        // The grid already shows the rejected layout; the saved one is the rollback.
+        queryClient.invalidateQueries({ queryKey: reportsQueryKey });
+      },
     })
   );
 
@@ -190,35 +205,30 @@ function Component() {
 
   useDashboardPageContext(dashboardId, dashboardPrimer);
 
-  // One refetch after every changed tile is saved, so the grid is re-seeded
-  // from a complete server state instead of jumping per response.
   const saveLayout = useCallback(
-    async (newLayout: Layout) => {
-      const changed = newLayout.filter((item) => {
-        const saved = reports.find((report) => report.id === item.i)?.layout;
-        return !saved || !isSameTilePosition(item, saved);
-      });
-      if (changed.length === 0) {
+    (newLayout: Layout) => {
+      const items = newLayout
+        .filter((item) => {
+          const saved = reports.find((report) => report.id === item.i)?.layout;
+          return !saved || !isSameTilePosition(item, saved);
+        })
+        .map((item) => ({
+          reportId: item.i,
+          layout: {
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: item.h,
+            minW: item.minW ?? TILE_MIN_SIZE.minW,
+            minH: item.minH ?? TILE_MIN_SIZE.minH,
+          },
+        }));
+      if (items.length === 0) {
         return;
       }
-      await Promise.allSettled(
-        changed.map((item) =>
-          updateLayout.mutateAsync({
-            reportId: item.i,
-            layout: {
-              x: item.x,
-              y: item.y,
-              w: item.w,
-              h: item.h,
-              minW: item.minW ?? TILE_MIN_SIZE.minW,
-              minH: item.minH ?? TILE_MIN_SIZE.minH,
-            },
-          })
-        )
-      );
-      reportsQuery.refetch();
+      updateLayouts.mutate({ dashboardId, projectId, items });
     },
-    [reports, updateLayout, reportsQuery]
+    [reports, updateLayouts, dashboardId, projectId]
   );
 
   if (!dashboard) {
