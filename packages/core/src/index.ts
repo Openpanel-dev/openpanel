@@ -60,6 +60,7 @@ export { BULL_BOARD_BASE_PATH, bullBoardRoutes } from './http/bull-board';
 export { requestContext, requestLogging } from './http/context';
 export { corsDelegator } from './http/cors';
 export { errorHandler } from './http/errors';
+export { MEMORY_ROUTES_BASE_PATH, memoryRoutes } from './http/memory.routes';
 export type {
   AnyJob,
   QueueDefinition,

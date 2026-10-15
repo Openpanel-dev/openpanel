@@ -35,7 +35,9 @@ import {
   interceptProcessOutput,
   type KafkaConsumerHandle,
   kafkaLogger,
+  MEMORY_ROUTES_BASE_PATH,
   markEventsActivity,
+  memoryRoutes,
   opsRoutes,
   publicApiRoutes,
   type QueueDefinition,
@@ -378,6 +380,14 @@ async function buildHttpApp(deps: AppDeps) {
   if (roleConsumes && !config.core.isProduction) {
     app.use(debugRoutes(deps));
     logger.info('Debug routes enabled at /debug/cron');
+  }
+
+  if (config.core.adminAuth) {
+    app.use(memoryRoutes(deps, config.core.adminAuth));
+    logger.info(
+      { path: MEMORY_ROUTES_BASE_PATH },
+      'Memory diagnostics mounted'
+    );
   }
 
   if (roleConsumes && !config.DISABLE_BULLBOARD) {
