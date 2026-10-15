@@ -3,6 +3,7 @@ import { round } from '@openpanel/shared';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
@@ -27,6 +28,11 @@ import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
+const DEFAULT_ROWS = 10;
+// One list row with its divider, measured: the tile shows whole rows only.
+const ROW_HEIGHT = 75;
+const MORE_ROW_HEIGHT = 36;
+
 type SortOption =
   | 'count-desc'
   | 'count-asc'
@@ -45,9 +51,11 @@ export function Chart({ data }: Props) {
   const [sortBy, setSortBy] = useState<SortOption>('count-desc');
   const {
     isEditMode,
+    layout,
     report: { metric, limit, previous },
     options: { onClick, dropdownMenuContent },
   } = useReportChartContext();
+  const isTile = layout === 'fill';
   const number = useNumber();
 
   // Use useVisibleSeries to add index property for colors
@@ -102,19 +110,189 @@ export function Chart({ data }: Props) {
       }
     });
 
-    // Apply limit if not in edit mode
-    return isEditMode ? sorted : sorted.slice(0, limit || 10);
+    if (isEditMode) {
+      return sorted;
+    }
+    // A tile is cut by its height below; a saved limit still caps it.
+    if (isTile) {
+      return sorted.slice(0, limit ?? Number.POSITIVE_INFINITY);
+    }
+    return sorted.slice(0, limit || DEFAULT_ROWS);
   }, [
     seriesWithOriginalRank,
     searchQuery,
     sortBy,
     totalSum,
     isEditMode,
+    isTile,
     limit,
   ]);
 
+  const renderRows = (rows: typeof series) => (
+    <div className="divide-y divide-def-200 dark:divide-def-800">
+      {rows.map((serie) => {
+        const isClickable = !serie.names.includes(NOT_SET_VALUE) && !!onClick;
+        const isDropDownEnabled =
+          !serie.names.includes(NOT_SET_VALUE) &&
+          (dropdownMenuContent?.(serie) || []).length > 0;
+
+        const color = getChartColor(serie.index);
+        const percentOfTotal = round((serie.metrics.sum / totalSum) * 100, 1);
+
+        return (
+          <div
+            className={cn(
+              'group relative overflow-hidden px-4 py-3 transition-colors',
+              isClickable && 'cursor-pointer'
+            )}
+            key={serie.id}
+            onClick={() => {
+              if (isClickable && !isDropDownEnabled) {
+                onClick?.(serie);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (!isClickable || isDropDownEnabled) {
+                return;
+              }
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.(serie);
+              }
+            }}
+            role={isClickable ? 'button' : undefined}
+            tabIndex={isClickable ? 0 : undefined}
+          >
+            <div
+              className="pointer-events-none absolute -top-10 -left-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
+              style={{
+                background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+              }}
+            />
+
+            <div className="relative z-10 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-def-50 dark:border-def-800 dark:bg-def-900"
+                    style={{ borderColor: `${color}22` }}
+                  >
+                    <SerieIcon name={serie.names[0]} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2">
+                      <div
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
+                        Rank {serie.originalRank}
+                      </span>
+                    </div>
+
+                    <DropdownMenu
+                      onOpenChange={() =>
+                        setOpen((p) => (p === serie.id ? null : serie.id))
+                      }
+                      open={isOpen === serie.id}
+                    >
+                      <DropdownMenuTrigger
+                        asChild
+                        disabled={!isDropDownEnabled}
+                        {...(isDropDownEnabled
+                          ? {
+                              onPointerDown: (e) => e.preventDefault(),
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                setOpen(serie.id);
+                              },
+                            }
+                          : {})}
+                      >
+                        <div
+                          className={cn(
+                            'min-w-0',
+                            isDropDownEnabled && 'cursor-pointer'
+                          )}
+                          {...(isClickable && !isDropDownEnabled
+                            ? {
+                                onClick: (e) => {
+                                  e.stopPropagation();
+                                  onClick?.(serie);
+                                },
+                              }
+                            : {})}
+                        >
+                          <SerieName
+                            className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-sm tracking-tight"
+                            name={serie.names}
+                          />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuContent>
+                          {dropdownMenuContent?.(serie).map((item) => (
+                            <DropdownMenuItem
+                              key={item.title}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                item.onClick();
+                              }}
+                            >
+                              {item.icon && (
+                                <item.icon className="mr-2" size={16} />
+                              )}
+                              {item.title}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="font-mono font-semibold text-base tracking-tight">
+                      {number.format(serie.metrics.sum)}
+                    </div>
+                    {previous && serie.metrics.previous?.[metric] && (
+                      <DeltaChip
+                        size="sm"
+                        variant={
+                          serie.metrics.previous[metric].state === 'positive'
+                            ? 'inc'
+                            : 'dec'
+                        }
+                      >
+                        {serie.metrics.previous[metric].diff?.toFixed(1)}%
+                      </DeltaChip>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-700 ease-out"
+                    style={{
+                      width: `${percentOfTotal}%`,
+                      background: `linear-gradient(90deg, ${color}aa, ${color})`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className={cn('w-full', isEditMode && 'card')}>
+    <div className={cn('w-full', isEditMode && 'card', isTile && 'h-full')}>
       {isEditMode && (
         <div className="flex items-center gap-3 border-def-200 border-b p-4 dark:border-def-800">
           <div className="relative flex-1">
@@ -150,173 +328,32 @@ export function Chart({ data }: Props) {
           </Select>
         </div>
       )}
-      <div className="overflow-hidden">
-        <div className="divide-y divide-def-200 dark:divide-def-800">
-          {series.map((serie, idx) => {
-            const isClickable =
-              !serie.names.includes(NOT_SET_VALUE) && !!onClick;
-            const isDropDownEnabled =
-              !serie.names.includes(NOT_SET_VALUE) &&
-              (dropdownMenuContent?.(serie) || []).length > 0;
-
-            const color = getChartColor(serie.index);
-            const percentOfTotal = round(
-              (serie.metrics.sum / totalSum) * 100,
-              1
-            );
-
+      {isTile ? (
+        <AutoSizer disableWidth>
+          {({ height }) => {
+            const hidden = series.length > Math.floor(height / ROW_HEIGHT);
+            const roomForRows = hidden ? height - MORE_ROW_HEIGHT : height;
+            const rows = hidden
+              ? series.slice(
+                  0,
+                  Math.max(1, Math.floor(roomForRows / ROW_HEIGHT))
+                )
+              : series;
             return (
-              <div
-                className={cn(
-                  'group relative overflow-hidden px-4 py-3 transition-colors',
-                  isClickable && 'cursor-pointer'
+              <div className="overflow-hidden" style={{ height }}>
+                {renderRows(rows)}
+                {hidden && (
+                  <div className="px-4 py-2 text-muted-foreground text-sm">
+                    +{series.length - rows.length} more
+                  </div>
                 )}
-                key={serie.id}
-                onClick={() => {
-                  if (isClickable && !isDropDownEnabled) {
-                    onClick?.(serie);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (!isClickable || isDropDownEnabled) {
-                    return;
-                  }
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onClick?.(serie);
-                  }
-                }}
-                role={isClickable ? 'button' : undefined}
-                tabIndex={isClickable ? 0 : undefined}
-              >
-                <div
-                  className="pointer-events-none absolute -top-10 -left-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
-                  style={{
-                    background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-                  }}
-                />
-
-                <div className="relative z-10 flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-def-50 dark:border-def-800 dark:bg-def-900"
-                        style={{ borderColor: `${color}22` }}
-                      >
-                        <SerieIcon name={serie.names[0]} />
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="mb-1 flex items-center gap-2">
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
-                            Rank {serie.originalRank}
-                          </span>
-                        </div>
-
-                        <DropdownMenu
-                          onOpenChange={() =>
-                            setOpen((p) => (p === serie.id ? null : serie.id))
-                          }
-                          open={isOpen === serie.id}
-                        >
-                          <DropdownMenuTrigger
-                            asChild
-                            disabled={!isDropDownEnabled}
-                            {...(isDropDownEnabled
-                              ? {
-                                  onPointerDown: (e) => e.preventDefault(),
-                                  onClick: (e) => {
-                                    e.stopPropagation();
-                                    setOpen(serie.id);
-                                  },
-                                }
-                              : {})}
-                          >
-                            <div
-                              className={cn(
-                                'min-w-0',
-                                isDropDownEnabled && 'cursor-pointer'
-                              )}
-                              {...(isClickable && !isDropDownEnabled
-                                ? {
-                                    onClick: (e) => {
-                                      e.stopPropagation();
-                                      onClick?.(serie);
-                                    },
-                                  }
-                                : {})}
-                            >
-                              <SerieName
-                                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-sm tracking-tight"
-                                name={serie.names}
-                              />
-                            </div>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuContent>
-                              {dropdownMenuContent?.(serie).map((item) => (
-                                <DropdownMenuItem
-                                  key={item.title}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    item.onClick();
-                                  }}
-                                >
-                                  {item.icon && (
-                                    <item.icon className="mr-2" size={16} />
-                                  )}
-                                  {item.title}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenuPortal>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <div className="flex items-center gap-2">
-                        <div className="font-mono font-semibold text-base tracking-tight">
-                          {number.format(serie.metrics.sum)}
-                        </div>
-                        {previous && serie.metrics.previous?.[metric] && (
-                          <DeltaChip
-                            size="sm"
-                            variant={
-                              serie.metrics.previous[metric].state ===
-                              'positive'
-                                ? 'inc'
-                                : 'dec'
-                            }
-                          >
-                            {serie.metrics.previous[metric].diff?.toFixed(1)}%
-                          </DeltaChip>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
-                      <div
-                        className="h-full rounded-full transition-[width] duration-700 ease-out"
-                        style={{
-                          width: `${percentOfTotal}%`,
-                          background: `linear-gradient(90deg, ${color}aa, ${color})`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             );
-          })}
-        </div>
-      </div>
+          }}
+        </AutoSizer>
+      ) : (
+        <div className="overflow-hidden">{renderRows(series)}</div>
+      )}
     </div>
   );
 }
