@@ -217,7 +217,7 @@ test('dashboard grid: drag, resize, persist, reset layout', async ({
       page.waitForResponse((response) =>
         response.url().includes('/trpc/report.updateLayouts')
       );
-    const handle = one.locator('.react-resizable-handle').last();
+    const handle = one.locator('.react-resizable-handle-se');
     const handleBox = await handle.boundingBox();
     if (!(handleBox && initial.one && initial.two)) {
       throw new Error('grid not laid out');
