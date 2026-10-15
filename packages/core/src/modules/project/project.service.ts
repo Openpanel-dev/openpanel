@@ -86,7 +86,7 @@ export async function getProjects(
     return [];
   }
 
-  const [projects, members, access] = await Promise.all([
+  const [projects, member] = await Promise.all([
     deps.db.project.findMany({
       where: {
         organizationId,
@@ -95,31 +95,25 @@ export async function getProjects(
         eventsCount: 'desc',
       },
     }),
-    deps.db.member.findMany({
+    deps.db.member.findFirst({
       where: {
         userId,
         organizationId,
       },
-    }),
-    deps.db.projectAccess.findMany({
-      where: {
-        userId,
-        organizationId,
-      },
+      select: { projectScope: true, projects: { select: { projectId: true } } },
     }),
   ]);
 
-  if (members.length === 0) {
+  if (!member) {
     return [];
   }
 
-  if (access.length > 0) {
-    return projects.filter((project) =>
-      access.some((a) => a.projectId === project.id)
-    );
+  if (member.projectScope === 'all') {
+    return projects;
   }
 
-  return projects;
+  const selected = new Set(member.projects.map((row) => row.projectId));
+  return projects.filter((project) => selected.has(project.id));
 }
 
 /**

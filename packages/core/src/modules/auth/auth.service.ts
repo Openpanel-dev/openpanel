@@ -7,9 +7,15 @@ import {
   getOrganizationAccess as getOrganizationAccessLookup,
   getProjectAccess as getProjectAccessLookup,
   getProjectById,
+  type IOrganizationAccess,
   type IProjectAccess,
 } from '../../shared/access-lookups';
 import type { ISetCookie } from '../../shared/cookie';
+import {
+  isOrganizationAdminRole,
+  type OrganizationRole,
+  resolveOrganizationRole,
+} from '../organization/organization.constants';
 import { type AccessChecks, createAccessChecks } from './src/access';
 import {
   deleteSessionTokenCookie,
@@ -87,6 +93,8 @@ export function getAccessChecks(): Promise<ProjectAccessChecks> {
         getProjectAccess: getProjectAccessLookup,
         canWriteProject,
         getOrganizationAccess: getOrganizationAccessLookup,
+        isOrganizationAdmin: (access) =>
+          !!access && isOrganizationAdminRole(resolveOrganizationRole(access)),
         getProjectById,
       })
     );
@@ -147,10 +155,16 @@ export function createAuthService(
     return getProjectAccessLookup(args);
   }
 
-  function getOrganizationAccess(
+  async function getOrganizationAccess(
     ...args: Parameters<typeof getOrganizationAccessLookup>
-  ): ReturnType<typeof getOrganizationAccessLookup> {
-    return getOrganizationAccessLookup(...args);
+  ): Promise<
+    (Omit<IOrganizationAccess, 'role'> & { role: OrganizationRole }) | null
+  > {
+    const access = await getOrganizationAccessLookup(...args);
+    if (!access) {
+      return null;
+    }
+    return { ...access, role: resolveOrganizationRole(access) };
   }
 
   function getClientAccess(

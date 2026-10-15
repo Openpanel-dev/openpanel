@@ -5,7 +5,11 @@
 //
 // `getProjectById` is spelled here because `shared/` sits below `modules/`.
 
-import type { AccessLevel } from '@openpanel/db/src/prisma-client';
+import type {
+  AccessLevel,
+  Member,
+  ProjectScope,
+} from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 
 // Lazy: `context.ts` value-imports `services.ts`, and a static import would
@@ -36,6 +40,34 @@ export function canWriteProject(access: IProjectAccess | null): boolean {
   return !!access && WRITE_LEVELS.has(access.level);
 }
 
+/** The one role that only reads. Spelled here so `shared/` carries no other role vocabulary. */
+const READ_ONLY_ROLE = 'viewer';
+
+/**
+ * The project access rule, pure so tests and the access snapshot can run it
+ * without a database. `all` follows every project of the organization;
+ * `selected` means the member's rows and nothing else. A row's `level` only
+ * ever restricts below what the role gives.
+ */
+export function resolveProjectAccess(member: {
+  role: string;
+  projectScope: ProjectScope;
+  grant: { level: AccessLevel | null } | null;
+}): IProjectAccess | null {
+  const roleLevel: AccessLevel =
+    member.role === READ_ONLY_ROLE ? 'read' : 'write';
+  if (member.projectScope === 'all') {
+    return { level: roleLevel };
+  }
+  if (!member.grant) {
+    return null;
+  }
+  if (roleLevel === 'read') {
+    return { level: 'read' };
+  }
+  return { level: member.grant.level ?? roleLevel };
+}
+
 /**
  * Resolve a user's access to one project.
  *
@@ -44,11 +76,12 @@ export function canWriteProject(access: IProjectAccess | null): boolean {
  * and 26 of 29 mutating procedures skipped the level check (GHSA-f9rx-pxgw-c6rg).
  * With one shape, omitting the check is a type error.
  *
- * The cache key is versioned: changing the return shape without renaming it
- * would serve old-shape entries for up to 5 minutes across a rolling deploy.
+ * The cache key is versioned: changing the rule or the return shape without
+ * renaming it would serve old entries for up to 5 minutes across a rolling
+ * deploy.
  */
 export const getProjectAccess = cacheable(
-  'getProjectAccessV2',
+  'getProjectAccessV3',
   async ({
     userId,
     projectId,
@@ -63,34 +96,27 @@ export const getProjectAccess = cacheable(
       }
 
       const db = await unscopedDb();
-      const [projectAccess, member] = await Promise.all([
-        db.projectAccess.findMany({
-          where: {
-            userId,
-            organizationId: project.organizationId,
-          },
-        }),
-        db.member.findFirst({
-          where: {
-            organizationId: project.organizationId,
-            userId,
-          },
-        }),
-      ]);
+      const member = await db.member.findFirst({
+        where: {
+          organizationId: project.organizationId,
+          userId,
+        },
+        select: {
+          role: true,
+          projectScope: true,
+          projects: { where: { projectId }, select: { level: true } },
+        },
+      });
 
       if (!member) {
         return null;
       }
 
-      // No explicit per-project grants means org-wide default access, and the
-      // default is write.
-      if (projectAccess.length === 0) {
-        return { level: 'write' };
-      }
-
-      const row = projectAccess.find((item) => item.projectId === projectId);
-
-      return row ? { level: row.level } : null;
+      return resolveProjectAccess({
+        role: member.role,
+        projectScope: member.projectScope,
+        grant: member.projects[0] ?? null,
+      });
     } catch (_err) {
       return null;
     }
@@ -98,21 +124,27 @@ export const getProjectAccess = cacheable(
   60 * 5
 );
 
+/** The membership row plus what the auth module needs to derive the owner role. */
+export type IOrganizationAccess = Member & {
+  organization: { createdByUserId: string | null };
+};
+
 export const getOrganizationAccess = cacheable(
-  'getOrganizationAccess',
+  'getOrganizationAccessV2',
   async ({
     userId,
     organizationId,
   }: {
     userId: string;
     organizationId: string;
-  }) => {
+  }): Promise<IOrganizationAccess | null> => {
     const db = await unscopedDb();
     return db.member.findFirst({
       where: {
         userId,
         organizationId,
       },
+      include: { organization: { select: { createdByUserId: true } } },
     });
   },
   60 * 5

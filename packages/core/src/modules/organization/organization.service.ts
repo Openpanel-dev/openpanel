@@ -4,8 +4,8 @@
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   Invite,
+  MemberProject,
   Prisma,
-  ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
 import { DateTime, generateSecureId } from '@openpanel/shared';
@@ -24,16 +24,28 @@ import {
 } from '../../shared/access-lookups';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { replicatedTarget, TABLE_NAMES } from '../../shared/ch-tables';
-import { DEFAULT_TIMEZONE, isValidTimezone } from './organization.constants';
+import {
+  DEFAULT_TIMEZONE,
+  type InvitableRole,
+  type IProjectAccessGrant,
+  isValidTimezone,
+  normalizeOrganizationRole,
+  type OrganizationRole,
+  type ProjectScope,
+  resolveOrganizationRole,
+  STORED_ADMIN_ROLES,
+  toStoredOrganizationRole,
+} from './organization.constants';
 
 export type IServiceOrganization = Awaited<
   ReturnType<typeof getOrganizationById>
 >;
-export type IServiceInvite = Invite;
-export type IServiceMember = Prisma.MemberGetPayload<{
-  include: { user: true };
-}> & { access: ProjectAccess[] };
-export type IServiceProjectAccess = ProjectAccess;
+export type IServiceInvite = Omit<Invite, 'role'> & { role: OrganizationRole };
+export type IServiceMember = Omit<
+  Prisma.MemberGetPayload<{ include: { user: true; projects: true } }>,
+  'role'
+> & { role: OrganizationRole };
+export type IServiceMemberProject = MemberProject;
 
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end long after tracking stopped), so they are not billable activity.
@@ -114,9 +126,9 @@ export const getOrganizationByProjectIdCached = cacheablePerDb(
 export async function getInvites(
   deps: ServiceDeps,
   organizationId: string
-): Promise<Invite[]> {
+): Promise<IServiceInvite[]> {
   const db = deps.db;
-  return db.invite.findMany({
+  const invites = await db.invite.findMany({
     where: {
       organizationId,
     },
@@ -124,6 +136,10 @@ export async function getInvites(
       createdAt: 'desc',
     },
   });
+  return invites.map((invite) => ({
+    ...invite,
+    role: normalizeOrganizationRole(invite.role),
+  }));
 }
 
 export async function getInviteById(deps: ServiceDeps, inviteId: string) {
@@ -159,29 +175,65 @@ export async function getMembers(
   organizationId: string
 ): Promise<IServiceMember[]> {
   const db = deps.db;
-  const [members, access] = await Promise.all([
-    db.member.findMany({
-      where: {
-        organizationId,
-        userId: {
-          not: null,
-        },
+  const members = await db.member.findMany({
+    where: {
+      organizationId,
+      userId: {
+        not: null,
       },
-      include: {
-        user: true,
-      },
-    }),
-    db.projectAccess.findMany({
-      where: {
-        organizationId,
-      },
-    }),
-  ]);
+    },
+    include: {
+      user: true,
+      projects: true,
+      organization: { select: { createdByUserId: true } },
+    },
+  });
 
-  return members.map((member) => ({
+  return members.map(({ organization, ...member }) => ({
     ...member,
-    access: access.filter((a) => a.userId === member.userId),
-  })) as IServiceMember[];
+    role: resolveOrganizationRole({ ...member, organization }),
+  }));
+}
+
+/**
+ * Write a member's project grants to both tables. `project_access` is the
+ * previous build's source of truth and is kept in step for one more build so
+ * a rollback changes nobody's access; the next build drops it.
+ */
+function writeMemberProjects(
+  deps: ServiceDeps,
+  member: { id: string; userId: string; organizationId: string },
+  projectScope: ProjectScope,
+  grants: IProjectAccessGrant[]
+) {
+  const db = deps.db;
+  const selected = projectScope === 'all' ? [] : grants;
+  return [
+    db.member.update({
+      where: { id: member.id },
+      data: { projectScope },
+    }),
+    db.memberProject.deleteMany({ where: { memberId: member.id } }),
+    db.memberProject.createMany({
+      data: selected.map((grant) => ({
+        memberId: member.id,
+        projectId: grant.projectId,
+        // Write is what the role gives; only a restriction is worth storing.
+        level: grant.level === 'read' ? 'read' : null,
+      })),
+    }),
+    db.projectAccess.deleteMany({
+      where: { userId: member.userId, organizationId: member.organizationId },
+    }),
+    db.projectAccess.createMany({
+      data: selected.map((grant) => ({
+        userId: member.userId,
+        organizationId: member.organizationId,
+        projectId: grant.projectId,
+        level: grant.level,
+      })),
+    }),
+  ];
 }
 
 /**
@@ -258,20 +310,18 @@ export async function connectUserToOrganization(
       role: invite.role,
       email: user.email,
       invitedById: invite.createdById,
+      projectScope: invite.projectScope,
     },
   });
 
-  for (const grant of invite.projectAccess) {
-    await db.projectAccess.create({
-      data: {
-        projectId: grant.projectId,
-        userId: user.id,
-        organizationId: invite.organizationId,
-        // The level the inviting admin chose, not a hardcoded default.
-        level: grant.level,
-      },
-    });
-  }
+  await db.$transaction(
+    writeMemberProjects(
+      deps,
+      { id: member.id, userId: user.id, organizationId: invite.organizationId },
+      invite.projectScope,
+      invite.projectAccess
+    )
+  );
 
   await clearMemberAccessCache(deps, {
     userId: user.id,
@@ -583,7 +633,7 @@ export async function runDeleteCron(
     where: {
       OR: [
         { deleteAt: { lte: now } },
-        { members: { none: { role: 'org:admin' } } },
+        { members: { none: { role: { in: [...STORED_ADMIN_ROLES] } } } },
       ],
     },
     include: { projects: { select: { id: true } } },
@@ -727,8 +777,9 @@ export async function inviteUserToOrganization(
   input: {
     organizationId: string;
     email: string;
-    role: 'org:admin' | 'org:member';
-    access: { projectId: string; level: 'read' | 'write' }[];
+    role: InvitableRole;
+    projectScope: ProjectScope;
+    access: IProjectAccessGrant[];
     invitedById: string;
   }
 ): Promise<InviteUserResult> {
@@ -769,20 +820,18 @@ export async function inviteUserToOrganization(
     );
   }
 
-  await assertProjectsInOrganization(
-    deps,
-    input.organizationId,
-    input.access ?? []
-  );
+  const access = input.projectScope === 'all' ? [] : input.access;
+  await assertProjectsInOrganization(deps, input.organizationId, access);
 
   const invite = await db.invite.create({
     data: {
       id: generateSecureId('invite'),
       email,
       organizationId: input.organizationId,
-      role: input.role,
+      role: toStoredOrganizationRole(input.role),
       createdById: input.invitedById,
-      projectAccess: input.access ?? [],
+      projectScope: input.projectScope,
+      projectAccess: access,
       expiresAt: new Date(Date.now() + INVITE_EXPIRY_MS),
     },
     include: {
@@ -918,9 +967,10 @@ export async function updateOrganizationMemberAccess(
   input: {
     organizationId: string;
     targetUserId: string;
-    access: { projectId: string; level: 'read' | 'write' }[];
+    projectScope: ProjectScope;
+    access: IProjectAccessGrant[];
   }
-) {
+): Promise<void> {
   const db = deps.db;
 
   // The rows below are keyed on a user this never confirmed was a member, so
@@ -935,31 +985,25 @@ export async function updateOrganizationMemberAccess(
   if (!member) {
     throw new TRPCNotFoundError('User is not a member of this organization');
   }
-  await assertProjectsInOrganization(deps, input.organizationId, input.access);
+  const access = input.projectScope === 'all' ? [] : input.access;
+  await assertProjectsInOrganization(deps, input.organizationId, access);
 
-  const result = await db.$transaction([
-    db.projectAccess.deleteMany({
-      where: {
+  await db.$transaction(
+    writeMemberProjects(
+      deps,
+      {
+        id: member.id,
         userId: input.targetUserId,
         organizationId: input.organizationId,
       },
-    }),
-    db.projectAccess.createMany({
-      // The level the admin chose; a hardcoded 'read' hid that nothing enforced
-      // levels (GHSA-f9rx-pxgw-c6rg).
-      data: input.access.map((grant) => ({
-        userId: input.targetUserId,
-        organizationId: input.organizationId,
-        projectId: grant.projectId,
-        level: grant.level,
-      })),
-    }),
-  ]);
+      input.projectScope,
+      access
+    )
+  );
   await clearMemberAccessCache(deps, {
     userId: input.targetUserId,
     organizationId: input.organizationId,
   });
-  return result;
 }
 
 export function createOrganizationService(
@@ -993,11 +1037,10 @@ export function createOrganizationService(
     ): Promise<void> => removeOrganizationMember(deps, input),
     updateMemberAccess: (
       input: Parameters<typeof updateOrganizationMemberAccess>[1]
-    ): ReturnType<typeof updateOrganizationMemberAccess> =>
-      updateOrganizationMemberAccess(deps, input),
+    ): Promise<void> => updateOrganizationMemberAccess(deps, input),
     members: (organizationId: string): Promise<IServiceMember[]> =>
       getMembers(deps, organizationId),
-    invitations: (organizationId: string): Promise<Invite[]> =>
+    invitations: (organizationId: string): Promise<IServiceInvite[]> =>
       getInvites(deps, organizationId),
     getInvite: (inviteId: string): ReturnType<typeof getInviteById> =>
       getInviteById(deps, inviteId),

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
-import { stripTrailingSlash } from '@openpanel/shared';
+import { shortId, slug, stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
@@ -12,6 +12,7 @@ import {
   type SequenceSubject,
   step,
 } from '../email/src/sequence';
+import { toStoredOrganizationRole } from '../organization/organization.constants';
 import {
   getOrganizationById,
   getOrganizationEventsCount,
@@ -32,18 +33,8 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
-  // Sequential, not Promise.all: the early return below skips the projectAccess query
-  // for any user with a membership, which a parallel fetch would give up.
-  const db = deps.db;
-  const members = await db.member.findMany({ where: { userId } });
-  if (members.length > 0) {
-    return { canSkip: true };
-  }
-
-  const projectAccess = await db.projectAccess.findMany({
-    where: { userId },
-  });
-  return { canSkip: projectAccess.length > 0 };
+  const members = await deps.db.member.count({ where: { userId } });
+  return { canSkip: members > 0 };
 }
 
 async function createOrGetOnboardingOrganization(
@@ -62,9 +53,9 @@ async function createOrGetOnboardingOrganization(
   const db = deps.db;
   const organizationId = await getId(deps, 'organization', input.organization);
 
-  // Create the organization and its owner (org:admin member) atomically. The
-  // `delete` cron treats an organization with no org:admin member as ownerless
-  // and removes it, so an organization must never exist without one.
+  // Create the organization and its owner atomically. The `delete` cron
+  // treats an organization with no admin member as ownerless and removes it,
+  // so an organization must never exist without one.
   const [organization] = await db.$transaction([
     db.organization.create({
       data: {
@@ -78,13 +69,14 @@ async function createOrGetOnboardingOrganization(
         subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
         timezone: input.timezone,
         onboarding: '',
+        slug: `${slug(input.organization) || 'organization'}-${shortId().toLowerCase()}`,
       },
     }),
     db.member.create({
       data: {
         email: (await getUserById(deps, userId)).email,
         organizationId,
-        role: 'org:admin',
+        role: toStoredOrganizationRole('owner'),
         userId,
       },
     }),

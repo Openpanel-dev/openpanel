@@ -27,6 +27,7 @@ interface Invite {
   id: string;
   email: string;
   role: string;
+  projectScope: 'all' | 'selected';
   projectAccess: { projectId: string; level: string }[];
 }
 
@@ -35,7 +36,8 @@ interface Member {
   userId: string;
   email: string;
   role: string;
-  access: { projectId: string; level: string }[];
+  projectScope: 'all' | 'selected';
+  projects: { projectId: string; level: string | null }[];
 }
 
 const THROWAWAY_EMAIL = /^e2e-org-\d+@example\.com$/;
@@ -61,9 +63,8 @@ const sendInvite = (sheet: Locator) =>
   sheet.getByRole('button', { name: 'Invite user' }).click();
 
 const pickProjects = async (page: Page, scope: Locator, names: string[]) => {
-  await scope
-    .getByRole('button', { name: /Restrict access to projects/ })
-    .click();
+  await scope.getByRole('radio', { name: 'Selected projects' }).click();
+  await scope.getByRole('button', { name: /Choose projects/ }).click();
   for (const name of names) {
     await page.getByRole('option', { name }).click();
   }
@@ -162,7 +163,7 @@ test('the members tab lists the admin and filters by email', async ({
   await expect(page).toHaveURL(/\/members\/members$/);
   const adminRow = page.getByRole('row', { name: new RegExp(seed.user.email) });
   await expect(adminRow).toContainText('Seed Admin');
-  await expect(adminRow).toContainText('org:admin');
+  await expect(adminRow).toContainText('owner');
   await expect(adminRow).toContainText('All projects');
 
   const search = page.getByRole('textbox', { name: 'Search email' });
@@ -247,14 +248,15 @@ test('an admin invite with project access shows in the list and can be copied an
   await sheet.getByRole('button', { name: 'Close' }).first().click();
 
   const row = page.getByRole('row', { name: new RegExp(email) });
-  await expect(row).toContainText('org:admin');
+  await expect(row).toContainText('admin');
   await expect(row).toContainText('Acme Web (read-only)');
   await expect(row).toContainText('Acme Shop');
   await shot(page, 'invitations');
 
   const invites = await listInvites(page, seed.organizationId);
   const invite = invites.find((candidate) => candidate.email === email);
-  expect(invite?.role).toBe('org:admin');
+  expect(invite?.role).toBe('admin');
+  expect(invite?.projectScope).toBe('selected');
   expect(invite?.projectAccess).toEqual([
     { projectId: 'acme-web', level: 'read' },
     { projectId: 'acme-shop', level: 'write' },
@@ -295,9 +297,8 @@ test('the project access picker only offers projects', async ({
 }) => {
   await gotoHydrated(page, `/${seed.organizationId}/members/invitations`);
   const sheet = await openInviteSheet(page);
-  await sheet
-    .getByRole('button', { name: /Restrict access to projects/ })
-    .click();
+  await sheet.getByRole('radio', { name: 'Selected projects' }).click();
+  await sheet.getByRole('button', { name: /Choose projects/ }).click();
   await expect(page.getByRole('option', { name: 'Acme Web' })).toBeVisible();
   await page.keyboard.type('no-such-project');
   await expect(page.getByRole('option', { name: /Pick/ })).toHaveCount(0);
@@ -342,12 +343,13 @@ test.describe('an invited member', () => {
       const member = (await listMembers(page, seed.organizationId)).find(
         (candidate) => candidate.email === email
       );
-      expect(member?.role).toBe('org:member');
+      expect(member?.role).toBe('member');
+      expect(member?.projectScope).toBe('selected');
       expect(
-        member?.access.map((grant) => [grant.projectId, grant.level])
+        member?.projects.map((grant) => [grant.projectId, grant.level])
       ).toEqual([
         ['acme-web', 'read'],
-        ['acme-shop', 'write'],
+        ['acme-shop', null],
       ]);
 
       // Restricted UI for a non-admin.

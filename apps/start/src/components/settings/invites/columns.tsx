@@ -115,6 +115,13 @@ function AccessCell({
   const projects = projectsQuery.data ?? [];
   const access = row.original.projectAccess ?? [];
 
+  if (row.original.projectScope === 'all') {
+    return <Badge variant={'secondary'}>All projects</Badge>;
+  }
+  if (access.length === 0) {
+    return <Badge variant={'secondary'}>No projects</Badge>;
+  }
+
   return (
     <>
       {access.map((grant) => {
@@ -133,7 +140,6 @@ function AccessCell({
           </Badge>
         );
       })}
-      {access.length === 0 && <Badge variant={'secondary'}>All projects</Badge>}
     </>
   );
 }

@@ -31,6 +31,13 @@ interface FakeMember {
   userId: string | null;
   role: string;
   email: string;
+  projectScope?: 'all' | 'selected';
+}
+
+interface FakeMemberProject {
+  memberId: string;
+  projectId: string;
+  level: 'read' | null;
 }
 
 interface FakeInvite {
@@ -39,6 +46,7 @@ interface FakeInvite {
   organizationId: string;
   role: string;
   createdById: string;
+  projectScope?: 'all' | 'selected';
   projectAccess: { projectId: string; level: 'read' | 'write' }[];
   expiresAt: Date;
   createdAt: Date;
@@ -86,6 +94,7 @@ const projectAccessStore = new Map<
     level: string;
   }
 >();
+const memberProjectStore: FakeMemberProject[] = [];
 
 function resetStores() {
   organizationStore.clear();
@@ -94,6 +103,7 @@ function resetStores() {
   inviteStore.clear();
   userStore.clear();
   projectAccessStore.clear();
+  memberProjectStore.length = 0;
 }
 
 const organization = {
@@ -244,7 +254,31 @@ const member = {
     }) =>
       [...memberStore.values()]
         .filter((m) => m.organizationId === where.organizationId && m.userId)
-        .map((m) => ({ ...m, user: userStore.get(m.userId as string) }))
+        .map((m) => ({
+          ...m,
+          user: userStore.get(m.userId as string),
+          projects: memberProjectStore.filter((row) => row.memberId === m.id),
+          organization: {
+            createdByUserId:
+              organizationStore.get(m.organizationId)?.createdByUserId ?? null,
+          },
+        }))
+  ),
+  update: mock(
+    async ({
+      where: { id },
+      data,
+    }: {
+      where: { id: string };
+      data: Partial<FakeMember>;
+    }) => {
+      const existing = memberStore.get(id);
+      if (!existing) {
+        throw new Error('member not found');
+      }
+      Object.assign(existing, data);
+      return existing;
+    }
   ),
   delete: mock(
     async ({
@@ -402,6 +436,22 @@ const projectAccess = {
   ),
 };
 
+const memberProject = {
+  deleteMany: mock(async ({ where }: { where: { memberId: string } }) => {
+    const remaining = memberProjectStore.filter(
+      (row) => row.memberId !== where.memberId
+    );
+    const count = memberProjectStore.length - remaining.length;
+    memberProjectStore.length = 0;
+    memberProjectStore.push(...remaining);
+    return { count };
+  }),
+  createMany: mock(async ({ data }: { data: FakeMemberProject[] }) => {
+    memberProjectStore.push(...data);
+    return { count: data.length };
+  }),
+};
+
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
 // `connectUserToOrganization` reaches `shared/access-lookups.ts` (cacheable, on
@@ -416,6 +466,7 @@ const deps = {
     invite,
     user,
     projectAccess,
+    memberProject,
     $transaction,
   },
   ch: { command: chCommand },
@@ -459,9 +510,9 @@ function seedMemberWithTwoProjects() {
 }
 
 const EXPECTED_CLEARED_ACCESS_KEYS = [
-  'getOrganizationAccess:{"userId":"user_1","organizationId":"org_1"}',
-  'getProjectAccessV2:{"userId":"user_1","projectId":"proj_1"}',
-  'getProjectAccessV2:{"userId":"user_1","projectId":"proj_2"}',
+  'getOrganizationAccessV2:{"userId":"user_1","organizationId":"org_1"}',
+  'getProjectAccessV3:{"userId":"user_1","projectId":"proj_1"}',
+  'getProjectAccessV3:{"userId":"user_1","projectId":"proj_2"}',
 ];
 // Spread the real module: `mock.module` replaces this specifier process-wide,
 // and `event-buffer.ts` value-imports `publishEvent` from here, so a partial
@@ -645,6 +696,7 @@ test('updateOrganizationMemberAccess drops the cached access for every project o
   await subject.updateOrganizationMemberAccess(deps, {
     organizationId: 'org_1',
     targetUserId: 'user_1',
+    projectScope: 'selected',
     access: [{ projectId: 'proj_1', level: 'read' }],
   });
 
@@ -660,6 +712,7 @@ test('connectUserToOrganization drops the cached access for every project of the
     organizationId: 'org_1',
     role: 'org:member',
     createdById: 'user_admin',
+    projectScope: 'selected',
     projectAccess: [{ projectId: 'proj_1', level: 'read' }],
     expiresAt: new Date(Date.now() + 60_000),
     createdAt: EPOCH,
@@ -697,12 +750,95 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
   await subject.updateOrganizationMemberAccess(deps, {
     organizationId: 'org_1',
     targetUserId: 'user_1',
+    projectScope: 'selected',
     access: [{ projectId: 'proj_new', level: 'write' }],
   });
 
   const remaining = [...projectAccessStore.values()];
   expect(remaining).toHaveLength(1);
   expect(remaining[0]).toMatchObject({ projectId: 'proj_new', level: 'write' });
+  expect(memberProjectStore).toEqual([
+    { memberId: 'member_1', projectId: 'proj_new', level: null },
+  ]);
+  expect(memberStore.get('member_1')?.projectScope).toBe('selected');
+});
+
+test('updateOrganizationMemberAccess with scope all clears both tables', async () => {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+    projectScope: 'selected',
+  });
+  memberProjectStore.push({
+    memberId: 'member_1',
+    projectId: 'proj_old',
+    level: 'read',
+  });
+  projectAccessStore.set('access_old', {
+    id: 'access_old',
+    userId: 'user_1',
+    organizationId: 'org_1',
+    projectId: 'proj_old',
+    level: 'read',
+  });
+
+  await subject.updateOrganizationMemberAccess(deps, {
+    organizationId: 'org_1',
+    targetUserId: 'user_1',
+    projectScope: 'all',
+    access: [{ projectId: 'proj_old', level: 'read' }],
+  });
+
+  expect(memberProjectStore).toHaveLength(0);
+  expect(projectAccessStore.size).toBe(0);
+  expect(memberStore.get('member_1')?.projectScope).toBe('all');
+});
+
+test('connectUserToOrganization writes the invite grants to both tables, keeping only read as a level', async () => {
+  projectStore.set('proj_1', {
+    id: 'proj_1',
+    organizationId: 'org_1',
+    deleteAt: null,
+  });
+  projectStore.set('proj_2', {
+    id: 'proj_2',
+    organizationId: 'org_1',
+    deleteAt: null,
+  });
+  inviteStore.set('invite_1', {
+    id: 'invite_1',
+    email: 'a@example.com',
+    organizationId: 'org_1',
+    role: 'org:member',
+    createdById: 'user_admin',
+    projectScope: 'selected',
+    projectAccess: [
+      { projectId: 'proj_1', level: 'read' },
+      { projectId: 'proj_2', level: 'write' },
+    ],
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: EPOCH,
+  });
+
+  const member = await subject.connectUserToOrganization(deps, {
+    user: { id: 'user_1', email: 'a@example.com' } as never,
+    inviteId: 'invite_1',
+  });
+
+  expect(member.projectScope).toBe('selected');
+  expect(memberProjectStore).toEqual([
+    { memberId: member.id, projectId: 'proj_1', level: 'read' },
+    { memberId: member.id, projectId: 'proj_2', level: null },
+  ]);
+  expect(
+    [...projectAccessStore.values()].map((row) => [row.projectId, row.level])
+  ).toEqual([
+    ['proj_1', 'read'],
+    ['proj_2', 'write'],
+  ]);
 });
 
 // Guards: access rows must not be written for a user never confirmed as a
@@ -718,6 +854,7 @@ test('updateOrganizationMemberAccess refuses a user who is not a member', async 
     subject.updateOrganizationMemberAccess(deps, {
       organizationId: 'org_1',
       targetUserId: 'not_a_member',
+      projectScope: 'selected',
       access: [{ projectId: 'proj_new', level: 'write' }],
     })
   ).rejects.toThrow(/not a member/i);
@@ -743,6 +880,7 @@ test('updateOrganizationMemberAccess refuses a project from another organization
     subject.updateOrganizationMemberAccess(deps, {
       organizationId: 'org_1',
       targetUserId: 'user_1',
+      projectScope: 'selected',
       access: [{ projectId: 'proj_elsewhere', level: 'write' }],
     })
   ).rejects.toThrow(/not in this organization/i);
@@ -764,7 +902,8 @@ test('inviteUserToOrganization refuses when the email is already a member', asyn
     subject.inviteUserToOrganization(deps, {
       organizationId: 'org_1',
       email: 'a@example.com',
-      role: 'org:member',
+      role: 'member',
+      projectScope: 'all',
       access: [],
       invitedById: 'user_admin',
     })
@@ -787,7 +926,8 @@ test('inviteUserToOrganization refuses a duplicate pending invite', async () => 
     subject.inviteUserToOrganization(deps, {
       organizationId: 'org_1',
       email: 'b@example.com',
-      role: 'org:member',
+      role: 'member',
+      projectScope: 'all',
       access: [],
       invitedById: 'user_admin',
     })
@@ -800,7 +940,8 @@ test('inviteUserToOrganization connects an existing user immediately, with no em
   const result = await subject.inviteUserToOrganization(deps, {
     organizationId: 'org_1',
     email: 'c@example.com',
-    role: 'org:member',
+    role: 'member',
+    projectScope: 'all',
     access: [],
     invitedById: 'user_admin',
   });
@@ -813,7 +954,8 @@ test('inviteUserToOrganization emails a new user and leaves the invite pending',
   const result = await subject.inviteUserToOrganization(deps, {
     organizationId: 'org_1',
     email: 'new@example.com',
-    role: 'org:member',
+    role: 'member',
+    projectScope: 'all',
     access: [],
     invitedById: 'user_admin',
   });

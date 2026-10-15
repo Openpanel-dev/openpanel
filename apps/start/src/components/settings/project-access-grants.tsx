@@ -54,7 +54,7 @@ export function ProjectAccessGrants({
           value: project.id,
         }))}
         onChange={(ids) => handleSelectionChange(ids as string[])}
-        placeholder="Restrict access to projects"
+        placeholder="Choose projects"
         value={selectedIds}
       />
 

@@ -1,12 +1,15 @@
 import type { IServiceMember } from '@openpanel/core';
-import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
+import type {
+  IProjectAccessGrant,
+  ProjectScope,
+} from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { ButtonContainer } from '@/components/button-container';
-import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
+import { ProjectScopePicker } from '@/components/settings/project-scope-picker';
 import { Button } from '@/components/ui/button';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
@@ -17,12 +20,15 @@ export default function EditMember(member: EditMemberProps) {
   const trpc = useTRPC();
 
   const toGrants = (): IProjectAccessGrant[] =>
-    member.access?.map((a) => ({
-      projectId: a.projectId,
-      // `admin` is not offered per project - it collapses to write here.
-      level: a.level === 'read' ? ('read' as const) : ('write' as const),
-    })) ?? [];
+    member.projects.map((row) => ({
+      projectId: row.projectId,
+      // A null level derives from the role, which is write for everyone but viewers.
+      level: row.level === 'read' ? ('read' as const) : ('write' as const),
+    }));
 
+  const [projectScope, setProjectScope] = useState<ProjectScope>(
+    member.projectScope
+  );
   const [access, setAccess] = useState<IProjectAccessGrant[]>(toGrants);
 
   const projectsQuery = useQuery(
@@ -33,6 +39,7 @@ export default function EditMember(member: EditMemberProps) {
     trpc.organization.updateMemberAccess.mutationOptions({
       onError(error) {
         handleError(error);
+        setProjectScope(member.projectScope);
         setAccess(toGrants());
       },
       onSuccess() {
@@ -59,10 +66,12 @@ export default function EditMember(member: EditMemberProps) {
       />
 
       <div className="col gap-4">
-        <ProjectAccessGrants
-          onChange={setAccess}
+        <ProjectScopePicker
+          access={access}
+          onAccessChange={setAccess}
+          onScopeChange={setProjectScope}
+          projectScope={projectScope}
           projects={projects}
-          value={access}
         />
 
         <ButtonContainer>
@@ -75,6 +84,7 @@ export default function EditMember(member: EditMemberProps) {
               mutation.mutate({
                 userId: member.user!.id,
                 organizationId: member.organizationId,
+                projectScope,
                 access,
               })
             }

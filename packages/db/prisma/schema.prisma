@@ -68,6 +68,8 @@ model ChatMessage {
 model Organization {
   id              String           @id @default(dbgenerated("gen_random_uuid()"))
   name            String
+  // Nullable until every row is backfilled; the organization plugin needs it.
+  slug            String?          @unique
   projects        Project[]
   members         Member[]
   createdByUserId String?
@@ -219,22 +221,44 @@ model Session {
 }
 
 model Member {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   role           String
   email          String
   // userId is nullable because we want to allow invites to be sent to emails that are not registered
   userId         String?
-  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitedById    String?
-  invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedBy      User?           @relation("invitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // `all` follows projects created later; `selected` with no rows is no access.
+  projectScope   ProjectScope    @default(all)
+  projects       MemberProject[]
   meta           Json?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
 
   @@unique([organizationId, userId])
   @@map("members")
+}
+
+enum ProjectScope {
+  all
+  selected
+}
+
+model MemberProject {
+  memberId  String       @db.Uuid
+  member    Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Null derives the level from the role; set only to restrict below it.
+  level     AccessLevel?
+  createdAt DateTime     @default(now())
+
+  @@id([memberId, projectId])
+  @@index([projectId])
+  @@map("member_projects")
 }
 
 model Invite {
@@ -246,6 +270,7 @@ model Invite {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// [IPrismaInviteProjectAccess]
   projectAccess  Json         @default("[]")
+  projectScope   ProjectScope @default(all)
   expiresAt      DateTime
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
@@ -287,6 +312,7 @@ model Project {
   meta              EventMeta[]
   references        Reference[]
   access            ProjectAccess[]
+  memberProjects    MemberProject[]
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
