@@ -2,6 +2,27 @@
 
 Tracking upstream bugs in `@bklitui/ui` (https://ui.bklit.com / `/Users/lindesvard/Projects/bklit-ui`) that we have patched locally after `shadcn add`. Re-running `shadcn add` will regress these fixes — re-apply from this file.
 
+## Re-vendoring
+
+Last synced from the registry on 2026-10-15. Fetch every item (and its `registryDependencies`) into a scratch directory, diff against `apps/start/src/components/charts/`, copy over, then `bunx biome format --write` the folder and re-apply the patches marked **open** below.
+
+| # | Patch | Status |
+|---|---|---|
+| 1 | `require("react-dom")` | fixed upstream |
+| 2 | registry lags local source | obsolete, registry is current |
+| 3 | dark `--chart-*` overrides | **open**: re-apply in `styles.css` after `shadcn add` |
+| 4 | no dual Y axis | **open**: workaround in `overview-metrics.tsx` |
+| 5 | `tickMode="data"` | **open**: pass it per chart |
+| 6 | svg clips markers | fixed upstream (`overflow-visible`) |
+| 7 | tooltip ignores markers | **open**: ours, `op-tooltip.tsx` |
+| 8 | missing values | **open**: re-apply in `line.tsx` / `area.tsx` |
+| 9 | slow hover springs | **open**: configured, not patched (`ChartConfigProvider` in `providers.tsx`) |
+| 10–16, 18 | hover performance, `useId`, memo splits, stable context, `console.log` | fixed upstream |
+| 17 | `series-point-marker` variants per render | obsolete: the marker is `memo`ed and its variants only drive the mount animation |
+| 19 | marker badge props | **open**: re-apply in `markers/marker-group.tsx` |
+
+`chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
+
 ---
 
 ## 1. `require("react-dom")` breaks under Vite / ESM bundlers
@@ -191,17 +212,7 @@ The fallback `0` is a raw SVG y coordinate, not a data-domain zero. In SVG y=0 i
 
 **Symptom:** in `OverviewLineChart`, hovering at a date where one of the series has no datapoint shows tooltip value `0` for that series, but its hover dot sits at the very top of the chart at Y=max instead of at Y=0.
 
-**Fix (applied locally)** in `apps/start/src/components/charts/line.tsx` and `area.tsx`:
-
-```ts
-const getY = useCallback((d) => {
-  const value = d[dataKey];
-  if (typeof value === "number") {
-    return yScale(value) ?? yScale(0) ?? 0;
-  }
-  return yScale(0) ?? 0;
-}, [dataKey, yScale]);
-```
+**Fix (applied locally)** in `apps/start/src/components/charts/line.tsx` and `area.tsx`: a `hasValue` callback passed as `defined` to the `LinePath` / `AreaClosed`, so a missing value leaves a gap instead of a point at y=0 or the ceiling. The animated transition path (`use-animated-series-path.ts`) still interpolates through gaps; it only shows during a data change.
 
 `shadcn add` will revert these — re-patch from this file.
 
@@ -221,7 +232,7 @@ Bklit ships hover-related springs that feel sluggish compared to recharts' no-an
 
 Plus our own `apps/start/src/components/charts/op-date-pill.tsx` (`SPRING`).
 
-`shadcn add` reverts the bklit ones. If hover ever starts feeling laggy again, re-tune these spring constants.
+Upstream now reads these from `ChartConfigProvider` (`chart-config-context.tsx`), so we no longer patch the files: `providers.tsx` wraps the app in a provider with `{ stiffness: 1000, damping: 60 }` for the tooltip, tooltip box and highlight springs.
 
 ---
 

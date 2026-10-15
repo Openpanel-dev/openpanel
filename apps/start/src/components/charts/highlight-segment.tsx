@@ -3,8 +3,11 @@
 import { type MotionValue, motion } from 'motion/react';
 import { type RefObject, useId } from 'react';
 
-// Re-strokes the base path `d` clipped to the hover band, so the highlight
-// follows whatever curve is drawn (see `highlight-segment-bounds.ts`).
+// Hover-highlight overlay: re-strokes the base path `d`, clipped to a vertical
+// band whose x/width spring to track the hovered point, so only the segment
+// around the dot shows brighter. The band comes from `useHighlightSegment`;
+// because the bright stroke reuses the base `d`, it follows whatever curve is
+// drawn (see `highlight-segment-bounds.ts` for the band-extent caveat).
 
 export interface HighlightSegmentProps {
   /** Ref to the rendered base stroke `<path>` — its `d` is re-used verbatim. */
@@ -38,7 +41,13 @@ export function HighlightSegment({
     <>
       <defs>
         <clipPath id={clipId}>
-          <motion.rect height={height} width={width} x={x} y={0} />
+          {/* Bleed by strokeWidth so a stroke at the min/max value keeps its full width. */}
+          <motion.rect
+            height={height + strokeWidth * 2}
+            width={width}
+            x={x}
+            y={-strokeWidth}
+          />
         </clipPath>
       </defs>
       <motion.path

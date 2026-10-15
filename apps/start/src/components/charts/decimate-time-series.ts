@@ -1,3 +1,7 @@
+/**
+ * Largest-Triangle-Three-Buckets downsampling for time-series SVG paths.
+ * Keeps first/last points and picks visually significant points per bucket.
+ */
 export function decimateTimeSeries<T extends Record<string, unknown>>(
   data: T[],
   maxPoints: number,

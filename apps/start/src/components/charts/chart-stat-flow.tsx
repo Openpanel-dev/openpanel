@@ -1,7 +1,7 @@
 'use client';
 
 import NumberFlow from '@number-flow/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 /** Subset of `Intl.NumberFormatOptions` supported by NumberFlow */
@@ -24,6 +24,43 @@ export const defaultChartStatFlowFormat: ChartStatFlowFormat = {
   notation: 'standard',
   maximumFractionDigits: 0,
 };
+
+function formatStatValue(
+  value: number,
+  formatOptions: ChartStatFlowFormat,
+  prefix?: string,
+  suffix?: string
+): string {
+  const formatted = new Intl.NumberFormat(undefined, formatOptions).format(
+    value
+  );
+  return `${prefix ?? ''}${formatted}${suffix ?? ''}`;
+}
+
+function useNumberFlowElementReady(): boolean {
+  const [ready, setReady] = useState(
+    () =>
+      typeof customElements !== 'undefined' &&
+      Boolean(customElements.get('number-flow-react'))
+  );
+
+  useEffect(() => {
+    if (ready) {
+      return;
+    }
+    let cancelled = false;
+    customElements.whenDefined('number-flow-react').then(() => {
+      if (!cancelled) {
+        setReady(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  return ready;
+}
 
 export interface ChartStatFlowProps {
   value: number;
@@ -50,6 +87,12 @@ export function ChartStatFlow({
   labelClassName = 'text-xs',
   icon,
 }: ChartStatFlowProps) {
+  const numberFlowReady = useNumberFlowElementReady();
+  const staticValue = useMemo(
+    () => formatStatValue(value, formatOptions, prefix, suffix),
+    [value, formatOptions, prefix, suffix]
+  );
+
   return (
     <>
       {icon ? (
@@ -58,13 +101,18 @@ export function ChartStatFlow({
         </div>
       ) : null}
       <span className={cn('text-foreground tabular-nums', valueClassName)}>
-        <NumberFlow
-          format={formatOptions}
-          prefix={prefix}
-          suffix={suffix}
-          value={value}
-          willChange
-        />
+        {numberFlowReady ? (
+          <NumberFlow
+            format={formatOptions}
+            isolate
+            prefix={prefix}
+            suffix={suffix}
+            value={value}
+            willChange
+          />
+        ) : (
+          staticValue
+        )}
       </span>
       <span className={cn('mt-0.5 text-chart-label', labelClassName)}>
         {label}

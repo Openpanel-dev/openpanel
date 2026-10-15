@@ -3,6 +3,7 @@
 import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { useChartHover } from './chart-context';
+import { useChartLegendHover } from './chart-legend-hover';
 
 interface SeriesHoverDimProps {
   /** Skip the dim entirely. */
@@ -11,6 +12,8 @@ interface SeriesHoverDimProps {
   dimOpacity?: number;
   /** Tween duration in seconds. */
   durationSec?: number;
+  /** Series index for multi-series legend hover dimming. */
+  seriesIndex?: number;
   /** Stable chart visuals — area fill, stroke line, dashed tail, etc. */
   children: ReactNode;
 }
@@ -29,11 +32,18 @@ export function SeriesHoverDim({
   enabled = true,
   dimOpacity = 0.5,
   durationSec = 0.4,
+  seriesIndex,
   children,
 }: SeriesHoverDimProps) {
   const { tooltipData, selection } = useChartHover();
-  const isHovering = tooltipData !== null || selection?.active === true;
-  const opacity = enabled && isHovering ? dimOpacity : 1;
+  const { hoveredIndex: legendHoveredIndex } = useChartLegendHover();
+  const isChartHovering = tooltipData !== null || selection?.active === true;
+  const isLegendDimmed =
+    legendHoveredIndex !== null &&
+    seriesIndex !== undefined &&
+    legendHoveredIndex !== seriesIndex;
+  const opacity =
+    enabled && (isChartHovering || isLegendDimmed) ? dimOpacity : 1;
   return (
     <motion.g
       animate={{ opacity }}

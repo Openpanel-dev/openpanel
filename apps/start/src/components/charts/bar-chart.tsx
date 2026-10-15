@@ -1,12 +1,9 @@
 'use client';
 
 import { localPoint } from '@visx/event';
-import { ParentSize } from '@visx/responsive';
 import { scaleBand, scaleLinear } from '@visx/scale';
 import type { Transition } from 'motion/react';
 import {
-  Children,
-  isValidElement,
   memo,
   type ReactElement,
   type ReactNode,
@@ -16,8 +13,19 @@ import {
   useRef,
   useState,
 } from 'react';
+import { cn } from '@/lib/utils';
 import { DEFAULT_ANIMATION_EASING } from './animation';
 import type { BarProps } from './bar';
+import { topSquareCenterY } from './bar-squares-layout';
+import {
+  forEachChartChild,
+  isChartClipPassthrough,
+  isClipExcludedComponent,
+  isPostOverlayComponent,
+  isUnderlayComponent,
+  renderKeyedChartLayers,
+  resolveChartChildElement,
+} from './chart-child-passthrough';
 import {
   ChartProvider,
   type LineConfig,
@@ -26,8 +34,25 @@ import {
 } from './chart-context';
 import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
 import { shortDateFmt } from './chart-formatters';
+import { ParentSize } from './chart-parent-size';
+import {
+  type ChartPhase,
+  type ChartStatus,
+  DEFAULT_CHART_LIFECYCLE,
+  resolveRestingChartPhase,
+} from './chart-phase';
+import { BarLoadingSkeleton } from './loading-sweep';
+import { extractReferenceAreaConfigs } from './reference-area-config';
 import { useScheduledTooltip } from './use-scheduled-tooltip';
-import { cn } from '@/lib/utils';
+import {
+  buildYScalesForLines,
+  getPrimaryYScale,
+  normalizeYAxisId,
+  wrapSingleYScale,
+} from './y-axis-scales';
+
+/** Skeleton bars to show when `status="loading"` and `data` is empty. */
+const FALLBACK_LOADING_BARS = 12;
 
 export type BarOrientation = 'vertical' | 'horizontal';
 
@@ -60,24 +85,36 @@ export interface BarChartProps {
   stacked?: boolean;
   /** Gap between stacked bar segments in pixels. Default: 0 */
   stackGap?: number;
-  /** Child components (Bar, Grid, ChartTooltip, etc.) */
-  children: ReactNode;
+  /** When set, tooltip Y positions snap to the top square center (shape variant). */
+  squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
+  /** Child components (Bar, Grid, ChartTooltip, etc.). Optional — omit for a
+   * pure `status="loading"` skeleton. */
+  children?: ReactNode;
+  /** Reports reveal lifecycle for OG screenshots and loading orchestration. */
+  onPhaseChange?: (phase: ChartPhase) => void;
+  /** Fetch / display status. When `"loading"`, a shimmer skeleton replaces the
+   * bars (no chart data required). Default: `"ready"`. */
+  status?: ChartStatus;
 }
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
+// Extract bar configs from children synchronously
 function extractBarConfigs(children: ReactNode): LineConfig[] {
   const configs: LineConfig[] = [];
 
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) {
-      return;
-    }
-
+  forEachChartChild(children, (child) => {
     const childType = child.type as {
       displayName?: string;
       name?: string;
+      __isBarDepthLayer?: boolean;
     };
+    // Bar-depth surface layers (BarDepthBack/Front, BarPulse) carry a
+    // `dataKey` to pair with a Bar but are not series themselves — skip them
+    // so they don't inflate the series count and shrink the real bars.
+    if (childType.__isBarDepthLayer) {
+      return;
+    }
     const componentName =
       typeof child.type === 'function'
         ? childType.displayName || childType.name || ''
@@ -86,6 +123,7 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
     const props = child.props as BarProps | undefined;
     const isBarComponent =
       componentName === 'Bar' ||
+      componentName === 'BarSquares' ||
       (props && typeof props.dataKey === 'string' && props.dataKey.length > 0);
 
     if (isBarComponent && props?.dataKey) {
@@ -97,30 +135,12 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
         dataKey: props.dataKey,
         stroke: dotColor,
         strokeWidth: 0,
+        yAxisId: props.yAxisId,
       });
     }
   });
 
   return configs;
-}
-
-function isPostOverlayComponent(child: ReactElement): boolean {
-  const childType = child.type as {
-    displayName?: string;
-    name?: string;
-    __isChartMarkers?: boolean;
-  };
-
-  if (childType.__isChartMarkers) {
-    return true;
-  }
-
-  const componentName =
-    typeof child.type === 'function'
-      ? childType.displayName || childType.name || ''
-      : '';
-
-  return componentName === 'ChartMarkers' || componentName === 'MarkerGroup';
 }
 
 interface ChartInnerProps {
@@ -138,8 +158,11 @@ interface ChartInnerProps {
   orientation: BarOrientation;
   stacked: boolean;
   stackGap: number;
+  squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  onPhaseChange?: (phase: ChartPhase) => void;
+  status: ChartStatus;
 }
 
 function ChartInner(props: ChartInnerProps) {
@@ -165,8 +188,11 @@ const ChartCore = memo(function ChartCore({
   orientation,
   stacked,
   stackGap,
+  squareSnap,
   children,
   containerRef,
+  onPhaseChange,
+  status,
 }: ChartInnerProps) {
   const { tooltipData, setTooltipData, scheduleTooltip, clearTooltip } =
     useScheduledTooltip<TooltipData>();
@@ -176,11 +202,13 @@ const ChartCore = memo(function ChartCore({
 
   const isHorizontal = orientation === 'horizontal';
 
+  // Extract bar configs synchronously from children
   const lines = useMemo(() => extractBarConfigs(children), [children]);
 
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
+  // Category accessor function - returns string for categorical scale
   const categoryAccessor = useCallback(
     (d: Record<string, unknown>): string => {
       const value = d[xDataKey];
@@ -204,6 +232,7 @@ const ChartCore = memo(function ChartCore({
     [xDataKey]
   );
 
+  // Category scale (band) - for the categorical axis
   const categoryScale = useMemo(() => {
     const domain = data.map((d) => categoryAccessor(d));
     const range: [number, number] = isHorizontal
@@ -216,10 +245,13 @@ const ChartCore = memo(function ChartCore({
     });
   }, [innerWidth, innerHeight, data, categoryAccessor, barGap, isHorizontal]);
 
+  // Band width for bars - use prop if provided, otherwise use scale's bandwidth
   const bandWidth = barWidthProp ?? categoryScale.bandwidth();
 
+  // Compute max value considering stacking
   const maxValue = useMemo(() => {
     if (stacked) {
+      // For stacked bars, sum all values at each data point
       let max = 0;
       for (const d of data) {
         let sum = 0;
@@ -235,6 +267,7 @@ const ChartCore = memo(function ChartCore({
       }
       return max || 100;
     }
+    // For grouped bars, find max single value
     let max = 0;
     for (const line of lines) {
       for (const d of data) {
@@ -247,6 +280,7 @@ const ChartCore = memo(function ChartCore({
     return max || 100;
   }, [data, lines, stacked]);
 
+  // Value scale (linear) - for the value axis
   const valueScale = useMemo(() => {
     const range = isHorizontal ? [0, innerWidth] : [innerHeight, 0];
     return scaleLinear({
@@ -256,6 +290,32 @@ const ChartCore = memo(function ChartCore({
     });
   }, [innerWidth, innerHeight, maxValue, isHorizontal]);
 
+  const yScales = useMemo(() => {
+    if (isHorizontal) {
+      return wrapSingleYScale(valueScale);
+    }
+    return buildYScalesForLines({
+      lines,
+      data,
+      innerHeight,
+      resolveDomain: (dataKeys) => {
+        let max = 0;
+        for (const d of data) {
+          for (const key of dataKeys) {
+            const value = d[key];
+            if (typeof value === 'number' && value > max) {
+              max = value;
+            }
+          }
+        }
+        return [0, (max || 100) * 1.1];
+      },
+    });
+  }, [data, innerHeight, isHorizontal, lines, valueScale]);
+
+  const primaryYScale = getPrimaryYScale(yScales, valueScale);
+
+  // Compute stack offsets for stacked bars
   const stackOffsets = useMemo(() => {
     if (!stacked) {
       return undefined;
@@ -313,12 +373,23 @@ const ChartCore = memo(function ChartCore({
   useEffect(() => {
     setRevealEpoch((n) => n + 1);
     setIsLoaded(false);
+    // While loading, hold the skeleton (no reveal, no interaction). When
+    // status flips to "ready" this effect re-runs and plays the grow reveal.
+    if (status === 'loading') {
+      return;
+    }
+    const staggerMs = data.length > 1 ? animationDuration * 0.4 : 0;
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, animationDuration);
+    }, animationDuration + staggerMs);
     return () => clearTimeout(timer);
-  }, [animationDuration, revealSignature]);
+  }, [animationDuration, revealSignature, status]);
 
+  useEffect(() => {
+    onPhaseChange?.(isLoaded ? 'ready' : 'revealing');
+  }, [isLoaded, onPhaseChange]);
+
+  // Mouse move handler
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGGElement>) => {
       const point = localPoint(event);
@@ -328,6 +399,7 @@ const ChartCore = memo(function ChartCore({
 
       const pos = isHorizontal ? point.y - margin.top : point.x - margin.left;
 
+      // Find which band the mouse is over
       const bandIndex = Math.floor(pos / columnWidth);
       const clampedIndex = Math.max(0, Math.min(data.length - 1, bandIndex));
       const d = data[clampedIndex];
@@ -336,6 +408,7 @@ const ChartCore = memo(function ChartCore({
         return;
       }
 
+      // Calculate positions for each bar
       const yPositions: Record<string, number> = {};
       const xPositions: Record<string, number> = {};
       const barPos = categoryScale(categoryAccessor(d)) ?? 0;
@@ -356,7 +429,9 @@ const ChartCore = memo(function ChartCore({
             const value = d[line.dataKey];
             if (typeof value === 'number') {
               cumulative += value;
-              xPositions[line.dataKey] = valueScale(cumulative) ?? 0;
+              const axisScale =
+                yScales[normalizeYAxisId(line.yAxisId)] ?? valueScale;
+              xPositions[line.dataKey] = axisScale(cumulative) ?? 0;
               yPositions[line.dataKey] = barPos + bandWidth / 2;
             }
           }
@@ -365,7 +440,9 @@ const ChartCore = memo(function ChartCore({
           lines.forEach((line, idx) => {
             const value = d[line.dataKey];
             if (typeof value === 'number') {
-              xPositions[line.dataKey] = valueScale(value) ?? 0;
+              const axisScale =
+                yScales[normalizeYAxisId(line.yAxisId)] ?? valueScale;
+              xPositions[line.dataKey] = axisScale(value) ?? 0;
               yPositions[line.dataKey] =
                 barPos +
                 idx * (individualBarHeight + groupGap) +
@@ -374,19 +451,22 @@ const ChartCore = memo(function ChartCore({
           });
         }
       } else if (stacked) {
+        // Vertical stacked bars
         let cumulative = 0;
         let seriesIdx = 0;
         for (const line of lines) {
           const value = d[line.dataKey];
           if (typeof value === 'number') {
             cumulative += value;
+            const axisScale =
+              yScales[normalizeYAxisId(line.yAxisId)] ?? primaryYScale;
             const gapOffset = seriesIdx * stackGap;
-            yPositions[line.dataKey] =
-              (valueScale(cumulative) ?? 0) - gapOffset;
+            yPositions[line.dataKey] = (axisScale(cumulative) ?? 0) - gapOffset;
             seriesIdx++;
           }
         }
       } else {
+        // Vertical grouped bars
         const seriesCount = lines.length;
         const groupGap = seriesCount > 1 ? 4 : 0;
         const individualBarWidth =
@@ -397,7 +477,24 @@ const ChartCore = memo(function ChartCore({
         lines.forEach((line, idx) => {
           const value = d[line.dataKey];
           if (typeof value === 'number') {
-            yPositions[line.dataKey] = valueScale(value) ?? 0;
+            const axisScale =
+              yScales[normalizeYAxisId(line.yAxisId)] ?? primaryYScale;
+            const baselineY = axisScale(0) ?? innerHeight;
+            const valueY = axisScale(value) ?? 0;
+            const barLengthPx = baselineY - valueY;
+
+            if (squareSnap && !isHorizontal && value > 0) {
+              yPositions[line.dataKey] = topSquareCenterY({
+                baselineY,
+                barLengthPx,
+                squareSize: individualBarWidth,
+                gap: squareSnap.squareGap,
+                fit: squareSnap.fit,
+              });
+            } else {
+              yPositions[line.dataKey] = valueY;
+            }
+
             xPositions[line.dataKey] =
               barPos +
               idx * (individualBarWidth + groupGap) +
@@ -409,6 +506,7 @@ const ChartCore = memo(function ChartCore({
       // Tooltip position: for horizontal, position at max bar end; for vertical, center of band
       let tooltipX: number;
       if (isHorizontal) {
+        // Position tooltip at the end of the longest bar
         const maxX = Math.max(...Object.values(xPositions), 0);
         tooltipX = maxX;
       } else {
@@ -437,6 +535,10 @@ const ChartCore = memo(function ChartCore({
       stacked,
       stackGap,
       scheduleTooltip,
+      yScales,
+      primaryYScale,
+      squareSnap,
+      innerHeight,
     ]
   );
 
@@ -446,33 +548,49 @@ const ChartCore = memo(function ChartCore({
 
   const canInteract = isLoaded;
 
+  // Separate children into defs, pre-overlay, and post-overlay
   const defsChildren: ReactElement[] = [];
+  const clipExcludedChildren: ReactElement[] = [];
+  const underlayChildren: ReactElement[] = [];
   const preOverlayChildren: ReactElement[] = [];
   const postOverlayChildren: ReactElement[] = [];
 
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) {
-      return;
-    }
+  forEachChartChild(children, (child) => {
+    const resolvedChild = resolveChartChildElement(child);
 
     if (isGradientDefComponent(child)) {
       defsChildren.push(child);
     } else if (isPatternDefComponent(child)) {
       preOverlayChildren.push(child);
-    } else if (isPostOverlayComponent(child)) {
-      postOverlayChildren.push(child);
+    } else if (isPostOverlayComponent(resolvedChild)) {
+      postOverlayChildren.push(resolvedChild);
+    } else if (isClipExcludedComponent(resolvedChild)) {
+      clipExcludedChildren.push(
+        isChartClipPassthrough(child.type) ? resolvedChild : child
+      );
+    } else if (isUnderlayComponent(resolvedChild)) {
+      underlayChildren.push(resolvedChild);
     } else {
       preOverlayChildren.push(child);
     }
   });
 
+  const referenceAreas = useMemo(
+    () => extractReferenceAreaConfigs(children),
+    [children]
+  );
+
   const contextValue = {
+    ...DEFAULT_CHART_LIFECYCLE,
+    chartPhase: resolveRestingChartPhase(status),
+    chartStatus: status,
     data,
     renderData: data,
     xScale: fakeTimeScale as unknown as ReturnType<
       typeof import('@visx/scale').scaleTime<number>
     >,
-    yScale: valueScale,
+    yScale: isHorizontal ? valueScale : primaryYScale,
+    yScales,
     width,
     height,
     innerWidth,
@@ -483,6 +601,7 @@ const ChartCore = memo(function ChartCore({
     setTooltipData,
     containerRef,
     lines,
+    referenceAreas,
     isLoaded,
     animationDuration,
     animationEasing,
@@ -498,11 +617,18 @@ const ChartCore = memo(function ChartCore({
     orientation,
     stacked,
     stackOffsets,
+    squareSnap,
   };
 
   return (
     <ChartProvider value={contextValue}>
-      <svg aria-hidden="true" height={height} width={width}>
+      <svg
+        aria-hidden="true"
+        className="overflow-visible"
+        height={height}
+        width={width}
+      >
+        {/* Gradient and pattern definitions */}
         {defsChildren.length > 0 && <defs>{defsChildren}</defs>}
 
         <rect fill="transparent" height={height} width={width} x={0} y={0} />
@@ -514,6 +640,7 @@ const ChartCore = memo(function ChartCore({
           style={{ cursor: canInteract ? 'crosshair' : 'default' }}
           transform={`translate(${margin.left},${margin.top})`}
         >
+          {/* Background rect for mouse event detection */}
           <rect
             fill="transparent"
             height={innerHeight}
@@ -522,10 +649,20 @@ const ChartCore = memo(function ChartCore({
             y={0}
           />
 
-          {preOverlayChildren}
+          {renderKeyedChartLayers(clipExcludedChildren)}
+          {renderKeyedChartLayers(underlayChildren)}
+          {status === 'loading' ? (
+            <BarLoadingSkeleton
+              barCount={data.length || FALLBACK_LOADING_BARS}
+              innerHeight={innerHeight}
+              innerWidth={innerWidth}
+            />
+          ) : (
+            renderKeyedChartLayers(preOverlayChildren)
+          )}
 
           {/* Markers rendered last so they're on top for interaction */}
-          {postOverlayChildren}
+          {renderKeyedChartLayers(postOverlayChildren)}
         </g>
       </svg>
     </ChartProvider>
@@ -547,14 +684,17 @@ export function BarChart({
   orientation = 'vertical',
   stacked = false,
   stackGap = 0,
+  squareSnap,
   children,
+  onPhaseChange,
+  status = 'ready',
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
 
   return (
     <div
-      className={cn('relative w-full', className)}
+      className={cn('relative w-full overflow-visible', className)}
       ref={containerRef}
       style={{ aspectRatio }}
     >
@@ -570,10 +710,13 @@ export function BarChart({
             enterTransition={enterTransition}
             height={height}
             margin={margin}
+            onPhaseChange={onPhaseChange}
             orientation={orientation}
             revealSignature={revealSignature}
+            squareSnap={squareSnap}
             stacked={stacked}
             stackGap={stackGap}
+            status={status}
             width={width}
             xDataKey={xDataKey}
           >

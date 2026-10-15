@@ -17,7 +17,11 @@ function defaultDedupeKey<T>(tooltip: T): string {
     'index' in tooltip &&
     typeof (tooltip as { index: unknown }).index === 'number'
   ) {
-    return String((tooltip as { index: number }).index);
+    const { index, x } = tooltip as { index: number; x?: number };
+    if (typeof x === 'number') {
+      return `${index}:${Math.round(x)}`;
+    }
+    return String(index);
   }
   return JSON.stringify(tooltip);
 }

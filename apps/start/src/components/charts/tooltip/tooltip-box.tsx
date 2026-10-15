@@ -4,8 +4,9 @@ import { motion, useSpring } from 'motion/react';
 import type { RefObject } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { type SpringConfig, useChartConfig } from '../chart-config-context';
 import { cn } from '@/lib/utils';
+import { type SpringConfig, useChartConfig } from '../chart-config-context';
+import { chartCssVars } from '../chart-context';
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */
@@ -34,7 +35,30 @@ export interface TooltipBoxProps {
   flipped?: boolean;
   /** Per-chart override; falls back to `ChartConfigProvider.tooltipBoxSpring`. */
   springConfig?: SpringConfig;
+  /** Animate panel position with a spring. Default: true */
+  animate?: boolean;
+  /** Fade/scale the panel on show. Default: true */
+  entrance?: boolean;
+  /** Inline styles for the inner tooltip panel. */
+  panelStyle?: React.CSSProperties;
+  /**
+   * Tooltip panel background color (CSS variable or color value).
+   * Default: `var(--chart-tooltip-background)`.
+   */
+  backgroundColor?: string;
 }
+
+/**
+ * Popover-style panel: rounded, 1px border, soft layered shadow and a 1px
+ * edge highlight (`before:`) — matches shadcn / coss popovers using only theme
+ * tokens (`border`, `--radius`) and Tailwind utilities.
+ */
+const TOOLTIP_PANEL_CLASS_NAME =
+  'relative min-w-[160px] rounded-xl border not-dark:bg-clip-padding text-chart-tooltip-foreground shadow-lg/5 before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-xl)-1px)] before:shadow-[0_1px_rgb(0_0_0/0.04)] dark:before:shadow-[0_-1px_rgb(255_255_255/0.06)]';
+
+/** Clips content to the panel's inner radius without clipping the edge highlight. */
+const TOOLTIP_PANEL_INNER_CLASS_NAME =
+  'overflow-hidden rounded-[calc(var(--radius-xl)-1px)]';
 
 // Inner-only-on-visible so `useSpring` initializes at the cursor's actual x/y
 // instead of (0, 0) on first hover.
@@ -67,6 +91,10 @@ function TooltipBoxInner({
   top: topOverride,
   flipped: flippedOverride,
   springConfig,
+  animate = true,
+  entrance = true,
+  panelStyle,
+  backgroundColor = chartCssVars.tooltipBackground,
   container,
 }: Omit<TooltipBoxProps, 'visible' | 'containerRef'> & {
   container: HTMLElement;
@@ -77,6 +105,7 @@ function TooltipBoxInner({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipWidthRef = useRef(180);
   const tooltipHeightRef = useRef(80);
+  const [staticPosition, setStaticPosition] = useState({ left: x, top: y });
 
   const tw = tooltipWidthRef.current;
   const th = tooltipHeightRef.current;
@@ -90,10 +119,10 @@ function TooltipBoxInner({
   const animatedLeft = useSpring(targetX, effectiveSpring);
   const animatedTop = useSpring(targetY, effectiveSpring);
 
-  if (leftOverride === undefined) {
+  if (animate && leftOverride === undefined) {
     animatedLeft.set(targetX);
   }
-  if (topOverride === undefined) {
+  if (animate && topOverride === undefined) {
     animatedTop.set(targetY);
   }
 
@@ -118,6 +147,10 @@ function TooltipBoxInner({
       offset,
       Math.min(y - h2 / 2, containerHeight - h2 - offset)
     );
+    if (!animate) {
+      setStaticPosition({ left: tx, top: ty });
+      return;
+    }
     if (leftOverride === undefined) {
       animatedLeft.set(tx);
     }
@@ -132,6 +165,7 @@ function TooltipBoxInner({
     offset,
     leftOverride,
     topOverride,
+    animate,
     animatedLeft,
     animatedTop,
   ]);
@@ -146,10 +180,42 @@ function TooltipBoxInner({
     }
   }, [shouldFlipX]);
 
-  const finalLeft = leftOverride ?? animatedLeft;
-  const finalTop = topOverride ?? animatedTop;
+  const finalLeft = animate
+    ? (leftOverride ?? animatedLeft)
+    : staticPosition.left;
+  const finalTop = animate ? (topOverride ?? animatedTop) : staticPosition.top;
   const isFlipped = flippedOverride ?? shouldFlipX;
   const transformOrigin = isFlipped ? 'right top' : 'left top';
+
+  const panelClassName = cn(
+    TOOLTIP_PANEL_CLASS_NAME,
+    panelStyle?.backgroundColor === undefined &&
+      backgroundColor === chartCssVars.tooltipBackground &&
+      'bg-chart-tooltip-background',
+    panelStyle?.backdropFilter === undefined && 'backdrop-blur-md'
+  );
+  const panelStyleResolved = {
+    transformOrigin,
+    ...(panelStyle?.backgroundColor === undefined && {
+      backgroundColor,
+    }),
+    ...panelStyle,
+  };
+
+  if (!entrance) {
+    return createPortal(
+      <div
+        className={cn('pointer-events-none absolute z-50', className)}
+        ref={tooltipRef}
+        style={{ left: staticPosition.left, top: staticPosition.top }}
+      >
+        <div className={panelClassName} style={panelStyleResolved}>
+          <div className={TOOLTIP_PANEL_INNER_CLASS_NAME}>{children}</div>
+        </div>
+      </div>,
+      container
+    );
+  }
 
   return createPortal(
     <motion.div
@@ -163,13 +229,13 @@ function TooltipBoxInner({
     >
       <motion.div
         animate={{ scale: 1, opacity: 1, x: 0 }}
-        className="min-w-[140px] overflow-hidden rounded-lg bg-chart-tooltip-background text-chart-tooltip-foreground shadow-lg backdrop-blur-md"
+        className={panelClassName}
         initial={{ scale: 0.85, opacity: 0, x: isFlipped ? 20 : -20 }}
         key={flipKey}
-        style={{ transformOrigin }}
+        style={panelStyleResolved}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       >
-        {children}
+        <div className={TOOLTIP_PANEL_INNER_CLASS_NAME}>{children}</div>
       </motion.div>
     </motion.div>,
     container
