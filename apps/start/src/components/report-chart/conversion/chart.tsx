@@ -52,8 +52,9 @@ export function Chart({ data }: Props) {
       visibleSeries: savedVisibleSeries,
     },
     isEditMode,
+    layout,
     shareId,
-    options: { hideXAxis, hideYAxis, maxDomain },
+    options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
   const dispatch = useDispatch();
   const { series, setVisibleSeries } = useVisibleConversionSeries(data, {
@@ -240,11 +241,13 @@ export function Chart({ data }: Props) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <ConversionTable
-        data={data}
-        setVisibleSeries={setVisibleSeries}
-        visibleSeries={series}
-      />
+      {layout !== 'fill' && (
+        <ConversionTable
+          data={data}
+          setVisibleSeries={setVisibleSeries}
+          visibleSeries={series}
+        />
+      )}
     </TooltipProvider>
   );
 }
@@ -257,7 +260,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     visibleSeries: RouterOutputs['chart']['conversion']['current'];
   }
 >(({ data, context }) => {
-  if (!(data && data[0])) {
+  if (!data?.[0]) {
     return null;
   }
 

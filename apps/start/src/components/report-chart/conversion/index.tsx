@@ -9,7 +9,7 @@ import { Summary } from './summary';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportConversionChart() {
-  const { isLazyLoading, shareId } = useReportChartContext();
+  const { isLazyLoading, shareId, layout } = useReportChartContext();
   const chartInput = useChartInput();
   const trpc = useTRPC();
   const res = useQuery(
@@ -39,6 +39,14 @@ export function ReportConversionChart() {
 
   if (!res.data || res.data?.current.length === 0) {
     return <Empty />;
+  }
+
+  if (layout === 'fill') {
+    return (
+      <AspectContainer>
+        <Chart data={res.data} />
+      </AspectContainer>
+    );
   }
 
   return (

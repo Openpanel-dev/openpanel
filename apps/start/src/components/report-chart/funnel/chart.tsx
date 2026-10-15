@@ -29,13 +29,13 @@ import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor, getChartTranslucentColor } from '@/utils/theme';
 
-type Props = {
+interface Props {
   data: {
     current: RouterOutputs['chart']['funnel']['current'][number];
     previous: RouterOutputs['chart']['funnel']['current'][number] | null;
   };
   noTopBorderRadius?: boolean;
-};
+}
 
 export const Metric = ({
   label,
@@ -332,7 +332,7 @@ export function Tables({
   );
 }
 
-type RechartData = {
+interface RechartData {
   name: string;
   [key: `step:percent:${number}`]: number | null;
   [key: `step:data:${number}`]:
@@ -346,7 +346,7 @@ type RechartData = {
         step: RouterOutputs['chart']['funnel']['current'][number]['steps'][number];
       })
     | null;
-};
+}
 
 const useRechartData = ({
   current,
@@ -453,6 +453,7 @@ export function Chart({
   data: RouterOutputs['chart']['funnel'];
   visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
 }) {
+  const { layout } = useReportChartContext();
   const rechartData = useRechartData({ ...data, visibleBreakdowns });
   const xAxisProps = useXAxisProps();
   const yAxisProps = useYAxisProps();
@@ -544,7 +545,13 @@ export function Chart({
       hasPrevious={hasPrevious}
       visibleBreakdownIds={new Set(visibleBreakdowns.map((b) => b.id))}
     >
-      <div className="card aspect-video max-h-[250px] w-full p-4 pb-1">
+      <div
+        className={cn(
+          layout === 'fill'
+            ? 'h-full w-full'
+            : 'card aspect-video max-h-[250px] w-full p-4 pb-1'
+        )}
+      >
         <ResponsiveContainer>
           <BarChart data={rechartData}>
             <CartesianGrid
@@ -582,7 +589,7 @@ export function Chart({
                     key={`step:percent:${item.id}`}
                     shape={<BarShapeProps />}
                   >
-                    {rechartData.map((row, stepIndex) => (
+                    {rechartData.map((row) => (
                       <Cell
                         fill={getChartTranslucentColor(colorIndex)}
                         key={`${row.name}-${breakdownIndex}`}
@@ -632,7 +639,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     hasPrevious: boolean;
     hasBreakdowns: boolean;
   }
->(({ data: dataArray, context, ...props }) => {
+>(({ data: dataArray, context }) => {
   const data = dataArray[0];
   const number = useNumber();
   if (!data) {

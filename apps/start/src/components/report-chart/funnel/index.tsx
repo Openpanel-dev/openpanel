@@ -12,7 +12,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useDispatch } from '@/redux';
 
 export function ReportFunnelChart() {
-  const { isLazyLoading, report, shareId, isEditMode } =
+  const { isLazyLoading, report, shareId, isEditMode, layout } =
     useReportChartContext();
   const chartInput = useChartInput();
   const dispatch = useDispatch();
@@ -52,6 +52,16 @@ export function ReportFunnelChart() {
   }
 
   const hasBreakdowns = res.data.current.length > 1;
+
+  // A dashboard tile is the chart alone; the summary and the breakdown list
+  // belong to the editor and the share page.
+  if (layout === 'fill') {
+    return (
+      <AspectContainer>
+        <Chart data={res.data} visibleBreakdowns={visibleBreakdowns} />
+      </AspectContainer>
+    );
+  }
 
   return (
     <div className="col gap-4">

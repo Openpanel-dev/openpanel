@@ -9,7 +9,7 @@ import CohortTable from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
-  const { isLazyLoading, report, shareId } = useReportChartContext();
+  const { isLazyLoading, report, shareId, layout } = useReportChartContext();
   const eventSeries = report.series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
@@ -66,6 +66,14 @@ export function ReportRetentionChart() {
 
   if (!res.data || res.data?.length === 0) {
     return <Empty />;
+  }
+
+  if (layout === 'fill') {
+    return (
+      <AspectContainer>
+        <Chart data={res.data} />
+      </AspectContainer>
+    );
   }
 
   return (
