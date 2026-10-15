@@ -22,6 +22,7 @@ Last synced from the registry on 2026-10-15. Fetch every item (and its `registry
 | 19 | marker badge props | **open**: re-apply in `markers/marker-group.tsx` |
 | 20 | x-axis date labels are always `Sep 25` | **open**: re-apply `formatDateLabel` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
 | 21 | tooltip dot for a missing value sits at the top | **open**: re-apply in `tooltip/chart-tooltip.tsx` |
+| 22 | no stacked areas | **open**: re-apply `baselineKey` in `area.tsx` |
 
 `chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
 
@@ -591,7 +592,7 @@ An hourly or minute report shows the same day label (`Sep 25`) on every tick and
 
 **Fix (applied locally)**
 
-`TimeSeriesChartInner` and `LineChart` take `formatDateLabel?: (date: Date) => string` (default `shortDateFmt.format`), used for `dateLabels`. The report line chart passes `formatDateInterval({ interval, short: true })`. Add the same pass-through to `AreaChart` when it is used.
+`TimeSeriesChartInner` and `LineChart` take `formatDateLabel?: (date: Date) => string` (default `shortDateFmt.format`), used for `dateLabels`. `AreaChart` forwards it too. The report charts pass `formatDateInterval({ interval, short: true })`.
 
 `shadcn add` reverts.
 
@@ -610,5 +611,19 @@ Hovering a point where one series has no value (e.g. the previous period of a ra
 **Fix (applied locally)**
 
 The dot's `visible` is false when `yPositions[line.dataKey]` is undefined.
+
+`shadcn add` reverts.
+
+---
+
+## 22. `<Area>` cannot stack
+
+**Symptom**
+
+Report area charts are stacked (each series on top of the ones before it); bklit's `<Area>` always fills down to zero.
+
+**Fix (applied locally)**
+
+`<Area baselineKey="…">` reads each point's baseline from that key and passes it to visx's `AreaClosed` as `y0`. The report area chart pre-computes a `:stack` top and `:stack-base` per series (`report-chart/area/chart.tsx`, `stackSeries`) and plots the tops, so the y-domain and the tooltip dots follow the stacked values while the tooltip rows show the raw counts.
 
 `shadcn add` reverts.

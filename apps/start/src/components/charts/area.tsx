@@ -32,6 +32,8 @@ import type { SeriesPointMarkerStyle } from './series-point-marker';
 export interface AreaProps {
   /** Key in data to use for y values */
   dataKey: string;
+  /** Key holding each point's baseline, for stacked areas. Default: the chart's zero line. */
+  baselineKey?: string;
   /** Y-scale group id (Recharts `yAxisId`). Default: `"left"`. */
   yAxisId?: string | number;
   /** Fill color for the area gradient start. Default: var(--chart-line-primary) */
@@ -135,6 +137,7 @@ function useAreaLoadingPulseState(
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mirrors Line series layout (fill, stroke, dash, markers, pulse)
 export function Area({
   dataKey,
+  baselineKey,
   yAxisId,
   fill = chartCssVars.linePrimary,
   fillOpacity = 0.4,
@@ -226,6 +229,14 @@ export function Area({
     [dataKey, yScale]
   );
 
+  const getBaseline = useCallback(
+    (d: Record<string, unknown>) => {
+      const value = baselineKey ? d[baselineKey] : undefined;
+      return yScale(typeof value === 'number' ? value : 0) ?? 0;
+    },
+    [baselineKey, yScale]
+  );
+
   const hasValue = useCallback(
     (d: Record<string, unknown>) => typeof d[dataKey] === 'number',
     [dataKey]
@@ -259,6 +270,7 @@ export function Area({
           fill={areaFill}
           x={(d) => xScale(xAccessor(d)) ?? 0}
           y={getY}
+          y0={baselineKey ? getBaseline : undefined}
           yScale={yScale}
         />
       ) : null}
