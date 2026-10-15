@@ -1,9 +1,6 @@
 import { expect, mock, test } from 'bun:test';
 import type { AppDeps } from '../context';
-import type {
-  GarbageCollectionResult,
-  MemorySnapshot,
-} from '../shared/memory';
+import type { GarbageCollectionResult, MemorySnapshot } from '../shared/memory';
 import { memoryRoutes } from './memory.routes';
 
 const ADMIN = { username: 'ops', password: 'secret-pass' };
