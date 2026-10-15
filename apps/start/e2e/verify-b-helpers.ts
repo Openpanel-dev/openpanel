@@ -1,8 +1,10 @@
 import type { Browser, Page } from '@playwright/test';
 
 export const SHOTS_DIR = 'test-results/verify-b/shots';
-export const API_URL = 'https://api.main.local.openpanel.cc';
-export const DASHBOARD_URL = 'https://main.local.openpanel.cc';
+export const API_URL =
+  process.env.API_URL ?? 'https://api.main.local.openpanel.cc';
+export const DASHBOARD_URL =
+  process.env.DASHBOARD_URL ?? 'https://main.local.openpanel.cc';
 
 export function shot(page: Page, name: string, fullPage = true) {
   return page.screenshot({ path: `${SHOTS_DIR}/${name}.png`, fullPage });

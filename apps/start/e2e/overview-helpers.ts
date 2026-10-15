@@ -1,7 +1,8 @@
 import type { Page, TestInfo } from '@playwright/test';
 
 export const SHOTS_DIR = 'test-results/overview-shots';
-export const API_URL = 'https://api.main.local.openpanel.cc';
+export const API_URL =
+  process.env.API_URL ?? 'https://api.main.local.openpanel.cc';
 const API_TIMEOUT_MS = 60_000;
 export const PROJECT_IDS = [
   'acme-web',
