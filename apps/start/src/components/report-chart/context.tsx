@@ -6,7 +6,7 @@ import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-export type ReportChartContextType = {
+export interface ReportChartContextType {
   options: Partial<{
     columns: React.ReactNode[];
     hideLegend: boolean;
@@ -28,9 +28,12 @@ export type ReportChartContextType = {
   report: IReportInput & { id?: string };
   isLazyLoading: boolean;
   isEditMode: boolean;
+  // `fill` takes the parent's height (a dashboard tile); `aspect` sizes the
+  // chart from its width (the editor, chat, modals, share pages).
+  layout: 'fill' | 'aspect';
   shareId?: string;
   reportId?: string;
-};
+}
 
 type ReportChartContextProviderProps = ReportChartContextType & {
   children: React.ReactNode;

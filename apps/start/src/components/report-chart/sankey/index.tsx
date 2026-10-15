@@ -66,11 +66,7 @@ export function ReportSankeyChart() {
     return <Empty />;
   }
 
-  return (
-    <div className="col gap-4">
-      <Chart data={res.data} />
-    </div>
-  );
+  return <Chart data={res.data} />;
 }
 
 function Loading() {

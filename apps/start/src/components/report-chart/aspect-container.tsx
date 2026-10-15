@@ -8,7 +8,12 @@ interface AspectContainerProps {
 }
 
 export function AspectContainer({ children, className }: AspectContainerProps) {
-  const { options } = useReportChartContext();
+  const { options, layout } = useReportChartContext();
+  if (layout === 'fill') {
+    return (
+      <div className={cn('h-full min-h-0 w-full', className)}>{children}</div>
+    );
+  }
   const minHeight = options?.minHeight ?? 100;
   const maxHeight = options?.maxHeight ?? 300;
   const aspectRatio = options?.aspectRatio ?? DEFAULT_ASPECT_RATIO;

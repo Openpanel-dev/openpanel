@@ -183,11 +183,12 @@ export function ReportItem({
       </div>
       <div
         className={cn(
-          'flex-1 overflow-auto p-4',
+          'min-h-0 flex-1 overflow-hidden p-4',
           report.chartType === 'metric' && 'p-0'
         )}
       >
         <ReportChart
+          layout="fill"
           report={{
             ...report,
             range: range ?? report.range,
@@ -251,11 +252,12 @@ export function ReportItemReadOnly({
       </div>
       <div
         className={cn(
-          'flex-1 overflow-auto p-4',
+          'min-h-0 flex-1 overflow-hidden p-4',
           report.chartType === 'metric' && 'p-0'
         )}
       >
         <ReportChart
+          layout="fill"
           report={{
             ...report,
             range: range ?? report.range,

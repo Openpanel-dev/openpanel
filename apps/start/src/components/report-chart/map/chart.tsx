@@ -6,6 +6,10 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 
+// The map draws at roughly 2:1, so in a tile its width is capped by the
+// height on offer.
+const MAP_WIDTH_PER_HEIGHT = 1.9;
+
 interface Props {
   data: IChartData;
 }
@@ -13,6 +17,7 @@ interface Props {
 export function Chart({ data }: Props) {
   const {
     report: { metric, unit },
+    layout,
   } = useReportChartContext();
   const { series } = useVisibleSeries(data, { limit: 99_999 });
   const [_, setFilter] = useEventQueryFilters();
@@ -25,22 +30,35 @@ export function Chart({ data }: Props) {
     [series, metric]
   );
 
-  return (
-    <AutoSizer disableHeight>
-      {({ width }) => (
-        <WorldMap
-          borderColor={'var(--foreground)'}
-          color={'var(--chart-0)'}
-          data={mapData}
-          onClickFunction={(event) => {
-            if (event.countryCode) {
-              setFilter('country', event.countryCode);
-            }
-          }}
-          size={width}
-          value-suffix={unit}
-        />
-      )}
-    </AutoSizer>
+  const renderMap = (size: number) => (
+    <WorldMap
+      borderColor={'var(--foreground)'}
+      color={'var(--chart-0)'}
+      data={mapData}
+      onClickFunction={(event) => {
+        if (event.countryCode) {
+          setFilter('country', event.countryCode);
+        }
+      }}
+      size={size}
+      value-suffix={unit}
+    />
   );
+
+  if (layout === 'fill') {
+    return (
+      <AutoSizer>
+        {({ width, height }) => (
+          <div
+            className="center-center overflow-hidden"
+            style={{ width, height }}
+          >
+            {renderMap(Math.min(width, height * MAP_WIDTH_PER_HEIGHT))}
+          </div>
+        )}
+      </AutoSizer>
+    );
+  }
+
+  return <AutoSizer disableHeight>{({ width }) => renderMap(width)}</AutoSizer>;
 }

@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { AspectContainer } from '../aspect-container';
+import { useReportChartContext } from '../context';
 import {
   ChartTooltipContainer,
   ChartTooltipHeader,
@@ -17,9 +18,14 @@ import {
 } from '@/components/charts/chart-tooltip';
 import { useTheme } from '@/components/theme-provider';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { cn } from '@/utils/cn';
 import { truncate } from '@/utils/truncate';
 
-type PortalTooltipPosition = { left: number; top: number; ready: boolean };
+interface PortalTooltipPosition {
+  left: number;
+  top: number;
+  ready: boolean;
+}
 
 function SankeyPortalTooltip({
   children,
@@ -131,7 +137,7 @@ function SankeyPortalTooltip({
   );
 }
 
-type SankeyData = {
+interface SankeyData {
   nodes: Array<{
     id: string;
     label: string;
@@ -141,9 +147,10 @@ type SankeyData = {
     step?: number;
   }>;
   links: Array<{ source: string; target: string; value: number }>;
-};
+}
 
 export function Chart({ data }: { data: SankeyData }) {
+  const { layout } = useReportChartContext();
   const number = useNumber();
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTheme } = useTheme();
@@ -181,7 +188,10 @@ export function Chart({ data }: { data: SankeyData }) {
   return (
     <AspectContainer>
       <div
-        className="relative aspect-square w-full md:aspect-[2]"
+        className={cn(
+          'relative w-full',
+          layout === 'fill' ? 'h-full' : 'aspect-square md:aspect-[2]'
+        )}
         ref={containerRef}
       >
         <ResponsiveSankey
