@@ -20,6 +20,8 @@ Last synced from the registry on 2026-10-15. Fetch every item (and its `registry
 | 10–16, 18 | hover performance, `useId`, memo splits, stable context, `console.log` | fixed upstream |
 | 17 | `series-point-marker` variants per render | obsolete: the marker is `memo`ed and its variants only drive the mount animation |
 | 19 | marker badge props | **open**: re-apply in `markers/marker-group.tsx` |
+| 20 | x-axis date labels are always `Sep 25` | **open**: re-apply `formatDateLabel` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
+| 21 | tooltip dot for a missing value sits at the top | **open**: re-apply in `tooltip/chart-tooltip.tsx` |
 
 `chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
 
@@ -574,3 +576,39 @@ Backward compat preserved (defaults off). Used by `op-marker-layer.tsx` to give 
 Also requires `report-chart/common/serie-icon.tsx`'s `fill?: boolean` prop (our own file, no shadcn regression risk) — when set, images render `size-full rounded-full object-cover` instead of the default `max-h-4` cap so they actually fill the larger `foreignObject`.
 
 `shadcn add` reverts the bklit patch.
+
+---
+
+## 20. X-axis labels ignore the interval
+
+**Symptom**
+
+An hourly or minute report shows the same day label (`Sep 25`) on every tick and in the crosshair pill.
+
+**Cause**
+
+`time-series-chart-shell.tsx` builds `dateLabels` with `shortDateFmt` unconditionally; there is no prop to format them.
+
+**Fix (applied locally)**
+
+`TimeSeriesChartInner` and `LineChart` take `formatDateLabel?: (date: Date) => string` (default `shortDateFmt.format`), used for `dateLabels`. The report line chart passes `formatDateInterval({ interval, short: true })`. Add the same pass-through to `AreaChart` when it is used.
+
+`shadcn add` reverts.
+
+---
+
+## 21. Tooltip dot for a series without a value is drawn at the top
+
+**Symptom**
+
+Hovering a point where one series has no value (e.g. the previous period of a range that has no earlier data) shows that series' dot at the very top of the chart.
+
+**Cause**
+
+`use-chart-interaction.ts` only writes `yPositions[dataKey]` for numeric values, but `chart-tooltip.tsx` renders every line's `TooltipDot` with `y={yPositions[dataKey] ?? 0}`.
+
+**Fix (applied locally)**
+
+The dot's `visible` is false when `yPositions[line.dataKey]` is undefined.
+
+`shadcn add` reverts.

@@ -1,46 +1,53 @@
 import { useQuery } from '@tanstack/react-query';
-import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { BookmarkIcon, UsersIcon } from 'lucide-react';
-import { last } from 'ramda';
-import { useCallback } from 'react';
-import {
-  CartesianGrid,
-  ComposedChart,
-  Customized,
-  Legend,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { useXAxisProps, useYAxisProps } from '../common/axis';
+import { useCallback, useRef } from 'react';
 import {
   ChartClickMenu,
+  type ChartClickMenuHandle,
   type ChartClickMenuItem,
 } from '../common/chart-click-menu';
-import { ReportChartTooltip } from '../common/report-chart-tooltip';
-import { ReportTable } from '../common/report-table';
+import { getCurve } from '../common/curve';
+import { PointClick } from '../common/point-click';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
-import { changeVisibleSeries } from '@/components/report/reportSlice';
-import { useDashedStroke } from '@/hooks/use-dashed-stroke';
-import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
-import { useVisibleSeries } from '@/hooks/use-visible-series';
+import { Grid } from '@/components/charts/grid';
+import { Line, LineChart } from '@/components/charts/line-chart';
+import { useDashedTail } from '@/components/charts/op-dashed-tail';
+import { OPReferences } from '@/components/charts/op-references';
+import {
+  OPChartTooltip,
+  type OPTooltipRow,
+} from '@/components/charts/op-tooltip';
+import { XAxis } from '@/components/charts/x-axis';
+import { YAxis } from '@/components/charts/y-axis';
+import { formatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import {
+  type IRechartPayloadItem,
+  useRechartDataModel,
+} from '@/hooks/use-rechart-data-model';
+import type { IVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
+const TOOLTIP_SERIES_LIMIT = 3;
+const MARKERS_MAX_POINTS = 8;
+const PREVIOUS_PERIOD_OPACITY = '30%';
+const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
+const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
+
 interface Props {
   data: IChartData;
+  series: IVisibleSeries;
 }
 
-export function Chart({ data }: Props) {
+type ChartPoint = Record<string, unknown> & { date: string };
+
+export function Chart({ data, series }: Props) {
   const {
     report: {
       previous,
@@ -50,17 +57,16 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       lineType,
+      unit,
       series: reportSeries,
       breakdowns,
-      visibleSeries: savedVisibleSeries,
     },
     isEditMode,
     shareId,
-    options: { hideXAxis, hideYAxis, maxDomain },
+    options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
-  const dispatch = useDispatch();
-  const dataLength = data.series[0]?.data?.length || 0;
   const trpc = useTRPC();
+  const number = useNumber();
   const references = useQuery(
     trpc.reference.getChartReferences.queryOptions({
       projectId,
@@ -69,99 +75,46 @@ export function Chart({ data }: Props) {
       range,
     })
   );
-  const { series, setVisibleSeries } = useVisibleSeries(data, {
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
-  const rechartData = useRechartDataModel(series);
+  const chartData = useRechartDataModel(series) as ChartPoint[];
+  const dashFromIndex = useDashedTail({ data: chartData, range, interval });
+  const curve = getCurve(lineType);
+  const showMarkers = chartData.length <= MARKERS_MAX_POINTS;
+  const hideAxes = hideXAxis && hideYAxis;
 
-  let dotIndex;
-  if (range === 'today') {
-    // Find closest index based on times
-    dotIndex = rechartData.findIndex((item) => {
-      return isSameHour(item.date, new Date());
-    });
-  }
+  const formatDateLabel = useCallback(
+    (date: Date) => formatDateInterval({ interval, date, short: true }),
+    [interval]
+  );
+  const formatValue = useCallback(
+    (value: number) => number.formatWithUnit(value, unit),
+    [number, unit]
+  );
 
-  const lastSerieDataItem = last(series[0]?.data || [])?.date || new Date();
-  const useDashedLastLine = (() => {
-    if (range === 'today') {
-      return true;
-    }
+  const tooltipRows = useCallback(
+    (point: ChartPoint): OPTooltipRow[] =>
+      seriesPayloads(point, series)
+        .slice(0, TOOLTIP_SERIES_LIMIT)
+        .map(({ payload, color }) => ({
+          color,
+          icon: <SerieIcon name={payload.names} />,
+          label: <SerieName name={payload.names} />,
+          value: payload.count,
+          previous: payload.previous?.value,
+          format: formatValue,
+        })),
+    [series, formatValue]
+  );
 
-    if (interval === 'hour') {
-      return isSameHour(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'day') {
-      return isSameDay(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'month') {
-      return isSameMonth(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'week') {
-      return isSameWeek(lastSerieDataItem, new Date());
-    }
-
-    return false;
-  })();
-
-  const { getStrokeDasharray, calcStrokeDasharray, handleAnimationEnd } =
-    useDashedStroke({
-      dotIndex,
-    });
-
-  const CustomLegend = useCallback(() => {
-    return (
-      <div className="mt-4 -mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-        {series.map((serie) => (
-          <div
-            className="flex items-center gap-1"
-            key={serie.id}
-            style={{
-              color: getChartColor(serie.index),
-            }}
-          >
-            <SerieIcon name={serie.names} />
-            <SerieName className="font-semibold" name={serie.names} />
-          </div>
-        ))}
-      </div>
-    );
-  }, [series]);
-
-  const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
-  const yAxisProps = useYAxisProps({
-    hide: hideYAxis,
-  });
+  const menuRef = useRef<ChartClickMenuHandle>(null);
 
   const getMenuItems = useCallback(
-    (e: any, clickedData: any): ChartClickMenuItem[] => {
-      const items: ChartClickMenuItem[] = [];
-
+    (_event: unknown, clickedData: ChartPoint | null): ChartClickMenuItem[] => {
       // Both actions need a signed-in member, which a share visitor is not.
       if (shareId || !clickedData?.date) {
-        return items;
+        return [];
       }
-
-      // Extract serie ID from the click event if needed
-      // activePayload is an array of payload objects
-      const validPayload = e.activePayload?.find(
-        (p: any) =>
-          p.dataKey &&
-          p.dataKey !== 'calcStrokeDasharray' &&
-          typeof p.dataKey === 'string' &&
-          p.dataKey.includes(':count')
-      );
-      const serieId = validPayload?.dataKey?.toString().replace(':count', '');
-
-      // View Users - only show if we have projectId
-      if (projectId) {
-        items.push({
+      return [
+        {
           label: 'View Users',
           icon: <UsersIcon size={16} />,
           onClick: () => {
@@ -183,21 +136,17 @@ export function Chart({ data }: Props) {
               date: clickedData.date,
             });
           },
-        });
-      }
-
-      // Add Reference - always show
-      items.push({
-        label: 'Add Reference',
-        icon: <BookmarkIcon size={16} />,
-        onClick: () => {
-          pushModal('AddReference', {
-            datetime: new Date(clickedData.date).toISOString(),
-          });
         },
-      });
-
-      return items;
+        {
+          label: 'Add Reference',
+          icon: <BookmarkIcon size={16} />,
+          onClick: () => {
+            pushModal('AddReference', {
+              datetime: new Date(clickedData.date).toISOString(),
+            });
+          },
+        },
+      ];
     },
     [
       shareId,
@@ -213,126 +162,106 @@ export function Chart({ data }: Props) {
     ]
   );
 
+  const openMenu = useCallback((point: ChartPoint, event: MouseEvent) => {
+    menuRef.current?.openAt(point, event.clientX, event.clientY);
+  }, []);
+
   return (
-    <ReportChartTooltip.TooltipProvider references={references.data}>
-      <ChartClickMenu getMenuItems={getMenuItems}>
-        <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-          <ResponsiveContainer>
-            <ComposedChart data={rechartData}>
-              <Customized component={calcStrokeDasharray} />
-              <Line
-                animationDuration={0}
-                dataKey="calcStrokeDasharray"
-                legendType="none"
-                onAnimationEnd={handleAnimationEnd}
-              />
-              <CartesianGrid
-                className="stroke-border"
-                horizontal={true}
-                strokeDasharray="3 3"
-                vertical={false}
-              />
-              {references.data?.map((ref) => (
-                <ReferenceLine
-                  fontSize={10}
-                  key={ref.id}
-                  label={{
-                    value: ref.title,
-                    position: 'centerTop',
-                    fill: '#334155',
-                    fontSize: 12,
-                  }}
-                  stroke={'oklch(from var(--foreground) l c h / 0.1)'}
-                  strokeDasharray={'3 3'}
-                  x={ref.date.getTime()}
+    <ChartClickMenu getMenuItems={getMenuItems} ref={menuRef}>
+      <div className={cn('col h-full w-full', isEditMode && 'card p-4')}>
+        <div
+          className="min-h-0 flex-1"
+          data-report-chart="linear"
+          data-visible-series={series.length}
+        >
+          <LineChart
+            animationDuration={0}
+            aspectRatio="auto"
+            className="h-full"
+            data={chartData}
+            formatDateLabel={formatDateLabel}
+            margin={hideAxes ? BARE_MARGIN : AXIS_MARGIN}
+            style={{ touchAction: 'pan-y' }}
+            xDataKey="date"
+          >
+            <Grid horizontal />
+            {!hideYAxis && <YAxis formatValue={number.short} />}
+            {!hideXAxis && <XAxis />}
+            {previous &&
+              series.map((serie) => (
+                <Line
+                  animate={false}
+                  curve={curve}
+                  dataKey={`${serie.id}:prev:count`}
+                  key={`${serie.id}:prev`}
+                  showHighlight={false}
+                  stroke={`color-mix(in oklch, ${getChartColor(serie.index)} ${PREVIOUS_PERIOD_OPACITY}, transparent)`}
+                  strokeWidth={1.5}
                 />
               ))}
-              <YAxis
-                {...yAxisProps}
-                domain={maxDomain ? [0, maxDomain] : undefined}
+            {series.map((serie) => (
+              <Line
+                animate={false}
+                curve={curve}
+                dashArray="4,4"
+                dashFromIndex={dashFromIndex}
+                dataKey={`${serie.id}:count`}
+                key={serie.id}
+                showMarkers={showMarkers}
+                stroke={getChartColor(serie.index)}
+                strokeWidth={2}
               />
-              <XAxis {...xAxisProps} />
-              {series.length > 1 && <Legend content={<CustomLegend />} />}
-              <Tooltip content={<ReportChartTooltip.Tooltip />} />
-
-              <defs>
-                <filter
-                  height="140%"
-                  id="rainbow-line-glow"
-                  width="140%"
-                  x="-20%"
-                  y="-20%"
-                >
-                  <feGaussianBlur result="blur" stdDeviation="5" />
-                  <feComponentTransfer in="blur" result="dimmedBlur">
-                    <feFuncA slope="0.5" type="linear" />
-                  </feComponentTransfer>
-                  <feComposite
-                    in="SourceGraphic"
-                    in2="dimmedBlur"
-                    operator="over"
-                  />
-                </filter>
-              </defs>
-
-              {series.map((serie) => {
-                const color = getChartColor(serie.index);
-                return (
-                  <Line
-                    dataKey={`${serie.id}:count`}
-                    dot={dataLength <= 8}
-                    fill={color}
-                    filter={
-                      series.length === 1
-                        ? 'url(#rainbow-line-glow)'
-                        : undefined
-                    }
-                    isAnimationActive={false}
-                    key={serie.id}
-                    name={serie.id}
-                    stroke={color}
-                    strokeDasharray={
-                      useDashedLastLine
-                        ? getStrokeDasharray(`${serie.id}:count`)
-                        : undefined
-                    }
-                    // Use for legend
-                    strokeWidth={2}
-                    type={lineType}
-                  />
-                );
-              })}
-
-              {previous
-                ? series.map((serie) => {
-                    const color = getChartColor(serie.index);
-                    return (
-                      <Line
-                        dataKey={`${serie.id}:prev:count`}
-                        dot={false}
-                        fill={color}
-                        isAnimationActive
-                        key={`${serie.id}:prev`}
-                        name={`${serie.id}:prev`}
-                        stroke={color}
-                        strokeOpacity={0.3}
-                        // Use for legend
-                        type={lineType}
-                      />
-                    );
-                  })
-                : null}
-            </ComposedChart>
-          </ResponsiveContainer>
+            ))}
+            <OPReferences items={references.data} />
+            <OPChartTooltip<ChartPoint>
+              extra={(point) => {
+                const hidden =
+                  seriesPayloads(point, series).length - TOOLTIP_SERIES_LIMIT;
+                return hidden > 0 ? (
+                  <div className="text-muted-foreground text-sm">
+                    and {hidden} more...
+                  </div>
+                ) : null;
+              }}
+              interval={interval}
+              references={references.data}
+              rows={tooltipRows}
+              showCrosshair
+              showDots
+            />
+            <PointClick<ChartPoint> onClick={openMenu} />
+          </LineChart>
         </div>
-        {isEditMode && (
-          <ReportTable
-            data={data}
-            setVisibleSeries={setVisibleSeries}
-            visibleSeries={series}
-          />
-        )}
-      </ChartClickMenu>
-    </ReportChartTooltip.TooltipProvider>
+        {series.length > 1 && <Legend series={series} />}
+      </div>
+    </ChartClickMenu>
+  );
+}
+
+function seriesPayloads(point: ChartPoint, series: IVisibleSeries) {
+  return series
+    .flatMap((serie) => {
+      const payload = point[`${serie.id}:payload`] as
+        | IRechartPayloadItem
+        | undefined;
+      return payload ? [{ payload, color: getChartColor(serie.index) }] : [];
+    })
+    .sort((a, b) => (b.payload.count || 0) - (a.payload.count || 0));
+}
+
+function Legend({ series }: { series: IVisibleSeries }) {
+  return (
+    <div className="flex shrink-0 flex-wrap justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+      {series.map((serie) => (
+        <div
+          className="flex items-center gap-1"
+          key={serie.id}
+          style={{ color: getChartColor(serie.index) }}
+        >
+          <SerieIcon name={serie.names} />
+          <SerieName className="font-semibold" name={serie.names} />
+        </div>
+      ))}
+    </div>
   );
 }

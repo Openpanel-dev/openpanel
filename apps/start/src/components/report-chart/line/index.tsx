@@ -3,9 +3,14 @@ import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
+import { ReportTable } from '../common/report-table';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { changeVisibleSeries } from '@/components/report/reportSlice';
+import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
+import { useDispatch } from '@/redux';
+import type { IChartData } from '@/trpc/client';
 
 export function ReportLineChart() {
   const { isLazyLoading, shareId } = useReportChartContext();
@@ -40,10 +45,35 @@ export function ReportLineChart() {
     return <Empty />;
   }
 
+  return <LineChartWithTable data={res.data} />;
+}
+
+function LineChartWithTable({ data }: { data: IChartData }) {
+  const {
+    report: { visibleSeries: savedVisibleSeries },
+    isEditMode,
+  } = useReportChartContext();
+  const dispatch = useDispatch();
+  const { series, setVisibleSeries } = useVisibleSeries(data, {
+    savedVisibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
+
   return (
-    <AspectContainer>
-      <Chart data={res.data} />
-    </AspectContainer>
+    <>
+      <AspectContainer>
+        <Chart data={data} series={series} />
+      </AspectContainer>
+      {isEditMode && (
+        <ReportTable
+          data={data}
+          setVisibleSeries={setVisibleSeries}
+          visibleSeries={series}
+        />
+      )}
+    </>
   );
 }
 

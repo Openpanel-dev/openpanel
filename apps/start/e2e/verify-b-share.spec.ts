@@ -221,7 +221,9 @@ test('a shared dashboard renders every chart type for an anonymous visitor', asy
       await expect(chartCard, chartType).not.toContainText('Select 2 events');
     }
     await expect(
-      card(visitor.page, 'linear').locator('svg.recharts-surface')
+      card(visitor.page, 'linear')
+        .locator('[data-report-chart="linear"] svg')
+        .first()
     ).toBeVisible();
     await expect(card(visitor.page, 'funnel')).toContainText('product_viewed');
     await expect(card(visitor.page, 'retention')).toContainText(
@@ -261,7 +263,9 @@ test('range and interval controls on a shared dashboard drive the chart queries'
     });
     await openShareClientSide(visitor.page, `/share/dashboard/${share.id}`);
     await expect(
-      card(visitor.page, 'linear').locator('svg.recharts-surface')
+      card(visitor.page, 'linear')
+        .locator('[data-report-chart="linear"] svg')
+        .first()
     ).toBeVisible({ timeout: 45_000 });
 
     await visitor.page
@@ -523,7 +527,7 @@ for (const kind of ['dashboard', 'report'] as const) {
         visitor.page.getByText(reportName('linear'), { exact: true })
       ).toBeVisible({ timeout: 45_000 });
       await expect(
-        visitor.page.locator('svg.recharts-surface').first()
+        visitor.page.locator('[data-report-chart="linear"] svg').first()
       ).toBeVisible({ timeout: 45_000 });
       await shot(visitor.page, `item4-${kind}-unlocked`, false);
 
@@ -560,7 +564,9 @@ test('clicking a chart point on a shared report keeps the visitor on the share',
       }
     );
     await openShareClientSide(visitor.page, `/share/report/${share.id}`);
-    const surface = visitor.page.locator('svg.recharts-surface').first();
+    const surface = visitor.page
+      .locator('[data-report-chart="linear"] svg')
+      .first();
     await expect(surface).toBeVisible({ timeout: 45_000 });
     await visitor.page.waitForLoadState('networkidle');
     const box = await surface.boundingBox();

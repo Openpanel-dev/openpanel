@@ -28,6 +28,8 @@ interface ChartClickMenuProps {
 
 export interface ChartClickMenuHandle {
   setPosition: (position: { x: number; y: number } | null) => void;
+  /** Opens the menu for `data` at a viewport point, for charts that are not Recharts. */
+  openAt: (data: unknown, clientX: number, clientY: number) => void;
   getContainerElement: () => HTMLDivElement | null;
 }
 
@@ -123,6 +125,16 @@ export const ChartClickMenu = forwardRef<
     () => ({
       setPosition: (position: { x: number; y: number } | null) => {
         setClickPosition(position);
+      },
+      openAt: (data, clientX, clientY) => {
+        const container = containerRef.current;
+        if (!(data && container)) {
+          return;
+        }
+        const rect = container.getBoundingClientRect();
+        setClickedData(data);
+        setClickEvent({});
+        setClickPosition({ x: clientX - rect.left, y: clientY - rect.top });
       },
       getContainerElement: () => containerRef.current,
     }),

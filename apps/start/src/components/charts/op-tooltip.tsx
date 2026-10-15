@@ -29,6 +29,8 @@ export interface OPTooltipRow {
   value?: number | null;
   /** How to format `value`. Default: 'count' (locale string). */
   unit?: OPTooltipUnit;
+  /** Formats `value` and `previous`; wins over `unit`. */
+  format?: (value: number) => string;
   /** Optional previous-period value — shown as "(prev)" next to value */
   previous?: number | null;
   /** Whether higher previous is better (e.g. bounce rate is inverted) */
@@ -393,6 +395,8 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
   const showDiff = row.showDiff !== false && showPrev;
   const diff =
     showDiff && hasValue ? getPreviousMetric(row.value!, prev) : null;
+  const formatValue = (value: number) =>
+    row.format ? row.format(value) : formatOPValue(value, row.unit, number);
 
   return (
     <div className="flex gap-2">
@@ -407,10 +411,10 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
         {hasValue && (
           <div className="flex items-center justify-between gap-8 font-medium font-mono">
             <div className="row items-baseline gap-1">
-              <span>{formatOPValue(row.value!, row.unit, number)}</span>
+              <span>{formatValue(row.value!)}</span>
               {showPrev && (
                 <span className="text-muted-foreground">
-                  ({formatOPValue(prev, row.unit, number)})
+                  ({formatValue(prev)})
                 </span>
               )}
               {row.percentage != null && (

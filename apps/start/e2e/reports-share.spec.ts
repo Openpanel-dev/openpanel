@@ -239,7 +239,7 @@ test('share reports of several chart types and open them logged out', async ({
       anonymous.page.getByText('E2E reports shared linear')
     ).toBeVisible({ timeout: 45_000 });
     await expect(
-      anonymous.page.locator('svg.recharts-surface').first()
+      anonymous.page.locator('[data-report-chart="linear"] svg').first()
     ).toBeVisible({ timeout: 45_000 });
     await shot(anonymous.page, 'share-11-public-report');
     expect(problems.responses).toEqual([]);

@@ -55,8 +55,12 @@ function tableRows(editor: Locator) {
   );
 }
 
-const drawnLines = (editor: Locator) =>
-  editor.locator('path.recharts-line-curve').count();
+const drawnLines = async (editor: Locator) =>
+  Number(
+    await editor
+      .locator('[data-report-chart="linear"]')
+      .getAttribute('data-visible-series')
+  );
 
 test.use({ actionTimeout: 15_000 });
 
@@ -89,7 +93,7 @@ test('report page: view users from a chart point, series toggles, sorting, searc
     const editor = page.locator('#report-editor');
 
     // --- view users from a chart point
-    const surface = editor.locator('svg.recharts-surface').first();
+    const surface = editor.locator('[data-report-chart="linear"] svg').first();
     const box = await surface.boundingBox();
     if (!box) {
       throw new Error('chart not drawn');
@@ -123,12 +127,11 @@ test('report page: view users from a chart point, series toggles, sorting, searc
     // --- series toggles (the chart legend itself is not interactive)
     const before = await tableRows(editor);
     const checkedBefore = before.filter((row) => row.checked).length;
-    // Each visible series draws one curve; the chart adds one helper curve.
-    await expect.poll(() => drawnLines(editor)).toBe(checkedBefore + 1);
-    await editor.getByRole('checkbox').first().click();
     await expect.poll(() => drawnLines(editor)).toBe(checkedBefore);
     await editor.getByRole('checkbox').first().click();
-    await expect.poll(() => drawnLines(editor)).toBe(checkedBefore + 1);
+    await expect.poll(() => drawnLines(editor)).toBe(checkedBefore - 1);
+    await editor.getByRole('checkbox').first().click();
+    await expect.poll(() => drawnLines(editor)).toBe(checkedBefore);
     await editor.getByRole('button', { name: 'Unselect All' }).click();
     await expect.poll(() => drawnLines(editor)).toBe(0);
     await shot(page, 'item13-unselect-all');
@@ -136,7 +139,7 @@ test('report page: view users from a chart point, series toggles, sorting, searc
     for (const index of [0, 1]) {
       await editor.getByRole('checkbox').nth(index).click();
     }
-    await expect.poll(() => drawnLines(editor)).toBe(3);
+    await expect.poll(() => drawnLines(editor)).toBe(2);
 
     // --- sorting on Sum, in the default flat view
     const sumHeader = editor.getByRole('button', { name: /^Sum/i }).first();

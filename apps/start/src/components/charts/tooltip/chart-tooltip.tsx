@@ -321,7 +321,9 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
                 strokeColor={chartCssVars.background}
                 strokeWidth={dotStrokeWidth}
                 variant={dotVariant}
-                visible={visible}
+                visible={
+                  visible && tooltipData?.yPositions[line.dataKey] !== undefined
+                }
                 x={tooltipData?.xPositions?.[line.dataKey] ?? x}
                 y={tooltipData?.yPositions[line.dataKey] ?? 0}
               />

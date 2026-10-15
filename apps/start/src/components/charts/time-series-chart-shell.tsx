@@ -179,6 +179,8 @@ export interface TimeSeriesChartInnerProps {
   /** Tween y-domain when the visible x-range changes during the ready phase. */
   tweenYDomainOnXDomainChange?: boolean;
   onPhaseChange?: (phase: ChartPhase) => void;
+  /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
+  formatDateLabel?: (date: Date) => string;
 }
 
 export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
@@ -219,6 +221,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   xDomainSlotCount,
   tweenYDomainOnXDomainChange = false,
   onPhaseChange,
+  formatDateLabel = shortDateFmt.format,
 }: TimeSeriesChartInnerProps) {
   // Unique per instance — shared clipPath ids crop later charts (#226).
   const uniqueClipPathId = `${clipPathId}-${useId().replace(/:/g, '')}`;
@@ -414,8 +417,8 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   );
 
   const dateLabels = useMemo(
-    () => visiblePlotData.map((d) => shortDateFmt.format(xAccessor(d))),
-    [visiblePlotData, xAccessor]
+    () => visiblePlotData.map((d) => formatDateLabel(xAccessor(d))),
+    [visiblePlotData, xAccessor, formatDateLabel]
   );
 
   const canInteract = isLoaded && isChartInteractionPhase(chartPhase);
