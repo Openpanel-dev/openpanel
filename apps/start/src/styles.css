@@ -114,10 +114,10 @@ code {
   --chart-marker-badge-foreground: var(--background);
   --chart-ring-background: oklch(from var(--foreground) l c h / 0.12);
   --chart-label: var(--muted-foreground);
-  --chart-scale-01: color-mix(in oklch, var(--chart-0) 8%, var(--card));
-  --chart-scale-02: color-mix(in oklch, var(--chart-0) 28%, var(--card));
-  --chart-scale-03: color-mix(in oklch, var(--chart-0) 50%, var(--card));
-  --chart-scale-04: color-mix(in oklch, var(--chart-0) 75%, var(--card));
+  --chart-scale-01: color-mix(in oklab, var(--chart-0) 8%, var(--card));
+  --chart-scale-02: color-mix(in oklab, var(--chart-0) 28%, var(--card));
+  --chart-scale-03: color-mix(in oklab, var(--chart-0) 50%, var(--card));
+  --chart-scale-04: color-mix(in oklab, var(--chart-0) 75%, var(--card));
   --chart-scale-05: var(--chart-0);
   --chart-scale-pattern-color: var(--def-100);
   --legend: var(--card);
