@@ -38,7 +38,18 @@ const config = defineConfig({
     ...(behindProxy ? { hmr: { protocol: 'wss', clientPort: 443 } } : {}),
   },
   ssr: {
-    noExternal: ['react-syntax-highlighter', 'lowlight', 'highlight.js'],
+    noExternal: [
+      'react-syntax-highlighter',
+      'lowlight',
+      'highlight.js',
+      // CommonJS that Node's ESM loader gets wrong in the built server:
+      // @visx/responsive imports `lodash/debounce` without an extension, and
+      // react-svg-worldmap's default export arrives as `{ default }`. Bundled,
+      // both resolve.
+      '@visx/responsive',
+      'lodash',
+      'react-svg-worldmap',
+    ],
   },
 });
 
