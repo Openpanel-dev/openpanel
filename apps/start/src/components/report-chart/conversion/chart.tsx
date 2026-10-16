@@ -1,70 +1,52 @@
-import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { average, round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
-import React, { useCallback, useMemo } from 'react';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { getPreviousMetric } from '../../../utils/previous-metric';
-import { useXAxisProps, useYAxisProps } from '../common/axis';
-import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
+import { useCallback, useMemo } from 'react';
+import { getCurve } from '../common/curve';
+import { PointClick } from '../common/point-click';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
+import { previousPeriodColor } from '../common/time-series';
 import { useReportChartContext } from '../context';
-import { ConversionTable } from './conversion-table';
+import { Grid } from '@/components/charts/grid';
+import { Line, LineChart } from '@/components/charts/line-chart';
+import { OPReferences } from '@/components/charts/op-references';
 import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
-import { changeVisibleSeries } from '@/components/report/reportSlice';
+  OPChartTooltip,
+  type OPTooltipRow,
+} from '@/components/charts/op-tooltip';
+import { XAxis } from '@/components/charts/x-axis';
+import { YAxis } from '@/components/charts/y-axis';
 import { useConversionRechartDataModel } from '@/hooks/use-conversion-rechart-data-model';
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
-import { useVisibleConversionSeries } from '@/hooks/use-visible-conversion-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useDispatch } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
-interface Props {
-  data: RouterOutputs['chart']['conversion'];
-}
+const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
+const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
+const MARKERS_MAX_POINTS = 30;
 
-export function Chart({ data }: Props) {
+type ConversionSeries = RouterOutputs['chart']['conversion']['current'];
+type ConversionPoint = Record<string, unknown> & { date: string };
+
+const seriesNames = (serie: ConversionSeries[number]) =>
+  serie.breakdowns.length > 0 ? serie.breakdowns : ['Conversion'];
+
+export function Chart({
+  series,
+}: {
+  series: (ConversionSeries[number] & { index: number })[];
+}) {
   const {
-    report: {
-      interval,
-      projectId,
-      startDate,
-      endDate,
-      range,
-      lineType,
-      visibleSeries: savedVisibleSeries,
-    },
+    report: { interval, projectId, startDate, endDate, range, lineType },
     isEditMode,
-    layout,
     shareId,
     options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
-  const dispatch = useDispatch();
-  const { series, setVisibleSeries } = useVisibleConversionSeries(data, {
-    limit: 5,
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
-  const rechartData = useConversionRechartDataModel(series);
+  const number = useNumber();
   const trpc = useTRPC();
   const references = useQuery(
     trpc.reference.getChartReferences.queryOptions({
@@ -74,263 +56,146 @@ export function Chart({ data }: Props) {
       range,
     })
   );
-
-  const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
-  const number = useNumber();
-
-  // Calculate dynamic Y-axis domain based on max rate
-  const yAxisDomain = useMemo(() => {
-    if (!series.length) {
-      return [0, 100];
-    }
-
-    const maxRate = Math.max(
-      ...series.flatMap((serie) => serie.data.map((item) => item.rate))
-    );
-
-    if (maxRate <= 5) {
-      return [0, 10];
-    }
-    if (maxRate <= 20) {
-      return [0, 30];
-    }
-    if (maxRate <= 50) {
-      return [0, 60];
-    }
-    return [0, 100];
-  }, [series]);
-
-  const yAxisProps = useYAxisProps({
-    hide: hideYAxis,
-    tickFormatter: (value: number) => {
-      return `${number.short(value)}%`;
-    },
-  });
-
-  const averageConversionRate = average(
-    series.map((serie) => {
-      return average(serie.data.map((item) => item.rate));
-    }, 0)
+  const averageRate = average(
+    series.map((serie) => average(serie.data.map((item) => item.rate)))
   );
+  const averageColor = getChartColor(series.length);
+  const rechartData = useConversionRechartDataModel(series);
+  const chartData = useMemo(
+    () =>
+      rechartData.map(
+        (point): ConversionPoint => ({
+          ...point,
+          date: String(point.date),
+          average: averageRate,
+        })
+      ),
+    [rechartData, averageRate]
+  );
+  const curve = getCurve(lineType);
 
-  // Show dots when we have 30 or fewer data points
-  const showDots = rechartData.length <= 30;
-
-  const handleChartClick = useCallback((e: any) => {
-    if (e?.activePayload?.[0]) {
-      const clickedData = e.activePayload[0].payload;
-      if (clickedData.date) {
-        pushModal('AddReference', {
-          datetime: new Date(clickedData.date).toISOString(),
-        });
-      }
-    }
+  const formatDateLabel = useCallback(
+    (date: Date) => formatDateInterval({ interval, date, short: true }),
+    [interval]
+  );
+  const formatRate = useCallback(
+    (rate: number) => number.formatWithUnit(rate / 100, '%'),
+    [number]
+  );
+  const tooltipRows = useCallback(
+    (point: ConversionPoint): OPTooltipRow[] =>
+      series.flatMap((serie) => {
+        const rate = point[`${serie.id}:rate`];
+        if (typeof rate !== 'number') {
+          return [];
+        }
+        const previous = point[`${serie.id}:previousRate`];
+        return [
+          {
+            color: getChartColor(serie.index),
+            icon: <SerieIcon name={seriesNames(serie)} />,
+            label: <SerieName name={seriesNames(serie)} />,
+            value: rate,
+            previous: typeof previous === 'number' ? previous : undefined,
+            format: formatRate,
+            sub: [
+              { label: 'Total', value: Number(point[`${serie.id}:total`]) },
+            ],
+          },
+        ];
+      }),
+    [series, formatRate]
+  );
+  const addReference = useCallback((point: ConversionPoint) => {
+    pushModal('AddReference', {
+      datetime: new Date(point.date).toISOString(),
+    });
   }, []);
 
-  const CustomLegend = useCallback(() => {
-    return (
-      <div className="mt-4 -mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-        {series.map((serie) => (
-          <div
-            className="flex items-center gap-1"
-            key={serie.id}
-            style={{
-              color: getChartColor(serie.index),
-            }}
-          >
-            <SerieIcon name={serie.breakdowns} />
-            <SerieName
-              className="font-semibold"
-              name={
-                serie.breakdowns.length > 0 ? serie.breakdowns : ['Conversion']
-              }
-            />
-          </div>
-        ))}
-      </div>
-    );
-  }, [series]);
-
   return (
-    <TooltipProvider
-      conversion={data}
-      interval={interval}
-      visibleSeries={series}
-    >
-      <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-        <ResponsiveContainer>
-          <LineChart
-            data={rechartData}
-            onClick={shareId ? undefined : handleChartClick}
-          >
-            <CartesianGrid
-              className="stroke-border"
-              horizontal={true}
-              strokeDasharray="3 3"
-              vertical={false}
+    <div className={cn('col h-full w-full', isEditMode && 'card p-4')}>
+      <div
+        className="relative min-h-0 flex-1"
+        data-report-chart="conversion"
+        data-visible-series={series.length}
+      >
+        <LineChart
+          animationDuration={0}
+          aspectRatio="auto"
+          className="h-full"
+          data={chartData}
+          formatDateLabel={formatDateLabel}
+          margin={hideXAxis && hideYAxis ? BARE_MARGIN : AXIS_MARGIN}
+          style={{ touchAction: 'pan-y' }}
+          xDataKey="date"
+        >
+          <Grid horizontal />
+          {!hideYAxis && (
+            <YAxis formatValue={(value) => `${number.short(value)}%`} />
+          )}
+          {!hideXAxis && <XAxis />}
+          {series.map((serie) => (
+            <Line
+              animate={false}
+              curve={curve}
+              dataKey={`${serie.id}:previousRate`}
+              key={`${serie.id}:previousRate`}
+              showHighlight={false}
+              stroke={previousPeriodColor(serie.index)}
+              strokeWidth={1}
             />
-            {references.data?.map((ref) => (
-              <ReferenceLine
-                fontSize={10}
-                key={ref.id}
-                label={{
-                  value: ref.title,
-                  position: 'centerTop',
-                  fill: '#334155',
-                  fontSize: 12,
-                }}
-                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
-                strokeDasharray={'3 3'}
-                x={ref.date.getTime()}
-              />
-            ))}
-            <YAxis {...yAxisProps} domain={yAxisDomain} />
-            <XAxis {...xAxisProps} allowDuplicatedCategory={false} />
-            {series.length > 1 && <Legend content={<CustomLegend />} />}
-            <Tooltip />
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <Line
-                  dataKey={`${serie.id}:previousRate`}
-                  dot={false}
-                  isAnimationActive={false}
-                  key={`${serie.id}:previousRate`}
-                  stroke={color}
-                  strokeOpacity={0.3}
-                  strokeWidth={1}
-                  type={lineType}
-                />
-              );
-            })}
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <Line
-                  activeDot={showDots ? { r: 5, strokeWidth: 2 } : { r: 4 }}
-                  dataKey={`${serie.id}:rate`}
-                  dot={
-                    showDots ? { r: 3, strokeWidth: 2, fill: 'white' } : false
-                  }
-                  isAnimationActive={false}
-                  key={`${serie.id}:rate`}
-                  stroke={color}
-                  strokeWidth={2}
-                  type={lineType}
-                />
-              );
-            })}
-            {typeof averageConversionRate === 'number' &&
-              averageConversionRate && (
-                <ReferenceLine
-                  label={{
-                    value: `Average (${round(averageConversionRate, 2)}%)`,
-                    fill: getChartColor(series.length),
-                    position: 'insideBottomRight',
-                    fontSize: 13,
-                    fontWeight: 500,
-                  }}
-                  stroke={getChartColor(series.length)}
-                  strokeDasharray="3 3"
-                  strokeLinecap="round"
-                  strokeOpacity={0.6}
-                  strokeWidth={2}
-                  y={averageConversionRate}
-                />
-              )}
-          </LineChart>
-        </ResponsiveContainer>
+          ))}
+          {series.map((serie) => (
+            <Line
+              animate={false}
+              curve={curve}
+              dataKey={`${serie.id}:rate`}
+              key={`${serie.id}:rate`}
+              showMarkers={chartData.length <= MARKERS_MAX_POINTS}
+              stroke={getChartColor(serie.index)}
+              strokeWidth={2}
+            />
+          ))}
+          <Line
+            animate={false}
+            dashArray="4,4"
+            dashFromIndex={0}
+            dataKey="average"
+            showHighlight={false}
+            stroke={averageColor}
+            strokeWidth={1.5}
+          />
+          <OPReferences items={references.data} />
+          <OPChartTooltip<ConversionPoint>
+            interval={interval}
+            references={references.data}
+            rows={tooltipRows}
+            showCrosshair
+            showDots
+          />
+          {!shareId && <PointClick<ConversionPoint> onClick={addReference} />}
+        </LineChart>
+        <div
+          className="pointer-events-none absolute top-0 right-3 font-medium text-xs"
+          style={{ color: averageColor }}
+        >
+          Average ({round(averageRate, 2)}%)
+        </div>
       </div>
-      {layout !== 'fill' && (
-        <ConversionTable
-          data={data}
-          setVisibleSeries={setVisibleSeries}
-          visibleSeries={series}
-        />
+      {series.length > 1 && (
+        <div className="flex shrink-0 flex-wrap justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+          {series.map((serie) => (
+            <div
+              className="flex items-center gap-1"
+              key={serie.id}
+              style={{ color: getChartColor(serie.index) }}
+            >
+              <SerieIcon name={seriesNames(serie)} />
+              <SerieName className="font-semibold" name={seriesNames(serie)} />
+            </div>
+          ))}
+        </div>
       )}
-    </TooltipProvider>
+    </div>
   );
 }
-
-const { Tooltip, TooltipProvider } = createChartTooltip<
-  Record<string, any>,
-  {
-    conversion: RouterOutputs['chart']['conversion'];
-    interval: IInterval;
-    visibleSeries: RouterOutputs['chart']['conversion']['current'];
-  }
->(({ data, context }) => {
-  if (!data?.[0]) {
-    return null;
-  }
-
-  const payload = data[0];
-  const { date } = payload;
-  const formatDate = useFormatDateInterval({
-    interval: context.interval,
-    short: false,
-  });
-  const number = useNumber();
-
-  return (
-    <>
-      {context.visibleSeries.map((serie, index) => {
-        const rate = payload[`${serie.id}:rate`];
-        const total = payload[`${serie.id}:total`];
-        const previousRate = payload[`${serie.id}:previousRate`];
-
-        if (rate === undefined) {
-          return null;
-        }
-
-        const prevSerie = context.conversion?.previous?.find(
-          (p) => p.id === serie.id
-        );
-        const prevItem = prevSerie?.data.find((d) => d.date === date);
-        const previousMetric = getPreviousMetric(rate, previousRate);
-
-        return (
-          <React.Fragment key={serie.id}>
-            {index === 0 && (
-              <ChartTooltipHeader>
-                <div>{formatDate(date)}</div>
-              </ChartTooltipHeader>
-            )}
-            <ChartTooltipItem color={getChartColor(index)}>
-              <div className="flex items-center gap-1">
-                <SerieIcon
-                  name={
-                    serie.breakdowns.length > 0
-                      ? serie.breakdowns
-                      : ['Conversion']
-                  }
-                />
-                <SerieName
-                  name={
-                    serie.breakdowns.length > 0
-                      ? serie.breakdowns
-                      : ['Conversion']
-                  }
-                />
-              </div>
-              <div className="flex justify-between gap-8 font-medium font-mono">
-                <div className="row gap-1">
-                  <span>{number.formatWithUnit(rate / 100, '%')}</span>
-                  <span className="text-muted-foreground">({total})</span>
-                  {prevItem && previousRate !== undefined && (
-                    <span className="text-muted-foreground">
-                      ({number.formatWithUnit(previousRate / 100, '%')})
-                    </span>
-                  )}
-                </div>
-                {previousRate !== undefined && (
-                  <PreviousDiffIndicator {...previousMetric} />
-                )}
-              </div>
-            </ChartTooltipItem>
-          </React.Fragment>
-        );
-      })}
-    </>
-  );
-});
