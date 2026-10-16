@@ -2,9 +2,11 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
+import { RankedTable } from '../common/ranked-table';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart, ROW_HEIGHT } from './chart';
 import { useTRPC } from '@/integrations/trpc/react';
+import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
 // Fixed, not random: the server and the browser must render the same widths.
@@ -45,7 +47,21 @@ export function ReportBarChart() {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return <BarWithTable data={res.data} />;
+}
+
+function BarWithTable({ data }: { data: IChartData }) {
+  const { layout } = useReportChartContext();
+  return (
+    <>
+      <Chart data={data} />
+      {layout !== 'fill' && (
+        <div className="card mt-4 overflow-hidden">
+          <RankedTable data={data} />
+        </div>
+      )}
+    </>
+  );
 }
 
 function Loading() {

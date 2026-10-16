@@ -177,7 +177,7 @@ export function ReportDataTable<Row>({
             column={column}
             formatted={formatCell(column.value(row.original), column.format)}
             key={column.id}
-            range={ranges.get(column.id)}
+            range={ranges.get(rangeKey(column))}
             row={row.original}
           />
         ))}
@@ -385,23 +385,36 @@ function SortChevron({ direction }: { direction: 'asc' | 'desc' | null }) {
   return <ChevronDownIcon className="size-3 shrink-0 opacity-0" />;
 }
 
+const HEAT_RANGE_KEY = 'heat';
+
+/** Bars are relative to their own column; heat is one scale across every heat column, so cells compare across the matrix. */
+function rangeKey<Row>(column: ReportColumn<Row>) {
+  return column.decorate === 'heat' ? HEAT_RANGE_KEY : column.id;
+}
+
 function columnRanges<Row>(rows: Row[], columns: ReportColumn<Row>[]) {
   const ranges = new Map<string, ColumnRange>();
   for (const column of columns) {
     if (!column.decorate) {
       continue;
     }
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
+    const key = rangeKey(column);
+    const range = ranges.get(key) ?? {
+      min: Number.POSITIVE_INFINITY,
+      max: Number.NEGATIVE_INFINITY,
+    };
     for (const row of rows) {
       const value = column.value(row);
       if (typeof value === 'number') {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
+        range.min = Math.min(range.min, value);
+        range.max = Math.max(range.max, value);
       }
     }
-    if (max > min || max > 0) {
-      ranges.set(column.id, { min, max });
+    ranges.set(key, range);
+  }
+  for (const [key, range] of ranges) {
+    if (!(range.max > range.min || range.max > 0)) {
+      ranges.delete(key);
     }
   }
   return ranges;

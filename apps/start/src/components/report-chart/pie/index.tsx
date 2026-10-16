@@ -46,6 +46,7 @@ export function ReportPieChart() {
     <SeriesWithTable
       chart={(series) => <Chart series={series} />}
       data={res.data}
+      table="ranked"
     />
   );
 }

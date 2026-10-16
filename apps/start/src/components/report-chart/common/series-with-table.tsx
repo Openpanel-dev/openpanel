@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
 import { useReportChartContext } from '../context';
+import { RankedTable } from './ranked-table';
 import { SeriesTable } from './series-table';
 import { changeVisibleSeries } from '@/components/report/reportSlice';
 import {
@@ -18,10 +19,14 @@ import type { IChartData } from '@/trpc/client';
 export function SeriesWithTable({
   data,
   chart,
+  table = 'series',
 }: {
   data: IChartData;
   chart: (series: IVisibleSeries) => ReactNode;
+  /** `series` is one row per series with its periods; `ranked` sorts them by value. */
+  table?: 'series' | 'ranked';
 }) {
+  const Table = table === 'ranked' ? RankedTable : SeriesTable;
   const {
     report: { visibleSeries: savedVisibleSeries },
     isEditMode,
@@ -51,7 +56,7 @@ export function SeriesWithTable({
       <AspectContainer>{chart(series)}</AspectContainer>
       {layout !== 'fill' && (
         <div className="card mt-4 overflow-hidden">
-          <SeriesTable
+          <Table
             data={data}
             onToggle={isEditMode ? toggleSeries : undefined}
             onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
