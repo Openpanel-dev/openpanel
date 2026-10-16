@@ -5,11 +5,7 @@ import { useId } from 'react';
 export interface DashTailStrokeProps {
   /** SVG path `d` for the full series (single curved path). */
   pathD: string | null;
-  /** Total length of `pathD` in user units. */
-  pathLength: number;
-  /** Path length at which the dashed tail begins. */
-  dashStartLength: number;
-  /** X coordinate (chart inner space) where the tail clip begins. */
+  /** X coordinate (chart inner space) where the dashed tail begins. */
   dashStartX: number;
   innerWidth: number;
   innerHeight: number;
@@ -19,10 +15,11 @@ export interface DashTailStrokeProps {
   dashArray: string;
 }
 
+// Both halves are clipped at the same x. Splitting by path length instead
+// needs the length at that x, which only an expensive search gets right on
+// steep curves; an estimate drew the solid head on top of the dashed tail.
 export function DashTailStroke({
   pathD,
-  pathLength,
-  dashStartLength,
   dashStartX,
   innerWidth,
   innerHeight,
@@ -30,39 +27,43 @@ export function DashTailStroke({
   strokeWidth,
   dashArray,
 }: DashTailStrokeProps) {
-  const clipPathId = useId().replace(/:/g, '');
+  const id = useId().replace(/:/g, '');
+  const headClipId = `${id}-head`;
+  const tailClipId = `${id}-tail`;
 
-  if (!pathD || pathLength <= 0 || dashStartLength >= pathLength) {
+  if (!pathD) {
     return null;
   }
 
   const pad = strokeWidth * 2;
-  const tailWidth = Math.max(0, innerWidth - dashStartX + pad);
+  const top = -pad;
+  const height = innerHeight + pad * 2;
 
   return (
     <>
       <defs>
-        <clipPath id={clipPathId}>
+        <clipPath id={headClipId}>
+          <rect height={height} width={dashStartX + pad} x={-pad} y={top} />
+        </clipPath>
+        <clipPath id={tailClipId}>
           <rect
-            height={innerHeight + pad}
-            width={tailWidth}
-            x={dashStartX - strokeWidth}
-            y={-strokeWidth}
+            height={height}
+            width={Math.max(0, innerWidth - dashStartX + pad)}
+            x={dashStartX}
+            y={top}
           />
         </clipPath>
       </defs>
-      {/* Solid head — same curved path, gradient/fade preserved */}
       <path
+        clipPath={`url(#${headClipId})`}
         d={pathD}
         fill="none"
         stroke={stroke}
-        strokeDasharray={`${dashStartLength} ${Math.max(1, pathLength - dashStartLength)}`}
         strokeLinecap="round"
         strokeWidth={strokeWidth}
       />
-      {/* Dashed tail — clipped to x ≥ dashStartX so dashes follow the curve */}
       <path
-        clipPath={`url(#${clipPathId})`}
+        clipPath={`url(#${tailClipId})`}
         d={pathD}
         fill="none"
         stroke={stroke}

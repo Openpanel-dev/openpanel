@@ -1,30 +1,6 @@
 // biome-ignore-all lint/correctness/useExhaustiveDependencies: usePathStrokeMetrics intentionally accepts caller-controlled deps
 import { type RefObject, useEffect, useState } from 'react';
 
-export function findPathLengthAtX(
-  path: SVGPathElement | null,
-  pathLength: number,
-  targetX: number
-): number {
-  if (!path || pathLength === 0) {
-    return 0;
-  }
-  let low = 0;
-  let high = pathLength;
-  const tolerance = 0.5;
-
-  while (high - low > tolerance) {
-    const mid = (low + high) / 2;
-    const point = path.getPointAtLength(mid);
-    if (point.x < targetX) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  return (low + high) / 2;
-}
-
 interface PathStrokeMetrics {
   pathD: string | null;
   pathLength: number;
