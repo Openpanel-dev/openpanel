@@ -242,7 +242,7 @@ test('retention on acme-saas shows the cohort sizes the API returns', async ({
   const editor = page.locator('#report-editor');
   for (const cohort of api.slice(1, 6)) {
     const row = editor
-      .locator('tr')
+      .locator('[data-report-table-row]')
       .filter({ hasText: cohort.cohort_interval })
       .first();
     await expect(row).toContainText(String(cohort.sum));

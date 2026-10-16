@@ -155,6 +155,7 @@ export function ReportDataTable<Row>({
           !isSelected && 'opacity-50',
           activeId === id && 'bg-def-100'
         )}
+        data-report-table-row={id}
         key={id}
         onClick={onRowClick ? () => onRowClick(id) : undefined}
         style={{ height: ROW_HEIGHT, minWidth: totalWidth, ...style }}
