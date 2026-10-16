@@ -226,11 +226,11 @@ export default function BillingUsage({ organization }: Props) {
         <ComposedChart
           animationDuration={0}
           aspectRatio="auto"
-          barSize={useWeeklyIntervals ? WEEKLY_BAR_SIZE : DAILY_BAR_SIZE}
           className="h-[250px]"
           data={chartData}
           formatDateLabel={formatDateLabel}
           margin={MARGIN}
+          maxBarSize={useWeeklyIntervals ? WEEKLY_BAR_SIZE : DAILY_BAR_SIZE}
           xDataKey="date"
         >
           <Grid horizontal />

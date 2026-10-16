@@ -13,7 +13,7 @@ const REVENUE_COLOR = '#3ba974';
 const REVENUE_AXIS_ID = 'right';
 // Revenue bars sit in the lower half so the sessions line stays readable above them.
 const REVENUE_HEADROOM = 2;
-const REVENUE_BAR_SIZE = 20;
+const REVENUE_MAX_BAR_SIZE = 20;
 const REVENUE_BAR_RADIUS = 5;
 const LINE_WIDTH = 2;
 const AXIS_TICKS = 2;
@@ -43,6 +43,7 @@ export function ProjectChart({
 
   const maxValue = Math.max(...data.map((point) => point.value), 0);
   const maxRevenue = Math.max(...data.map((point) => point.revenue), 0);
+  const hasRevenue = maxRevenue > 0;
 
   if (maxValue === 0) {
     return <EmptyState />;
@@ -53,21 +54,27 @@ export function ProjectChart({
       <ComposedChart
         animationDuration={0}
         aspectRatio="auto"
-        barSize={REVENUE_BAR_SIZE}
         className="h-full"
         data={points}
         margin={MARGIN}
+        maxBarSize={REVENUE_MAX_BAR_SIZE}
         xDataKey="date"
-        yDomains={{ [REVENUE_AXIS_ID]: [0, maxRevenue * REVENUE_HEADROOM] }}
+        yDomains={
+          hasRevenue
+            ? { [REVENUE_AXIS_ID]: [0, maxRevenue * REVENUE_HEADROOM] }
+            : undefined
+        }
       >
         <YAxis formatValue={number.short} numTicks={AXIS_TICKS} />
-        <SeriesBar
-          animate={false}
-          dataKey="revenue"
-          fill={REVENUE_COLOR}
-          radius={REVENUE_BAR_RADIUS}
-          yAxisId={REVENUE_AXIS_ID}
-        />
+        {hasRevenue && (
+          <SeriesBar
+            animate={false}
+            dataKey="revenue"
+            fill={REVENUE_COLOR}
+            radius={REVENUE_BAR_RADIUS}
+            yAxisId={REVENUE_AXIS_ID}
+          />
+        )}
         <Line
           animate={false}
           curve={curveMonotoneX}
