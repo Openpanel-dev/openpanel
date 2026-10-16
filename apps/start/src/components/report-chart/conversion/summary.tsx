@@ -1,9 +1,9 @@
 import { average, sum } from '@openpanel/shared';
-import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { SerieIcon } from '../common/serie-icon';
+import { Stat, StatStrip } from '../common/stat-strip';
 import { useReportChartContext } from '../context';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
@@ -79,11 +79,8 @@ export function Summary({ data }: Props) {
   const formatRate = (value: number) => number.formatWithUnit(value / 100, '%');
 
   return (
-    <div
-      className={cn(
-        'card grid grid-cols-2 overflow-hidden md:grid-cols-4',
-        hasBreakdowns && 'lg:grid-cols-6'
-      )}
+    <StatStrip
+      className={cn('md:grid-cols-4', hasBreakdowns && 'lg:grid-cols-6')}
     >
       <Stat
         change={
@@ -138,36 +135,7 @@ export function Summary({ data }: Props) {
           value={formatRate(averageRate(stats.worstSerie))}
         />
       )}
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  change,
-  detail,
-}: {
-  label: string;
-  value: string;
-  change?: ReactNode;
-  detail?: ReactNode;
-}) {
-  return (
-    <div className="col min-w-0 gap-1 px-4 py-3 shadow-[0_0_0_0.5px] shadow-border">
-      <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
-        {label}
-      </span>
-      <span className="flex items-baseline gap-2">
-        <span className="truncate font-mono font-semibold text-xl tabular-nums tracking-tight">
-          {value}
-        </span>
-        {change}
-      </span>
-      <span className="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
-        {detail}
-      </span>
-    </div>
+    </StatStrip>
   );
 }
 

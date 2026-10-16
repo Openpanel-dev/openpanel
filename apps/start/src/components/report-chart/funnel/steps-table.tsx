@@ -1,10 +1,10 @@
 import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
-import { InfoIcon, UsersIcon } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { Stat, StatStrip } from '../common/stat-strip';
 import { useReportChartContext } from '../context';
-import { Metric } from './chart';
 import { ColorSquare } from '@/components/color-square';
 import {
   type ReportColumn,
@@ -12,7 +12,6 @@ import {
   type ReportRowIdentity,
 } from '@/components/report-table/report-data-table';
 import { Button } from '@/components/ui/button';
-import { Tooltiper } from '@/components/ui/tooltip';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -167,61 +166,32 @@ function FunnelMetrics({
   previous: Funnel | null;
 }) {
   const number = useNumber();
+  const change = (current: number, before: number | undefined) =>
+    before === undefined ? undefined : (
+      <PreviousDiffIndicatorPure
+        {...getPreviousMetric(current, before)}
+        size="xs"
+      />
+    );
   return (
-    <div className="col md:row divide-border border-b bg-def-100 max-md:divide-y md:items-center md:divide-x">
-      <Metric
-        className="p-4 py-3"
-        enhancer={
-          previous && (
-            <PreviousDiffIndicatorPure
-              {...getPreviousMetric(
-                funnel.lastStep.percent,
-                previous.lastStep.percent
-              )}
-            />
-          )
-        }
+    <StatStrip className="border-b md:grid-cols-3" framed={false}>
+      <Stat
+        change={change(funnel.lastStep.percent, previous?.lastStep.percent)}
         label="Conversion"
         value={number.formatWithUnit(funnel.lastStep.percent / 100, '%')}
       />
-      <Metric
-        className="p-4 py-3"
-        enhancer={
-          previous && (
-            <PreviousDiffIndicatorPure
-              {...getPreviousMetric(
-                funnel.lastStep.count,
-                previous.lastStep.count
-              )}
-            />
-          )
-        }
+      <Stat
+        change={change(funnel.lastStep.count, previous?.lastStep.count)}
         label="Completed"
         value={number.format(funnel.lastStep.count)}
       />
       {funnel.mostDropoffsStep && (
-        <Metric
-          className="p-4 py-3"
-          enhancer={
-            <Tooltiper
-              content={
-                <span>
-                  <span className="font-semibold">
-                    {funnel.mostDropoffsStep.dropoffCount}
-                  </span>{' '}
-                  dropped after this event. Improve this step and your
-                  conversion rate will likely increase.
-                </span>
-              }
-              tooltipClassName="max-w-xs"
-            >
-              <InfoIcon className="size-3" />
-            </Tooltiper>
-          }
-          label="Most dropoffs after"
+        <Stat
+          detail={`${number.format(funnel.mostDropoffsStep.dropoffCount ?? 0)} dropped after this step`}
+          label="Most drop-offs after"
           value={funnel.mostDropoffsStep.event.displayName}
         />
       )}
-    </div>
+    </StatStrip>
   );
 }

@@ -140,6 +140,10 @@ export function ReportDataTable<Row>({
   const virtualRows = isVirtual ? virtualizer.getVirtualItems() : null;
 
   const identityWidth = identity.width ?? DEFAULT_IDENTITY_WIDTH;
+  // The name column takes whatever width the value columns leave, so a short
+  // table still fills its card; it only shrinks to its base width when the
+  // columns need the horizontal scroll.
+  const identityStyle = { flex: `1 0 ${identityWidth}px` };
   const totalWidth =
     identityWidth +
     columns.reduce(
@@ -155,7 +159,7 @@ export function ReportDataTable<Row>({
     return (
       <RowTag
         className={cn(
-          'group/row flex w-full border-border border-b text-left transition-colors hover:bg-def-100',
+          'group/row flex w-full min-w-full border-border border-b text-left transition-colors hover:bg-def-100',
           !isSelected && 'opacity-50',
           activeId === id && 'bg-def-100'
         )}
@@ -167,10 +171,10 @@ export function ReportDataTable<Row>({
       >
         <div
           className={cn(
-            'sticky left-0 z-10 flex shrink-0 items-center gap-2 bg-card px-3 group-hover/row:bg-def-100',
+            'sticky left-0 z-10 flex items-center gap-2 bg-card px-3 group-hover/row:bg-def-100',
             activeId === id && 'bg-def-100'
           )}
-          style={{ width: identityWidth }}
+          style={identityStyle}
         >
           {onToggleRow && (
             <Checkbox
@@ -230,7 +234,7 @@ export function ReportDataTable<Row>({
         style={{ maxHeight: MAX_TABLE_HEIGHT }}
       >
         <div
-          className="sticky top-0 z-20 flex border-border border-b bg-card"
+          className="sticky top-0 z-20 flex min-w-full border-border border-b bg-card"
           style={{ height: HEADER_HEIGHT, minWidth: totalWidth }}
         >
           {table.getFlatHeaders().map((header) => {
@@ -248,11 +252,11 @@ export function ReportDataTable<Row>({
                 disabled={!header.column.getCanSort()}
                 key={header.id}
                 onClick={header.column.getToggleSortingHandler()}
-                style={{
-                  width: isIdentity
-                    ? identityWidth
-                    : (column?.width ?? DEFAULT_COLUMN_WIDTH),
-                }}
+                style={
+                  isIdentity
+                    ? identityStyle
+                    : { width: column?.width ?? DEFAULT_COLUMN_WIDTH }
+                }
                 type="button"
               >
                 <span className="truncate">
