@@ -5,6 +5,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { decide } from './next-version';
 
+// A git hook (pre-push runs this suite) exports GIT_DIR and friends, which
+// win over `cwd`: every command below would then commit, tag and configure
+// the real repository instead of the scratch one.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('GIT_')) {
+    delete process.env[key];
+  }
+}
+
 const repo = mkdtempSync(join(tmpdir(), 'op-release-'));
 const run = (...args: string[]) =>
   execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
