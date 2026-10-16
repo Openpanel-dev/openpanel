@@ -27,6 +27,7 @@ interface Props {
   /** Absent on read-only pages, which hides the checkboxes. */
   onToggle?: (id: string) => void;
   onUnselectAll?: () => void;
+  onReset?: () => void;
 }
 
 const METRIC_COLUMNS = [
@@ -44,6 +45,7 @@ export function SeriesTable({
   visibleIds,
   onToggle,
   onUnselectAll,
+  onReset,
 }: Props) {
   const {
     report: { interval, unit, breakdowns, name },
@@ -137,6 +139,7 @@ export function SeriesTable({
       csvFilename={name || 'report'}
       getRowId={(row) => row.id}
       identity={identity}
+      onReset={onReset}
       onToggleRow={onToggle}
       onUnselectAll={onUnselectAll}
       rows={rows}

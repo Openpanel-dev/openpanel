@@ -36,6 +36,8 @@ export function useVisibleSeries(
   const [visibleSeries, setVisibleSeries] = useState<string[]>(() =>
     resolveIds(data?.series ?? [])
   );
+  // What the chart first showed for this set of series; "Reset" goes back to it.
+  const defaultIdsRef = useRef(visibleSeries);
 
   // Reset only when the actual series IDs change (breakdowns/events changed),
   // not when the data object reference changes. This is React's recommended
@@ -43,7 +45,8 @@ export function useVisibleSeries(
   const prevKeyRef = useRef(seriesKey);
   if (prevKeyRef.current !== seriesKey) {
     prevKeyRef.current = seriesKey;
-    setVisibleSeries(resolveIds(data?.series ?? []));
+    defaultIdsRef.current = resolveIds(data?.series ?? []);
+    setVisibleSeries(defaultIdsRef.current);
   }
 
   // Stable setter that notifies parent without recreating on every render
@@ -58,13 +61,23 @@ export function useVisibleSeries(
     []
   );
 
+  const defaultIds = defaultIdsRef.current;
+  const isDefaultSelection =
+    defaultIds.length === visibleSeries.length &&
+    defaultIds.every((id) => visibleSeries.includes(id));
+  const resetRef = useRef<() => void>(() => undefined);
+  resetRef.current = () => handleSet(defaultIds);
+  const reset = useCallback(() => resetRef.current(), []);
+
   return useMemo(
     () => ({
+      isDefaultSelection,
+      reset,
       series: data.series
         .map((serie, index) => ({ ...serie, index }))
         .filter((serie) => visibleSeries.includes(serie.id)),
       setVisibleSeries: handleSet,
     }),
-    [visibleSeries, data.series, handleSet]
+    [visibleSeries, data.series, handleSet, isDefaultSelection, reset]
   );
 }

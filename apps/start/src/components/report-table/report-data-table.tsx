@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   DownloadIcon,
+  RotateCcwIcon,
   SearchIcon,
   XIcon,
 } from 'lucide-react';
@@ -47,6 +48,8 @@ interface ReportDataTableProps<Row> {
   selectedIds?: ReadonlySet<string>;
   onToggleRow?: (id: string) => void;
   onUnselectAll?: () => void;
+  /** Puts the chart's default selection back. */
+  onReset?: () => void;
   /** Enables the "Download CSV" button, named after this. */
   csvFilename?: string;
   searchable?: boolean;
@@ -69,6 +72,7 @@ export function ReportDataTable<Row>({
   selectedIds,
   onToggleRow,
   onUnselectAll,
+  onReset,
   csvFilename,
   searchable = true,
   onRowClick,
@@ -215,6 +219,7 @@ export function ReportDataTable<Row>({
                 )
             : undefined
         }
+        onReset={onReset}
         onSearch={searchable ? setSearch : undefined}
         onUnselectAll={onUnselectAll}
         search={search}
@@ -339,14 +344,16 @@ function Toolbar({
   search,
   onSearch,
   onUnselectAll,
+  onReset,
   onDownload,
 }: {
   search: string;
   onSearch?: (value: string) => void;
   onUnselectAll?: () => void;
+  onReset?: () => void;
   onDownload?: () => void;
 }) {
-  if (!(onSearch || onUnselectAll || onDownload)) {
+  if (!(onSearch || onUnselectAll || onReset || onDownload)) {
     return null;
   }
   return (
@@ -364,6 +371,16 @@ function Toolbar({
         </div>
       )}
       <div className="ml-auto flex items-center gap-2">
+        {onReset && (
+          <Button
+            icon={RotateCcwIcon}
+            onClick={onReset}
+            size="sm"
+            variant="outline"
+          >
+            Reset
+          </Button>
+        )}
         {onUnselectAll && (
           <Button
             icon={XIcon}

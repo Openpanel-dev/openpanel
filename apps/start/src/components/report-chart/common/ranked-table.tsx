@@ -31,6 +31,7 @@ interface Props {
   /** Absent on read-only pages, which hides the checkboxes. */
   onToggle?: (id: string) => void;
   onUnselectAll?: () => void;
+  onReset?: () => void;
 }
 
 /** One row per series ranked by its value: the table behind bar and pie reports. */
@@ -39,6 +40,7 @@ export function RankedTable({
   visibleIds,
   onToggle,
   onUnselectAll,
+  onReset,
 }: Props) {
   const {
     report: { metric, unit, previous: comparesPrevious, name },
@@ -134,6 +136,7 @@ export function RankedTable({
       csvFilename={name || 'report'}
       getRowId={(row) => row.id}
       identity={identity}
+      onReset={onReset}
       onToggleRow={onToggle}
       onUnselectAll={onUnselectAll}
       rows={rows}

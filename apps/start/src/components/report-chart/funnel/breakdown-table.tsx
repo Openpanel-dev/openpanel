@@ -27,6 +27,7 @@ interface Props {
   visibleIds: ReadonlySet<string>;
   onToggle?: (id: string) => void;
   onUnselectAll?: () => void;
+  onReset?: () => void;
   /** The breakdown whose steps are shown under the table. */
   activeId?: string;
   onSelect: (id: string) => void;
@@ -50,6 +51,7 @@ export function BreakdownTable({
   visibleIds,
   onToggle,
   onUnselectAll,
+  onReset,
   activeId,
   onSelect,
 }: Props) {
@@ -127,6 +129,7 @@ export function BreakdownTable({
       csvFilename={name || 'funnel'}
       getRowId={(row) => row.id}
       identity={IDENTITY}
+      onReset={onReset}
       onRowClick={onSelect}
       onToggleRow={onToggle}
       onUnselectAll={onUnselectAll}

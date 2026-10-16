@@ -33,6 +33,7 @@ interface Props {
   /** Absent on read-only pages, which hides the checkboxes. */
   onToggle?: (id: string) => void;
   onUnselectAll?: () => void;
+  onReset?: () => void;
 }
 
 const SUMMARY_COLUMNS: ReportColumn<ConversionRow>[] = [
@@ -67,6 +68,7 @@ export function ConversionTable({
   visibleIds,
   onToggle,
   onUnselectAll,
+  onReset,
 }: Props) {
   const {
     report: { interval, name },
@@ -86,9 +88,15 @@ export function ConversionTable({
           names:
             serie.breakdowns.length > 0 ? serie.breakdowns : ['Conversion'],
           color: getChartColor(index),
-          averageRate: average(serie.data.map((item) => item.rate)),
+          averageRate: average(
+            serie.data.map((item) => item.rate),
+            true
+          ),
           previousAverageRate: previous?.data.length
-            ? average(previous.data.map((item) => item.rate))
+            ? average(
+                previous.data.map((item) => item.rate),
+                true
+              )
             : undefined,
           total: serie.data.reduce((sum, item) => sum + item.total, 0),
           conversions: serie.data.reduce(
@@ -124,6 +132,7 @@ export function ConversionTable({
       csvFilename={name || 'conversion'}
       getRowId={(row) => row.id}
       identity={IDENTITY}
+      onReset={onReset}
       onToggleRow={onToggle}
       onUnselectAll={onUnselectAll}
       rows={rows}

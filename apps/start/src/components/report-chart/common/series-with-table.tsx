@@ -32,12 +32,13 @@ export function SeriesWithTable({
     isEditMode,
   } = useReportChartContext();
   const dispatch = useDispatch();
-  const { series, setVisibleSeries } = useVisibleSeries(data, {
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
+  const { series, setVisibleSeries, reset, isDefaultSelection } =
+    useVisibleSeries(data, {
+      savedVisibleSeries,
+      onVisibleSeriesChange: isEditMode
+        ? (ids) => dispatch(changeVisibleSeries(ids))
+        : undefined,
+    });
   const visibleIds = useMemo(
     () => new Set(series.map((serie) => serie.id)),
     [series]
@@ -57,8 +58,13 @@ export function SeriesWithTable({
         <TableCard>
           <Table
             data={data}
+            onReset={isEditMode && !isDefaultSelection ? reset : undefined}
             onToggle={isEditMode ? toggleSeries : undefined}
-            onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
+            onUnselectAll={
+              isEditMode && series.length > 0
+                ? () => setVisibleSeries([])
+                : undefined
+            }
             visibleIds={visibleIds}
           />
         </TableCard>

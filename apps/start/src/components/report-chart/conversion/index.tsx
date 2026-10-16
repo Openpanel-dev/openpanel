@@ -63,13 +63,14 @@ function ConversionWithTable({
     isEditMode,
   } = useReportChartContext();
   const dispatch = useDispatch();
-  const { series, setVisibleSeries } = useVisibleConversionSeries(data, {
-    limit: VISIBLE_SERIES_LIMIT,
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
+  const { series, setVisibleSeries, reset, isDefaultSelection } =
+    useVisibleConversionSeries(data, {
+      limit: VISIBLE_SERIES_LIMIT,
+      savedVisibleSeries,
+      onVisibleSeriesChange: isEditMode
+        ? (ids) => dispatch(changeVisibleSeries(ids))
+        : undefined,
+    });
 
   const visibleIds = useMemo(
     () => new Set(series.map((serie) => serie.id)),
@@ -91,8 +92,13 @@ function ConversionWithTable({
         <TableCard>
           <ConversionTable
             data={data}
+            onReset={isEditMode && !isDefaultSelection ? reset : undefined}
             onToggle={isEditMode ? toggleSeries : undefined}
-            onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
+            onUnselectAll={
+              isEditMode && series.length > 0
+                ? () => setVisibleSeries([])
+                : undefined
+            }
             visibleIds={visibleIds}
           />
         </TableCard>

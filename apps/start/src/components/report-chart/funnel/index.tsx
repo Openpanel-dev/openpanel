@@ -35,14 +35,18 @@ export function ReportFunnelChart() {
   );
 
   // Hook for limiting which breakdowns are shown in the chart only
-  const { breakdowns: visibleBreakdowns, setVisibleSeries } =
-    useVisibleFunnelBreakdowns(res.data?.current ?? [], {
-      limit: 10,
-      savedVisibleSeries: report.visibleSeries,
-      onVisibleSeriesChange: isEditMode
-        ? (ids) => dispatch(changeVisibleSeries(ids))
-        : undefined,
-    });
+  const {
+    breakdowns: visibleBreakdowns,
+    setVisibleSeries,
+    reset,
+    isDefaultSelection,
+  } = useVisibleFunnelBreakdowns(res.data?.current ?? [], {
+    limit: 10,
+    savedVisibleSeries: report.visibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
 
   if (isLazyLoading || res.isLoading) {
     return <Loading />;
@@ -59,7 +63,9 @@ export function ReportFunnelChart() {
   return (
     <FunnelWithTables
       data={res.data}
+      isDefaultSelection={isDefaultSelection}
       isEditMode={isEditMode}
+      reset={reset}
       setVisibleSeries={setVisibleSeries}
       visibleBreakdowns={visibleBreakdowns}
     />
@@ -71,11 +77,15 @@ function FunnelWithTables({
   isEditMode,
   visibleBreakdowns,
   setVisibleSeries,
+  reset,
+  isDefaultSelection,
 }: {
   data: RouterOutputs['chart']['funnel'];
   isEditMode: boolean;
   visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
+  reset: () => void;
+  isDefaultSelection: boolean;
 }) {
   const hasBreakdowns = data.current.length > 1;
   const [selectedId, setSelectedId] = useState<string>();
@@ -108,10 +118,13 @@ function FunnelWithTables({
               <BreakdownTable
                 activeId={active?.id}
                 data={data}
+                onReset={isEditMode && !isDefaultSelection ? reset : undefined}
                 onSelect={setSelectedId}
                 onToggle={isEditMode ? toggle : undefined}
                 onUnselectAll={
-                  isEditMode ? () => setVisibleSeries([]) : undefined
+                  isEditMode && visibleBreakdowns.length > 0
+                    ? () => setVisibleSeries([])
+                    : undefined
                 }
                 visibleIds={visibleIds}
               />
