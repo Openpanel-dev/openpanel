@@ -41,6 +41,8 @@ export interface ComposedChartProps {
   stacked?: boolean;
   /** Gap in px between stacked segments. Default: 0 */
   stackGap?: number;
+  /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
+  formatDateLabel?: (date: Date) => string;
 }
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -186,6 +188,7 @@ interface ChartInnerProps {
   barGap?: number;
   stacked?: boolean;
   stackGap?: number;
+  formatDateLabel?: (date: Date) => string;
 }
 
 function ChartInner({
@@ -205,6 +208,7 @@ function ChartInner({
   barGap,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
 }: ChartInnerProps) {
   const { lines, barDataKeys } = useMemo(
     () => extractComposedSeries(children),
@@ -258,6 +262,7 @@ function ChartInner({
       containerRef={containerRef}
       data={data}
       enterTransition={enterTransition}
+      formatDateLabel={formatDateLabel}
       height={height}
       lines={lines}
       margin={margin}
@@ -287,6 +292,7 @@ export function ComposedChart({
   barGap = 4,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
 }: ComposedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
@@ -295,7 +301,7 @@ export function ComposedChart({
     <div
       className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: 'none' }}
+      style={{ aspectRatio, touchAction: 'pan-y' }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
@@ -307,6 +313,7 @@ export function ComposedChart({
             containerRef={containerRef}
             data={data}
             enterTransition={enterTransition}
+            formatDateLabel={formatDateLabel}
             height={height}
             margin={margin}
             maxBarSize={maxBarSize}
