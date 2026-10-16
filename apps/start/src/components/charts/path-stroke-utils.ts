@@ -39,7 +39,10 @@ const EMPTY_METRICS: PathStrokeMetrics = { pathD: null, pathLength: 0 };
  * in-place mutations of `renderData` keep the summary identical, so the
  * effect would never re-fire and `pathD`/`pathLength` would stay frozen on
  * the previous geometry (the area fill repaints from `renderData` directly
- * and would diverge from the stroke).
+ * and would diverge from the stroke). The y-scale belongs in `deps` too: it
+ * is rebuilt on every frame of the y-domain tween and on height changes, and
+ * the dashed-tail stroke is drawn from the measured `pathD`, so a stale
+ * measurement leaves the stroke behind while the fill follows the scale.
  */
 export function usePathStrokeMetrics(
   pathRef: RefObject<SVGPathElement | null>,

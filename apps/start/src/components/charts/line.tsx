@@ -288,6 +288,8 @@ export function Line({
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, [
     renderData,
     innerWidth,
+    innerHeight,
+    yScale,
     dashFromIndex,
     animate,
     useDataTransitionPath ? animatedPathD : null,

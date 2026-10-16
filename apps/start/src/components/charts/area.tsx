@@ -200,6 +200,8 @@ export function Area({
   const { pathLength, pathD } = usePathStrokeMetrics(pathRef, [
     renderData,
     innerWidth,
+    innerHeight,
+    yScale,
     dashFromIndex,
     showLine,
     showSeriesContent,
