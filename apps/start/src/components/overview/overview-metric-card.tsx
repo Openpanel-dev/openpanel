@@ -17,6 +17,9 @@ import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
 
 const PRIMARY_COLOR = 'var(--chart-0)';
 const METRIC_ERROR_LABEL = 'Could not load';
+// A tall card's bars get the report bars' rounding; the 40px sparkline's thin bars only a hint of it.
+const BAR_RADIUS = 4;
+const SPARKLINE_BAR_RADIUS = 1;
 
 export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
@@ -124,7 +127,7 @@ export function OverviewMetricCard({
               dataKey="current"
               fadedOpacity={0.35}
               fill={PRIMARY_COLOR}
-              lineCap={1}
+              lineCap={fill ? BAR_RADIUS : SPARKLINE_BAR_RADIUS}
             />
           </BarChart>
         )}
