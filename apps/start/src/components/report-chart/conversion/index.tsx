@@ -1,12 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
-import { ConversionTable } from './conversion-table';
 import { Summary } from './summary';
+import { ConversionTable } from './table';
 import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useVisibleConversionSeries } from '@/hooks/use-visible-conversion-series';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -70,6 +71,18 @@ function ConversionWithTable({
       : undefined,
   });
 
+  const visibleIds = useMemo(
+    () => new Set(series.map((serie) => serie.id)),
+    [series]
+  );
+  const toggleSeries = useCallback(
+    (id: string) =>
+      setVisibleSeries((ids) =>
+        ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]
+      ),
+    [setVisibleSeries]
+  );
+
   // A dashboard tile is the chart alone; the summary and the table belong to
   // the editor and the share page.
   if (layout === 'fill') {
@@ -86,11 +99,14 @@ function ConversionWithTable({
       <AspectContainer>
         <Chart series={series} />
       </AspectContainer>
-      <ConversionTable
-        data={data}
-        setVisibleSeries={setVisibleSeries}
-        visibleSeries={series}
-      />
+      <div className="card mt-4 overflow-hidden">
+        <ConversionTable
+          data={data}
+          onToggle={isEditMode ? toggleSeries : undefined}
+          onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
+          visibleIds={visibleIds}
+        />
+      </div>
     </div>
   );
 }
