@@ -169,16 +169,8 @@ test('report page: view users from a chart point, series toggles, sorting, searc
       api.series.map((serie) => serie.metrics.sum).sort((a, b) => a - b)
     );
 
-    // --- grouped view folds the rows under their series
-    await editor.getByRole('button', { name: 'Flat', exact: true }).click();
-    await expect(
-      editor.getByRole('button', { name: 'Grouped', exact: true })
-    ).toBeVisible();
-    await shot(page, 'item13-grouped');
-    await editor.getByRole('button', { name: 'Grouped', exact: true }).click();
-
     // --- search narrows the rows
-    await editor.getByPlaceholder('Search...').fill('tablet');
+    await editor.getByPlaceholder(/Search/).fill('tablet');
     await expect
       .poll(async () => (await tableRows(editor)).map((row) => row.device))
       .toEqual(['tablet', 'tablet']);

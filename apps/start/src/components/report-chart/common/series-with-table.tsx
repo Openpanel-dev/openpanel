@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
 import { useReportChartContext } from '../context';
-import { ReportTable } from './report-table';
+import { SeriesTable } from './series-table';
 import { changeVisibleSeries } from '@/components/report/reportSlice';
 import {
   type IVisibleSeries,
@@ -10,7 +10,11 @@ import {
 import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 
-/** Renders the chart for the visible series, and in the editor the series table under it that toggles them. */
+/**
+ * The chart for the visible series with the series table under it. A
+ * dashboard tile shows the chart alone; the editor's table toggles series,
+ * the share page's is read-only.
+ */
 export function SeriesWithTable({
   data,
   chart,
@@ -21,6 +25,7 @@ export function SeriesWithTable({
   const {
     report: { visibleSeries: savedVisibleSeries },
     isEditMode,
+    layout,
   } = useReportChartContext();
   const dispatch = useDispatch();
   const { series, setVisibleSeries } = useVisibleSeries(data, {
@@ -29,16 +34,30 @@ export function SeriesWithTable({
       ? (ids) => dispatch(changeVisibleSeries(ids))
       : undefined,
   });
+  const visibleIds = useMemo(
+    () => new Set(series.map((serie) => serie.id)),
+    [series]
+  );
+  const toggleSeries = useCallback(
+    (id: string) =>
+      setVisibleSeries((ids) =>
+        ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]
+      ),
+    [setVisibleSeries]
+  );
 
   return (
     <>
       <AspectContainer>{chart(series)}</AspectContainer>
-      {isEditMode && (
-        <ReportTable
-          data={data}
-          setVisibleSeries={setVisibleSeries}
-          visibleSeries={series}
-        />
+      {layout !== 'fill' && (
+        <div className="card mt-4 overflow-hidden">
+          <SeriesTable
+            data={data}
+            onToggle={isEditMode ? toggleSeries : undefined}
+            onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
+            visibleIds={visibleIds}
+          />
+        </div>
       )}
     </>
   );

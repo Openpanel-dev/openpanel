@@ -206,7 +206,7 @@ export function ReportDataTable<Row>({
         search={search}
       />
       <div
-        className="relative overflow-auto"
+        className="scrollbar-thin relative overflow-auto"
         ref={scrollRef}
         style={{ maxHeight: MAX_TABLE_HEIGHT }}
       >
