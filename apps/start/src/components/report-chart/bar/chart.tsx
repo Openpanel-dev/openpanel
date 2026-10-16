@@ -1,19 +1,14 @@
-import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import { round } from '@openpanel/shared';
-import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { useElementSize } from 'usehooks-ts';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
-import { DeltaChip } from '@/components/delta-chip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { BarLabels } from './bar-labels';
+import { Bar } from '@/components/charts/bar';
+import { BarChart } from '@/components/charts/bar-chart';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -22,338 +17,251 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useNumber } from '@/hooks/use-numer-formatter';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
 const DEFAULT_ROWS = 10;
-// One list row with its divider, measured: the tile shows whole rows only.
-const ROW_HEIGHT = 75;
-const MORE_ROW_HEIGHT = 36;
+const ALL_SERIES_LIMIT = 500;
+export const ROW_HEIGHT = 36;
+const MORE_ROW_HEIGHT = 28;
+const BAR_GAP = 0.35;
+const LABEL_SHARE = 0.4;
+const LABEL_MAX_WIDTH = 260;
+const VALUE_WIDTH = 96;
+const BAR_COLOR = getChartColor(0);
+const PREVIOUS_BAR_COLOR = `color-mix(in oklch, ${BAR_COLOR} 30%, transparent)`;
 
-type SortOption =
-  | 'count-desc'
-  | 'count-asc'
-  | 'name-asc'
-  | 'name-desc'
-  | 'percent-desc'
-  | 'percent-asc';
+const SORT_OPTIONS = {
+  'count-desc': 'Count (High → Low)',
+  'count-asc': 'Count (Low → High)',
+  'name-asc': 'Name (A → Z)',
+  'name-desc': 'Name (Z → A)',
+} as const;
+type SortOption = keyof typeof SORT_OPTIONS;
+
+// The index signature lets rows go straight into bklit's chart data.
+export interface BarRow {
+  [key: string]: unknown;
+  id: string;
+  names: string[];
+  /** `names` without the event name when every row shares it. */
+  labelNames: string[];
+  count: number;
+  previous?: number;
+  previousDiff?: { diff: number | null; state: string };
+  share: number;
+}
 
 interface Props {
   data: IChartData;
 }
 
 export function Chart({ data }: Props) {
-  const [isOpen, setOpen] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('count-desc');
   const {
     isEditMode,
     layout,
     report: { metric, limit, previous },
-    options: { onClick, dropdownMenuContent },
   } = useReportChartContext();
   const isTile = layout === 'fill';
-  const number = useNumber();
+  const [sizeRef, { width = 0, height = 0 }] = useElementSize();
+  const { series } = useVisibleSeries(data, { limit: ALL_SERIES_LIMIT });
+  const total = data.metrics.sum || 1;
 
-  // Use useVisibleSeries to add index property for colors
-  const { series: allSeriesWithIndex } = useVisibleSeries(data, { limit: 500 });
-
-  const totalSum = data.metrics.sum || 1;
-
-  // Calculate original ranks (based on count descending - default sort)
-  const seriesWithOriginalRank = useMemo(() => {
-    const sortedByCount = [...allSeriesWithIndex].sort(
-      (a, b) => b.metrics.sum - a.metrics.sum
+  const rows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const matching = query
+      ? series.filter((serie) =>
+          serie.names.some((name) => name.toLowerCase().includes(query))
+        )
+      : series;
+    const isSharedEvent =
+      new Set(series.map((serie) => serie.names[0])).size === 1;
+    return sortSeries(matching, sortBy).map(
+      (serie): BarRow => ({
+        id: serie.id,
+        names: serie.names,
+        labelNames:
+          isSharedEvent && serie.names.length > 1
+            ? serie.names.slice(1)
+            : serie.names,
+        count: serie.metrics.sum,
+        previous: previous
+          ? serie.metrics.previous?.[metric]?.value
+          : undefined,
+        previousDiff: previous ? serie.metrics.previous?.[metric] : undefined,
+        share: round((serie.metrics.sum / total) * 100, 1),
+      })
     );
-    const rankMap = new Map<string, number>();
-    sortedByCount.forEach((serie, idx) => {
-      rankMap.set(serie.id, idx + 1);
-    });
-    return allSeriesWithIndex.map((serie) => ({
-      ...serie,
-      originalRank: rankMap.get(serie.id) ?? 0,
-    }));
-  }, [allSeriesWithIndex]);
+  }, [series, searchQuery, sortBy, previous, metric, total]);
 
-  // Filter and sort series
-  const series = useMemo(() => {
-    let filtered = seriesWithOriginalRank;
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((serie) =>
-        serie.names.some((name) => name.toLowerCase().includes(query))
-      );
-    }
-
-    // Sort
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'count-desc':
-          return b.metrics.sum - a.metrics.sum;
-        case 'count-asc':
-          return a.metrics.sum - b.metrics.sum;
-        case 'name-asc':
-          return a.names.join(' > ').localeCompare(b.names.join(' > '));
-        case 'name-desc':
-          return b.names.join(' > ').localeCompare(a.names.join(' > '));
-        case 'percent-desc':
-          return b.metrics.sum / totalSum - a.metrics.sum / totalSum;
-        case 'percent-asc':
-          return a.metrics.sum / totalSum - b.metrics.sum / totalSum;
-        default:
-          return 0;
-      }
-    });
-
+  const rowLimit = (() => {
     if (isEditMode) {
-      return sorted;
+      return rows.length;
     }
-    // A tile is cut by its height below; a saved limit still caps it.
+    // A tile shows the whole rows that fit its height; a saved limit still caps it.
     if (isTile) {
-      return sorted.slice(0, limit ?? Number.POSITIVE_INFINITY);
+      const fitting = Math.floor(height / ROW_HEIGHT);
+      const fittingWithMore = Math.floor(
+        (height - MORE_ROW_HEIGHT) / ROW_HEIGHT
+      );
+      const fits = Math.min(rows.length, limit ?? Number.POSITIVE_INFINITY);
+      return fits <= fitting ? fits : Math.max(1, fittingWithMore);
     }
-    return sorted.slice(0, limit || DEFAULT_ROWS);
-  }, [
-    seriesWithOriginalRank,
-    searchQuery,
-    sortBy,
-    totalSum,
-    isEditMode,
-    isTile,
-    limit,
-  ]);
+    return limit || DEFAULT_ROWS;
+  })();
+  const visibleRows = rows.slice(0, rowLimit);
+  const hiddenCount = rows.length - visibleRows.length;
 
-  const renderRows = (rows: typeof series) => (
-    <div className="divide-y divide-def-200 dark:divide-def-800">
-      {rows.map((serie) => {
-        const isClickable = !serie.names.includes(NOT_SET_VALUE) && !!onClick;
-        const isDropDownEnabled =
-          !serie.names.includes(NOT_SET_VALUE) &&
-          (dropdownMenuContent?.(serie) || []).length > 0;
-
-        const color = getChartColor(serie.index);
-        const percentOfTotal = round((serie.metrics.sum / totalSum) * 100, 1);
-
-        return (
+  return (
+    <div className={cn('col w-full', isEditMode && 'card', isTile && 'h-full')}>
+      {isEditMode && (
+        <BarToolbar
+          onSearch={setSearchQuery}
+          onSort={setSortBy}
+          searchQuery={searchQuery}
+          sortBy={sortBy}
+        />
+      )}
+      <div
+        className={cn(
+          'w-full',
+          isTile && 'min-h-0 flex-1',
+          isEditMode && 'p-4'
+        )}
+        data-report-chart="bar"
+        ref={sizeRef}
+      >
+        {width > 0 && visibleRows.length > 0 && (
+          <BarRows previous={previous} rows={visibleRows} width={width} />
+        )}
+        {hiddenCount > 0 && (
           <div
-            className={cn(
-              'group relative overflow-hidden px-4 py-3 transition-colors',
-              isClickable && 'cursor-pointer'
-            )}
-            key={serie.id}
-            onClick={() => {
-              if (isClickable && !isDropDownEnabled) {
-                onClick?.(serie);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (!isClickable || isDropDownEnabled) {
-                return;
-              }
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onClick?.(serie);
-              }
-            }}
-            role={isClickable ? 'button' : undefined}
-            tabIndex={isClickable ? 0 : undefined}
+            className="flex items-center px-1 text-muted-foreground text-sm"
+            style={{ height: MORE_ROW_HEIGHT }}
           >
-            <div
-              className="pointer-events-none absolute -top-10 -left-10 h-40 w-96 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-10"
-              style={{
-                background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-              }}
-            />
-
-            <div className="relative z-10 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-def-50 dark:border-def-800 dark:bg-def-900"
-                    style={{ borderColor: `${color}22` }}
-                  >
-                    <SerieIcon name={serie.names[0]} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2">
-                      <div
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
-                        Rank {serie.originalRank}
-                      </span>
-                    </div>
-
-                    <DropdownMenu
-                      onOpenChange={() =>
-                        setOpen((p) => (p === serie.id ? null : serie.id))
-                      }
-                      open={isOpen === serie.id}
-                    >
-                      <DropdownMenuTrigger
-                        asChild
-                        disabled={!isDropDownEnabled}
-                        {...(isDropDownEnabled
-                          ? {
-                              onPointerDown: (e) => e.preventDefault(),
-                              onClick: (e) => {
-                                e.stopPropagation();
-                                setOpen(serie.id);
-                              },
-                            }
-                          : {})}
-                      >
-                        <div
-                          className={cn(
-                            'min-w-0',
-                            isDropDownEnabled && 'cursor-pointer'
-                          )}
-                          {...(isClickable && !isDropDownEnabled
-                            ? {
-                                onClick: (e) => {
-                                  e.stopPropagation();
-                                  onClick?.(serie);
-                                },
-                              }
-                            : {})}
-                        >
-                          <SerieName
-                            className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-sm tracking-tight"
-                            name={serie.names}
-                          />
-                        </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuPortal>
-                        <DropdownMenuContent>
-                          {dropdownMenuContent?.(serie).map((item) => (
-                            <DropdownMenuItem
-                              key={item.title}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                item.onClick();
-                              }}
-                            >
-                              {item.icon && (
-                                <item.icon className="mr-2" size={16} />
-                              )}
-                              {item.title}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenuPortal>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <div className="flex items-center gap-2">
-                    <div className="font-mono font-semibold text-base tracking-tight">
-                      {number.format(serie.metrics.sum)}
-                    </div>
-                    {previous && serie.metrics.previous?.[metric] && (
-                      <DeltaChip
-                        size="sm"
-                        variant={
-                          serie.metrics.previous[metric].state === 'positive'
-                            ? 'inc'
-                            : 'dec'
-                        }
-                      >
-                        {serie.metrics.previous[metric].diff?.toFixed(1)}%
-                      </DeltaChip>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-700 ease-out"
-                    style={{
-                      width: `${percentOfTotal}%`,
-                      background: `linear-gradient(90deg, ${color}aa, ${color})`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+            +{hiddenCount} more
           </div>
-        );
-      })}
+        )}
+      </div>
     </div>
+  );
+}
+
+function BarRows({
+  rows,
+  width,
+  previous,
+}: {
+  rows: BarRow[];
+  width: number;
+  previous: boolean | undefined;
+}) {
+  const labelWidth = Math.min(width * LABEL_SHARE, LABEL_MAX_WIDTH);
+  // An empty previous bar would still take half of every row.
+  const hasPrevious = previous && rows.some((row) => (row.previous ?? 0) > 0);
+  const rowsById = useMemo(
+    () => new Map(rows.map((row) => [row.id, row])),
+    [rows]
   );
 
   return (
-    <div className={cn('w-full', isEditMode && 'card', isTile && 'h-full')}>
-      {isEditMode && (
-        <div className="flex items-center gap-3 border-def-200 border-b p-4 dark:border-def-800">
-          <div className="relative flex-1">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by name"
-              size="sm"
-              type="text"
-              value={searchQuery}
-            />
-          </div>
-          <Select
-            onValueChange={(value) => setSortBy(value as SortOption)}
-            value={sortBy}
-          >
-            <SelectTrigger className="w-[180px]" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="count-desc">Count (High → Low)</SelectItem>
-              <SelectItem value="count-asc">Count (Low → High)</SelectItem>
-              <SelectItem value="name-asc">Name (A → Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z → A)</SelectItem>
-              <SelectItem value="percent-desc">
-                Percentage (High → Low)
-              </SelectItem>
-              <SelectItem value="percent-asc">
-                Percentage (Low → High)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      {isTile ? (
-        <AutoSizer disableWidth>
-          {({ height }) => {
-            const hidden = series.length > Math.floor(height / ROW_HEIGHT);
-            const roomForRows = hidden ? height - MORE_ROW_HEIGHT : height;
-            const rows = hidden
-              ? series.slice(
-                  0,
-                  Math.max(1, Math.floor(roomForRows / ROW_HEIGHT))
-                )
-              : series;
-            return (
-              <div className="overflow-hidden" style={{ height }}>
-                {renderRows(rows)}
-                {hidden && (
-                  <div className="px-4 py-2 text-muted-foreground text-sm">
-                    +{series.length - rows.length} more
-                  </div>
-                )}
-              </div>
-            );
-          }}
-        </AutoSizer>
-      ) : (
-        <div className="overflow-hidden">{renderRows(series)}</div>
-      )}
+    <div style={{ height: rows.length * ROW_HEIGHT }}>
+      <BarChart
+        animationDuration={0}
+        aspectRatio="auto"
+        barGap={BAR_GAP}
+        className="h-full"
+        data={rows}
+        margin={{ top: 0, right: VALUE_WIDTH, bottom: 0, left: labelWidth }}
+        orientation="horizontal"
+        xDataKey="id"
+      >
+        <Bar animate={false} dataKey="count" fill={BAR_COLOR} lineCap={4} />
+        {hasPrevious && (
+          <Bar
+            animate={false}
+            dataKey="previous"
+            fill={PREVIOUS_BAR_COLOR}
+            lineCap={4}
+          />
+        )}
+        <BarLabels rowsById={rowsById} />
+        <OPChartTooltip<BarRow>
+          rows={(row) => [
+            {
+              color: BAR_COLOR,
+              icon: <SerieIcon name={row.labelNames} />,
+              label: <SerieName name={row.labelNames} />,
+              value: row.count,
+              previous: row.previous,
+              percentage: row.share,
+            },
+          ]}
+          title={() => null}
+        />
+      </BarChart>
     </div>
   );
+}
+
+function BarToolbar({
+  searchQuery,
+  onSearch,
+  sortBy,
+  onSort,
+}: {
+  searchQuery: string;
+  onSearch: (query: string) => void;
+  sortBy: SortOption;
+  onSort: (sort: SortOption) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 border-def-200 border-b p-4 dark:border-def-800">
+      <div className="relative flex-1">
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          onChange={(event) => onSearch(event.target.value)}
+          placeholder="Filter by name"
+          size="sm"
+          type="text"
+          value={searchQuery}
+        />
+      </div>
+      <Select
+        onValueChange={(value) => onSort(value as SortOption)}
+        value={sortBy}
+      >
+        <SelectTrigger className="w-[180px]" size="sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(SORT_OPTIONS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function sortSeries<T extends { names: string[]; metrics: { sum: number } }>(
+  series: T[],
+  sortBy: SortOption
+) {
+  const byName = (a: T, b: T) =>
+    a.names.join(' > ').localeCompare(b.names.join(' > '));
+  const compare: Record<SortOption, (a: T, b: T) => number> = {
+    'count-desc': (a, b) => b.metrics.sum - a.metrics.sum,
+    'count-asc': (a, b) => a.metrics.sum - b.metrics.sum,
+    'name-asc': byName,
+    'name-desc': (a, b) => byName(b, a),
+  };
+  return [...series].sort(compare[sortBy]);
 }

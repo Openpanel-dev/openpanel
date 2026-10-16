@@ -3,7 +3,6 @@ import type {
   IReportInput,
 } from '@openpanel/core/modules/report/report.constants';
 import isEqual from 'lodash.isequal';
-import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 export interface ReportChartContextType {
@@ -15,15 +14,8 @@ export interface ReportChartContextType {
     aspectRatio: number;
     maxHeight: number;
     minHeight: number;
-    maxDomain: number;
-    onClick: (serie: IChartSerie) => void;
     renderSerieName: (names: string[]) => React.ReactNode;
     renderSerieIcon: (serie: IChartSerie) => React.ReactNode;
-    dropdownMenuContent: (serie: IChartSerie) => {
-      icon: LucideIcon;
-      title: string;
-      onClick: () => void;
-    }[];
   }>;
   report: IReportInput & { id?: string };
   isLazyLoading: boolean;
