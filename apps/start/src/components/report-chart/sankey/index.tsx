@@ -1,6 +1,7 @@
 import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -24,7 +25,6 @@ export function ReportSankeyChart() {
     },
     isLazyLoading,
     shareId,
-    layout,
   } = useReportChartContext();
 
   const input: IReportInput = {
@@ -69,14 +69,15 @@ export function ReportSankeyChart() {
   }
 
   return (
-    <>
-      <Chart data={res.data} />
-      {layout !== 'fill' && (
-        <div className="card mt-4 overflow-hidden">
+    <ChartWithTable
+      chart={<Chart data={res.data} />}
+      sizesItself
+      tables={
+        <TableCard>
           <PathsTable data={res.data} />
-        </div>
-      )}
-    </>
+        </TableCard>
+      }
+    />
   );
 }
 

@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useMemo } from 'react';
-import { AspectContainer } from '../aspect-container';
 import { useReportChartContext } from '../context';
+import { ChartWithTable, TableCard } from './chart-with-table';
 import { RankedTable } from './ranked-table';
 import { SeriesTable } from './series-table';
 import { changeVisibleSeries } from '@/components/report/reportSlice';
@@ -30,7 +30,6 @@ export function SeriesWithTable({
   const {
     report: { visibleSeries: savedVisibleSeries },
     isEditMode,
-    layout,
   } = useReportChartContext();
   const dispatch = useDispatch();
   const { series, setVisibleSeries } = useVisibleSeries(data, {
@@ -52,18 +51,18 @@ export function SeriesWithTable({
   );
 
   return (
-    <>
-      <AspectContainer>{chart(series)}</AspectContainer>
-      {layout !== 'fill' && (
-        <div className="card mt-4 overflow-hidden">
+    <ChartWithTable
+      chart={chart(series)}
+      tables={
+        <TableCard>
           <Table
             data={data}
             onToggle={isEditMode ? toggleSeries : undefined}
             onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
             visibleIds={visibleIds}
           />
-        </div>
-      )}
-    </>
+        </TableCard>
+      }
+    />
   );
 }

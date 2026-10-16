@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -60,7 +61,6 @@ function ConversionWithTable({
   const {
     report: { visibleSeries: savedVisibleSeries },
     isEditMode,
-    layout,
   } = useReportChartContext();
   const dispatch = useDispatch();
   const { series, setVisibleSeries } = useVisibleConversionSeries(data, {
@@ -83,31 +83,21 @@ function ConversionWithTable({
     [setVisibleSeries]
   );
 
-  // A dashboard tile is the chart alone; the summary and the table belong to
-  // the editor and the share page.
-  if (layout === 'fill') {
-    return (
-      <AspectContainer>
-        <Chart series={series} />
-      </AspectContainer>
-    );
-  }
-
   return (
-    <div>
-      <Summary data={data} />
-      <AspectContainer>
-        <Chart series={series} />
-      </AspectContainer>
-      <div className="card mt-4 overflow-hidden">
-        <ConversionTable
-          data={data}
-          onToggle={isEditMode ? toggleSeries : undefined}
-          onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
-          visibleIds={visibleIds}
-        />
-      </div>
-    </div>
+    <ChartWithTable
+      chart={<Chart series={series} />}
+      summary={<Summary data={data} />}
+      tables={
+        <TableCard>
+          <ConversionTable
+            data={data}
+            onToggle={isEditMode ? toggleSeries : undefined}
+            onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
+            visibleIds={visibleIds}
+          />
+        </TableCard>
+      }
+    />
   );
 }
 

@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -9,7 +10,7 @@ import { CohortTable } from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
-  const { isLazyLoading, report, shareId, layout } = useReportChartContext();
+  const { isLazyLoading, report, shareId } = useReportChartContext();
   const eventSeries = report.series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
@@ -67,23 +68,15 @@ export function ReportRetentionChart() {
     return <Empty />;
   }
 
-  if (layout === 'fill') {
-    return (
-      <AspectContainer>
-        <Chart data={res.data} />
-      </AspectContainer>
-    );
-  }
-
   return (
-    <div className="col gap-4">
-      <AspectContainer>
-        <Chart data={res.data} />
-      </AspectContainer>
-      <div className="card overflow-hidden">
-        <CohortTable data={res.data} />
-      </div>
-    </div>
+    <ChartWithTable
+      chart={<Chart data={res.data} />}
+      tables={
+        <TableCard>
+          <CohortTable data={res.data} />
+        </TableCard>
+      }
+    />
   );
 }
 

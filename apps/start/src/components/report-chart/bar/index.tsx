@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { RankedTable } from '../common/ranked-table';
@@ -51,16 +52,16 @@ export function ReportBarChart() {
 }
 
 function BarWithTable({ data }: { data: IChartData }) {
-  const { layout } = useReportChartContext();
   return (
-    <>
-      <Chart data={data} />
-      {layout !== 'fill' && (
-        <div className="card mt-4 overflow-hidden">
+    <ChartWithTable
+      chart={<Chart data={data} />}
+      sizesItself
+      tables={
+        <TableCard>
           <RankedTable data={data} />
-        </div>
-      )}
-    </>
+        </TableCard>
+      }
+    />
   );
 }
 

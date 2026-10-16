@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -16,7 +17,7 @@ import { useDispatch } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 
 export function ReportFunnelChart() {
-  const { isLazyLoading, report, shareId, isEditMode, layout } =
+  const { isLazyLoading, report, shareId, isEditMode } =
     useReportChartContext();
   const chartInput = useChartInput();
   const dispatch = useDispatch();
@@ -59,7 +60,6 @@ export function ReportFunnelChart() {
     <FunnelWithTables
       data={res.data}
       isEditMode={isEditMode}
-      layout={layout}
       setVisibleSeries={setVisibleSeries}
       visibleBreakdowns={visibleBreakdowns}
     />
@@ -68,13 +68,11 @@ export function ReportFunnelChart() {
 
 function FunnelWithTables({
   data,
-  layout,
   isEditMode,
   visibleBreakdowns,
   setVisibleSeries,
 }: {
   data: RouterOutputs['chart']['funnel'];
-  layout: 'fill' | 'aspect';
   isEditMode: boolean;
   visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
@@ -98,46 +96,42 @@ function FunnelWithTables({
   );
   const active = data.current[activeIndex];
 
-  // A dashboard tile is the chart alone; the summary and the tables belong
-  // to the editor and the share page.
-  if (layout === 'fill') {
-    return (
-      <AspectContainer>
-        <Chart data={data} visibleBreakdowns={visibleBreakdowns} />
-      </AspectContainer>
-    );
-  }
-
   return (
-    <div className="col gap-4">
-      {hasBreakdowns && <Summary data={data} />}
-      <Chart data={data} visibleBreakdowns={visibleBreakdowns} />
-      {hasBreakdowns && (
-        <div className="card overflow-hidden">
-          <BreakdownTable
-            activeId={active?.id}
-            data={data}
-            onSelect={setSelectedId}
-            onToggle={isEditMode ? toggle : undefined}
-            onUnselectAll={isEditMode ? () => setVisibleSeries([]) : undefined}
-            visibleIds={visibleIds}
-          />
-        </div>
-      )}
-      {active && (
-        <div className="card overflow-hidden">
+    <ChartWithTable
+      chart={<Chart data={data} visibleBreakdowns={visibleBreakdowns} />}
+      sizesItself
+      summary={hasBreakdowns && <Summary data={data} />}
+      tables={
+        <>
           {hasBreakdowns && (
-            <div className="border-b px-4 py-3 font-medium">
-              Steps for {active.breakdowns.join(' › ')}
-            </div>
+            <TableCard>
+              <BreakdownTable
+                activeId={active?.id}
+                data={data}
+                onSelect={setSelectedId}
+                onToggle={isEditMode ? toggle : undefined}
+                onUnselectAll={
+                  isEditMode ? () => setVisibleSeries([]) : undefined
+                }
+                visibleIds={visibleIds}
+              />
+            </TableCard>
           )}
-          <StepsTable
-            funnel={active}
-            previous={data.previous?.[activeIndex] ?? null}
-          />
-        </div>
-      )}
-    </div>
+          {active && (
+            <TableCard
+              title={
+                hasBreakdowns && `Steps for ${active.breakdowns.join(' › ')}`
+              }
+            >
+              <StepsTable
+                funnel={active}
+                previous={data.previous?.[activeIndex] ?? null}
+              />
+            </TableCard>
+          )}
+        </>
+      }
+    />
   );
 }
 
