@@ -102,13 +102,7 @@ The injection also collapses onto a single line, mangling the `.dark` block form
 
 **Fix**
 
-After re-installing, manually remove the appended `--chart-1..5`, `--chart-background`, `--chart-foreground`, `--chart-grid`, `--chart-crosshair`, `--chart-marker-*`, `--chart-ring-background`, `--chart-label`, `--chart-foreground-muted` lines from `.dark`. Keep only:
-
-```css
---chart-tooltip-background: oklch(from var(--foreground) l c h / 0.92);
---chart-tooltip-foreground: var(--background);
---chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
-```
+After re-installing, remove everything the injection appended to `.dark`. The `:root` tokens (including `--chart-tooltip-*`, which follow `--card` / `--foreground`) already adapt to the theme.
 
 OpenPanel's bklit tokens in `:root` map back to existing vars so a single `:root` block is enough — see the head of `apps/start/src/styles.css`.
 

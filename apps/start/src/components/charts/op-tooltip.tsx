@@ -384,10 +384,7 @@ export function OPTooltipCard({
 }) {
   return (
     <div
-      className={cn(
-        'col gap-2 rounded-xl border border-border/60 p-3 text-foreground shadow-xl',
-        className
-      )}
+      className={cn('col gap-2 p-3 text-foreground', className)}
       style={style}
     >
       {children}

@@ -99,10 +99,10 @@ code {
   --chart-line-secondary: var(--chart-1);
   --chart-crosshair: oklch(from var(--foreground) l c h / 0.4);
   --chart-grid: var(--border);
-  /* Outer tooltip box is transparent — OPTooltipCard owns the visible card. */
-  --chart-tooltip-background: transparent;
-  --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  /* Slightly see-through so the chart's blur shows, opaque enough to read over bright series. */
+  --chart-tooltip-background: oklch(from var(--card) l c h / 0.9);
+  --chart-tooltip-foreground: var(--foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
   --chart-marker-background: var(--def-100);
   --chart-marker-border: var(--border);
   --chart-marker-foreground: var(--foreground);
@@ -160,12 +160,6 @@ code {
   --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --ring: oklch(87.6% 0 0); /* hsl(0, 0%, 83.9%) -> #d6d6d6 */
-
-  /* Bklit chart tokens (dark) — OpenPanel chart palette (--chart-0..12) stays
-     theme-agnostic and is defined in :root only, so we do NOT redefine it here. */
-  --chart-tooltip-background: transparent;
-  --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
 }
 
 @theme {
@@ -536,9 +530,9 @@ button {
   --chart-line-secondary: var(----chart-line-secondary);
   --color-chart-crosshair: var(----chart-crosshair);
   --color-chart-grid: var(----chart-grid);
-  --color-chart-tooltip-background: var(----chart-tooltip-background);
-  --color-chart-tooltip-foreground: var(----chart-tooltip-foreground);
-  --color-chart-tooltip-muted: var(----chart-tooltip-muted);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
   --color-chart-marker-background: var(----chart-marker-background);
   --color-chart-marker-border: var(----chart-marker-border);
   --color-chart-marker-foreground: var(----chart-marker-foreground);
