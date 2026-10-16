@@ -2,7 +2,6 @@ import { round } from '@openpanel/shared';
 import { ArrowRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
-import { useReportChartContext } from '../context';
 import { OPTooltipCard } from '@/components/charts/op-tooltip';
 import {
   SankeyChart,
@@ -12,7 +11,6 @@ import {
 } from '@/components/charts/sankey';
 import { useElementSize } from '@/hooks/use-element-size';
 import { useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { truncate } from '@/utils/truncate';
 
@@ -53,7 +51,6 @@ interface SankeyNodeInfo {
 }
 
 export function Chart({ data }: { data: ReportSankeyData }) {
-  const { layout } = useReportChartContext();
   const number = useNumber();
   const [sizeRef, size] = useElementSize();
 
@@ -109,10 +106,7 @@ export function Chart({ data }: { data: ReportSankeyData }) {
   return (
     <AspectContainer>
       <div
-        className={cn(
-          'relative w-full',
-          layout === 'fill' ? 'h-full' : 'aspect-square md:aspect-[2]'
-        )}
+        className="relative h-full w-full"
         data-report-chart="sankey"
         ref={sizeRef}
       >

@@ -6,6 +6,7 @@ import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { PathsTable } from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportSankeyChart() {
@@ -23,6 +24,7 @@ export function ReportSankeyChart() {
     },
     isLazyLoading,
     shareId,
+    layout,
   } = useReportChartContext();
 
   const input: IReportInput = {
@@ -66,7 +68,16 @@ export function ReportSankeyChart() {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return (
+    <>
+      <Chart data={res.data} />
+      {layout !== 'fill' && (
+        <div className="card mt-4 overflow-hidden">
+          <PathsTable data={res.data} />
+        </div>
+      )}
+    </>
+  );
 }
 
 function Loading() {
