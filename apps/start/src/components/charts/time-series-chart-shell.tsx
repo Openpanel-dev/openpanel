@@ -183,6 +183,10 @@ export interface TimeSeriesChartInnerProps {
   formatDateLabel?: (date: Date) => string;
   /** Fixed y domain, used as is: no headroom and no rounding. */
   yDomain?: [number, number];
+  /** Fixed y domain per `yAxisId`; wins over `yDomain` for that axis. */
+  yDomains?: Record<string, [number, number]>;
+  /** Smallest value at the top, for "lower is better" metrics. */
+  yReversed?: boolean;
 }
 
 export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
@@ -225,6 +229,8 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   onPhaseChange,
   formatDateLabel = shortDateFmt.format,
   yDomain,
+  yDomains,
+  yReversed = false,
 }: TimeSeriesChartInnerProps) {
   // Unique per instance — shared clipPath ids crop later charts (#226).
   const uniqueClipPathId = `${clipPathId}-${useId().replace(/:/g, '')}`;
@@ -233,9 +239,14 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   const innerHeight = height - margin.top - margin.bottom;
 
   const resolveYDomain = useCallback(
-    (sourceData: Record<string, unknown>[], dataKeys: string[]) => {
-      if (yDomain) {
-        return yDomain;
+    (
+      sourceData: Record<string, unknown>[],
+      dataKeys: string[],
+      axisId: string
+    ) => {
+      const fixedDomain = yDomains?.[axisId] ?? yDomain;
+      if (fixedDomain) {
+        return fixedDomain;
       }
       const axisGroups = groupLinesByYAxisId(lines);
       const usesDefaultOnly =
@@ -246,7 +257,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
           : undefined;
       return resolveTimeSeriesYDomain(sourceData, dataKeys, domainMax);
     },
-    [lines, yScaleDomainMax, yDomain]
+    [lines, yScaleDomainMax, yDomain, yDomains]
   );
 
   const skeletonData = useMemo(() => {
@@ -353,7 +364,8 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     () =>
       computeYDomainsByAxis({
         lines,
-        resolveDomain: (dataKeys) => resolveYDomain(skeletonData, dataKeys),
+        resolveDomain: (dataKeys, axisId) =>
+          resolveYDomain(skeletonData, dataKeys, axisId),
       }),
     [lines, resolveYDomain, skeletonData]
   );
@@ -361,8 +373,8 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   const yDomainTargetByAxis = useMemo(() => {
     const base = computeYDomainsByAxis({
       lines,
-      resolveDomain: (dataKeys) =>
-        resolveYDomain(xDomain ? visiblePlotData : data, dataKeys),
+      resolveDomain: (dataKeys, axisId) =>
+        resolveYDomain(xDomain ? visiblePlotData : data, dataKeys, axisId),
     });
     if (projectionConfigs.length === 0) {
       return base;
@@ -413,13 +425,18 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
         domainsByAxis: yDomainsForScales,
         innerHeight,
         lines,
+        reversed: yReversed,
       }),
-    [yDomainsForScales, innerHeight, lines]
+    [yDomainsForScales, innerHeight, lines, yReversed]
   );
 
   const yScale = getPrimaryYScale(
     yScales,
-    scaleLinear({ range: [innerHeight, 0], domain: [0, 100], nice: true })
+    scaleLinear({
+      range: yReversed ? [0, innerHeight] : [innerHeight, 0],
+      domain: [0, 100],
+      nice: true,
+    })
   );
 
   const dateLabels = useMemo(

@@ -79,14 +79,17 @@ export function computeYDomainsByAxis({
   resolveDomain,
 }: {
   lines: LineConfig[];
-  resolveDomain: (dataKeys: string[]) => YDomain;
+  resolveDomain: (dataKeys: string[], axisId: string) => YDomain;
 }): Record<string, YDomain> {
   const groups = groupLinesByYAxisId(lines);
   const domains: Record<string, YDomain> = {};
 
   for (const [axisId, axisLines] of groups) {
     const dataKeys = axisLines.map((line) => line.dataKey);
-    domains[normalizeYAxisId(axisId)] = niceYDomain(resolveDomain(dataKeys));
+    const normalizedAxisId = normalizeYAxisId(axisId);
+    domains[normalizedAxisId] = niceYDomain(
+      resolveDomain(dataKeys, normalizedAxisId)
+    );
   }
 
   if (!domains.left) {

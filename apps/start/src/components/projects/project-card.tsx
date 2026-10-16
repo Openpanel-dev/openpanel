@@ -88,7 +88,7 @@ function ProjectChartOuter({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ProjectChart color={'blue'} data={data?.chart || []} />
+      <ProjectChart data={data?.chart || []} />
     </FadeIn>
   );
 }

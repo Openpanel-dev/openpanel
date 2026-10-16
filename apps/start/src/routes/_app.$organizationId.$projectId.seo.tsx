@@ -1,20 +1,9 @@
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import {
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
+import { OPLineChart } from '@/components/charts/op-line-chart';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
@@ -22,16 +11,13 @@ import { OverviewRange } from '@/components/overview/overview-range';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { GscCannibalization } from '@/components/page/gsc-cannibalization';
+import { GSC_CLICKS_SERIES } from '@/components/page/gsc-clicks-chart';
 import { GscCtrBenchmark } from '@/components/page/gsc-ctr-benchmark';
 import { GscPositionChart } from '@/components/page/gsc-position-chart';
 import { PagesInsights } from '@/components/page/pages-insights';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
-import {
-  useYAxisProps,
-  X_AXIS_STYLE_PROPS,
-} from '@/components/report-chart/common/axis';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
@@ -40,7 +26,6 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { getChartColor } from '@/utils/theme';
 import { createProjectTitle } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/seo')({
@@ -50,40 +35,7 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/seo')({
   }),
 });
 
-interface GscChartData {
-  date: string;
-  clicks: number;
-  impressions: number;
-}
-
-const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
-  GscChartData,
-  Record<string, unknown>
->(({ data }) => {
-  const item = data[0];
-  if (!item) {
-    return null;
-  }
-  return (
-    <>
-      <ChartTooltipHeader>
-        <div>{item.date}</div>
-      </ChartTooltipHeader>
-      <ChartTooltipItem color={getChartColor(0)}>
-        <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Clicks</span>
-          <span>{item.clicks.toLocaleString()}</span>
-        </div>
-      </ChartTooltipItem>
-      <ChartTooltipItem color={getChartColor(1)}>
-        <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Impressions</span>
-          <span>{item.impressions.toLocaleString()}</span>
-        </div>
-      </ChartTooltipItem>
-    </>
-  );
-});
+const CHART_HEIGHT = 200;
 
 function SeoPage() {
   const { projectId, organizationId } = useAppParams();
@@ -321,11 +273,16 @@ function SeoPage() {
           />
         </div>
 
-        <GscChart data={overview} isLoading={overviewQuery.isLoading} />
+        <GscChart
+          data={overview}
+          interval={interval ?? 'day'}
+          isLoading={overviewQuery.isLoading}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GscPositionChart
             data={overview}
+            interval={interval ?? 'day'}
             isLoading={overviewQuery.isLoading}
           />
           <GscCtrBenchmark
@@ -533,80 +490,29 @@ function AiEngines(props: {
 
 function GscChart({
   data,
+  interval,
   isLoading,
 }: {
   data: Array<{ date: string; clicks: number; impressions: number }>;
+  interval: IInterval;
   isLoading: boolean;
 }) {
-  const color = getChartColor(0);
-  const yAxisProps = useYAxisProps();
-
   return (
     <div className="card p-4">
       <h3 className="mb-4 font-medium text-sm">Clicks & Impressions</h3>
       {isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : (
-        <TooltipProvider>
-          <ResponsiveContainer height={200} width="100%">
-            <ComposedChart data={data}>
-              <defs>
-                <filter
-                  height="140%"
-                  id="gsc-line-glow"
-                  width="140%"
-                  x="-20%"
-                  y="-20%"
-                >
-                  <feGaussianBlur result="blur" stdDeviation="5" />
-                  <feComponentTransfer in="blur" result="dimmedBlur">
-                    <feFuncA slope="0.5" type="linear" />
-                  </feComponentTransfer>
-                  <feComposite
-                    in="SourceGraphic"
-                    in2="dimmedBlur"
-                    operator="over"
-                  />
-                </filter>
-              </defs>
-              <CartesianGrid
-                className="stroke-border"
-                horizontal
-                strokeDasharray="3 3"
-                vertical={false}
-              />
-              <XAxis
-                {...X_AXIS_STYLE_PROPS}
-                dataKey="date"
-                tickFormatter={(v: string) => v.slice(5)}
-                type="category"
-              />
-              <YAxis {...yAxisProps} yAxisId="left" />
-              <YAxis {...yAxisProps} orientation="right" yAxisId="right" />
-              <GscTooltip />
-              <Line
-                dataKey="clicks"
-                dot={false}
-                filter="url(#gsc-line-glow)"
-                isAnimationActive={false}
-                stroke={color}
-                strokeWidth={2}
-                type="monotone"
-                yAxisId="left"
-              />
-              <Line
-                dataKey="impressions"
-                dot={false}
-                filter="url(#gsc-line-glow)"
-                isAnimationActive={false}
-                stroke={getChartColor(1)}
-                strokeWidth={2}
-                type="monotone"
-                yAxisId="right"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </TooltipProvider>
+        <OPLineChart
+          data={data.map((row) => ({
+            date: row.date,
+            clicks: row.clicks,
+            impressions: row.impressions,
+          }))}
+          height={CHART_HEIGHT}
+          interval={interval}
+          series={GSC_CLICKS_SERIES}
+        />
       )}
     </div>
   );

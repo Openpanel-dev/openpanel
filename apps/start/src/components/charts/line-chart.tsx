@@ -65,6 +65,8 @@ export interface LineChartProps {
   formatDateLabel?: (date: Date) => string;
   /** Fixed y domain, used as is: no headroom and no rounding. */
   yDomain?: [number, number];
+  /** Smallest value at the top, for "lower is better" metrics. */
+  yReversed?: boolean;
   /** Child components (Line, Grid, ChartTooltip, etc.) */
   children: ReactNode;
 }
@@ -163,6 +165,7 @@ interface ChartInnerProps {
   onPhaseChange: (phase: ChartPhase) => void;
   formatDateLabel?: (date: Date) => string;
   yDomain?: [number, number];
+  yReversed?: boolean;
 }
 
 function ChartInner({
@@ -187,6 +190,7 @@ function ChartInner({
   onPhaseChange,
   formatDateLabel,
   yDomain,
+  yReversed,
 }: ChartInnerProps) {
   const lines = useMemo(() => extractLineConfigs(children), [children]);
 
@@ -214,6 +218,7 @@ function ChartInner({
       yDomain={yDomain}
       yDomainTween={yDomainTween}
       yDomainTweenDuration={yDomainTweenDuration}
+      yReversed={yReversed}
     >
       {children}
     </TimeSeriesChartInner>
@@ -241,6 +246,7 @@ export function LineChart({
   onPhaseChange,
   formatDateLabel,
   yDomain,
+  yReversed,
   children,
 }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -297,6 +303,7 @@ export function LineChart({
             yDomain={yDomain}
             yDomainTween={yDomainTween}
             yDomainTweenDuration={yDomainTweenDuration}
+            yReversed={yReversed}
           >
             {children}
           </ChartInner>

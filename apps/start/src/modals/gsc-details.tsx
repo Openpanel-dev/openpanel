@@ -4,90 +4,21 @@ import type {
 } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import {
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
+  OPLineChart,
+  type OPLineChartSeries,
+} from '@/components/charts/op-line-chart';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
-import {
-  useYAxisProps,
-  X_AXIS_STYLE_PROPS,
-} from '@/components/report-chart/common/axis';
+import { GSC_CLICKS_SERIES } from '@/components/page/gsc-clicks-chart';
 import { Skeleton } from '@/components/skeleton';
 import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
-interface GscChartData {
-  date: string;
-  clicks: number;
-  impressions: number;
-}
-interface GscViewsChartData {
-  date: string;
-  views: number;
-}
+const CHART_HEIGHT = 160;
 
-const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
-  GscChartData | GscViewsChartData,
-  Record<string, unknown>
->(({ data }) => {
-  const item = data[0];
-  if (!item) {
-    return null;
-  }
-  if (!('date' in item)) {
-    return null;
-  }
-  if ('views' in item && item.views != null) {
-    return (
-      <>
-        <ChartTooltipHeader>
-          <div>{item.date}</div>
-        </ChartTooltipHeader>
-        <ChartTooltipItem color={getChartColor(0)}>
-          <div className="flex justify-between gap-8 font-medium font-mono">
-            <span>Views</span>
-            <span>{item.views.toLocaleString()}</span>
-          </div>
-        </ChartTooltipItem>
-      </>
-    );
-  }
-  const clicks = 'clicks' in item ? item.clicks : undefined;
-  const impressions = 'impressions' in item ? item.impressions : undefined;
-  return (
-    <>
-      <ChartTooltipHeader>
-        <div>{item.date}</div>
-      </ChartTooltipHeader>
-      {clicks != null && (
-        <ChartTooltipItem color={getChartColor(0)}>
-          <div className="flex justify-between gap-8 font-medium font-mono">
-            <span>Clicks</span>
-            <span>{clicks.toLocaleString()}</span>
-          </div>
-        </ChartTooltipItem>
-      )}
-      {impressions != null && (
-        <ChartTooltipItem color={getChartColor(1)}>
-          <div className="flex justify-between gap-8 font-medium font-mono">
-            <span>Impressions</span>
-            <span>{impressions.toLocaleString()}</span>
-          </div>
-        </ChartTooltipItem>
-      )}
-    </>
-  );
-});
+const VIEWS_SERIES: OPLineChartSeries[] = [
+  { dataKey: 'views', label: 'Views', color: getChartColor(0) },
+];
 
 type Props =
   | {
@@ -185,11 +116,14 @@ export default function GscDetails(props: Props) {
             {isLoading || pageTimeseriesQuery.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <GscViewsChart
-                data={pageTimeseries.map((r) => ({
-                  date: r.date,
-                  views: r.pageviews,
+              <OPLineChart
+                data={pageTimeseries.map((row) => ({
+                  date: row.date,
+                  views: row.pageviews,
                 }))}
+                height={CHART_HEIGHT}
+                interval={interval}
+                series={VIEWS_SERIES}
               />
             )}
           </div>
@@ -200,7 +134,16 @@ export default function GscDetails(props: Props) {
           {isLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : (
-            <GscTimeseriesChart data={timeseries} />
+            <OPLineChart
+              data={timeseries.map((row) => ({
+                date: row.date,
+                clicks: row.clicks,
+                impressions: row.impressions,
+              }))}
+              height={CHART_HEIGHT}
+              interval={interval}
+              series={GSC_CLICKS_SERIES}
+            />
           )}
         </div>
 
@@ -308,137 +251,5 @@ export default function GscDetails(props: Props) {
         </div>
       </div>
     </SheetContent>
-  );
-}
-
-function GscViewsChart({
-  data,
-}: {
-  data: Array<{ date: string; views: number }>;
-}) {
-  const yAxisProps = useYAxisProps();
-
-  return (
-    <TooltipProvider>
-      <ResponsiveContainer height={160} width="100%">
-        <ComposedChart data={data}>
-          <defs>
-            <filter
-              height="140%"
-              id="gsc-detail-glow"
-              width="140%"
-              x="-20%"
-              y="-20%"
-            >
-              <feGaussianBlur result="blur" stdDeviation="5" />
-              <feComponentTransfer in="blur" result="dimmedBlur">
-                <feFuncA slope="0.5" type="linear" />
-              </feComponentTransfer>
-              <feComposite
-                in="SourceGraphic"
-                in2="dimmedBlur"
-                operator="over"
-              />
-            </filter>
-          </defs>
-          <CartesianGrid
-            className="stroke-border"
-            horizontal
-            strokeDasharray="3 3"
-            vertical={false}
-          />
-          <XAxis
-            {...X_AXIS_STYLE_PROPS}
-            dataKey="date"
-            tickFormatter={(v: string) => v.slice(5)}
-            type="category"
-          />
-          <YAxis {...yAxisProps} yAxisId="left" />
-          <YAxis {...yAxisProps} orientation="right" yAxisId="right" />
-          <GscTooltip />
-          <Line
-            dataKey="views"
-            dot={false}
-            filter="url(#gsc-detail-glow)"
-            isAnimationActive={false}
-            stroke={getChartColor(0)}
-            strokeWidth={2}
-            type="monotone"
-            yAxisId="left"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </TooltipProvider>
-  );
-}
-
-function GscTimeseriesChart({
-  data,
-}: {
-  data: Array<{ date: string; clicks: number; impressions: number }>;
-}) {
-  const yAxisProps = useYAxisProps();
-
-  return (
-    <TooltipProvider>
-      <ResponsiveContainer height={160} width="100%">
-        <ComposedChart data={data}>
-          <defs>
-            <filter
-              height="140%"
-              id="gsc-detail-glow"
-              width="140%"
-              x="-20%"
-              y="-20%"
-            >
-              <feGaussianBlur result="blur" stdDeviation="5" />
-              <feComponentTransfer in="blur" result="dimmedBlur">
-                <feFuncA slope="0.5" type="linear" />
-              </feComponentTransfer>
-              <feComposite
-                in="SourceGraphic"
-                in2="dimmedBlur"
-                operator="over"
-              />
-            </filter>
-          </defs>
-          <CartesianGrid
-            className="stroke-border"
-            horizontal
-            strokeDasharray="3 3"
-            vertical={false}
-          />
-          <XAxis
-            {...X_AXIS_STYLE_PROPS}
-            dataKey="date"
-            tickFormatter={(v: string) => v.slice(5)}
-            type="category"
-          />
-          <YAxis {...yAxisProps} yAxisId="left" />
-          <YAxis {...yAxisProps} orientation="right" yAxisId="right" />
-          <GscTooltip />
-          <Line
-            dataKey="clicks"
-            dot={false}
-            filter="url(#gsc-detail-glow)"
-            isAnimationActive={false}
-            stroke={getChartColor(0)}
-            strokeWidth={2}
-            type="monotone"
-            yAxisId="left"
-          />
-          <Line
-            dataKey="impressions"
-            dot={false}
-            filter="url(#gsc-detail-glow)"
-            isAnimationActive={false}
-            stroke={getChartColor(1)}
-            strokeWidth={2}
-            type="monotone"
-            yAxisId="right"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </TooltipProvider>
   );
 }

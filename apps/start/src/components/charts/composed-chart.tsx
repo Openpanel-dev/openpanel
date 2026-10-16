@@ -43,6 +43,8 @@ export interface ComposedChartProps {
   stackGap?: number;
   /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
   formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain per `yAxisId`; axes not listed keep their data-driven domain. */
+  yDomains?: Record<string, [number, number]>;
 }
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -82,6 +84,7 @@ function tryAppendSeriesBar(
     dataKey: props.dataKey,
     stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
     strokeWidth: 0,
+    yAxisId: props.yAxisId,
   });
   return true;
 }
@@ -97,6 +100,7 @@ function tryAppendLine(child: ReactElement, lines: LineConfig[]): boolean {
       dataKey: props.dataKey,
       stroke: props.stroke || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2.5,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -113,6 +117,7 @@ function tryAppendArea(child: ReactElement, lines: LineConfig[]): boolean {
       dataKey: props.dataKey,
       stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -189,6 +194,7 @@ interface ChartInnerProps {
   stacked?: boolean;
   stackGap?: number;
   formatDateLabel?: (date: Date) => string;
+  yDomains?: Record<string, [number, number]>;
 }
 
 function ChartInner({
@@ -209,6 +215,7 @@ function ChartInner({
   stacked = false,
   stackGap = 0,
   formatDateLabel,
+  yDomains,
 }: ChartInnerProps) {
   const { lines, barDataKeys } = useMemo(
     () => extractComposedSeries(children),
@@ -269,6 +276,7 @@ function ChartInner({
       revealSignature={revealSignature}
       width={width}
       xDataKey={xDataKey}
+      yDomains={yDomains}
       yScaleDomainMax={yScaleDomainMax}
     >
       {children}
@@ -293,6 +301,7 @@ export function ComposedChart({
   stacked = false,
   stackGap = 0,
   formatDateLabel,
+  yDomains,
 }: ComposedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
@@ -322,6 +331,7 @@ export function ComposedChart({
             stackGap={stackGap}
             width={width}
             xDataKey={xDataKey}
+            yDomains={yDomains}
           >
             {children}
           </ChartInner>

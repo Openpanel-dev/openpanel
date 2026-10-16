@@ -80,28 +80,31 @@ export function buildYScalesFromDomains({
   lines,
   innerHeight,
   domainsByAxis,
+  reversed = false,
 }: {
   lines: LineConfig[];
   innerHeight: number;
   domainsByAxis: Record<string, [number, number]>;
+  /** Smallest value at the top, for "lower is better" metrics. */
+  reversed?: boolean;
 }): Record<string, YScale> {
   const groups = groupLinesByYAxisId(lines);
   const scales: Record<string, YScale> = {};
+  const range: [number, number] = reversed
+    ? [0, innerHeight]
+    : [innerHeight, 0];
 
   for (const [axisId] of groups) {
     const domain =
       domainsByAxis[axisId] ??
       domainsByAxis[DEFAULT_Y_AXIS_ID] ??
       ([0, 100] as [number, number]);
-    scales[axisId] = scaleLinear({
-      range: [innerHeight, 0],
-      domain,
-    });
+    scales[axisId] = scaleLinear({ range, domain });
   }
 
   if (!scales[DEFAULT_Y_AXIS_ID]) {
     scales[DEFAULT_Y_AXIS_ID] = scaleLinear({
-      range: [innerHeight, 0],
+      range,
       domain: domainsByAxis[DEFAULT_Y_AXIS_ID] ?? [0, 100],
     });
   }
