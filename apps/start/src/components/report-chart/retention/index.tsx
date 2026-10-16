@@ -5,7 +5,7 @@ import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
-import CohortTable from './table';
+import { CohortTable } from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
@@ -80,7 +80,9 @@ export function ReportRetentionChart() {
       <AspectContainer>
         <Chart data={res.data} />
       </AspectContainer>
-      <CohortTable data={res.data} />
+      <div className="card overflow-hidden">
+        <CohortTable data={res.data} />
+      </div>
     </div>
   );
 }
