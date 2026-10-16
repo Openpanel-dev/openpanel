@@ -32,6 +32,9 @@ const PREVIOUS_PERIOD_OPACITY = '30%';
 const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
 const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
 
+/** Small point markers for sparse series; bklit's default ring is sized for hero charts. */
+export const POINT_MARKER = { radius: 3, strokeWidth: 0, ringGap: 0 };
+
 export type TimeSeriesPoint = Record<string, unknown> & { date: string };
 
 /** What the line, area and histogram report charts share around their bklit chart. */

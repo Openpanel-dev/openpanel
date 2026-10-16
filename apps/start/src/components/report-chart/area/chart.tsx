@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { PointClick } from '../common/point-click';
 import {
+  POINT_MARKER,
   previousPeriodColor,
   TimeSeriesFrame,
   type TimeSeriesPoint,
@@ -8,6 +9,7 @@ import {
 } from '../common/time-series';
 import { Area, AreaChart } from '@/components/charts/area-chart';
 import { Grid } from '@/components/charts/grid';
+import { OPDatePill } from '@/components/charts/op-date-pill';
 import { OPReferences } from '@/components/charts/op-references';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { XAxis } from '@/components/charts/x-axis';
@@ -71,6 +73,7 @@ export function Chart({ data, series }: Props) {
             fill={getChartColor(serie.index)}
             fillOpacity={AREA_FILL_OPACITY}
             key={serie.id}
+            markers={POINT_MARKER}
             showMarkers={chart.showMarkers}
             stroke={getChartColor(serie.index)}
           />
@@ -82,8 +85,10 @@ export function Chart({ data, series }: Props) {
           references={chart.references}
           rows={chart.tooltipRows}
           showCrosshair
+          showDatePill={false}
           showDots
         />
+        <OPDatePill interval={chart.interval} />
         <PointClick<TimeSeriesPoint> onClick={chart.menu.openMenu} />
       </AreaChart>
     </TimeSeriesFrame>

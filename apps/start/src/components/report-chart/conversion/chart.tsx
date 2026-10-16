@@ -5,10 +5,11 @@ import { getCurve } from '../common/curve';
 import { PointClick } from '../common/point-click';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
-import { previousPeriodColor } from '../common/time-series';
+import { POINT_MARKER, previousPeriodColor } from '../common/time-series';
 import { useReportChartContext } from '../context';
 import { Grid } from '@/components/charts/grid';
 import { Line, LineChart } from '@/components/charts/line-chart';
+import { OPDatePill } from '@/components/charts/op-date-pill';
 import { OPReferences } from '@/components/charts/op-references';
 import {
   OPChartTooltip,
@@ -151,6 +152,7 @@ export function Chart({
               curve={curve}
               dataKey={`${serie.id}:rate`}
               key={`${serie.id}:rate`}
+              markers={POINT_MARKER}
               showMarkers={chartData.length <= MARKERS_MAX_POINTS}
               stroke={getChartColor(serie.index)}
               strokeWidth={2}
@@ -171,8 +173,10 @@ export function Chart({
             references={references.data}
             rows={tooltipRows}
             showCrosshair
+            showDatePill={false}
             showDots
           />
+          <OPDatePill interval={interval} />
           {!shareId && <PointClick<ConversionPoint> onClick={addReference} />}
         </LineChart>
         <div

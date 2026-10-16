@@ -1,5 +1,6 @@
 import { PointClick } from '../common/point-click';
 import {
+  POINT_MARKER,
   previousPeriodColor,
   TimeSeriesFrame,
   type TimeSeriesPoint,
@@ -7,6 +8,7 @@ import {
 } from '../common/time-series';
 import { Grid } from '@/components/charts/grid';
 import { Line, LineChart } from '@/components/charts/line-chart';
+import { OPDatePill } from '@/components/charts/op-date-pill';
 import { OPReferences } from '@/components/charts/op-references';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { XAxis } from '@/components/charts/x-axis';
@@ -58,6 +60,7 @@ export function Chart({ data, series }: Props) {
             dashFromIndex={chart.dashFromIndex}
             dataKey={`${serie.id}:count`}
             key={serie.id}
+            markers={POINT_MARKER}
             showMarkers={chart.showMarkers}
             stroke={getChartColor(serie.index)}
             strokeWidth={2}
@@ -70,8 +73,10 @@ export function Chart({ data, series }: Props) {
           references={chart.references}
           rows={chart.tooltipRows}
           showCrosshair
+          showDatePill={false}
           showDots
         />
+        <OPDatePill interval={chart.interval} />
         <PointClick<TimeSeriesPoint> onClick={chart.menu.openMenu} />
       </LineChart>
     </TimeSeriesFrame>

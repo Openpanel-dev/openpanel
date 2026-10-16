@@ -112,6 +112,7 @@ export function Chart({ data }: Props) {
             },
           ]}
           showCrosshair
+          showDatePill={false}
           showDots
           title={(point) => (
             <span className="capitalize">
