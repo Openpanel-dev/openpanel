@@ -1,22 +1,19 @@
 import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { Area, AreaChart, Tooltip } from 'recharts';
+import { curveStepAfter } from 'd3-shape';
 import {
   getDiffIndicator,
   PreviousDiffIndicator,
 } from '../common/previous-diff-indicator';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
-import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
+import { Area, AreaChart } from '@/components/charts/area-chart';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { formatDate } from '@/utils/date';
-import { getChartColor } from '@/utils/theme';
+
+const SPARKLINE_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 };
+const SPARKLINE_FILL_OPACITY = 0.2;
 
 interface MetricCardProps {
   serie: IChartData['series'][number];
@@ -25,34 +22,16 @@ interface MetricCardProps {
   unit?: string;
 }
 
-const TooltipContent = (props: { payload?: any[] }) => {
-  const number = useNumber();
-  return (
-    <ChartTooltipContainer>
-      {props.payload?.map((item) => {
-        const { date, count } = item.payload;
-        return (
-          <div className="col gap-2" key={item.id}>
-            <ChartTooltipHeader>
-              <div>{formatDate(new Date(date))}</div>
-            </ChartTooltipHeader>
-            <ChartTooltipItem color={getChartColor(0)}>
-              <div>{number.format(count)}</div>
-            </ChartTooltipItem>
-          </div>
-        );
-      })}
-    </ChartTooltipContainer>
-  );
-};
-
 export function MetricCard({
   serie,
   color: _color,
   metric,
   unit,
 }: MetricCardProps) {
-  const { isEditMode } = useReportChartContext();
+  const {
+    isEditMode,
+    report: { interval },
+  } = useReportChartContext();
   const number = useNumber();
 
   const renderValue = (value: number | undefined, unitClassName?: string) => {
@@ -99,43 +78,32 @@ export function MetricCard({
           'absolute top-0 -right-1 bottom-0 -left-1 z-0 opacity-100 transition-opacity duration-300 group-hover:opacity-100'
         )}
       >
-        <AutoSizer>
-          {({ width, height }) => (
-            <AreaChart
-              data={serie.data}
-              height={height / 4}
-              style={{ marginTop: (height / 4) * 3 }}
-              width={width}
-            >
-              <defs>
-                <linearGradient
-                  id={`colorUv${serie.id}`}
-                  x1="0"
-                  x2="0"
-                  y1="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stopColor={graphColors} stopOpacity={0.2} />
-                  <stop
-                    offset="100%"
-                    stopColor={graphColors}
-                    stopOpacity={0.05}
-                  />
-                </linearGradient>
-              </defs>
-              <Tooltip content={TooltipContent} />
-              <Area
-                dataKey="count"
-                fill={`url(#colorUv${serie.id})`}
-                fillOpacity={1}
-                isAnimationActive={false}
-                stroke={graphColors}
-                strokeWidth={1}
-                type="step"
-              />
-            </AreaChart>
-          )}
-        </AutoSizer>
+        <div className="absolute inset-x-0 bottom-0 h-1/4">
+          <AreaChart
+            animationDuration={0}
+            aspectRatio="auto"
+            className="h-full"
+            data={serie.data}
+            margin={SPARKLINE_MARGIN}
+            xDataKey="date"
+          >
+            <Area
+              animate={false}
+              curve={curveStepAfter}
+              dataKey="count"
+              fill={graphColors}
+              fillOpacity={SPARKLINE_FILL_OPACITY}
+              stroke={graphColors}
+              strokeWidth={1}
+            />
+            <OPChartTooltip<(typeof serie.data)[number]>
+              interval={interval}
+              rows={(point) => [
+                { color: graphColors, label: 'Count', value: point.count },
+              ]}
+            />
+          </AreaChart>
+        </div>
       </div>
       <MetricCardNumber
         enhancer={
