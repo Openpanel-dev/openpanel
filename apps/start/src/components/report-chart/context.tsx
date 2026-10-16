@@ -9,6 +9,8 @@ export interface ReportChartContextType {
   options: Partial<{
     columns: React.ReactNode[];
     hideLegend: boolean;
+    /** Show the chart alone, without the series tables an editor shows under it. */
+    hideTable: boolean;
     hideXAxis: boolean;
     hideYAxis: boolean;
     aspectRatio: number;

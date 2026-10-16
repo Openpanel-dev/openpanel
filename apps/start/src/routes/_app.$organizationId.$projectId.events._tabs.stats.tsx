@@ -49,6 +49,7 @@ function Component() {
           <WidgetBody>
             <ReportChartShortcut
               chartType="histogram"
+              options={{ hideTable: true }}
               projectId={projectId}
               range="30d"
               series={
@@ -80,8 +81,9 @@ function Component() {
               ]}
               chartType="pie"
               options={{
+                hideTable: true,
                 renderSerieName(names) {
-                  return names[1];
+                  return names.at(-1);
                 },
               }}
               projectId={projectId}
@@ -124,8 +126,9 @@ function Component() {
               ]}
               chartType="bar"
               options={{
+                hideTable: true,
                 renderSerieName(names) {
-                  return names[1];
+                  return names.at(-1);
                 },
               }}
               projectId={projectId}
@@ -168,8 +171,9 @@ function Component() {
               ]}
               chartType="linear"
               options={{
+                hideTable: true,
                 renderSerieName(names) {
-                  return names[1];
+                  return names.at(-1);
                 },
               }}
               projectId={projectId}

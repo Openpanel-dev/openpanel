@@ -118,7 +118,7 @@ export default function OverviewTopDevices({
         options: {
           columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
-            return name[1] || NOT_SET_VALUE;
+            return name.at(-1) || NOT_SET_VALUE;
           },
         },
         report: {
@@ -199,7 +199,7 @@ export default function OverviewTopDevices({
         options: {
           columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
-            return name[1] || NOT_SET_VALUE;
+            return name.at(-1) || NOT_SET_VALUE;
           },
         },
         report: {
@@ -280,7 +280,7 @@ export default function OverviewTopDevices({
         options: {
           columns: ['Model', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
-            return name[1] || NOT_SET_VALUE;
+            return name.at(-1) || NOT_SET_VALUE;
           },
         },
         report: {

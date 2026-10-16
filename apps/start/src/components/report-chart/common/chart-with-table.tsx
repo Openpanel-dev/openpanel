@@ -3,8 +3,9 @@ import { AspectContainer } from '../aspect-container';
 import { useReportChartContext } from '../context';
 
 /**
- * Where a report's pieces go: a dashboard tile is the chart alone; the editor
- * and the share page get the summary, the chart, and the tables under it.
+ * Where a report's pieces go: a dashboard tile, or any embed with `hideTable`,
+ * is the chart alone; the editor and the share page get the summary, the
+ * chart, and the tables under it.
  */
 export function ChartWithTable({
   summary,
@@ -18,14 +19,17 @@ export function ChartWithTable({
   /** The chart measures its own height (bar, sankey) instead of the aspect box. */
   sizesItself?: boolean;
 }) {
-  const { layout } = useReportChartContext();
+  const {
+    layout,
+    options: { hideTable },
+  } = useReportChartContext();
   const sizedChart = sizesItself ? (
     chart
   ) : (
     <AspectContainer>{chart}</AspectContainer>
   );
 
-  if (layout === 'fill') {
+  if (layout === 'fill' || hideTable) {
     return sizedChart;
   }
 
