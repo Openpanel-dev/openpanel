@@ -16,7 +16,6 @@ import {
 import { YAxis } from '@/components/charts/y-axis';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
-import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
 type FunnelData = RouterOutputs['chart']['funnel'];
@@ -35,22 +34,33 @@ export function Chart({
   const { layout } = useReportChartContext();
   const hasBreakdowns = data.current.length > 1;
   const funnel = data.current[0];
-
-  return (
-    <div
-      className={cn(
-        layout === 'fill'
-          ? 'h-full w-full'
-          : 'card aspect-video max-h-[250px] w-full p-4'
-      )}
-      data-report-chart="funnel"
-    >
+  const content = (
+    <>
       {hasBreakdowns && (
         <BreakdownBars data={data} visibleBreakdowns={visibleBreakdowns} />
       )}
       {!hasBreakdowns && funnel && (
         <SingleFunnel funnel={funnel} previous={data.previous?.[0] ?? null} />
       )}
+    </>
+  );
+
+  if (layout === 'fill') {
+    return (
+      <div className="h-full w-full" data-report-chart="funnel">
+        {content}
+      </div>
+    );
+  }
+
+  // Safari does not resolve `h-full` against an `aspect-video` height, so the
+  // funnel needs an absolute layer to get a definite height to fill.
+  return (
+    <div
+      className="card relative aspect-video max-h-[250px] w-full"
+      data-report-chart="funnel"
+    >
+      <div className="absolute inset-4">{content}</div>
     </div>
   );
 }
