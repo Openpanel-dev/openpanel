@@ -1,143 +1,29 @@
-import { ResponsiveSankey } from '@nivo/sankey';
 import { round } from '@openpanel/shared';
 import { ArrowRightIcon } from 'lucide-react';
-import {
-  type ReactNode,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo } from 'react';
 import { AspectContainer } from '../aspect-container';
 import { useReportChartContext } from '../context';
+import { OPTooltipCard } from '@/components/charts/op-tooltip';
 import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
-import { useTheme } from '@/components/theme-provider';
+  SankeyChart,
+  SankeyLink,
+  SankeyNode,
+  SankeyTooltip,
+} from '@/components/charts/sankey';
+import { useElementSize } from '@/hooks/use-element-size';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { truncate } from '@/utils/truncate';
 
-interface PortalTooltipPosition {
-  left: number;
-  top: number;
-  ready: boolean;
-}
+// Roughly one character of the 12px label font, to fit labels in their margin.
+const LABEL_CHAR_WIDTH = 7;
+const LABEL_SHARE = 0.2;
+const LABEL_MAX_WIDTH = 170;
+const VERTICAL_MARGIN = 16;
+const NODE_WIDTH = 10;
+const NODE_PADDING = 14;
 
-function SankeyPortalTooltip({
-  children,
-  offset = 12,
-  padding = 8,
-}: {
-  children: ReactNode;
-  offset?: number;
-  padding?: number;
-}) {
-  const anchorRef = useRef<HTMLSpanElement | null>(null);
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [pos, setPos] = useState<PortalTooltipPosition>({
-    left: 0,
-    top: 0,
-    ready: false,
-  });
-  const [mounted, setMounted] = useState(false);
-
-  useLayoutEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useLayoutEffect(() => {
-    const el = anchorRef.current;
-    if (!el) {
-      return;
-    }
-
-    const wrapper = el.parentElement;
-    if (!wrapper) {
-      return;
-    }
-
-    const update = () => {
-      setAnchorRect(wrapper.getBoundingClientRect());
-    };
-
-    update();
-
-    const ro = new ResizeObserver(update);
-    ro.observe(wrapper);
-
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!mounted) {
-      return;
-    }
-    if (!anchorRect) {
-      return;
-    }
-    const tooltipEl = tooltipRef.current;
-    if (!tooltipEl) {
-      return;
-    }
-
-    const rect = tooltipEl.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    let left = anchorRect.left + offset;
-    let top = anchorRect.top + offset;
-
-    left = Math.min(
-      Math.max(padding, left),
-      Math.max(padding, vw - rect.width - padding)
-    );
-    top = Math.min(
-      Math.max(padding, top),
-      Math.max(padding, vh - rect.height - padding)
-    );
-
-    setPos({ left, top, ready: true });
-  }, [mounted, anchorRect, children, offset, padding]);
-
-  if (typeof document === 'undefined') {
-    return <>{children}</>;
-  }
-
-  return (
-    <>
-      <span className="sr-only" ref={anchorRef} />
-      {mounted &&
-        createPortal(
-          <div
-            className="pointer-events-none fixed z-[9999]"
-            ref={tooltipRef}
-            style={{
-              left: pos.left,
-              top: pos.top,
-              visibility: pos.ready ? 'visible' : 'hidden',
-            }}
-          >
-            {children}
-          </div>,
-          document.body
-        )}
-    </>
-  );
-}
-
-interface SankeyData {
+interface ReportSankeyData {
   nodes: Array<{
     id: string;
     label: string;
@@ -149,41 +35,61 @@ interface SankeyData {
   links: Array<{ source: string; target: string; value: number }>;
 }
 
-export function Chart({ data }: { data: SankeyData }) {
+interface SankeyNodeInfo {
+  [key: string]: unknown;
+  name: string;
+  category?: 'source';
+  label: string;
+  color: string;
+  step?: number;
+}
+
+export function Chart({ data }: { data: ReportSankeyData }) {
   const { layout } = useReportChartContext();
   const number = useNumber();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { appTheme } = useTheme();
+  const [sizeRef, size] = useElementSize();
 
-  // Process data for Sankey
+  const labelWidth = Math.min(size.width * LABEL_SHARE, LABEL_MAX_WIDTH);
+  const labelLength = Math.floor(labelWidth / LABEL_CHAR_WIDTH);
+
   const sankeyData = useMemo(() => {
-    if (!data) {
-      return { nodes: [], links: [] };
-    }
-
+    const indexById = new Map(
+      data.nodes.map((node, index) => [node.id, index])
+    );
+    const targets = new Set(data.links.map((link) => link.target));
     return {
-      nodes: data.nodes.map((node) => ({
-        ...node,
-        label: node.label || node.id,
-        data: {
-          percentage: node.percentage,
-          value: node.value,
-          step: node.step,
+      nodes: data.nodes.map(
+        (node): SankeyNodeInfo => ({
+          name: truncate(node.label || node.id, labelLength, 'middle'),
+          // bklit counts a source by its outgoing flow, every other node by its incoming flow.
+          category: targets.has(node.id) ? undefined : 'source',
           label: node.label || node.id,
-        },
-      })),
-      links: data.links,
+          color: node.nodeColor,
+          step: node.step,
+        })
+      ),
+      links: data.links.flatMap((link) => {
+        const source = indexById.get(link.source);
+        const target = indexById.get(link.target);
+        if (source === undefined || target === undefined) {
+          return [];
+        }
+        return [{ source, target, value: link.value }];
+      }),
     };
-  }, [data]);
+  }, [data, labelLength]);
 
+  // Share of the sessions that start the flow, so link and node shares add up per step.
   const totalSessions = useMemo(() => {
-    if (!sankeyData.nodes || sankeyData.nodes.length === 0) {
-      return 0;
-    }
-    const step1 = sankeyData.nodes.filter((n: any) => n.data?.step === 1);
-    const base = step1.length > 0 ? step1 : sankeyData.nodes;
-    return base.reduce((sum: number, n: any) => sum + (n.data?.value ?? 0), 0);
-  }, [sankeyData.nodes]);
+    const firstStep = data.nodes.filter((node) => node.step === 1);
+    const base = firstStep.length > 0 ? firstStep : data.nodes;
+    return base.reduce((sum, node) => sum + (node.value ?? 0), 0);
+  }, [data.nodes]);
+  const shareOfTotal = (value: number) =>
+    totalSessions > 0 ? round((value / totalSessions) * 100, 1) : 0;
+
+  const nodeColor = (node: { name?: string; color?: unknown }) =>
+    typeof node.color === 'string' ? node.color : 'var(--chart-0)';
 
   return (
     <AspectContainer>
@@ -192,134 +98,105 @@ export function Chart({ data }: { data: SankeyData }) {
           'relative w-full',
           layout === 'fill' ? 'h-full' : 'aspect-square md:aspect-[2]'
         )}
-        ref={containerRef}
+        data-report-chart="sankey"
+        ref={sizeRef}
       >
-        <ResponsiveSankey
-          animate={false}
-          colors={(node: any) => node.nodeColor}
-          data={sankeyData}
-          label={(node: any) => {
-            const label = node.data?.label || node.label || node.id;
-            return truncate(label, 30, 'middle');
-          }}
-          labelTextColor={appTheme === 'dark' ? '#e2e8f0' : '#0f172a'}
-          linkBlendMode={'normal'}
-          linkContract={1}
-          linkOpacity={0.3}
-          linkTooltip={({ link }: any) => {
-            const sourceLabel =
-              link?.source?.data?.label ??
-              link?.source?.label ??
-              link?.source?.id;
-            const targetLabel =
-              link?.target?.data?.label ??
-              link?.target?.label ??
-              link?.target?.id;
-
-            const value = link?.value ?? 0;
-            const sourceValue =
-              link?.source?.data?.value ?? link?.source?.value ?? 0;
-
-            const pctOfTotal =
-              totalSessions > 0 ? (value / totalSessions) * 100 : 0;
-            const pctOfSource =
-              sourceValue > 0 ? (value / sourceValue) * 100 : 0;
-
-            const sourceStep = link?.source?.data?.step;
-            const targetStep = link?.target?.data?.step;
-
-            const color =
-              link?.color ??
-              link?.source?.color ??
-              link?.source?.data?.nodeColor ??
-              '#64748b';
-
-            return (
-              <SankeyPortalTooltip>
-                <ChartTooltipContainer>
-                  <ChartTooltipHeader>
-                    <div className="min-w-0 flex-1 break-words font-medium">
-                      {sourceLabel}
-                      <ArrowRightIcon className="mx-3 inline-block size-2" />
-                      {targetLabel}
+        {size.width > 0 && (
+          <SankeyChart
+            animationDuration={0}
+            aspectRatio="auto"
+            className="h-full"
+            data={sankeyData}
+            margin={{
+              top: VERTICAL_MARGIN,
+              bottom: VERTICAL_MARGIN,
+              left: labelWidth,
+              right: labelWidth,
+            }}
+            nodePadding={NODE_PADDING}
+            nodeWidth={NODE_WIDTH}
+          >
+            <SankeyLink getNodeColor={nodeColor} strokeOpacity={0.3} />
+            <SankeyNode getNodeColor={nodeColor} lineCap={2} />
+            <SankeyTooltip
+              linkContent={({ link }) => {
+                const source = link.source as unknown as SankeyNodeInfo & {
+                  value?: number;
+                };
+                const target = link.target as unknown as SankeyNodeInfo;
+                const sourceValue = source.value ?? 0;
+                return (
+                  <OPTooltipCard className="min-w-[220px]">
+                    <div className="font-medium">
+                      {source.label}
+                      <ArrowRightIcon className="mx-2 inline-block size-3" />
+                      {target.label}
                     </div>
-                    {typeof sourceStep === 'number' &&
-                      typeof targetStep === 'number' && (
-                        <div className="shrink-0 text-muted-foreground">
-                          {sourceStep} → {targetStep}
-                        </div>
+                    <TooltipStats
+                      color={nodeColor(source)}
+                      rows={[
+                        ['Sessions', number.format(link.value)],
+                        ['% of total', `${shareOfTotal(link.value)} %`],
+                        [
+                          '% of source',
+                          `${sourceValue > 0 ? round((link.value / sourceValue) * 100, 1) : 0} %`,
+                        ],
+                      ]}
+                    />
+                  </OPTooltipCard>
+                );
+              }}
+              nodeContent={({ node }) => {
+                const info = node as unknown as SankeyNodeInfo & {
+                  value?: number;
+                };
+                const value = info.value ?? 0;
+                return (
+                  <OPTooltipCard className="min-w-[220px]">
+                    <div className="flex justify-between gap-4">
+                      <span className="font-medium">{info.label}</span>
+                      {info.step !== undefined && (
+                        <span className="shrink-0 text-muted-foreground">
+                          Step {info.step}
+                        </span>
                       )}
-                  </ChartTooltipHeader>
-
-                  <ChartTooltipItem color={color} innerClassName="gap-2">
-                    <div className="flex items-center justify-between gap-8 font-medium font-mono">
-                      <div className="text-muted-foreground">Sessions</div>
-                      <div>{number.format(value)}</div>
                     </div>
-                    <div className="flex items-center justify-between gap-8 font-mono text-sm">
-                      <div className="text-muted-foreground">% of total</div>
-                      <div>{number.format(round(pctOfTotal, 1))} %</div>
-                    </div>
-                    <div className="flex items-center justify-between gap-8 font-mono text-sm">
-                      <div className="text-muted-foreground">% of source</div>
-                      <div>{number.format(round(pctOfSource, 1))} %</div>
-                    </div>
-                  </ChartTooltipItem>
-                </ChartTooltipContainer>
-              </SankeyPortalTooltip>
-            );
-          }}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-          nodeBorderRadius={2}
-          nodeBorderWidth={0}
-          nodeOpacity={0.8}
-          nodeSpacing={10}
-          nodeTooltip={({ node }: any) => {
-            const label = node?.data?.label ?? node?.label ?? node?.id;
-            const value = node?.data?.value ?? node?.value ?? 0;
-            const step = node?.data?.step;
-            const pct =
-              typeof node?.data?.percentage === 'number'
-                ? node.data.percentage
-                : totalSessions > 0
-                  ? (value / totalSessions) * 100
-                  : 0;
-            const color =
-              node?.color ??
-              node?.data?.nodeColor ??
-              node?.data?.color ??
-              node?.nodeColor ??
-              '#64748b';
-
-            return (
-              <SankeyPortalTooltip>
-                <ChartTooltipContainer className="min-w-[250px]">
-                  <ChartTooltipHeader>
-                    <div className="min-w-0 flex-1 break-words font-medium">
-                      {label}
-                    </div>
-                    {typeof step === 'number' && (
-                      <div className="shrink-0 text-muted-foreground">
-                        Step {step}
-                      </div>
-                    )}
-                  </ChartTooltipHeader>
-                  <ChartTooltipItem color={color} innerClassName="gap-2">
-                    <div className="flex items-center justify-between gap-8 font-medium font-mono">
-                      <div className="text-muted-foreground">Sessions</div>
-                      <div>{number.format(value)}</div>
-                    </div>
-                    <div className="flex items-center justify-between gap-8 font-medium font-mono">
-                      <div className="text-muted-foreground">Share</div>
-                      <div>{number.format(round(pct, 1))} %</div>
-                    </div>
-                  </ChartTooltipItem>
-                </ChartTooltipContainer>
-              </SankeyPortalTooltip>
-            );
-          }}
-        />
+                    <TooltipStats
+                      color={nodeColor(info)}
+                      rows={[
+                        ['Sessions', number.format(value)],
+                        ['Share', `${shareOfTotal(value)} %`],
+                      ]}
+                    />
+                  </OPTooltipCard>
+                );
+              }}
+            />
+          </SankeyChart>
+        )}
       </div>
     </AspectContainer>
+  );
+}
+
+function TooltipStats({
+  color,
+  rows,
+}: {
+  color: string;
+  rows: [label: string, value: string][];
+}) {
+  return (
+    <div className="flex gap-2">
+      <div className="w-[3px] rounded-full" style={{ background: color }} />
+      <div className="col flex-1 gap-1 font-mono text-sm">
+        {rows.map(([label, value]) => (
+          <div className="flex justify-between gap-8" key={label}>
+            <span className="text-muted-foreground">{label}</span>
+            <span>{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
