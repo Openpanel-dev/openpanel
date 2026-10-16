@@ -19,6 +19,8 @@ import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
 const BAR_RADIUS = 4;
+// Room between stacked segments so each reads as its own rounded block, like the bar chart's rows.
+const STACK_GAP = 2;
 const MAX_BAR_WIDTH = 48;
 
 interface Props {
@@ -47,6 +49,7 @@ export function Chart({ data, series }: Props) {
         margin={chart.margin}
         maxBarSize={MAX_BAR_WIDTH}
         stacked={isStacked}
+        stackGap={isStacked ? STACK_GAP : 0}
         xDataKey="date"
       >
         <Grid horizontal />
@@ -68,7 +71,7 @@ export function Chart({ data, series }: Props) {
             dataKey={`${serie.id}:count`}
             fill={getChartColor(serie.index)}
             key={serie.id}
-            radius={isStacked ? 0 : BAR_RADIUS}
+            radius={BAR_RADIUS}
           />
         ))}
         <OPReferences items={chart.references} />
@@ -77,8 +80,9 @@ export function Chart({ data, series }: Props) {
           interval={chart.interval}
           references={chart.references}
           rows={chart.tooltipRows}
-          showCrosshair
+          showCrosshair={false}
           showDatePill={false}
+          showDots={false}
         />
         <OPDatePill interval={chart.interval} />
         <PointClick<TimeSeriesPoint> onClick={chart.menu.openMenu} />
