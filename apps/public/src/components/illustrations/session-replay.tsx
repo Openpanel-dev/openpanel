@@ -2,10 +2,10 @@ import { PlayIcon } from 'lucide-react';
 
 export function SessionReplayIllustration() {
   return (
-    <div className="session-replay-illustration h-full px-6 pb-3 pt-4">
+    <div className="session-replay-illustration h-full px-6 pt-4 pb-3">
       <div className="col h-full overflow-hidden rounded-xl border border-border bg-background shadow-lg transition-transform duration-300 group-hover:-translate-y-0.5">
         {/* Browser chrome */}
-        <div className="row shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2">
+        <div className="row shrink-0 items-center gap-1.5 border-border border-b bg-muted/30 px-3 py-2">
           <div className="h-2 w-2 rounded-full bg-red-400" />
           <div className="h-2 w-2 rounded-full bg-yellow-400" />
           <div className="h-2 w-2 rounded-full bg-green-400" />
@@ -26,16 +26,10 @@ export function SessionReplayIllustration() {
           <div className="h-2 w-24 rounded-full bg-muted/20" />
 
           {/* Click heatspot */}
-          <div
-            className="absolute"
-            style={{ left: '62%', top: '48%' }}
-          >
+          <div className="absolute" style={{ left: '62%', top: '48%' }}>
             <div className="h-4 w-4 animate-pulse rounded-full border-2 border-blue-500/70 bg-blue-500/20" />
           </div>
-          <div
-            className="absolute"
-            style={{ left: '25%', top: '32%' }}
-          >
+          <div className="absolute" style={{ left: '25%', top: '32%' }}>
             <div className="h-2.5 w-2.5 rounded-full border border-blue-500/40 bg-blue-500/25" />
           </div>
 
@@ -55,11 +49,12 @@ export function SessionReplayIllustration() {
 
           {/* Cursor */}
           <div
-            className="cursor-animated absolute"
+            className="absolute cursor-animated"
             style={{
               left: 'calc(18% + 8px)',
               top: 'calc(22% + 6px)',
-              animation: 'cursor-trail 4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+              animation:
+                'cursor-trail 4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
             }}
           >
             <svg fill="none" height="12" viewBox="0 0 10 12" width="10">
@@ -86,11 +81,11 @@ export function SessionReplayIllustration() {
         </div>
 
         {/* Playback bar */}
-        <div className="row shrink-0 items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
+        <div className="row shrink-0 items-center gap-2 border-border border-t bg-muted/20 px-3 py-2">
           <PlayIcon className="size-3 shrink-0 text-muted-foreground" />
-          <div className="relative flex-1 h-1 overflow-hidden rounded-full bg-muted">
+          <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted">
             <div
-              className="absolute left-0 top-0 h-1 rounded-full bg-blue-500"
+              className="absolute top-0 left-0 h-1 rounded-full bg-blue-500"
               style={{ width: '42%' }}
             />
           </div>

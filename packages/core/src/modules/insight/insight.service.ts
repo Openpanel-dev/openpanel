@@ -1,0 +1,700 @@
+// Plain exported functions, not only methods on `createInsightService`'s
+// container: a caller with no Ctx yet still needs a direct call. They take
+// `ServiceDeps` so the requestId minted at the edge reaches every query, and the
+// explain cache runs on `deps.redis`, whose lifecycle the app shell owns.
+
+import { sendEmail } from '../../clients/email';
+import type { Logger } from '../../logger';
+import type { ServiceDeps, Services } from '../../services';
+import { createEngine, type EngineConfig } from './src/engine';
+import {
+  ENRICH_VERSION,
+  enrichInsights,
+  type InsightToEnrich,
+} from './src/enrich';
+import {
+  type ExplainInsightInput,
+  generateInsightExplanation,
+  type InsightExplanation,
+} from './src/explain';
+import {
+  devicesModule,
+  entryPagesModule,
+  geoModule,
+  pageTrendsModule,
+  referrersModule,
+} from './src/modules';
+import { generateWeeklyNarrative } from './src/narrative';
+import {
+  type GetReferrerSpikesInput,
+  getReferrerSpikes as getReferrerSpikesQuery,
+  type ReferrerSpikeCluster,
+} from './src/referrer-spikes';
+import { createInsightStore } from './src/store';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const EXPLAIN_CACHE_TTL_SEC = 24 * 60 * 60;
+
+// Tier-1 enrichment batch size, kept modest so the prompt stays small and the
+// id-mapping reliable.
+const ENRICH_BATCH_SIZE = 25;
+
+// Postgres batch-delete chunk — bounds the first (large) purge to never hold a
+// single long-lived transaction/lock.
+const CLEANUP_BATCH_SIZE = 5000;
+const CLEANUP_MAX_BATCHES = 2000; // runaway backstop: 5000 * 2000 = 10M rows
+const DEFAULT_INSIGHTS_RETENTION_DAYS = 90;
+/** Where the weekly-digest link points when DASHBOARD_URL is not set. */
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+
+// Weekly digest: quiet threshold + how many email-worthy insights to surface.
+const WEEKLY_DIGEST_MIN_EVENTS = 100;
+const WEEKLY_DIGEST_MAX_INSIGHTS = 5;
+
+const DEFAULT_ENGINE_CONFIG: EngineConfig = {
+  keepTopNPerModuleWindow: 20,
+  closeStaleAfterDays: 7,
+  dimensionBatchSize: 50,
+  globalThresholds: {
+    minTotal: 200,
+    minAbsDelta: 80,
+    minPct: 0.15,
+  },
+};
+
+export interface DailyInsightCandidate {
+  projectId: string;
+  date: string;
+}
+
+export interface WeeklyDigestResult {
+  projects: number;
+  sent: number;
+}
+
+export interface WeeklyDigestPreview {
+  sent: boolean;
+  to?: string;
+  skipped?: string;
+  data?: unknown;
+}
+
+function clamp01(n: number): number {
+  if (Number.isNaN(n)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, n));
+}
+
+/** The `insightsDaily` cron fan-out: eligible project ids, paired with `date`. */
+export async function listDailyInsightCandidates(
+  deps: ServiceDeps,
+  date: string
+): Promise<DailyInsightCandidate[]> {
+  const insightStore = createInsightStore(deps);
+  const projectIds = await insightStore.listProjectIdsForCadence('daily');
+  return projectIds.map((projectId) => ({ projectId, date }));
+}
+
+/**
+ * Tier-1 AI enrichment for one project's active insights: scores anything
+ * new, materially-changed, or enriched under an older prompt version.
+ * Failures are logged and skipped — a bad batch must never fail the insights
+ * job itself.
+ */
+async function enrichProjectInsights(
+  deps: ServiceDeps,
+  projectId: string,
+  logger: Logger
+): Promise<void> {
+  const db = deps.db;
+
+  const stale = await db.projectInsight.findMany({
+    where: {
+      projectId,
+      state: 'active',
+      OR: [
+        { enrichedAt: null },
+        { enrichVersion: null },
+        { enrichVersion: { lt: ENRICH_VERSION } },
+      ],
+    },
+    select: {
+      id: true,
+      moduleKey: true,
+      dimensionKey: true,
+      windowKind: true,
+      title: true,
+      summary: true,
+      displayName: true,
+      direction: true,
+      impactScore: true,
+      severityBand: true,
+      payload: true,
+    },
+  });
+
+  if (stale.length === 0) {
+    return;
+  }
+
+  let enriched = 0;
+  for (let i = 0; i < stale.length; i += ENRICH_BATCH_SIZE) {
+    const batch = stale.slice(i, i + ENRICH_BATCH_SIZE);
+    const input: InsightToEnrich[] = batch.map((r) => ({
+      id: r.id,
+      moduleKey: r.moduleKey,
+      dimensionKey: r.dimensionKey,
+      windowKind: r.windowKind,
+      title: r.title,
+      summary: r.summary,
+      displayName: r.displayName,
+      direction: r.direction,
+      impactScore: r.impactScore,
+      severityBand: r.severityBand,
+      payload: r.payload,
+    }));
+
+    let results: Awaited<ReturnType<typeof enrichInsights>>;
+    try {
+      results = await enrichInsights(deps.config, input);
+    } catch (err) {
+      logger.error(
+        { err, projectId, batchSize: batch.length },
+        'insight enrichment call failed; skipping batch'
+      );
+      continue;
+    }
+
+    const byId = new Map(results.map((r) => [r.id, r]));
+    for (const row of batch) {
+      const e = byId.get(row.id);
+      if (!e) {
+        continue;
+      }
+      await db.projectInsight.update({
+        where: { id: row.id },
+        data: {
+          relevanceScore: clamp01(e.relevanceScore),
+          aiSummary: e.summary,
+          aiCategory: e.category,
+          emailWorthy: e.emailWorthy,
+          referenceWorthy: e.referenceWorthy,
+          enrichedAt: new Date(),
+          enrichVersion: ENRICH_VERSION,
+        },
+      });
+      enriched++;
+    }
+  }
+
+  logger.info(
+    { projectId, candidates: stale.length, enriched },
+    'insight enrichment complete'
+  );
+}
+
+/** The `insightsProject` job body: engine run + tier-1 AI enrichment. */
+export async function runProjectInsights(
+  deps: ServiceDeps,
+  args: {
+    projectId: string;
+    date: string;
+    logger: Logger;
+  }
+): Promise<void> {
+  const { projectId, date, logger } = args;
+  const insightStore = createInsightStore(deps);
+  const engine = createEngine({
+    store: insightStore,
+    modules: [
+      referrersModule,
+      entryPagesModule,
+      pageTrendsModule,
+      geoModule,
+      devicesModule,
+    ],
+    deps,
+    config: DEFAULT_ENGINE_CONFIG,
+  });
+
+  const projectCreatedAt = await insightStore.getProjectCreatedAt(projectId);
+
+  await engine.runProject({
+    projectId,
+    cadence: 'daily',
+    now: new Date(date),
+    projectCreatedAt,
+  });
+
+  // Isolated so a provider outage or rate-limit never fails the insights
+  // computation itself.
+  try {
+    await enrichProjectInsights(deps, projectId, logger);
+  } catch (err) {
+    logger.error({ err, projectId }, 'insight enrichment failed');
+  }
+}
+
+async function deleteInBatches(
+  runBatch: () => Promise<number>
+): Promise<number> {
+  let total = 0;
+  for (let i = 0; i < CLEANUP_MAX_BATCHES; i++) {
+    const deleted = await runBatch();
+    total += deleted;
+    if (deleted < CLEANUP_BATCH_SIZE) {
+      break;
+    }
+  }
+  return total;
+}
+
+/**
+ * Keeps the insights tables bounded (they otherwise grow forever). The
+ * `insightCleanup` cron job body.
+ */
+export async function cleanupStaleInsights(
+  deps: ServiceDeps,
+  logger: Logger
+): Promise<{ insights: number; events: number }> {
+  const db = deps.db;
+  const retentionDays =
+    deps.config.query.insightsRetentionDays ?? DEFAULT_INSIGHTS_RETENTION_DAYS;
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+
+  const suppressed = await deleteInBatches(
+    () => db.$executeRaw`
+      DELETE FROM "project_insights"
+      WHERE "id" IN (
+        SELECT "id" FROM "project_insights"
+        WHERE "state" = 'suppressed'
+        LIMIT ${CLEANUP_BATCH_SIZE}
+      )`
+  );
+
+  const closed = await deleteInBatches(
+    () => db.$executeRaw`
+      DELETE FROM "project_insights"
+      WHERE "id" IN (
+        SELECT "id" FROM "project_insights"
+        WHERE "state" = 'closed'
+          AND "lastSeenAt" < ${cutoff}
+        LIMIT ${CLEANUP_BATCH_SIZE}
+      )`
+  );
+  const insights = suppressed + closed;
+
+  const events = await deleteInBatches(
+    () => db.$executeRaw`
+      DELETE FROM "insight_events"
+      WHERE "id" IN (
+        SELECT "id" FROM "insight_events"
+        WHERE "createdAt" < ${cutoff}
+        LIMIT ${CLEANUP_BATCH_SIZE}
+      )`
+  );
+
+  logger.info({ retentionDays, insights, events }, 'insight cleanup complete');
+  return { insights, events };
+}
+
+function pctDelta(
+  current: number,
+  previous: number
+): { delta?: string; direction: 'up' | 'down' | 'flat' } {
+  if (previous <= 0) {
+    return { direction: 'flat' };
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const direction = pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat';
+  const sign = pct >= 0 ? '+' : '';
+  return { delta: `${sign}${pct.toFixed(0)}%`, direction };
+}
+
+function ppDelta(
+  current: number,
+  previous: number
+): { delta?: string; direction: 'up' | 'down' | 'flat' } {
+  const diff = current - previous;
+  const direction = diff > 0.5 ? 'up' : diff < -0.5 ? 'down' : 'flat';
+  const sign = diff >= 0 ? '+' : '';
+  return { delta: `${sign}${diff.toFixed(0)}pp`, direction };
+}
+
+function formatCount(n: number): string {
+  return Math.round(n).toLocaleString();
+}
+
+function formatRange(startMs: number, endMs: number): string {
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  const start = new Date(startMs).toLocaleDateString('en-US', opts);
+  const end = new Date(endMs).toLocaleDateString('en-US', {
+    ...opts,
+    year: 'numeric',
+  });
+  return `${start} – ${end}`;
+}
+
+interface DigestProjectRow {
+  id: string;
+  name: string;
+  organizationId: string;
+}
+
+/** Assembles one project's digest payload (no sending). */
+async function buildDigestData(
+  deps: ServiceDeps,
+  project: DigestProjectRow,
+  opts: { force?: boolean } = {}
+): Promise<{ skipped?: string; data?: Record<string, unknown> }> {
+  const now = Date.now();
+  const curStart = now - 7 * DAY_MS;
+  const prevStart = now - 14 * DAY_MS;
+  const iso = (ms: number) => new Date(ms).toISOString();
+
+  const db = deps.db;
+  const { getAnalyticsOverviewCore } = await import(
+    '../overview/overview.service'
+  );
+
+  const [cur, prev] = await Promise.all([
+    getAnalyticsOverviewCore(deps, {
+      projectId: project.id,
+      startDate: iso(curStart),
+      endDate: iso(now),
+      interval: 'day',
+    }),
+    getAnalyticsOverviewCore(deps, {
+      projectId: project.id,
+      startDate: iso(prevStart),
+      endDate: iso(curStart),
+      interval: 'day',
+    }),
+  ]);
+
+  const c = cur.summary;
+  const p = prev.summary;
+
+  if (!opts.force && c.unique_visitors === 0) {
+    return { skipped: 'no visitors in the last 7 days' };
+  }
+
+  const stats = [
+    {
+      label: 'visitors',
+      value: formatCount(c.unique_visitors),
+      ...pctDelta(c.unique_visitors, p.unique_visitors),
+    },
+    {
+      label: 'sessions',
+      value: formatCount(c.total_sessions),
+      ...pctDelta(c.total_sessions, p.total_sessions),
+    },
+    {
+      label: 'pageviews',
+      value: formatCount(c.total_screen_views),
+      ...pctDelta(c.total_screen_views, p.total_screen_views),
+    },
+    {
+      label: 'bounce rate',
+      value: `${Math.round(c.bounce_rate)}%`,
+      ...ppDelta(c.bounce_rate, p.bounce_rate),
+    },
+  ];
+
+  const insightRows = await db.projectInsight.findMany({
+    where: {
+      projectId: project.id,
+      state: 'active',
+      emailWorthy: true,
+      windowKind: { in: ['rolling_7d'] },
+    },
+    orderBy: [
+      { relevanceScore: { sort: 'desc', nulls: 'last' } },
+      { impactScore: 'desc' },
+    ],
+    take: WEEKLY_DIGEST_MAX_INSIGHTS,
+    select: { title: true, aiSummary: true, summary: true },
+  });
+
+  const insights = insightRows.map((i) => ({
+    title: i.aiSummary ?? i.title,
+    summary: i.summary ?? undefined,
+  }));
+
+  const dateRange = formatRange(curStart, now);
+
+  let narrative = '';
+  try {
+    narrative = await generateWeeklyNarrative(deps.config, {
+      projectName: project.name,
+      dateRange,
+      stats: [
+        {
+          label: 'visitors',
+          current: c.unique_visitors,
+          previous: p.unique_visitors,
+        },
+        {
+          label: 'sessions',
+          current: c.total_sessions,
+          previous: p.total_sessions,
+        },
+        {
+          label: 'pageviews',
+          current: c.total_screen_views,
+          previous: p.total_screen_views,
+        },
+        {
+          label: 'bounce rate',
+          current: c.bounce_rate,
+          previous: p.bounce_rate,
+          unit: '%',
+        },
+      ],
+      insights,
+    });
+  } catch {
+    // Narrative is best-effort — the digest still sends without it.
+  }
+
+  const dashboardUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${project.organizationId}/${project.id}`;
+
+  return {
+    data: {
+      projectName: project.name,
+      dashboardUrl,
+      dateRange,
+      narrative: narrative || undefined,
+      stats,
+      insights,
+    },
+  };
+}
+
+async function recipientsForOrg(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<string[]> {
+  const db = deps.db;
+  const members = await db.member.findMany({
+    where: { organizationId },
+    select: { email: true },
+  });
+  return [...new Set(members.map((m) => m.email).filter(Boolean))];
+}
+
+/**
+ * Per active project: week-over-week stats + the AI's email-worthy insights +
+ * a generated narrative, mailed to org members. The `weeklyDigest` cron job
+ * body.
+ */
+export async function sendWeeklyDigests(
+  deps: ServiceDeps,
+  logger: Logger
+): Promise<WeeklyDigestResult> {
+  const db = deps.db;
+
+  // Prefilter on the raw status column (computed fields can't be used in
+  // `where`), then refine with the canonical subscription state below.
+  const projects = await db.project.findMany({
+    where: {
+      deleteAt: null,
+      eventsCount: { gt: WEEKLY_DIGEST_MIN_EVENTS },
+      organization: { subscriptionStatus: { in: ['active', 'trialing'] } },
+    },
+    select: {
+      id: true,
+      name: true,
+      organizationId: true,
+      organization: { select: { subscriptionState: true } },
+    },
+  });
+
+  let sent = 0;
+  for (const project of projects) {
+    try {
+      const state = project.organization.subscriptionState;
+      if (state !== 'active' && state !== 'trialing') {
+        continue;
+      }
+
+      const { skipped, data } = await buildDigestData(deps, project);
+      if (skipped || !data) {
+        continue;
+      }
+      const emails = await recipientsForOrg(deps, project.organizationId);
+      if (emails.length === 0) {
+        continue;
+      }
+      for (const to of emails) {
+        await sendEmail('weekly-digest', { to, data: data as never });
+      }
+      sent++;
+    } catch (err) {
+      logger.error({ err, projectId: project.id }, 'weekly digest failed');
+    }
+  }
+
+  logger.info({ projects: projects.length, sent }, 'weekly digest complete');
+  return { projects: projects.length, sent };
+}
+
+/**
+ * Debug/testing helper for a SINGLE project, bypassing eligibility.
+ *   - opts.to    → send only to that address (safe for testing)
+ *   - no opts.to → assemble and return the payload without sending (preview)
+ *   - opts.force → build even if the project had 0 visitors this week
+ */
+export async function previewWeeklyDigest(
+  deps: ServiceDeps,
+  projectId: string,
+  opts: { to?: string; force?: boolean } = {}
+): Promise<WeeklyDigestPreview> {
+  const db = deps.db;
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, name: true, organizationId: true },
+  });
+  if (!project) {
+    return { sent: false, skipped: 'project not found' };
+  }
+
+  const { skipped, data } = await buildDigestData(deps, project, {
+    force: opts.force,
+  });
+  if (skipped || !data) {
+    return { sent: false, skipped, data };
+  }
+
+  if (opts.to) {
+    await sendEmail('weekly-digest', { to: opts.to, data: data as never });
+    return { sent: true, to: opts.to, data };
+  }
+
+  return { sent: false, data };
+}
+
+export async function listInsights(
+  deps: ServiceDeps,
+  args: { projectId: string; limit: number }
+) {
+  const db = deps.db;
+  return db.projectInsight.findMany({
+    where: { projectId: args.projectId, state: 'active' },
+    orderBy: [
+      { relevanceScore: { sort: 'desc', nulls: 'last' } },
+      { impactScore: 'desc' },
+    ],
+    take: args.limit,
+  });
+}
+
+/**
+ * The same query as `listInsights` under the name the insights PAGE calls it
+ * by; the two differ only in the router — `insight.list` over-fetches and
+ * deduplicates by window, `insight.listAll` takes the rows as they come.
+ */
+export function listAllInsights(
+  deps: ServiceDeps,
+  args: {
+    projectId: string;
+    limit: number;
+  }
+): ReturnType<typeof listInsights> {
+  return listInsights(deps, args);
+}
+
+/**
+ * Explains one insight, cached per insight version (`cacheKey` already
+ * carries the insight id + `lastUpdatedAt`) so repeat clicks don't re-bill
+ * the LLM.
+ */
+export async function explainInsight(
+  deps: ServiceDeps,
+  input: ExplainInsightInput,
+  cacheKey: string
+): Promise<InsightExplanation | null> {
+  const cached = await deps.redis.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached) as InsightExplanation;
+  }
+
+  const explanation = await generateInsightExplanation(deps.config, input);
+
+  // Only cache a successful explanation — a null is a transient LLM failure
+  // and should be retried on the next click.
+  if (explanation) {
+    await deps.redis.setex(
+      cacheKey,
+      EXPLAIN_CACHE_TTL_SEC,
+      JSON.stringify(explanation)
+    );
+  }
+
+  return explanation;
+}
+
+export async function getReferrerSpikes(
+  deps: ServiceDeps,
+  input: GetReferrerSpikesInput
+): Promise<ReferrerSpikeCluster[]> {
+  return getReferrerSpikesQuery(deps, input);
+}
+
+// Re-exported at each type's own import site (noExportedImports): a type
+// that is also used locally still gets `export type {} from '<module>'`
+// rather than a second `import`-then-`export` pair gathered here.
+export type {
+  ExplainInsightInput,
+  InsightExplanation,
+} from './src/explain';
+export type {
+  GetReferrerSpikesInput,
+  ReferrerSpikeCluster,
+} from './src/referrer-spikes';
+
+/** `ctx.services.insight` — a thin binding of the functions above to a Ctx's logger. */
+export function createInsightService(
+  deps: ServiceDeps,
+  _services: () => Services
+) {
+  const logger = deps.logger.child({ module: 'insight' });
+
+  return {
+    listDailyInsightCandidates: (
+      date: string
+    ): Promise<DailyInsightCandidate[]> =>
+      listDailyInsightCandidates(deps, date),
+    runProjectInsights: (args: {
+      projectId: string;
+      date: string;
+    }): Promise<void> => runProjectInsights(deps, { ...args, logger }),
+    cleanupStaleInsights: (): Promise<{ insights: number; events: number }> =>
+      cleanupStaleInsights(deps, logger),
+    sendWeeklyDigests: (): Promise<WeeklyDigestResult> =>
+      sendWeeklyDigests(deps, logger),
+    previewWeeklyDigest: (
+      projectId: string,
+      opts?: { to?: string; force?: boolean }
+    ): Promise<WeeklyDigestPreview> =>
+      previewWeeklyDigest(deps, projectId, opts),
+    listInsights: (args: {
+      projectId: string;
+      limit: number;
+    }): ReturnType<typeof listInsights> => listInsights(deps, args),
+    listAllInsights: (args: {
+      projectId: string;
+      limit: number;
+    }): ReturnType<typeof listAllInsights> => listAllInsights(deps, args),
+    explainInsight: (
+      input: ExplainInsightInput,
+      cacheKey: string
+    ): Promise<InsightExplanation | null> =>
+      explainInsight(deps, input, cacheKey),
+    getReferrerSpikes: (
+      input: GetReferrerSpikesInput
+    ): Promise<ReferrerSpikeCluster[]> => getReferrerSpikes(deps, input),
+  };
+}

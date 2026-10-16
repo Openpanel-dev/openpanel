@@ -119,7 +119,7 @@ async function main() {
   const state = process.argv[2];
   const orgId = process.argv[3] ?? 'openpanel-dev';
 
-  if (!state || !recipes[state]) {
+  if (!(state && recipes[state])) {
     console.error(
       `Usage: set-subscription-state <state> [orgId]\n\nStates: ${Object.keys(recipes).join(', ')}`
     );
@@ -135,10 +135,13 @@ async function main() {
   delete process.env.SELF_HOSTED;
   const resolved = getSubscriptionState(recipe);
 
-  console.log(`Set ${orgId} -> requested "${state}", resolves to "${resolved}"`);
+  console.log(
+    `Set ${orgId} -> requested "${state}", resolves to "${resolved}"`
+  );
   console.table({
     subscriptionStatus: recipe.subscriptionStatus,
-    subscriptionCanceledAt: recipe.subscriptionCanceledAt?.toISOString() ?? null,
+    subscriptionCanceledAt:
+      recipe.subscriptionCanceledAt?.toISOString() ?? null,
     subscriptionStartsAt: recipe.subscriptionStartsAt?.toISOString() ?? null,
     subscriptionEndsAt: recipe.subscriptionEndsAt?.toISOString() ?? null,
   });

@@ -96,19 +96,19 @@ export default function DpaDownloadPage() {
             require it for their own compliance documentation and records of
             processing activities.
           </p>
-          <p className="mb-1 text-gray-700 text-sm font-semibold">
+          <p className="mb-1 font-semibold text-gray-700 text-sm">
             Session replay (optional feature)
           </p>
           <p className="mb-3 text-gray-700 text-sm">
             OpenPanel optionally supports session replay, which must be
             explicitly enabled by the Controller. When enabled, session replay
-            records DOM snapshots and user interactions (mouse movements, clicks,
-            scrolls) using rrweb. All text content and form inputs are masked by
-            default. The Controller is responsible for ensuring their use of
-            session replay complies with applicable privacy law, including
-            providing appropriate notice to end users.
+            records DOM snapshots and user interactions (mouse movements,
+            clicks, scrolls) using rrweb. All text content and form inputs are
+            masked by default. The Controller is responsible for ensuring their
+            use of session replay complies with applicable privacy law,
+            including providing appropriate notice to end users.
           </p>
-          <p className="mb-1 text-gray-700 text-sm font-semibold">
+          <p className="mb-1 font-semibold text-gray-700 text-sm">
             AI features (optional, opt-in)
           </p>
           <p className="text-gray-700 text-sm">
@@ -415,10 +415,11 @@ export default function DpaDownloadPage() {
               permanently deleted.
             </li>
             <li>
-              The Controller can delete individual projects, all associated data,
-              or their entire account at any time from within the dashboard. Upon
-              account termination, OpenPanel will delete the Controller's data
-              within 30 days unless required by law to retain it longer.
+              The Controller can delete individual projects, all associated
+              data, or their entire account at any time from within the
+              dashboard. Upon account termination, OpenPanel will delete the
+              Controller's data within 30 days unless required by law to retain
+              it longer.
             </li>
           </ul>
         </Section>
@@ -510,7 +511,7 @@ export default function DpaDownloadPage() {
 
             {/* Controller - blank */}
             <div>
-              <div className="flex flex-col h-32 gap-2">
+              <div className="flex h-32 flex-col gap-2">
                 <p className="font-semibold text-gray-500 text-xs uppercase tracking-widest">
                   Controller
                 </p>

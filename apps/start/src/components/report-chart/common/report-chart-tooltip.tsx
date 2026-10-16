@@ -1,15 +1,4 @@
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import type { IRechartPayloadItem } from '@/hooks/use-rechart-data-model';
-import React from 'react';
-
-import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
-import type { RouterOutputs } from '@/trpc/client';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import {
   format,
   isSameDay,
@@ -18,15 +7,25 @@ import {
   isSameMonth,
   isSameWeek,
 } from 'date-fns';
+import React from 'react';
 import { useReportChartContext } from '../context';
 import { PreviousDiffIndicator } from './previous-diff-indicator';
 import { SerieIcon } from './serie-icon';
 import { SerieName } from './serie-name';
+import {
+  ChartTooltipHeader,
+  ChartTooltipItem,
+  createChartTooltip,
+} from '@/components/charts/chart-tooltip';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import type { IRechartPayloadItem } from '@/hooks/use-rechart-data-model';
+import type { RouterOutputs } from '@/trpc/client';
 
 const getMatchingReferences = (
   interval: IInterval,
   references: RouterOutputs['reference']['getChartReferences'],
-  date: Date,
+  date: Date
 ) => {
   return references.filter((reference) => {
     if (interval === 'minute') {
@@ -76,15 +75,14 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
     const matchingReferences = getMatchingReferences(
       interval,
       references ?? [],
-      new Date(firstItem.date),
+      new Date(firstItem.date)
     );
 
     // Get all payload items from the first data point
     const payloadItems = Object.keys(firstItem)
       .filter((key) => key.endsWith(':payload'))
       .map(
-        (key) =>
-          firstItem[key as keyof typeof firstItem] as IRechartPayloadItem,
+        (key) => firstItem[key as keyof typeof firstItem] as IRechartPayloadItem
       )
       .filter((item) => item && typeof item === 'object' && 'id' in item);
 
@@ -108,7 +106,7 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
                 <SerieIcon name={item.names} />
                 <SerieName name={item.names} />
               </div>
-              <div className="flex justify-between gap-8 font-mono font-medium">
+              <div className="flex justify-between gap-8 font-medium font-mono">
                 <div className="row gap-1">
                   {number.formatWithUnit(item.count, unit)}
                   {!!item.previous && (
@@ -132,11 +130,11 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
             <hr className="border-border" />
             {matchingReferences.map((reference) => (
               <div
+                className="row items-center justify-between"
                 key={reference.id}
-                className="row justify-between items-center"
               >
                 <div className="font-medium text-sm">{reference.title}</div>
-                <div className="font-medium text-sm shrink-0 text-muted-foreground">
+                <div className="shrink-0 font-medium text-muted-foreground text-sm">
                   {format(reference.date, 'HH:mm')}
                 </div>
               </div>
@@ -145,5 +143,5 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
         )}
       </>
     );
-  },
+  }
 );

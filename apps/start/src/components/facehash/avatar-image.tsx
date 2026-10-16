@@ -25,7 +25,7 @@ export type AvatarImageProps = Omit<
 export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
   (
     { src, alt = '', className, style, onLoadingStatusChange, ...props },
-    ref,
+    ref
   ) => {
     const { imageLoadingStatus, onImageLoadingStatusChange } =
       useAvatarContext();
@@ -38,7 +38,7 @@ export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
         onImageLoadingStatusChange(status);
         onLoadingStatusChange?.(status);
       },
-      [onImageLoadingStatusChange, onLoadingStatusChange],
+      [onImageLoadingStatusChange, onLoadingStatusChange]
     );
 
     React.useLayoutEffect(() => {
@@ -74,21 +74,21 @@ export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
 
     return (
       <img
-        ref={imageRef}
-        src={src || undefined}
         alt={alt}
         className={className}
+        data-avatar-image=""
+        ref={imageRef}
+        src={src || undefined}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
           ...style,
         }}
-        data-avatar-image=""
         {...props}
       />
     );
-  },
+  }
 );
 
 AvatarImage.displayName = 'AvatarImage';

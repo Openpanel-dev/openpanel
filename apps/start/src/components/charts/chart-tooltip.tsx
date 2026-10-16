@@ -1,17 +1,19 @@
-import { cn } from '@/utils/cn';
 import { createContext, useContext as useBaseContext } from 'react';
-
 import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
+import { cn } from '@/utils/cn';
 
 export const ChartTooltipContainer = ({
   children,
   className,
-}: { children: React.ReactNode; className?: string }) => {
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
   return (
     <div
       className={cn(
-        'min-w-[180px] col gap-2 rounded-xl border bg-background/80 p-3  shadow-xl backdrop-blur-sm',
-        className,
+        'col min-w-[180px] gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm',
+        className
       )}
     >
       {children}
@@ -21,7 +23,9 @@ export const ChartTooltipContainer = ({
 
 export const ChartTooltipHeader = ({
   children,
-}: { children: React.ReactNode }) => {
+}: {
+  children: React.ReactNode;
+}) => {
   return <div className="flex justify-between gap-8">{children}</div>;
 };
 
@@ -53,7 +57,7 @@ export function createChartTooltip<
       context: PropsFromContext;
       data: PropsFromTooltip[];
     } & TooltipProps<number, string>
-  >,
+  >
 ) {
   const context = createContext<PropsFromContext | null>(null);
   const useContext = () => {
@@ -68,13 +72,13 @@ export function createChartTooltip<
     const context = useContext();
     const data = tooltip.payload?.map((p) => p.payload) ?? [];
 
-    if (!data || !tooltip.active) {
+    if (!(data && tooltip.active)) {
       return null;
     }
 
     return (
       <ChartTooltipContainer>
-        <Tooltip data={data} context={context} {...tooltip} />
+        <Tooltip context={context} data={data} {...tooltip} />
       </ChartTooltipContainer>
     );
   };

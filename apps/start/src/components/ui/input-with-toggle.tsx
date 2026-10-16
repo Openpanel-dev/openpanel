@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react';
 import AnimateHeight from '../animate-height';
 import { Label } from './label';
 import { Switch } from './switch';
@@ -18,7 +17,7 @@ export function InputWithToggle({
 }: Props) {
   return (
     <div className="col gap-2">
-      <div className="flex gap-2 items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label className="mb-0">{label}</Label>
         <Switch checked={active} onCheckedChange={onActiveChange} />
       </div>

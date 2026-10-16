@@ -1,0 +1,312 @@
+// A factory over `ServiceDeps` so the requestId minted at the edge reaches every
+// insight write. `Prisma` is the JSON sentinel (`DbNull`), which arrives on the
+// scope as `deps.prisma`.
+
+import type { Prisma } from '@openpanel/db/src/prisma-client';
+import type { ServiceDeps } from '../../../services';
+import type {
+  Cadence,
+  InsightDirection,
+  InsightState,
+  InsightStore,
+  PersistedInsight,
+  SeverityBand,
+  WindowKind,
+} from './types';
+
+/** One `project_insights` row as Prisma returns it. */
+type InsightRow = Awaited<
+  ReturnType<ServiceDeps['db']['projectInsight']['update']>
+>;
+
+/** The row's `state`/`direction`/`severityBand` are text columns; the engine's
+ *  vocabulary for them is narrower than `string`. */
+function toPersistedInsight(row: InsightRow): PersistedInsight {
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    moduleKey: row.moduleKey,
+    dimensionKey: row.dimensionKey,
+    windowKind: row.windowKind as WindowKind,
+    state: row.state as InsightState,
+    version: row.version,
+    impactScore: row.impactScore,
+    lastSeenAt: row.lastSeenAt,
+    lastUpdatedAt: row.lastUpdatedAt,
+    direction: row.direction as InsightDirection | null,
+    severityBand: row.severityBand as SeverityBand | null,
+  };
+}
+
+export function createInsightStore(deps: ServiceDeps): InsightStore {
+  const db = deps.db;
+  // `Prisma.DbNull` lives in the same module as the constructed client, so it
+  // arrives on the scope rather than through a lazy import.
+  const { DbNull } = deps.prisma;
+  return {
+    // `cadence` isn't read — there is only one today ('daily') — but it stays
+    // on the signature because InsightStore's contract names it.
+    async listProjectIdsForCadence(_cadence: Cadence): Promise<string[]> {
+      const projects = await db.project.findMany({
+        where: {
+          deleteAt: null,
+          eventsCount: { gt: 10_000 },
+          updatedAt: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
+          organization: {
+            subscriptionStatus: 'active',
+          },
+        },
+        select: { id: true },
+      });
+      return projects.map((p) => p.id);
+    },
+
+    async getProjectCreatedAt(projectId: string): Promise<Date | null> {
+      const project = await db.project.findFirst({
+        where: { id: projectId, deleteAt: null },
+        select: { createdAt: true },
+      });
+      return project?.createdAt ?? null;
+    },
+
+    async getActiveInsightByIdentity({
+      projectId,
+      moduleKey,
+      dimensionKey,
+      windowKind,
+    }): Promise<PersistedInsight | null> {
+      const insight = await db.projectInsight.findFirst({
+        where: {
+          projectId,
+          moduleKey,
+          dimensionKey,
+          windowKind,
+          state: 'active',
+        },
+      });
+
+      return insight ? toPersistedInsight(insight) : null;
+    },
+
+    async upsertInsight({
+      projectId,
+      moduleKey,
+      dimensionKey,
+      window,
+      card,
+      metrics,
+      now,
+      decision,
+      prev,
+    }): Promise<PersistedInsight> {
+      const baseData = {
+        projectId,
+        moduleKey,
+        dimensionKey,
+        windowKind: window.kind,
+        state: prev?.state === 'closed' ? 'active' : (prev?.state ?? 'active'),
+        title: card.title,
+        summary: card.summary ?? null,
+        displayName: card.displayName,
+        payload: card.payload,
+        direction: metrics.direction ?? null,
+        impactScore: metrics.impactScore,
+        severityBand: metrics.severityBand ?? null,
+        version: prev
+          ? decision.material
+            ? prev.version + 1
+            : prev.version
+          : 1,
+        windowStart: window.start,
+        windowEnd: window.end,
+        lastSeenAt: now,
+        lastUpdatedAt: now,
+      };
+
+      const existing = prev
+        ? await db.projectInsight.findFirst({
+            where: {
+              projectId,
+              moduleKey,
+              dimensionKey,
+              windowKind: window.kind,
+              state: prev.state,
+            },
+          })
+        : null;
+
+      let insight: InsightRow;
+      if (existing) {
+        insight = await db.projectInsight.update({
+          where: { id: existing.id },
+          data: {
+            ...baseData,
+            threadId: existing.threadId,
+            // Materially-changed insights need re-enrichment; clearing enrichedAt
+            // re-queues them for the AI pass. Keep the old score/summary as a
+            // fallback until then (don't null those).
+            ...(decision.material ? { enrichedAt: null } : {}),
+          },
+        });
+      } else {
+        // Create new - need to check if there's a closed/suppressed one to reopen.
+        // `suppressed` is only ever a row written before `applySuppression` began
+        // deleting instead of suppressing; it stays in the filter so those rows
+        // still reopen with their threadId.
+        const closed = await db.projectInsight.findFirst({
+          where: {
+            projectId,
+            moduleKey,
+            dimensionKey,
+            windowKind: window.kind,
+            state: { in: ['closed', 'suppressed'] },
+          },
+          orderBy: { lastUpdatedAt: 'desc' },
+        });
+
+        if (closed) {
+          insight = await db.projectInsight.update({
+            where: { id: closed.id },
+            data: {
+              ...baseData,
+              state: 'active',
+              threadId: closed.threadId,
+              // Reopening is a material event — re-enrich it.
+              enrichedAt: null,
+            },
+          });
+        } else {
+          insight = await db.projectInsight.create({
+            data: {
+              ...baseData,
+              firstDetectedAt: now,
+            },
+          });
+        }
+      }
+
+      return toPersistedInsight(insight);
+    },
+
+    // projectId/moduleKey/dimensionKey/windowKind aren't persisted here — the
+    // insight_events row is scoped by insightId alone, they're derivable from
+    // the parent — but the engine passes them for identity/logging symmetry
+    // with the store's other methods, so they stay on the signature.
+    async insertEvent({
+      insightId,
+      eventKind,
+      changeFrom,
+      changeTo,
+      now,
+    }): Promise<void> {
+      await db.insightEvent.create({
+        data: {
+          insightId,
+          eventKind,
+          changeFrom: changeFrom
+            ? (changeFrom as Prisma.InputJsonValue)
+            : DbNull,
+          changeTo: changeTo ? (changeTo as Prisma.InputJsonValue) : DbNull,
+          createdAt: now,
+        },
+      });
+    },
+
+    async closeMissingActiveInsights({
+      projectId,
+      moduleKey,
+      windowKind,
+      seenDimensionKeys,
+      now,
+      staleDays,
+    }): Promise<number> {
+      const staleDate = new Date(now);
+      staleDate.setDate(staleDate.getDate() - staleDays);
+
+      const result = await db.projectInsight.updateMany({
+        where: {
+          projectId,
+          moduleKey,
+          windowKind,
+          state: 'active',
+          lastSeenAt: { lt: staleDate },
+          dimensionKey: { notIn: seenDimensionKeys },
+        },
+        data: {
+          state: 'closed',
+          lastUpdatedAt: now,
+        },
+      });
+
+      return result.count;
+    },
+
+    async applySuppression({
+      projectId,
+      moduleKey,
+      windowKind,
+      keepTopN,
+      now,
+    }): Promise<{ deleted: number }> {
+      // Below-top-N insights are DELETED, not stored as `suppressed`: nothing
+      // reads them and they were ~75% of the table. A dimension that climbs back
+      // into the top-N is re-created next run, losing thread continuity (not
+      // surfaced anywhere). `suppressed` is only read for rows written before this.
+      const insights = await db.projectInsight.findMany({
+        where: {
+          projectId,
+          moduleKey,
+          windowKind,
+          state: 'active',
+        },
+        orderBy: { impactScore: 'desc' },
+      });
+
+      if (insights.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const toDelete: string[] = [];
+
+      if (windowKind === 'yesterday') {
+        // Drop stale "yesterday" insights whose windowEnd isn't actually
+        // yesterday (prevents showing "Yesterday traffic dropped" from 2+ days
+        // ago), then apply top-N to the fresh remainder.
+        const yesterday = new Date(now);
+        yesterday.setUTCHours(0, 0, 0, 0);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const yesterdayTime = yesterday.getTime();
+
+        const fresh: typeof insights = [];
+        for (const insight of insights) {
+          const isStale = insight.windowEnd
+            ? new Date(insight.windowEnd).setUTCHours(0, 0, 0, 0) !==
+              yesterdayTime
+            : true;
+          if (isStale) {
+            toDelete.push(insight.id);
+          } else {
+            fresh.push(insight);
+          }
+        }
+        // `fresh` preserves the impactScore-desc order; everything past keepTopN goes.
+        for (const insight of fresh.slice(keepTopN)) {
+          toDelete.push(insight.id);
+        }
+      } else {
+        for (const insight of insights.slice(keepTopN)) {
+          toDelete.push(insight.id);
+        }
+      }
+
+      if (toDelete.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const result = await db.projectInsight.deleteMany({
+        where: { id: { in: toDelete } },
+      });
+      return { deleted: result.count };
+    },
+  };
+}

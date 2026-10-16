@@ -49,7 +49,7 @@ const zGuide = z.object({
     z.object({
       name: z.string(),
       anchor: z.string(),
-    }),
+    })
   ),
 });
 

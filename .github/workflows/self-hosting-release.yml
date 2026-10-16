@@ -1,0 +1,197 @@
+name: Self-hosting release
+
+# Moving the `self-hosting` tag (sh/tag-self-hosting) publishes the version
+# that commit was built as on main:
+#   1. its v* tag says which version it is (commits main never built have none)
+#   2. the images main already built and smoke-tested are copied to Docker Hub
+#   3. GPT-6 Astra writes the notes for everything since the previous public release
+#   4. the build's pre-release `vX.Y.Z` (the CLI main built next to those images)
+#      becomes the public release, with the notes, marked latest
+# That release is what `openpanel upgrade` and install.sh look for, and the
+# previous one is where the next release's notes start.
+on:
+  push:
+    tags:
+      - self-hosting
+
+concurrency:
+  group: self-hosting-release
+  cancel-in-progress: false
+
+env:
+  repo_owner: openpanel-dev
+  # The last release before this workflow existed; the first notes start here.
+  BASELINE_TAG: v2.3.0
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      minor: ${{ steps.version.outputs.minor }}
+      major: ${{ steps.version.outputs.major }}
+      previous: ${{ steps.version.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Find the version to release
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(git tag --points-at "$GITHUB_SHA" --list 'v[0-9]*' | sort -V | tail -n 1)"
+          if [ -z "$tag" ]; then
+            echo "::error::$GITHUB_SHA has no v* version tag. Only commits that main has built and tagged can be released; move self-hosting to one of those."
+            exit 1
+          fi
+          version="${tag#v}"
+
+          previous="$(gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)"
+          previous="${previous:-$BASELINE_TAG}"
+          if ! git rev-parse -q --verify "refs/tags/$previous" >/dev/null; then
+            echo "::error::The previous release tag $previous does not exist, so the notes have no starting point."
+            exit 1
+          fi
+          newest="$(printf '%s\n%s\n' "$previous" "$tag" | sort -V | tail -n 1)"
+          if [ "$tag" = "$previous" ] || [ "$newest" != "$tag" ]; then
+            echo "::error::$tag is not newer than the last release $previous."
+            exit 1
+          fi
+
+          major="${version%%.*}"
+          minor="$(echo "$version" | cut -d. -f1-2)"
+          {
+            echo "version=$version"
+            echo "minor=$minor"
+            echo "major=$major"
+            echo "previous=$previous"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing $tag (previous release: $previous)"
+
+  # Copies, never rebuilds: what ships is byte-identical to what main tested.
+  images:
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Copy the tested images to Docker Hub
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+          MINOR: ${{ needs.resolve.outputs.minor }}
+          MAJOR: ${{ needs.resolve.outputs.major }}
+        run: |
+          set -euo pipefail
+          for app in api dashboard; do
+            target="lindesvard/openpanel-$app"
+            docker buildx imagetools create \
+              -t "$target:$VERSION" -t "$target:$MINOR" -t "$target:$MAJOR" -t "$target:latest" \
+              "ghcr.io/$repo_owner/$app:$VERSION"
+            echo "$target: $VERSION, $MINOR, $MAJOR, latest"
+          done
+
+  notes:
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - run: bun install --frozen-lockfile --filter @openpanel/release
+
+      # Falls back to a plain commit list if the API is unavailable, so the
+      # release never waits on it.
+      - name: Write release notes
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: bun tooling/release/src/release-notes.ts --from "${{ needs.resolve.outputs.previous }}" --to "v${{ needs.resolve.outputs.version }}" --out release-notes.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+
+  # Promotes, never rebuilds: the CLI supporters already ran is the one that
+  # ships. Only if that build's pre-release was cleaned up (releasing an older
+  # build) is the CLI rebuilt, from the same commit.
+  publish:
+    needs: [resolve, images, notes]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Find the build's pre-release
+        id: build
+        run: |
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx checksums.txt; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.build.outputs.exists != 'true'
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: Rebuild the CLI
+        if: steps.build.outputs.exists != 'true'
+        working-directory: self-hosting/cli
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          for target in linux-x64 linux-arm64; do
+            bun build --compile --target="bun-$target" --define "OPENPANEL_RELEASE_VERSION=\"$VERSION\"" src/main.ts --outfile "dist/openpanel-$target"
+          done
+          test "$(./dist/openpanel-linux-x64 --version)" = "$VERSION"
+          (cd dist && sha256sum openpanel-* > checksums.txt)
+          files=(dist/openpanel-* dist/checksums.txt)
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            gh release upload "v$VERSION" "${files[@]}" --clobber
+          else
+            gh release create "v$VERSION" "${files[@]}" --verify-tag --prerelease --title "OpenPanel $VERSION" --notes "pending"
+          fi
+
+      - name: Publish the release
+        run: |
+          gh release edit "v$VERSION" --prerelease=false --latest \
+            --title "OpenPanel $VERSION" --notes-file release-notes.md

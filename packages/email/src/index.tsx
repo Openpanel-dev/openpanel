@@ -1,14 +1,12 @@
-import React from 'react';
+import { db } from '@openpanel/db';
 import { render } from '@react-email/render';
 import { createTransport } from 'nodemailer';
 import { Resend } from 'resend';
 import type { z } from 'zod';
-
-import { db } from '@openpanel/db';
 import { type TemplateKey, type Templates, templates } from './emails';
 import { getUnsubscribeUrl } from './unsubscribe';
 
-/** a***@example.com, enough to correlate a log line without exposing the address. */
+/** a***@example.com: enough to correlate a log line without exposing the address. */
 function redactEmail(email: string): string {
   const at = email.indexOf('@');
   if (at <= 0) {
@@ -44,7 +42,7 @@ export async function sendEmail<T extends TemplateKey>(
   options: {
     to: string;
     data: z.infer<Templates[T]['schema']>;
-  },
+  }
 ) {
   const { to, data } = options;
   const template = templates[templateKey];
@@ -67,7 +65,7 @@ export async function sendEmail<T extends TemplateKey>(
 
     if (unsubscribed) {
       console.log(
-        `Skipping email to ${to} - unsubscribed from ${template.category}`,
+        `Skipping email to ${to} - unsubscribed from ${template.category}`
       );
       return null;
     }
@@ -86,7 +84,7 @@ export async function sendEmail<T extends TemplateKey>(
   if (process.env.SMTP_HOST) {
     try {
       const html = await render(
-        <template.Component {...(props.data as any)} />,
+        <template.Component {...(props.data as any)} />
       );
       const transport = createSmtpTransport();
       const res = await transport.sendMail({
@@ -108,7 +106,7 @@ export async function sendEmail<T extends TemplateKey>(
     // unsubscribe links, and the recipient is personal data
     // (GHSA-xr2x-w49w-hp2c).
     console.warn(
-      `Email not sent (email_provider_not_configured): template=${templateKey} to=${redactEmail(to)}`,
+      `Email not sent (email_provider_not_configured): template=${templateKey} to=${redactEmail(to)}`
     );
     return null;
   }

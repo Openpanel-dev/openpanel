@@ -1,11 +1,14 @@
-import { ReportChart } from '@/components/report-chart';
-import { Button } from '@/components/ui/button';
-import { pushModal } from '@/modals';
-import type { IReport, IReportInput } from '@openpanel/validation';
+import type {
+  IReport,
+  IReportInput,
+} from '@openpanel/core/modules/report/report.constants';
 import { SaveIcon } from 'lucide-react';
 import { asReportOutput } from './output-types';
 import { ResultCard, ToolStateGuard } from './shared';
 import type { ToolResultProps } from './types';
+import { ReportChart } from '@/components/report-chart';
+import { Button } from '@/components/ui/button';
+import { pushModal } from '@/modals';
 
 /**
  * Renders the result of `get_report_data` / `generate_report` /
@@ -20,13 +23,13 @@ import type { ToolResultProps } from './types';
 export function ChatReportResult({ part }: ToolResultProps) {
   return (
     <ToolStateGuard
-      state={part.state}
       errorText={part.errorText}
+      state={part.state}
       toolName={part.type.replace(/^tool-/, '')}
     >
       <ChatReportInner
-        output={part.output}
         input={part.input}
+        output={part.output}
         toolType={part.type}
       />
     </ToolStateGuard>
@@ -46,7 +49,7 @@ function ChatReportInner({
   if (!value || value.error) {
     return (
       <ResultCard>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+        <div className="px-3 py-2 text-muted-foreground text-sm">
           {value?.error ?? 'No data'}
         </div>
       </ResultCard>
@@ -54,10 +57,10 @@ function ChatReportInner({
   }
 
   const report = value.report;
-  if (!report || !report.chartType) {
+  if (!(report && report.chartType)) {
     return (
       <ResultCard title={value.name ?? 'Report'}>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+        <div className="px-3 py-2 text-muted-foreground text-sm">
           Report data returned but no renderable config.
         </div>
       </ResultCard>
@@ -73,7 +76,6 @@ function ChatReportInner({
     <ResultCard title={title}>
       <div className="p-2">
         <ReportChart
-          report={report as unknown as IReportInput}
           lazy={false}
           options={{
             hideLegend: false,
@@ -81,24 +83,23 @@ function ChatReportInner({
             minHeight: 180,
             maxHeight: 260,
           }}
+          report={report as unknown as IReportInput}
         />
       </div>
       {(value.dashboard_url || !report.id) && (
-        <div className="border-t px-3 py-1.5 flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 border-t px-3 py-1.5">
           {value.dashboard_url && (
             <a
+              className="text-muted-foreground text-sm hover:underline"
               href={value.dashboard_url}
-              target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:underline"
+              target="_blank"
             >
               Open in dashboard →
             </a>
           )}
           {!report.id && (
             <Button
-              size="sm"
-              variant="ghost"
               className="ml-auto h-6 text-sm"
               onClick={() =>
                 pushModal('SaveReport', {
@@ -109,8 +110,10 @@ function ChatReportInner({
                   disableRedirect: true,
                 })
               }
+              size="sm"
+              variant="ghost"
             >
-              <SaveIcon className="size-3 mr-1" />
+              <SaveIcon className="mr-1 size-3" />
               Save
             </Button>
           )}
@@ -127,7 +130,9 @@ function ChatReportInner({
  * user actually asked for.
  */
 function deriveTitleFromInput(toolType: string, input: unknown): string | null {
-  if (!input || typeof input !== 'object') return null;
+  if (!input || typeof input !== 'object') {
+    return null;
+  }
   const args = input as {
     steps?: unknown;
     series?: Array<{ name?: string; displayName?: string }>;
@@ -139,17 +144,22 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
   switch (toolType) {
     case 'tool-get_funnel': {
       if (Array.isArray(args.steps) && args.steps.length > 0) {
-        const names = args.steps.filter((s): s is string => typeof s === 'string');
-        if (names.length > 0) return `Funnel: ${names.join(' → ')}`;
+        const names = args.steps.filter(
+          (s): s is string => typeof s === 'string'
+        );
+        if (names.length > 0) {
+          return `Funnel: ${names.join(' → ')}`;
+        }
       }
       return 'Funnel';
     }
 
     case 'tool-get_rolling_active_users': {
-      const w = args.windowDays ?? 1;
-      const label = w === 1 ? 'DAU' : w === 7 ? 'WAU' : w === 30 ? 'MAU' : `${w}-day active users`;
+      // The chart this tool returns is daily uniques whatever `windowDays`
+      // asked for — only the numeric summary honours the rolling window — so
+      // the title must not say DAU/WAU/MAU.
       const days = args.days ?? 30;
-      return `${label} — last ${days} days`;
+      return `Daily active users — last ${days} days`;
     }
 
     case 'tool-generate_report': {
@@ -161,8 +171,12 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
       const kind = args.chartType
         ? humanizeChartType(args.chartType)
         : 'Report';
-      if (events.length === 0) return kind;
-      if (events.length === 1) return `${kind}: ${events[0]}`;
+      if (events.length === 0) {
+        return kind;
+      }
+      if (events.length === 1) {
+        return `${kind}: ${events[0]}`;
+      }
       return `${kind}: ${events.join(', ')}`;
     }
 

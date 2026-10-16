@@ -1,9 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal, showConfirm } from '@/modals';
-import type { RouterOutputs } from '@/trpc/client';
 import type { NotificationRule } from '@openpanel/db';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
 import { FilterIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { ColorSquare } from '../color-square';
@@ -15,13 +11,17 @@ import { PingBadge } from '../ping';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal, showConfirm } from '@/modals';
+import type { RouterOutputs } from '@/trpc/client';
 
 function EventBadge({
   event,
-}: { event: NotificationRule['config']['events'][number] }) {
+}: {
+  event: NotificationRule['config']['events'][number];
+}) {
   return (
     <Tooltiper
-      disabled={!event.filters.length}
       content={
         <div className="col gap-2 font-mono">
           {event.filters.map((filter) => (
@@ -31,11 +31,12 @@ function EventBadge({
           ))}
         </div>
       }
+      disabled={!event.filters.length}
     >
-      <Badge variant="outline" className="inline-flex">
+      <Badge className="inline-flex" variant="outline">
         {event.name === '*' ? 'Any event' : event.name}
         {Boolean(event.filters.length) && (
-          <FilterIcon className="size-2 ml-1" />
+          <FilterIcon className="ml-1 size-2" />
         )}
       </Badge>
     </Tooltiper>
@@ -44,7 +45,9 @@ function EventBadge({
 
 export function RuleCard({
   rule,
-}: { rule: RouterOutputs['notification']['rules'][number] }) {
+}: {
+  rule: RouterOutputs['notification']['rules'][number];
+}) {
   const trpc = useTRPC();
   const client = useQueryClient();
   const deletion = useMutation(
@@ -54,19 +57,19 @@ export function RuleCard({
         client.refetchQueries(
           trpc.notification.rules.queryOptions({
             projectId: rule.projectId,
-          }),
+          })
         );
       },
-    }),
+    })
   );
   const renderConfig = () => {
     switch (rule.config.type) {
       case 'events':
         return (
-          <div className="row gap-2 items-baseline flex-wrap">
+          <div className="row flex-wrap items-baseline gap-2">
             <div>Get notified when</div>
             {rule.config.events.map((event) => (
-              <EventBadge key={event.id} event={event} />
+              <EventBadge event={event} key={event.id} />
             ))}
             <div>occurs</div>
           </div>
@@ -78,11 +81,11 @@ export function RuleCard({
             <div className="col gap-2">
               {rule.config.events.map((event, index) => (
                 <div
+                  className="row items-center gap-2 font-mono"
                   key={event.id}
-                  className="row gap-2 items-center font-mono"
                 >
                   <ColorSquare>{index + 1}</ColorSquare>
-                  <EventBadge key={event.id} event={event} />
+                  <EventBadge event={event} key={event.id} />
                 </div>
               ))}
             </div>
@@ -95,16 +98,15 @@ export function RuleCard({
       <IntegrationCardHeader>
         <div className="title">{rule.name}</div>
       </IntegrationCardHeader>
-      <div className="p-4 col gap-2">{renderConfig()}</div>
-      <IntegrationCardFooter className="row gap-2 justify-between items-center">
-        <div className="row gap-2 flex-wrap">
+      <div className="col gap-2 p-4">{renderConfig()}</div>
+      <IntegrationCardFooter className="row items-center justify-between gap-2">
+        <div className="row flex-wrap gap-2">
           {rule.integrations.map((integration) => (
             <PingBadge key={integration.id}>{integration.name}</PingBadge>
           ))}
         </div>
         <div className="row gap-2">
           <Button
-            variant="ghost"
             className="text-destructive"
             onClick={() => {
               showConfirm({
@@ -117,16 +119,17 @@ export function RuleCard({
                 },
               });
             }}
+            variant="ghost"
           >
             Delete
           </Button>
           <Button
-            variant="ghost"
             onClick={() => {
               pushModal('AddNotificationRule', {
                 rule,
               });
             }}
+            variant="ghost"
           >
             Edit
           </Button>

@@ -8,6 +8,4 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   minify: true,
-  // Bundle @openpanel/common into the output instead of treating it as external
-  noExternal: ['@openpanel/common'],
 });

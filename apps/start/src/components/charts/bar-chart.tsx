@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { localPoint } from "@visx/event";
-import { ParentSize } from "@visx/responsive";
-import { scaleBand, scaleLinear } from "@visx/scale";
-import type { Transition } from "motion/react";
+import { localPoint } from '@visx/event';
+import { ParentSize } from '@visx/responsive';
+import { scaleBand, scaleLinear } from '@visx/scale';
+import type { Transition } from 'motion/react';
 import {
   Children,
   isValidElement,
@@ -15,21 +15,21 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { cn } from "@/lib/utils";
-import { DEFAULT_ANIMATION_EASING } from "./animation";
-import type { BarProps } from "./bar";
+} from 'react';
+import { DEFAULT_ANIMATION_EASING } from './animation';
+import type { BarProps } from './bar';
 import {
   ChartProvider,
   type LineConfig,
   type Margin,
   type TooltipData,
-} from "./chart-context";
-import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
-import { shortDateFmt } from "./chart-formatters";
-import { useScheduledTooltip } from "./use-scheduled-tooltip";
+} from './chart-context';
+import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
+import { shortDateFmt } from './chart-formatters';
+import { useScheduledTooltip } from './use-scheduled-tooltip';
+import { cn } from '@/lib/utils';
 
-export type BarOrientation = "vertical" | "horizontal";
+export type BarOrientation = 'vertical' | 'horizontal';
 
 export interface BarChartProps {
   /** Data array - each item should have an x-axis key and numeric values */
@@ -66,7 +66,6 @@ export interface BarChartProps {
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
-// Extract bar configs from children synchronously
 function extractBarConfigs(children: ReactNode): LineConfig[] {
   const configs: LineConfig[] = [];
 
@@ -80,20 +79,20 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
       name?: string;
     };
     const componentName =
-      typeof child.type === "function"
-        ? childType.displayName || childType.name || ""
-        : "";
+      typeof child.type === 'function'
+        ? childType.displayName || childType.name || ''
+        : '';
 
     const props = child.props as BarProps | undefined;
     const isBarComponent =
-      componentName === "Bar" ||
-      (props && typeof props.dataKey === "string" && props.dataKey.length > 0);
+      componentName === 'Bar' ||
+      (props && typeof props.dataKey === 'string' && props.dataKey.length > 0);
 
     if (isBarComponent && props?.dataKey) {
       // Use stroke for tooltip dot color if provided, otherwise fall back to fill
       // This allows gradient/pattern fills to have a solid dot color
       const dotColor =
-        props.stroke || props.fill || "var(--chart-line-primary)";
+        props.stroke || props.fill || 'var(--chart-line-primary)';
       configs.push({
         dataKey: props.dataKey,
         stroke: dotColor,
@@ -105,7 +104,6 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
   return configs;
 }
 
-// Check if a component should render after the mouse overlay
 function isPostOverlayComponent(child: ReactElement): boolean {
   const childType = child.type as {
     displayName?: string;
@@ -118,11 +116,11 @@ function isPostOverlayComponent(child: ReactElement): boolean {
   }
 
   const componentName =
-    typeof child.type === "function"
-      ? childType.displayName || childType.name || ""
-      : "";
+    typeof child.type === 'function'
+      ? childType.displayName || childType.name || ''
+      : '';
 
-  return componentName === "ChartMarkers" || componentName === "MarkerGroup";
+  return componentName === 'ChartMarkers' || componentName === 'MarkerGroup';
 }
 
 interface ChartInnerProps {
@@ -161,7 +159,7 @@ const ChartCore = memo(function ChartCore({
   animationDuration,
   animationEasing,
   enterTransition,
-  revealSignature = "",
+  revealSignature = '',
   barGap,
   barWidthProp,
   orientation,
@@ -176,22 +174,20 @@ const ChartCore = memo(function ChartCore({
   const [revealEpoch, setRevealEpoch] = useState(0);
   const hoveredBarIndex = tooltipData?.index ?? null;
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
 
-  // Extract bar configs synchronously from children
   const lines = useMemo(() => extractBarConfigs(children), [children]);
 
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  // Category accessor function - returns string for categorical scale
   const categoryAccessor = useCallback(
     (d: Record<string, unknown>): string => {
       const value = d[xDataKey];
       if (value instanceof Date) {
         return shortDateFmt.format(value);
       }
-      return String(value ?? "");
+      return String(value ?? '');
     },
     [xDataKey]
   );
@@ -208,7 +204,6 @@ const ChartCore = memo(function ChartCore({
     [xDataKey]
   );
 
-  // Category scale (band) - for the categorical axis
   const categoryScale = useMemo(() => {
     const domain = data.map((d) => categoryAccessor(d));
     const range: [number, number] = isHorizontal
@@ -221,19 +216,16 @@ const ChartCore = memo(function ChartCore({
     });
   }, [innerWidth, innerHeight, data, categoryAccessor, barGap, isHorizontal]);
 
-  // Band width for bars - use prop if provided, otherwise use scale's bandwidth
   const bandWidth = barWidthProp ?? categoryScale.bandwidth();
 
-  // Compute max value considering stacking
   const maxValue = useMemo(() => {
     if (stacked) {
-      // For stacked bars, sum all values at each data point
       let max = 0;
       for (const d of data) {
         let sum = 0;
         for (const line of lines) {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             sum += value;
           }
         }
@@ -243,12 +235,11 @@ const ChartCore = memo(function ChartCore({
       }
       return max || 100;
     }
-    // For grouped bars, find max single value
     let max = 0;
     for (const line of lines) {
       for (const d of data) {
         const value = d[line.dataKey];
-        if (typeof value === "number" && value > max) {
+        if (typeof value === 'number' && value > max) {
           max = value;
         }
       }
@@ -256,7 +247,6 @@ const ChartCore = memo(function ChartCore({
     return max || 100;
   }, [data, lines, stacked]);
 
-  // Value scale (linear) - for the value axis
   const valueScale = useMemo(() => {
     const range = isHorizontal ? [0, innerWidth] : [innerHeight, 0];
     return scaleLinear({
@@ -266,7 +256,6 @@ const ChartCore = memo(function ChartCore({
     });
   }, [innerWidth, innerHeight, maxValue, isHorizontal]);
 
-  // Compute stack offsets for stacked bars
   const stackOffsets = useMemo(() => {
     if (!stacked) {
       return undefined;
@@ -282,7 +271,7 @@ const ChartCore = memo(function ChartCore({
       for (const line of lines) {
         pointOffsets.set(line.dataKey, cumulative);
         const value = d[line.dataKey];
-        if (typeof value === "number") {
+        if (typeof value === 'number') {
           cumulative += value;
         }
       }
@@ -330,7 +319,6 @@ const ChartCore = memo(function ChartCore({
     return () => clearTimeout(timer);
   }, [animationDuration, revealSignature]);
 
-  // Mouse move handler
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGGElement>) => {
       const point = localPoint(event);
@@ -340,7 +328,6 @@ const ChartCore = memo(function ChartCore({
 
       const pos = isHorizontal ? point.y - margin.top : point.x - margin.left;
 
-      // Find which band the mouse is over
       const bandIndex = Math.floor(pos / columnWidth);
       const clampedIndex = Math.max(0, Math.min(data.length - 1, bandIndex));
       const d = data[clampedIndex];
@@ -349,7 +336,6 @@ const ChartCore = memo(function ChartCore({
         return;
       }
 
-      // Calculate positions for each bar
       const yPositions: Record<string, number> = {};
       const xPositions: Record<string, number> = {};
       const barPos = categoryScale(categoryAccessor(d)) ?? 0;
@@ -368,7 +354,7 @@ const ChartCore = memo(function ChartCore({
           let cumulative = 0;
           for (const line of lines) {
             const value = d[line.dataKey];
-            if (typeof value === "number") {
+            if (typeof value === 'number') {
               cumulative += value;
               xPositions[line.dataKey] = valueScale(cumulative) ?? 0;
               yPositions[line.dataKey] = barPos + bandWidth / 2;
@@ -378,7 +364,7 @@ const ChartCore = memo(function ChartCore({
           // Grouped horizontal: each bar at its own y position
           lines.forEach((line, idx) => {
             const value = d[line.dataKey];
-            if (typeof value === "number") {
+            if (typeof value === 'number') {
               xPositions[line.dataKey] = valueScale(value) ?? 0;
               yPositions[line.dataKey] =
                 barPos +
@@ -388,12 +374,11 @@ const ChartCore = memo(function ChartCore({
           });
         }
       } else if (stacked) {
-        // Vertical stacked bars
         let cumulative = 0;
         let seriesIdx = 0;
         for (const line of lines) {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             cumulative += value;
             const gapOffset = seriesIdx * stackGap;
             yPositions[line.dataKey] =
@@ -402,7 +387,6 @@ const ChartCore = memo(function ChartCore({
           }
         }
       } else {
-        // Vertical grouped bars
         const seriesCount = lines.length;
         const groupGap = seriesCount > 1 ? 4 : 0;
         const individualBarWidth =
@@ -412,7 +396,7 @@ const ChartCore = memo(function ChartCore({
 
         lines.forEach((line, idx) => {
           const value = d[line.dataKey];
-          if (typeof value === "number") {
+          if (typeof value === 'number') {
             yPositions[line.dataKey] = valueScale(value) ?? 0;
             xPositions[line.dataKey] =
               barPos +
@@ -425,7 +409,6 @@ const ChartCore = memo(function ChartCore({
       // Tooltip position: for horizontal, position at max bar end; for vertical, center of band
       let tooltipX: number;
       if (isHorizontal) {
-        // Position tooltip at the end of the longest bar
         const maxX = Math.max(...Object.values(xPositions), 0);
         tooltipX = maxX;
       } else {
@@ -463,7 +446,6 @@ const ChartCore = memo(function ChartCore({
 
   const canInteract = isLoaded;
 
-  // Separate children into defs, pre-overlay, and post-overlay
   const defsChildren: ReactElement[] = [];
   const preOverlayChildren: ReactElement[] = [];
   const postOverlayChildren: ReactElement[] = [];
@@ -488,7 +470,7 @@ const ChartCore = memo(function ChartCore({
     data,
     renderData: data,
     xScale: fakeTimeScale as unknown as ReturnType<
-      typeof import("@visx/scale").scaleTime<number>
+      typeof import('@visx/scale').scaleTime<number>
     >,
     yScale: valueScale,
     width,
@@ -521,7 +503,6 @@ const ChartCore = memo(function ChartCore({
   return (
     <ChartProvider value={contextValue}>
       <svg aria-hidden="true" height={height} width={width}>
-        {/* Gradient and pattern definitions */}
         {defsChildren.length > 0 && <defs>{defsChildren}</defs>}
 
         <rect fill="transparent" height={height} width={width} x={0} y={0} />
@@ -530,10 +511,9 @@ const ChartCore = memo(function ChartCore({
         <g
           onMouseLeave={canInteract ? handleMouseLeave : undefined}
           onMouseMove={canInteract ? handleMouseMove : undefined}
-          style={{ cursor: canInteract ? "crosshair" : "default" }}
+          style={{ cursor: canInteract ? 'crosshair' : 'default' }}
           transform={`translate(${margin.left},${margin.top})`}
         >
-          {/* Background rect for mouse event detection */}
           <rect
             fill="transparent"
             height={innerHeight}
@@ -542,7 +522,6 @@ const ChartCore = memo(function ChartCore({
             y={0}
           />
 
-          {/* SVG children rendered before markers */}
           {preOverlayChildren}
 
           {/* Markers rendered last so they're on top for interaction */}
@@ -555,17 +534,17 @@ const ChartCore = memo(function ChartCore({
 
 export function BarChart({
   data,
-  xDataKey = "name",
+  xDataKey = 'name',
   margin: marginProp,
   animationDuration = 1100,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
   revealSignature,
-  aspectRatio = "2 / 1",
-  className = "",
+  aspectRatio = '2 / 1',
+  className = '',
   barGap = 0.2,
   barWidth,
-  orientation = "vertical",
+  orientation = 'vertical',
   stacked = false,
   stackGap = 0,
   children,
@@ -575,7 +554,7 @@ export function BarChart({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn('relative w-full', className)}
       ref={containerRef}
       style={{ aspectRatio }}
     >
@@ -606,6 +585,6 @@ export function BarChart({
   );
 }
 
-BarChart.displayName = "BarChart";
+BarChart.displayName = 'BarChart';
 
 export default BarChart;

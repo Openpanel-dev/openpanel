@@ -4,11 +4,18 @@ description: Complete reference for all OpenPanel environment variables
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
 
 This page documents all environment variables used by OpenPanel. Variables are organized by category. Most variables are optional and have sensible defaults.
 
 <Callout>
 For deployment-specific configuration, see the [deployment guides](/docs/self-hosting/deploy-docker-compose).
+</Callout>
+
+<Callout type="info">
+After editing `.env`, run `openpanel reload`. It checks the file for mistakes first, then recreates only the services whose settings changed; your databases keep running. A plain `docker compose restart` is not enough: it restarts containers with their old environment.
 </Callout>
 
 ## Database & Storage
@@ -65,6 +72,19 @@ Redis connection string for caching and queue management.
 REDIS_URL=redis://localhost:6379
 # With password
 REDIS_URL=redis://:password@localhost:6379
+```
+
+### REDIS_CACHE_COMMAND_TIMEOUT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `5000`
+
+How long, in milliseconds, a Redis command used for caching, buffers and ingest may take before it fails. Commands still fail immediately while Redis is unreachable; this only bounds a connection that is up but slow. Too low a value turns brief network stalls into failed requests and duplicate events.
+
+**Example**:
+```bash
+REDIS_CACHE_COMMAND_TIMEOUT_MS=5000
 ```
 
 ### CLICKHOUSE_URL
@@ -188,10 +208,25 @@ API_CORS_ORIGINS=https://app.example.com,https://another-app.com
 
 Secret key for encrypting session cookies. Generate a secure random string (32+ characters).
 
+It also keys two HMACs: the cookie that proves a viewer entered a password-protected share's password, and the signature on unsubscribe links. Set the same value on the API and the worker — the worker sends the emails, the API verifies the links. Without it, password-protected shares cannot be unlocked and unsubscribe links cannot be signed.
+
 **Example**:
 ```bash
 # Generate with: openssl rand -base64 32
 COOKIE_SECRET=your-random-secret-here
+```
+
+### UNSUBSCRIBE_SECRET
+
+**Type**: `string`
+**Required**: No
+**Default**: falls back to `COOKIE_SECRET`
+
+Keys the HMAC on unsubscribe links, if you want it separate from `COOKIE_SECRET`. One of the two must be set or sending an email that carries an unsubscribe link fails; there is no built-in default, because a known default makes every unsubscribe link forgeable.
+
+**Example**:
+```bash
+UNSUBSCRIBE_SECRET=$(openssl rand -hex 32)
 ```
 
 <Callout type="warn">
@@ -703,31 +738,31 @@ Port for the worker service to listen on.
 WORKER_PORT=3000
 ```
 
-### BULLBOARD_USERNAME / BULLBOARD_PASSWORD
-
-**Type**: `string`
-**Required**: No
-**Default**: None
-
-Credentials for the Bull Board queue dashboard served on the worker port. The dashboard can add, retry and clean jobs, so it is only mounted when both variables are set. Without them the worker logs a warning at startup and serves only `/healthcheck` and `/metrics`. The browser prompts for these credentials (HTTP Basic auth).
-
-**Example**:
-```bash
-BULLBOARD_USERNAME=ops
-BULLBOARD_PASSWORD=$(openssl rand -hex 16)
-```
-
 ### DISABLE_BULLBOARD
 
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
 
-Disable the Bull Board queue dashboard entirely and silence the startup warning about missing credentials. Set to `true` or `1`.
+Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring dashboard.
 
 **Example**:
 ```bash
 DISABLE_BULLBOARD=true
+```
+
+### ADMIN_USERNAME / ADMIN_PASSWORD
+
+**Type**: `string`
+**Required**: No
+**Default**: None
+
+HTTP Basic credentials for operator-only surfaces. Today that is the queue dashboard at `/bullboard`, which can add, retry and clean jobs; it already requires a dashboard session, and these credentials narrow it from "any signed-up user" to "an operator". Set both or neither — half a pair is a startup error. The browser prompts for them.
+
+**Example**:
+```bash
+ADMIN_USERNAME=ops
+ADMIN_PASSWORD=$(openssl rand -hex 16)
 ```
 
 ### DISABLE_WORKERS
@@ -749,7 +784,7 @@ DISABLE_WORKERS=true
 **Required**: No
 **Default**: All queues enabled
 
-Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `import`, `insights`, `gsc`, `cohortCompute`.
+Comma-separated list of queue names to enable. Accepted queues: `events`, `sessions`, `cron`, `notification`, `import`, `insights`, `gsc`, `cohortCompute`. An unknown value (including the old `events_kafka` name, see below) fails startup with a non-zero exit rather than being silently ignored.
 
 **Example**:
 ```bash
@@ -757,7 +792,7 @@ ENABLED_QUEUES=events,sessions,cron
 ```
 
 <Callout>
-Enable `events_kafka` to run the Kafka-based events consumer alongside (or instead of) the default `events` queue. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events_kafka` and another pool with everything else.
+`events` is the Kafka-based events consumer — there is only one events transport now, so there is no separate `events_kafka` queue name. If you're upgrading from a version that used `ENABLED_QUEUES=events_kafka`, rename it to `ENABLED_QUEUES=events`; the old name is now rejected at boot. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events` and another pool with everything else.
 </Callout>
 
 ### EVENT_JOB_CONCURRENCY
@@ -880,12 +915,12 @@ AUTO_BATCH_SIZE=100
 
 OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka itself, Redpanda, etc.) instead of the default Redis-backed events queue. This is useful at high throughput, where many consumer instances can process partitions in parallel.
 
-Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
+Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events` on the worker(s) that should consume from Kafka.
 
 Connections are unauthenticated plaintext by default. For managed or production clusters, enable TLS with `KAFKA_SSL` and SASL authentication (`plain`, `scram-sha-256` or `scram-sha-512`) with the `KAFKA_SASL_*` variables below.
 
 <Callout>
-The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
+The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. `self-hosting/docker-compose.template.yml` ships an `op-rp` service running [Redpanda](https://redpanda.com/) — a lightweight, single-binary broker — by default, with `KAFKA_BROKERS` already pointed at it. You can instead point `KAFKA_BROKERS` at any Kafka cluster of your own.
 </Callout>
 
 ### KAFKA_BROKERS
@@ -909,7 +944,7 @@ KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
 **Required**: No
 **Default**: `false` (automatically `true` when SASL credentials are set)
 
-Connect to the brokers over TLS. Set this to `true` for a TLS-only cluster without authentication. When `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD` are set, TLS is enabled automatically; set `KAFKA_SSL=false` explicitly to send SASL over plaintext (only sensible on a trusted internal network).
+Connect to the brokers over TLS. Set this to `true` for a TLS-only cluster without authentication. When `KAFKA_SASL_USERNAME`/`KAFKA_SASL_PASSWORD` are set, TLS is enabled automatically; set `KAFKA_SSL=false` explicitly to send SASL over plaintext (only sensible on a trusted internal network). Any value other than `true`/`1`/`false`/`0` fails startup.
 
 **Example**:
 ```bash
@@ -922,7 +957,7 @@ KAFKA_SSL=true
 **Required**: No
 **Default**: None (system trust store)
 
-Path to a PEM-encoded CA certificate (or bundle) to trust in addition to the system trust store. Use this when your brokers present certificates signed by a private or self-signed CA. Requires TLS to be enabled.
+Path to a PEM-encoded CA certificate (or bundle) to trust in addition to the system trust store. Use this when your brokers present certificates signed by a private or self-signed CA. Requires TLS to be enabled; an unreadable file fails startup.
 
 **Example**:
 ```bash
@@ -1007,6 +1042,23 @@ Name of the Kafka topic used for incoming events.
 ```bash
 KAFKA_EVENTS_TOPIC=openpanel-events
 ```
+
+### KAFKA_EVENTS_TOPIC_PARTITIONS
+
+**Type**: `number`
+**Required**: No
+**Default**: `24`
+
+Number of partitions the bundled Redpanda service creates the `KAFKA_EVENTS_TOPIC` topic with on first boot (matches the partition count OpenPanel Cloud runs). Only takes effect on an empty data volume — it does not repartition a topic that already exists.
+
+**Example**:
+```bash
+KAFKA_EVENTS_TOPIC_PARTITIONS=48
+```
+
+<Callout type="warn">
+Set this once, before the first `openpanel up`. The Kafka/Redpanda partitioner is `murmur2(key) % numPartitions`, so raising the partition count after the topic already has data reshuffles where every key lands — it silently breaks per-key event ordering and the mutual exclusion the session buffer relies on for events produced before the change. To raise it later: stop producers, let consumers fully drain the backlog, delete the `events` topic, then restart so it's recreated with the new count.
+</Callout>
 
 ### KAFKA_CONSUMER_GROUP
 
@@ -1110,6 +1162,19 @@ How often, in milliseconds, the consumer sends background heartbeats to the brok
 **Example**:
 ```bash
 KAFKA_HEARTBEAT_INTERVAL_MS=3000
+```
+
+### KAFKA_REBALANCE_TIMEOUT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `60000`
+
+How long, in milliseconds, the consumer group waits for every member to rejoin during a rebalance. No consumer processes events while it waits, so a member that stopped without leaving the group stalls ingestion for up to this long. Raise it only if a single batch can take longer than this to finish.
+
+**Example**:
+```bash
+KAFKA_REBALANCE_TIMEOUT_MS=60000
 ```
 
 ## Buffers
@@ -1219,19 +1284,6 @@ BOT_BUFFER_BATCH_SIZE=1000
 ```
 
 ## Analytics Behavior
-
-### FUNNEL_NON_STRICT_ORDERING
-
-**Type**: `boolean` (`1` or `true`)
-**Required**: No
-**Default**: unset (strict ordering)
-
-Funnels use ClickHouse's `windowFunnel` in `strict_increase` mode by default: every step's timestamp must be strictly greater than the previous step's. Setting this variable switches funnels to non-strict ordering (`>=`), where steps sharing the same timestamp still count as an ordered sequence — matching how Mixpanel and Amplitude evaluate funnels. Useful for server-side senders, batched SDKs, or imported data with coarse timestamps.
-
-**Example**:
-```bash
-FUNNEL_NON_STRICT_ORDERING=1
-```
 
 ## Performance & Tuning
 

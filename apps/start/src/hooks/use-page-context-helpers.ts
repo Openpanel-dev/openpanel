@@ -1,15 +1,15 @@
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import { useAppParams } from './use-app-params';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from './use-event-query-filters';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import {
   type PageContext,
   type PageContextPage,
   usePageContext,
 } from '@/contexts/page-context';
-import {
-  useEventQueryFilters,
-  useEventQueryNamesFilter,
-} from './use-event-query-filters';
-import { useAppParams } from './use-app-params';
-import type { IReportInput } from '@openpanel/validation';
 
 /**
  * For pages that share the standard date-range / interval filters
@@ -50,7 +50,7 @@ export function useRangePageContext(page: PageContextPage) {
 export function useEntityPageContext(
   page: 'sessionDetail' | 'profileDetail' | 'groupDetail',
   ids: PageContext['ids'],
-  primer?: Record<string, unknown>,
+  primer?: Record<string, unknown>
 ) {
   const { projectId, organizationId } = useAppParams();
 
@@ -71,7 +71,7 @@ export function useEntityPageContext(
  */
 export function useDashboardPageContext(
   dashboardId: string,
-  primer?: Record<string, unknown>,
+  primer?: Record<string, unknown>
 ) {
   const { projectId, organizationId } = useAppParams();
   const { range, startDate, endDate, interval } = useOverviewOptions();

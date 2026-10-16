@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { intFmt } from "../chart-formatters";
+import type { ReactNode } from 'react';
+import { intFmt } from '../chart-formatters';
 
 export interface TooltipRow {
   color: string;
@@ -41,7 +41,7 @@ export function TooltipContent({ title, rows, children }: TooltipContentProps) {
                 </span>
               </div>
               <span className="font-medium text-chart-tooltip-foreground text-sm tabular-nums">
-                {typeof row.value === "number" ? intFmt(row.value) : row.value}
+                {typeof row.value === 'number' ? intFmt(row.value) : row.value}
               </span>
             </div>
           ))}
@@ -57,6 +57,6 @@ export function TooltipContent({ title, rows, children }: TooltipContentProps) {
   );
 }
 
-TooltipContent.displayName = "TooltipContent";
+TooltipContent.displayName = 'TooltipContent';
 
 export default TooltipContent;

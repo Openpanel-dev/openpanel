@@ -1,10 +1,6 @@
 'use client';
-import { cn } from '@/lib/utils';
 import { ResponsiveFunnel } from '@nivo/funnel';
-import NumberFlow from '@number-flow/react';
-import { AnimatePresence, motion, useSpring } from 'framer-motion';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 
 function useFunnelSteps() {
   const { resolvedTheme } = useTheme();
@@ -12,7 +8,7 @@ function useFunnelSteps() {
     {
       id: 'Visitors',
       label: 'Visitors',
-      value: 10000,
+      value: 10_000,
       percentage: 100,
       color: resolvedTheme === 'dark' ? '#333' : '#888',
     },
@@ -46,7 +42,6 @@ export const PartLabel = ({ part }: { part: any }) => {
   return (
     <g transform={`translate(${part.x}, ${part.y})`}>
       <text
-        textAnchor="middle"
         dominantBaseline="central"
         style={{
           fill: resolvedTheme === 'dark' ? '#fff' : '#000',
@@ -54,6 +49,7 @@ export const PartLabel = ({ part }: { part: any }) => {
           fontSize: 12,
           fontWeight: 500,
         }}
+        textAnchor="middle"
       >
         {part.data.label}
       </text>
@@ -77,24 +73,24 @@ function FunnelVisualization() {
   }));
 
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <ResponsiveFunnel
-        data={nivoData}
-        margin={{ top: 20, right: 0, bottom: 20, left: 0 }}
-        direction="horizontal"
-        shapeBlending={0.6}
-        colors={colors}
-        enableBeforeSeparators={false}
-        enableAfterSeparators={false}
-        beforeSeparatorLength={0}
         afterSeparatorLength={0}
         afterSeparatorOffset={0}
+        beforeSeparatorLength={0}
         beforeSeparatorOffset={0}
-        currentPartSizeExtension={5}
         borderWidth={20}
+        colors={colors}
         currentBorderWidth={15}
-        tooltip={() => null}
+        currentPartSizeExtension={5}
+        data={nivoData}
+        direction="horizontal"
+        enableAfterSeparators={false}
+        enableBeforeSeparators={false}
         layers={['parts', Labels]}
+        margin={{ top: 20, right: 0, bottom: 20, left: 0 }}
+        shapeBlending={0.6}
+        tooltip={() => null}
       />
     </div>
   );

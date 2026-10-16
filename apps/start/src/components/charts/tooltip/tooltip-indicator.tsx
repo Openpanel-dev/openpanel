@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { type SpringConfig, useChartConfig } from "../chart-config-context";
-import { chartCssVars } from "../chart-context";
+import { motion, useSpring } from 'motion/react';
+import { type SpringConfig, useChartConfig } from '../chart-config-context';
+import { chartCssVars } from '../chart-context';
 
 export type IndicatorWidth =
   | number // Pixel width
-  | "line" // 1px line (default)
-  | "thin" // 2px
-  | "medium" // 4px
-  | "thick"; // 8px
+  | 'line' // 1px line (default)
+  | 'thin' // 2px
+  | 'medium' // 4px
+  | 'thick'; // 8px
 
 export interface TooltipIndicatorProps {
   /** X position in pixels (center of the indicator) */
@@ -45,17 +45,17 @@ export interface TooltipIndicatorProps {
 }
 
 function resolveWidth(width: IndicatorWidth): number {
-  if (typeof width === "number") {
+  if (typeof width === 'number') {
     return width;
   }
   switch (width) {
-    case "line":
+    case 'line':
       return 1;
-    case "thin":
+    case 'thin':
       return 2;
-    case "medium":
+    case 'medium':
       return 4;
-    case "thick":
+    case 'thick':
       return 8;
     default:
       return 1;
@@ -74,16 +74,16 @@ export function TooltipIndicator(props: TooltipIndicatorProps) {
 function TooltipIndicatorInner({
   x,
   height,
-  width = "line",
+  width = 'line',
   span,
   columnWidth,
   colorEdge = chartCssVars.crosshair,
   colorMid = chartCssVars.crosshair,
   fadeEdges = true,
   animate = true,
-  gradientId = "tooltip-indicator-gradient",
+  gradientId = 'tooltip-indicator-gradient',
   springConfig,
-}: Omit<TooltipIndicatorProps, "visible">) {
+}: Omit<TooltipIndicatorProps, 'visible'>) {
   const { tooltipSpring } = useChartConfig();
   const effectiveSpring = springConfig ?? tooltipSpring;
 
@@ -139,6 +139,6 @@ function TooltipIndicatorInner({
   );
 }
 
-TooltipIndicator.displayName = "TooltipIndicator";
+TooltipIndicator.displayName = 'TooltipIndicator';
 
 export default TooltipIndicator;

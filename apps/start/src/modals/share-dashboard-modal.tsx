@@ -1,23 +1,25 @@
-import { ButtonContainer } from '@/components/button-container';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { zShareDashboard } from '@openpanel/core/modules/share/share.constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { CheckCircle2, Copy, ExternalLink, TrashIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-
-import { zShareDashboard } from '@openpanel/validation';
-
-import { Input } from '@/components/ui/input';
-import { Tooltiper } from '@/components/ui/tooltip';
-import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Copy, ExternalLink, TrashIcon } from 'lucide-react';
-import { useState } from 'react';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { ButtonContainer } from '@/components/button-container';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tooltiper } from '@/components/ui/tooltip';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import {
+  getSharePasswordFieldValue,
+  getSharePasswordToSubmit,
+  STORED_PASSWORD_PLACEHOLDER,
+} from '@/utils/share-password';
 
 const validator = zShareDashboard;
 
@@ -40,7 +42,7 @@ export default function ShareDashboardModal({
     trpc.share.dashboardSettings.queryOptions({
       projectId,
       dashboardId,
-    }),
+    })
   );
 
   const existingShare = shareQuery.data;
@@ -51,13 +53,16 @@ export default function ShareDashboardModal({
 
   const { register, handleSubmit, watch } = useForm<IForm>({
     resolver: zodResolver(validator),
-    defaultValues: {
+    // `values` rather than `defaultValues`: the share settings arrive after
+    // the first render, and the field must then show the stored password.
+    values: {
       public: true,
-      password: existingShare?.hasPassword ? '••••••••' : '',
+      password: getSharePasswordFieldValue(existingShare?.hasPassword),
       projectId,
       organizationId,
       dashboardId,
     },
+    resetOptions: { keepDirtyValues: true },
   });
 
   const password = watch('password');
@@ -66,7 +71,9 @@ export default function ShareDashboardModal({
     trpc.share.createDashboard.mutationOptions({
       onError: handleError,
       onSuccess(res) {
-        queryClient.invalidateQueries(trpc.share.dashboardSettings.pathFilter());
+        queryClient.invalidateQueries(
+          trpc.share.dashboardSettings.pathFilter()
+        );
         toast('Success', {
           description: `Your dashboard is now ${
             res.public ? 'public' : 'private'
@@ -86,7 +93,7 @@ export default function ShareDashboardModal({
         });
         popModal();
       },
-    }),
+    })
   );
 
   const handleCopyLink = () => {
@@ -109,28 +116,28 @@ export default function ShareDashboardModal({
   return (
     <ModalContent className="max-w-md">
       <ModalHeader
-        title="Dashboard public availability"
         text={
           isShared
             ? 'Your dashboard is currently public and can be accessed by anyone with the link.'
             : 'You can choose if you want to add a password to make it a bit more private.'
         }
+        title="Dashboard public availability"
       />
 
       {isShared && (
-        <div className="p-4 bg-def-100 border rounded-lg space-y-3">
-          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+        <div className="space-y-3 rounded-lg border bg-def-100 p-4">
+          <div className="flex items-center gap-2 text-green-600 text-sm dark:text-green-400">
             <CheckCircle2 className="size-4" />
             <span className="font-medium">Currently shared</span>
           </div>
           <div className="flex items-center gap-1">
-            <Input value={shareUrl} readOnly className="flex-1 text-sm" />
-            <Tooltiper content="Copy link">
+            <Input className="flex-1 text-sm" readOnly value={shareUrl} />
+            <Tooltiper asChild content="Copy link">
               <Button
+                onClick={handleCopyLink}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={handleCopyLink}
               >
                 {copied ? (
                   <CheckCircle2 className="size-4" />
@@ -139,21 +146,21 @@ export default function ShareDashboardModal({
                 )}
               </Button>
             </Tooltiper>
-            <Tooltiper content="Open in new tab">
+            <Tooltiper asChild content="Open in new tab">
               <Button
+                onClick={() => window.open(shareUrl, '_blank')}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={() => window.open(shareUrl, '_blank')}
               >
                 <ExternalLink className="size-4" />
               </Button>
             </Tooltiper>
-            <Tooltiper content="Make private">
+            <Tooltiper asChild content="Make private">
               <Button
+                onClick={handleMakePrivate}
                 type="button"
                 variant="destructive"
-                onClick={handleMakePrivate}
               >
                 <TrashIcon className="size-4" />
               </Button>
@@ -166,9 +173,7 @@ export default function ShareDashboardModal({
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            // Only send password if it's not the placeholder
-            password:
-              values.password === '••••••••' ? null : values.password || null,
+            password: getSharePasswordToSubmit(values.password),
           });
         })}
       >
@@ -176,10 +181,10 @@ export default function ShareDashboardModal({
           {...register('password')}
           placeholder="Enter your password (optional)"
           size="large"
-          type={password === '••••••••' ? 'text' : 'password'}
+          type={password === STORED_PASSWORD_PLACEHOLDER ? 'text' : 'password'}
         />
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
 

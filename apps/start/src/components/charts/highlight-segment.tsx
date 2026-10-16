@@ -1,13 +1,10 @@
-"use client";
+'use client';
 
-import { type MotionValue, motion } from "motion/react";
-import { type RefObject, useId } from "react";
+import { type MotionValue, motion } from 'motion/react';
+import { type RefObject, useId } from 'react';
 
-// Hover-highlight overlay: re-strokes the base path `d`, clipped to a vertical
-// band whose x/width spring to track the hovered point, so only the segment
-// around the dot shows brighter. The band comes from `useHighlightSegment`;
-// because the bright stroke reuses the base `d`, it follows whatever curve is
-// drawn (see `highlight-segment-bounds.ts` for the band-extent caveat).
+// Re-strokes the base path `d` clipped to the hover band, so the highlight
+// follows whatever curve is drawn (see `highlight-segment-bounds.ts`).
 
 export interface HighlightSegmentProps {
   /** Ref to the rendered base stroke `<path>` — its `d` is re-used verbatim. */
@@ -47,19 +44,19 @@ export function HighlightSegment({
       <motion.path
         animate={{ opacity: 1 }}
         clipPath={`url(#${clipId})`}
-        d={pathRef.current.getAttribute("d") || ""}
+        d={pathRef.current.getAttribute('d') || ''}
         exit={{ opacity: 0 }}
         fill="none"
         initial={{ opacity: 0 }}
         stroke={stroke}
         strokeLinecap="round"
         strokeWidth={strokeWidth}
-        transition={{ duration: 0.4, ease: "easeInOut" }}
+        transition={{ duration: 0.4, ease: 'easeInOut' }}
       />
     </>
   );
 }
 
-HighlightSegment.displayName = "HighlightSegment";
+HighlightSegment.displayName = 'HighlightSegment';
 
 export default HighlightSegment;

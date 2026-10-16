@@ -1,8 +1,8 @@
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
+import { useQuery } from '@tanstack/react-query';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
 
 interface GscBreakdownTableProps {
   projectId: string;
@@ -10,7 +10,11 @@ interface GscBreakdownTableProps {
   type: 'page' | 'query';
 }
 
-export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableProps) {
+export function GscBreakdownTable({
+  projectId,
+  value,
+  type,
+}: GscBreakdownTableProps) {
   const { range, startDate, endDate } = useOverviewOptions();
   const trpc = useTRPC();
 
@@ -23,23 +27,26 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
   const pageQuery = useQuery(
     trpc.gsc.getPageDetails.queryOptions(
       { projectId, page: value, ...dateInput },
-      { enabled: type === 'page' },
-    ),
+      { enabled: type === 'page' }
+    )
   );
 
   const queryQuery = useQuery(
     trpc.gsc.getQueryDetails.queryOptions(
       { projectId, query: value, ...dateInput },
-      { enabled: type === 'query' },
-    ),
+      { enabled: type === 'query' }
+    )
   );
 
-  const isLoading = type === 'page' ? pageQuery.isLoading : queryQuery.isLoading;
+  const isLoading =
+    type === 'page' ? pageQuery.isLoading : queryQuery.isLoading;
 
   const breakdownRows: Record<string, string | number>[] =
     type === 'page'
-      ? ((pageQuery.data as { queries?: unknown[] } | undefined)?.queries ?? []) as Record<string, string | number>[]
-      : ((queryQuery.data as { pages?: unknown[] } | undefined)?.pages ?? []) as Record<string, string | number>[];
+      ? (((pageQuery.data as { queries?: unknown[] } | undefined)?.queries ??
+          []) as Record<string, string | number>[])
+      : (((queryQuery.data as { pages?: unknown[] } | undefined)?.pages ??
+          []) as Record<string, string | number>[]);
 
   const breakdownKey = type === 'page' ? 'query' : 'page';
   const breakdownLabel = type === 'page' ? 'Query' : 'Page';
@@ -47,7 +54,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
 
   const maxClicks = Math.max(
     ...(breakdownRows as { clicks: number }[]).map((r) => r.clicks),
-    1,
+    1
   );
 
   return (
@@ -57,22 +64,39 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
       </div>
       {isLoading ? (
         <OverviewWidgetTable
-          data={[1, 2, 3, 4, 5]}
-          keyExtractor={(i) => String(i)}
-          getColumnPercentage={() => 0}
           columns={[
-            { name: breakdownLabel, width: 'w-full', render: () => <Skeleton className="h-4 w-2/3" /> },
-            { name: 'Clicks', width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
-            { name: 'Impr.', width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
-            { name: 'CTR', width: '60px', render: () => <Skeleton className="h-4 w-8" /> },
-            { name: 'Pos.', width: '55px', render: () => <Skeleton className="h-4 w-8" /> },
+            {
+              name: breakdownLabel,
+              width: 'w-full',
+              render: () => <Skeleton className="h-4 w-2/3" />,
+            },
+            {
+              name: 'Clicks',
+              width: '70px',
+              render: () => <Skeleton className="h-4 w-10" />,
+            },
+            {
+              name: 'Impr.',
+              width: '70px',
+              render: () => <Skeleton className="h-4 w-10" />,
+            },
+            {
+              name: 'CTR',
+              width: '60px',
+              render: () => <Skeleton className="h-4 w-8" />,
+            },
+            {
+              name: 'Pos.',
+              width: '55px',
+              render: () => <Skeleton className="h-4 w-8" />,
+            },
           ]}
+          data={[1, 2, 3, 4, 5]}
+          getColumnPercentage={() => 0}
+          keyExtractor={(i) => String(i)}
         />
       ) : (
         <OverviewWidgetTable
-          data={breakdownRows}
-          keyExtractor={(item) => String(item[breakdownKey])}
-          getColumnPercentage={(item) => (item.clicks as number) / maxClicks}
           columns={[
             {
               name: breakdownLabel,
@@ -136,6 +160,9 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
               },
             },
           ]}
+          data={breakdownRows}
+          getColumnPercentage={(item) => (item.clicks as number) / maxClicks}
+          keyExtractor={(item) => String(item[breakdownKey])}
         />
       )}
     </div>

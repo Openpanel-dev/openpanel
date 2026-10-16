@@ -40,8 +40,8 @@ export function RealtimeActiveSessions({
               >
                 <ProjectLink
                   className="relative block p-4 py-3 pr-14"
-                  to="/sessions/$sessionId"
                   params={{ sessionId: session.sessionId }}
+                  to="/sessions/$sessionId"
                 >
                   <div className="col flex-1 gap-1">
                     {session.name === 'screen_view' && (

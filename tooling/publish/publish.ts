@@ -10,7 +10,6 @@ import { generateReadme } from './generate-readme';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Types
 interface PackageJson {
   name: string;
   version: string;
@@ -35,7 +34,6 @@ interface PublishConfig {
   clear: boolean;
 }
 
-// Utility functions
 const workspacePath = (relativePath: string) =>
   resolve(__dirname, '../../', relativePath);
 
@@ -76,7 +74,6 @@ const getNextVersion = (version: string, type: ReleaseType): string => {
     : nextVersion;
 };
 
-// Core functions
 const loadPackages = (
   releaseType: ReleaseType
 ): Record<string, PackageInfo> => {
@@ -336,7 +333,6 @@ const restoreAndUpdateLocal = (
 };
 
 function main() {
-  // Main execution
   const args = arg({
     '--name': String,
     '--publish': Boolean,

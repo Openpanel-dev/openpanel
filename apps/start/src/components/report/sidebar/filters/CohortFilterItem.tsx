@@ -1,19 +1,19 @@
-import { ColorSquare } from '@/components/color-square';
-import { RenderDots } from '@/components/ui/RenderDots';
-import { Button } from '@/components/ui/button';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
-import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useCohorts } from '@/hooks/use-cohorts';
-import { useDispatch } from '@/redux';
 import {
   getCohortIds,
   type IChartEvent,
   type IChartEventFilter,
   type IChartEventFilterOperator,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
+import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
+import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { RenderDots } from '@/components/ui/RenderDots';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useCohorts } from '@/hooks/use-cohorts';
+import { useDispatch } from '@/redux';
 
 interface CohortFilterItemProps {
   event: IChartEvent;
@@ -25,7 +25,7 @@ interface PureCohortFilterItemProps {
   onRemove: (filter: IChartEventFilter) => void;
   onChangeOperator: (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => void;
   onChangeCohort: (cohortIds: string[], filter: IChartEventFilter) => void;
   className?: string;
@@ -40,22 +40,22 @@ export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
         ...event,
         filters: event.filters.filter((item) => item.id !== id),
         type: 'event',
-      }),
+      })
     );
   };
 
   const onChangeOperator = (
     operator: IChartEventFilterOperator,
-    { id }: IChartEventFilter,
+    { id }: IChartEventFilter
   ) => {
     dispatch(
       changeEvent({
         ...event,
         type: 'event',
         filters: event.filters.map((item) =>
-          item.id === id ? { ...item, operator } : item,
+          item.id === id ? { ...item, operator } : item
         ),
-      }),
+      })
     );
   };
 
@@ -75,19 +75,19 @@ export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
                 cohortId: firstId,
                 cohortIds,
               }
-            : item,
+            : item
         ),
-      }),
+      })
     );
   };
 
   return (
     <PureCohortFilterItem
-      filter={filter}
-      onRemove={onRemove}
-      onChangeOperator={onChangeOperator}
-      onChangeCohort={onChangeCohort}
       className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+      filter={filter}
+      onChangeCohort={onChangeCohort}
+      onChangeOperator={onChangeOperator}
+      onRemove={onRemove}
     />
   );
 }
@@ -132,7 +132,7 @@ export function PureCohortFilterItem({
   const changeCohort = (next: Array<string | number>) => {
     onChangeCohort(
       next.filter((id): id is string => typeof id === 'string'),
-      filter,
+      filter
     );
   };
 
@@ -145,29 +145,29 @@ export function PureCohortFilterItem({
         <div className="flex flex-1">
           <RenderDots truncate>{cohortLabel}</RenderDots>
         </div>
-        <Button variant="ghost" size="sm" onClick={removeFilter}>
+        <Button onClick={removeFilter} size="sm" variant="ghost">
           <Trash size={16} />
         </Button>
       </div>
       <div className="flex gap-1">
         <DropdownMenuComposed
-          onChange={changeFilterOperator}
           items={[
             { value: 'inCohort', label: 'In cohort' },
             { value: 'notInCohort', label: 'Not in cohort' },
           ]}
           label="Operator"
+          onChange={changeFilterOperator}
         >
-          <Button variant="outline" className="whitespace-nowrap">
+          <Button className="whitespace-nowrap" variant="outline">
             {filter.operator === 'inCohort' ? 'In cohort' : 'Not in cohort'}
           </Button>
         </DropdownMenuComposed>
         <ComboboxAdvanced
-          items={cohortsCombobox}
-          value={selectedIds}
           className="flex-1"
+          items={cohortsCombobox}
           onChange={changeCohort}
           placeholder="Select cohorts..."
+          value={selectedIds}
         />
       </div>
     </div>

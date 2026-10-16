@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import type { scaleBand } from "@visx/scale";
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
-import { memo, useId, useMemo } from "react";
-import { chartCssVars, useChart, useChartStable } from "./chart-context";
-import { transitionWithDelay } from "./motion-utils";
+import type { scaleBand } from '@visx/scale';
+import type { Transition } from 'motion/react';
+import { motion } from 'motion/react';
+import { memo, useId, useMemo } from 'react';
+import { chartCssVars, useChart, useChartStable } from './chart-context';
+import { transitionWithDelay } from './motion-utils';
 
 type ScaleBand<Domain extends { toString(): string }> = ReturnType<
   typeof scaleBand<Domain>
 >;
 
-export type BarLineCap = "round" | "butt" | number;
-export type BarAnimationType = "grow" | "fade";
+export type BarLineCap = 'round' | 'butt' | number;
+export type BarAnimationType = 'grow' | 'fade';
 
 export interface BarProps {
   /** Key in data to use for y values */
@@ -82,16 +82,16 @@ function AnimatedBar({
 }: AnimatedBarProps) {
   const enterAnim = transitionWithDelay(enterTransition, index * staggerDelay);
 
-  if (animationType === "fade") {
+  if (animationType === 'fade') {
     return (
       <motion.rect
         animate={{
           opacity: isFaded ? fadedOpacity : 1,
-          filter: "blur(0px)",
+          filter: 'blur(0px)',
         }}
         fill={fill}
         height={height}
-        initial={{ opacity: 0, filter: "blur(2px)" }}
+        initial={{ opacity: 0, filter: 'blur(2px)' }}
         key={`fade-${index}-${revealEpoch}`}
         rx={rx}
         ry={ry}
@@ -113,7 +113,7 @@ function AnimatedBar({
   return (
     <g
       opacity={isFaded ? fadedOpacity : 1}
-      style={{ transition: "opacity 0.15s ease-in-out" }}
+      style={{ transition: 'opacity 0.15s ease-in-out' }}
     >
       <motion.rect
         animate={target}
@@ -131,9 +131,9 @@ function AnimatedBar({
 const BarInner = memo(function BarInner({
   dataKey,
   fill = chartCssVars.linePrimary,
-  lineCap = "round",
+  lineCap = 'round',
   animate = true,
-  animationType = "grow",
+  animationType = 'grow',
   fadedOpacity = 0.3,
   staggerDelay,
   stackGap = 0,
@@ -157,17 +157,15 @@ const BarInner = memo(function BarInner({
     revealEpoch = 0,
   } = useChart();
 
-  // Calculate stagger delay automatically if not provided
   // Total animation duration is ~1200ms, with 40% for stagger spread and 60% for bar animation
   const totalAnimDuration = animationDuration || 1100;
-  const staggerSpread = totalAnimDuration * 0.4; // 40% of time for stagger spread
+  const staggerSpread = totalAnimDuration * 0.4;
   const calculatedStaggerDelay =
     staggerDelay ?? (data.length > 1 ? staggerSpread / 1000 / data.length : 0);
   const uniqueId = useId();
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
 
-  // Find the index of this bar series among all bar series
   const seriesIndex = useMemo(() => {
     const idx = lines.findIndex((l) => l.dataKey === dataKey);
     return idx >= 0 ? idx : 0;
@@ -176,26 +174,22 @@ const BarInner = memo(function BarInner({
   const seriesCount = lines.length;
   const isLastSeries = seriesIndex === seriesCount - 1;
 
-  // Calculate the width for each bar within a group (for non-stacked)
   const barWidth = useMemo(() => {
     if (!bandWidth || seriesCount === 0) {
       return 0;
     }
     if (stacked) {
-      // Stacked bars use full band width
       return bandWidth;
     }
-    // Leave a gap between grouped bars (controlled by groupGap prop)
     const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
     return (bandWidth - effectiveGroupGap * (seriesCount - 1)) / seriesCount;
   }, [bandWidth, seriesCount, stacked, groupGap]);
 
-  // Calculate corner radius based on lineCap
   const cornerRadius = useMemo(() => {
-    if (typeof lineCap === "number") {
+    if (typeof lineCap === 'number') {
       return lineCap;
     }
-    if (lineCap === "round" && barWidth) {
+    if (lineCap === 'round' && barWidth) {
       return Math.min(barWidth / 2, 8);
     }
     return 0;
@@ -205,7 +199,7 @@ const BarInner = memo(function BarInner({
     <g className={`bar-series-${uniqueId}`}>
       {data.map((d, i) => {
         const value = d[dataKey];
-        if (typeof value !== "number") {
+        if (typeof value !== 'number') {
           return null;
         }
 
@@ -227,7 +221,6 @@ const BarInner = memo(function BarInner({
             const offset = stackOffsets.get(i)?.get(dataKey) ?? 0;
             x = yScale(offset) ?? 0;
             barW = valuePos - x;
-            // Apply stack gap for horizontal: shift right and reduce width
             const gapOffset = seriesIndex * stackGap;
             x += gapOffset;
             if (!isLastSeries && stackGap > 0) {
@@ -235,7 +228,6 @@ const BarInner = memo(function BarInner({
             }
           } else {
             x = 0;
-            // For grouped bars, offset y position
             const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
             y = bandPos + seriesIndex * (barWidth + effectiveGroupGap);
           }
@@ -252,7 +244,6 @@ const BarInner = memo(function BarInner({
           if (stacked && stackOffsets) {
             const offset = stackOffsets.get(i)?.get(dataKey) ?? 0;
             const offsetY = yScale(offset) ?? innerHeight;
-            // Apply stack gap: shift up and reduce height
             const gapOffset = seriesIndex * stackGap;
             y = offsetY - barHeight - gapOffset;
             // Reduce height slightly for non-last bars to create visual gap
@@ -261,7 +252,6 @@ const BarInner = memo(function BarInner({
             }
           } else {
             y = valuePos;
-            // For grouped bars, offset x position
             const effectiveGroupGap = seriesCount > 1 ? groupGap : 0;
             x = bandPos + seriesIndex * (barWidth + effectiveGroupGap);
           }
@@ -318,8 +308,8 @@ const BarInner = memo(function BarInner({
             rx={effectiveRx}
             ry={effectiveRy}
             style={{
-              cursor: "default",
-              transition: "opacity 0.15s ease-in-out",
+              cursor: 'default',
+              transition: 'opacity 0.15s ease-in-out',
             }}
             width={barW}
             x={x}
@@ -335,7 +325,7 @@ export function Bar(props: BarProps) {
   const { barScale, bandWidth, barXAccessor } = useChartStable();
 
   if (!(barScale && bandWidth && barXAccessor)) {
-    console.warn("Bar component must be used within a BarChart");
+    console.warn('Bar component must be used within a BarChart');
     return null;
   }
 
@@ -349,6 +339,6 @@ export function Bar(props: BarProps) {
   );
 }
 
-Bar.displayName = "Bar";
+Bar.displayName = 'Bar';
 
 export default Bar;

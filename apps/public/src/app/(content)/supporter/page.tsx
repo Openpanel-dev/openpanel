@@ -1,10 +1,3 @@
-import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { HeroContainer } from '@/app/(home)/_sections/hero';
-import { FeatureCard } from '@/components/feature-card';
-import { Section, SectionHeader } from '@/components/section';
-import { Button } from '@/components/ui/button';
-import { url } from '@/lib/layout.shared';
-import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { SupporterPerks } from 'components/sections/supporter-perks';
 import {
   ClockIcon,
@@ -19,6 +12,13 @@ import {
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
+import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
+import { HeroContainer } from '@/app/(home)/_sections/hero';
+import { FeatureCard } from '@/components/feature-card';
+import { Section, SectionHeader } from '@/components/section';
+import { Button } from '@/components/ui/button';
+import { url } from '@/lib/layout.shared';
+import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = getPageMetadata({
   title: 'Become a Supporter',
@@ -49,17 +49,18 @@ export default function SupporterPage() {
   return (
     <div>
       <Script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="supporter-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HeroContainer>
         <div className="col center-center flex-1">
           <SectionHeader
-            as="h1"
             align="center"
+            as="h1"
             className="flex-1"
+            description="Your support accelerates development, funds infrastructure, and helps us build features faster. Plus, you get exclusive perks and early access to everything we ship."
             title={
               <>
                 Help us build
@@ -67,16 +68,15 @@ export default function SupporterPage() {
                 the future of open analytics
               </>
             }
-            description="Your support accelerates development, funds infrastructure, and helps us build features faster. Plus, you get exclusive perks and early access to everything we ship."
           />
-          <div className="col gap-4 justify-center items-center mt-8">
-            <Button size="lg" asChild>
+          <div className="col mt-8 items-center justify-center gap-4">
+            <Button asChild size="lg">
               <Link href="https://buy.polar.sh/polar_cl_Az1CruNFzQB2bYdMOZmGHqTevW317knWqV44W1FqZmV">
                 Become a Supporter
                 <SparklesIcon className="size-4" />
               </Link>
             </Button>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Starting at $20/month • Cancel anytime
             </p>
           </div>
@@ -85,34 +85,34 @@ export default function SupporterPage() {
 
       <div className="container">
         {/* Main Content with Sidebar */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8 mb-16">
+        <div className="mb-16 grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* Main Content */}
           <div className="col gap-16">
             {/* Why Support Section */}
             <Section className="my-0">
               <SectionHeader
-                title="Why your support matters"
                 description="We're not a big corporation – just a small team passionate about building something useful for developers. OpenPanel started because we believed analytics tools shouldn't be complicated or locked behind expensive enterprise subscriptions."
+                title="Why your support matters"
               />
-              <div className="col gap-6 mt-8">
+              <div className="col mt-8 gap-6">
                 <p className="text-muted-foreground">
                   When you become a supporter, you're directly funding:
                 </p>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <FeatureCard
-                    title="Active Development"
                     description="More time fixing bugs, adding features, and improving documentation"
                     icon={ZapIcon}
+                    title="Active Development"
                   />
                   <FeatureCard
-                    title="Infrastructure"
                     description="Keeping servers running, CI/CD pipelines, and development tools"
                     icon={ZapIcon}
+                    title="Infrastructure"
                   />
                   <FeatureCard
-                    title="Independence"
                     description="Staying focused on what matters: building a tool developers actually want"
                     icon={ZapIcon}
+                    title="Independence"
                   />
                 </div>
                 <p className="text-muted-foreground">
@@ -127,36 +127,36 @@ export default function SupporterPage() {
             {/* What You Get Section */}
             <Section className="my-0">
               <SectionHeader
-                title="What you get as a supporter"
                 description="Exclusive perks and early access to everything we ship."
+                title="What you get as a supporter"
               />
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
+              <div className="mt-8 grid gap-6 md:grid-cols-2">
                 <FeatureCard
-                  title="Latest Docker Images"
                   description="Get bleeding-edge builds on every commit. Access new features weeks before public release."
                   icon={RocketIcon}
+                  title="Latest Docker Images"
                 >
                   <Link
+                    className="mt-2 text-primary text-sm hover:underline"
                     href="/docs/self-hosting/supporter-access-latest-docker-images"
-                    className="text-sm text-primary hover:underline mt-2"
                   >
                     Learn more →
                   </Link>
                 </FeatureCard>
                 <FeatureCard
-                  title="Prioritized Support"
                   description="Get help faster with priority support in our Discord community. Your questions get answered first."
                   icon={MessageSquareIcon}
+                  title="Prioritized Support"
                 />
                 <FeatureCard
-                  title="Feature Requests"
                   description="Your ideas and feature requests get prioritized in our roadmap. Shape the future of OpenPanel."
                   icon={SparklesIcon}
+                  title="Feature Requests"
                 />
                 <FeatureCard
-                  title="Exclusive Discord Role"
                   description="Special badge and recognition in our community. Show your support with pride."
                   icon={StarIcon}
+                  title="Exclusive Discord Role"
                 />
               </div>
             </Section>
@@ -164,49 +164,49 @@ export default function SupporterPage() {
             {/* Impact Section */}
             <Section className="my-0">
               <SectionHeader
-                title="Your impact"
                 description="Every dollar you contribute goes directly into development, infrastructure, and making OpenPanel better. Here's what your support enables:"
+                title="Your impact"
               />
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
+              <div className="mt-8 grid gap-6 md:grid-cols-2">
                 <FeatureCard
-                  title="100% Open Source"
                   description="Full transparency. Audit the code, contribute, fork it, or self-host without lock-in."
                   icon={GithubIcon}
+                  title="100% Open Source"
                 />
                 <FeatureCard
-                  title="24/7 Active Development"
                   description="Continuous improvements and updates. Your support enables faster development cycles."
                   icon={ClockIcon}
+                  title="24/7 Active Development"
                 />
                 <FeatureCard
-                  title="Self-Hostable"
                   description="Deploy OpenPanel anywhere - your server, your cloud, or locally. Full flexibility."
                   icon={InfinityIcon}
+                  title="Self-Hostable"
                 />
               </div>
             </Section>
           </div>
 
           {/* Sidebar */}
-          <aside className="lg:block hidden">
+          <aside className="hidden lg:block">
             <SupporterPerks />
           </aside>
         </div>
 
         {/* Mobile Perks */}
-        <div className="lg:hidden mb-16">
+        <div className="mb-16 lg:hidden">
           <SupporterPerks />
         </div>
 
         <CtaBanner
-          title="Ready to support OpenPanel?"
-          description="Join our community of supporters and help us build the best open-source alternative to Mixpanel. Every contribution helps accelerate development and make OpenPanel better for everyone."
-          ctaText="Become a Supporter"
           ctaLink="https://buy.polar.sh/polar_cl_Az1CruNFzQB2bYdMOZmGHqTevW317knWqV44W1FqZmV"
+          ctaText="Become a Supporter"
+          description="Join our community of supporters and help us build the best open-source alternative to Mixpanel. Every contribution helps accelerate development and make OpenPanel better for everyone."
+          title="Ready to support OpenPanel?"
         />
       </div>
 
-      <div className="lg:-mx-20 xl:-mx-40 not-prose mt-16">
+      <div className="not-prose mt-16 lg:-mx-20 xl:-mx-40">
         {/* <Testimonials />
         <Faq /> */}
       </div>

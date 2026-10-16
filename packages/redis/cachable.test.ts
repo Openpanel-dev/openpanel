@@ -8,7 +8,6 @@ describe('cachable', () => {
 
   beforeEach(async () => {
     redis = getRedisCache();
-    // Clear any existing cache data for clean tests
     const keys = [
       ...(await redis.keys('cachable:*')),
       ...(await redis.keys('test-key*')),
@@ -19,7 +18,6 @@ describe('cachable', () => {
   });
 
   afterEach(async () => {
-    // Clean up after each test
     const keys = [
       ...(await redis.keys('cachable:*')),
       ...(await redis.keys('test-key*')),
@@ -35,7 +33,6 @@ describe('cachable', () => {
       const mockDate = new Date('2023-01-01T00:00:00Z');
       const cachedData = { ...mockData, createdAt: mockDate };
 
-      // First, cache some data
       await redis.setex('test-key', 3600, JSON.stringify(cachedData));
 
       let fnCalled = false;
@@ -64,7 +61,6 @@ describe('cachable', () => {
       expect(result).toEqual(mockData);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const cached = await redis.get('test-key-2');
       expect(cached).toBe(JSON.stringify(mockData));
     });
@@ -73,7 +69,6 @@ describe('cachable', () => {
       const mockDate = new Date('2023-01-01T00:00:00Z');
       const cachedData = { id: 1, createdAt: mockDate };
 
-      // Cache the data first
       await redis.setex('test-key', 3600, JSON.stringify(cachedData));
 
       let fnCalled = false;
@@ -106,7 +101,6 @@ describe('cachable', () => {
       expect(result).toEqual(mockData);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1', 'arg2');
       const cached = await redis.get(key);
       expect(cached).toBe(JSON.stringify(mockData));
@@ -127,7 +121,6 @@ describe('cachable', () => {
       expect(result).toEqual(mockData);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1', 'arg2');
       const cached = await redis.get(key);
       expect(cached).toBe(JSON.stringify(mockData));
@@ -136,7 +129,6 @@ describe('cachable', () => {
     it('should return cached result when available', async () => {
       const mockData = { id: 1, name: 'test' };
 
-      // First cache some data
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string, arg2: string) => mockData,
@@ -144,7 +136,6 @@ describe('cachable', () => {
       );
       await cachedFn('arg1', 'arg2');
 
-      // Now test that it returns cached data
       let fnCalled = false;
       const fn = async (arg1: string, arg2: string) => {
         fnCalled = true;
@@ -171,7 +162,6 @@ describe('cachable', () => {
       expect(result).toBeUndefined();
       expect(fnCalled).toBe(true);
 
-      // Verify nothing was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
@@ -190,7 +180,6 @@ describe('cachable', () => {
       expect(result).toBeNull();
       expect(fnCalled).toBe(true);
 
-      // Verify nothing was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
@@ -209,7 +198,6 @@ describe('cachable', () => {
       expect(result).toBe('');
       expect(fnCalled).toBe(true);
 
-      // Verify nothing was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
@@ -228,7 +216,6 @@ describe('cachable', () => {
       expect(result).toEqual([]);
       expect(fnCalled).toBe(true);
 
-      // Verify nothing was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
@@ -247,7 +234,6 @@ describe('cachable', () => {
       expect(first).toEqual([]);
       expect(callCount).toBe(1);
 
-      // Verify it was written to Redis
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('[]');
@@ -265,7 +251,6 @@ describe('cachable', () => {
         return [] as number[];
       };
 
-      // First instance writes the empty array into Redis
       const firstCachedFn = cacheable('sharedEmptyArrayFn', firstFn, 3600, {
         cacheEmptyArray: true,
       });
@@ -347,7 +332,6 @@ describe('cachable', () => {
       expect(result).toEqual({});
       expect(fnCalled).toBe(true);
 
-      // Verify nothing was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
@@ -366,7 +350,6 @@ describe('cachable', () => {
       expect(result).toBe('hello');
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('"hello"');
@@ -385,7 +368,6 @@ describe('cachable', () => {
       expect(result).toEqual([1, 2, 3]);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('[1,2,3]');
@@ -404,7 +386,6 @@ describe('cachable', () => {
       expect(result).toEqual({ id: 1 });
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('{"id":1}');
@@ -423,7 +404,6 @@ describe('cachable', () => {
       expect(result).toBe(true);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('true');
@@ -442,7 +422,6 @@ describe('cachable', () => {
       expect(result).toBe(42);
       expect(fnCalled).toBe(true);
 
-      // Verify it was cached
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBe('42');
@@ -451,7 +430,6 @@ describe('cachable', () => {
     it('should handle cache parsing errors gracefully', async () => {
       const mockData = { id: 1, name: 'test' };
 
-      // First, manually set invalid JSON in cache
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string) => mockData,
@@ -460,9 +438,9 @@ describe('cachable', () => {
       const key = cachedFn.getKey('arg1');
       await redis.set(key, 'invalid json');
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-        // noop
-      });
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       let fnCalled = false;
       const fn = async (arg1: string) => {
@@ -487,7 +465,6 @@ describe('cachable', () => {
       const mockDate = new Date('2023-01-01T00:00:00Z');
       const cachedData = { id: 1, createdAt: mockDate };
 
-      // First cache some data with Date
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string) => cachedData,
@@ -495,7 +472,6 @@ describe('cachable', () => {
       );
       await cachedFn('arg1');
 
-      // Now test that it returns cached data with proper Date parsing
       let fnCalled = false;
       const fn = async (arg1: string) => {
         fnCalled = true;
@@ -523,19 +499,15 @@ describe('cachable', () => {
       const fn = async (arg1: string, arg2: string) => ({ id: 1 });
       const cachedFn = cacheable(fn, 3600);
 
-      // First cache some data
       await cachedFn('arg1', 'arg2');
 
-      // Verify it's cached
       const key = cachedFn.getKey('arg1', 'arg2');
       let cached = await redis.get(key);
       expect(cached).not.toBeNull();
 
-      // Clear it
       const result = await cachedFn.clear('arg1', 'arg2');
       expect(result).toBe(1);
 
-      // Verify it's cleared
       cached = await redis.get(key);
       expect(cached).toBeNull();
     });
@@ -547,7 +519,6 @@ describe('cachable', () => {
       const payload = { id: 1, name: 'test' };
       await cachedFn.set('arg1', 'arg2')(payload);
 
-      // Verify it was set
       const key = cachedFn.getKey('arg1', 'arg2');
       const cached = await redis.get(key);
       expect(cached).toBe(JSON.stringify(payload));

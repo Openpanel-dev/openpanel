@@ -4,21 +4,21 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3100",
-    "build": "tsc && vite build",
+    "dev": "node scripts/copy-op1.mjs && vite --port 3100",
+    "build": "node scripts/copy-op1.mjs && tsc && vite build",
     "postinstall": "node scripts/copy-op1.mjs"
   },
   "dependencies": {
     "@openpanel/web": "workspace:*",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.13.1"
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-router-dom": "7.13.1"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.2.0",
     "typescript": "catalog:",
-    "vite": "^6.0.0"
+    "vite": "7.3.0"
   }
 }

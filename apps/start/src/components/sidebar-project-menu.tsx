@@ -1,9 +1,8 @@
-import type { IServiceDashboards } from '@openpanel/db';
+import type { IServiceDashboards } from '@openpanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BellIcon,
-  WorkflowIcon,
   BookOpenIcon,
   Building2Icon,
   ChartLineIcon,
@@ -24,6 +23,7 @@ import {
   UserCircleIcon,
   UsersIcon,
   WallpaperIcon,
+  WorkflowIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SidebarLink } from './sidebar-link';
@@ -159,17 +159,21 @@ export function ActionCTAButton() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            type="button"
             className={cn(
               'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'text-[13px] font-medium text-foreground',
+              'font-medium text-[13px] text-foreground',
               'transition-colors hover:bg-def-300',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
+            type="button"
           >
             <PlusIcon className="size-5 shrink-0" />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
-              <AnimatePresence mode="popLayout">
+              {/* `initial={false}` suppresses only the FIRST mount: framer writes
+                  transform/opacity into the style attribute, and the SSR string
+                  differs from the client's first frame. The
+                  cycling animation between actions is unaffected. */}
+              <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
                   animate={{ y: 0, opacity: 1 }}
                   className="absolute whitespace-nowrap"

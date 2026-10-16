@@ -1,0 +1,14 @@
+# `bun test` configuration for @openpanel/core.
+
+[test]
+# Runs in every test PROCESS, not once per run — `bun test` has no
+# `globalSetup` — so it must stay idempotent and cheap. It pins the infra URLs
+# at local values so no test can reach production regardless of .env; that is
+# the successor to vitest.shared.ts's env block and it is a safety property.
+# Infrastructure fixtures are deliberately not preloaded — see AGENTS.md.
+preload = ["./test/preload.ts"]
+
+# --isolate is chosen deliberately (ADR-010) and it CANNOT be set here: on Bun
+# 1.4.0 `[test] isolate` is silently ignored, as is any unknown key in this
+# table, so writing it would read as a guarantee and be none. The flag lives on
+# the `test` script in package.json. Measurement and reasoning: AGENTS.md.

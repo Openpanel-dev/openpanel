@@ -1,15 +1,15 @@
-import { Section, SectionHeader } from '@/components/section';
-import { CompareFeatureComparison } from '@/lib/compare';
 import {
+  BellIcon,
+  BrainIcon,
   HeartIcon,
+  LayoutIcon,
+  LockIcon,
   MessageSquareIcon,
   RefreshCwIcon,
   SparklesIcon,
-  LayoutIcon,
-  BellIcon,
-  BrainIcon,
-  LockIcon,
 } from 'lucide-react';
+import { Section, SectionHeader } from '@/components/section';
+import type { CompareFeatureComparison } from '@/lib/compare';
 
 interface FeaturesShowcaseProps {
   featureComparison: CompareFeatureComparison;
@@ -33,23 +33,23 @@ export function FeaturesShowcase({ featureComparison }: FeaturesShowcaseProps) {
     .filter(
       (f) =>
         f.openpanel === true ||
-        (typeof f.openpanel === 'string' && f.openpanel.toLowerCase() !== 'no'),
+        (typeof f.openpanel === 'string' && f.openpanel.toLowerCase() !== 'no')
     )
     .slice(0, 8);
 
   return (
     <Section className="container">
       <SectionHeader
-        title={featureComparison.title}
         description={featureComparison.intro}
+        title={featureComparison.title}
         variant="sm"
       />
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+      <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {openpanelFeatures.map((feature, index) => {
           const Icon = featureIcons[index] || SparklesIcon;
           return (
-            <div key={feature.name} className="col gap-3">
-              <div className="size-10 rounded-lg bg-primary/10 center-center">
+            <div className="col gap-3" key={feature.name}>
+              <div className="center-center size-10 rounded-lg bg-primary/10">
                 <Icon className="size-5 text-primary" />
               </div>
               <h3 className="font-semibold text-sm">{feature.name}</h3>
@@ -60,4 +60,3 @@ export function FeaturesShowcase({ featureComparison }: FeaturesShowcaseProps) {
     </Section>
   );
 }
-

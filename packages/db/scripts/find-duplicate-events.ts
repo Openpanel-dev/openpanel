@@ -1,10 +1,8 @@
 /**
- * find-duplicate-events.ts
- *
  * Reports (and optionally deletes) duplicate rows in the ClickHouse `events`
  * table. A "duplicate" is two or more rows that are logically the same event
  * but have different `id`s — the signature of the event being processed more
- * than once (see the Kafka consumer offset-handling fix).
+ * than once.
  *
  * Duplicates are matched by a content hash over the meaningful columns
  * (everything that identifies the event, excluding `id`), so genuinely
@@ -29,14 +27,10 @@
  *                          flag the script only reports.
  */
 import {
-  TABLE_NAMES,
   ch,
   getReplicatedTableName,
+  TABLE_NAMES,
 } from '../src/clickhouse/client';
-
-// ---------------------------------------------------------------------------
-// Arg parsing
-// ---------------------------------------------------------------------------
 
 type Bucket = 'day' | 'hour';
 
@@ -63,7 +57,7 @@ function parseSince(raw: string): Date {
   const relative = raw.match(/^(\d+)([hd])$/);
   if (relative) {
     const amount = Number.parseInt(relative[1]!, 10);
-    const unitMs = relative[2] === 'h' ? 3600_000 : 86_400_000;
+    const unitMs = relative[2] === 'h' ? 3_600_000 : 86_400_000;
     return new Date(Date.now() - amount * unitMs);
   }
   const parsed = new Date(raw);
@@ -91,10 +85,6 @@ function parseArgs(): Args {
     delete: hasFlag('danger-yes-delete'),
   };
 }
-
-// ---------------------------------------------------------------------------
-// SQL helpers
-// ---------------------------------------------------------------------------
 
 // Format a JS Date as a ClickHouse DateTime64(3) literal (UTC).
 function chDateTime(date: Date): string {
@@ -132,10 +122,6 @@ async function query<T>(sql: string): Promise<T[]> {
     .query({ query: sql, format: 'JSONEachRow' })
     .then((res) => res.json<T>());
 }
-
-// ---------------------------------------------------------------------------
-// Report
-// ---------------------------------------------------------------------------
 
 async function report(args: Args): Promise<void> {
   const bucketFn = args.bucket === 'day' ? 'toStartOfDay' : 'toStartOfHour';
@@ -236,16 +222,11 @@ async function report(args: Args): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Delete
-// ---------------------------------------------------------------------------
-
 function* bucketRanges(
   since: Date,
   bucket: Bucket
 ): Generator<{ start: Date; end: Date }> {
-  const stepMs = bucket === 'day' ? 86_400_000 : 3600_000;
-  // Align the first bucket to the start of the day/hour.
+  const stepMs = bucket === 'day' ? 86_400_000 : 3_600_000;
   const start = new Date(since);
   if (bucket === 'day') {
     start.setUTCHours(0, 0, 0, 0);
@@ -261,10 +242,10 @@ function* bucketRanges(
 async function deleteDuplicates(args: Args): Promise<void> {
   const target = getReplicatedTableName(TABLE_NAMES.events);
   console.log(
-    `\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n` +
+    '\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n' +
       `   Target: ${target}\n` +
-      `   Note: ClickHouse mutations run asynchronously; rows disappear once the\n` +
-      `   mutation completes server-side.\n`
+      '   Note: ClickHouse mutations run asynchronously; rows disappear once the\n' +
+      '   mutation completes server-side.\n'
   );
 
   let grandTotal = 0;
@@ -309,19 +290,16 @@ async function deleteDuplicates(args: Args): Promise<void> {
           `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
           `${projectClause(args.project)} AND id IN (${idList})`,
       });
-      // Avoid piling up mutations.
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 
   console.log(
     `\nSubmitted deletes for ${grandTotal.toLocaleString()} duplicate rows.\n` +
-      `Watch system.mutations for completion:\n` +
-      `  SELECT * FROM system.mutations WHERE is_done = 0\n`
+      'Watch system.mutations for completion:\n' +
+      '  SELECT * FROM system.mutations WHERE is_done = 0\n'
   );
 }
-
-// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   const args = parseArgs();

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface CompareSeo {
@@ -203,7 +203,7 @@ export interface CompareData {
 const contentDir = join(process.cwd(), 'content', 'compare');
 
 export async function getCompareData(
-  slug: string,
+  slug: string
 ): Promise<CompareData | null> {
   try {
     const filePath = join(contentDir, `${slug}.json`);

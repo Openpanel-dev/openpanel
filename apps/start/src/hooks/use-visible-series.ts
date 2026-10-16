@@ -1,5 +1,5 @@
-import type { IChartData } from '@/trpc/client';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { IChartData } from '@/trpc/client';
 
 export type IVisibleSeries = ReturnType<typeof useVisibleSeries>['series'];
 
@@ -9,7 +9,7 @@ export function useVisibleSeries(
     limit?: number;
     savedVisibleSeries?: string[] | null;
     onVisibleSeriesChange?: (ids: string[]) => void;
-  },
+  }
 ) {
   const max = options?.limit ?? 5;
   const savedVisibleSeries = options?.savedVisibleSeries;
@@ -24,15 +24,17 @@ export function useVisibleSeries(
   const resolveIds = (series: IChartData['series']): string[] => {
     if (savedVisibleSeries && savedVisibleSeries.length > 0) {
       const valid = savedVisibleSeries.filter((id) =>
-        series.some((s) => s.id === id),
+        series.some((s) => s.id === id)
       );
-      if (valid.length > 0) return valid;
+      if (valid.length > 0) {
+        return valid;
+      }
     }
     return series.slice(0, max).map((s) => s.id);
   };
 
   const [visibleSeries, setVisibleSeries] = useState<string[]>(() =>
-    resolveIds(data?.series ?? []),
+    resolveIds(data?.series ?? [])
   );
 
   // Reset only when the actual series IDs change (breakdowns/events changed),
@@ -53,7 +55,7 @@ export function useVisibleSeries(
         return next;
       });
     },
-    [],
+    []
   );
 
   return useMemo(
@@ -63,6 +65,6 @@ export function useVisibleSeries(
         .filter((serie) => visibleSeries.includes(serie.id)),
       setVisibleSeries: handleSet,
     }),
-    [visibleSeries, data.series, handleSet],
+    [visibleSeries, data.series, handleSet]
   );
 }

@@ -1,10 +1,10 @@
-import ReportEditor from '@/components/report-chart/report-editor';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
+import ReportEditor from '@/components/report-chart/report-editor';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/reports',
+  '/_app/$organizationId/$projectId/reports'
 )({
   component: Component,
   head: () => {

@@ -1,3 +1,4 @@
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import type { LucideProps } from 'lucide-react';
 import {
   ActivityIcon,
@@ -17,11 +18,8 @@ import {
   TvIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-
-import { NOT_SET_VALUE } from '@openpanel/constants';
-
-import { useAppContext } from '@/hooks/use-app-context';
 import iconsWithUrls from './serie-icon.urls';
+import { useAppContext } from '@/hooks/use-app-context';
 
 // ============================================================================
 // Types
@@ -289,13 +287,16 @@ function resolveIcon(name: string): ResolvedIcon {
 function IconWrapper({
   children,
   fill,
-}: { children: React.ReactNode; fill?: boolean }) {
+}: {
+  children: React.ReactNode;
+  fill?: boolean;
+}) {
   return (
     <div
       className={
         fill
-          ? 'relative size-full flex-shrink-0 [&_svg]:!rounded-[2px]'
-          : 'relative max-h-4 flex-shrink-0 [&_svg]:!rounded-[2px]'
+          ? '[&_svg]:!rounded-[2px] relative size-full flex-shrink-0'
+          : '[&_svg]:!rounded-[2px] relative max-h-4 flex-shrink-0'
       }
     >
       {children}
@@ -316,16 +317,16 @@ function ImageIcon({ url, fill }: { url: string; fill?: boolean }) {
   return (
     <IconWrapper fill={fill}>
       <img
-        src={fullUrl}
         alt=""
         className={
           fill
             ? 'size-full rounded-full object-cover'
-            : 'w-full max-h-4 rounded-[2px] object-contain'
+            : 'max-h-4 w-full rounded-[2px] object-contain'
         }
-        loading="lazy"
         decoding="async"
+        loading="lazy"
         onError={() => setHasError(true)}
+        src={fullUrl}
       />
     </IconWrapper>
   );
@@ -377,9 +378,9 @@ export function SerieIcon({ name: names, fill, ...props }: SerieIconProps) {
 
   switch (resolved.type) {
     case 'lucide':
-      return <LucideIconWrapper Icon={resolved.Icon} fill={fill} {...props} />;
+      return <LucideIconWrapper fill={fill} Icon={resolved.Icon} {...props} />;
     case 'image':
-      return <ImageIcon url={resolved.url} fill={fill} />;
+      return <ImageIcon fill={fill} url={resolved.url} />;
     case 'flag':
       return <FlagIcon code={resolved.code} fill={fill} />;
   }

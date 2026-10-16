@@ -1,5 +1,5 @@
-import { sum } from '@openpanel/common';
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
+import { sum } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
 import {
@@ -219,7 +219,6 @@ export default function BillingUsage({ organization }: Props) {
           </>
         )}
       </div>
-      {/* Events Chart */}
       <div className="space-y-2">
         <h3 className="font-medium text-muted-foreground text-sm">
           {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}

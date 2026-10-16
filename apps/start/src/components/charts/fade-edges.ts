@@ -1,4 +1,4 @@
-export type FadeEdges = boolean | "left" | "right";
+export type FadeEdges = boolean | 'left' | 'right';
 
 export interface FadeSides {
   /** Whether the left edge should fade out. */
@@ -13,10 +13,10 @@ export function resolveFadeSides(fade: FadeEdges): FadeSides {
   if (fade === false) {
     return { left: false, right: false, any: false };
   }
-  if (fade === "left") {
+  if (fade === 'left') {
     return { left: true, right: false, any: true };
   }
-  if (fade === "right") {
+  if (fade === 'right') {
     return { left: false, right: true, any: true };
   }
   return { left: true, right: true, any: true };
@@ -33,9 +33,9 @@ export interface FadeGradientStop {
  */
 export function fadeGradientStops(sides: FadeSides): FadeGradientStop[] {
   return [
-    { offset: "0%", opacity: sides.left ? 0 : 1 },
-    { offset: "15%", opacity: 1 },
-    { offset: "85%", opacity: 1 },
-    { offset: "100%", opacity: sides.right ? 0 : 1 },
+    { offset: '0%', opacity: sides.left ? 0 : 1 },
+    { offset: '15%', opacity: 1 },
+    { offset: '85%', opacity: 1 },
+    { offset: '100%', opacity: sides.right ? 0 : 1 },
   ];
 }

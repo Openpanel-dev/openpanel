@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo } from "react";
-import { chartCssVars, useChart } from "../chart-context";
-import { type ChartMarker, MarkerGroup } from "./marker-group";
+import { useCallback, useMemo } from 'react';
+import { chartCssVars, useChart } from '../chart-context';
+import { type ChartMarker, MarkerGroup } from './marker-group';
 
 export interface ChartMarkersProps {
   /** Array of markers to display */
@@ -206,9 +206,9 @@ export function useActiveMarkers(items: ChartMarker[]) {
   }, [tooltipData, items]);
 }
 
-ChartMarkers.displayName = "ChartMarkers";
+ChartMarkers.displayName = 'ChartMarkers';
 // Marker for SVG component detection (renders after mouse overlay for interaction)
 (ChartMarkers as { __isChartMarkers?: boolean }).__isChartMarkers = true;
-MarkerTooltipContent.displayName = "MarkerTooltipContent";
+MarkerTooltipContent.displayName = 'MarkerTooltipContent';
 
 export default ChartMarkers;

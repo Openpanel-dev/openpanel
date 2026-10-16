@@ -1,10 +1,9 @@
-import { cn } from '@/utils/cn';
+import type { EventMeta } from '@openpanel/db';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import * as Icons from 'lucide-react';
-
-import type { EventMeta } from '@openpanel/db';
+import { cn } from '@/utils/cn';
 
 const variants = cva('flex shrink-0 items-center justify-center rounded-full', {
   variants: {
@@ -220,25 +219,30 @@ export const EventIconColors = [
   'slate',
 ];
 
+/** What `EventIconRecords.default` resolves to; also the last-resort lookup. */
+const FALLBACK_ICON_NAME = 'BotIcon';
+const FALLBACK_COLOR = 'slate';
+
 export function EventIcon({ className, name, size, meta }: EventIconProps) {
-  const Icon =
-    EventIconMapper[
-      meta?.icon ??
-        EventIconRecords[name]?.icon ??
-        EventIconRecords.default?.icon ??
-        ''
-    ]!;
+  const iconName =
+    meta?.icon ??
+    EventIconRecords[name]?.icon ??
+    EventIconRecords.default?.icon ??
+    FALLBACK_ICON_NAME;
+  // `meta.icon` is operator-entered and may name an icon this mapper does not
+  // carry; an undefined component makes React throw the whole tree away.
+  const Icon = EventIconMapper[iconName] ?? EventIconMapper[FALLBACK_ICON_NAME];
   const color =
     meta?.color ??
     EventIconRecords[name]?.color ??
     EventIconRecords.default?.color ??
-    '';
+    FALLBACK_COLOR;
 
   return (
     <div className={cn(`bg-${color}-200`, variants({ size }), className)}>
       <Icon
-        size={size === 'xs' ? 12 : size === 'sm' ? 14 : 20}
         className={`text-${color}-700`}
+        size={size === 'xs' ? 12 : size === 'sm' ? 14 : 20}
       />
     </div>
   );

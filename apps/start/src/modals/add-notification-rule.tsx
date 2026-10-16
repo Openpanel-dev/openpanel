@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { shortId } from '@openpanel/common';
-import { isKind, zCreateNotificationRule } from '@openpanel/validation';
+import { isKind } from '@openpanel/core/modules/integration/integration.constants';
+import { zCreateNotificationRule } from '@openpanel/core/modules/notification/notification.constants';
+import { shortId } from '@openpanel/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import {
@@ -100,7 +101,7 @@ export default function AddNotificationRule({ rule }: Props) {
   // Only notification sinks belong in a rule — export integrations (S3/GCS)
   // come back from the same list endpoint but have nothing to deliver to.
   const integrations = (integrationsQuery.data ?? []).filter((integration) =>
-    isKind(integration.config, 'notification'),
+    isKind(integration.config, 'notification')
   );
 
   return (

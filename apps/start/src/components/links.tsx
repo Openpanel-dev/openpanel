@@ -1,5 +1,5 @@
-import { useAppParams } from '@/hooks/use-app-params';
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
+import { useAppParams } from '@/hooks/use-app-params';
 
 type ProjectLinkBaseProps = Omit<
   LinkComponentProps,
@@ -47,9 +47,9 @@ export function ProjectLink({
   return (
     <Link
       {...rest}
-      to={`/$organizationId/$projectId/${path.replace(/^\//, '')}` as any}
-      params={{ organizationId, projectId, ...params } as any}
       activeOptions={{ exact: exact ?? true }}
+      params={{ organizationId, projectId, ...params } as any}
+      to={`/$organizationId/$projectId/${path.replace(/^\//, '')}` as any}
     >
       {children}
     </Link>

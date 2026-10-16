@@ -1,11 +1,10 @@
-import { useDebounceFn } from '@/hooks/use-debounce-fn';
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { isNil } from 'ramda';
 import { useRef, useState } from 'react';
 import type { AxisDomain } from 'recharts/types/util/types';
-
-import type { IInterval } from '@openpanel/validation';
+import { useDebounceFn } from '@/hooks/use-debounce-fn';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 export const AXIS_FONT_PROPS = {
   fontSize: 8,
   className: 'font-mono',
@@ -41,7 +40,7 @@ export const useYAxisProps = (options?: {
       const tick = options?.tickFormatter
         ? options.tickFormatter(value)
         : number.short(value);
-      if(!options?.width) {
+      if (!options?.width) {
         const newWidth = getYAxisWidth(tick);
         ref.current.push(newWidth);
         setWidthDebounced(Math.max(...ref.current));
@@ -69,7 +68,7 @@ export const useXAxisProps = (
   } = {
     hide: false,
     interval: 'auto',
-  },
+  }
 ) => {
   const formatDate = useFormatDateInterval({
     interval: interval === 'auto' ? 'day' : interval,

@@ -1,6 +1,5 @@
-import { useNumber } from '@/hooks/use-numer-formatter';
-import type { RouterOutputs } from '@/trpc/client';
 import { useReportChartContext } from '../context';
+import { useNumber } from '@/hooks/use-numer-formatter';
 
 type Props = {
   active?: boolean;

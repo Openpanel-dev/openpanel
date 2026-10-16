@@ -105,7 +105,10 @@ function LoginPage() {
           <Or />
         </>
       )}
-      <SignInEmailForm inviteId={inviteId} isLastUsed={lastProvider === 'email'} />
+      <SignInEmailForm
+        inviteId={inviteId}
+        isLastUsed={lastProvider === 'email'}
+      />
     </div>
   );
 }

@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   op-proxy:
     image: caddy:2-alpine
@@ -89,15 +87,53 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  op-api:
-    image: lindesvard/openpanel-api:2
+  # Required: every tracked event goes through Redpanda (Kafka-compatible).
+  # --memory=2G is a single-node starting point; raise it if the host can
+  # spare more, or lower it on small machines.
+  op-rp:
+    image: redpandadata/redpanda:v25.1.4
     restart: always
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://op-rp:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=op-rp:33145
+      - --smp=1
+      - --memory=2G
+      - --default-log-level=info
+    volumes:
+      - op-rp-data:/var/lib/redpanda/data
+      - ./redpanda/bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health", "--exit-when-healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Uncomment to reach the Kafka API from the host
+    # ports:
+    #   - 19092:9092
+
+  op-api:
+    image: lindesvard/openpanel-api:3
+    restart: always
+    # Database migrations run here, before the api starts. The Prisma CLI is
+    # fetched at start (pinned to the version the image was built with), so
+    # this container needs to reach the npm registry when it boots.
     command: >
       sh -c "
         echo 'Running migrations...'
-        CI=true pnpm -r run migrate:deploy
+        cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+        cd /app/packages/core && bun scripts/migrate-code.ts
 
-        pnpm start
+        cd /app/apps/api && bun run start
       "
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
@@ -111,6 +147,8 @@ services:
         condition: service_healthy
       op-kv:
         condition: service_healthy
+      op-rp:
+        condition: service_healthy
     env_file:
       - .env
     logging:
@@ -120,7 +158,7 @@ services:
         max-file: "3"
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:2
+    image: lindesvard/openpanel-dashboard:3
     restart: always
     depends_on:
       op-api:
@@ -139,16 +177,22 @@ services:
         max-size: "20m"
         max-file: "3"
 
+  # The worker is the api image started with ROLE=worker: it runs the queues,
+  # the scheduled jobs and the event consumer.
   op-worker:
-    image: lindesvard/openpanel-worker:2
+    image: lindesvard/openpanel-api:3
     restart: always
+    environment:
+      - ROLE=worker
     depends_on:
       op-api:
+        condition: service_healthy
+      op-rp:
         condition: service_healthy
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -167,6 +211,8 @@ volumes:
   op-kv-data:
     driver: local
   op-ch-data:
+    driver: local
+  op-rp-data:
     driver: local
   op-proxy-data:
     driver: local

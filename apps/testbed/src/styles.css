@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -22,7 +24,9 @@ body {
   line-height: 1.5;
 }
 
-button, input, select {
+button,
+input,
+select {
   font-family: monospace;
   font-size: 14px;
 }

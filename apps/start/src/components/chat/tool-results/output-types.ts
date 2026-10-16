@@ -1,27 +1,19 @@
 /**
  * Frontend-side TypeScript types for the chat tool outputs we render
- * with custom UIs. These mirror what the matching backend tool returns
- * — see `apps/api/src/chat/tools/*.ts`. The renderers narrow `unknown`
- * via the type guards below before reading any field.
+ * with custom UIs. These mirror what the matching backend tool returns.
+ * The renderers narrow `unknown` via the type guards below before
+ * reading any field.
  *
  * If the backend changes a tool's return shape, the matching renderer
  * will fall back to a "no data" card rather than crashing — that's why
  * we narrow with predicates rather than `as any`.
  */
 
-// ────────────────────────────────────────────────────────────────────
-// Metrics (get_analytics_overview, get_profile_metrics)
-// ────────────────────────────────────────────────────────────────────
-
 export type MetricsLike = Record<string, unknown>;
 
 export function isMetricsLike(value: unknown): value is MetricsLike {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Profile full (get_profile_full)
-// ────────────────────────────────────────────────────────────────────
 
 export type ProfileMetrics = {
   sessions?: number;
@@ -53,19 +45,17 @@ export type ProfileFullError = {
 export type ProfileFullOutput = ProfileFullSuccess | ProfileFullError;
 
 export function isProfileFullError(
-  value: ProfileFullOutput,
+  value: ProfileFullOutput
 ): value is ProfileFullError {
   return 'error' in value && typeof value.error === 'string';
 }
 
 export function asProfileFullOutput(value: unknown): ProfileFullOutput | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
   return value as ProfileFullOutput;
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Report (get_report_data, generate_report, preview_report_with_changes)
-// ────────────────────────────────────────────────────────────────────
 
 export type ReportOutput = {
   data?: unknown;
@@ -80,13 +70,11 @@ export type ReportOutput = {
 };
 
 export function asReportOutput(value: unknown): ReportOutput | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
   return value as ReportOutput;
 }
-
-// ────────────────────────────────────────────────────────────────────
-// Tables (top_pages, top_referrers, country_breakdown, etc.)
-// ────────────────────────────────────────────────────────────────────
 
 export type TableRow = Record<string, unknown>;
 
@@ -130,7 +118,7 @@ export function normalizeTableOutput(value: unknown): TableNormalized {
     }
     if (Array.isArray(o.properties)) {
       const rows: TableRow[] = (o.properties as unknown[]).map((p) =>
-        typeof p === 'string' ? { property_key: p } : (p as TableRow),
+        typeof p === 'string' ? { property_key: p } : (p as TableRow)
       );
       return { rows, total, truncated };
     }

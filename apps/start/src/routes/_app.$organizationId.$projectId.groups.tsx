@@ -49,7 +49,7 @@ function Component() {
         search: debouncedSearch || undefined,
         type: typeFilter || undefined,
         take: PAGE_SIZE,
-        cursor: (page - 1) * PAGE_SIZE,
+        cursor: page - 1,
       },
       { placeholderData: keepPreviousData }
     )

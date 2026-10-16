@@ -1,0 +1,25 @@
+{
+  "name": "@openpanel/seed",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "seed": "bun run with-env bun src/cli.ts",
+    "test": "bun test --isolate",
+    "typecheck": "tsc --noEmit",
+    "with-env": "dotenv -e ../../.env -c --",
+    "send": "bun run with-env bun src/send.ts"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "2.0.2",
+    "@openpanel/db": "workspace:*",
+    "@openpanel/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "bun-types": "1.4.0",
+    "typescript": "catalog:"
+  }
+}

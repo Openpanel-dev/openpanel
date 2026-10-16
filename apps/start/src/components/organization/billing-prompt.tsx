@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect } from 'react';
@@ -244,8 +244,7 @@ export default function BillingPrompt({
           op.track('billing_prompt_upgrade_clicked', {
             type,
             cta: 'checkout',
-            price:
-              'priceAmount' in bestPrice ? bestPrice.priceAmount / 100 : 0,
+            price: 'priceAmount' in bestPrice ? bestPrice.priceAmount / 100 : 0,
           });
           checkout.mutate({
             organizationId: organization.id,

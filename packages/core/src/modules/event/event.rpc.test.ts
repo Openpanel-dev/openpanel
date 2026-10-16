@@ -1,0 +1,88 @@
+// Only the "is anyone logged in" boundary is exercised here; no database.
+
+import { expect, test } from 'bun:test';
+import {
+  servicesWithProjectAccess,
+  stubHttpCtx,
+} from '../../../test/rpc-fixtures';
+import { makeTrpcContext } from '../../rpc/base';
+import type { CookieOptions } from '../../shared/cookie';
+import { eventRouter } from './event.rpc';
+
+const COOKIE_OPTIONS: CookieOptions = {
+  domain: '.openpanel.dev',
+  secure: true,
+  sameSite: 'lax',
+  httpOnly: true,
+  path: '/',
+};
+
+const EMPTY_SESSION = { session: null, user: null, userId: null };
+const PROJECT = { projectId: 'proj_1' };
+const REF = { id: 'evt_1', projectId: 'proj_1' };
+const WINDOW = { projectId: 'proj_1', range: '7d', interval: 'day' } as const;
+
+async function anonCaller() {
+  const { ctx } = stubHttpCtx({}, EMPTY_SESSION);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return eventRouter.createCaller(trpcCtx);
+}
+
+/**
+ * A signed-in member. `protectedProcedure` authenticates and authorizes
+ * before the input parser runs, so reaching a zod rejection needs both.
+ */
+async function memberCaller() {
+  const { ctx } = stubHttpCtx({ services: servicesWithProjectAccess() });
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return eventRouter.createCaller(trpcCtx);
+}
+
+const UNAUTHORIZED = { code: 'UNAUTHORIZED' };
+
+test('every query rejects an unauthenticated caller before touching a database', async () => {
+  const caller = await anonCaller();
+  await expect(caller.byId(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.details(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.events(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.conversionNames(PROJECT)).rejects.toMatchObject(
+    UNAUTHORIZED
+  );
+  await expect(caller.conversions(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.pages(WINDOW)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.pagesTimeseries(WINDOW)).rejects.toMatchObject(
+    UNAUTHORIZED
+  );
+  await expect(
+    caller.previousPages({ ...WINDOW, pages: [] })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(
+    caller.pageTimeseries({ ...WINDOW, origin: 'https://a.io', path: '/' })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.origin(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
+});
+
+// Letting anonymous callers in on the mere existence of a ShareOverview row
+// was a bug.
+test('bots rejects an unauthenticated caller (ADR-011: no anonymous share branch)', async () => {
+  const caller = await anonCaller();
+  await expect(caller.bots(PROJECT)).rejects.toMatchObject(UNAUTHORIZED);
+});
+
+test('updateEventMeta rejects an unauthenticated caller before touching Postgres', async () => {
+  const caller = await anonCaller();
+  await expect(
+    caller.updateEventMeta({ ...PROJECT, name: 'signup', conversion: true })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+});
+
+test('events rejects a malformed filter at the input boundary', async () => {
+  const caller = await memberCaller();
+  await expect(
+    caller.events({ ...PROJECT, filters: [{ bogus: true }] as never })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});

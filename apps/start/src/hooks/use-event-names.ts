@@ -1,5 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function useEventNames(params: {
   projectId: string;
@@ -12,9 +12,9 @@ export function useEventNames(params: {
     trpc.chart.events.queryOptions(input, {
       enabled: enabled !== false && !!params.projectId,
       staleTime: 1000 * 60 * 10,
-    }),
+    })
   );
   return (query.data ?? []).filter((event) =>
-    (params.anyEvents ?? true) ? true : event.name !== '*',
+    (params.anyEvents ?? true) ? true : event.name !== '*'
   );
 }

@@ -17,7 +17,7 @@ export const useAvatarContext = () => {
   const context = React.useContext(AvatarContext);
   if (!context) {
     throw new Error(
-      'Avatar compound components must be rendered within an Avatar component',
+      'Avatar compound components must be rendered within an Avatar component'
     );
   }
   return context;
@@ -44,7 +44,7 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
         imageLoadingStatus,
         onImageLoadingStatusChange: setImageLoadingStatus,
       }),
-      [imageLoadingStatus],
+      [imageLoadingStatus]
     );
 
     const Element = asChild ? React.Fragment : 'span';
@@ -72,7 +72,7 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
         <Element {...elementProps}>{children}</Element>
       </AvatarContext.Provider>
     );
-  },
+  }
 );
 
 Avatar.displayName = 'Avatar';

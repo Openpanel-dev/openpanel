@@ -11,7 +11,8 @@ type Props = Omit<OpenPanelOptions, 'filter'> & {
   globalProperties?: Record<string, unknown>;
 };
 
-const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } = Astro.props;
+const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } =
+  Astro.props;
 
 const CDN_URL = 'https://openpanel.dev/op1.js';
 

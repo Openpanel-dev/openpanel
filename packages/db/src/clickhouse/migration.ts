@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
-import { createClient } from './client';
-import { formatClickhouseDate } from './client';
+import type { EventEmitter } from 'node:events';
+import { createClient, formatClickhouseDate } from './client';
 
 interface CreateTableOptions {
   name: string;
@@ -34,9 +34,27 @@ const CLUSTER_REPLICA_PATH =
 
 const replicated = (tableName: string) => `${tableName}_replicated`;
 
+/**
+ * The database the migrations create and query, from `CLICKHOUSE_URL`'s path the same way the
+ * client resolves it, so an isolated database (a hub worktree's `openpanel_<name>`) migrates
+ * into itself and not into `openpanel`.
+ */
+export function migrationDatabase(): string {
+  const raw = (process.env.CLICKHOUSE_URL ?? '').split(',')[0]?.trim();
+  if (!raw) {
+    return 'openpanel';
+  }
+  try {
+    const name = new URL(raw).pathname.replace(/^\/+|\/+$/g, '');
+    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : 'openpanel';
+  } catch {
+    return 'openpanel';
+  }
+}
+
 export const chMigrationClient = createClient({
   url: process.env.CLICKHOUSE_URL,
-  request_timeout: 3600000, // 1 hour in milliseconds
+  request_timeout: 3_600_000, // 1 hour in milliseconds
   keep_alive: {
     enabled: true,
   },
@@ -46,9 +64,9 @@ export const chMigrationClient = createClient({
   },
   clickhouse_settings: {
     wait_end_of_query: 1,
-    // Ask ClickHouse to periodically send query execution progress in HTTP headers, creating some activity in the connection.
+    // Progress headers keep the connection active so long queries are not idled out by proxies.
     send_progress_in_http_headers: 1,
-    // The interval of sending these progress headers. Here it is less than 60s,
+    // Under 60s, the usual proxy idle timeout.
     http_headers_progress_interval_ms: '50000',
   },
 });
@@ -61,10 +79,7 @@ export function createDatabase(name: string, isClustered: boolean) {
   return `CREATE DATABASE IF NOT EXISTS ${name}`;
 }
 
-/**
- * Creates SQL statements for table creation in ClickHouse
- * Handles both clustered and non-clustered scenarios
- */
+/** Creates SQL statements for table creation, clustered or not. */
 export function createTable({
   name: tableName,
   columns,
@@ -88,7 +103,6 @@ export function createTable({
   const partitionByClause = partitionBy ? `PARTITION BY ${partitionBy}` : '';
 
   if (!isClustered) {
-    // Non-clustered scenario: single table
     return [
       `CREATE TABLE IF NOT EXISTS ${tableName} (
   ${columnDefinitions}
@@ -101,7 +115,6 @@ ${settingsClause}`.trim(),
   }
 
   return [
-    // Local replicated table
     `CREATE TABLE IF NOT EXISTS ${replicated(tableName)} ON CLUSTER '{cluster}' (
   ${columnDefinitions}
 )
@@ -109,7 +122,6 @@ ENGINE = Replicated${engine.replace(/^(.+?)\((.+?)?\)/, `$1('${CLUSTER_REPLICA_P
 ${partitionByClause}
 ORDER BY (${orderBy.join(', ')})
 ${settingsClause}`.trim(),
-    // Distributed table
     `CREATE TABLE IF NOT EXISTS ${tableName} ON CLUSTER '{cluster}' AS ${replicated(tableName)}
 ENGINE = Distributed('{cluster}', currentDatabase(), ${replicated(tableName)}, ${distributionHash})`,
   ];
@@ -131,13 +143,10 @@ export const modifyTTL = ({
   return `ALTER TABLE ${tableName} MODIFY TTL ${ttl}`;
 };
 
-/**
- * Generates ALTER TABLE statements for adding columns
- */
 export function addColumns(
   tableName: string,
   columns: string[],
-  isClustered: boolean,
+  isClustered: boolean
 ): string[] {
   if (isClustered) {
     return columns.flatMap((col) => [
@@ -147,17 +156,14 @@ export function addColumns(
   }
 
   return columns.map(
-    (col) => `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col}`,
+    (col) => `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col}`
   );
 }
 
-/**
- * Generates ALTER TABLE statements for dropping columns
- */
 export function dropColumns(
   tableName: string,
   columnNames: string[],
-  isClustered: boolean,
+  isClustered: boolean
 ): string[] {
   if (isClustered) {
     return columnNames.flatMap((colName) => [
@@ -167,14 +173,16 @@ export function dropColumns(
   }
 
   return columnNames.map(
-    (colName) => `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${colName}`,
+    (colName) => `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${colName}`
   );
 }
 
 export async function getExistingTables() {
   try {
     const existingTablesQuery = await chMigrationClient.query({
-      query: `SELECT name FROM system.tables WHERE database = 'openpanel'`,
+      query:
+        'SELECT name FROM system.tables WHERE database = {database:String}',
+      query_params: { database: migrationDatabase() },
       format: 'JSONEachRow',
     });
     return (await existingTablesQuery.json<{ name: string }>())
@@ -232,17 +240,16 @@ export function moveDataBetweenTables({
 }): string[] {
   const sqls: string[] = [];
 
-  // Build the SELECT clause
   const selectClause = columns && columns.length > 0 ? columns.join(', ') : '*';
 
   if (!batch) {
     return [`INSERT INTO ${to} SELECT ${selectClause} FROM ${from}`];
   }
 
-  // Start from today and go back 3 years
+  // Default window: 3 years back from tomorrow, so today is included.
   const endDate = batch.endDate || new Date();
   if (!batch.endDate) {
-    endDate.setDate(endDate.getDate() + 1); // Add 1 day to include today
+    endDate.setDate(endDate.getDate() + 1);
   }
   const startDate = batch.startDate || new Date();
   if (!batch.startDate) {
@@ -252,25 +259,21 @@ export function moveDataBetweenTables({
   let currentDate = endDate;
   const interval = batch.interval || 'day';
 
-  // Helper function to get the start of the week (Monday) for a given date
   const getWeekStart = (date: Date): Date => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
-    d.setHours(0, 0, 0, 0); // Normalize to start of day
+    d.setHours(0, 0, 0, 0);
     return d;
   };
 
-  // Helper function to compare dates based on interval
   const shouldContinue = (
     current: Date,
     start: Date,
-    intervalType: string,
+    intervalType: string
   ): boolean => {
     if (intervalType === 'month') {
-      // For months, compare by year and month
-      // Continue if current month is >= start month
       const currentYear = current.getFullYear();
       const currentMonth = current.getMonth();
       const startYear = start.getFullYear();
@@ -281,7 +284,6 @@ export function moveDataBetweenTables({
       );
     }
     if (intervalType === 'week') {
-      // For weeks, compare by week start dates
       const currentWeekStart = getWeekStart(current);
       const startWeekStart = getWeekStart(start);
       return currentWeekStart >= startWeekStart;
@@ -295,8 +297,7 @@ export function moveDataBetweenTables({
     switch (interval) {
       case 'month':
         previousDate.setMonth(previousDate.getMonth() - 1);
-        // If we've gone below startDate's month, adjust to start of startDate's month
-        // This ensures we generate SQL for the month containing startDate
+        // Clamp to the month containing startDate so it is still covered.
         if (
           previousDate.getFullYear() < startDate.getFullYear() ||
           (previousDate.getFullYear() === startDate.getFullYear() &&
@@ -309,7 +310,6 @@ export function moveDataBetweenTables({
         break;
       case 'week': {
         previousDate.setDate(previousDate.getDate() - 7);
-        // If we've gone below startDate's week, adjust to start of startDate's week
         const startWeekStart = getWeekStart(startDate);
         const prevWeekStart = getWeekStart(previousDate);
         if (prevWeekStart < startWeekStart) {
@@ -317,17 +317,13 @@ export function moveDataBetweenTables({
         }
         break;
       }
-      // day
       default:
         previousDate.setDate(previousDate.getDate() - 1);
         break;
     }
 
-    // For monthly/weekly intervals with transform, upperBoundDate should be currentDate
-    // because currentDate already represents the start of the period we're processing
-    // The WHERE clause uses > previousDate AND <= currentDate to get exactly one period
+    // The WHERE clause uses > previousDate AND <= upperBoundDate to get exactly one period.
     let upperBoundDate = currentDate;
-    // Don't exceed the endDate
     if (upperBoundDate > endDate) {
       upperBoundDate = endDate;
     }
@@ -338,7 +334,6 @@ export function moveDataBetweenTables({
       AND ${batch.column} <= '${batch.transform ? batch.transform(upperBoundDate) : formatClickhouseDate(upperBoundDate, true)}'`;
     sqls.push(sql);
 
-    // For monthly/weekly intervals, stop if we've reached the start period
     if (interval === 'month') {
       const prevYear = previousDate.getFullYear();
       const prevMonth = previousDate.getMonth();
@@ -381,9 +376,8 @@ export function createMaterializedView({
 
   const partitionByClause = partitionBy ? `PARTITION BY ${partitionBy}` : '';
 
-  // Transform query to use replicated table names in clustered mode
   const transformedQuery = query.replace(/\{(\w+)\}/g, (_, tableName) =>
-    isClustered ? replicated(tableName) : tableName,
+    isClustered ? replicated(tableName) : tableName
   );
 
   if (!isClustered) {
@@ -399,7 +393,6 @@ AS ${transformedQuery}`.trim(),
   }
 
   return [
-    // Replicated materialized view
     `CREATE MATERIALIZED VIEW IF NOT EXISTS ${replicated(tableName)} ON CLUSTER '{cluster}'
 ENGINE = Replicated${engine.replace(/^(.+?)\((.+?)?\)/, `$1('${CLUSTER_REPLICA_PATH.replace('{replicatedVersion}', replicatedVersion)}', '{replica}', $2)`).replace(/, \)$/, ')')}
 ${partitionByClause}
@@ -407,7 +400,6 @@ ORDER BY (${orderBy.join(', ')})
 ${settingsClause}
 ${populate ? 'POPULATE' : ''}
 AS ${transformedQuery}`.trim(),
-    // Distributed materialized view
     `CREATE TABLE IF NOT EXISTS ${tableName} ON CLUSTER '{cluster}' AS ${replicated(tableName)}
 ENGINE = Distributed('{cluster}', currentDatabase(), ${replicated(tableName)}, ${distributionHash})`,
   ];
@@ -423,7 +415,7 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
   const handleTermination = async (signal: string) => {
     console.warn(
-      `Received ${signal}. Cleaning up active queries before exit...`,
+      `Received ${signal}. Cleaning up active queries before exit...`
     );
 
     if (abort) {
@@ -431,11 +423,9 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
     }
   };
 
-  // Create bound handler functions
   const handleSigterm = () => handleTermination('SIGTERM');
   const handleSigint = () => handleTermination('SIGINT');
 
-  // Register handlers
   process.on('SIGTERM', handleSigterm);
   process.on('SIGINT', handleSigint);
 
@@ -464,7 +454,9 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
             let checking = false; // Add flag to prevent multiple concurrent checks
 
             async function check() {
-              if (checking) return; // Skip if already checking
+              if (checking) {
+                return;
+              }
               checking = true;
 
               try {
@@ -501,17 +493,16 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
                   const { elapsed, read_rows, written_rows, memory_usage } =
                     res[0] as any;
                   console.log(
-                    `Progress: ${elapsed.toFixed(2)}s | Memory: ${formatMemory(memory_usage)} | Read: ${formatNumber(read_rows)} rows | Written: ${formatNumber(written_rows)} rows`,
+                    `Progress: ${elapsed.toFixed(2)}s | Memory: ${formatMemory(memory_usage)} | Read: ${formatNumber(read_rows)} rows | Written: ${formatNumber(written_rows)} rows`
                   );
                 }
               } finally {
                 checking = false;
               }
 
-              timer = setTimeout(check, 5000); // Schedule next check after current one completes
+              timer = setTimeout(check, 5000);
             }
 
-            // Start the first check after 5 seconds
             timer = setTimeout(check, 5000);
           }),
         ]);
@@ -545,8 +536,12 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
     throw e;
   } finally {
-    // Clean up event listeners
-    process.off('SIGTERM', handleSigterm);
-    process.off('SIGINT', handleSigint);
+    // Clean up event listeners. bun-types' `Process.off` override declares
+    // only its own "memoryPressure" overload and wins over the @types/node
+    // Signals overload, so the cast is what keeps this compiling (dropping it
+    // produces TS2345 on both lines below).
+    const emitter = process as unknown as EventEmitter;
+    emitter.off('SIGTERM', handleSigterm);
+    emitter.off('SIGINT', handleSigint);
   }
 }

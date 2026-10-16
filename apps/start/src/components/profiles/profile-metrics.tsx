@@ -1,10 +1,12 @@
-import type { IProfileMetrics } from '@openpanel/db';
+import type { IProfileMetrics } from '@openpanel/core';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 
-type Props = {
-  data: IProfileMetrics;
-};
+interface Props {
+  /** `null` when nothing is known about the profile — no row and no events. */
+  data: IProfileMetrics | null;
+}
 
+// The card's 'min' unit takes seconds and renders them as a duration.
 const PROFILE_METRICS = [
   {
     title: 'Total Events',
@@ -84,7 +86,7 @@ const PROFILE_METRICS = [
     hideOnZero: false,
   },
   {
-    title: 'Avg Time Between Sessions (h)',
+    title: 'Avg Time Between Sessions',
     key: 'avgTimeBetweenSessions',
     unit: 'min',
     inverted: false,
@@ -100,6 +102,10 @@ const PROFILE_METRICS = [
 ] as const;
 
 export const ProfileMetrics = ({ data }: Props) => {
+  if (!data) {
+    return null;
+  }
+
   return (
     <div className="relative col-span-6 -m-4 mt-0 mb-0 md:m-0">
       <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-4 lg:grid-cols-6">

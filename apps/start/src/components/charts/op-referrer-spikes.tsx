@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import {
-  OPMarkerLayer,
   type OPMarkerCluster,
   type OPMarkerItem,
+  OPMarkerLayer,
 } from './op-marker-layer';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 
 export interface OPReferrerSpikeItem {
   date: string | Date;
@@ -51,7 +51,9 @@ export function OPReferrerSpikes({
   onSpikeClick,
 }: OPReferrerSpikesProps) {
   const clusters = useMemo<OPMarkerCluster[]>(() => {
-    if (!items || items.length === 0) return [];
+    if (!items || items.length === 0) {
+      return [];
+    }
     return items.map((cluster) => {
       const markerItems: OPMarkerItem[] = cluster.spikes.map((spike) => ({
         date:

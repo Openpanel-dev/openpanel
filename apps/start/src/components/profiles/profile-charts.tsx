@@ -1,9 +1,8 @@
+import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import { memo } from 'react';
+import { WidgetHead } from '../overview/overview-widget';
 import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody } from '@/components/widget';
-import { memo } from 'react';
-
-import type { IReport } from '@openpanel/validation';
-import { WidgetHead } from '../overview/overview-widget';
 
 type Props = {
   profileId: string;
@@ -103,5 +102,5 @@ export const ProfileCharts = memo(
   },
   (a, b) => {
     return a.profileId === b.profileId && a.projectId === b.projectId;
-  },
+  }
 );

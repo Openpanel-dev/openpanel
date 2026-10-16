@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
@@ -177,7 +177,6 @@ export default function Billing({ organization }: Props) {
     }
   }, [success]);
 
-  // Clear query state when modal is closed
   useOnPushModal('BillingSuccess', (open) => {
     if (!open) {
       setSuccess(null);

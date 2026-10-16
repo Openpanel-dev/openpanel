@@ -1,6 +1,4 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -8,6 +6,7 @@ import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 import CohortTable from './table';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
   const { isLazyLoading, report, shareId } = useReportChartContext();
@@ -20,13 +19,14 @@ export function ReportRetentionChart() {
   const filters = [
     ...(report.globalFilters ?? []),
     ...eventSeries.flatMap((item) =>
-      (item.filters ?? []).filter((filter) => filter.name !== 'name'),
+      (item.filters ?? []).filter((filter) => filter.name !== 'name')
     ),
   ];
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
 
-  const retentionOptions = report.options?.type === 'retention' ? report.options : undefined;
+  const retentionOptions =
+    report.options?.type === 'retention' ? report.options : undefined;
   const criteria = retentionOptions?.criteria ?? 'on_or_after';
 
   const trpc = useTRPC();
@@ -48,8 +48,8 @@ export function ReportRetentionChart() {
       {
         placeholderData: keepPreviousData,
         enabled: isEnabled,
-      },
-    ),
+      }
+    )
   );
 
   if (!isEnabled) {

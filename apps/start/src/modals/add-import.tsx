@@ -1,24 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import { ProjectMapper } from '@/components/project-mapper';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   IAmplitudeImportConfig,
   IImportConfig,
   IMixpanelImportConfig,
   IUmamiImportConfig,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/import/import.constants';
 import {
   zAmplitudeImportConfig,
   zMixpanelImportConfig,
   zUmamiImportConfig,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/import/import.constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+import { popModal, pushModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import { ProjectMapper } from '@/components/project-mapper';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -26,12 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { useFieldArray, useForm } from 'react-hook-form';
-import type { z } from 'zod';
-import { popModal, pushModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/lib/utils';
 
 type Provider = 'umami' | 'plausible' | 'mixpanel' | 'amplitude';
 
@@ -60,7 +59,7 @@ function UmamiImport({
   const { data: projects = [] } = useQuery(
     trpc.project.list.queryOptions({
       organizationId,
-    }),
+    })
   );
 
   const form = useForm<UmamiFormData>({
@@ -83,32 +82,32 @@ function UmamiImport({
   });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
         <InputWithLabel
-          label="File URL"
-          placeholder="https://example.com/export.csv"
           error={form.formState.errors.fileUrl?.message}
           info="Provide a publicly accessible URL to your exported CSV file."
+          label="File URL"
+          placeholder="https://example.com/export.csv"
           {...form.register('fileUrl')}
         />
 
         <ProjectMapper
-          fields={fields}
           append={append}
-          remove={remove}
+          fields={fields}
           projects={projects}
           register={form.register}
-          watch={form.watch}
+          remove={remove}
           setValue={form.setValue}
+          watch={form.watch}
         />
       </div>
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => popModal()}>
+        <Button onClick={() => popModal()} type="button" variant="outline">
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}
         </Button>
       </div>
@@ -163,47 +162,47 @@ function MixpanelImport({
   });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
         <InputWithLabel
+          error={form.formState.errors.serviceAccount?.message}
           label="Service Account"
           placeholder="Eg. xxx.xxx.mp-service-account"
-          error={form.formState.errors.serviceAccount?.message}
           {...form.register('serviceAccount')}
         />
 
         <InputWithLabel
-          label="Service Secret"
-          type="password"
-          placeholder="Your Mixpanel service secret"
           error={form.formState.errors.serviceSecret?.message}
+          label="Service Secret"
+          placeholder="Your Mixpanel service secret"
+          type="password"
           {...form.register('serviceSecret')}
         />
 
         <InputWithLabel
+          error={form.formState.errors.projectId?.message}
           label="Project ID"
           placeholder="Your Mixpanel project ID"
-          error={form.formState.errors.projectId?.message}
           {...form.register('projectId')}
         />
 
         <WithLabel
-          label="Date Range"
           info={
-            !form.getValues('from') || !form.getValues('to')
-              ? 'Select the date range for importing data'
-              : undefined
+            form.getValues('from') && form.getValues('to')
+              ? undefined
+              : 'Select the date range for importing data'
           }
+          label="Date Range"
         >
           <Button
-            type="button"
-            variant="outline"
             className={cn(
               'w-full justify-start text-left font-normal',
-              (!form.getValues('from') || !form.getValues('to')) &&
-                'text-muted-foreground',
+              !(form.getValues('from') && form.getValues('to')) &&
+                'text-muted-foreground'
             )}
             onClick={handleDateRangeSelect}
+            type="button"
+            variant="outline"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {form.getValues('from') && form.getValues('to') ? (
@@ -218,19 +217,22 @@ function MixpanelImport({
         </WithLabel>
 
         <InputWithLabel
+          error={form.formState.errors.mapScreenViewProperty?.message}
+          info="Leave empty if not applicable"
           label="Screen View Property"
           placeholder="Enter the name of the property that contains the screen name"
-          info="Leave empty if not applicable"
-          error={form.formState.errors.mapScreenViewProperty?.message}
           {...form.register('mapScreenViewProperty')}
         />
 
-        <WithLabel label="Data Residency" info="Select the Mixpanel data center your project uses">
+        <WithLabel
+          info="Select the Mixpanel data center your project uses"
+          label="Data Residency"
+        >
           <Select
-            value={form.watch('dataResidency') ?? 'us'}
             onValueChange={(value) =>
               form.setValue('dataResidency', value as 'us' | 'eu' | 'in')
             }
+            value={form.watch('dataResidency') ?? 'us'}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="US (default)" />
@@ -245,10 +247,10 @@ function MixpanelImport({
       </div>
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => popModal()}>
+        <Button onClick={() => popModal()} type="button" variant="outline">
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}
         </Button>
       </div>
@@ -297,41 +299,41 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
   });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
         <InputWithLabel
-          label="API Key"
-          placeholder="Your Amplitude API key"
           error={form.formState.errors.apiKey?.message}
           info="Settings → Projects → General in Amplitude."
+          label="API Key"
+          placeholder="Your Amplitude API key"
           {...form.register('apiKey')}
         />
 
         <InputWithLabel
-          label="Secret Key"
-          type="password"
-          placeholder="Your Amplitude secret key"
           error={form.formState.errors.secretKey?.message}
+          label="Secret Key"
+          placeholder="Your Amplitude secret key"
+          type="password"
           {...form.register('secretKey')}
         />
 
         <WithLabel
-          label="Date Range"
           info={
-            !form.getValues('from') || !form.getValues('to')
-              ? 'Select the date range for importing data'
-              : undefined
+            form.getValues('from') && form.getValues('to')
+              ? undefined
+              : 'Select the date range for importing data'
           }
+          label="Date Range"
         >
           <Button
-            type="button"
-            variant="outline"
             className={cn(
               'w-full justify-start text-left font-normal',
-              (!form.getValues('from') || !form.getValues('to')) &&
-                'text-muted-foreground',
+              !(form.getValues('from') && form.getValues('to')) &&
+                'text-muted-foreground'
             )}
             onClick={handleDateRangeSelect}
+            type="button"
+            variant="outline"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {form.getValues('from') && form.getValues('to') ? (
@@ -346,22 +348,22 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
         </WithLabel>
 
         <InputWithLabel
+          error={form.formState.errors.mapScreenViewProperty?.message}
+          info="Leave empty if not applicable"
           label="Screen View Property"
           placeholder="Enter the name of the property that contains the screen name"
-          info="Leave empty if not applicable"
-          error={form.formState.errors.mapScreenViewProperty?.message}
           {...form.register('mapScreenViewProperty')}
         />
 
         <WithLabel
-          label="Data Residency"
           info="Select the Amplitude data region your project uses"
+          label="Data Residency"
         >
           <Select
-            value={form.watch('dataResidency') ?? 'us'}
             onValueChange={(value) =>
               form.setValue('dataResidency', value as 'us' | 'eu')
             }
+            value={form.watch('dataResidency') ?? 'us'}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="US (default)" />
@@ -375,10 +377,10 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
       </div>
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => popModal()}>
+        <Button onClick={() => popModal()} type="button" variant="outline">
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}
         </Button>
       </div>
@@ -405,7 +407,7 @@ export default function AddImport({ provider, name }: AddImportProps) {
           description: error.message,
         });
       },
-    }),
+    })
   );
 
   const handleImportSubmit = (config: IImportConfig) => {
@@ -422,24 +424,24 @@ export default function AddImport({ provider, name }: AddImportProps) {
 
       {provider === 'umami' && (
         <UmamiImport
-          onSubmit={handleImportSubmit}
           isPending={createImport.isPending}
+          onSubmit={handleImportSubmit}
           organizationId={organizationId}
         />
       )}
 
       {provider === 'mixpanel' && (
         <MixpanelImport
-          onSubmit={handleImportSubmit}
           isPending={createImport.isPending}
+          onSubmit={handleImportSubmit}
           organizationId={organizationId}
         />
       )}
 
       {provider === 'amplitude' && (
         <AmplitudeImport
-          onSubmit={handleImportSubmit}
           isPending={createImport.isPending}
+          onSubmit={handleImportSubmit}
           organizationId={organizationId}
         />
       )}

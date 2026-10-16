@@ -1,4 +1,3 @@
-import type { IServiceGroup } from '@openpanel/db';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -26,11 +25,21 @@ interface Props {
   toolbarLeft?: React.ReactNode;
 }
 
-const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceGroupWithStats[];
+const LOADING_DATA = [
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+] as IServiceGroupWithStats[];
 
 export const GroupsTable = memo(
   ({ query, pageSize = PAGE_SIZE, toolbarLeft }: Props) => {
-    const { data, isLoading } = query;
+    const { data, isLoading, isError } = query;
     const columns = useGroupColumns();
 
     const { setPage, state: pagination } = useDataTablePagination(pageSize);
@@ -81,13 +90,20 @@ export const GroupsTable = memo(
             description:
               'Groups represent companies, teams, or other entities that events belong to.',
           }}
+          error={isError}
           loading={isLoading}
           table={table}
         />
       </>
     );
   },
-  arePropsEqual(['query.isLoading', 'query.data', 'pageSize', 'toolbarLeft'])
+  arePropsEqual([
+    'query.isLoading',
+    'query.isError',
+    'query.data',
+    'pageSize',
+    'toolbarLeft',
+  ])
 );
 
 function GroupsTableToolbar({

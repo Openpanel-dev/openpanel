@@ -1,5 +1,4 @@
-import type { IChartEvent } from '@openpanel/validation';
-
+import type { IChartEvent } from '@openpanel/core/modules/report/report.constants';
 import { CohortFilterItem } from './CohortFilterItem';
 import { FilterItem } from './FilterItem';
 
@@ -27,25 +26,24 @@ export function FiltersList({
 
   return (
     <div>
-      <div className="bg-def-100 flex flex-col divide-y overflow-hidden rounded-b-md">
+      <div className="flex flex-col divide-y overflow-hidden rounded-b-md bg-def-100">
         {filters.map((filter) => {
           const isCohortFilter =
-            filter.operator === 'inCohort' ||
-            filter.operator === 'notInCohort';
+            filter.operator === 'inCohort' || filter.operator === 'notInCohort';
           if (isCohortFilter) {
             return (
               <CohortFilterItem
-                key={filter.id ?? filter.name}
-                filter={filter}
                 event={event}
+                filter={filter}
+                key={filter.id ?? filter.name}
               />
             );
           }
           return (
             <FilterItem
-              key={filter.id ?? filter.name}
-              filter={filter}
               event={event}
+              filter={filter}
+              key={filter.id ?? filter.name}
             />
           );
         })}

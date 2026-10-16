@@ -1,4 +1,4 @@
-import type { IServiceReport } from '@openpanel/db';
+import type { IServiceReport } from '@openpanel/core';
 import { GanttChartSquareIcon, ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import EditReportName from '../report/edit-report-name';

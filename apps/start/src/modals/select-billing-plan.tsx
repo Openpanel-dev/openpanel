@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import type { IPolarProduct } from '@openpanel/payments';
 import { useState } from 'react';
 import { popModal } from '.';

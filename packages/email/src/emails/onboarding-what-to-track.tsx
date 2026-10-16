@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { withUtm } from '../utm';
@@ -57,7 +56,7 @@ export function OnboardingWhatToTrack({
             <Link
               href={withUtm(
                 'https://openpanel.dev/docs/get-started/install-openpanel',
-                'onboarding-what-to-track',
+                'onboarding-what-to-track'
               )}
             >
               install guide
@@ -78,5 +77,5 @@ export function OnboardingWhatToTrack({
 OnboardingWhatToTrack.PreviewProps = {
   firstName: 'Alex',
   hasData: true,
-  eventsCount: 12544,
+  eventsCount: 12_544,
 };

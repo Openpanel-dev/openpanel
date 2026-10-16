@@ -1,12 +1,12 @@
+import path from 'node:path';
+import { apiRefCollection } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
+import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
 import {
   createOpenAPI,
   openapiPlugin,
   openapiSource,
 } from 'fumadocs-openapi/server';
-import { apiRefCollection } from 'collections/server';
-import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
-import path from 'node:path';
 import { cache } from 'react';
 
 const API_URL =
@@ -37,7 +37,10 @@ export const getApiReferenceSource = cache(async () => {
   // Inject static page slugs at the top of the root meta.json that
   // openapiSource generates for the tag separator groups.
   const patchedOpenapiFiles = openapiFiles.files.map((f) => {
-    if (f.type === 'meta' && (f.path === 'meta.json' || f.path === '/meta.json')) {
+    if (
+      f.type === 'meta' &&
+      (f.path === 'meta.json' || f.path === '/meta.json')
+    ) {
       const data = f.data as { pages?: string[] };
       return {
         ...f,

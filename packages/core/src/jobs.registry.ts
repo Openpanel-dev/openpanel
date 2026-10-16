@@ -1,0 +1,168 @@
+// The seven BullMQ queues, statically composed: static composition is what
+// keeps `QueueProducers` typed. Registry key === Redis name for all seven
+// (`cohortCompute` included), so `COHORTCOMPUTE_CONCURRENCY` keeps working;
+// `queueKey` decides what actually reaches Redis.
+
+import { legacyCompat } from './jobs/compat';
+import type { Producers } from './jobs/define';
+import { defineQueue } from './jobs/define';
+import type { ProducerHandle } from './jobs/producers';
+import {
+  type SchedulerDefinition,
+  schedulersFromRegistry,
+} from './jobs/schedulers';
+import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
+import { eventCronJobs } from './modules/event/event.jobs';
+import { groupCronJobs } from './modules/group/group.jobs';
+import { gscCronJobs, gscQueueJobs } from './modules/gsc/gsc.jobs';
+import { importQueueJobs } from './modules/import/import.jobs';
+import {
+  insightCronJobs,
+  insightQueueJobs,
+} from './modules/insight/insight.jobs';
+import { integrationCronJobs } from './modules/integration/integration.jobs';
+import { miscCronJobs } from './modules/misc/misc.jobs';
+import { notificationQueueJobs } from './modules/notification/notification.jobs';
+import { onboardingCronJobs } from './modules/onboarding/onboarding.jobs';
+import { organizationCronJobs } from './modules/organization/organization.jobs';
+import { profileCronJobs } from './modules/profile/profile.jobs';
+import { saltCronJobs } from './modules/salt/salt.jobs';
+import {
+  sessionCronJobs,
+  sessionQueueJobs,
+} from './modules/session/session.jobs';
+
+const HOUR_IN_SECONDS = 3600;
+const DAY_IN_SECONDS = 86_400;
+const COHORT_BACKOFF_MS = 5000;
+const COHORT_ATTEMPTS = 3;
+
+// `<KEY>_CONCURRENCY` overrides one of these at boot.
+const CONCURRENCY = {
+  sessions: 1,
+  cron: 1,
+  notification: 1,
+  import: 1,
+  insights: 5,
+  gsc: 5,
+  cohortCompute: 2,
+} as const;
+
+// Every queue bounds its failed set: a failed job is a Redis hash with no TTL,
+// and `age` alone only trims when another job in the queue finishes, so each
+// is paired with a count.
+const sessions = defineQueue('sessions', {
+  defaults: {
+    removeOnComplete: true,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 1000 },
+  },
+  worker: { concurrency: CONCURRENCY.sessions },
+  compat: legacyCompat.sessions,
+  jobs: {
+    ...sessionQueueJobs,
+  },
+});
+
+// One queue, one worker at concurrency 1, every scheduled job in the system.
+// Pausing it from bull-board halts all buffer flushing.
+const cron = defineQueue('cron', {
+  defaults: {
+    removeOnComplete: 10,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
+  worker: { concurrency: CONCURRENCY.cron },
+  compat: legacyCompat.cron,
+  jobs: {
+    ...saltCronJobs,
+    ...eventCronJobs,
+    ...profileCronJobs,
+    ...groupCronJobs,
+    ...insightCronJobs,
+    ...gscCronJobs,
+    ...cohortCronJobs,
+    ...organizationCronJobs,
+    ...onboardingCronJobs,
+    ...sessionCronJobs,
+    ...miscCronJobs,
+    ...integrationCronJobs,
+  },
+});
+
+const notification = defineQueue('notification', {
+  defaults: {
+    removeOnComplete: 10,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
+  worker: { concurrency: CONCURRENCY.notification },
+  compat: legacyCompat.notification,
+  jobs: {
+    ...notificationQueueJobs,
+  },
+});
+
+const importQueue = defineQueue('import', {
+  defaults: { removeOnComplete: 10, removeOnFail: 50 },
+  worker: { concurrency: CONCURRENCY.import },
+  compat: legacyCompat.import,
+  jobs: {
+    ...importQueueJobs,
+  },
+});
+
+const insights = defineQueue('insights', {
+  defaults: {
+    removeOnComplete: 100,
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
+  worker: { concurrency: CONCURRENCY.insights },
+  compat: legacyCompat.insights,
+  jobs: {
+    ...insightQueueJobs,
+  },
+});
+
+const gsc = defineQueue('gsc', {
+  defaults: { removeOnComplete: 50, removeOnFail: 100 },
+  worker: { concurrency: CONCURRENCY.gsc },
+  compat: legacyCompat.gsc,
+  jobs: {
+    ...gscQueueJobs,
+  },
+});
+
+const cohortCompute = defineQueue('cohortCompute', {
+  defaults: {
+    attempts: COHORT_ATTEMPTS,
+    backoff: { type: 'exponential', delay: COHORT_BACKOFF_MS },
+    removeOnComplete: { age: HOUR_IN_SECONDS, count: 100 },
+    removeOnFail: { age: DAY_IN_SECONDS, count: 100 },
+  },
+  worker: { concurrency: CONCURRENCY.cohortCompute },
+  compat: legacyCompat.cohortCompute,
+  jobs: {
+    ...cohortQueueJobs,
+  },
+});
+
+export const queues = {
+  sessions,
+  cron,
+  notification,
+  import: importQueue,
+  insights,
+  gsc,
+  cohortCompute,
+};
+
+export type Queues = typeof queues;
+
+// Derived from the `cron` queue's own jobs so a job and its schedule cannot
+// drift apart. Computed here because `jobs/schedulers.ts` may not import a registry.
+export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
+  schedulersFromRegistry(cron);
+
+/** What `ctx.queues` is: `ctx.queues.import.run.add({ importId })`. */
+export type QueueProducers = Producers<Queues>;
+
+/** What `AppDeps.producers` is: built once at boot, scoped per unit of work. */
+export type QueueProducerHandle = ProducerHandle<Queues>;

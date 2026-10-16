@@ -1,4 +1,4 @@
-import type { IServiceEvent, IServiceSession } from '@openpanel/db';
+import type { IServiceEvent, IServiceSession } from '@openpanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { EventIcon } from '@/components/events/event-icon';
@@ -157,7 +157,7 @@ function Component() {
       isBounce: session.isBounce,
       entryPath: session.entryPath,
       exitPath: session.exitPath,
-    },
+    }
   );
 
   const { data: eventsData } = useSuspenseQuery(
@@ -236,9 +236,7 @@ function Component() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        {/* Left column */}
         <div className="col gap-6">
-          {/* Session info */}
           <Widget className="w-full">
             <WidgetHead>
               <WidgetTitle>Session info</WidgetTitle>
@@ -321,7 +319,6 @@ function Component() {
             />
           </Widget>
 
-          {/* Profile card */}
           {isIdentified && profile && (
             <Widget className="w-full">
               <WidgetHead>
@@ -353,7 +350,6 @@ function Component() {
             </Widget>
           )}
 
-          {/* Group cards */}
           {sessionGroups && sessionGroups.length > 0 && (
             <Widget className="w-full">
               <WidgetHead>
@@ -362,14 +358,14 @@ function Component() {
               <WidgetBody className="p-0">
                 {sessionGroups.map((group) => (
                   <Link
-                    key={group.id}
                     className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
+                    key={group.id}
                     params={{ organizationId, projectId, groupId: group.id }}
                     to="/$organizationId/$projectId/groups/$groupId"
                   >
                     <div className="col min-w-0 flex-1 gap-0.5">
                       <span className="truncate font-medium">{group.name}</span>
-                      <span className="truncate text-muted-foreground text-sm font-mono">
+                      <span className="truncate font-mono text-muted-foreground text-sm">
                         {group.id}
                       </span>
                     </div>
@@ -382,20 +378,16 @@ function Component() {
             </Widget>
           )}
 
-          {/* Visited pages */}
           <VisitedRoutes
             paths={events
               .filter((e) => e.name === 'screen_view' && e.path)
               .map((e) => e.path)}
           />
 
-          {/* Event distribution */}
           <EventDistribution events={events} />
         </div>
 
-        {/* Right column */}
         <div className="col gap-6">
-          {/* Events list */}
           <Widget className="w-full">
             <WidgetHead>
               <WidgetTitle>Events</WidgetTitle>

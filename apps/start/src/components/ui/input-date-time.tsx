@@ -1,9 +1,9 @@
-import { pushModal } from '@/modals';
 import { format, isValid, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { type InputHTMLAttributes, useEffect, useState } from 'react';
 import { WithLabel } from '../forms/input-with-label';
 import { Input } from './input';
+import { pushModal } from '@/modals';
 
 export function InputDateTime({
   value,
@@ -26,7 +26,9 @@ export function InputDateTime({
 
   // Convert string to Date for modal
   const getDateFromValue = (dateString: string): Date => {
-    if (!dateString) return new Date();
+    if (!dateString) {
+      return new Date();
+    }
 
     try {
       const date = parseISO(dateString);
@@ -38,7 +40,9 @@ export function InputDateTime({
 
   // Format date for display
   const getDisplayValue = (dateString: string): string => {
-    if (!dateString) return '';
+    if (!dateString) {
+      return '';
+    }
 
     try {
       const date = parseISO(dateString);
@@ -73,13 +77,13 @@ export function InputDateTime({
       >
         <Input
           {...props}
-          value={getDisplayValue(value || '')}
+          className="cursor-pointer pr-10"
           placeholder={placeholder}
           readOnly
-          className="cursor-pointer pr-10"
           size="default"
+          value={getDisplayValue(value || '')}
         />
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2">
           <CalendarIcon className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>

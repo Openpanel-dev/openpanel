@@ -1,12 +1,18 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-
-import { cn } from '@/utils/cn';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
+
+// Fixed, not random. The server and the browser each rendered their own
+// widths, so every skeleton row was an attribute mismatch and React threw the
+// SSR tree away. The exact values do not matter; only that
+// both renders agree.
+const SKELETON_NAME_WIDTHS = [186, 134, 158, 112, 170, 126, 194, 148, 120, 176];
+const SKELETON_BAR_WIDTHS = [72, 48, 63, 35, 57, 41, 78, 52, 29, 66];
 
 export function ReportBarChart() {
   const { isLazyLoading, shareId } = useReportChartContext();
@@ -22,8 +28,8 @@ export function ReportBarChart() {
       {
         placeholderData: keepPreviousData,
         enabled: !isLazyLoading,
-      },
-    ),
+      }
+    )
   );
 
   if (
@@ -52,45 +58,40 @@ function Loading() {
         <div className="divide-y divide-def-200 dark:divide-def-800">
           {Array.from({ length: 10 }).map((_, index) => (
             <div
+              className="relative animate-pulse px-4 py-3"
               key={index as number}
-              className="relative px-4 py-3 animate-pulse"
             >
               <div className="relative z-10 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    {/* Icon skeleton */}
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-def-100 dark:border-def-800 dark:bg-def-900" />
 
                     <div className="min-w-0">
-                      {/* Rank badge skeleton */}
                       <div className="mb-1 flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-def-200 dark:bg-def-700" />
                         <div className="h-2 w-12 rounded bg-def-200 dark:bg-def-700" />
                       </div>
 
-                      {/* Name skeleton */}
                       <div
                         className="h-4 rounded bg-def-200 dark:bg-def-700"
                         style={{
-                          width: `${Math.random() * 100 + 100}px`,
+                          width: `${SKELETON_NAME_WIDTHS[index % SKELETON_NAME_WIDTHS.length]}px`,
                         }}
                       />
                     </div>
                   </div>
 
-                  {/* Count skeleton */}
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <div className="h-5 w-16 rounded bg-def-200 dark:bg-def-700" />
                   </div>
                 </div>
 
-                {/* Bar skeleton */}
                 <div className="flex items-center">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-def-100 dark:bg-def-900">
                     <div
                       className="h-full rounded-full bg-def-200 dark:bg-def-700"
                       style={{
-                        width: `${Math.random() * 60 + 20}%`,
+                        width: `${SKELETON_BAR_WIDTHS[index % SKELETON_BAR_WIDTHS.length]}%`,
                       }}
                     />
                   </div>

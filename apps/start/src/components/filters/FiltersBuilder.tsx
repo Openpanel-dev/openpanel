@@ -1,16 +1,16 @@
-import { FilterIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  PropertiesCombobox,
-  type PropertiesComboboxCategory,
-} from '@/components/report/sidebar/PropertiesCombobox';
-import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
-import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
+import { FilterIcon } from 'lucide-react';
+import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
+import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
+import {
+  PropertiesCombobox,
+  type PropertiesComboboxCategory,
+} from '@/components/report/sidebar/PropertiesCombobox';
+import { Button } from '@/components/ui/button';
 
 interface FiltersBuilderProps {
   value: IChartEventFilter[];
@@ -48,9 +48,11 @@ export function FiltersBuilder({
   const addFilter = (action: { value: string }) => {
     if (action.value === 'cohort') {
       const hasCohort = value.some(
-        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort',
+        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort'
       );
-      if (hasCohort) return;
+      if (hasCohort) {
+        return;
+      }
       onChange([
         ...value,
         {
@@ -83,13 +85,9 @@ export function FiltersBuilder({
           if (isCohort) {
             return (
               <PureCohortFilterItem
-                key={filter.id}
-                filter={filter}
                 className="rounded border bg-def-100 p-3"
-                onRemove={removeFilter}
-                onChangeOperator={(operator, original) =>
-                  setFilter({ ...original, operator })
-                }
+                filter={filter}
+                key={filter.id}
                 onChangeCohort={(cohortIds, original) => {
                   setFilter({
                     ...original,
@@ -97,23 +95,23 @@ export function FiltersBuilder({
                     cohortIds,
                   });
                 }}
+                onChangeOperator={(operator, original) =>
+                  setFilter({ ...original, operator })
+                }
+                onRemove={removeFilter}
               />
             );
           }
           return (
             <PureFilterItem
-              key={filter.id}
-              filter={filter}
-              eventName={eventName}
               className="rounded border bg-def-100 p-3"
+              eventName={eventName}
+              filter={filter}
               immediateInput
-              onRemove={removeFilter}
-              onChangeValue={(nextValue: IChartEventFilterValue[], original) =>
-                setFilter({ ...original, value: nextValue })
-              }
+              key={filter.id}
               onChangeOperator={(
                 operator: IChartEventFilterOperator,
-                original,
+                original
               ) =>
                 setFilter({
                   ...original,
@@ -123,6 +121,10 @@ export function FiltersBuilder({
                   value: original.value.filter(Boolean).slice(0, 1),
                 })
               }
+              onChangeValue={(nextValue: IChartEventFilterValue[], original) =>
+                setFilter({ ...original, value: nextValue })
+              }
+              onRemove={removeFilter}
             />
           );
         })}
@@ -130,15 +132,19 @@ export function FiltersBuilder({
       <div className="mt-2">
         <PropertiesCombobox
           categories={categories}
+          event={
+            eventName
+              ? ({ name: eventName, id: 'builder' } as never)
+              : undefined
+          }
           onSelect={addFilter}
-          event={eventName ? ({ name: eventName, id: 'builder' } as never) : undefined}
         >
           {(setOpen) => (
             <Button
-              variant="outline"
-              size="sm"
               icon={FilterIcon}
               onClick={() => setOpen((p) => !p)}
+              size="sm"
+              variant="outline"
             >
               {addLabel}
             </Button>

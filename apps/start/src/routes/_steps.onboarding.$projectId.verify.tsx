@@ -1,25 +1,26 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import VerifyListener from '@/components/onboarding/onboarding-verify-listener';
 import { VerifyFaq } from '@/components/onboarding/verify-faq';
 import { LinkButton } from '@/components/ui/button';
-import { useEffect } from 'react';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 import { op } from '@/utils/op';
+import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   head: () => ({
     meta: [{ title: createEntityTitle('Verify', PAGE_TITLES.ONBOARDING) }],
   }),
-  beforeLoad: ({ context }) => {
-    if (!context.session?.session) {
+  beforeLoad: async ({ context }) => {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/onboarding' });
     }
   },
@@ -51,9 +52,7 @@ function Component() {
   // Refetch the event list the moment an event arrives instead of waiting for
   // the next poll — same channel the in-app live event feed uses.
   useWS(`/live/events/${projectId}`, () => {
-    queryClient.invalidateQueries(
-      trpc.event.events.queryFilter({ projectId })
-    );
+    queryClient.invalidateQueries(trpc.event.events.queryFilter({ projectId }));
   });
   const isVerified = events?.data && events.data.length > 0;
 

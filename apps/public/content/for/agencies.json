@@ -151,16 +151,34 @@
   "related_links": {
     "guides": [
       { "title": "Script tag SDK setup", "url": "/docs/sdks/script" },
-      { "title": "Migrate from Google Analytics", "url": "/guides/migrate-from-google-analytics" }
+      {
+        "title": "Migrate from Google Analytics",
+        "url": "/guides/migrate-from-google-analytics"
+      }
     ],
     "articles": [
-      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
-      { "title": "How to self-host OpenPanel", "url": "/articles/how-to-self-host-openpanel" },
-      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "Cookieless analytics explained",
+        "url": "/articles/cookieless-analytics"
+      },
+      {
+        "title": "How to self-host OpenPanel",
+        "url": "/articles/how-to-self-host-openpanel"
+      },
+      {
+        "title": "Best open source analytics tools",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
-      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" },
+      {
+        "title": "OpenPanel vs Google Analytics",
+        "url": "/compare/google-analytics-alternative"
+      },
+      {
+        "title": "OpenPanel vs Plausible",
+        "url": "/compare/plausible-alternative"
+      },
       { "title": "OpenPanel vs Matomo", "url": "/compare/matomo-alternative" }
     ]
   },

@@ -34,6 +34,14 @@ const widgetSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/widget/realtime')({
+  // Embedded in someone else's page, so this stays small. Without it a
+  // missing `shareId` fell through to the root handler, which prints
+  // `error.message` — for a ZodError that is the raw issues array.
+  errorComponent: () => (
+    <div className="p-2 text-muted-foreground text-xs">
+      Missing or invalid widget link.
+    </div>
+  ),
   component: RouteComponent,
   validateSearch: widgetSearchSchema,
 });
@@ -121,7 +129,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
 
   return (
     <div className="flex h-screen w-full flex-col bg-background text-foreground">
-      {/* Header with live counter */}
       <div className="p-6 pb-3">
         <div className="flex h-4 w-full items-center justify-between">
           <div className="flex w-full items-center gap-3">
@@ -179,7 +186,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
         data.paths.length > 0) && (
         <div className="hide-scrollbar flex flex-1 flex-col gap-6 overflow-auto border-t p-6">
           <div className={cn('grid grid-cols-1 gap-6', grids)}>
-            {/* Countries */}
             {data.countries.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -224,7 +230,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               </div>
             )}
 
-            {/* Referrers */}
             {data.referrers.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -263,7 +268,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               </div>
             )}
 
-            {/* Paths */}
             {data.paths.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -441,7 +445,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
 
   return (
     <div className="flex h-screen w-full animate-pulse flex-col bg-background text-foreground">
-      {/* Header with live counter */}
       <div className="border-b p-6 pb-3">
         <div className="flex h-4 w-full items-center justify-between">
           <div className="flex w-full items-center gap-3">
@@ -478,9 +481,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
       </div>
 
       <div className="hide-scrollbar flex flex-1 flex-col gap-6 overflow-auto p-6">
-        {/* Countries, Referrers, and Paths skeleton */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Countries skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               COUNTRY
@@ -492,7 +493,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
             </div>
           </div>
 
-          {/* Referrers skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               REFERRER
@@ -504,7 +504,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
             </div>
           </div>
 
-          {/* Paths skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               PATH

@@ -138,21 +138,39 @@
   },
   "related_links": {
     "guides": [
-      { "title": "Website analytics setup", "url": "/guides/website-analytics-setup" },
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
       { "title": "Track custom events", "url": "/guides/track-custom-events" }
     ],
     "articles": [
-      { "title": "Self-hosted analytics without DPAs: GDPR, HIPAA, CCPA guide", "url": "/articles/better-compliance-self-hosted-analytics" },
-      { "title": "Cookieless analytics", "url": "/articles/cookieless-analytics" },
-      { "title": "Self-hosted web analytics: head-to-head buyer's guide", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "Self-hosted analytics without DPAs: GDPR, HIPAA, CCPA guide",
+        "url": "/articles/better-compliance-self-hosted-analytics"
+      },
+      {
+        "title": "Cookieless analytics",
+        "url": "/articles/cookieless-analytics"
+      },
+      {
+        "title": "Self-hosted web analytics: head-to-head buyer's guide",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "audiences": [
       { "title": "For SaaS teams", "url": "/for/saas" },
       { "title": "For WordPress", "url": "/for/wordpress" }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
-      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" },
+      {
+        "title": "OpenPanel vs Google Analytics",
+        "url": "/compare/google-analytics-alternative"
+      },
+      {
+        "title": "OpenPanel vs Plausible",
+        "url": "/compare/plausible-alternative"
+      },
       { "title": "OpenPanel vs Matomo", "url": "/compare/matomo-alternative" }
     ]
   },

@@ -1,6 +1,5 @@
 'use client';
 
-import { FeatureCardContainer } from '@/components/feature-card';
 import { MoreVerticalIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { FeatureCardContainer } from '@/components/feature-card';
 
 // Sample data for the last 7 days
 const data = [
@@ -35,18 +35,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       payload.find((p: any) => p.dataKey === 'revenue')?.value || 0;
 
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-lg min-w-[200px]">
-        <div className="text-sm font-semibold mb-2">{label}</div>
-        <div className="text-sm text-muted-foreground space-y-1 flex-1">
-          <div className="row gap-2 items-center flex-1">
-            <div className="h-6 bg-foreground w-1 rounded-full" />
-            <div className="font-medium row items-center gap-2 justify-between flex-1">
+      <div className="min-w-[200px] rounded-lg border border-border bg-card p-3 shadow-lg">
+        <div className="mb-2 font-semibold text-sm">{label}</div>
+        <div className="flex-1 space-y-1 text-muted-foreground text-sm">
+          <div className="row flex-1 items-center gap-2">
+            <div className="h-6 w-1 rounded-full bg-foreground" />
+            <div className="row flex-1 items-center justify-between gap-2 font-medium">
               <span>Visitors</span> <span>{visitors.toLocaleString()}</span>
             </div>
           </div>
-          <div className="row gap-2 items-center flex-1">
-            <div className="h-6 bg-emerald-500 w-1 rounded-full" />
-            <div className="font-medium row items-center gap-2 justify-between flex-1">
+          <div className="row flex-1 items-center gap-2">
+            <div className="h-6 w-1 rounded-full bg-emerald-500" />
+            <div className="row flex-1 items-center justify-between gap-2 font-medium">
               <span>Revenue</span> <span>${revenue.toLocaleString()}</span>
             </div>
           </div>
@@ -69,101 +69,101 @@ export function CollaborationChart() {
   const totalRevenue = activeData.revenue;
 
   return (
-    <FeatureCardContainer className="col gap-4 h-full">
+    <FeatureCardContainer className="col h-full gap-4">
       {/* Header */}
       <div className="row items-center justify-between">
         <div>
           <h3 className="font-semibold">Product page views</h3>
-          <p className="text-sm text-muted-foreground">Last 7 days</p>
+          <p className="text-muted-foreground text-sm">Last 7 days</p>
         </div>
         <button
+          className="text-muted-foreground transition-colors hover:text-foreground"
           type="button"
-          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <MoreVerticalIcon className="size-4" />
         </button>
       </div>
 
       {/* Chart */}
-      <div className="flex-1 min-h-[200px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="min-h-[200px] flex-1">
+        <ResponsiveContainer height="100%" width="100%">
           <ComposedChart
             data={data}
             margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+            onMouseLeave={() => setActiveIndex(null)}
             onMouseMove={(state) => {
               if (state?.activeTooltipIndex !== undefined) {
                 setActiveIndex(state.activeTooltipIndex);
               }
             }}
-            onMouseLeave={() => setActiveIndex(null)}
           >
             <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
               opacity={0.3}
+              stroke="hsl(var(--border))"
+              strokeDasharray="3 3"
             />
             <XAxis
+              axisLine={false}
               dataKey="day"
-              axisLine={false}
-              tickLine={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+              tickLine={false}
             />
             <YAxis
-              yAxisId="left"
               axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
               hide
+              tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+              tickLine={false}
+              yAxisId="left"
             />
             <YAxis
-              yAxisId="right"
-              orientation="right"
               axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
               domain={[0, 2400]}
               hide
+              orientation="right"
+              tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+              tickLine={false}
+              yAxisId="right"
             />
             <Tooltip content={<CustomTooltip />} cursor={false} />
             {/* Revenue bars */}
-            <Bar yAxisId="right" dataKey="revenue" radius={4}>
+            <Bar dataKey="revenue" radius={4} yAxisId="right">
               {data.map((entry, index) => (
                 <Cell
-                  key={`cell-${entry.day}`}
                   className={
                     activeIndex === index
                       ? 'fill-emerald-500' // Lighter green on hover
                       : 'fill-foreground/30' // Default green
                   }
+                  key={`cell-${entry.day}`}
                   style={{ transition: 'fill 0.2s ease' }}
                 />
               ))}
             </Bar>
             <Line
-              yAxisId="left"
-              type="monotone"
               dataKey="visitors"
-              strokeWidth={2}
-              stroke="var(--foreground)"
               dot={false}
+              stroke="var(--foreground)"
+              strokeWidth={2}
+              type="monotone"
+              yAxisId="left"
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 gap-4 center-center">
+      <div className="center-center grid grid-cols-2 gap-4">
         <div>
-          <div className="text-2xl font-semibold font-mono">
+          <div className="font-mono font-semibold text-2xl">
             {totalVisitors.toLocaleString()}
           </div>
-          <div className="text-xs text-muted-foreground">Visitors</div>
+          <div className="text-muted-foreground text-xs">Visitors</div>
         </div>
         <div>
-          <div className="text-2xl font-semibold font-mono text-emerald-500">
+          <div className="font-mono font-semibold text-2xl text-emerald-500">
             ${totalRevenue.toLocaleString()}
           </div>
-          <div className="text-xs text-muted-foreground">Revenue</div>
+          <div className="text-muted-foreground text-xs">Revenue</div>
         </div>
       </div>
     </FeatureCardContainer>

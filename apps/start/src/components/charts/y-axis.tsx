@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { useChartStable } from "./chart-context";
+import { memo, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useChartStable } from './chart-context';
 
 export interface YAxisProps {
   /** Number of ticks to show. Default: 5 */
@@ -69,7 +69,7 @@ const YAxisInner = memo(function YAxisInner({
         <div
           className="absolute right-0 flex items-center justify-end pr-2"
           key={tick.value}
-          style={{ top: tick.y, transform: "translateY(-50%)" }}
+          style={{ top: tick.y, transform: 'translateY(-50%)' }}
         >
           <span className="text-chart-label text-xs">{tick.label}</span>
         </div>
@@ -79,6 +79,6 @@ const YAxisInner = memo(function YAxisInner({
   );
 });
 
-YAxis.displayName = "YAxis";
+YAxis.displayName = 'YAxis';
 
 export default YAxis;

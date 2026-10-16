@@ -1,0 +1,77 @@
+import { getRedisCache, type Redis } from '@openpanel/redis';
+import type { IClickhouseBotEvent } from '../modules/event/event.service';
+import { TABLE_NAMES } from '../shared/ch-tables';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+
+const DEFAULT_BATCH_SIZE = 1000;
+
+export class BotBuffer extends BaseBuffer {
+  private readonly batchSize =
+    this.deps.config.buffers.bot.batchSize ?? DEFAULT_BATCH_SIZE;
+
+  private readonly redisKey = 'bot-events-buffer';
+  private readonly redis: Redis;
+  constructor(deps: BufferDeps) {
+    super(deps, {
+      name: 'bot',
+      onFlush: async () => {
+        await this.processBuffer();
+      },
+    });
+    this.redis = getRedisCache();
+  }
+
+  protected getRedisListKey(): string {
+    return this.redisKey;
+  }
+
+  async add(event: IClickhouseBotEvent) {
+    return this.timeAdd(async () => {
+      try {
+        await this.redis.rpush(this.redisKey, JSON.stringify(event));
+      } catch (error) {
+        this.logger.error({ err: error }, 'Failed to add bot event');
+      }
+    });
+  }
+
+  async processBuffer() {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  private async processBatch(): Promise<number> {
+    const lrangeStart = performance.now();
+    const events = await this.redis.lrange(
+      this.redisKey,
+      0,
+      this.batchSize - 1
+    );
+    const lrangeMs = performance.now() - lrangeStart;
+
+    if (events.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return 0;
+    }
+
+    // Raw passthrough: each Redis entry is already a JSONEachRow line.
+    const ch = this.resolveCh();
+    const chStart = performance.now();
+    await ch.insert({
+      table: TABLE_NAMES.events_bots,
+      values: this.jsonEachRowStream(events),
+      format: 'JSONEachRow',
+      clickhouse_settings: this.getClickhouseSettings(),
+    });
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    await this.redis.ltrim(this.redisKey, events.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: events.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
+    return events.length;
+  }
+}

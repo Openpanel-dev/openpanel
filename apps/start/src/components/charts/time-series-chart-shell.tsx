@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { scaleLinear, scaleTime } from "@visx/scale";
-import { bisector, extent } from "d3-array";
-import type { Transition } from "motion/react";
+import { scaleLinear, scaleTime } from '@visx/scale';
+import { bisector, extent } from 'd3-array';
+import type { Transition } from 'motion/react';
 import {
   Children,
   cloneElement,
@@ -14,21 +14,21 @@ import {
   useEffect,
   useMemo,
   useState,
-} from "react";
-import { DEFAULT_ANIMATION_EASING } from "./animation";
-import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
-import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
-import { shortDateFmt } from "./chart-formatters";
-import { ChartRevealClip } from "./chart-reveal-clip";
+} from 'react';
+import { DEFAULT_ANIMATION_EASING } from './animation';
+import { ChartProvider, type LineConfig, type Margin } from './chart-context';
+import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
+import { shortDateFmt } from './chart-formatters';
+import { ChartRevealClip } from './chart-reveal-clip';
 import {
   decimateTimeSeries,
   maxRenderPointsForWidth,
-} from "./decimate-time-series";
+} from './decimate-time-series';
 import {
   computeSeriesBarRevealClipPadding,
   computeSeriesBarWidth,
-} from "./series-bar-layout";
-import { useChartInteraction } from "./use-chart-interaction";
+} from './series-bar-layout';
+import { useChartInteraction } from './use-chart-interaction';
 
 function collectNumericExtents(
   data: Record<string, unknown>[],
@@ -40,7 +40,7 @@ function collectNumericExtents(
   for (const d of data) {
     for (const key of dataKeys) {
       const value = d[key];
-      if (typeof value === "number") {
+      if (typeof value === 'number') {
         if (value < minValue) {
           minValue = value;
         }
@@ -91,11 +91,11 @@ export function isPostOverlayComponent(child: ReactElement): boolean {
   }
 
   const componentName =
-    typeof child.type === "function"
-      ? childType.displayName || childType.name || ""
-      : "";
+    typeof child.type === 'function'
+      ? childType.displayName || childType.name || ''
+      : '';
 
-  return componentName === "ChartMarkers" || componentName === "MarkerGroup";
+  return componentName === 'ChartMarkers' || componentName === 'MarkerGroup';
 }
 
 function ensureChildKey(child: ReactElement, index: number): ReactElement {
@@ -151,7 +151,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   animationDuration,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
-  revealSignature = "",
+  revealSignature = '',
   children,
   containerRef,
   lines,
@@ -347,11 +347,10 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     ]
   );
 
-  // Single shared reveal clip for every series. Replaces the per-<Line> /
-  // per-<Area> `<ChartRevealClip>` motion.rects: one motion-driven attribute
-  // animation instead of N, with all series referencing the same `<clipPath>`.
-  // The wipe semantics (left-to-right unveil of static path geometry) are
-  // identical to the previous per-series clips.
+  // Single shared reveal clip for every series: one motion-driven attribute
+  // animation instead of one per line/area, with all series referencing the
+  // same `<clipPath>`. The wipe is a left-to-right unveil of static path
+  // geometry.
   // animationDuration === 0 truly disables the reveal (no clipPath wrapper),
   // so consumers can opt out without having to also pass enterTransition.
   const showReveal =
@@ -360,7 +359,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   // animationDuration so clipRevealTransition picks up the override instead
   // of falling back to its 1100ms default.
   const effectiveEnterTransition: Transition = enterTransition ?? {
-    type: "tween",
+    type: 'tween',
     duration: animationDuration / 1000,
   };
 

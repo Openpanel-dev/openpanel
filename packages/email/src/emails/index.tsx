@@ -3,6 +3,7 @@ import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
 } from './email-reset-password';
+import NotificationRule, { zNotificationRule } from './notification-rule';
 import OnboardingDashboards, {
   zOnboardingDashboards,
 } from './onboarding-dashboards';
@@ -12,7 +13,6 @@ import OnboardingFeatureRequest, {
 import OnboardingTrialEnding, {
   zOnboardingTrialEnding,
 } from './onboarding-trial-ending';
-import NotificationRule, { zNotificationRule } from './notification-rule';
 import OnboardingWelcome, { zOnboardingWelcome } from './onboarding-welcome';
 import OnboardingWhatToTrack, {
   zOnboardingWhatToTrack,

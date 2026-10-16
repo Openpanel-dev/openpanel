@@ -1,8 +1,3 @@
-import { getChatClient } from '@/agents/client';
-import { usePageContextValue } from '@/contexts/page-context';
-import { useAppContext } from '@/hooks/use-app-context';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useAgent } from '@better-agent/client/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,24 +10,18 @@ import {
   useState,
 } from 'react';
 import { useChatState } from './chat-context';
-import { chatToolHandlers } from './tool-handlers';
 import { streamTitle } from './title-stream';
+import { chatToolHandlers } from './tool-handlers';
+import { getChatClient } from '@/agents/client';
+import { usePageContextValue } from '@/contexts/page-context';
+import { useAppContext } from '@/hooks/use-app-context';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
 
 /**
- * Drawer-scoped runtime that owns the `useAgent()` instance and exposes
- * `messages`, `status`, `sendMessage`, `stop` to body + footer via a
- * tiny context. Mounts inside the drawer, between the header and the
- * body/footer pair.
- *
- * Why this is here and not in a global provider:
- *   - The `useAgent()` call itself is a hook — it can't move without
- *     mounting. Putting it on the drawer means the chat client is
- *     only active when the drawer is open.
- *   - Page context is read here so every send carries the user's
- *     current view (project, page, filters). Re-evaluates on each
- *     send via the closure — no refs needed.
- *   - When `agentName` or `conversationId` changes, the controller
- *     rebuilds. Better Agent handles hydration via `hydrateFromServer`.
+ * Drawer-scoped runtime that owns the `useAgent()` instance, so the chat
+ * client is only active while the drawer is open. Page context is read per
+ * send, so every message carries the user's current view.
  */
 
 type ChatRuntimeValue = ReturnType<typeof useAgent> & {
@@ -59,7 +48,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => getChatClient(apiUrl), [apiUrl]);
 
   const renameConversation = useMutation(
-    trpc.conversation.rename.mutationOptions(),
+    trpc.conversation.rename.mutationOptions()
   );
 
   // Title streams run fire-and-forget. If the user switches or closes
@@ -76,7 +65,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       titleAbortRef.current?.abort();
       titleAbortRef.current = null;
     },
-    [],
+    []
   );
 
   const agent = useAgent(client, {
@@ -85,7 +74,8 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
     hydrateFromServer: true,
     optimisticUserMessage: true,
     // Better Agent forwards tool calls for any tool declared via
-    // `.client()` on the server (see `apps/api/src/agents/tools/ui.ts`)
+    // `.client()` on the server (see `@openpanel/core`'s
+    // `modules/assistant/src/tools/ui.ts`)
     // to the matching entry here. Typed via `ToolHandlers<ChatApp>`
     // on the map itself, so this line stays cast-free.
     toolHandlers: chatToolHandlers,
@@ -101,7 +91,9 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       ...agent,
       send: (text: string) => {
         const trimmed = text.trim();
-        if (!trimmed) return;
+        if (!trimmed) {
+          return;
+        }
         if (agent.status === 'submitted' || agent.status === 'streaming') {
           return;
         }
@@ -127,9 +119,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
         // set — it's the in-memory source of truth for this session.
         // It gets cleared on `newConversation()` / `switchConversation()`.
         if (isFirstTurn) {
-          // Cancel any previously in-flight title (shouldn't exist on
-          // a first turn, but defensive) and start a fresh controller
-          // bound to this runtime's lifecycle.
+          // Defensive: a first turn should have no title request in flight.
           titleAbortRef.current?.abort();
           const controller = new AbortController();
           titleAbortRef.current = controller;
@@ -140,12 +130,16 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
               client,
               trimmed,
               (partial) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                  return;
+                }
                 setStreamingTitle(partial);
               },
-              controller.signal,
+              controller.signal
             );
-            if (controller.signal.aborted || !finalTitle) return;
+            if (controller.signal.aborted || !finalTitle) {
+              return;
+            }
             try {
               await renameConversation.mutateAsync({
                 id: idAtSend,
@@ -153,7 +147,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
                 projectId,
               });
               queryClient.invalidateQueries(
-                trpc.conversation.list.pathFilter(),
+                trpc.conversation.list.pathFilter()
               );
             } catch (err) {
               console.error('[chat] conversation rename failed', err);
@@ -171,7 +165,7 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
       pageContext,
       renameConversation,
       setStreamingTitle,
-    ],
+    ]
   );
 
   // Drain the pending message left by the sidebar composer.
@@ -196,8 +190,12 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setHydrationPhase((prev) => {
-      if (agent.status !== 'ready') return 'hydrating';
-      if (prev === 'hydrating') return 'settled';
+      if (agent.status !== 'ready') {
+        return 'hydrating';
+      }
+      if (prev === 'hydrating') {
+        return 'settled';
+      }
       return prev;
     });
   }, [agent.status]);
@@ -210,9 +208,15 @@ export function ChatRuntimeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hydrationPhase !== 'settled') return;
-    if (agent.status !== 'ready') return;
-    if (!pendingMessage) return;
+    if (hydrationPhase !== 'settled') {
+      return;
+    }
+    if (agent.status !== 'ready') {
+      return;
+    }
+    if (!pendingMessage) {
+      return;
+    }
     const text = pendingMessage;
     // Clear first to prevent re-entry: the effect re-runs when `value`
     // rebuilds (it depends on agent state), and without the early null

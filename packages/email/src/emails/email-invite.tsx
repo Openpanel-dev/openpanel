@@ -1,5 +1,4 @@
 import { Button, Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 

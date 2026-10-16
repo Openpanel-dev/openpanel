@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo, useMemo } from "react";
-import { DashTailStroke } from "./dash-tail-stroke";
-import { resolveDashStartX, resolveDashTailBounds } from "./path-stroke-utils";
+import { memo, useMemo } from 'react';
+import { DashTailStroke } from './dash-tail-stroke';
+import { resolveDashStartX, resolveDashTailBounds } from './path-stroke-utils';
 
 interface SeriesDashTailOverlayProps {
   dashFromIndex?: number;

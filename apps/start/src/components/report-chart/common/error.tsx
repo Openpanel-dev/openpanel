@@ -1,6 +1,6 @@
-import { cn } from '@/utils/cn';
 import { ServerCrashIcon } from 'lucide-react';
 import { useReportChartContext } from '../context';
+import { cn } from '@/utils/cn';
 
 export function ReportChartError() {
   const { isEditMode } = useReportChartContext();
@@ -8,14 +8,14 @@ export function ReportChartError() {
     <div
       className={cn(
         'center-center h-full w-full flex-col',
-        isEditMode && 'card p-4',
+        isEditMode && 'card p-4'
       )}
     >
       <ServerCrashIcon
-        strokeWidth={1.2}
         className="mb-4 size-10 animate-pulse text-muted-foreground"
+        strokeWidth={1.2}
       />
-      <div className="text-sm font-medium text-muted-foreground">
+      <div className="font-medium text-muted-foreground text-sm">
         There was an error loading this chart.
       </div>
     </div>

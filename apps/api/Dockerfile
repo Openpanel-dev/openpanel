@@ -1,11 +1,17 @@
-ARG NODE_VERSION=24.19.0
+# API image — one image, two roles (ROLE=api, worker or all).
+#
+# Bun is pinned exactly; keep this ARG in sync with `.bun-version`.
+ARG BUN_VERSION=1.4.0
 
-FROM node:${NODE_VERSION}-slim AS base
+# BASE — oven/bun:${BUN_VERSION}-slim. Not distroless (no shell, and the compose files start this image with
+# `sh -c "…"`) and not alpine (musl against a `debian-openssl-3.0.x` Prisma engine).
+#
+# The apt set is what the running container needs: `curl` backs the compose HEALTHCHECKs and `netcat-openbsd` backs
+# self-hosting/coolify.yml's `nc -z` wait loops, both exec inside the container. `ca-certificates`, `openssl` and
+# `libssl3` are already in the base; naming them pulls the Debian-Security libssl3t64/openssl upgrade.
+FROM oven/bun:${BUN_VERSION}-slim AS base
 
-# FIX: Bad workaround (https://github.com/nodejs/corepack/issues/612)
-ENV COREPACK_INTEGRITY_KEYS=0
-
-RUN corepack enable && apt-get update && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     openssl \
@@ -15,115 +21,99 @@ RUN corepack enable && apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# TOOLCHAIN — the full workspace, installed once WITH devDependencies, because codegen needs them (core's `tar` for
+# scripts/download-geo.ts, db's `prisma` CLI for schema generation). Neither this stage nor `build` ships.
+#
+# The whole tree is copied rather than a list of manifests: a workspace install has to see every member's
+# `package.json`, Docker's COPY cannot glob a directory level, and a hand-maintained list failed SILENTLY when it
+# drifted (a missing manifest surfaced as a runtime "Cannot find module").
+#
+# `bunfig.toml` is copied with the tree on purpose: it carries `[install] ignoreScripts = true` and
+# `linker = "isolated"`. Both install lines name `--linker=isolated` too, so the layout is a property of the command.
+#
+# No python3/make/g++: with `ignoreScripts` nothing compiles at install time, and the native addons this image needs
+# (@node-rs/argon2, sharp) resolve to prebuilt packages.
+FROM base AS toolchain
+
+WORKDIR /app
+
+COPY . .
+
+RUN bun install --frozen-lockfile --linker=isolated
+
+# BUILD — the Prisma client and core's geo/ASN data. There is no JS build step: the only output is generated
+# *source* under packages/, which `prod-deps` inherits.
+FROM toolchain AS build
+
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
 
-WORKDIR /app
+RUN bun run codegen
 
-# Workspace
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-# Apps
-COPY apps/api/package.json ./apps/api/
-# Packages
-COPY packages/ai/package.json packages/ai/
-COPY packages/db/package.json packages/db/
-COPY packages/geo/package.json packages/geo/
-COPY packages/mcp/package.json packages/mcp/
-COPY packages/trpc/package.json packages/trpc/
-COPY packages/auth/package.json packages/auth/
-COPY packages/json/package.json packages/json/
-COPY packages/email/package.json packages/email/
-COPY packages/queue/package.json packages/queue/
-COPY packages/redis/package.json packages/redis/
-COPY packages/logger/package.json packages/logger/
-COPY packages/common/package.json packages/common/
-COPY packages/payments/package.json packages/payments/
-COPY packages/constants/package.json packages/constants/
-COPY packages/validation/package.json packages/validation/
-COPY packages/integrations/package.json packages/integrations/
-COPY packages/js-runtime/package.json packages/js-runtime/
-COPY patches ./patches
+# PROD-DEPS — the node_modules that ships, and the only place anything is deleted. Derived from `build` so the
+# generated output survives, with every node_modules removed first: a `--production` install must be production-only
+# from the start, not a filtered view of a devDependency-laden tree.
+#
+# `--filter '@openpanel/api'` is the closure boundary: it follows `workspace:` edges transitively (api -> core -> db ->
+# redis/email/payments) and installs nothing outside them. A filter that matches nothing leaves the app unable to
+# resolve its imports, which tooling/gates/p13-images.sh catches by booting the image.
+FROM build AS prod-deps
 
-# BUILD
-FROM base AS build
+RUN find . -maxdepth 4 -type d -name node_modules -prune -exec rm -rf {} + && \
+    bun install --production --frozen-lockfile --linker=isolated --filter '@openpanel/api'
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++
+# TRIM — cuts that run HERE, in a build stage, never in the runtime stage: deleting a file in the final stage adds a
+# whiteout and makes the image LARGER, so a removal only shrinks anything if the bytes are never COPYed forward.
+#
+#   1. The musl-only native store entries. The base is glibc, so a package whose name says `musl` is dead on every
+#      arch this image is built for; the glob is arch-independent (an arm64 build resolves `-linux-arm64`).
+#   2/3. apps/api/scripts (two mock fixtures, 15.5 MB, only used by the non-production `test:manage` script) and
+#      apps/api/e2e. Removed here rather than by splitting the COPY below, which keeps that COPY drift-proof.
+#   4. `*.test.ts` under packages/, and packages/sdks: nothing in the api's closure imports an SDK.
+RUN find /app/node_modules/.bun -maxdepth 1 -name '*musl*' -prune -exec rm -rf {} + && \
+    rm -rf /app/apps/api/scripts /app/apps/api/e2e && \
+    find /app/packages -type f -name '*.test.ts' -delete && \
+    rm -rf /app/packages/sdks
 
-WORKDIR /app
-RUN pnpm install --frozen-lockfile && \
-    pnpm store prune
-
-COPY apps/api ./apps/api
-COPY packages ./packages
-COPY tooling ./tooling
-
-RUN pnpm codegen && \
-    pnpm --filter api run build
-
-# PROD
-FROM base AS prod
-
-ENV npm_config_build_from_source=true
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++
-
-WORKDIR /app
-COPY --from=build /app/package.json ./
-COPY --from=build /app/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod && \
-    pnpm rebuild && \
-    pnpm store prune
-
-# FINAL
-FROM base AS runner
+# RUNTIME — oven/bun:${BUN_VERSION}-slim, nothing but the app: the isolated node_modules and the source (with
+# `build`'s generated output), both from `prod-deps` so the store and the per-package symlinks come from one install.
+FROM base AS runtime
 
 ENV NODE_ENV=production
-ENV npm_config_build_from_source=true
+
+# The image runs as `bun` (uid 1000, created by the base image), so HOME must
+# point somewhere that user owns. Docker does not move HOME with USER, and the
+# start command in all three compose files runs `bunx prisma@6.14.0 migrate
+# deploy`, which writes to bun's install cache under HOME.
+ENV HOME=/home/bun
 
 WORKDIR /app
 
-COPY --from=build /app/package.json ./
-COPY --from=prod /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=bun:bun /app/package.json ./
+COPY --from=prod-deps --chown=bun:bun /app/node_modules ./node_modules
 
-# Apps
-COPY --from=build /app/apps/api ./apps/api
+# Apps — src/ is the artifact; there is no dist/.
+COPY --from=prod-deps --chown=bun:bun /app/apps/api ./apps/api
 
-# Packages
-COPY --from=build /app/packages/ai ./packages/ai
-COPY --from=build /app/packages/db ./packages/db
-COPY --from=build /app/packages/geo ./packages/geo
-COPY --from=build /app/packages/mcp ./packages/mcp
-COPY --from=build /app/packages/auth ./packages/auth
-COPY --from=build /app/packages/trpc ./packages/trpc
-COPY --from=build /app/packages/json ./packages/json
-COPY --from=build /app/packages/email ./packages/email
-COPY --from=build /app/packages/queue ./packages/queue
-COPY --from=build /app/packages/redis ./packages/redis
-COPY --from=build /app/packages/logger ./packages/logger
-COPY --from=build /app/packages/common ./packages/common
-COPY --from=build /app/packages/payments ./packages/payments
-COPY --from=build /app/packages/constants ./packages/constants
-COPY --from=build /app/packages/validation ./packages/validation
-COPY --from=build /app/packages/integrations ./packages/integrations
-COPY --from=build /app/packages/js-runtime ./packages/js-runtime
-COPY --from=build /app/tooling/typescript ./tooling/typescript
-RUN pnpm db:codegen
+COPY --from=prod-deps --chown=bun:bun /app/packages ./packages
+COPY --from=prod-deps --chown=bun:bun /app/tooling/typescript ./tooling/typescript
+
+# The shipped start command is `cd /app/packages/db && bunx prisma@6.14.0 migrate deploy`, so the schema and the
+# migrations directory are load-bearing image content. Assert them at build time rather than let a self-hoster find
+# out at container start. The code migrations' entrypoint is asserted too: `packages/core/scripts/migrate-code.ts`,
+# which the shipped compose files name, forwards to `packages/db/scripts/migrate-code.ts`, so both are load-bearing.
+RUN test -f /app/packages/db/prisma/schema.prisma && \
+    test -d /app/packages/db/prisma/migrations && \
+    test -f /app/packages/db/scripts/migrate-code.ts && \
+    test -d /app/packages/db/src/code-migrations && \
+    test -f /app/packages/core/scripts/migrate-code.ts
+
+USER bun
 
 WORKDIR /app/apps/api
 
-# Drop a diagnostic report on fatal errors / SIGUSR2 so the next native
-# segfault (exit 139) leaves a stack we can read. Override per-environment
-# by setting NODE_OPTIONS in the swarm stack file.
-ENV NODE_OPTIONS="--report-on-fatalerror --report-on-signal --report-directory=/tmp"
-
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+# ROLE picks the shape: `api` (or unset) serves HTTP only, `worker` consumes only, `all` does both. `config/env.ts`
+# fails boot loudly on an unknown value.
+CMD ["bun", "run", "src/main.ts"]

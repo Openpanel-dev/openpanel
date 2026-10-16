@@ -15,5 +15,9 @@ worker.$DOMAIN_NAME {$SSL_CONFIG
         admin $BASIC_AUTH_PASSWORD
     }
 
+    # The queue dashboard lives at /bullboard on the worker. It also requires
+    # a dashboard login, so this basic_auth is a second lock, not the only one.
+    redir / /bullboard/
+
     reverse_proxy op-worker:3000
 }

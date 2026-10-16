@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { type SpringConfig, useChartConfig } from "../chart-config-context";
-import { chartCssVars } from "../chart-context";
+import { motion, useSpring } from 'motion/react';
+import { type SpringConfig, useChartConfig } from '../chart-config-context';
+import { chartCssVars } from '../chart-context';
 
 export interface TooltipDotProps {
   x: number;
@@ -50,6 +50,6 @@ export function TooltipDot({
   );
 }
 
-TooltipDot.displayName = "TooltipDot";
+TooltipDot.displayName = 'TooltipDot';
 
 export default TooltipDot;

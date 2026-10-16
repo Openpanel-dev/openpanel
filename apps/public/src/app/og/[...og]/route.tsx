@@ -5,7 +5,6 @@ import { getFeatureData } from '@/lib/features';
 import { url as baseUrl } from '@/lib/layout.shared';
 import { articleSource, guideSource, pageSource, source } from '@/lib/source';
 
-// Truncate text helper
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -149,45 +148,6 @@ async function getOgData(
   }
 }
 
-// export async function generateStaticParams() {
-//   const params: { og: string[] }[] = [];
-
-//   // Static pages
-//   params.push({ og: ['default'] });
-//   params.push({ og: ['supporter'] });
-//   params.push({ og: ['pricing'] });
-//   params.push({ og: ['articles'] });
-//   params.push({ og: ['compare'] });
-//   params.push({ og: ['docs'] });
-
-//   // Articles
-//   const articles = await articleSource.getPages();
-//   for (const article of articles) {
-//     const slug = article.url.replace(/^\/articles\//, '').replace(/\/$/, '');
-//     params.push({ og: ['articles', slug] });
-//   }
-
-//   // Compare pages
-//   const compareSlugs = await getAllCompareSlugs();
-//   for (const slug of compareSlugs) {
-//     params.push({ og: ['compare', slug] });
-//   }
-
-//   // Docs pages
-//   const docs = await source.getPages();
-//   for (const doc of docs) {
-//     params.push({ og: ['docs', ...doc.slugs] });
-//   }
-
-//   // Other pages
-//   const pages = await pageSource.getPages();
-//   for (const page of pages) {
-//     params.push({ og: page.slugs });
-//   }
-
-//   return params;
-// }
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ og: string[] }> }
@@ -195,19 +155,15 @@ export async function GET(
   try {
     const { og } = await params;
 
-    // Get OG data based on segments
     const { title, description } = await getOgData(og);
 
-    // Truncate title and description
     const truncatedTitle = truncateText(title, 100);
     const truncatedDescription = description
       ? truncateText(description, 200)
       : undefined;
 
-    // Get background image URL
     const backgroundImageUrl = baseUrl('/ogimage-empty.png');
 
-    // Fetch Geist font files from CDN (cache fonts for better performance)
     const [geistRegular, geistBold] = await Promise.all([
       fetch(
         'https://cdn.jsdelivr.net/npm/geist@1.5.1/dist/fonts/geist-sans/Geist-Regular.ttf'
@@ -229,7 +185,6 @@ export async function GET(
           display: 'flex',
         }}
       >
-        {/* Title and Description at bottom left */}
         <div
           style={{
             bottom: '55px',
@@ -240,7 +195,6 @@ export async function GET(
             marginTop: 'auto',
           }}
         >
-          {/* Title */}
           <div
             style={{
               fontSize: truncatedTitle.length > 40 ? '56px' : '72px',
@@ -254,7 +208,6 @@ export async function GET(
             {truncatedTitle}
           </div>
 
-          {/* Description */}
           {truncatedDescription ? (
             <div
               style={{

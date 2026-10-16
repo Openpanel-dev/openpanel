@@ -1,8 +1,8 @@
-import { ResetPasswordForm } from '@/components/auth/reset-password-form';
-import { FullPageErrorState } from '@/components/full-page-error-state';
-import { PAGE_TITLES, createTitle } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
+import { ResetPasswordForm } from '@/components/auth/reset-password-form';
+import { FullPageErrorState } from '@/components/full-page-error-state';
+import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/reset-password')({
   head: () => ({
@@ -24,7 +24,7 @@ function Component() {
   const { token } = Route.useSearch();
 
   return (
-    <div className="col gap-8 w-full text-left">
+    <div className="col w-full gap-8 text-left">
       <ResetPasswordForm token={token} />
     </div>
   );

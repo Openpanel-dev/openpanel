@@ -14,6 +14,14 @@ const widgetSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/widget/counter')({
+  // Embedded in someone else's page, so this stays small. Without it a
+  // missing `shareId` fell through to the root handler, which prints
+  // `error.message` — for a ZodError that is the raw issues array.
+  errorComponent: () => (
+    <div className="p-2 text-muted-foreground text-xs">
+      Missing or invalid widget link.
+    </div>
+  ),
   component: RouteComponent,
   validateSearch: widgetSearchSchema,
 });

@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_app/account')({
         context.trpc.organization.list.queryOptions(undefined, {
           staleTime: 0,
           gcTime: 0,
-        }),
+        })
       )
       .catch(() => []);
 

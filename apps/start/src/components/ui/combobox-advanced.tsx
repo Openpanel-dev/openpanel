@@ -1,9 +1,6 @@
-import { Badge } from '@/components/ui/badge';
-import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
-
 import { Button, type ButtonProps } from './button';
 import { DumpCheckbox } from './checkbox';
 import {
@@ -12,6 +9,8 @@ import {
   PopoverPortal,
   PopoverTrigger,
 } from './popover';
+import { Badge } from '@/components/ui/badge';
+import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
@@ -53,13 +52,14 @@ export function ComboboxAdvanced({
         (typeof item.label === 'string' &&
           item.label.toLowerCase().includes(inputValue.toLowerCase())) ||
         (typeof item.value === 'string' &&
-          item.value.toLowerCase().includes(inputValue.toLowerCase())),
+          item.value.toLowerCase().includes(inputValue.toLowerCase()))
     );
 
   const renderItem = (item: IItem) => {
     const checked = !!value.find((s) => s === desanitize(item.value));
     return (
       <CommandItem
+        className={'flex cursor-pointer items-center gap-2'}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -69,10 +69,9 @@ export function ComboboxAdvanced({
           onChange(
             value.includes(desanitize(item.value))
               ? value.filter((s) => s !== desanitize(item.value))
-              : [...value, desanitize(item.value)],
+              : [...value, desanitize(item.value)]
           );
         }}
-        className={'flex cursor-pointer items-center gap-2'}
         value={item.value}
       >
         <DumpCheckbox checked={checked} />
@@ -82,15 +81,7 @@ export function ComboboxAdvanced({
   };
 
   const data = React.useMemo(() => {
-    return [
-      ...(inputValue === ''
-        ? []
-        : [
-            {
-              value: inputValue,
-              label: `Pick '${inputValue}'`,
-            },
-          ]),
+    const known = [
       ...value.map((val) => {
         const item = items.find((item) => item.value === val);
         return item
@@ -99,10 +90,21 @@ export function ComboboxAdvanced({
       }),
       ...selectables,
     ].filter((item) => item.value);
-  }, [inputValue, selectables, items]);
+
+    // The "Pick '…'" entry is only offered for a value that is not already in
+    // the list. Offering it for an exact match gave two rows the same `value`,
+    // which is the list's React key, and the duplicate made the real row
+    // unselectable.
+    const isNewValue =
+      inputValue !== '' && !known.some((item) => item.value === inputValue);
+
+    return isNewValue
+      ? [{ value: inputValue, label: `Pick '${inputValue}'` }, ...known]
+      : known;
+  }, [inputValue, selectables, items, value]);
 
   const trigger = children ?? (
-    <Button variant={'outline'} className={className} size={size} autoHeight>
+    <Button autoHeight className={className} size={size} variant={'outline'}>
       <div className="flex w-full flex-wrap gap-1">
         {value.length === 0 && placeholder}
         {value.map((val) => {
@@ -118,23 +120,28 @@ export function ComboboxAdvanced({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent className="w-full max-w-md p-0" align="start">
+        {/* `w-full` resolved against the PORTAL, not the trigger, so the
+            popover opened at an unrelated width and position. */}
+        <PopoverContent
+          align="start"
+          className="w-[--radix-popover-trigger-width] max-w-md p-0"
+        >
           <Command shouldFilter={false}>
             <CommandInput
+              onValueChange={setInputValue}
               placeholder="Search"
               value={inputValue}
-              onValueChange={setInputValue}
             />
             <VirtualList
-              height={Math.min(items.length * 32, 300)}
               data={data.map((item) => ({
                 ...item,
                 label: sanitize(item.label),
                 value: sanitize(item.value),
               }))}
+              height={Math.min(items.length * 32, 300)}
               itemHeight={32}
               itemKey="value"
             >

@@ -89,14 +89,14 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
 
   const analyticsQuery = useQuery(
     trpc.event.pages.queryOptions(
-      { projectId, cursor: 1, take: 1000, search: undefined, range, interval },
+      { projectId, take: 1000, range, interval },
       { placeholderData: keepPreviousData }
     )
   );
 
   const insights = useMemo<PageInsight[]>(() => {
     const gscPages = gscPagesQuery.data ?? [];
-    const analyticsPages = analyticsQuery.data ?? [];
+    const analyticsPages = analyticsQuery.data?.data ?? [];
 
     const analyticsMap = new Map(
       analyticsPages.map((p) => [p.origin + p.path, p])

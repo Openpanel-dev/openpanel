@@ -24,19 +24,14 @@
 
 import { createClient } from '../packages/db/src/clickhouse/client';
 import { PrismaClient } from '../packages/db/src/generated/prisma/client';
+import { TEST_CLICKHOUSE_URL, TEST_DATABASE_URL } from './databases';
 
 // Lazily create a Prisma client so DATABASE_URL is read at call time,
 // not at module-import time (globalSetup runs before env is configured).
 function getDb() {
-  const url =
-    process.env.DATABASE_URL ??
-    'postgresql://postgres:postgres@localhost:5432/postgres?schema=public';
+  const url = process.env.DATABASE_URL ?? TEST_DATABASE_URL;
   return new PrismaClient({ datasources: { db: { url } } });
 }
-
-// ---------------------------------------------------------------------------
-// Well-known fixture IDs — import these in tests instead of hard-coding strings
-// ---------------------------------------------------------------------------
 
 export const FIXTURE = {
   profiles: {
@@ -65,18 +60,14 @@ export const FIXTURE = {
   },
 } as const;
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
 type ChClient = ReturnType<typeof createClient>;
 
 function getClient() {
-  const url = process.env.CLICKHOUSE_URL ?? 'http://localhost:8123';
+  const url = process.env.CLICKHOUSE_URL ?? TEST_CLICKHOUSE_URL;
   return createClient({ url });
 }
 
-function timeAgo(now: Date, days: number, minutesOffset = 0) {
+export function timeAgo(now: Date, days: number, minutesOffset = 0) {
   return (
     new Date(now.getTime() - days * 86_400_000 - minutesOffset * 60_000)
       .toISOString()
@@ -86,7 +77,7 @@ function timeAgo(now: Date, days: number, minutesOffset = 0) {
   );
 }
 
-function buildEvent(
+export function buildEvent(
   now: Date,
   projectId: string,
   id: string,
@@ -183,7 +174,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
   const now = new Date();
 
   await client.insert({
-    table: 'openpanel.profiles',
+    table: 'profiles',
     values: [
       {
         id: FIXTURE.profiles.alice,
@@ -230,11 +221,9 @@ async function insertFixtures(client: ChClient, projectId: string) {
     format: 'JSONEachRow',
   });
 
-  // Alice: session_start → page_view → session_end (2 days ago, spaced 2 min apart)
-  // Charlie: session_start → screen_view → page_view → purchase → session_end (5 days ago, spaced 5 min apart)
   // Events are spaced so windowFunnel strict_increase mode works correctly.
   await client.insert({
-    table: 'openpanel.events',
+    table: 'events',
     values: [
       buildEvent(
         now,
@@ -329,7 +318,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
   });
 
   await client.insert({
-    table: 'openpanel.sessions',
+    table: 'sessions',
     values: [
       buildSession(
         now,
@@ -376,23 +365,19 @@ async function insertFixtures(client: ChClient, projectId: string) {
 async function deleteFixtures(client: ChClient, projectId: string) {
   await Promise.all([
     client.command({
-      query: `DELETE FROM openpanel.profiles WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM profiles WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM events WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.sessions WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM sessions WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `ALTER TABLE openpanel.distinct_event_names_mv DELETE WHERE project_id = '${projectId}'`,
+      query: `ALTER TABLE distinct_event_names_mv DELETE WHERE project_id = '${projectId}'`,
     }),
   ]);
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 export async function setupPostgresFixtures(
   projectId: string,
@@ -427,8 +412,6 @@ export async function teardownPostgresFixtures(
     await db.$disconnect();
   }
 }
-
-
 
 export async function setupFixtures(projectId: string): Promise<void> {
   const client = getClient();

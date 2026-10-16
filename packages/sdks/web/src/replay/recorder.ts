@@ -26,7 +26,7 @@ let stopRecording: (() => void) | null = null;
 
 export function startReplayRecorder(
   config: ReplayRecorderConfig,
-  sendChunk: (payload: ReplayChunkPayload) => void,
+  sendChunk: (payload: ReplayChunkPayload) => void
 ): void {
   if (typeof document === 'undefined' || typeof window === 'undefined') {
     return;
@@ -46,7 +46,9 @@ export function startReplayRecorder(
   let flushTimer: ReturnType<typeof setInterval> | null = null;
 
   function flush(isFullSnapshot: boolean): void {
-    if (buffer.length === 0) return;
+    if (buffer.length === 0) {
+      return;
+    }
 
     const payloadJson = JSON.stringify(buffer);
     const payloadBytes = new TextEncoder().encode(payloadJson).length;
@@ -111,12 +113,15 @@ export function startReplayRecorder(
     checkoutEveryNms: flushIntervalMs,
     maskAllInputs: config.maskAllInputs ?? true,
     maskTextSelector: maskAllText ? '*' : '[data-openpanel-replay-mask]',
-    maskTextFn: maskAllText && unmaskTextSelector
-      ? (text, element) => {
-          if (element?.closest(unmaskTextSelector)) return text;
-          return text.replace(/\S/g, '*');
-        }
-      : undefined,
+    maskTextFn:
+      maskAllText && unmaskTextSelector
+        ? (text, element) => {
+            if (element?.closest(unmaskTextSelector)) {
+              return text;
+            }
+            return text.replace(/\S/g, '*');
+          }
+        : undefined,
     blockSelector: config.blockSelector ?? '[data-openpanel-replay-block]',
     blockClass: config.blockClass,
     ignoreSelector: config.ignoreSelector,

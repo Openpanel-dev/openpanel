@@ -18,11 +18,11 @@ export function PublicPageCard({
   return (
     <div>
       <LoginNavbar />
-      <div className="center-center h-screen w-screen p-4 col">
-        <div className="bg-background p-6 rounded-lg max-w-md w-full text-left">
+      <div className="center-center col h-screen w-screen p-4">
+        <div className="w-full max-w-md rounded-lg bg-background p-6 text-left">
           <div className="col mt-1 flex-1 gap-2">
-            <LogoSquare className="size-12 mb-4" />
-            <div className="text-xl font-semibold">{title}</div>
+            <LogoSquare className="mb-4 size-12" />
+            <div className="font-semibold text-xl">{title}</div>
             {description && (
               <div className="text-lg text-muted-foreground leading-normal">
                 {description}
@@ -32,10 +32,10 @@ export function PublicPageCard({
           {!!children && <div className="mt-6">{children}</div>}
         </div>
         {showFooter && (
-          <div className="p-6 text-sm max-w-sm col gap-1 text-muted-foreground">
+          <div className="col max-w-sm gap-1 p-6 text-muted-foreground text-sm">
             <p>
               Powered by{' '}
-              <a href="https://openpanel.dev" className="font-medium">
+              <a className="font-medium" href="https://openpanel.dev">
                 OpenPanel.dev
               </a>
               {' · '}

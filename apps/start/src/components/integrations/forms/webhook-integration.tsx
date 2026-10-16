@@ -1,3 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateWebhookIntegration } from '@openpanel/core/modules/integration/integration.constants';
+import { useMutation } from '@tanstack/react-query';
+import { PlusIcon, TrashIcon } from 'lucide-react';
+import { mergeDeepRight, path } from 'ramda';
+import { useEffect } from 'react';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { JsonEditor } from '@/components/json-editor';
 import { Button } from '@/components/ui/button';
@@ -6,16 +15,6 @@ import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateWebhookIntegration } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { PlusIcon, TrashIcon } from 'lucide-react';
-import { path, mergeDeepRight } from 'ramda';
-import { useEffect } from 'react';
-import { Controller, useFieldArray, useWatch } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type IForm = z.infer<typeof zCreateWebhookIntegration>;
 
@@ -25,7 +24,7 @@ const DEFAULT_TRANSFORMER = `(payload) => {
 
 // Convert Record<string, string> to array format for form
 function headersToArray(
-  headers: Record<string, string> | undefined,
+  headers: Record<string, string> | undefined
 ): { key: string; value: string }[] {
   if (!headers || Object.keys(headers).length === 0) {
     return [];
@@ -35,7 +34,7 @@ function headersToArray(
 
 // Convert array format back to Record<string, string> for API
 function headersToRecord(
-  headers: { key: string; value: string }[],
+  headers: { key: string; value: string }[]
 ): Record<string, string> {
   return headers.reduce(
     (acc, { key, value }) => {
@@ -44,7 +43,7 @@ function headersToRecord(
       }
       return acc;
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   );
 }
 
@@ -76,7 +75,7 @@ export function WebhookIntegrationForm({
           javascriptTemplate: undefined,
         },
       },
-      defaultValues ?? {},
+      defaultValues ?? {}
     ),
     resolver: zodResolver(zCreateWebhookIntegration),
   });
@@ -106,7 +105,7 @@ export function WebhookIntegrationForm({
         (h): h is { key: string; value: string } =>
           h !== undefined &&
           typeof h.key === 'string' &&
-          typeof h.value === 'string',
+          typeof h.value === 'string'
       );
       form.setValue('config.headers', headersToRecord(validHeaders), {
         shouldValidate: false,
@@ -135,7 +134,7 @@ export function WebhookIntegrationForm({
           toast.error('Failed to create integration');
         }
       },
-    }),
+    })
   );
 
   const handleSubmit = (values: IForm) => {
@@ -148,8 +147,8 @@ export function WebhookIntegrationForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit, handleError)}
       className="col gap-4"
+      onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
         label="Name"
@@ -164,43 +163,41 @@ export function WebhookIntegrationForm({
       />
 
       <WithLabel
-        label="Headers"
         info="Add custom HTTP headers to include with webhook requests"
+        label="Headers"
       >
         <div className="col gap-2">
           {headersArray.fields.map((field, index) => (
-            <div key={field.id} className="row gap-2">
+            <div className="row gap-2" key={field.id}>
               <Input
                 placeholder="Header Name"
                 {...headersForm.register(`headers.${index}.key`)}
                 className="flex-1"
               />
               <Input
-                placeholder={
-                  defaultValues?.id ? 'Unchanged' : 'Header Value'
-                }
+                placeholder={defaultValues?.id ? 'Unchanged' : 'Header Value'}
                 // Header values are never sent back to the browser, so an edit
                 // starts blank and blank means "keep the stored value".
                 {...headersForm.register(`headers.${index}.value`)}
                 className="flex-1"
               />
               <Button
+                className="text-destructive"
+                onClick={() => headersArray.remove(index)}
+                size="icon"
                 type="button"
                 variant="ghost"
-                size="icon"
-                onClick={() => headersArray.remove(index)}
-                className="text-destructive"
               >
                 <TrashIcon className="h-4 w-4" />
               </Button>
             </div>
           ))}
           <Button
-            type="button"
-            variant="outline"
-            onClick={() => headersArray.append({ key: '', value: '' })}
             className="self-start"
             icon={PlusIcon}
+            onClick={() => headersArray.append({ key: '', value: '' })}
+            type="button"
+            variant="outline"
           >
             Add Header
           </Button>
@@ -212,13 +209,12 @@ export function WebhookIntegrationForm({
         name="config.mode"
         render={({ field }) => (
           <WithLabel
-            label="Payload Format"
             info="Choose how to format the webhook payload"
+            label="Payload Format"
           >
             <Combobox
               {...field}
               className="w-full"
-              placeholder="Select format"
               items={[
                 {
                   label: 'Message',
@@ -229,8 +225,9 @@ export function WebhookIntegrationForm({
                   value: 'javascript' as const,
                 },
               ]}
-              value={field.value ?? 'message'}
               onChange={field.onChange}
+              placeholder="Select format"
+              value={field.value ?? 'message'}
             />
           </WithLabel>
         )}
@@ -242,7 +239,6 @@ export function WebhookIntegrationForm({
           name="config.javascriptTemplate"
           render={({ field }) => (
             <WithLabel
-              label="JavaScript Transform"
               info={
                 <div className="prose dark:prose-invert max-w-none">
                   <p>
@@ -250,7 +246,7 @@ export function WebhookIntegrationForm({
                     payload. The function receives <code>payload</code> as a
                     parameter and should return an object.
                   </p>
-                  <p className="text-sm font-semibold mt-2">
+                  <p className="mt-2 font-semibold text-sm">
                     Available in payload:
                   </p>
                   <ul className="text-sm">
@@ -271,7 +267,7 @@ export function WebhookIntegrationForm({
                       <code>payload.profile.firstName</code> - Profile property
                     </li>
                     <li>
-                      <div className="flex gap-x-2 flex-wrap mt-1">
+                      <div className="mt-1 flex flex-wrap gap-x-2">
                         <code>country</code>
                         <code>city</code>
                         <code>device</code>
@@ -283,7 +279,7 @@ export function WebhookIntegrationForm({
                       </div>
                     </li>
                   </ul>
-                  <p className="text-sm font-semibold mt-2">
+                  <p className="mt-2 font-semibold text-sm">
                     Available helpers:
                   </p>
                   <ul className="text-sm">
@@ -293,10 +289,10 @@ export function WebhookIntegrationForm({
                       <code>Object</code>
                     </li>
                   </ul>
-                  <p className="text-sm mt-2">
+                  <p className="mt-2 text-sm">
                     <strong>Example:</strong>
                   </p>
-                  <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
+                  <pre className="mt-1 overflow-x-auto rounded bg-muted p-2 text-xs">
                     {`(payload) => ({
   event: payload.name,
   user: payload.profileId,
@@ -305,15 +301,17 @@ export function WebhookIntegrationForm({
   location: \`\${payload.city}, \${payload.country}\`
 })`}
                   </pre>
-                  <p className="text-sm mt-2 text-yellow-600 dark:text-yellow-400">
+                  <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
                     <strong>Security:</strong> Network calls, file system
                     access, and other dangerous operations are blocked.
                   </p>
                 </div>
               }
+              label="JavaScript Transform"
             >
               <JsonEditor
-                value={field.value ?? DEFAULT_TRANSFORMER}
+                language="javascript"
+                minHeight="300px"
                 onChange={(value) => {
                   field.onChange(value);
                   // Clear error when user starts typing
@@ -322,11 +320,10 @@ export function WebhookIntegrationForm({
                   }
                 }}
                 placeholder={DEFAULT_TRANSFORMER}
-                minHeight="300px"
-                language="javascript"
+                value={field.value ?? DEFAULT_TRANSFORMER}
               />
               {form.formState.errors.config?.javascriptTemplate && (
-                <p className="mt-1 text-sm text-destructive">
+                <p className="mt-1 text-destructive text-sm">
                   {form.formState.errors.config.javascriptTemplate.message}
                 </p>
               )}

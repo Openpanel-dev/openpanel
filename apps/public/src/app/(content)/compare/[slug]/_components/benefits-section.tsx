@@ -1,8 +1,8 @@
+import { CheckIcon } from 'lucide-react';
+import Link from 'next/link';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CheckIcon } from 'lucide-react';
-import Link from 'next/link';
 
 interface BenefitsSectionProps {
   label?: string;
@@ -26,23 +26,23 @@ export function BenefitsSection({
 }: BenefitsSectionProps) {
   return (
     <Section className={cn('container', className)}>
-      <div className="max-w-3xl col gap-6">
+      <div className="col max-w-3xl gap-6">
         {label && (
-          <p className="text-sm italic text-primary font-medium">{label}</p>
+          <p className="font-medium text-primary text-sm italic">{label}</p>
         )}
-        <h2 className="text-4xl md:text-5xl font-semibold leading-tight">
+        <h2 className="font-semibold text-4xl leading-tight md:text-5xl">
           {title}
         </h2>
         <p className="text-lg text-muted-foreground">{description}</p>
         {cta && (
-          <Button size="lg" asChild className="w-fit">
+          <Button asChild className="w-fit" size="lg">
             <Link href={cta.href}>{cta.label}</Link>
           </Button>
         )}
-        <div className="col gap-4 mt-4">
+        <div className="col mt-4 gap-4">
           {benefits.map((benefit) => (
-            <div key={benefit} className="row gap-3 items-start">
-              <CheckIcon className="size-5 text-green-500 shrink-0 mt-0.5" />
+            <div className="row items-start gap-3" key={benefit}>
+              <CheckIcon className="mt-0.5 size-5 shrink-0 text-green-500" />
               <p className="text-muted-foreground">{benefit}</p>
             </div>
           ))}

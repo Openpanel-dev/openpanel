@@ -1,11 +1,7 @@
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useQuery } from '@tanstack/react-query';
 import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { Widget, WidgetBody } from '../widget';
 import OverviewDetailsButton from './overview-details-button';
@@ -17,6 +13,9 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 
 interface OverviewTopPagesProps {
   projectId: string;
@@ -66,7 +65,7 @@ export default function OverviewTopPages({
       endDate,
       mode: widget.key,
       range,
-    }),
+    })
   );
 
   const filteredData = useMemo(() => {
@@ -78,7 +77,7 @@ export default function OverviewTopPages({
     return data.filter(
       (item) =>
         item.path.toLowerCase().includes(queryLower) ||
-        item.origin.toLowerCase().includes(queryLower),
+        item.origin.toLowerCase().includes(queryLower)
     );
   }, [query.data, searchQuery]);
 
@@ -91,13 +90,13 @@ export default function OverviewTopPages({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {query.isLoading ? (
@@ -121,15 +120,17 @@ export default function OverviewTopPages({
         </WidgetBody>
         <WidgetFooter>
           <OverviewDetailsButton
-            onClick={() => pushModal('OverviewTopPagesModal', { projectId })}
+            onClick={() =>
+              pushModal('OverviewTopPagesModal', { projectId, shareId })
+            }
           />
           <div className="flex-1" />
           <Button
-            variant={'ghost'}
+            icon={Globe2Icon}
             onClick={() => {
               setDomain((p) => !p);
             }}
-            icon={Globe2Icon}
+            variant={'ghost'}
           >
             {domain ? 'Hide domain' : 'Show domain'}
           </Button>

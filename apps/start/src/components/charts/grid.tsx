@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { GridColumns, GridRows } from "@visx/grid";
-import { useId } from "react";
-import { chartCssVars, useChartStable } from "./chart-context";
+import { GridColumns, GridRows } from '@visx/grid';
+import { useId } from 'react';
+import { chartCssVars, useChartStable } from './chart-context';
 
 export interface GridProps {
   /** Show horizontal grid lines. Default: true */
@@ -48,25 +48,21 @@ export function Grid({
   stroke = chartCssVars.grid,
   strokeOpacity = 1,
   strokeWidth = 1,
-  strokeDasharray = "4,4",
+  strokeDasharray = '4,4',
   highlightRowValues,
   highlightRowStroke = chartCssVars.foregroundMuted,
   highlightRowStrokeOpacity = 1,
   highlightRowStrokeWidth = 1,
-  highlightRowStrokeDasharray = "0",
+  highlightRowStrokeDasharray = '0',
   fadeHorizontal = true,
   fadeVertical = false,
 }: GridProps) {
   const { xScale, yScale, innerWidth, innerHeight, orientation, barScale } =
     useChartStable();
 
-  // For bar charts, determine which scale to use for grid lines
-  // Horizontal bar charts: vertical grid should use yScale (value scale)
-  // Vertical bar charts: horizontal grid uses yScale (value scale)
-  const isHorizontalBarChart = orientation === "horizontal" && barScale;
-
-  // For vertical grid lines in horizontal bar charts, use yScale (the value scale)
-  // For time-based charts, use xScale
+  // Bar charts swap axes: for a horizontal bar chart the vertical grid needs
+  // the value scale (yScale), not the category scale.
+  const isHorizontalBarChart = orientation === 'horizontal' && barScale;
   const columnScale = isHorizontalBarChart ? yScale : xScale;
   const uniqueId = useId();
 
@@ -80,16 +76,15 @@ export function Grid({
 
   return (
     <g className="chart-grid">
-      {/* Gradient mask for horizontal grid lines - fades at left/right */}
       {horizontal && fadeHorizontal && (
         <defs>
           <linearGradient id={hGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" style={{ stopColor: "white", stopOpacity: 0 }} />
-            <stop offset="10%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop offset="90%" style={{ stopColor: "white", stopOpacity: 1 }} />
+            <stop offset="0%" style={{ stopColor: 'white', stopOpacity: 0 }} />
+            <stop offset="10%" style={{ stopColor: 'white', stopOpacity: 1 }} />
+            <stop offset="90%" style={{ stopColor: 'white', stopOpacity: 1 }} />
             <stop
               offset="100%"
-              style={{ stopColor: "white", stopOpacity: 0 }}
+              style={{ stopColor: 'white', stopOpacity: 0 }}
             />
           </linearGradient>
           <mask id={hMaskId}>
@@ -104,16 +99,15 @@ export function Grid({
         </defs>
       )}
 
-      {/* Gradient mask for vertical grid lines - fades at top/bottom */}
       {vertical && fadeVertical && (
         <defs>
           <linearGradient id={vGradientId} x1="0%" x2="0%" y1="0%" y2="100%">
-            <stop offset="0%" style={{ stopColor: "white", stopOpacity: 0 }} />
-            <stop offset="10%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop offset="90%" style={{ stopColor: "white", stopOpacity: 1 }} />
+            <stop offset="0%" style={{ stopColor: 'white', stopOpacity: 0 }} />
+            <stop offset="10%" style={{ stopColor: 'white', stopOpacity: 1 }} />
+            <stop offset="90%" style={{ stopColor: 'white', stopOpacity: 1 }} />
             <stop
               offset="100%"
-              style={{ stopColor: "white", stopOpacity: 0 }}
+              style={{ stopColor: 'white', stopOpacity: 0 }}
             />
           </linearGradient>
           <mask id={vMaskId}>
@@ -166,7 +160,7 @@ export function Grid({
           })}
         </g>
       ) : null}
-      {vertical && columnScale && typeof columnScale === "function" && (
+      {vertical && columnScale && typeof columnScale === 'function' && (
         <g mask={fadeVertical ? `url(#${vMaskId})` : undefined}>
           <GridColumns
             height={innerHeight}
@@ -183,6 +177,6 @@ export function Grid({
   );
 }
 
-Grid.displayName = "Grid";
+Grid.displayName = 'Grid';
 
 export default Grid;

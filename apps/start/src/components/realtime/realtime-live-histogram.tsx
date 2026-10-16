@@ -33,8 +33,7 @@ export function RealtimeLiveHistogram({
   );
 
   const chartData = liveData?.minuteCounts ?? [];
-  // Calculate total unique visitors (sum of unique visitors per minute)
-  // Note: This is an approximation - ideally we'd want unique visitors across all minutes
+  // Approximation: totalSessions, not unique visitors across the window.
   const totalVisitors = liveData?.totalSessions ?? 0;
 
   if (isLoading) {
@@ -53,24 +52,7 @@ export function RealtimeLiveHistogram({
     Math.max(...chartData.map((item) => item.visitorCount), 0) * 1.2 || 1;
 
   return (
-    <Wrapper
-      count={totalVisitors}
-      // icons={
-      //   liveData.referrers && liveData.referrers.length > 0 ? (
-      //     <div className="row shrink-0 gap-2">
-      //       {liveData.referrers.slice(0, 3).map((ref, index) => (
-      //         <div
-      //           className="row items-center gap-1 font-bold text-xs"
-      //           key={`${ref.referrer}-${ref.count}-${index}`}
-      //         >
-      //           <SerieIcon name={ref.referrer} />
-      //           <span>{number.short(ref.count)}</span>
-      //         </div>
-      //       ))}
-      //     </div>
-      //   ) : null
-      // }
-    >
+    <Wrapper count={totalVisitors}>
       <ResponsiveContainer height="100%" width="100%">
         <BarChart
           data={chartData}

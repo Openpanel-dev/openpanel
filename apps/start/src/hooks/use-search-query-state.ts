@@ -1,6 +1,6 @@
-import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useQueryState } from 'nuqs';
 import { useDebounceValue } from './use-debounce-value';
+import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 
 export function useSearchQueryState(props?: {
   searchKey?: string;

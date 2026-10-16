@@ -88,8 +88,8 @@ services:
 When you're done with above steps you should need to restart all services. This will take quite some time depending on your hardware and how many events you have. Since we have made significant changes to the database schema and data we need to run migrations.
 
 ```bash
-./stop
-./start
+docker compose down
+docker compose up -d
 ```
 
 ## Using Coolify?

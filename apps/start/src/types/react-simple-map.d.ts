@@ -15,7 +15,7 @@ declare module 'react-simple-maps' {
   export type ProjectionFunction = (
     width: number,
     height: number,
-    config: ProjectionConfig,
+    config: ProjectionConfig
   ) => GeoProjection;
 
   export interface ComposableMapProps
@@ -81,7 +81,7 @@ declare module 'react-simple-maps' {
     onMoveStart?:
       | ((
           position: { coordinates: [number, number]; zoom: number },
-          event: D3ZoomEvent<SVGElement, any>,
+          event: D3ZoomEvent<SVGElement, any>
         ) => void)
       | undefined;
     onMove?:
@@ -92,13 +92,13 @@ declare module 'react-simple-maps' {
             zoom: number;
             dragging: WheelEvent;
           },
-          event: D3ZoomEvent<SVGElement, any>,
+          event: D3ZoomEvent<SVGElement, any>
         ) => void)
       | undefined;
     onMoveEnd?:
       | ((
           position: { coordinates: [number, number]; zoom: number },
-          event: D3ZoomEvent<SVGElement, any>,
+          event: D3ZoomEvent<SVGElement, any>
         ) => void)
       | undefined;
     filterZoomEvent?: ((element: SVGElement) => boolean) | undefined;

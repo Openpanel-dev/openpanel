@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

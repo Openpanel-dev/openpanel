@@ -1,22 +1,20 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-
-import { mapKeys } from '@openpanel/validation';
-
 import type { ReportChartProps } from '../report-chart/context';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 export function useOverviewWidget<T extends string>(
   key: string,
   widgets: Record<
     T,
     { title: string; btn: string; chart: ReportChartProps; hide?: boolean }
-  >,
+  >
 ) {
   const keys = Object.keys(widgets) as T[];
   const [widget, setWidget] = useQueryState<T>(
     key,
     parseAsStringEnum(keys)
       .withDefault(keys[0]!)
-      .withOptions({ history: 'push' }),
+      .withOptions({ history: 'push' })
   );
   return [
     {
@@ -33,17 +31,14 @@ export function useOverviewWidget<T extends string>(
 
 export function useOverviewWidgetV2<T extends string>(
   key: string,
-  widgets: Record<
-    T,
-    { title: string; btn: string; meta?: any; hide?: boolean }
-  >,
+  widgets: Record<T, { title: string; btn: string; meta?: any; hide?: boolean }>
 ) {
   const keys = Object.keys(widgets) as T[];
   const [widget, setWidget] = useQueryState<T>(
     key,
     parseAsStringEnum(keys)
       .withDefault(keys[0]!)
-      .withOptions({ history: 'push' }),
+      .withOptions({ history: 'push' })
   );
   return [
     {

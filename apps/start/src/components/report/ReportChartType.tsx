@@ -1,4 +1,5 @@
-import { useDispatch, useSelector } from '@/redux';
+import type { IChartType } from '@openpanel/core/modules/report/report.constants';
+import { chartTypes } from '@openpanel/core/modules/report/report.constants';
 import {
   AreaChartIcon,
   ChartBarIcon,
@@ -13,10 +14,7 @@ import {
   TrendingUpIcon,
   UsersIcon,
 } from 'lucide-react';
-
-import { chartTypes } from '@openpanel/constants';
-import { type IChartType, objectToZodEnums } from '@openpanel/validation';
-
+import { Button } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
-import { Button } from '../ui/button';
-import { changeChartType } from './reportSlice';
+import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 
 interface ReportChartTypeProps {
   className?: string;
@@ -66,9 +63,9 @@ export function ReportChartType({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          icon={Icons[value]}
           className={cn('justify-start', className)}
+          icon={Icons[value]}
+          variant="outline"
         >
           {items.find((item) => item.value === value)?.label}
         </Button>
@@ -82,13 +79,13 @@ export function ReportChartType({
             const Icon = Icons[item.value];
             return (
               <DropdownMenuItem
+                className="group"
                 key={item.value}
                 onClick={() => onChange(item.value)}
-                className="group"
               >
                 {item.label}
                 <DropdownMenuShortcut>
-                  <Icon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
+                  <Icon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             );

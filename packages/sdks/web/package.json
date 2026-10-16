@@ -18,7 +18,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^7.2.0",
+    "tsup": "7.3.0",
     "typescript": "catalog:"
   }
 }

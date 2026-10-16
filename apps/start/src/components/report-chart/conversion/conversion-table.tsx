@@ -1,3 +1,10 @@
+import type { SortingState } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
+import { getPreviousMetric } from '../../../utils/previous-metric';
+import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { ReportTableToolbar } from '../common/report-table-toolbar';
+import { SerieIcon } from '../common/serie-icon';
+import { SerieName } from '../common/serie-name';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -5,13 +12,6 @@ import { useSelector } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import { getPreviousMetric } from '@openpanel/common';
-import type { SortingState } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
-import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
-import { ReportTableToolbar } from '../common/report-table-toolbar';
-import { SerieIcon } from '../common/serie-icon';
-import { SerieName } from '../common/serie-name';
 
 interface ConversionTableProps {
   data: RouterOutputs['chart']['conversion'];
@@ -33,16 +33,14 @@ export function ConversionTable({
     short: true,
   });
 
-  // Get all unique dates from the first series
   const dates = useMemo(
     () => data.current[0]?.data.map((item) => item.date) ?? [],
-    [data.current],
+    [data.current]
   );
 
   // Get all series (including non-visible ones for toggle functionality)
   const allSeries = data.current;
 
-  // Transform data to table rows with memoization
   const rows = useMemo(() => {
     return allSeries.map((serie) => {
       const dateValues: Record<string, number> = {};
@@ -54,7 +52,7 @@ export function ConversionTable({
       const total = serie.data.reduce((sum, item) => sum + item.total, 0);
       const conversions = serie.data.reduce(
         (sum, item) => sum + item.conversions,
-        0,
+        0
       );
       const avgRate =
         serie.data.length > 0
@@ -84,7 +82,6 @@ export function ConversionTable({
     });
   }, [allSeries, dates, data.previous]);
 
-  // Calculate ranges for color visualization (memoized)
   const { metricRanges, dateRanges } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
       avgRate: {
@@ -110,27 +107,25 @@ export function ConversionTable({
     });
 
     rows.forEach((row) => {
-      // Metric ranges
       metricRanges.avgRate.min = Math.min(
         metricRanges.avgRate.min,
-        row.avgRate,
+        row.avgRate
       );
       metricRanges.avgRate.max = Math.max(
         metricRanges.avgRate.max,
-        row.avgRate,
+        row.avgRate
       );
       metricRanges.total.min = Math.min(metricRanges.total.min, row.total);
       metricRanges.total.max = Math.max(metricRanges.total.max, row.total);
       metricRanges.conversions.min = Math.min(
         metricRanges.conversions.min,
-        row.conversions,
+        row.conversions
       );
       metricRanges.conversions.max = Math.max(
         metricRanges.conversions.max,
-        row.conversions,
+        row.conversions
       );
 
-      // Date ranges
       dates.forEach((date) => {
         const value = row.dateValues[date] ?? 0;
         dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
@@ -141,12 +136,11 @@ export function ConversionTable({
     return { metricRanges, dateRanges };
   }, [rows, dates]);
 
-  // Helper to get background color style
   const getCellBackgroundStyle = (
     value: number,
     min: number,
     max: number,
-    colorClass: 'purple' | 'emerald' = 'emerald',
+    colorClass: 'purple' | 'emerald' = 'emerald'
   ): React.CSSProperties => {
     if (value === 0 || max === min) {
       return {};
@@ -165,7 +159,7 @@ export function ConversionTable({
 
   const visibleSeriesIds = useMemo(
     () => visibleSeries.map((s) => s.id),
-    [visibleSeries],
+    [visibleSeries]
   );
 
   const getSerieIndex = (serieId: string): number => {
@@ -189,25 +183,22 @@ export function ConversionTable({
     if (globalFilter.trim()) {
       const searchLower = globalFilter.toLowerCase();
       result = rows.filter((row) => {
-        // Search in serie name
         if (
           row.serieName.some((name) =>
-            name?.toLowerCase().includes(searchLower),
+            name?.toLowerCase().includes(searchLower)
           )
         ) {
           return true;
         }
 
-        // Search in breakdown values
         if (
           row.breakdownValues.some((val) =>
-            val?.toLowerCase().includes(searchLower),
+            val?.toLowerCase().includes(searchLower)
           )
         ) {
           return true;
         }
 
-        // Search in metric values
         if (
           String(row.avgRate).toLowerCase().includes(searchLower) ||
           String(row.total).toLowerCase().includes(searchLower) ||
@@ -216,10 +207,9 @@ export function ConversionTable({
           return true;
         }
 
-        // Search in date values
         if (
           Object.values(row.dateValues).some((val) =>
-            String(val).toLowerCase().includes(searchLower),
+            String(val).toLowerCase().includes(searchLower)
           )
         ) {
           return true;
@@ -258,17 +248,28 @@ export function ConversionTable({
           }
 
           // Handle null/undefined values
-          if (aValue == null && bValue == null) continue;
-          if (aValue == null) return 1;
-          if (bValue == null) return -1;
+          if (aValue == null && bValue == null) {
+            continue;
+          }
+          if (aValue == null) {
+            return 1;
+          }
+          if (bValue == null) {
+            return -1;
+          }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
-            if (comparison !== 0) return desc ? -comparison : comparison;
+            if (comparison !== 0) {
+              return desc ? -comparison : comparison;
+            }
           } else {
-            if (aValue < bValue) return desc ? 1 : -1;
-            if (aValue > bValue) return desc ? -1 : 1;
+            if (aValue < bValue) {
+              return desc ? 1 : -1;
+            }
+            if (aValue > bValue) {
+              return desc ? -1 : 1;
+            }
           }
         }
         return 0;
@@ -296,7 +297,9 @@ export function ConversionTable({
 
   const getSortIcon = (columnId: string) => {
     const sort = sorting.find((s) => s.id === columnId);
-    if (!sort) return '⇅';
+    if (!sort) {
+      return '⇅';
+    }
     return sort.desc ? '↓' : '↑';
   };
 
@@ -305,11 +308,11 @@ export function ConversionTable({
   }
 
   return (
-    <div className="flex flex-col border rounded-lg overflow-hidden bg-card mt-8">
+    <div className="mt-8 flex flex-col overflow-hidden rounded-lg border bg-card">
       <ReportTableToolbar
-        search={globalFilter}
         onSearchChange={setGlobalFilter}
         onUnselectAll={() => setVisibleSeries([])}
+        search={globalFilter}
       />
       <div
         className="overflow-x-auto overflow-y-auto"
@@ -319,10 +322,10 @@ export function ConversionTable({
         }}
       >
         <table className="w-full" style={{ minWidth: 'fit-content' }}>
-          <thead className="bg-muted/30 border-b sticky top-0 z-10">
+          <thead className="sticky top-0 z-10 border-b bg-muted/30">
             <tr>
               <th
-                className="text-left h-10 px-4 text-[10px] uppercase font-semibold sticky left-0 bg-card z-20 min-w-[200px] border-r border-border whitespace-nowrap"
+                className="sticky left-0 z-20 h-10 min-w-[200px] whitespace-nowrap border-border border-r bg-card px-4 text-left font-semibold text-[10px] uppercase"
                 style={{
                   boxShadow: '2px 0 4px -2px var(--border)',
                 }}
@@ -330,7 +333,7 @@ export function ConversionTable({
                 <div className="flex items-center">Serie</div>
               </th>
               <th
-                className="text-right h-10 px-4 text-[10px] uppercase font-semibold min-w-[100px] cursor-pointer hover:bg-muted/50 select-none border-r border-border whitespace-nowrap"
+                className="h-10 min-w-[100px] cursor-pointer select-none whitespace-nowrap border-border border-r px-4 text-right font-semibold text-[10px] uppercase hover:bg-muted/50"
                 onClick={() => handleSort('metric-avgRate')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -347,7 +350,7 @@ export function ConversionTable({
                 </div>
               </th>
               <th
-                className="text-right h-10 px-4 text-[10px] uppercase font-semibold min-w-[100px] cursor-pointer hover:bg-muted/50 select-none border-r border-border whitespace-nowrap"
+                className="h-10 min-w-[100px] cursor-pointer select-none whitespace-nowrap border-border border-r px-4 text-right font-semibold text-[10px] uppercase hover:bg-muted/50"
                 onClick={() => handleSort('metric-total')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -364,7 +367,7 @@ export function ConversionTable({
                 </div>
               </th>
               <th
-                className="text-right h-10 px-4 text-[10px] uppercase font-semibold min-w-[100px] cursor-pointer hover:bg-muted/50 select-none border-r border-border whitespace-nowrap"
+                className="h-10 min-w-[100px] cursor-pointer select-none whitespace-nowrap border-border border-r px-4 text-right font-semibold text-[10px] uppercase hover:bg-muted/50"
                 onClick={() => handleSort('metric-conversions')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -382,8 +385,8 @@ export function ConversionTable({
               </th>
               {dates.map((date) => (
                 <th
+                  className="h-10 min-w-[100px] cursor-pointer select-none whitespace-nowrap border-border border-r px-4 text-right font-semibold text-[10px] uppercase hover:bg-muted/50"
                   key={date}
-                  className="text-right h-10 px-4 text-[10px] uppercase font-semibold min-w-[100px] cursor-pointer hover:bg-muted/50 select-none border-r border-border whitespace-nowrap"
                   onClick={() => handleSort(`date-${date}`)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -414,14 +417,14 @@ export function ConversionTable({
 
               return (
                 <tr
-                  key={row.id}
                   className={cn(
-                    'border-b hover:bg-muted/30 transition-colors',
-                    !isVisible && 'opacity-50',
+                    'border-b transition-colors hover:bg-muted/30',
+                    !isVisible && 'opacity-50'
                   )}
+                  key={row.id}
                 >
                   <td
-                    className="px-4 py-3 sticky left-0 z-10 border-r border-border"
+                    className="sticky left-0 z-10 border-border border-r px-4 py-3"
                     style={{
                       backgroundColor: 'var(--card)',
                       boxShadow: '2px 0 4px -2px var(--border)',
@@ -430,6 +433,7 @@ export function ConversionTable({
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={isVisible}
+                        className="h-4 w-4 shrink-0"
                         onCheckedChange={() =>
                           toggleSerieVisibility(row.serieId)
                         }
@@ -437,14 +441,13 @@ export function ConversionTable({
                           borderColor: color,
                           backgroundColor: isVisible ? color : 'transparent',
                         }}
-                        className="h-4 w-4 shrink-0"
                       />
                       <div
-                        className="w-[3px] rounded-full shrink-0"
+                        className="w-[3px] shrink-0 rounded-full"
                         style={{ background: color }}
                       />
                       <SerieIcon name={row.serieName} />
-                      <SerieName name={row.serieName} className="truncate" />
+                      <SerieName className="truncate" name={row.serieName} />
                     </div>
                   </td>
                   <td
@@ -453,7 +456,7 @@ export function ConversionTable({
                       row.avgRate,
                       metricRanges.avgRate.min,
                       metricRanges.avgRate.max,
-                      'purple',
+                      'purple'
                     )}
                   >
                     <div className="flex items-center justify-end gap-2">
@@ -471,7 +474,7 @@ export function ConversionTable({
                       row.total,
                       metricRanges.total.min,
                       metricRanges.total.max,
-                      'purple',
+                      'purple'
                     )}
                   >
                     {number.format(row.total)}
@@ -482,7 +485,7 @@ export function ConversionTable({
                       row.conversions,
                       metricRanges.conversions.min,
                       metricRanges.conversions.max,
-                      'purple',
+                      'purple'
                     )}
                   >
                     {number.format(row.conversions)}
@@ -491,13 +494,13 @@ export function ConversionTable({
                     const value = row.dateValues[date] ?? 0;
                     return (
                       <td
-                        key={date}
                         className="px-4 py-3 text-right font-mono text-sm"
+                        key={date}
                         style={getCellBackgroundStyle(
                           value,
                           dateRanges[date]!.min,
                           dateRanges[date]!.max,
-                          'emerald',
+                          'emerald'
                         )}
                       >
                         {number.formatWithUnit(value / 100, '%')}

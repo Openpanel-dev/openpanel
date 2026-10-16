@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
+import { isSignedIn } from '@/utils/route-session';
 import { createTitle } from '@/utils/title';
 
 export const Route = createFileRoute('/')({
-  beforeLoad: ({ context }) => {
-    if (!context.session?.session) {
+  beforeLoad: async ({ context }) => {
+    if (!(await isSignedIn(context))) {
       throw redirect({ to: '/login' });
     }
   },

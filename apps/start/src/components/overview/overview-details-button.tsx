@@ -1,5 +1,4 @@
 import { ScanEyeIcon } from 'lucide-react';
-
 import { Button, type ButtonProps } from '../ui/button';
 
 type Props = Omit<ButtonProps, 'children'>;

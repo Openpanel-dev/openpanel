@@ -24,7 +24,7 @@ export function screenView(properties?: TrackProperties): void;
 export function screenView(path: string, properties?: TrackProperties): void;
 export function screenView(
   pathOrProperties?: string | TrackProperties,
-  propertiesOrUndefined?: TrackProperties,
+  propertiesOrUndefined?: TrackProperties
 ) {
   window.op?.('screenView', pathOrProperties, propertiesOrUndefined);
 }

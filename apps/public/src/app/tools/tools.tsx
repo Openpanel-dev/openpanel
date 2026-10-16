@@ -1,10 +1,4 @@
-import {
-  GlobeIcon,
-  Link2Icon,
-  QrCodeIcon,
-  SearchIcon,
-  TimerIcon,
-} from 'lucide-react';
+import { GlobeIcon, SearchIcon } from 'lucide-react';
 
 export const TOOLS = [
   {

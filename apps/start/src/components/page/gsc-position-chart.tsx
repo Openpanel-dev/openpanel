@@ -28,7 +28,9 @@ const { TooltipProvider, Tooltip } = createChartTooltip<
   Record<string, unknown>
 >(({ data }) => {
   const item = data[0];
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
   return (
     <>
       <ChartTooltipHeader>
@@ -58,7 +60,9 @@ export function GscPositionChart({ data, isLoading }: GscPositionChartProps) {
   }));
 
   const positions = chartData.map((d) => d.position).filter((p) => p > 0);
-  const minPos = positions.length ? Math.max(1, Math.floor(Math.min(...positions)) - 2) : 1;
+  const minPos = positions.length
+    ? Math.max(1, Math.floor(Math.min(...positions)) - 2)
+    : 1;
   const maxPos = positions.length ? Math.ceil(Math.max(...positions)) + 2 : 20;
 
   return (

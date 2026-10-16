@@ -1,13 +1,11 @@
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { toast } from 'sonner';
-
 import { ColumnCreatedAt } from '@/components/column-created-at';
+import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
 
@@ -69,13 +67,13 @@ export function useColumns(): ColumnDef<
             queryClient.invalidateQueries(
               trpc.organization.invitations.queryFilter({
                 organizationId: row.original.organizationId,
-              }),
+              })
             );
           },
           onError() {
             toast.error(`Failed to revoke invite for ${row.original.email}`);
           },
-        }),
+        })
       );
 
       return (
@@ -83,7 +81,7 @@ export function useColumns(): ColumnDef<
           <DropdownMenuItem
             onClick={() => {
               clipboard(
-                `${window.location.origin}/onboarding?inviteId=${row.original.id}`,
+                `${window.location.origin}/onboarding?inviteId=${row.original.id}`
               );
             }}
           >
@@ -112,7 +110,7 @@ function AccessCell({
   const projectsQuery = useQuery(
     trpc.project.list.queryOptions({
       organizationId: row.original.organizationId,
-    }),
+    })
   );
   const projects = projectsQuery.data ?? [];
   const access = row.original.projectAccess ?? [];
@@ -123,13 +121,13 @@ function AccessCell({
         const project = projects.find((p) => p.id === grant.projectId);
         if (!project) {
           return (
-            <Badge key={grant.projectId} className="mr-1">
+            <Badge className="mr-1" key={grant.projectId}>
               Unknown
             </Badge>
           );
         }
         return (
-          <Badge key={grant.projectId} color="blue" className="mr-1">
+          <Badge className="mr-1" color="blue" key={grant.projectId}>
             {project.name}
             {grant.level === 'read' ? ' (read-only)' : ''}
           </Badge>

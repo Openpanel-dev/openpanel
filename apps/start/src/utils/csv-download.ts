@@ -1,5 +1,7 @@
 function escapeCsvValue(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) {
+    return '';
+  }
   const str = String(value);
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`;
@@ -24,6 +26,8 @@ export function downloadCSV(content: string, filename: string): void {
 }
 
 export function cohortMembersToCSV(profileIds: string[]): string {
-  if (!profileIds.length) return '';
+  if (!profileIds.length) {
+    return '';
+  }
   return buildCSV([['profile_id'], ...profileIds.map((id) => [id])]);
 }

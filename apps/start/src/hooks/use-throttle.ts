@@ -10,6 +10,6 @@ export function useThrottle(cb: () => void, delay: number) {
   });
   return useCallback(
     throttle(() => cbRef.current(), delay, options),
-    [delay],
+    [delay]
   );
 }

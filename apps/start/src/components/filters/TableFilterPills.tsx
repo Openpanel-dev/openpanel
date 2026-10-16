@@ -1,19 +1,19 @@
+import {
+  getCohortIds,
+  type IChartEventFilter,
+  operators,
+} from '@openpanel/core/modules/report/report.constants';
 import { FilterIcon, X } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
+import type { PropertiesComboboxCategory } from '@/components/report/sidebar/PropertiesCombobox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { PropertiesComboboxCategory } from '@/components/report/sidebar/PropertiesCombobox';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { pushModal } from '@/modals';
 import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
-import { operators } from '@openpanel/constants';
-import {
-  getCohortIds,
-  type IChartEventFilter,
-} from '@openpanel/validation';
 
 interface TableFilterPillsProps {
   /** URL key the filters live under. Sessions tables use `f`. */
@@ -38,8 +38,12 @@ const SESSION_LABELS: Record<string, string> = {
 };
 
 function humanizeFilterName(name: string): string {
-  if (name === 'cohort' || name.startsWith('cohort:')) return 'Cohort';
-  if (SESSION_LABELS[name]) return SESSION_LABELS[name]!;
+  if (name === 'cohort' || name.startsWith('cohort:')) {
+    return 'Cohort';
+  }
+  if (SESSION_LABELS[name]) {
+    return SESSION_LABELS[name]!;
+  }
   if (name.startsWith('profile.')) {
     const rest = name.replace(/^profile\./, '');
     return `Profile · ${rest.replace(/^properties\./, '')}`;
@@ -54,7 +58,9 @@ function humanizeFilterName(name: string): string {
 function formatFilterValue(filter: IChartEventFilter): string {
   if (filter.name === 'session.is_bounce') {
     const v = filter.value[0];
-    if (v === undefined) return '';
+    if (v === undefined) {
+      return '';
+    }
     const truthy =
       typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true';
     return truthy ? 'Yes' : 'No';
@@ -76,7 +82,7 @@ export function TableFilterPills({
   const [filters, setFilters] = useTableFilters(urlKey, nuqsOptions);
   const cohorts = useCohorts(
     { projectId, includeCount: false },
-    { enabled: categories.includes('cohort') },
+    { enabled: categories.includes('cohort') }
   );
   const cohortNames = new Map(cohorts.map((c) => [c.id, c.name]));
 
@@ -94,12 +100,7 @@ export function TableFilterPills({
 
   return (
     <div className={cn('row flex-wrap items-center gap-2', className)}>
-      <Button
-        variant="outline"
-        size="sm"
-        icon={FilterIcon}
-        onClick={openSheet}
-      >
+      <Button icon={FilterIcon} onClick={openSheet} size="sm" variant="outline">
         Filters
         {filters.length > 0 && (
           <Badge className="ml-2 rounded-full px-1.5 py-0 text-xs">
@@ -114,7 +115,9 @@ export function TableFilterPills({
         const valueText = isCohort
           ? cohortIds
               .map(
-                (id) => cohortNames.get(id) ?? cohortNames.get(id.replace(/^cohort:/, '')),
+                (id) =>
+                  cohortNames.get(id) ??
+                  cohortNames.get(id.replace(/^cohort:/, ''))
               )
               .filter(Boolean)
               .join(', ') || 'pick cohort'
@@ -122,37 +125,37 @@ export function TableFilterPills({
 
         return (
           <div
+            className="flex h-8 items-stretch overflow-hidden rounded-md border bg-card text-sm"
             key={`${filter.name}-${index}`}
-            className="flex items-stretch text-sm border rounded-md overflow-hidden h-8 bg-card"
           >
             <button
-              type="button"
+              className="cursor-pointer px-2 transition-colors hover:bg-accent"
               onClick={openSheet}
-              className="px-2 hover:bg-accent transition-colors cursor-pointer"
+              type="button"
             >
               {humanizeFilterName(filter.name)}
             </button>
             <button
-              type="button"
+              className="cursor-pointer border-l px-2 lowercase opacity-50 transition-colors hover:bg-accent hover:opacity-100"
               onClick={openSheet}
-              className="px-2 opacity-50 lowercase hover:opacity-100 hover:bg-accent transition-colors border-l cursor-pointer"
+              type="button"
             >
               {operators[filter.operator] ?? filter.operator}
             </button>
             {valueText && (
               <button
-                type="button"
+                className="max-w-40 cursor-pointer truncate border-l px-2 font-semibold transition-colors hover:bg-accent"
                 onClick={openSheet}
-                className="px-2 font-semibold hover:bg-accent transition-colors border-l cursor-pointer max-w-40 truncate"
+                type="button"
               >
                 {valueText}
               </button>
             )}
             <button
-              type="button"
-              onClick={() => removeAt(index)}
-              className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
               aria-label="Remove filter"
+              className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => removeAt(index)}
+              type="button"
             >
               <X className="size-3" />
             </button>

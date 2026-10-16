@@ -1,5 +1,11 @@
-import { getDefaultIntervalByDates, timeWindows } from '@openpanel/constants';
-import type { IChartRange, IInterval } from '@openpanel/validation';
+import type {
+  IChartRange,
+  IInterval,
+} from '@openpanel/core/modules/report/report.constants';
+import {
+  getDefaultIntervalByDates,
+  timeWindows,
+} from '@openpanel/core/modules/report/report.constants';
 import { bind } from 'bind-event-listener';
 import { addDays, endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';

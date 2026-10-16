@@ -7,7 +7,7 @@ const variantB = [28, 30, 32, 35, 38, 37, 40, 42, 44, 43, 47, 50];
 
 export function ConversionsIllustration() {
   return (
-    <div className="h-full col gap-3 px-4 pb-3 pt-5">
+    <div className="col h-full gap-3 px-4 pt-5 pb-3">
       {/* A/B variant cards */}
       <div className="row gap-3">
         <div className="col flex-1 gap-1 rounded-xl border bg-card p-3 transition-all duration-300 group-hover:-translate-y-0.5">
@@ -30,7 +30,7 @@ export function ConversionsIllustration() {
               Variant B ↑
             </span>
           </div>
-          <span className="font-bold font-mono text-xl text-emerald-500">
+          <span className="font-bold font-mono text-emerald-500 text-xl">
             41.2%
           </span>
           <SimpleChart
@@ -44,7 +44,7 @@ export function ConversionsIllustration() {
 
       {/* Breakdown label */}
       <div className="col gap-1 rounded-xl border bg-card/60 px-3 py-2.5">
-        <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
           Breakdown by experiment variant
         </span>
         <div className="row items-center gap-2">

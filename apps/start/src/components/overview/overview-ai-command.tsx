@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Loader2Icon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { chatToolHandlers } from '../chat/tool-handlers';
+import { applyFilterCommandToUrl } from '../chat/tool-handlers';
 import { Input } from '../ui/input';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useAppParams } from '@/hooks/use-app-params';
@@ -16,7 +16,7 @@ import { cn } from '@/utils/cn';
 /**
  * Inline AI command bar. Calls the `overview.runFilterCommand`
  * mutation, then dispatches the returned URL-mutator actions through
- * the same handlers the chat panel uses (`chatToolHandlers`).
+ * the same URL serialization the chat panel's handlers use.
  *
  * `className` controls layout — caller passes the width / responsive
  * visibility it wants (e.g. compact `hidden w-[280px] md:block` in a
@@ -39,29 +39,19 @@ export function OverviewAICommand({ className }: { className?: string }) {
         // Strip null inner fields from applyFilters: the schema uses
         // nullable for OpenAI strict-mode compatibility, but the chat
         // handler expects undefined to mean "leave this alone".
-        let applied = 0;
-        if (result.applyFilters) {
-          const af = result.applyFilters;
-          await chatToolHandlers.apply_filters({
-            ...(af.range !== null ? { range: af.range } : {}),
-            ...(af.startDate !== null ? { startDate: af.startDate } : {}),
-            ...(af.endDate !== null ? { endDate: af.endDate } : {}),
-            ...(af.interval !== null ? { interval: af.interval } : {}),
-          });
-          applied += 1;
-        }
-        if (result.setPropertyFilters) {
-          await chatToolHandlers.set_property_filters(
-            result.setPropertyFilters
-          );
-          applied += 1;
-        }
-        if (result.setEventNamesFilter) {
-          await chatToolHandlers.set_event_names_filter(
-            result.setEventNamesFilter
-          );
-          applied += 1;
-        }
+        const af = result.applyFilters;
+        const applied = applyFilterCommandToUrl({
+          applyFilters: af
+            ? {
+                ...(af.range !== null ? { range: af.range } : {}),
+                ...(af.startDate !== null ? { startDate: af.startDate } : {}),
+                ...(af.endDate !== null ? { endDate: af.endDate } : {}),
+                ...(af.interval !== null ? { interval: af.interval } : {}),
+              }
+            : null,
+          setPropertyFilters: result.setPropertyFilters,
+          setEventNamesFilter: result.setEventNamesFilter,
+        });
 
         if (applied === 0) {
           toast(

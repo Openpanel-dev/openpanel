@@ -1,7 +1,3 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { FloatingPagination } from '@/components/pagination-floating';
-import { Skeleton } from '@/components/skeleton';
-import { cn } from '@/utils/cn';
 import type { Table as ITable } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
 import {
@@ -13,11 +9,22 @@ import {
   TableRow,
 } from '../table';
 import { getCommonPinningStyles } from './data-table-helpers';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { FullPageErrorState } from '@/components/full-page-error-state';
+import { FloatingPagination } from '@/components/pagination-floating';
+import { Skeleton } from '@/components/skeleton';
+import { cn } from '@/utils/cn';
 
 export interface DataTableProps<TData> {
   table: ITable<TData>;
   className?: string;
   loading?: boolean;
+  /**
+   * A failed query, not an empty one. Without this the table renders its
+   * empty state for both, so a 500 from `profile.list` reads as "you haven't
+   * identified any profiles yet".
+   */
+  error?: boolean;
   empty?: {
     title: string;
     description: string;
@@ -35,6 +42,7 @@ declare module '@tanstack/react-table' {
 export function DataTable<TData>({
   table,
   loading,
+  error,
   className,
   onRowClick,
   empty = {
@@ -55,8 +63,8 @@ export function DataTable<TData>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    key={header.id}
                     colSpan={header.colSpan}
+                    key={header.id}
                     style={{
                       ...getCommonPinningStyles({
                         column: header.column,
@@ -67,7 +75,7 @@ export function DataTable<TData>({
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext(),
+                          header.getContext()
                         )}
                   </TableHead>
                 ))}
@@ -75,32 +83,44 @@ export function DataTable<TData>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {error ? (
+              <TableRow>
+                <TableCell
+                  className="h-24 text-center"
+                  colSpan={table.getAllColumns().length}
+                >
+                  <FullPageErrorState
+                    description="We could not load this data. Try again in a moment."
+                    title="Something went wrong"
+                  />
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={onRowClick ? 'cursor-pointer' : undefined}
+                  data-state={row.getIsSelected() && 'selected'}
+                  key={row.id}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
+                      className={cn(
+                        cell.column.columnDef.meta?.bold && 'font-medium'
+                      )}
                       key={cell.id}
                       style={{
                         ...getCommonPinningStyles({
                           column: cell.column,
                         }),
                       }}
-                      className={cn(
-                        cell.column.columnDef.meta?.bold && 'font-medium',
-                      )}
                     >
                       {loading ? (
                         <Skeleton className="h-4 w-3/5" />
                       ) : (
                         flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext(),
+                          cell.getContext()
                         )
                       )}
                     </TableCell>
@@ -110,12 +130,12 @@ export function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={table.getAllColumns().length}
                   className="h-24 text-center"
+                  colSpan={table.getAllColumns().length}
                 >
                   <FullPageEmptyState
-                    title={empty.title}
                     description={empty.description}
+                    title={empty.title}
                   />
                 </TableCell>
               </TableRow>
@@ -128,11 +148,11 @@ export function DataTable<TData>({
           <FloatingPagination
             canNextPage={table.getCanNextPage()}
             canPreviousPage={table.getCanPreviousPage()}
-            pageIndex={table.getState().pagination.pageIndex}
-            nextPage={table.nextPage}
-            previousPage={table.previousPage}
             firstPage={table.firstPage}
             lastPage={table.lastPage}
+            nextPage={table.nextPage}
+            pageIndex={table.getState().pagination.pageIndex}
+            previousPage={table.previousPage}
           />
           <div className="h-20" />
         </>

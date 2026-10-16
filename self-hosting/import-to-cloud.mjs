@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto';
 /**
- * Import an `export-for-cloud.sh` dump into another OpenPanel ClickHouse.
+ * Import an `openpanel export` dump into another OpenPanel ClickHouse.
  *
  * Runs on plain Node (>= 18), no dependencies.
  *
@@ -37,12 +38,16 @@
  * database and the mapping itself, so changing any of them starts a fresh
  * state rather than silently skipping files the previous mapping had filtered.
  */
-import { createReadStream, existsSync, appendFileSync, readFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  createReadStream,
+  existsSync,
+  readFileSync,
+} from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { createGunzip } from 'node:zlib';
-import path from 'node:path';
 
 const IMPORT_ORDER = [
   'profiles',
@@ -76,24 +81,41 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const next = () => argv[++i];
-    if (arg === '--dir') args.dir = next();
-    else if (arg === '--url') args.url = next();
-    else if (arg === '--db') args.db = next();
-    else if (arg === '--user') args.user = next();
-    else if (arg === '--password') args.password = next();
-    else if (arg === '--batch') args.batch = Number.parseInt(next(), 10);
-    else if (arg === '--tables') args.tables = next().split(',');
-    else if (arg === '--dry-run') args.dryRun = true;
-    else if (arg === '--no-map') args.noMap = true;
-    else if (arg === '--map') {
+    if (arg === '--dir') {
+      args.dir = next();
+    } else if (arg === '--url') {
+      args.url = next();
+    } else if (arg === '--db') {
+      args.db = next();
+    } else if (arg === '--user') {
+      args.user = next();
+    } else if (arg === '--password') {
+      args.password = next();
+    } else if (arg === '--batch') {
+      args.batch = Number.parseInt(next(), 10);
+    } else if (arg === '--tables') {
+      args.tables = next().split(',');
+    } else if (arg === '--dry-run') {
+      args.dryRun = true;
+    } else if (arg === '--no-map') {
+      args.noMap = true;
+    } else if (arg === '--map') {
       const [from, to] = next().split('=');
-      if (!from || !to) throw new Error('--map expects <old>=<new>');
+      if (!(from && to)) {
+        throw new Error('--map expects <old>=<new>');
+      }
       args.map.set(from, to);
-    } else throw new Error(`Unknown flag: ${arg}`);
+    } else {
+      throw new Error(`Unknown flag: ${arg}`);
+    }
   }
-  if (!args.url) throw new Error('Missing --url (or CLICKHOUSE_URL)');
+  if (!args.url) {
+    throw new Error('Missing --url (or CLICKHOUSE_URL)');
+  }
   if (!args.noMap && args.map.size === 0) {
-    throw new Error('Pass --map <old>=<new> to remap project_id, or --no-map to keep it');
+    throw new Error(
+      'Pass --map <old>=<new> to remap project_id, or --no-map to keep it'
+    );
   }
 
   // OpenPanel writes CLICKHOUSE_URL as http://host:8123/openpanel, so accept the
@@ -104,7 +126,7 @@ function parseArgs(argv) {
   const pathDb = parsed.pathname.replace(/^\/+|\/+$/g, '');
   if (args.db && pathDb && args.db !== pathDb) {
     console.warn(
-      `⚠️  --db "${args.db}" overrides the database "${pathDb}" in the URL path`,
+      `⚠️  --db "${args.db}" overrides the database "${pathDb}" in the URL path`
     );
   }
   args.db = args.db ?? (pathDb || 'openpanel');
@@ -115,16 +137,22 @@ function parseArgs(argv) {
 }
 
 async function insert(args, table, rows) {
-  if (args.dryRun || rows.length === 0) return;
+  if (args.dryRun || rows.length === 0) {
+    return;
+  }
 
   const url = new URL(args.url);
-  if (args.user) url.username = args.user;
-  if (args.password) url.password = args.password;
+  if (args.user) {
+    url.username = args.user;
+  }
+  if (args.password) {
+    url.password = args.password;
+  }
 
   const headers = { 'Content-Type': 'application/json' };
   if (url.username || url.password) {
     headers.Authorization = `Basic ${Buffer.from(
-      `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`,
+      `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`
     ).toString('base64')}`;
     url.username = '';
     url.password = '';
@@ -140,11 +168,15 @@ async function insert(args, table, rows) {
 
   for (let attempt = 1; attempt <= 5; attempt++) {
     const res = await fetch(url, { method: 'POST', headers, body });
-    if (res.ok) return;
+    if (res.ok) {
+      return;
+    }
     const text = await res.text();
     // 4xx means the payload is wrong — retrying will not help.
     if (res.status < 500 || attempt === 5) {
-      throw new Error(`INSERT INTO ${table} failed (${res.status}): ${text.slice(0, 800)}`);
+      throw new Error(
+        `INSERT INTO ${table} failed (${res.status}): ${text.slice(0, 800)}`
+      );
     }
     console.warn(`   ⚠️  ${res.status} on ${table}, retry ${attempt}/4`);
     await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
@@ -175,7 +207,9 @@ function remapLine(line, table, args) {
   }
 
   // A collapsed session export only contains live rows.
-  if (table === 'sessions') row.sign = 1;
+  if (table === 'sessions') {
+    row.sign = 1;
+  }
 
   // A self-hosted install older than the 20260504 profiles restructure has no
   // `last_seen_at`. The target column is the ReplacingMergeTree version and has
@@ -200,14 +234,19 @@ async function importFile(args, table, file, state) {
   const stream = file.endsWith('.gz')
     ? createReadStream(file).pipe(createGunzip())
     : createReadStream(file);
-  const lines = createInterface({ input: stream, crlfDelay: Number.POSITIVE_INFINITY });
+  const lines = createInterface({
+    input: stream,
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
 
   let batch = [];
   let total = 0;
   let dropped = 0;
 
   for await (const line of lines) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const row = remapLine(line, table, args);
     if (row === null) {
       dropped++;
@@ -222,7 +261,9 @@ async function importFile(args, table, file, state) {
   }
   await insert(args, table, batch);
 
-  if (!args.dryRun) appendFileSync(state.file, `${key}\n`);
+  if (!args.dryRun) {
+    appendFileSync(state.file, `${key}\n`);
+  }
   state.add(key);
   const suffix = dropped > 0 ? ` (${dropped} dropped — unmapped project)` : '';
   console.log(`   ✅ ${path.basename(file)} — ${total} rows${suffix}`);
@@ -253,7 +294,7 @@ async function main() {
   const state = new Set(
     existsSync(stateFile)
       ? readFileSync(stateFile, 'utf8').split('\n').filter(Boolean)
-      : [],
+      : []
   );
   state.file = stateFile;
 
@@ -261,16 +302,26 @@ async function main() {
   if (existsSync(metaPath)) {
     console.log(`📄 ${readFileSync(metaPath, 'utf8').trim()}\n`);
   }
-  if (args.dryRun) console.log('🧪 Dry run — nothing will be written\n');
+  if (args.dryRun) {
+    console.log('🧪 Dry run — nothing will be written\n');
+  }
 
   const totals = {};
   for (const table of IMPORT_ORDER) {
-    if (args.tables && !args.tables.includes(table)) continue;
+    if (args.tables && !args.tables.includes(table)) {
+      continue;
+    }
     const dir = path.join(args.dir, table);
-    if (!existsSync(dir)) continue;
+    if (!existsSync(dir)) {
+      continue;
+    }
 
-    const files = (await readdir(dir)).filter((f) => f.includes('.jsonl')).sort();
-    if (files.length === 0) continue;
+    const files = (await readdir(dir))
+      .filter((f) => f.includes('.jsonl'))
+      .sort();
+    if (files.length === 0) {
+      continue;
+    }
 
     console.log(`▶️  ${table} (${files.length} files)`);
     let rows = 0;
@@ -288,36 +339,45 @@ async function main() {
 
   if (importedByProject.size > 0) {
     console.log('\n   Imported by project:');
-    for (const [source, rows] of [...importedByProject].sort((a, b) => b[1] - a[1])) {
+    for (const [source, rows] of [...importedByProject].sort(
+      (a, b) => b[1] - a[1]
+    )) {
       const dest = args.noMap ? source : args.map.get(source);
-      console.log(`     ${source} → ${dest}`.padEnd(58) + `${String(rows).padStart(10)} rows`);
+      console.log(
+        `     ${source} → ${dest}`.padEnd(58) +
+          `${String(rows).padStart(10)} rows`
+      );
     }
   }
 
   if (droppedByProject.size > 0) {
     console.log('\n   Ignored (no --map entry):');
-    for (const [source, rows] of [...droppedByProject].sort((a, b) => b[1] - a[1])) {
-      console.log(`     ${source}`.padEnd(58) + `${String(rows).padStart(10)} rows`);
+    for (const [source, rows] of [...droppedByProject].sort(
+      (a, b) => b[1] - a[1]
+    )) {
+      console.log(
+        `     ${source}`.padEnd(58) + `${String(rows).padStart(10)} rows`
+      );
     }
   }
 
   // Every row filtered out is almost always a typo in --map rather than intent.
   if (importedByProject.size === 0 && droppedByProject.size > 0) {
     console.error(
-      '\n❌ Every row was dropped — no project_id in the export matched a --map entry.',
+      '\n❌ Every row was dropped — no project_id in the export matched a --map entry.'
     );
     console.error('   Check _meta.json for the exact source project ids.');
     process.exit(1);
   }
   if (backfilled.last_seen_at > 0) {
     console.log(
-      `\nℹ️  Seeded last_seen_at from created_at for ${backfilled.last_seen_at} profiles`,
+      `\nℹ️  Seeded last_seen_at from created_at for ${backfilled.last_seen_at} profiles`
     );
     console.log(
-      '   (source install predates the 20260504 profiles restructure — see',
+      '   (source install predates the 20260504 profiles restructure — see'
     );
     console.log(
-      '   16-restructure-profiles.ts for the optional events-derived backfill)',
+      '   16-restructure-profiles.ts for the optional events-derived backfill)'
     );
   }
 }

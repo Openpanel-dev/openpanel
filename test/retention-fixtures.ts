@@ -22,6 +22,8 @@
  *
  *   => D0 cohort = {RU1,RU2,RU3} (size 3), D1 cohort = {RU4,RU5} (size 2)
  *
+ *   RU1 and RU2's events belong to the group "Retention Co" (group-filter case).
+ *
  * WEEK scenario — window 2024-12-29 .. 2025-01-06 (crosses the year boundary,
  * which is exactly what the old toWeek() implementation got wrong)
  *
@@ -34,10 +36,7 @@
  */
 
 import { createClient } from '../packages/db/src/clickhouse/client';
-
-// ---------------------------------------------------------------------------
-// Well-known ids + absolute dates
-// ---------------------------------------------------------------------------
+import { TEST_CLICKHOUSE_URL } from './databases';
 
 export const RETENTION_FIXTURE = {
   users: {
@@ -62,6 +61,11 @@ export const RETENTION_FIXTURE = {
     start: '2024-12-29 00:00:00',
     end: '2025-01-06 23:59:59',
     cohort: '2024-12-29',
+  },
+  // Group attached to every RU1 and RU2 event, for the group-filter case
+  group: {
+    id: 'retention-group-co',
+    name: 'Retention Co',
   },
   // Saved cohort used for the inCohort filter case (members: RU1, RU4)
   cohort: {
@@ -98,6 +102,9 @@ export const RETENTION_BLUEPRINT = {
     { cohort_interval: '2024-03-04', sum: 1, values: [1, 1, 1] },
     { cohort_interval: '2024-03-05', sum: 1, values: [1, 1, 0] },
   ],
+  // app_open self-retention, day, criteria on, filtered to group "Retention Co"
+  // {RU1, RU2}. Needs the groups join that defines `_g`.
+  groupNameOn: [{ cohort_interval: '2024-03-04', sum: 2, values: [2, 1, 2] }],
   // Week-over-week active-user retention across the whole fixture.
   // - 2024-03-03: RU1-5 active, none active the next week -> 0% retained
   // - 2024-12-29: WU1+WU2 active, WU1 active next week -> 50% retained
@@ -109,14 +116,10 @@ export const RETENTION_BLUEPRINT = {
   ],
 } as const;
 
-// ---------------------------------------------------------------------------
-// Builders
-// ---------------------------------------------------------------------------
-
 type ChClient = ReturnType<typeof createClient>;
 
 function getClient(): ChClient {
-  const url = process.env.CLICKHOUSE_URL ?? 'http://localhost:8123';
+  const url = process.env.CLICKHOUSE_URL ?? TEST_CLICKHOUSE_URL;
   return createClient({ url });
 }
 
@@ -170,34 +173,28 @@ function buildEvents(projectId: string) {
 
   const us = { country: 'US' };
   const se = { country: 'SE' };
+  const usInGroup = { ...us, groups: [RETENTION_FIXTURE.group.id] };
 
   return [
-    // --- DAY scenario: app_open (self-retention) ---
-    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d0), us),
-    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d1), us),
-    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d2), us),
-    buildEvent(projectId, users.ru2, 'app_open', dayAt(day.d0), us),
-    buildEvent(projectId, users.ru2, 'app_open', dayAt(day.d2), us),
+    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d0), usInGroup),
+    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d1), usInGroup),
+    buildEvent(projectId, users.ru1, 'app_open', dayAt(day.d2), usInGroup),
+    buildEvent(projectId, users.ru2, 'app_open', dayAt(day.d0), usInGroup),
+    buildEvent(projectId, users.ru2, 'app_open', dayAt(day.d2), usInGroup),
     buildEvent(projectId, users.ru3, 'app_open', dayAt(day.d0), se),
     buildEvent(projectId, users.ru4, 'app_open', dayAt(day.d1), us),
     buildEvent(projectId, users.ru4, 'app_open', dayAt(day.d2), us),
     buildEvent(projectId, users.ru5, 'app_open', dayAt(day.d1), us),
 
-    // --- DAY scenario: purchase (cross-event retention) ---
-    buildEvent(projectId, users.ru1, 'purchase', dayAt(day.d1), us),
-    buildEvent(projectId, users.ru2, 'purchase', dayAt(day.d2), us),
+    buildEvent(projectId, users.ru1, 'purchase', dayAt(day.d1), usInGroup),
+    buildEvent(projectId, users.ru2, 'purchase', dayAt(day.d2), usInGroup),
 
-    // --- WEEK scenario: app_open crossing the 2024->2025 boundary ---
     // 2024-12-30 (Mon) falls in the Sunday-aligned week starting 2024-12-29.
     buildEvent(projectId, users.wu1, 'app_open', '2024-12-30 12:00:00'),
     buildEvent(projectId, users.wu1, 'app_open', '2025-01-06 12:00:00'),
     buildEvent(projectId, users.wu2, 'app_open', '2024-12-30 12:00:00'),
   ];
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 function buildCohortMembers(projectId: string) {
   return RETENTION_FIXTURE.cohort.members.map((profileId) => ({
@@ -210,18 +207,36 @@ function buildCohortMembers(projectId: string) {
   }));
 }
 
+function buildGroups(projectId: string) {
+  return [
+    {
+      id: RETENTION_FIXTURE.group.id,
+      project_id: projectId,
+      type: 'company',
+      name: RETENTION_FIXTURE.group.name,
+      properties: {},
+      created_at: RETENTION_FIXTURE.day.start,
+      version: 1,
+      deleted: 0,
+    },
+  ];
+}
+
 async function deleteFixtures(client: ChClient, projectId: string) {
   await Promise.all([
     client.command({
-      query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM events WHERE project_id = '${projectId}'`,
     }),
     // Materialized views are NOT touched by DELETE FROM events; mutate them too
     // so reruns stay clean.
     client.command({
-      query: `ALTER TABLE openpanel.cohort_events_mv DELETE WHERE project_id = '${projectId}'`,
+      query: `ALTER TABLE cohort_events_mv DELETE WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.cohort_members WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM cohort_members WHERE project_id = '${projectId}'`,
+    }),
+    client.command({
+      query: `DELETE FROM groups WHERE project_id = '${projectId}'`,
     }),
   ]);
 }
@@ -231,13 +246,18 @@ export async function setupRetentionFixtures(projectId: string): Promise<void> {
   try {
     await deleteFixtures(client, projectId);
     await client.insert({
-      table: 'openpanel.events',
+      table: 'events',
       values: buildEvents(projectId),
       format: 'JSONEachRow',
     });
     await client.insert({
-      table: 'openpanel.cohort_members',
+      table: 'cohort_members',
       values: buildCohortMembers(projectId),
+      format: 'JSONEachRow',
+    });
+    await client.insert({
+      table: 'groups',
+      values: buildGroups(projectId),
       format: 'JSONEachRow',
     });
   } finally {

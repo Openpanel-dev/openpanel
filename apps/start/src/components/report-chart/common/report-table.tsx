@@ -1,3 +1,32 @@
+import type { ColumnDef, Header, Row } from '@tanstack/react-table';
+import {
+  type ExpandedState,
+  flexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import {
+  useVirtualizer,
+  useWindowVirtualizer,
+  type VirtualItem,
+} from '@tanstack/react-virtual';
+import throttle from 'lodash.throttle';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import type * as React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReportTableToolbar } from './report-table-toolbar';
+import {
+  type ExpandableTableRow,
+  type GroupedTableRow,
+  groupsToExpandableRows,
+  type TableRow,
+  transformToHierarchicalGroups,
+  transformToTableData,
+} from './report-table-utils';
+import { SerieName } from './serie-name';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -5,36 +34,6 @@ import { useSelector } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import type { ColumnDef, Header, Row } from '@tanstack/react-table';
-import {
-  type ExpandedState,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import {
-  type VirtualItem,
-  useVirtualizer,
-  useWindowVirtualizer,
-} from '@tanstack/react-virtual';
-import throttle from 'lodash.throttle';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import type * as React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-import { ReportTableToolbar } from './report-table-toolbar';
-import {
-  type ExpandableTableRow,
-  type GroupedTableRow,
-  type TableRow,
-  groupsToExpandableRows,
-  transformToHierarchicalGroups,
-  transformToTableData,
-} from './report-table-utils';
-import { SerieName } from './serie-name';
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
@@ -61,7 +60,6 @@ interface VirtualRowProps {
   isResizingRef: React.MutableRefObject<boolean>;
   resizingColumnId: string | null;
   setResizingColumnId: (id: string | null) => void;
-  // Horizontal virtualization props
   leftPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
   scrollableColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
   rightPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
@@ -91,10 +89,12 @@ const VirtualRow = function VirtualRow({
 
   const renderCell = (
     column: Header<TableRow | GroupedTableRow, unknown>['column'],
-    header: Header<TableRow | GroupedTableRow, unknown> | undefined,
+    header: Header<TableRow | GroupedTableRow, unknown> | undefined
   ) => {
     const cell = cells.find((c) => c.column.id === column.id);
-    if (!cell || !header) return null;
+    if (!(cell && header)) {
+      return null;
+    }
 
     const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
     const pinningStyles = pinningStylesMap.get(column.id) ?? {};
@@ -104,6 +104,7 @@ const VirtualRow = function VirtualRow({
 
     return (
       <div
+        className={cn('relative overflow-hidden border-r')}
         key={cell.id}
         style={{
           width: `${header.getSize()}px`,
@@ -111,11 +112,14 @@ const VirtualRow = function VirtualRow({
           maxWidth: column.columnDef.maxSize,
           ...pinningStyles,
         }}
-        className={cn('relative overflow-hidden border-r')}
       >
         {flexRender(cell.column.columnDef.cell, cell.getContext())}
         {canResize && isPinned && (
           <div
+            className={cn(
+              'absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent transition-colors hover:bg-primary/50',
+              isResizing && 'bg-primary'
+            )}
             data-resize-handle
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -129,22 +133,18 @@ const VirtualRow = function VirtualRow({
                 setResizingColumnId(null);
               }, 0);
             }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              isResizingRef.current = true;
-              setResizingColumnId(column.id);
-              header.getResizeHandler()(e);
-            }}
             onTouchEnd={() => {
               setTimeout(() => {
                 isResizingRef.current = false;
                 setResizingColumnId(null);
               }, 0);
             }}
-            className={cn(
-              'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-              isResizing && 'bg-primary',
-            )}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              isResizingRef.current = true;
+              setResizingColumnId(column.id);
+              header.getResizeHandler()(e);
+            }}
           />
         )}
       </div>
@@ -153,6 +153,7 @@ const VirtualRow = function VirtualRow({
 
   return (
     <div
+      className="border-b transition-colors hover:bg-muted/30"
       key={virtualRow.key}
       style={{
         position: 'absolute',
@@ -164,15 +165,12 @@ const VirtualRow = function VirtualRow({
         display: 'flex',
         minWidth: 'fit-content',
       }}
-      className="border-b hover:bg-muted/30 transition-colors"
     >
-      {/* Left Pinned Columns */}
       {leftPinnedColumns.map((column) => {
         const header = headers.find((h) => h.column.id === column.id);
         return renderCell(column, header);
       })}
 
-      {/* Scrollable Columns (Virtualized) */}
       <div
         style={{
           position: 'relative',
@@ -182,13 +180,18 @@ const VirtualRow = function VirtualRow({
       >
         {virtualColumns.map((virtualCol) => {
           const column = scrollableColumns[virtualCol.index];
-          if (!column) return null;
+          if (!column) {
+            return null;
+          }
           const header = headers.find((h) => h.column.id === column.id);
           const cell = cells.find((c) => c.column.id === column.id);
-          if (!cell || !header) return null;
+          if (!(cell && header)) {
+            return null;
+          }
 
           return (
             <div
+              className={cn('relative overflow-hidden')}
               key={cell.id}
               style={{
                 position: 'absolute',
@@ -196,7 +199,6 @@ const VirtualRow = function VirtualRow({
                 width: `${virtualCol.size}px`,
                 height: `${virtualRow.size}px`,
               }}
-              className={cn('relative overflow-hidden')}
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </div>
@@ -204,7 +206,6 @@ const VirtualRow = function VirtualRow({
         })}
       </div>
 
-      {/* Right Pinned Columns */}
       {rightPinnedColumns.map((column) => {
         const header = headers.find((h) => h.column.id === column.id);
         return renderCell(column, header);
@@ -236,7 +237,6 @@ export function ReportTable({
     short: true,
   });
 
-  // Transform data to hierarchical groups or flat rows
   const {
     groups: hierarchicalGroups,
     rows: flatRows,
@@ -261,55 +261,49 @@ export function ReportTable({
     };
   }, [data, breakdowns, grouped]);
 
-  // Convert hierarchical groups to expandable rows (for TanStack Table's expanding feature)
   const expandableRows = useMemo(() => {
-    if (!grouped || !hierarchicalGroups || hierarchicalGroups.length === 0) {
+    if (!(grouped && hierarchicalGroups) || hierarchicalGroups.length === 0) {
       return null;
     }
 
     return groupsToExpandableRows(
       hierarchicalGroups,
-      breakdownPropertyNames.length,
+      breakdownPropertyNames.length
     );
   }, [grouped, hierarchicalGroups, breakdownPropertyNames.length]);
 
-  // Use expandable rows if available, otherwise use flat rows
   const rows = expandableRows ?? flatRows ?? [];
 
-  // Filter rows based on global search and apply sorting
   const filteredRows = useMemo(() => {
     let result = rows;
 
-    // Apply search filter
     if (globalFilter.trim()) {
       const searchLower = globalFilter.toLowerCase();
       result = rows.filter((row) => {
-        // Search in serie name
-        if (row.serieName.toLowerCase().includes(searchLower)) return true;
+        if (row.serieName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
 
-        // Search in breakdown values
         if (
           row.breakdownValues.some((val) =>
-            val?.toLowerCase().includes(searchLower),
+            val?.toLowerCase().includes(searchLower)
           )
         ) {
           return true;
         }
 
-        // Search in metric values
         const metrics = ['count', 'sum', 'average', 'min', 'max'] as const;
         if (
           metrics.some((metric) =>
-            String(row[metric]).toLowerCase().includes(searchLower),
+            String(row[metric]).toLowerCase().includes(searchLower)
           )
         ) {
           return true;
         }
 
-        // Search in date values
         if (
           Object.values(row.dateValues).some((val) =>
-            String(val).toLowerCase().includes(searchLower),
+            String(val).toLowerCase().includes(searchLower)
           )
         ) {
           return true;
@@ -319,17 +313,16 @@ export function ReportTable({
       });
     }
 
-    // Apply sorting - if grouped, always sort groups by highest count, then sort within each group
     if (grouped && result.length > 0) {
       const groupedRows = result as ExpandableTableRow[] | GroupedTableRow[];
 
-      // Sort function based on current sort state
       const sortFn = (
         a: ExpandableTableRow | GroupedTableRow | TableRow,
-        b: ExpandableTableRow | GroupedTableRow | TableRow,
+        b: ExpandableTableRow | GroupedTableRow | TableRow
       ) => {
-        // If no sorting is selected, return 0 (no change)
-        if (sorting.length === 0) return 0;
+        if (sorting.length === 0) {
+          return 0;
+        }
 
         for (const sort of sorting) {
           const { id, desc } = sort;
@@ -363,31 +356,38 @@ export function ReportTable({
             continue;
           }
 
-          // Handle null/undefined values
-          if (aValue == null && bValue == null) continue;
-          if (aValue == null) return 1;
-          if (bValue == null) return -1;
+          if (aValue == null && bValue == null) {
+            continue;
+          }
+          if (aValue == null) {
+            return 1;
+          }
+          if (bValue == null) {
+            return -1;
+          }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
-            if (comparison !== 0) return desc ? -comparison : comparison;
+            if (comparison !== 0) {
+              return desc ? -comparison : comparison;
+            }
           } else {
-            if (aValue < bValue) return desc ? 1 : -1;
-            if (aValue > bValue) return desc ? -1 : 1;
+            if (aValue < bValue) {
+              return desc ? 1 : -1;
+            }
+            if (aValue > bValue) {
+              return desc ? -1 : 1;
+            }
           }
         }
         return 0;
       };
 
-      // For expandable rows, we need to sort recursively
       function sortExpandableRows(
         rows: ExpandableTableRow[],
-        isTopLevel = true,
+        isTopLevel = true
       ): ExpandableTableRow[] {
-        // Sort rows: groups by count first (only at top level), then apply user sort
         const sorted = [...rows].sort((a, b) => {
-          // At top level, sort groups by count first
           if (isTopLevel) {
             const aIsGroupHeader = 'isGroupHeader' in a && a.isGroupHeader;
             const bIsGroupHeader = 'isGroupHeader' in b && b.isGroupHeader;
@@ -401,18 +401,16 @@ export function ReportTable({
                 const aCount = a.count ?? 0;
                 const bCount = b.count ?? 0;
                 if (aCount !== bCount) {
-                  return bCount - aCount; // Highest first
+                  return bCount - aCount;
                 }
                 // If counts are equal, fall through to user sort
               }
             }
           }
 
-          // Apply user's sort criteria (for all rows, including within groups)
           return sortFn(a, b);
         });
 
-        // Sort subRows recursively (within each group) - these are NOT top level
         return sorted.map((row) => {
           if ('subRows' in row && row.subRows) {
             return {
@@ -427,7 +425,6 @@ export function ReportTable({
       return sortExpandableRows(groupedRows as ExpandableTableRow[]);
     }
 
-    // For flat mode, apply sorting
     if (!grouped && result.length > 0 && sorting.length > 0) {
       return [...result].sort((a, b) => {
         for (const sort of sorting) {
@@ -454,18 +451,28 @@ export function ReportTable({
             continue;
           }
 
-          // Handle null/undefined values
-          if (aValue == null && bValue == null) continue;
-          if (aValue == null) return 1;
-          if (bValue == null) return -1;
+          if (aValue == null && bValue == null) {
+            continue;
+          }
+          if (aValue == null) {
+            return 1;
+          }
+          if (bValue == null) {
+            return -1;
+          }
 
-          // Compare values
           if (typeof aValue === 'string' && typeof bValue === 'string') {
             const comparison = aValue.localeCompare(bValue);
-            if (comparison !== 0) return desc ? -comparison : comparison;
+            if (comparison !== 0) {
+              return desc ? -comparison : comparison;
+            }
           } else {
-            if (aValue < bValue) return desc ? 1 : -1;
-            if (aValue > bValue) return desc ? -1 : 1;
+            if (aValue < bValue) {
+              return desc ? 1 : -1;
+            }
+            if (aValue > bValue) {
+              return desc ? -1 : 1;
+            }
           }
         }
         return 0;
@@ -475,7 +482,6 @@ export function ReportTable({
     return result;
   }, [rows, globalFilter, grouped, sorting]);
 
-  // Calculate min/max values for color visualization
   const { metricRanges, dateRanges } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
       count: {
@@ -499,9 +505,8 @@ export function ReportTable({
       };
     });
 
-    // Helper function to flatten expandable rows and get only individual rows
     function getIndividualRows(
-      rows: (ExpandableTableRow | TableRow)[],
+      rows: (ExpandableTableRow | TableRow)[]
     ): TableRow[] {
       const individualRows: TableRow[] = [];
       for (const row of rows) {
@@ -509,12 +514,10 @@ export function ReportTable({
           'isGroupHeader' in row && row.isGroupHeader === true;
         const isSummary = 'isSummaryRow' in row && row.isSummaryRow === true;
 
-        if (!isGroupHeader && !isSummary) {
-          // It's an individual row - add it
+        if (!(isGroupHeader || isSummary)) {
           individualRows.push(row as TableRow);
         }
 
-        // Always recursively process subRows if they exist (regardless of whether this is a group header)
         if ('subRows' in row && row.subRows && Array.isArray(row.subRows)) {
           individualRows.push(...getIndividualRows(row.subRows));
         }
@@ -522,20 +525,17 @@ export function ReportTable({
       return individualRows;
     }
 
-    // Get only individual rows from all rows to ensure consistent ranges
     const individualRows = getIndividualRows(rows);
     const isSingleSeries = individualRows.length === 1;
 
     if (isSingleSeries) {
-      // For single series, calculate ranges from date values
       const singleRow = individualRows[0]!;
       const allDateValues = dates.map(
-        (date) => singleRow.dateValues[date] ?? 0,
+        (date) => singleRow.dateValues[date] ?? 0
       );
       const dateMin = Math.min(...allDateValues);
       const dateMax = Math.max(...allDateValues);
 
-      // For date columns, use the range across all dates
       dates.forEach((date) => {
         dateRanges[date] = {
           min: dateMin,
@@ -543,62 +543,52 @@ export function ReportTable({
         };
       });
 
-      // For metric columns, use date values to create meaningful ranges
-      // This ensures we can still show color variation even with one series
       metricRanges.count = { min: dateMin, max: dateMax };
       metricRanges.sum = { min: dateMin, max: dateMax };
       metricRanges.average = { min: dateMin, max: dateMax };
       metricRanges.min = { min: dateMin, max: dateMax };
       metricRanges.max = { min: dateMin, max: dateMax };
+    } else if (individualRows.length === 0) {
     } else {
-      // Multiple series: calculate ranges across individual rows only
-      if (individualRows.length === 0) {
-        // No individual rows found - this shouldn't happen, but handle gracefully
-      } else {
-        individualRows.forEach((row) => {
-          // Calculate metric ranges
-          Object.keys(metricRanges).forEach((key) => {
-            const value = row[key as keyof typeof row] as number;
-            if (typeof value === 'number' && !Number.isNaN(value)) {
-              metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
-              metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
-            }
-          });
-
-          // Calculate date ranges
-          dates.forEach((date) => {
-            const value = row.dateValues[date] ?? 0;
-            if (!dateRanges[date]) {
-              dateRanges[date] = {
-                min: Number.POSITIVE_INFINITY,
-                max: Number.NEGATIVE_INFINITY,
-              };
-            }
-            if (typeof value === 'number' && !Number.isNaN(value)) {
-              dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
-              dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
-            }
-          });
+      individualRows.forEach((row) => {
+        Object.keys(metricRanges).forEach((key) => {
+          const value = row[key as keyof typeof row] as number;
+          if (typeof value === 'number' && !Number.isNaN(value)) {
+            metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
+            metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
+          }
         });
-      }
+
+        dates.forEach((date) => {
+          const value = row.dateValues[date] ?? 0;
+          if (!dateRanges[date]) {
+            dateRanges[date] = {
+              min: Number.POSITIVE_INFINITY,
+              max: Number.NEGATIVE_INFINITY,
+            };
+          }
+          if (typeof value === 'number' && !Number.isNaN(value)) {
+            dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
+            dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+          }
+        });
+      });
     }
 
     return { metricRanges, dateRanges };
   }, [rows, dates]);
 
-  // Helper to get background color style and opacity for a value
   // Returns both style and opacity (for text color calculation) to avoid parsing
   const getCellBackgroundStyle = (
     value: number,
     min: number,
     max: number,
-    colorClass: 'purple' | 'emerald' = 'emerald',
+    colorClass: 'purple' | 'emerald' = 'emerald'
   ): { style: React.CSSProperties; opacity: number } => {
     if (value === 0) {
       return { style: {}, opacity: 0 };
     }
 
-    // If min equals max (e.g. single row or all values same), show moderate opacity
     let opacity: number;
     if (max === min) {
       opacity = 0.5;
@@ -619,26 +609,24 @@ export function ReportTable({
     };
   };
 
-  // Normalize visibleSeries to string array
   const visibleSeriesIds = useMemo(() => {
-    if (visibleSeries.length === 0) return [];
+    if (visibleSeries.length === 0) {
+      return [];
+    }
     if (typeof visibleSeries[0] === 'string') {
       return visibleSeries as string[];
     }
     return (visibleSeries as IChartData['series']).map((s) => s.id);
   }, [visibleSeries]);
 
-  // Create a hash of visibleSeriesIds to track checkbox state changes
   const visibleSeriesIdsHash = useMemo(() => {
     return visibleSeriesIds.sort().join(',');
   }, [visibleSeriesIds]);
 
-  // Get serie index for color
   const getSerieIndex = (serieId: string): number => {
     return data.series.findIndex((s) => s.id === serieId);
   };
 
-  // Toggle serie visibility
   const toggleSerieVisibility = (serieId: string) => {
     setVisibleSeries((prev) => {
       if (prev.includes(serieId)) {
@@ -648,19 +636,13 @@ export function ReportTable({
     });
   };
 
-  // Toggle group collapse (now handled by TanStack Table's expanding feature)
-  // This is kept for backward compatibility with header click handlers
   const toggleGroupCollapse = (groupKey: string) => {
-    // This will be handled by TanStack Table's row expansion
-    // We can find the row by groupKey and toggle it
     // For now, this is a no-op as TanStack Table handles it
   };
 
-  // Define columns
   const columns = useMemo<ColumnDef<TableRow | GroupedTableRow>[]>(() => {
     const cols: ColumnDef<TableRow | GroupedTableRow>[] = [];
 
-    // Serie name column (pinned left) with checkbox
     cols.push({
       id: 'serie-name',
       header: 'Serie',
@@ -689,18 +671,16 @@ export function ReportTable({
           original.groupKey &&
           !original.isSummaryRow
         ) {
-          // Find all rows in this group from the current rows array
           const groupRows = rows.filter(
             (r): r is GroupedTableRow =>
               'groupKey' in r &&
               r.groupKey === original.groupKey &&
-              !r.isSummaryRow,
+              !r.isSummaryRow
           );
 
           if (groupRows.length > 0) {
             const firstRowInGroup = groupRows[0]!;
 
-            // Check if this is the first row in the group
             if (firstRowInGroup.id === original.id) {
               isFirstRowInGroup = true;
             } else {
@@ -722,31 +702,30 @@ export function ReportTable({
         const isExpandable = grouped && isSerieGroupHeader && hasSubRows;
 
         return (
-          <div className="flex items-center gap-2 px-4 h-12">
+          <div className="flex h-12 items-center gap-2 px-4">
             <Checkbox
               checked={isVisible}
+              className="h-4 w-4 shrink-0"
               onCheckedChange={() => toggleSerieVisibility(serieId)}
               style={{
                 borderColor: color,
                 backgroundColor: isVisible ? color : 'transparent',
               }}
-              className="h-4 w-4 shrink-0"
             />
             <SerieName
-              name={serieName}
               className={cn(
                 'truncate',
                 !isExpandable && grouped && 'text-muted-foreground/40',
-                isExpandable && 'font-semibold',
+                isExpandable && 'font-semibold'
               )}
+              name={serieName}
             />
             {isExpandable && (
               <button
-                type="button"
+                className="cursor-pointer hover:opacity-70"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  // Toggle expanded state manually
                   setExpanded((prev) => {
                     const newExpanded: ExpandedState =
                       typeof prev === 'object' ? { ...prev } : {};
@@ -755,7 +734,7 @@ export function ReportTable({
                     return newExpanded;
                   });
                 }}
-                className="cursor-pointer hover:opacity-70"
+                type="button"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4" />
@@ -769,7 +748,6 @@ export function ReportTable({
       },
     });
 
-    // Breakdown columns (pinned left, collapsible)
     breakdownPropertyNames.forEach((propertyName, index) => {
       const isLastBreakdown = index === breakdownPropertyNames.length - 1;
       const isCollapsible = grouped && !isLastBreakdown;
@@ -792,13 +770,12 @@ export function ReportTable({
             return propertyName;
           }
 
-          // Find all rows at this breakdown level that can be expanded
           const rowsAtLevel: string[] = [];
           if (grouped && expandableRows) {
             function collectRowIdsAtLevel(
               rows: ExpandableTableRow[],
               targetLevel: number,
-              currentLevel = 0,
+              currentLevel = 0
             ): void {
               for (const row of rows) {
                 if (
@@ -808,12 +785,11 @@ export function ReportTable({
                 ) {
                   rowsAtLevel.push(row.id);
                 }
-                // Recurse into subRows if we haven't reached target level yet
                 if (currentLevel < targetLevel && row.subRows) {
                   collectRowIdsAtLevel(
                     row.subRows,
                     targetLevel,
-                    currentLevel + 1,
+                    currentLevel + 1
                   );
                 }
               }
@@ -821,19 +797,19 @@ export function ReportTable({
             collectRowIdsAtLevel(expandableRows, index);
           }
 
-          // Check if all groups at this level are expanded
           const allExpanded =
             rowsAtLevel.length > 0 &&
             rowsAtLevel.every(
-              (id) => typeof expanded === 'object' && expanded[id] === true,
+              (id) => typeof expanded === 'object' && expanded[id] === true
             );
 
           return (
             <div
-              className="flex items-center gap-2 cursor-pointer hover:opacity-70"
+              className="flex cursor-pointer items-center gap-2 hover:opacity-70"
               onClick={() => {
-                if (!grouped) return;
-                // Toggle all groups at this breakdown level
+                if (!grouped) {
+                  return;
+                }
                 setExpanded((prev) => {
                   const newExpanded: ExpandedState =
                     typeof prev === 'object' ? { ...prev } : {};
@@ -847,7 +823,9 @@ export function ReportTable({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  if (!grouped) return;
+                  if (!grouped) {
+                    return;
+                  }
                   setExpanded((prev) => {
                     const newExpanded: ExpandedState =
                       typeof prev === 'object' ? { ...prev } : {};
@@ -880,23 +858,24 @@ export function ReportTable({
           const value: string | number | null =
             original.breakdownValues[index] ?? null;
           const isLastBreakdown = index === breakdownPropertyNames.length - 1;
-          const isMuted = (!isLastBreakdown && !canExpand && grouped) || !value;
+          const isMuted =
+            (!(isLastBreakdown || canExpand) && grouped) || !value;
 
           // For group headers, only show value at the group level, hide deeper breakdowns
           if (isGroupHeader && 'groupLevel' in original) {
             const groupLevel = original.groupLevel ?? 0;
             if (index !== groupLevel) {
-              return <div className="flex items-center gap-2 px-4 h-12" />;
+              return <div className="flex h-12 items-center gap-2 px-4" />;
             }
           }
 
           return (
-            <div className="flex items-center gap-2 px-4 h-12">
+            <div className="flex h-12 items-center gap-2 px-4">
               <span
                 className={cn(
-                  'truncate block leading-[48px]',
+                  'block truncate leading-[48px]',
                   isMuted && 'text-muted-foreground/50',
-                  isGroupHeader && 'font-semibold',
+                  isGroupHeader && 'font-semibold'
                 )}
               >
                 {value || '(Not set)'}
@@ -906,13 +885,15 @@ export function ReportTable({
                   ('groupLevel' in original ? (original.groupLevel ?? 0) : 0) &&
                 index < breakdownPropertyNames.length - 1 && (
                   <button
-                    type="button"
+                    className="cursor-pointer hover:opacity-70"
                     onClick={(e) => {
                       e.stopPropagation();
                       const handler = row.getToggleExpandedHandler();
-                      if (handler) handler();
+                      if (handler) {
+                        handler();
+                      }
                     }}
-                    className="cursor-pointer hover:opacity-70"
+                    type="button"
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4" />
@@ -927,7 +908,6 @@ export function ReportTable({
       });
     });
 
-    // Metric columns
     const metrics = [
       { key: 'count', label: 'Unique' },
       { key: 'sum', label: 'Sum' },
@@ -951,10 +931,9 @@ export function ReportTable({
           const isSummary = hasIsSummaryRow && original.isSummaryRow === true;
           const isGroupHeader =
             hasIsGroupHeader && original.isGroupHeader === true;
-          const isIndividualRow = !isSummary && !isGroupHeader;
+          const isIndividualRow = !(isSummary || isGroupHeader);
           const range = metricRanges[metric.key];
 
-          // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
           const hasValidRange =
             range &&
@@ -969,9 +948,9 @@ export function ReportTable({
           return (
             <div
               className={cn(
-                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
-                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
-                (isSummary || isGroupHeader) && 'font-semibold',
+                'flex h-12 w-full items-center justify-end px-4 text-right font-mono text-sm',
+                'shadow-[inset_-1px_-1px_0_var(--border)] [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
+                (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
             >
@@ -982,7 +961,6 @@ export function ReportTable({
       });
     });
 
-    // Date columns
     dates.forEach((date) => {
       cols.push({
         id: `date-${date}`,
@@ -996,9 +974,8 @@ export function ReportTable({
           const isGroupHeader =
             'isGroupHeader' in row.original &&
             row.original.isGroupHeader === true;
-          const isIndividualRow = !isSummary && !isGroupHeader;
+          const isIndividualRow = !(isSummary || isGroupHeader);
           const range = dateRanges[date];
-          // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
           const hasValidRange =
             range &&
@@ -1014,9 +991,9 @@ export function ReportTable({
           return (
             <div
               className={cn(
-                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
-                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
-                (isSummary || isGroupHeader) && 'font-semibold',
+                'flex h-12 w-full items-center justify-end px-4 text-right font-mono text-sm',
+                'shadow-[inset_-1px_-1px_0_var(--border)] [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
+                (isSummary || isGroupHeader) && 'font-semibold'
               )}
               style={backgroundStyle}
             >
@@ -1044,15 +1021,13 @@ export function ReportTable({
     data,
   ]);
 
-  // Create a hash of column IDs to track when columns change
   const columnsHash = useMemo(() => {
     return columns.map((col) => col.id).join(',');
   }, [columns]);
 
-  // Memoize table options to ensure table updates when filteredRows changes
   const tableOptions = useMemo(
     () => ({
-      data: filteredRows, // This is already sorted in filteredRows
+      data: filteredRows,
       columns,
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: grouped ? getExpandedRowModel() : undefined,
@@ -1070,7 +1045,9 @@ export function ReportTable({
       getRowCanExpand: grouped
         ? (row: any) => {
             const r = row.original as ExpandableTableRow;
-            if (!('isGroupHeader' in r) || !r.isGroupHeader) return false;
+            if (!('isGroupHeader' in r && r.isGroupHeader)) {
+              return false;
+            }
             // Don't allow expansion for the last breakdown level
             const groupLevel = r.groupLevel ?? -1;
             const isLastBreakdown =
@@ -1087,9 +1064,9 @@ export function ReportTable({
       onSortingChange: setSorting,
       onColumnSizingChange: setColumnSizing,
       onExpandedChange: grouped ? setExpanded : undefined,
-      globalFilterFn: () => true, // We handle filtering manually
-      manualSorting: true, // We handle sorting manually for both modes
-      manualFiltering: true, // We handle filtering manually
+      globalFilterFn: () => true,
+      manualSorting: true,
+      manualFiltering: true,
     }),
     [
       filteredRows,
@@ -1102,17 +1079,16 @@ export function ReportTable({
       setSorting,
       setColumnSizing,
       setExpanded,
-    ],
+    ]
   );
 
   const table = useReactTable(tableOptions);
 
-  // Virtualization setup
   useEffect(() => {
     const updateScrollMargin = throttle(() => {
       if (parentRef.current) {
         setScrollMargin(
-          parentRef.current.getBoundingClientRect().top + window.scrollY,
+          parentRef.current.getBoundingClientRect().top + window.scrollY
         );
       }
     }, 500);
@@ -1125,7 +1101,6 @@ export function ReportTable({
     };
   }, []);
 
-  // Handle global mouseup to reset resize flag
   useEffect(() => {
     const handleMouseUp = () => {
       if (isResizingRef.current) {
@@ -1146,7 +1121,6 @@ export function ReportTable({
     };
   }, []);
 
-  // Get the row model to use (expanded when grouped, regular otherwise)
   // Always call the table helpers so React Table can manage its own memoization
   const rowModelToUse = grouped
     ? table.getExpandedRowModel()
@@ -1161,37 +1135,33 @@ export function ReportTable({
 
   const virtualRows = virtualizer.getVirtualItems();
 
-  // Get visible columns in order
   const headerColumns = table
     .getAllLeafColumns()
     .filter((col) => table.getState().columnVisibility[col.id] !== false);
 
-  // Separate columns into pinned and scrollable
   const leftPinnedColumns = headerColumns.filter(
-    (col) => col.columnDef.meta?.pinned === 'left',
+    (col) => col.columnDef.meta?.pinned === 'left'
   );
   const rightPinnedColumns = headerColumns.filter(
-    (col) => col.columnDef.meta?.pinned === 'right',
+    (col) => col.columnDef.meta?.pinned === 'right'
   );
   const scrollableColumns = headerColumns.filter(
-    (col) => !col.columnDef.meta?.pinned,
+    (col) => !col.columnDef.meta?.pinned
   );
 
-  // Calculate widths for virtualization
   const leftPinnedWidth = useMemo(
     () => leftPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [leftPinnedColumns, columnSizing],
+    [leftPinnedColumns, columnSizing]
   );
   const rightPinnedWidth = useMemo(
     () => rightPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [rightPinnedColumns, columnSizing],
+    [rightPinnedColumns, columnSizing]
   );
   const scrollableColumnsTotalWidth = useMemo(
     () => scrollableColumns.reduce((sum, col) => sum + col.getSize(), 0),
-    [scrollableColumns, columnSizing],
+    [scrollableColumns, columnSizing]
   );
 
-  // Horizontal virtualization for scrollable columns
   // Only virtualize if we have enough columns to benefit from it
   const shouldVirtualizeHorizontal = scrollableColumns.length > 10;
 
@@ -1204,7 +1174,6 @@ export function ReportTable({
     overscan: shouldVirtualizeHorizontal ? 5 : scrollableColumns.length,
   });
 
-  // Get virtual columns - if not virtualizing, return all columns
   const virtualColumns = shouldVirtualizeHorizontal
     ? horizontalVirtualizer.getVirtualItems()
     : scrollableColumns.map((col, index) => ({
@@ -1218,7 +1187,6 @@ export function ReportTable({
         lane: 0,
       }));
 
-  // Pre-compute grid template columns string and headers
   const { gridTemplateColumns, headers } = useMemo(() => {
     const headerGroups = table.getHeaderGroups();
     const firstGroupHeaders = headerGroups[0]?.headers ?? [];
@@ -1229,7 +1197,6 @@ export function ReportTable({
     };
   }, [table, columnSizing, columnsHash]);
 
-  // Pre-compute pinning styles for all columns
   const pinningStylesMap = useMemo(() => {
     const stylesMap = new Map<string, React.CSSProperties>();
     const headerGroups = table.getHeaderGroups();
@@ -1275,11 +1242,12 @@ export function ReportTable({
     return stylesMap;
   }, [table, leftPinnedColumns, rightPinnedColumns, columnSizing, columnsHash]);
 
-  // Helper to get pinning styles (for backward compatibility with header)
   const getPinningStyles = (
-    column: ReturnType<typeof table.getColumn> | undefined,
+    column: ReturnType<typeof table.getColumn> | undefined
   ) => {
-    if (!column) return {};
+    if (!column) {
+      return {};
+    }
     return pinningStylesMap.get(column.id) ?? {};
   };
 
@@ -1288,21 +1256,21 @@ export function ReportTable({
   }
 
   return (
-    <div className="flex flex-col border rounded-lg overflow-hidden bg-card mt-8">
+    <div className="mt-8 flex flex-col overflow-hidden rounded-lg border bg-card">
       <ReportTableToolbar
         grouped={grouped}
+        onSearchChange={setGlobalFilter}
         onToggleGrouped={
           !breakdowns || breakdowns.length === 0
             ? undefined
             : () => setGrouped(!grouped)
         }
-        search={globalFilter}
-        onSearchChange={setGlobalFilter}
         onUnselectAll={() => setVisibleSeries([])}
+        search={globalFilter}
       />
       <div
-        ref={parentRef}
         className="overflow-x-auto"
+        ref={parentRef}
         style={{
           width: '100%',
         }}
@@ -1315,9 +1283,8 @@ export function ReportTable({
             minWidth: 'fit-content',
           }}
         >
-          {/* Header */}
           <div
-            className="sticky top-0 z-20 bg-card border-b"
+            className="sticky top-0 z-20 border-b bg-card"
             style={{
               display: 'flex',
               width:
@@ -1327,10 +1294,11 @@ export function ReportTable({
               minWidth: 'fit-content',
             }}
           >
-            {/* Left Pinned Columns */}
             {leftPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
-              if (!header) return null;
+              if (!header) {
+                return null;
+              }
               const headerContent = column.columnDef.header;
               const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
               const pinningStyles = getPinningStyles(column);
@@ -1345,18 +1313,12 @@ export function ReportTable({
 
               return (
                 <div
-                  key={header.id}
-                  style={{
-                    width: `${header.getSize()}px`,
-                    minWidth: column.columnDef.minSize,
-                    maxWidth: column.columnDef.maxSize,
-                    ...pinningStyles,
-                  }}
                   className={cn(
-                    'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
+                    'relative flex h-10 items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                    canSort && 'cursor-pointer select-none hover:bg-muted/50'
                   )}
+                  key={header.id}
                   onClick={
                     canSort
                       ? (e) => {
@@ -1365,7 +1327,7 @@ export function ReportTable({
                             isResizingRef.current ||
                             column.getIsResizing() ||
                             (e.target as HTMLElement).closest(
-                              '[data-resize-handle]',
+                              '[data-resize-handle]'
                             )
                           ) {
                             return;
@@ -1385,9 +1347,15 @@ export function ReportTable({
                       : undefined
                   }
                   role={canSort ? 'button' : undefined}
+                  style={{
+                    width: `${header.getSize()}px`,
+                    minWidth: column.columnDef.minSize,
+                    maxWidth: column.columnDef.maxSize,
+                    ...pinningStyles,
+                  }}
                   tabIndex={canSort ? 0 : undefined}
                 >
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex flex-1 items-center gap-1.5">
                     {header.isPlaceholder
                       ? null
                       : typeof headerContent === 'function'
@@ -1405,6 +1373,10 @@ export function ReportTable({
                   </div>
                   {canResize && isPinned && (
                     <div
+                      className={cn(
+                        'absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent transition-colors hover:bg-primary/50',
+                        header.column.getIsResizing() && 'bg-primary'
+                      )}
                       data-resize-handle
                       onMouseDown={(e) => {
                         e.stopPropagation();
@@ -1419,29 +1391,24 @@ export function ReportTable({
                           setResizingColumnId(null);
                         }, 0);
                       }}
-                      onTouchStart={(e) => {
-                        e.stopPropagation();
-                        isResizingRef.current = true;
-                        setResizingColumnId(column.id);
-                        header.getResizeHandler()(e);
-                      }}
                       onTouchEnd={() => {
                         setTimeout(() => {
                           isResizingRef.current = false;
                           setResizingColumnId(null);
                         }, 0);
                       }}
-                      className={cn(
-                        'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-                        header.column.getIsResizing() && 'bg-primary',
-                      )}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        isResizingRef.current = true;
+                        setResizingColumnId(column.id);
+                        header.getResizeHandler()(e);
+                      }}
                     />
                   )}
                 </div>
               );
             })}
 
-            {/* Scrollable Columns (Virtualized) */}
             <div
               style={{
                 position: 'relative',
@@ -1451,9 +1418,13 @@ export function ReportTable({
             >
               {virtualColumns.map((virtualCol) => {
                 const column = scrollableColumns[virtualCol.index];
-                if (!column) return null;
+                if (!column) {
+                  return null;
+                }
                 const header = headers.find((h) => h.column.id === column.id);
-                if (!header) return null;
+                if (!header) {
+                  return null;
+                }
 
                 const headerContent = header.column.columnDef.header;
                 const isBreakdown =
@@ -1466,18 +1437,12 @@ export function ReportTable({
 
                 return (
                   <div
-                    key={header.id}
-                    style={{
-                      position: 'absolute',
-                      left: `${virtualCol.start}px`,
-                      width: `${virtualCol.size}px`,
-                      height: '40px',
-                    }}
                     className={cn(
-                      'px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap',
+                      'flex items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                       isMetricOrDate && 'text-right',
-                      canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                      canSort && 'cursor-pointer select-none hover:bg-muted/50'
                     )}
+                    key={header.id}
                     onClick={
                       canSort
                         ? (e) => {
@@ -1485,7 +1450,7 @@ export function ReportTable({
                               isResizingRef.current ||
                               header.column.getIsResizing() ||
                               (e.target as HTMLElement).closest(
-                                '[data-resize-handle]',
+                                '[data-resize-handle]'
                               )
                             ) {
                               return;
@@ -1505,9 +1470,15 @@ export function ReportTable({
                         : undefined
                     }
                     role={canSort ? 'button' : undefined}
+                    style={{
+                      position: 'absolute',
+                      left: `${virtualCol.start}px`,
+                      width: `${virtualCol.size}px`,
+                      height: '40px',
+                    }}
                     tabIndex={canSort ? 0 : undefined}
                   >
-                    <div className="flex items-center gap-1.5 flex-1">
+                    <div className="flex flex-1 items-center gap-1.5">
                       {header.isPlaceholder
                         ? null
                         : typeof headerContent === 'function'
@@ -1528,10 +1499,11 @@ export function ReportTable({
               })}
             </div>
 
-            {/* Right Pinned Columns */}
             {rightPinnedColumns.map((column) => {
               const header = headers.find((h) => h.column.id === column.id);
-              if (!header) return null;
+              if (!header) {
+                return null;
+              }
 
               const headerContent = header.column.columnDef.header;
               const isBreakdown =
@@ -1546,18 +1518,12 @@ export function ReportTable({
 
               return (
                 <div
-                  key={header.id}
-                  style={{
-                    width: `${header.getSize()}px`,
-                    minWidth: header.column.columnDef.minSize,
-                    maxWidth: header.column.columnDef.maxSize,
-                    ...pinningStyles,
-                  }}
                   className={cn(
-                    'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
+                    'relative flex h-10 items-center whitespace-nowrap border-border border-r bg-muted/30 px-4 font-semibold text-[10px] uppercase',
                     isMetricOrDate && 'text-right',
-                    canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                    canSort && 'cursor-pointer select-none hover:bg-muted/50'
                   )}
+                  key={header.id}
                   onClick={
                     canSort
                       ? (e) => {
@@ -1565,7 +1531,7 @@ export function ReportTable({
                             isResizingRef.current ||
                             header.column.getIsResizing() ||
                             (e.target as HTMLElement).closest(
-                              '[data-resize-handle]',
+                              '[data-resize-handle]'
                             )
                           ) {
                             return;
@@ -1585,9 +1551,15 @@ export function ReportTable({
                       : undefined
                   }
                   role={canSort ? 'button' : undefined}
+                  style={{
+                    width: `${header.getSize()}px`,
+                    minWidth: header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
+                    ...pinningStyles,
+                  }}
                   tabIndex={canSort ? 0 : undefined}
                 >
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex flex-1 items-center gap-1.5">
                     {header.isPlaceholder
                       ? null
                       : typeof headerContent === 'function'
@@ -1608,7 +1580,6 @@ export function ReportTable({
             })}
           </div>
 
-          {/* Virtualized Body */}
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
@@ -1617,7 +1588,9 @@ export function ReportTable({
           >
             {virtualRows.map((virtualRow) => {
               const tableRow = rowModelToUse.rows[virtualRow.index];
-              if (!tableRow) return null;
+              if (!tableRow) {
+                return null;
+              }
 
               // Include serie name in key to force re-render when name changes
               const serieId = tableRow.original.serieId;
@@ -1627,24 +1600,24 @@ export function ReportTable({
 
               return (
                 <VirtualRow
+                  headers={headers}
+                  isResizingRef={isResizingRef}
                   key={`${virtualRow.key}-${serieName}-${gridTemplateColumns}`}
+                  leftPinnedColumns={leftPinnedColumns}
+                  leftPinnedWidth={leftPinnedWidth}
+                  pinningStylesMap={pinningStylesMap}
+                  resizingColumnId={resizingColumnId}
+                  rightPinnedColumns={rightPinnedColumns}
+                  rightPinnedWidth={rightPinnedWidth}
                   row={tableRow}
+                  scrollableColumns={scrollableColumns}
+                  scrollableColumnsTotalWidth={scrollableColumnsTotalWidth}
+                  setResizingColumnId={setResizingColumnId}
+                  virtualColumns={virtualColumns}
                   virtualRow={{
                     ...virtualRow,
                     start: virtualRow.start - virtualizer.options.scrollMargin,
                   }}
-                  pinningStylesMap={pinningStylesMap}
-                  headers={headers}
-                  isResizingRef={isResizingRef}
-                  resizingColumnId={resizingColumnId}
-                  setResizingColumnId={setResizingColumnId}
-                  leftPinnedColumns={leftPinnedColumns}
-                  scrollableColumns={scrollableColumns}
-                  rightPinnedColumns={rightPinnedColumns}
-                  virtualColumns={virtualColumns}
-                  leftPinnedWidth={leftPinnedWidth}
-                  scrollableColumnsTotalWidth={scrollableColumnsTotalWidth}
-                  rightPinnedWidth={rightPinnedWidth}
                 />
               );
             })}

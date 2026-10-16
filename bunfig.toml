@@ -1,0 +1,37 @@
+# Root `bun install` policy (ADR-014).
+#
+# `ignoreScripts` is the successor to pnpm's `allowBuilds:` block, which was
+# twelve entries and every one `false` — under pnpm not one dependency build
+# script has ever run in any image this repo shipped, and the one time they
+# were flipped on, sharp's install script tried a node-gyp compile under
+# `npm_config_build_from_source=true` and broke the dashboard build
+# (reverted in 4e715348).
+#
+# Omitting `trustedDependencies` does NOT reproduce that. Measured on Bun
+# 1.4.0 on 2026-09-07: `bun pm default-trusted` lists **367** packages, and
+# eight of the twelve `allowBuilds: false` entries are on it (@prisma/client,
+# @prisma/engines, prisma, esbuild, msgpackr-extract, sharp, simple-git-hooks,
+# workerd). A bare `bun install` therefore runs eight scripts that have never
+# run here — and `simple-git-hooks`'s postinstall hard-fails under
+# `--linker=isolated` (it stats node_modules/.bun/<pkg>/package.json), so the
+# install itself exits 1.
+#
+# This setting lives here, not on the command line, because the gates and
+# `verification/full.sh` run a BARE `bun install --frozen-lockfile`. A policy
+# that only holds when someone remembers a flag is not a policy.
+#
+# The two workspace-own postinstalls this suppresses are build steps the tree
+# needs (apps/public's `fumadocs-mdx`, apps/testbed's `copy-op1.mjs`); both are
+# now invoked by their package's own `build`/`typecheck` scripts, and
+# `bun run postinstall:workspaces` runs them explicitly.
+#
+# Enable a single dependency's scripts only with a build that proves it is
+# needed — and via `trustedDependencies`, which is inert while this is true.
+[install]
+ignoreScripts = true
+
+# ADR-014 amendment 1: the isolated layout is what this repo has always
+# installed under, and it is what makes an undeclared ("phantom") dependency
+# fail at install rather than resolve by accident. `--linker=hoisted` is a
+# fallback that requires a recorded reason and a re-run of the full gate.
+linker = "isolated"

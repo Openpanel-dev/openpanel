@@ -14,7 +14,7 @@ const CLIENT_ID = process.env.CLIENT_ID!;
 const CLIENT_SECRET = process.env.CLIENT_SECRET!;
 const API_BASE_URL = process.env.API_URL || 'http://localhost:3333';
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
+if (!(CLIENT_ID && CLIENT_SECRET)) {
   console.error('CLIENT_ID and CLIENT_SECRET must be set');
   process.exit(1);
 }
@@ -34,7 +34,7 @@ const results: TestResult[] = [];
 async function makeRequest(
   method: string,
   path: string,
-  body?: any,
+  body?: any
 ): Promise<TestResult> {
   const url = `${API_BASE_URL}${path}`;
   const headers: Record<string, string> = {
@@ -80,7 +80,6 @@ async function makeRequest(
 async function testProjects() {
   console.log('\n📁 Testing Projects endpoints...\n');
 
-  // Create project
   const createResult = await makeRequest('POST', '/manage/projects', {
     name: `Test Project ${Date.now()}`,
     domain: 'https://example.com',
@@ -90,9 +89,11 @@ async function testProjects() {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/projects: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/projects: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const projectId = createResult.data?.data?.id;
   const clientId = createResult.data?.data?.client?.id;
@@ -100,50 +101,51 @@ async function testProjects() {
 
   if (projectId) {
     console.log(`  Created project: ${projectId}`);
-    if (clientId) console.log(`  Created client: ${clientId}`);
-    if (clientSecret) console.log(`  Client secret: ${clientSecret}`);
+    if (clientId) {
+      console.log(`  Created client: ${clientId}`);
+    }
+    if (clientSecret) {
+      console.log(`  Client secret: ${clientSecret}`);
+    }
   }
 
-  // List projects
   const listResult = await makeRequest('GET', '/manage/projects');
   results.push(listResult);
   console.log(
-    `✓ GET /manage/projects: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/projects: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} projects`);
   }
 
   if (projectId) {
-    // Get project
     const getResult = await makeRequest('GET', `/manage/projects/${projectId}`);
     results.push(getResult);
     console.log(
-      `✓ GET /manage/projects/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/projects/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update project
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/projects/${projectId}`,
       {
         name: 'Updated Test Project',
         crossDomain: true,
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/projects/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/projects/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
     // Delete project (soft delete)
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/projects/${projectId}`,
+      `/manage/projects/${projectId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/projects/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/projects/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 
@@ -153,7 +155,6 @@ async function testProjects() {
 async function testClients(projectId?: string) {
   console.log('\n🔑 Testing Clients endpoints...\n');
 
-  // Create client
   const createResult = await makeRequest('POST', '/manage/clients', {
     name: `Test Client ${Date.now()}`,
     projectId: projectId || undefined,
@@ -161,60 +162,60 @@ async function testClients(projectId?: string) {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/clients: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/clients: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const clientId = createResult.data?.data?.id;
   const clientSecret = createResult.data?.data?.secret;
 
   if (clientId) {
     console.log(`  Created client: ${clientId}`);
-    if (clientSecret) console.log(`  Client secret: ${clientSecret}`);
+    if (clientSecret) {
+      console.log(`  Client secret: ${clientSecret}`);
+    }
   }
 
-  // List clients
   const listResult = await makeRequest(
     'GET',
-    projectId ? `/manage/clients?projectId=${projectId}` : '/manage/clients',
+    projectId ? `/manage/clients?projectId=${projectId}` : '/manage/clients'
   );
   results.push(listResult);
   console.log(
-    `✓ GET /manage/clients: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/clients: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} clients`);
   }
 
   if (clientId) {
-    // Get client
     const getResult = await makeRequest('GET', `/manage/clients/${clientId}`);
     results.push(getResult);
     console.log(
-      `✓ GET /manage/clients/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/clients/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update client
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/clients/${clientId}`,
       {
         name: 'Updated Test Client',
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/clients/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/clients/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
-    // Delete client
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/clients/${clientId}`,
+      `/manage/clients/${clientId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/clients/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/clients/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 }
@@ -227,7 +228,6 @@ async function testReferences(projectId?: string) {
     return;
   }
 
-  // Create reference
   const createResult = await makeRequest('POST', '/manage/references', {
     projectId,
     title: `Test Reference ${Date.now()}`,
@@ -236,9 +236,11 @@ async function testReferences(projectId?: string) {
   });
   results.push(createResult);
   console.log(
-    `✓ POST /manage/references: ${createResult.success ? '✅' : '❌'} ${createResult.status}`,
+    `✓ POST /manage/references: ${createResult.success ? '✅' : '❌'} ${createResult.status}`
   );
-  if (createResult.error) console.log(`  Error: ${createResult.error}`);
+  if (createResult.error) {
+    console.log(`  Error: ${createResult.error}`);
+  }
 
   const referenceId = createResult.data?.data?.id;
 
@@ -246,31 +248,28 @@ async function testReferences(projectId?: string) {
     console.log(`  Created reference: ${referenceId}`);
   }
 
-  // List references
   const listResult = await makeRequest(
     'GET',
-    `/manage/references?projectId=${projectId}`,
+    `/manage/references?projectId=${projectId}`
   );
   results.push(listResult);
   console.log(
-    `✓ GET /manage/references: ${listResult.success ? '✅' : '❌'} ${listResult.status}`,
+    `✓ GET /manage/references: ${listResult.success ? '✅' : '❌'} ${listResult.status}`
   );
   if (listResult.data?.data?.length) {
     console.log(`  Found ${listResult.data.data.length} references`);
   }
 
   if (referenceId) {
-    // Get reference
     const getResult = await makeRequest(
       'GET',
-      `/manage/references/${referenceId}`,
+      `/manage/references/${referenceId}`
     );
     results.push(getResult);
     console.log(
-      `✓ GET /manage/references/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`,
+      `✓ GET /manage/references/:id: ${getResult.success ? '✅' : '❌'} ${getResult.status}`
     );
 
-    // Update reference
     const updateResult = await makeRequest(
       'PATCH',
       `/manage/references/${referenceId}`,
@@ -278,21 +277,20 @@ async function testReferences(projectId?: string) {
         title: 'Updated Test Reference',
         description: 'Updated description',
         datetime: new Date().toISOString(),
-      },
+      }
     );
     results.push(updateResult);
     console.log(
-      `✓ PATCH /manage/references/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`,
+      `✓ PATCH /manage/references/:id: ${updateResult.success ? '✅' : '❌'} ${updateResult.status}`
     );
 
-    // Delete reference
     const deleteResult = await makeRequest(
       'DELETE',
-      `/manage/references/${referenceId}`,
+      `/manage/references/${referenceId}`
     );
     results.push(deleteResult);
     console.log(
-      `✓ DELETE /manage/references/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`,
+      `✓ DELETE /manage/references/:id: ${deleteResult.success ? '✅' : '❌'} ${deleteResult.status}`
     );
   }
 }
@@ -306,13 +304,11 @@ async function main() {
     // Test projects first (creates a project we can use for other tests)
     const { projectId } = await testProjects();
 
-    // Test clients
     await testClients(projectId);
 
     // Test references (requires a project)
     await testReferences(projectId);
 
-    // Summary
     console.log(`\n${'='.repeat(60)}`);
     console.log('📊 Test Summary\n');
     const successful = results.filter((r) => r.success).length;
@@ -328,7 +324,9 @@ async function main() {
         .filter((r) => !r.success)
         .forEach((r) => {
           console.log(`  ❌ ${r.name} (${r.status})`);
-          if (r.error) console.log(`     Error: ${r.error}`);
+          if (r.error) {
+            console.log(`     Error: ${r.error}`);
+          }
         });
     }
   } catch (error) {

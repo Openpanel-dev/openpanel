@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import { CheckCircle2Icon, CheckIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { timeAgo } from '@/utils/date';

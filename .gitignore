@@ -1,6 +1,6 @@
 .secrets
 packages/db/src/generated/prisma
-packages/db/code-migrations/*.sql
+packages/core/src/code-migrations/*.sql
 **/.open-next
 
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
@@ -189,3 +189,26 @@ dist
 .DS_Store
 
 *.tsbuildinfo
+
+# hub worktrees and their markers
+.worktrees/
+.worktree-port
+.worktree-db
+WORKTREE.md
+
+# seed output and playwright auth state
+.seed.json
+apps/start/e2e/.auth/
+
+# playwright output
+apps/start/test-results/
+apps/start/playwright-report/
+# Playwright MCP scratch: console logs, page snapshots and screenshots, written
+# at the repo root by the MCP server rather than under apps/start.
+.playwright-mcp/
+
+# SQL dumps the ClickHouse code-migration runner writes next to each migration
+packages/db/src/code-migrations/*.sql
+
+# local working list of open issues
+ISSUES.md

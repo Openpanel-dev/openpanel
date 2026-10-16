@@ -1,4 +1,4 @@
-import type { IChartEvent } from '@openpanel/validation';
+import type { IChartEvent } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -137,8 +137,8 @@ export function PropertiesCombobox({
   const groupPropertiesQuery = useQuery(
     trpc.group.properties.queryOptions(
       { projectId },
-      { enabled: categories.includes('group') },
-    ),
+      { enabled: categories.includes('group') }
+    )
   );
 
   /**
@@ -169,7 +169,9 @@ export function PropertiesCombobox({
   };
 
   const shouldShowProperty = (property: string) => {
-    return !exclude.some((pattern) => matchesPropertyPattern(property, pattern));
+    return !exclude.some((pattern) =>
+      matchesPropertyPattern(property, pattern)
+    );
   };
 
   const allProperties = Array.from(new Set([...properties, ...include]));
@@ -205,7 +207,7 @@ export function PropertiesCombobox({
       description: property.split('.').slice(0, -1).join('.'),
     }));
   const sessionActions = SESSION_ACTIONS.filter((a) =>
-    shouldShowProperty(a.value),
+    shouldShowProperty(a.value)
   );
 
   const handleStateChange = (newState: State) => {
@@ -293,12 +295,12 @@ export function PropertiesCombobox({
 
   const renderActionList = (
     actions: PropertiesComboboxAction[],
-    options: { itemKey?: string } = {},
+    options: { itemKey?: string } = {}
   ) => {
     const filtered = actions.filter(
       (action) =>
         action.label.toLowerCase().includes(search.toLowerCase()) ||
-        action.description.toLowerCase().includes(search.toLowerCase()),
+        action.description.toLowerCase().includes(search.toLowerCase())
     );
 
     return (

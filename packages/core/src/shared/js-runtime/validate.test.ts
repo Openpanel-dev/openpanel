@@ -1,0 +1,673 @@
+import { describe, expect, it } from 'bun:test';
+import { execute, validate } from './index';
+
+describe('validate', () => {
+  describe('Valid templates', () => {
+    it('should accept arrow function', () => {
+      const result = validate('(payload) => ({ event: payload.name })');
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject function expression', () => {
+      const result = validate(
+        '(function(payload) { return { event: payload.name }; })'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('arrow functions');
+    });
+
+    it('should accept complex transformations', () => {
+      const code = `(payload) => ({
+        event: payload.name,
+        user: payload.profileId,
+        data: payload.properties,
+        timestamp: new Date(payload.createdAt).toISOString()
+      })`;
+      const result = validate(code);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept array operations', () => {
+      const code = `(payload) => ({
+        tags: payload.tags?.map(t => t.toUpperCase()) || []
+      })`;
+      const result = validate(code);
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Blocked operations', () => {
+    it('should block fetch calls', () => {
+      const result = validate('(payload) => fetch("https://evil.com")');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('fetch');
+    });
+
+    it('should block XMLHttpRequest', () => {
+      const result = validate('(payload) => new XMLHttpRequest()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('XMLHttpRequest');
+    });
+
+    it('should block require calls', () => {
+      const result = validate('(payload) => require("fs")');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('require');
+    });
+
+    it('should block import statements', () => {
+      const result = validate('import fs from "fs"; (payload) => ({})');
+      expect(result.valid).toBe(false);
+      // Import statements cause multiple statements error first
+      expect(result.error).toContain('single function');
+    });
+
+    it('should block eval calls', () => {
+      const result = validate('(payload) => eval("evil")');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('eval');
+    });
+
+    it('should block setTimeout', () => {
+      const result = validate('(payload) => setTimeout(() => {}, 1000)');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('setTimeout');
+    });
+
+    it('should block process access', () => {
+      const result = validate('(payload) => process.env.SECRET');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('process');
+    });
+
+    it('should block while loops', () => {
+      const result = validate(
+        '(payload) => { while(true) {} return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Loops are not allowed');
+    });
+
+    it('should block for loops', () => {
+      const result = validate(
+        '(payload) => { for(let i = 0; i < 10; i++) {} return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Loops are not allowed');
+    });
+
+    it('should block try/catch', () => {
+      const result = validate(
+        '(payload) => { try { return payload; } catch(e) {} }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('try/catch');
+    });
+
+    it('should block async/await', () => {
+      const result = validate(
+        'async (payload) => { await something(); return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('async/await');
+    });
+
+    it('should block classes', () => {
+      const result = validate('(payload) => { class Foo {} return payload; }');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Class');
+    });
+
+    it('should block new Array()', () => {
+      const result = validate('(payload) => new Array(10)');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('new Array()');
+    });
+
+    it('should block new Object()', () => {
+      const result = validate('(payload) => new Object()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('new Object()');
+    });
+
+    it('should allow new Date()', () => {
+      const result = validate(
+        '(payload) => ({ timestamp: new Date().toISOString() })'
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Computed and indirect access', () => {
+    it('should block a computed call target', () => {
+      const result = validate(
+        `(payload) => payload['constructor']['constructor']('return 1')()`
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not allowed');
+    });
+
+    it('should block a computed call target reached by optional chaining', () => {
+      const result = validate(
+        `(payload) => payload?.['constructor']['constructor']('return 1')()`
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not allowed');
+    });
+
+    it('should block a computed key written with escape sequences', () => {
+      const result = validate(
+        `(payload) => payload['\\u0063onstructor']['constructor']('return 1')()`
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not allowed');
+    });
+
+    it('should block a computed call target on a nested value', () => {
+      const result = validate(`(payload) => payload.properties['toString']()`);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed property access');
+    });
+
+    it("should block 'new' on a non-identifier callee", () => {
+      const result = validate(
+        `(payload) => new (payload['constructor']['constructor'])('return 1')`
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("target of 'new'");
+    });
+
+    it("should block 'new' on a member expression", () => {
+      const result = validate('(payload) => new payload.Thing()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("target of 'new'");
+    });
+
+    it('should block dynamic import()', () => {
+      const result = validate(`(payload) => import('node:fs')`);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic import()');
+    });
+  });
+
+  describe('Reads that reach the Function constructor', () => {
+    // Every form here stores or forwards a reference instead of calling it as a
+    // member, which the call checks alone never see (GHSA-mc99-9jf5-22cq,
+    // GHSA-fmf9-23m7-xg84).
+    it('should block reading .constructor into a local', () => {
+      const result = validate(
+        '(payload) => { const F = payload.constructor.constructor; return F; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor through optional chaining', () => {
+      const result = validate('(payload) => payload?.constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading .constructor off a literal', () => {
+      const result = validate('(payload) => [].constructor');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("'constructor'");
+    });
+
+    it('should block reading __proto__ and prototype', () => {
+      expect(validate('(payload) => payload.__proto__').valid).toBe(false);
+      expect(validate('(payload) => payload.name.prototype').valid).toBe(false);
+    });
+
+    it('should block destructuring a forbidden key', () => {
+      const result = validate(
+        '(payload) => { const { constructor: C } = payload; return C; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Destructuring 'constructor'");
+    });
+
+    it('should block destructuring with a computed key', () => {
+      const result = validate(
+        '(payload) => { const { [payload.k]: v } = payload; return v; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed keys in destructuring');
+    });
+
+    it('should block dynamic computed reads', () => {
+      const result = validate('(payload) => payload[payload.key]');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a template literal key with substitutions', () => {
+      // Built by concatenation so the source file itself has no placeholder.
+      const code = ['(payload) => payload[`$', '{payload.key}`]'].join('');
+      const result = validate(code);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic computed property access');
+    });
+
+    it('should block a sequence-expression callee', () => {
+      const result = validate('(payload) => (0, payload.name.toUpperCase)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling the result of a call', () => {
+      const result = validate('(payload) => JSON.parse(payload.raw)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block tagged template literals', () => {
+      const result = validate('(payload) => payload.name.trim`x`');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Tagged template literals');
+    });
+
+    it('should still allow literal keys and numeric indexes', () => {
+      const result = validate(
+        `(payload) => ({ a: payload['name'], b: payload.items[0], c: payload.items.at(-1) })`
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should block calling a local variable', () => {
+      const result = validate(
+        '(payload) => { const fmt = payload.name; return fmt(payload.name); }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'fmt'");
+    });
+
+    it('should block an immediately invoked arrow function', () => {
+      const result = validate('(payload) => (() => payload.name)()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Calling the result of an expression');
+    });
+
+    it('should block calling a global that is not a function', () => {
+      const result = validate('(payload) => Math(payload.name)');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("Calling 'Math'");
+    });
+
+    it('should block a static method on a shadowed global', () => {
+      const result = validate(
+        '(payload) => { const JSON = payload; return JSON.parse(payload.raw); }'
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block new Date when Date is shadowed', () => {
+      const result = validate(
+        '(payload) => { const Date = payload; return new Date(); }'
+      );
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block assigning to a method on a global', () => {
+      const result = validate(
+        '(payload) => { Math.round = (x) => Math.round(x); return Math.round(1); }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('only target local variables');
+    });
+
+    it('should block assigning to a global itself', () => {
+      const result = validate('(payload) => { JSON = payload; return 1; }');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should block an arrow stored in a variable', () => {
+      const result = validate('(payload) => { const f = (x) => x; return 1; }');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('callbacks passed directly');
+    });
+
+    it('should block an arrow in an object literal', () => {
+      const result = validate('(payload) => ({ f: (x) => x })');
+      expect(result.valid).toBe(false);
+    });
+
+    it('should still allow callbacks passed to allowed methods', () => {
+      const result = validate(
+        '(payload) => payload.tags.map((t) => t.toUpperCase()).filter((t) => t.length > 1)'
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Allowlist fallbacks', () => {
+    it('should reject syntax outside the allowlist by default', () => {
+      // A class field, a label, a switch: none of these need a dedicated
+      // rule, they are refused because they are not on the list.
+      expect(
+        validate(
+          '(payload) => { switch (payload.name) { default: return 1; } }'
+        ).valid
+      ).toBe(false);
+      expect(validate('(payload) => { x: return 1; }').valid).toBe(false);
+      expect(validate('(payload) => { var x = 1; return x; }').valid).toBe(
+        false
+      );
+      expect(validate('(payload) => { let i = 0; i++; return i; }').valid).toBe(
+        false
+      );
+      expect(validate('(payload) => delete payload.name').valid).toBe(false);
+      expect(validate('(payload) => ({ [payload.k]: 1 })').valid).toBe(false);
+      expect(validate('(payload) => ({ f() { return 1; } })').valid).toBe(
+        false
+      );
+      expect(validate('async (payload) => payload').valid).toBe(false);
+    });
+
+    it('should reject TypeScript syntax', () => {
+      const result = validate('(payload: any) => payload');
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe('Prototype writes', () => {
+    it('should block writing through __proto__', () => {
+      const result = validate(
+        '(payload) => { payload.__proto__.x = 1; return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
+    it('should block writing through a computed __proto__ key', () => {
+      const result = validate(
+        `(payload) => { payload['__proto__'].x = 1; return payload; }`
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
+    it('should block writing to a prototype', () => {
+      const result = validate(
+        '(payload) => { payload.constructor.prototype.x = 1; return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not allowed');
+    });
+
+    it('should block writing through a no-substitution template literal key', () => {
+      const result = validate(
+        '(payload) => { payload[`__proto__`].x = 1; return payload; }'
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
+    it('should still allow writing an ordinary property', () => {
+      const result = validate(
+        '(payload) => { const out = {}; out.event = payload.name; return out; }'
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Invalid syntax', () => {
+    it('should reject non-function code', () => {
+      const result = validate('const x = 1;');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('function');
+    });
+
+    it('should reject invalid JavaScript', () => {
+      const result = validate('(payload) => { invalid syntax }');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Parse error');
+    });
+  });
+});
+
+describe('execute', () => {
+  const basePayload = {
+    name: 'page_view',
+    profileId: 'user-123',
+    country: 'US',
+    city: 'New York',
+    device: 'desktop',
+    os: 'Windows',
+    browser: 'Chrome',
+    longitude: -73.935_242,
+    latitude: 40.730_61,
+    createdAt: '2024-01-15T10:30:00Z',
+    properties: {
+      plan: 'premium',
+      userId: 'user-456',
+      metadata: {
+        source: 'web',
+        campaign: 'summer-sale',
+      },
+    },
+    profile: {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+    },
+    tags: ['tag1', 'tag2'],
+  };
+
+  describe('Basic transformations', () => {
+    it('should execute simple arrow function', () => {
+      const code = '(payload) => ({ event: payload.name })';
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ event: 'page_view' });
+    });
+
+    it('should access nested properties', () => {
+      const code = '(payload) => ({ plan: payload.properties.plan })';
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ plan: 'premium' });
+    });
+
+    it('should handle multiple properties', () => {
+      const code = `(payload) => ({
+        event: payload.name,
+        user: payload.profileId,
+        location: payload.city
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({
+        event: 'page_view',
+        user: 'user-123',
+        location: 'New York',
+      });
+    });
+  });
+
+  describe('Date operations', () => {
+    it('should format dates', () => {
+      const code = `(payload) => ({
+        timestamp: new Date(payload.createdAt).toISOString()
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toHaveProperty('timestamp');
+      expect((result as { timestamp: string }).timestamp).toBe(
+        '2024-01-15T10:30:00.000Z'
+      );
+    });
+  });
+
+  describe('Array operations', () => {
+    it('should transform arrays', () => {
+      const code = `(payload) => ({
+        tags: payload.tags?.map(t => t.toUpperCase()) || []
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ tags: ['TAG1', 'TAG2'] });
+    });
+
+    it('should filter arrays', () => {
+      const code = `(payload) => ({
+        filtered: payload.tags?.filter(t => t.includes('tag1')) || []
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ filtered: ['tag1'] });
+    });
+  });
+
+  describe('String operations', () => {
+    it('should use template literals', () => {
+      const code = `(payload) => ({
+        location: \`\${payload.city}, \${payload.country}\`
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ location: 'New York, US' });
+    });
+
+    it('should use string methods', () => {
+      const code = `(payload) => ({
+        upperName: payload.name.toUpperCase()
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ upperName: 'PAGE_VIEW' });
+    });
+  });
+
+  describe('Math operations', () => {
+    it('should use Math functions', () => {
+      const code = `(payload) => ({
+        roundedLng: Math.round(payload.longitude)
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ roundedLng: -74 });
+    });
+  });
+
+  describe('Conditional logic', () => {
+    it('should handle ternary operators', () => {
+      const code = `(payload) => ({
+        plan: payload.properties?.plan || 'free'
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ plan: 'premium' });
+    });
+
+    it('should handle if conditions', () => {
+      const code = `(payload) => {
+        const result = { event: payload.name };
+        if (payload.properties?.plan === 'premium') {
+          result.plan = 'premium';
+        }
+        return result;
+      }`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({ event: 'page_view', plan: 'premium' });
+    });
+  });
+
+  describe('Complex transformations', () => {
+    it('should handle nested object construction', () => {
+      const code = `(payload) => ({
+        event: payload.name,
+        user: {
+          id: payload.profileId,
+          name: \`\${payload.profile?.firstName} \${payload.profile?.lastName}\`
+        },
+        data: payload.properties,
+        meta: {
+          location: \`\${payload.city}, \${payload.country}\`,
+          device: payload.device
+        }
+      })`;
+      const result = execute(code, basePayload);
+      expect(result).toEqual({
+        event: 'page_view',
+        user: {
+          id: 'user-123',
+          name: 'John Doe',
+        },
+        data: basePayload.properties,
+        meta: {
+          location: 'New York, US',
+          device: 'desktop',
+        },
+      });
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle runtime errors gracefully', () => {
+      const code = '(payload) => payload.nonexistent.property';
+      expect(() => {
+        execute(code, basePayload);
+      }).toThrow('Error executing JavaScript template');
+    });
+
+    it('should refuse to run a stored template that fails validation', () => {
+      // A template that was persisted at some point but does not pass
+      // validation must not reach new Function().
+      const code = `(payload) => payload['constructor']['constructor']('return 1')()`;
+      expect(() => {
+        execute(code, basePayload);
+      }).toThrow('Invalid JavaScript template');
+    });
+  });
+
+  describe('Templates in use in production', () => {
+    // Real templates customers have saved. Every one must keep validating
+    // and executing whenever the allowlist is tightened.
+    const productionTemplates = [
+      `(payload) => ({   name: payload.name || 'identify',   profileId: payload.profileId,   timestamp: new Date(payload.createdAt).toISOString(),   properties: {     ...(payload.properties || {}),     country: payload.country,     city: payload.city,     device: payload.device,     os: payload.os,     browser: payload.browser,     path: payload.path,     firstName: payload.profile ? payload.profile.firstName : undefined,     lastName: payload.profile ? payload.profile.lastName : undefined,     email: payload.profile ? payload.profile.email : undefined   } })`,
+      `(payload) => {   if (!payload.profileId || !payload.profileId.includes('@')) return null;   return {     email_address: payload.profileId,     fields: { "city": payload.city || "", "country": payload.country || "" }     }; }`,
+      '(payload) => ({   event: payload.name,   email: payload.properties?.email ?? null,   occurredAt: payload.createdAt })',
+      `(payload) => {   return {     event_name: payload.name,     first_name: payload.properties?.first_name || '',     last_name: payload.properties?.last_name || '',     email: payload.properties?.email || '',     phone: payload.properties?.phone || '',     sms_consent: payload.properties?.sms_consent || '',     form_name: payload.properties?.form_name || '',     form_id: payload.properties?.form_id || '',     page_url: payload.properties?.page_url || ''   }; }`,
+    ];
+
+    it.each(productionTemplates)('validates and runs: %s', (code) => {
+      expect(validate(code)).toEqual({ valid: true });
+      expect(() => execute(code, basePayload)).not.toThrow();
+    });
+
+    it('produces the expected shape for the identify template', () => {
+      const result = execute(productionTemplates[0]!, basePayload) as Record<
+        string,
+        unknown
+      >;
+      expect(result.name).toBe('page_view');
+      expect(result.timestamp).toBe('2024-01-15T10:30:00.000Z');
+      expect(result.properties).toMatchObject({
+        plan: 'premium',
+        city: 'New York',
+        firstName: 'John',
+      });
+    });
+
+    it('returns null when the template returns null', () => {
+      expect(execute(productionTemplates[1]!, basePayload)).toBeNull();
+    });
+  });
+
+  describe('Isolation', () => {
+    it('does not hand the template a host object', () => {
+      // The payload crosses into the context as JSON, so mutations never
+      // reach the caller's object.
+      const payload = { name: 'x', nested: { a: 1 } };
+      execute(
+        '(payload) => { payload.nested.a = 2; return payload; }',
+        payload
+      );
+      expect(payload.nested.a).toBe(1);
+    });
+
+    it('measures the output cap in UTF-8 bytes', () => {
+      // 600k three-byte characters is 600k UTF-16 units but 1.8MB on the wire.
+      expect(() => execute("(payload) => 'ࠀ'.repeat(600000)", {})).toThrow(
+        'too large'
+      );
+    });
+
+    it('stops a template that runs too long', () => {
+      expect(() =>
+        execute("(payload) => 'a'.repeat(100000000).replace(/(a+)+b/, '')", {})
+      ).toThrow('Error executing JavaScript template');
+    });
+  });
+});

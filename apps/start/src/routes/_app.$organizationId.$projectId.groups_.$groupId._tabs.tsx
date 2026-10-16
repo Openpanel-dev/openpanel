@@ -66,7 +66,7 @@ function Component() {
           name: group.data.name,
           type: group.data.type,
         }
-      : undefined,
+      : undefined
   );
 
   const deleteMutation = useMutation(

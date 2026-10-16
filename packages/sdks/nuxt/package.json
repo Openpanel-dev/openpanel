@@ -32,13 +32,13 @@
     "nuxt": "^3.0.0 || ^4.0.0"
   },
   "devDependencies": {
-    "@nuxt/kit": "^3.0.0",
-    "@nuxt/module-builder": "^1.0.2",
-    "@nuxt/types": "^2.18.1",
+    "@nuxt/kit": "3.20.2",
+    "@nuxt/module-builder": "1.0.2",
+    "@nuxt/types": "2.18.1",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "@vue/runtime-core": "^3.5.25",
+    "@vue/runtime-core": "3.5.25",
     "typescript": "catalog:",
-    "unbuild": "^3.6.1"
+    "unbuild": "3.6.1"
   }
 }

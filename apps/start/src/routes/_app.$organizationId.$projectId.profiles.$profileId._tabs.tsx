@@ -1,3 +1,5 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
@@ -8,11 +10,9 @@ import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getProfileName } from '@/utils/getters';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs',
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs'
 )({
   component: Component,
   loader: async ({ context, params }) => {
@@ -20,7 +20,7 @@ export const Route = createFileRoute(
       context.trpc.profile.byId.queryOptions({
         profileId: params.profileId,
         projectId: params.projectId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -35,7 +35,7 @@ function Component() {
     trpc.profile.byId.queryOptions({
       profileId,
       projectId,
-    }),
+    })
   );
 
   useEntityPageContext(
@@ -47,7 +47,7 @@ function Component() {
       browser: profile.data?.properties.browser,
       os: profile.data?.properties.os,
       email: profile.data?.email,
-    },
+    }
   );
 
   const { activeTab, tabs } = usePageTabs([
@@ -70,7 +70,7 @@ function Component() {
     <PageContainer>
       <PageHeader
         title={
-          <div className="row items-center gap-4 min-w-0">
+          <div className="row min-w-0 items-center gap-4">
             <ProfileAvatar {...profile.data} />
             <span className="truncate">
               {profile.data
@@ -80,9 +80,9 @@ function Component() {
           </div>
         }
       >
-        <div className="row gap-4 mb-6 flex-wrap">
+        <div className="row mb-6 flex-wrap gap-4">
           {profile.data?.properties.country && (
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <SerieIcon name={profile.data.properties.country} />
               <span>
                 {profile.data.properties.country}
@@ -92,7 +92,7 @@ function Component() {
             </div>
           )}
           {profile.data?.properties.device && (
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <SerieIcon name={profile.data.properties.device} />
               <span className="capitalize">
                 {profile.data.properties.device}
@@ -100,19 +100,19 @@ function Component() {
             </div>
           )}
           {profile.data?.properties.os && (
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <SerieIcon name={profile.data.properties.os} />
               <span>{profile.data.properties.os}</span>
             </div>
           )}
           {profile.data?.properties.model && (
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <SerieIcon name={profile.data.properties.model} />
               <span>{profile.data.properties.model}</span>
             </div>
           )}
           {profile.data?.properties.browser && (
-            <div className="row gap-2 items-center">
+            <div className="row items-center gap-2">
               <SerieIcon name={profile.data.properties.browser} />
               <span>{profile.data.properties.browser}</span>
             </div>
@@ -121,9 +121,9 @@ function Component() {
       </PageHeader>
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
         className="mt-2 mb-8"
+        onValueChange={handleTabChange}
+        value={activeTab}
       >
         <TabsList>
           {tabs.map((tab) => (

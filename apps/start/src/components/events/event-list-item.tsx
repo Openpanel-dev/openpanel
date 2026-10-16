@@ -1,4 +1,4 @@
-import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
+import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/core';
 import { Link } from '@tanstack/react-router';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { EventIcon } from './event-icon';

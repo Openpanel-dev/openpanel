@@ -14,7 +14,7 @@ import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/settings/_tabs/mcp',
+  '/_app/$organizationId/$projectId/settings/_tabs/mcp'
 )({
   component: Component,
 });
@@ -44,7 +44,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       description: (
         <>
           Add the following block to <code>claude_desktop_config.json</code>.
-          You can open it from <strong>Settings → Developer → Edit Config</strong>.
+          You can open it from{' '}
+          <strong>Settings → Developer → Edit Config</strong>.
         </>
       ),
       configFile:
@@ -62,7 +63,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             },
           },
           null,
-          2,
+          2
         ),
     },
     {
@@ -84,8 +85,9 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Cursor',
       description: (
         <>
-          Add the server to your global config at <code>~/.cursor/mcp.json</code>{' '}
-          or your project config at <code>.cursor/mcp.json</code>.
+          Add the server to your global config at{' '}
+          <code>~/.cursor/mcp.json</code> or your project config at{' '}
+          <code>.cursor/mcp.json</code>.
         </>
       ),
       configFile: '~/.cursor/mcp.json',
@@ -102,7 +104,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             },
           },
           null,
-          2,
+          2
         ),
     },
     {
@@ -127,7 +129,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             },
           },
           null,
-          2,
+          2
         ),
     },
     {
@@ -153,7 +155,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             },
           },
           null,
-          2,
+          2
         ),
     },
     {
@@ -175,7 +177,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             url: urlWithToken,
           },
           null,
-          2,
+          2
         ),
     },
   ];
@@ -192,8 +194,9 @@ function Component() {
         <h2 className="font-semibold text-lg">MCP Server</h2>
         <p className="text-muted-foreground text-sm">
           Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your OpenPanel data. The server is read-only and exposes 38 tools for
-          querying events, sessions, profiles, funnels, retention and more.
+          your OpenPanel data. Most of its tools read — events, sessions,
+          profiles, funnels, retention and more — but it can also create, edit
+          and delete dashboards and reports, so treat the token as write access.
         </p>
       </div>
 
@@ -211,9 +214,9 @@ function Component() {
         <div className="col gap-1">
           <div className="font-medium">Need a token?</div>
           <p className="text-muted-foreground text-sm">
-            Only <code>read</code> and <code>root</code> clients can authenticate
-            with MCP. Create one and copy the MCP token from the success screen
-            — it's only shown once.
+            Only <code>read</code> and <code>root</code> clients can
+            authenticate with MCP. Create one and copy the MCP token from the
+            success screen — it's only shown once.
           </p>
         </div>
         <div>
@@ -227,11 +230,7 @@ function Component() {
         <div className="font-medium">Configure your AI client</div>
         <Accordion className="rounded-lg border" collapsible type="single">
           {clients.map((client) => (
-            <AccordionItem
-              className="px-4"
-              key={client.id}
-              value={client.id}
-            >
+            <AccordionItem className="px-4" key={client.id} value={client.id}>
               <AccordionTrigger>{client.name}</AccordionTrigger>
               <AccordionContent className="col gap-3">
                 <p className="text-muted-foreground text-sm">

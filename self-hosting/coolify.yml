@@ -110,6 +110,10 @@ services:
   opapi:
     image: lindesvard/openpanel-api:latest
     restart: always
+    # Same contract as docker-compose.template.yml's op-api: no second package
+    # manager exists in this image (P13 / ADR-014), migrations run in this
+    # container's start command, and the Prisma CLI is fetched by `bunx` at a
+    # PINNED version rather than shipped. See the long note there.
     command: >
       sh -c "
         echo 'Waiting for PostgreSQL to be ready...'
@@ -125,9 +129,10 @@ services:
         echo 'ClickHouse is ready'
 
         echo 'Running migrations...'
-        CI=true pnpm -r run migrate:deploy
+        cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+        cd /app/packages/core && bun scripts/migrate-code.ts
 
-        pnpm start
+        cd /app/apps/api && bun run start
       "
     depends_on:
       opdb:
@@ -196,23 +201,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # ONE image, two roles — see the note on op-worker in
+  # docker-compose.template.yml. ROLE=worker turns the api image into the
+  # queue/scheduler/Kafka half.
   opworker:
-    image: lindesvard/openpanel-worker:latest
+    image: lindesvard/openpanel-api:latest
     restart: always
     depends_on:
       opapi:
         condition: service_healthy
     environment:
+      - ROLE=worker
       # FQDN
       - SERVICE_FQDN_OPBULLBOARD
-      # Bull Board is only served with credentials (HTTP Basic auth)
-      - BULLBOARD_USERNAME=${SERVICE_USER_BULLBOARD}
-      - BULLBOARD_PASSWORD=${SERVICE_PASSWORD_BULLBOARD}
       # Common
       - NODE_ENV=production
       - SELF_HOSTED=true
-      # Must match the API's secret: unsubscribe links in worker emails are verified by the API
-      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
@@ -222,11 +226,18 @@ services:
       - API_URL=$SERVICE_FQDN_OPAPI
       # Must match the API's key: the worker decrypts GSC tokens during sync
       - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
+      # Must match the API's secret: unsubscribe links in worker emails are
+      # verified by the API, and signing them needs a real secret
+      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      # Operator credentials for the queue dashboard (HTTP Basic, on top of
+      # the dashboard session guard)
+      - ADMIN_USERNAME=${SERVICE_USER_ADMIN}
+      - ADMIN_PASSWORD=${SERVICE_PASSWORD_ADMIN}
       # Optional: Google Search Console sync needs the Google OAuth client
       - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

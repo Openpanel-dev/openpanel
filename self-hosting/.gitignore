@@ -1,3 +1,7 @@
 .env
 docker-compose.yml
 caddy/Caddyfile
+redpanda/bootstrap.yaml
+
+# Test fixtures are real install layouts, so they need the ignored names.
+!cli/test/fixtures/**

@@ -1,3 +1,4 @@
+import { CONVERSATION_TITLE_MAX_LENGTH } from '@openpanel/core/modules/conversation/conversation.constants';
 import type { AppClient } from '@/agents/client';
 
 /**
@@ -18,11 +19,15 @@ export async function streamTitle(
   client: AppClient,
   firstUserText: string,
   onDelta: (text: string) => void,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<string | null> {
   const trimmed = firstUserText.trim().slice(0, 400);
-  if (!trimmed) return null;
-  if (signal?.aborted) return null;
+  if (!trimmed) {
+    return null;
+  }
+  if (signal?.aborted) {
+    return null;
+  }
 
   let accumulated = '';
   try {
@@ -31,17 +36,24 @@ export async function streamTitle(
       // biome-ignore lint/suspicious/noExplicitAny: titler agent has no typed context; its run-input shape is generic
     } as any);
     for await (const event of iterable) {
-      if (signal?.aborted) return null;
+      if (signal?.aborted) {
+        return null;
+      }
       // Better Agent emits `TEXT_MESSAGE_CONTENT` with a `delta` field
       // for each streamed chunk of assistant text.
       const maybe = event as { type?: string; delta?: string };
-      if (maybe.type === 'TEXT_MESSAGE_CONTENT' && typeof maybe.delta === 'string') {
+      if (
+        maybe.type === 'TEXT_MESSAGE_CONTENT' &&
+        typeof maybe.delta === 'string'
+      ) {
         accumulated += maybe.delta;
-        onDelta(accumulated.trim().slice(0, 80));
+        onDelta(accumulated.trim().slice(0, CONVERSATION_TITLE_MAX_LENGTH));
       }
     }
-    if (signal?.aborted) return null;
-    return accumulated.trim().slice(0, 80) || null;
+    if (signal?.aborted) {
+      return null;
+    }
+    return accumulated.trim().slice(0, CONVERSATION_TITLE_MAX_LENGTH) || null;
   } catch (err) {
     console.error('[chat] title stream failed', err);
     return null;

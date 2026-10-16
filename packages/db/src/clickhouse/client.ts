@@ -5,19 +5,17 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
-import { createLogger } from '@openpanel/logger';
-import type { IInterval } from '@openpanel/validation';
-import sqlstring from 'sqlstring';
+import { getSafeJson } from '@openpanel/shared';
+import { createLogger } from '../logger';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
+import { type SqlFragment, toStatement } from './sql';
 
 export { createClient } from '@clickhouse/client';
 
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
-import { getSafeJson } from '@openpanel/json';
 
-// All three LogParams types are exported by the client
 interface LogParams {
   module: string;
   message: string;
@@ -66,40 +64,27 @@ export const TABLE_NAMES = {
   groups: 'groups',
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
-  // Superseded by the two event_*_summary_mv entries above and dropped in
-  // migration 23. Kept because migrations 13, 14 and 15 still name them.
+  // Dropped in migration 24; kept because migrations 13, 14 and 15 still name them.
   profile_event_summary_mv: 'profile_event_summary_mv',
-  // Same content as the two MVs above, keyed for the cohort criteria that
-  // read them (event + window first, profile last) rather than by profile.
-  // See migration 20.
+  // Keyed for the cohort criteria (event + window first, profile last) rather than by profile.
   event_profile_summary_mv: 'event_profile_summary_mv',
   event_property_profile_summary_mv: 'event_property_profile_summary_mv',
   profile_event_property_summary_mv: 'profile_event_property_summary_mv',
 };
 
 /**
- * Check if ClickHouse is running in clustered mode
- * Clustered mode = production (not self-hosted)
- * Non-clustered mode = self-hosted environments
+ * Whether ClickHouse runs as a cluster with `<table>_replicated` targets.
+ * Keyed on CLICKHOUSE_CLUSTER alone — the same rule the code migrations use
+ * when they create the schema — so runtime never mutates tables that were
+ * never created.
  */
 export function isClickhouseClustered(): boolean {
-  if (
+  return (
     process.env.CLICKHOUSE_CLUSTER === 'true' ||
     process.env.CLICKHOUSE_CLUSTER === '1'
-  ) {
-    return true;
-  }
-
-  return !(
-    process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
   );
 }
 
-/**
- * Get the replicated table name for mutations
- * In clustered mode, returns table_name_replicated
- * In non-clustered mode, returns the original table name
- */
 export function getReplicatedTableName(tableName: string): string {
   if (isClickhouseClustered()) {
     return `${tableName}_replicated ON CLUSTER '{cluster}'`;
@@ -124,19 +109,14 @@ function getClickhouseSettings(): ClickHouseSettings {
   };
 }
 
-// Request gzip is on by default — pays CPU on the worker to send less data
-// over the wire. For payload-heavy buffers (replay) the gzip step happens on
-// the single Node main thread and can block the event loop, so it's worth
-// being able to flip it off to test. Set CLICKHOUSE_REQUEST_COMPRESSION=false
-// to disable.
+// Gzip runs on the main thread and can block the event loop for payload-heavy
+// buffers (replay), so CLICKHOUSE_REQUEST_COMPRESSION=false turns it off.
 const requestCompressionEnabled =
   process.env.CLICKHOUSE_REQUEST_COMPRESSION !== 'false' &&
   process.env.CLICKHOUSE_REQUEST_COMPRESSION !== '0';
 
-// Pool size per worker process. With parallel chunk inserts (cap 5 per
-// flush) and a few buffers potentially flushing concurrently across cluster
-// nodes, the previous 30 left headroom but might be tight at peak. Set
-// CLICKHOUSE_MAX_OPEN_CONNECTIONS to override.
+// Pool size per worker process: parallel chunk inserts (cap 5 per flush)
+// from several buffers flushing at once.
 const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
   ? Math.max(
       1,
@@ -144,10 +124,8 @@ const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
     )
   : 50;
 
-// Per-request timeout. Was 300_000 (5 min) — way too long for fast failover
-// against a dead node, and after the Hetzner LB story we want stuck inserts
-// to fail and retry on a different node well before 5 min. 30s is enough for
-// any legitimate batch insert in this codebase. Bumpable via env if needed.
+// Short enough that a stuck insert fails over to another node quickly; 30s is
+// enough for any legitimate batch insert.
 const requestTimeoutMs = process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS
   ? Math.max(
       1000,
@@ -195,8 +173,8 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
 // avoids putting an L4 LB on the hot path.
 //
 // Tests sometimes import this module without CLICKHOUSE_URL set; in that
-// case we fall back to a single client created the same way the old code
-// did (URL = undefined, delegated to the client library's own handling).
+// case we fall back to a single client (URL = undefined, delegated to the
+// client library's own handling).
 const rawClickhouseUrls = (process.env.CLICKHOUSE_URL ?? '')
   .split(',')
   .map((s) => s.trim())
@@ -244,9 +222,8 @@ logger.info(
   'ClickHouse clients initialized'
 );
 
-// Backwards-compat export. Some callers (notably gsc.ts) use `originalCh`
-// directly to bypass the retry/round-robin layer for one-off DDL or for
-// places where retry semantics aren't wanted. Points at the first node.
+// Bypasses the retry/round-robin layer, for one-off DDL or where retries
+// aren't wanted. Points at the first node.
 export const originalCh = clients[0]!;
 
 const cleanQuery = (query?: string) =>
@@ -284,16 +261,13 @@ function urlHostname(url: string | undefined): string | undefined {
 }
 
 const INSERT_DEFAULT_SETTINGS: ClickHouseSettings = {
-  // Increase insert timeouts and buffer sizes for large batches
   max_execution_time: 300,
   max_insert_block_size: '500000',
   max_http_get_redirects: '0',
-  // Ensure JSONEachRow stays efficient
   input_format_parallel_parsing: 1,
   // Keep long-running inserts/queries from idling out at proxies by sending progress headers
   send_progress_in_http_headers: 1,
   http_headers_progress_interval_ms: '50000',
-  // Ensure server holds the connection until the query is finished
   wait_end_of_query: 1,
 };
 
@@ -326,16 +300,27 @@ export const ch = new Proxy(chTarget as unknown as ClickHouseClient, {
   },
 }) as ClickHouseClient;
 
+/**
+ * A query is either finished SQL text or a `sql` fragment carrying its own
+ * bound params. Both go through the same round-robin/retry path.
+ */
+export type ChQueryInput = string | SqlFragment;
+
 export async function chQueryWithMeta<T extends Record<string, any>>(
-  query: string,
+  query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
   let host: string | undefined;
+  const statement = toStatement(query);
+  const paramNames = Object.keys(statement.query_params);
+  const hasParams = paramNames.length > 0;
+  const queryParams = hasParams ? statement.query_params : undefined;
   const res = await withRetry((client, ctx) => {
     host = urlHostname(ctx.url);
     return client.query({
-      query,
+      query: statement.query,
+      query_params: queryParams,
       clickhouse_settings: clickhouseSettings,
     });
   });
@@ -360,7 +345,9 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   logger.info(
     {
       host,
-      query: cleanQuery(query),
+      query: cleanQuery(statement.query),
+      // Names only: bound values are user data and must not reach the logs.
+      queryParams: hasParams ? paramNames : undefined,
       rows: json.rows,
       stats: response.statistics,
       elapsed: Date.now() - start,
@@ -373,7 +360,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 }
 
 export async function chQuery<T extends Record<string, any>>(
-  query: string,
+  query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<T[]> {
   return (await chQueryWithMeta<T>(query, clickhouseSettings)).data;
@@ -390,23 +377,6 @@ export function formatClickhouseDate(
     .toISOString()
     .replace('T', ' ')
     .replace(/(\.\d{3})?Z+$/, '');
-}
-
-export function toDate(str: string, interval?: IInterval) {
-  // If it does not match the regex it's a column name eg 'created_at'
-  if (!interval || interval === 'minute' || interval === 'hour') {
-    if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-      return sqlstring.escape(str);
-    }
-
-    return str;
-  }
-
-  if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-    return `toDate(${sqlstring.escape(str.split(' ')[0])})`;
-  }
-
-  return `toDate(${str})`;
 }
 
 export function convertClickhouseDateToJs(date: string) {

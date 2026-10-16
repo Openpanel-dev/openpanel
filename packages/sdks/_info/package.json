@@ -11,7 +11,6 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@openpanel/tsconfig": "workspace:*",
-    "prisma": "^5.1.1",
     "typescript": "catalog:"
   }
 }

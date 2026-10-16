@@ -1,0 +1,138 @@
+// Job/cron-fragment wiring; no ClickHouse/Postgres touched.
+
+import { expect, test } from 'bun:test';
+import { testCoreConfig } from '../../../test/config-fixture';
+import type { AppDeps, Buffers, JobCtx } from '../../context';
+import { createRecordingProducers } from '../../jobs/testing';
+import { queues } from '../../jobs.registry';
+import type { Logger } from '../../logger';
+import type { Services } from '../../services';
+import { cohortCronJobs, cohortQueueJobs } from './cohort.jobs';
+import type { createCohortService } from './cohort.service';
+
+function stubLogger(): Logger {
+  const noop = () => undefined;
+  const logger: Logger = {
+    fatal: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    child: () => logger,
+  };
+  return logger;
+}
+
+function stubJobCtx(
+  cohort: Partial<ReturnType<typeof createCohortService>>,
+  jobName = 'test'
+): JobCtx {
+  const services: Services = {
+    auth: {} as Services['auth'],
+    notification: {} as Services['notification'],
+    insight: {} as Services['insight'],
+    integration: {} as Services['integration'],
+    gsc: {} as Services['gsc'],
+    import: {} as Services['import'],
+    ingest: {} as Services['ingest'],
+    cohort: cohort as ReturnType<typeof createCohortService>,
+    organization: {} as Services['organization'],
+    onboarding: {} as Services['onboarding'],
+    session: {} as Services['session'],
+    event: {} as Services['event'],
+    profile: {} as Services['profile'],
+    group: {} as Services['group'],
+    chart: {} as Services['chart'],
+    funnel: {} as Services['funnel'],
+    conversion: {} as Services['conversion'],
+    sankey: {} as Services['sankey'],
+    retention: {} as Services['retention'],
+    overview: {} as Services['overview'],
+    pages: {} as Services['pages'],
+    realtime: {} as Services['realtime'],
+    misc: {} as Services['misc'],
+    report: {} as Services['report'],
+    dashboard: {} as Services['dashboard'],
+    export: {} as Services['export'],
+    share: {} as Services['share'],
+    reference: {} as Services['reference'],
+    client: {} as Services['client'],
+    project: {} as Services['project'],
+    user: {} as Services['user'],
+    subscription: {} as Services['subscription'],
+    salt: {} as Services['salt'],
+    conversation: {} as Services['conversation'],
+    assistant: {} as Services['assistant'],
+    mcp: {} as Services['mcp'],
+  };
+  return {
+    db: {} as AppDeps['db'],
+    prisma: {} as AppDeps['prisma'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
+    buffers: {} as Buffers,
+    logger: stubLogger(),
+    queues: createRecordingProducers(queues).queues,
+    config: testCoreConfig(),
+    services,
+    requestId: 'req_1',
+    job: { id: 'job_1', attempt: 0, queue: 'cohortCompute', name: jobName },
+  };
+}
+
+test('the cohortCompute jobs registry declares cohortCompute on the cohortCompute queue', () => {
+  expect(queues.cohortCompute.jobs.cohortCompute).toMatchObject({
+    queue: 'cohortCompute',
+    name: 'cohortCompute',
+  });
+});
+
+test('the cohort cron fragment is spread into the cron queue', () => {
+  expect(queues.cron.jobs.cohortRefresh).toBeDefined();
+});
+
+test('cohortCompute validates its payload', () => {
+  expect(() => cohortQueueJobs.cohortCompute.payload.parse({})).toThrow();
+  expect(
+    cohortQueueJobs.cohortCompute.payload.parse({ cohortId: 'c1' })
+  ).toEqual({ cohortId: 'c1' });
+});
+
+test('cohortCompute delegates to updateMembership', async () => {
+  const calls: unknown[] = [];
+  const ctx = stubJobCtx({
+    updateMembership: async (cohortId) => {
+      calls.push(cohortId);
+    },
+  });
+
+  await cohortQueueJobs.cohortCompute.handler({
+    payload: { cohortId: 'c1' },
+    ctx,
+  });
+
+  expect(calls).toEqual(['c1']);
+});
+
+test('cohortRefresh fans out one enqueueCompute per non-static cohort', async () => {
+  const calls: unknown[] = [];
+  const ctx = stubJobCtx({
+    listRefreshableCohortIds: async () => ['c1', 'c2'],
+    enqueueCompute: async (cohortId) => {
+      calls.push(cohortId);
+    },
+  });
+
+  await cohortCronJobs.cohortRefresh.handler({ payload: null, ctx });
+
+  expect(calls).toEqual(['c1', 'c2']);
+});
+
+// Reads the cadence straight off the registry.
+test('the cohort cron fragment keeps its scheduler id and cadence', () => {
+  expect(queues.cron.jobs.cohortRefresh.cron).toEqual({
+    pattern: '*/30 * * * *',
+  });
+});

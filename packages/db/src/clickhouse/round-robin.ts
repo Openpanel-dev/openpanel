@@ -1,14 +1,11 @@
 import type { ClickHouseClient } from '@clickhouse/client';
-import type { ILogger } from '@openpanel/logger';
+import type { ILogger } from '../logger';
 
 /**
  * Round-robin selection across multiple ClickHouse clients with simple
  * health tracking and a withRetry wrapper that moves to a different node
- * on connection failures.
- *
- * The Hetzner LB experience taught us that L4 TCP forwarders can add
- * unbounded tail latency. Instead of going through an LB, we now hold a
- * direct connection to each CH node and pick between them ourselves.
+ * on connection failures. Used instead of an L4 load balancer, which can add
+ * unbounded tail latency.
  */
 
 export interface ClientSlot {
@@ -18,7 +15,7 @@ export interface ClientSlot {
 }
 
 /**
- * Three buckets of error:
+ * Four classes of error:
  *
  * - `node-down`: TCP/DNS/CONNECT-level failure. The node is genuinely
  *   unreachable from this worker right now. **Retry on next node AND
@@ -133,7 +130,6 @@ export function classifyError(err: unknown): ErrorClass {
   };
   const msg = String(e.message ?? '');
 
-  // ── Allow-list: overload rejections retry as transient ────────────────
   // Checked before the server-error deny below. `transient` (not
   // `node-down`): the node is healthy, just briefly saturated — sin-binning
   // it would shrink the pool exactly when capacity is scarcest.
@@ -141,7 +137,6 @@ export function classifyError(err: unknown): ErrorClass {
     return 'transient';
   }
 
-  // ── Deny: ClickHouse server errors ────────────────────────────────────
   if (CH_SERVER_ERROR_PREFIX.test(msg)) {
     return 'ch-server';
   }
@@ -149,13 +144,15 @@ export function classifyError(err: unknown): ErrorClass {
     return 'ch-server';
   }
 
-  // ── Explicit error.code wins ──────────────────────────────────────────
   if (typeof e.code === 'string') {
-    if (NODE_DOWN_CODES.has(e.code)) return 'node-down';
-    if (TRANSIENT_CODES.has(e.code)) return 'transient';
+    if (NODE_DOWN_CODES.has(e.code)) {
+      return 'node-down';
+    }
+    if (TRANSIENT_CODES.has(e.code)) {
+      return 'transient';
+    }
   }
 
-  // ── Message keyword fallback ──────────────────────────────────────────
   if (NODE_DOWN_MESSAGE_KEYWORDS.some((k) => msg.includes(k))) {
     return 'node-down';
   }
@@ -163,11 +160,14 @@ export function classifyError(err: unknown): ErrorClass {
     return 'transient';
   }
 
-  // ── Bare-code substring fallback ──────────────────────────────────────
-  if (NODE_DOWN_BARE_CODE_REGEX.test(msg)) return 'node-down';
-  if (TRANSIENT_BARE_CODE_REGEX.test(msg)) return 'transient';
+  if (NODE_DOWN_BARE_CODE_REGEX.test(msg)) {
+    return 'node-down';
+  }
+  if (TRANSIENT_BARE_CODE_REGEX.test(msg)) {
+    return 'transient';
+  }
 
-  // ── Wrapped causes (Node 18+ AggregateError, undici wrapping) ─────────
+  // AggregateError / undici wrap the real error in `cause`.
   if (e.cause) {
     return classifyError(e.cause);
   }

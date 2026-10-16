@@ -1,0 +1,156 @@
+// Intentionally separate from `modules/mcp/src/tools/analytics/reports.ts`: both
+// call the same @openpanel/db primitives and must be kept in sync by hand.
+
+import type { CoreConfig } from '../../../config';
+import type { ServiceDeps } from '../../../services';
+import { executeAggregateChart, executeChart } from '../../chart/chart.service';
+import { getFunnel } from '../../chart/funnel.service';
+import { getSettingsForProject } from '../../organization/organization.service';
+import {
+  getReportById,
+  type IServiceReport,
+} from '../../report/report.service';
+import { getChartStartEndDate } from '../../report/src/chart-dates';
+
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
+const TRAILING_SLASH = /\/$/;
+
+function reportUrl(
+  config: CoreConfig,
+  organizationId: string,
+  projectId: string,
+  reportId: string
+): string {
+  const base = (config.dashboardUrl || DEFAULT_DASHBOARD_URL).replace(
+    TRAILING_SLASH,
+    ''
+  );
+  return `${base}/${organizationId}/${projectId}/reports/${reportId}`;
+}
+
+/**
+ * Execute a saved report by ID, dispatching on chart type. Returns the raw
+ * engine output: the chat renderer needs the full chart, unlike MCP's copy,
+ * which reshapes it for an LLM.
+ */
+export async function runReport(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    reportId: string;
+  }
+): Promise<
+  | { error: string; reportId: string }
+  | {
+      id: string;
+      name: string;
+      chartType: string;
+      range: string;
+      interval: string;
+      startDate: string;
+      endDate: string;
+      dashboard_url: string;
+      /** The saved config as `zReportInput`, so the renderer can draw the chart. */
+      report: Omit<NonNullable<IServiceReport>, 'layout'>;
+      data: unknown;
+    }
+> {
+  const report = await getReportById(deps, input.reportId);
+
+  if (!report) {
+    return { error: 'Report not found', reportId: input.reportId };
+  }
+
+  if (report.projectId !== input.projectId) {
+    return {
+      error: 'Report does not belong to this project',
+      reportId: input.reportId,
+    };
+  }
+
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
+  const { startDate, endDate } = getChartStartEndDate(report, timezone);
+  const chartInput = { ...report, startDate, endDate, timezone };
+
+  // `layout` is the dashboard grid position, not chart config. `id` stays so the
+  // renderer can tell a saved report from an ad-hoc one.
+  const { layout: _layout, ...config } = report;
+
+  const meta = {
+    id: report.id,
+    name: report.name,
+    chartType: report.chartType,
+    range: report.range,
+    interval: report.interval,
+    startDate,
+    endDate,
+    dashboard_url: reportUrl(
+      deps.config,
+      input.organizationId,
+      input.projectId,
+      input.reportId
+    ),
+    report: config,
+  };
+
+  if (report.chartType === 'funnel') {
+    return { ...meta, data: await getFunnel(deps, chartInput) };
+  }
+  if (report.chartType === 'metric') {
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
+  }
+  return { ...meta, data: await executeChart(deps, chartInput) };
+}
+
+/** Execute an ad-hoc report config (no DB lookup). */
+export async function runReportFromConfig(
+  deps: ServiceDeps,
+  input: {
+    organizationId: string;
+    projectId: string;
+    config: {
+      chartType: string;
+      interval: string;
+      startDate: string;
+      endDate: string;
+      [key: string]: unknown;
+    };
+  }
+): Promise<{
+  chartType: string;
+  interval: string;
+  startDate: string;
+  endDate: string;
+  report: typeof input.config & { projectId: string };
+  data: unknown;
+}> {
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
+  const chartInput = {
+    ...input.config,
+    projectId: input.projectId,
+    timezone,
+  } as unknown as Parameters<typeof executeChart>[1];
+
+  const meta = {
+    chartType: input.config.chartType,
+    interval: input.config.interval,
+    startDate: input.config.startDate,
+    endDate: input.config.endDate,
+    report: { ...input.config, projectId: input.projectId },
+  };
+
+  if (input.config.chartType === 'funnel') {
+    return {
+      ...meta,
+      data: await getFunnel(
+        deps,
+        chartInput as Parameters<typeof getFunnel>[1]
+      ),
+    };
+  }
+  if (input.config.chartType === 'metric') {
+    return { ...meta, data: await executeAggregateChart(deps, chartInput) };
+  }
+  return { ...meta, data: await executeChart(deps, chartInput) };
+}

@@ -1,10 +1,7 @@
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
-import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
-import { timeWindows } from '@openpanel/constants';
-import { getPreviousMetric } from '@openpanel/common';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import { timeWindows } from '@openpanel/core/modules/report/report.constants';
 import { type ReactNode, useState } from 'react';
+import { getPreviousMetric } from '../../utils/previous-metric';
 import { Bar } from '../charts/bar';
 import { BarChart } from '../charts/bar-chart';
 import {
@@ -13,9 +10,13 @@ import {
 } from '../charts/op-stat-hover-bridge';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { cn } from '@/utils/cn';
 import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
 
 const PRIMARY_COLOR = 'var(--chart-0)';
+const METRIC_ERROR_LABEL = 'Could not load';
 
 export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
@@ -36,6 +37,8 @@ interface MetricCardProps {
   active?: boolean;
   inverted?: boolean;
   isLoading?: boolean;
+  /** The metric failed to load: show that instead of a value that reads as real. */
+  isError?: boolean;
   /** Interval drives the hover-label date format. */
   interval?: IInterval;
   /** Range drives the default label ("Last 30 days") and dashed-tail logic. */
@@ -43,7 +46,6 @@ interface MetricCardProps {
 }
 
 export function OverviewMetricCard({
-  id,
   data,
   metric,
   unit,
@@ -52,6 +54,7 @@ export function OverviewMetricCard({
   active,
   inverted = false,
   isLoading = false,
+  isError = false,
   interval = 'day',
   range,
 }: MetricCardProps) {
@@ -70,15 +73,16 @@ export function OverviewMetricCard({
     : (range ? timeWindows[range]?.label : 'Total') || 'Total';
 
   const diff = getPreviousMetric(displayValue, displayPrev);
+  const hasValue = !(isLoading || isError);
 
   return (
     <MetricCardShell active={active} onClick={onClick}>
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
-          {isLoading ? null : (
+          {hasValue && (
             <PreviousDiffIndicatorPure
               {...diff}
               inverted={inverted}
@@ -87,35 +91,33 @@ export function OverviewMetricCard({
           )}
         </div>
         <div className="mt-1 flex items-baseline gap-0.5 leading-none">
-          {isLoading ? (
-            <Skeleton className="h-5 w-20" />
-          ) : (
-            <MetricValue value={displayValue} unit={unit} />
-          )}
+          {isLoading && <Skeleton className="h-5 w-20" />}
+          {isError && <span className={VALUE_CLASS}>—</span>}
+          {hasValue && <MetricValue unit={unit} value={displayValue} />}
         </div>
-        <div className="mt-0.5 truncate text-[11px] leading-none text-muted-foreground">
-          {displayLabel}
+        <div className="mt-0.5 truncate text-[11px] text-muted-foreground leading-none">
+          {isError ? METRIC_ERROR_LABEL : displayLabel}
         </div>
       </div>
 
       <div className="mt-1.5 h-[40px]">
         {data.length > 0 && (
           <BarChart
-            data={data}
-            xDataKey="date"
-            aspectRatio="auto"
-            className="h-full"
-            margin={{ top: 6, right: 0, bottom: 0, left: 0 }}
             animationDuration={0}
+            aspectRatio="auto"
             barGap={0.25}
+            className="h-full"
+            data={data}
+            margin={{ top: 6, right: 0, bottom: 0, left: 0 }}
+            xDataKey="date"
           >
             <OPStatHoverBridge onHoverChange={setHover} />
             <Bar
-              dataKey="current"
-              fill={PRIMARY_COLOR}
-              fadedOpacity={0.35}
-              lineCap={1}
               animate={false}
+              dataKey="current"
+              fadedOpacity={0.35}
+              fill={PRIMARY_COLOR}
+              lineCap={1}
             />
           </BarChart>
         )}
@@ -143,15 +145,15 @@ export function MetricCardShell({
   const Tag: 'button' | 'div' = onClick ? 'button' : 'div';
   return (
     <Tag
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
       className={cn(
         'group relative flex flex-col overflow-hidden text-left',
         'shadow-[0_0_0_0.5px] shadow-border transition-colors',
         active ? 'bg-def-100' : 'bg-card hover:bg-def-100/50',
         onClick && 'cursor-pointer',
-        className,
+        className
       )}
+      onClick={onClick}
+      type={onClick ? 'button' : undefined}
     >
       {active && (
         <span
@@ -180,7 +182,9 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
 
   if (unit === 'timeAgo') {
     return (
-      <span className={VALUE_CLASS}>{value ? timeAgo(new Date(value)) : 'N/A'}</span>
+      <span className={VALUE_CLASS}>
+        {value ? timeAgo(new Date(value)) : 'N/A'}
+      </span>
     );
   }
 
@@ -200,7 +204,7 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
     return (
       <>
         <span className={VALUE_CLASS}>{number.format(value)}</span>
-        <span className="font-mono font-medium text-sm text-muted-foreground">
+        <span className="font-medium font-mono text-muted-foreground text-sm">
           %
         </span>
       </>

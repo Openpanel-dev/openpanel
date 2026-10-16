@@ -1,6 +1,6 @@
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -17,7 +17,10 @@ export interface ReplayPlayerInstance {
   getMetaData: () => { startTime: number; endTime: number; totalTime: number };
   getReplayer: () => { getCurrentTime: () => number };
   addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
-  addEventListener: (event: string, handler: (e: { payload: unknown }) => void) => void;
+  addEventListener: (
+    event: string,
+    handler: (e: { payload: unknown }) => void
+  ) => void;
   $set?: (props: Record<string, unknown>) => void;
   $destroy?: () => void;
 }
@@ -44,7 +47,10 @@ interface ReplayContextValue {
   addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
   refreshDuration: () => void;
   // Called by ReplayPlayer to register/unregister the rrweb instance
-  onPlayerReady: (player: ReplayPlayerInstance, playerStartTime: number) => void;
+  onPlayerReady: (
+    player: ReplayPlayerInstance,
+    playerStartTime: number
+  ) => void;
   onPlayerDestroy: () => void;
   // State setters exposed so ReplayPlayer can wire rrweb event listeners
   setCurrentTime: (t: number) => void;
@@ -131,7 +137,7 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
       setIsPlayingWithRef(false);
       setIsReady(true);
     },
-    [setIsPlayingWithRef],
+    [setIsPlayingWithRef]
   );
 
   const onPlayerDestroy = useCallback(() => {
@@ -160,7 +166,9 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setSpeed = useCallback((s: number) => {
-    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) return;
+    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) {
+      return;
+    }
     playerRef.current?.setSpeed(s);
   }, []);
 
@@ -168,12 +176,14 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     (event: { type: number; data: unknown; timestamp: number }) => {
       playerRef.current?.addEvent(event);
     },
-    [],
+    []
   );
 
   const refreshDuration = useCallback(() => {
     const total = playerRef.current?.getMetaData().totalTime ?? 0;
-    if (total > 0) setDuration(total);
+    if (total > 0) {
+      setDuration(total);
+    }
   }, []);
 
   const value: ReplayContextValue = {

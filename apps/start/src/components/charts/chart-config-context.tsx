@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { createContext, type ReactNode, useContext, useMemo } from "react";
+import { createContext, type ReactNode, useContext, useMemo } from 'react';
 
 export interface SpringConfig {
   stiffness: number;

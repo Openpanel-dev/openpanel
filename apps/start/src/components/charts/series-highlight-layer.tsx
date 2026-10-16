@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { RefObject } from "react";
-import { useChartStable } from "./chart-context";
-import { HighlightSegment } from "./highlight-segment";
-import { useHighlightSegment } from "./use-highlight-segment";
+import type { RefObject } from 'react';
+import { useChartStable } from './chart-context';
+import { HighlightSegment } from './highlight-segment';
+import { useHighlightSegment } from './use-highlight-segment';
 
 interface SeriesHighlightLayerProps {
   /** Caller already gated `showHighlight && showLine`; this just routes through. */
@@ -44,6 +44,6 @@ export function SeriesHighlightLayer({
   );
 }
 
-SeriesHighlightLayer.displayName = "SeriesHighlightLayer";
+SeriesHighlightLayer.displayName = 'SeriesHighlightLayer';
 
 export default SeriesHighlightLayer;

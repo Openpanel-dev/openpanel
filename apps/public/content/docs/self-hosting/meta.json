@@ -3,6 +3,7 @@
   "defaultOpen": true,
   "pages": [
     "[Get started](/docs/self-hosting/self-hosting)",
+    "v2",
     "[Deploy with Docker Compose](/docs/self-hosting/deploy-docker-compose)",
     "[Deploy with Coolify](/docs/self-hosting/deploy-coolify)",
     "[Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)",

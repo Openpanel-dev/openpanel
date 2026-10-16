@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { differenceInMonths } from 'date-fns';
 import { useEffect, useState } from 'react';

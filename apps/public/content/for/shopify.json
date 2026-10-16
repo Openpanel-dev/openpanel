@@ -134,15 +134,30 @@
   },
   "related_links": {
     "guides": [
-      { "title": "Ecommerce tracking setup", "url": "/guides/ecommerce-tracking" }
+      {
+        "title": "Ecommerce tracking setup",
+        "url": "/guides/ecommerce-tracking"
+      }
     ],
     "articles": [
-      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
-      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" }
+      {
+        "title": "Cookieless analytics explained",
+        "url": "/articles/cookieless-analytics"
+      },
+      {
+        "title": "Best open source analytics tools",
+        "url": "/articles/self-hosted-web-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
-      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" }
+      {
+        "title": "OpenPanel vs Google Analytics",
+        "url": "/compare/google-analytics-alternative"
+      },
+      {
+        "title": "OpenPanel vs Plausible",
+        "url": "/compare/plausible-alternative"
+      }
     ]
   },
   "ctas": {

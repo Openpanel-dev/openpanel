@@ -1,12 +1,12 @@
+import { CheckCircle2Icon } from 'lucide-react';
+import Link from 'next/link';
+import { CompareToc } from './compare-toc';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
 import { GetStartedButton } from '@/components/get-started-button';
 import { Perks } from '@/components/perks';
 import { SectionHeader } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import type { CompareHero as CompareHeroData } from '@/lib/compare';
-import { CheckCircle2Icon } from 'lucide-react';
-import Link from 'next/link';
-import { CompareToc } from './compare-toc';
 
 interface CompareHeroProps {
   hero: CompareHeroData;
@@ -15,11 +15,11 @@ interface CompareHeroProps {
 
 export function CompareHero({ hero, tocItems = [] }: CompareHeroProps) {
   return (
-    <HeroContainer divider={false} className="-mb-32">
+    <HeroContainer className="-mb-32" divider={false}>
       <div
         className={
           tocItems.length > 0
-            ? 'grid md:grid-cols-[1fr_auto] gap-8 items-start'
+            ? 'grid items-start gap-8 md:grid-cols-[1fr_auto]'
             : 'col gap-6'
         }
       >
@@ -27,24 +27,24 @@ export function CompareHero({ hero, tocItems = [] }: CompareHeroProps) {
           <SectionHeader
             as="h1"
             className="flex-1"
-            title={hero.heading}
             description={hero.subheading}
+            title={hero.heading}
             variant="sm"
           />
           <div className="row gap-4">
             <GetStartedButton />
-            <Button size="lg" variant="outline" asChild>
+            <Button asChild size="lg" variant="outline">
               <Link
                 href={'https://demo.openpanel.dev'}
-                target="_blank"
                 rel="noreferrer noopener nofollow"
+                target="_blank"
               >
                 See live demo
               </Link>
             </Button>
           </div>
           <Perks
-            className="flex gap-4 flex-wrap"
+            className="flex flex-wrap gap-4"
             perks={hero.badges.map((badge) => ({
               text: badge,
               icon: CheckCircle2Icon,

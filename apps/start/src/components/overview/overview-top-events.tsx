@@ -1,11 +1,6 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { eventQueryFiltersParser } from '@/hooks/use-event-query-filters';
-import { useMemo, useState } from 'react';
-
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
 import { Widget, WidgetBody } from '../widget';
 import { WidgetFooter, WidgetHeadSearchable } from './overview-widget';
 import {
@@ -15,6 +10,12 @@ import {
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
+import { useAppParams } from '@/hooks/use-app-params';
+import {
+  eventQueryFiltersParser,
+  useEventQueryFilters,
+} from '@/hooks/use-event-query-filters';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export interface OverviewTopEventsProps {
   projectId: string;
@@ -31,7 +32,7 @@ export default function OverviewTopEvents({
   const navigate = useNavigate();
   const trpc = useTRPC();
   const { data: conversions } = useQuery(
-    trpc.overview.topConversions.queryOptions({ projectId, shareId }),
+    trpc.overview.topConversions.queryOptions({ projectId, shareId })
   );
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -73,7 +74,7 @@ export default function OverviewTopEvents({
         widget.meta?.type === 'events'
           ? ['session_start', 'session_end', 'screen_view']
           : undefined,
-    }),
+    })
   );
 
   const linkOutQuery = useQuery(
@@ -84,13 +85,15 @@ export default function OverviewTopEvents({
       startDate,
       endDate,
       filters,
-    }),
+    })
   );
 
   const tableData: EventTableItem[] = useMemo(() => {
     // For link out, use href as name
     if (widget.meta?.type === 'linkOut') {
-      if (!linkOutQuery.data) return [];
+      if (!linkOutQuery.data) {
+        return [];
+      }
       return linkOutQuery.data.map((item) => ({
         id: item.href,
         name: item.href,
@@ -99,7 +102,9 @@ export default function OverviewTopEvents({
     }
 
     // For events and conversions
-    if (!eventsQuery.data) return [];
+    if (!eventsQuery.data) {
+      return [];
+    }
 
     // For conversions, filter events by conversion names (client-side filtering)
     if (widget.meta?.type === 'conversions' && conversions) {
@@ -133,7 +138,7 @@ export default function OverviewTopEvents({
     }
     const queryLower = searchQuery.toLowerCase();
     return tableData.filter((item) =>
-      item.name?.toLowerCase().includes(queryLower),
+      item.name?.toLowerCase().includes(queryLower)
     );
   }, [tableData, searchQuery]);
 
@@ -145,20 +150,20 @@ export default function OverviewTopEvents({
           key: w.key,
           label: w.btn,
         })),
-    [widgets],
+    [widgets]
   );
 
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHeadSearchable
-          tabs={tabs}
           activeTab={widget.key}
-          onTabChange={setWidget}
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
           className="border-b-0 pb-2"
+          onSearchChange={setSearchQuery}
+          onTabChange={setWidget}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchValue={searchQuery}
+          tabs={tabs}
         />
         <WidgetBody className="p-0">
           {isLoading ? (
@@ -168,9 +173,7 @@ export default function OverviewTopEvents({
               data={filteredData}
               onItemClick={(name) => {
                 const filterName =
-                  widget.meta?.type === 'linkOut'
-                    ? 'properties.href'
-                    : 'name';
+                  widget.meta?.type === 'linkOut' ? 'properties.href' : 'name';
                 const f = eventQueryFiltersParser.serialize([
                   {
                     id: filterName,

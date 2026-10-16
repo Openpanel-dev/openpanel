@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 
 interface UseDashedTailOptions<T extends { date: string | Date }> {
   data: T[];
@@ -27,15 +27,21 @@ export function useDashedTail<T extends { date: string | Date }>({
   range,
   interval: _interval,
 }: UseDashedTailOptions<T>): number | undefined {
-  if (data.length < 2) return undefined;
+  if (data.length < 2) {
+    return undefined;
+  }
 
   const now = Date.now();
   let currentIdx = -1;
   for (let i = 0; i < data.length; i++) {
     const item = data[i];
-    if (!item) continue;
+    if (!item) {
+      continue;
+    }
     const t =
-      item.date instanceof Date ? item.date.getTime() : new Date(item.date).getTime();
+      item.date instanceof Date
+        ? item.date.getTime()
+        : new Date(item.date).getTime();
     if (t <= now) {
       currentIdx = i;
     } else {
@@ -65,15 +71,21 @@ export function useDashedTail<T extends { date: string | Date }>({
 
 function isLastBucketInProgress<T extends { date: string | Date }>(
   data: T[],
-  now: number,
+  now: number
 ): boolean {
   const last = data[data.length - 1];
   const prev = data[data.length - 2];
-  if (!(last && prev)) return false;
+  if (!(last && prev)) {
+    return false;
+  }
   const lastT =
-    last.date instanceof Date ? last.date.getTime() : new Date(last.date).getTime();
+    last.date instanceof Date
+      ? last.date.getTime()
+      : new Date(last.date).getTime();
   const prevT =
-    prev.date instanceof Date ? prev.date.getTime() : new Date(prev.date).getTime();
+    prev.date instanceof Date
+      ? prev.date.getTime()
+      : new Date(prev.date).getTime();
   // Bucket width = gap between consecutive points. If "now" lies within the
   // last bucket's window, it's in progress.
   const bucketMs = lastT - prevT;

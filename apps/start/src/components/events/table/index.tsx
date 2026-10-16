@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -22,12 +22,11 @@ import { Button } from '@/components/ui/button';
 import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { DataTableToolbarContainer } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
-type Props = {
+interface Props {
   query: UseInfiniteQueryResult<
     TRPCInfiniteData<
       RouterInputs['event']['events'],
@@ -36,7 +35,7 @@ type Props = {
     unknown
   >;
   showEventListener?: boolean;
-};
+}
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceEvent[];
 const ROW_HEIGHT = 40;
@@ -165,7 +164,6 @@ const VirtualizedEventsTable = ({
       className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
     >
-      {/* Table Header */}
       <div
         className="sticky top-0 z-10 border-b bg-card"
         style={{
@@ -200,7 +198,6 @@ const VirtualizedEventsTable = ({
         />
       )}
 
-      {/* Table Body */}
       <div
         className="relative w-full"
         style={{
@@ -335,7 +332,6 @@ function EventsTableToolbar({
   table: Table<IServiceEvent>;
   showEventListener: boolean;
 }) {
-  const { projectId } = useAppParams();
   const [startDate, setStartDate] = useQueryState(
     'startDate',
     parseAsIsoDateTime
@@ -368,7 +364,10 @@ function EventsTableToolbar({
             : 'Date range'}
         </Button>
         <OverviewFilterButton enableEventsFilter />
-        <OverviewFiltersButtons className="justify-end p-0" />
+        <OverviewFiltersButtons
+          className="justify-end p-0"
+          filterModal={{ enableEventsFilter: true }}
+        />
       </div>
       <DataTableViewOptions table={table} />
     </DataTableToolbarContainer>

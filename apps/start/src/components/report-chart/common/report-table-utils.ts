@@ -12,7 +12,6 @@ export type TableRow = {
   min: number;
   max: number;
   dateValues: Record<string, number>; // date -> count
-  // Group metadata
   groupKey?: string;
   parentGroupKey?: string;
   isSummaryRow?: boolean;
@@ -23,41 +22,35 @@ export type GroupedTableRow = TableRow & {
   breakdownDisplay: (string | null)[]; // null means show empty cell
 };
 
-/**
- * Row type that supports TanStack Table's expanding feature
- * Can represent both group header rows and data rows
- */
+/** Row type that supports TanStack Table's expanding feature. */
 export type ExpandableTableRow = TableRow & {
   subRows?: ExpandableTableRow[];
-  isGroupHeader?: boolean; // True if this is a group header row
-  groupValue?: string; // The value this group represents
-  groupLevel?: number; // The level in the hierarchy (0-based)
-  breakdownDisplay?: (string | null)[]; // For display purposes
+  isGroupHeader?: boolean;
+  groupValue?: string;
+  groupLevel?: number; // 0-based
+  breakdownDisplay?: (string | null)[];
 };
 
-/**
- * Hierarchical group structure for better collapse/expand functionality
- */
+/** Hierarchical group structure for collapse/expand. */
 export type GroupedItem<T> = {
   group: string;
   items: Array<GroupedItem<T> | T>;
   level: number;
-  groupKey: string; // Unique key for this group (path-based)
-  parentGroupKey?: string; // Key of parent group
+  groupKey: string; // path-based
+  parentGroupKey?: string;
 };
 
-/**
- * Transform flat array of items with hierarchical names into nested group structure
- * This creates a tree structure that makes it easier to toggle specific groups
- */
+/** Transform a flat array with hierarchical names into a nested group tree. */
 export function groupByNames<T extends { names: string[] }>(
-  items: T[],
+  items: T[]
 ): Array<GroupedItem<T>> {
   const rootGroups = new Map<string, GroupedItem<T>>();
 
   for (const item of items) {
     const names = item.names;
-    if (names.length === 0) continue;
+    if (names.length === 0) {
+      continue;
+    }
 
     // Start with the first level (serie name, level -1)
     const firstLevel = names[0]!;
@@ -83,21 +76,19 @@ export function groupByNames<T extends { names: string[] }>(
       const groupKey = `${parentGroupKey}:${levelName}`;
       const level = i - 1; // Breakdown levels start at 0
 
-      // Find existing group at this level
       const existingGroup = currentGroup.items.find(
         (child): child is GroupedItem<T> =>
           typeof child === 'object' &&
           'group' in child &&
           child.group === levelName &&
           'level' in child &&
-          child.level === level,
+          child.level === level
       );
 
       if (existingGroup) {
         currentGroup = existingGroup;
         parentGroupKey = groupKey;
       } else {
-        // Create new group at this level
         const newGroup: GroupedItem<T> = {
           group: levelName,
           items: [],
@@ -111,28 +102,22 @@ export function groupByNames<T extends { names: string[] }>(
       }
     }
 
-    // Add the actual item to the deepest group
     currentGroup.items.push(item);
   }
 
   return Array.from(rootGroups.values());
 }
 
-/**
- * Flatten a grouped structure back into a flat array of items
- * Useful for getting all items in a group or its children
- */
+/** Flatten a grouped structure back into a flat array of items. */
 export function flattenGroupedItems<T>(
-  groupedItems: Array<GroupedItem<T> | T>,
+  groupedItems: Array<GroupedItem<T> | T>
 ): T[] {
   const result: T[] = [];
 
   for (const item of groupedItems) {
     if (item && typeof item === 'object' && 'items' in item) {
-      // It's a group, recursively flatten its items
       result.push(...flattenGroupedItems(item.items));
     } else if (item) {
-      // It's an actual item
       result.push(item);
     }
   }
@@ -145,18 +130,19 @@ export function flattenGroupedItems<T>(
  */
 export function findGroup<T>(
   groups: Array<GroupedItem<T>>,
-  groupKey: string,
+  groupKey: string
 ): GroupedItem<T> | null {
   for (const group of groups) {
     if (group.groupKey === groupKey) {
       return group;
     }
 
-    // Search in nested groups
     for (const item of group.items) {
       if (item && typeof item === 'object' && 'items' in item) {
         const found = findGroup([item], groupKey);
-        if (found) return found;
+        if (found) {
+          return found;
+        }
       }
     }
   }
@@ -165,30 +151,23 @@ export function findGroup<T>(
 }
 
 /**
- * Convert hierarchical groups to TanStack Table's expandable row format
- *
- * Transforms nested GroupedItem structure into flat ExpandableTableRow array
- * that TanStack Table can use with its native expanding feature.
- *
- * Key behaviors:
- * - Serie level (level -1) and breakdown levels 0 to breakdownCount-2 create group headers
- * - Last breakdown level (breakdownCount-1) does NOT create group headers (always individual rows)
- * - Individual rows are explicitly marked as NOT group headers or summary rows
+ * Convert hierarchical groups into TanStack Table's flat expandable-row
+ * format. The serie level and every breakdown level except the last create
+ * group header rows; the last breakdown level is always individual rows.
  */
 export function groupsToExpandableRows(
   groups: Array<GroupedItem<TableRow>>,
-  breakdownCount: number,
+  breakdownCount: number
 ): ExpandableTableRow[] {
   const result: ExpandableTableRow[] = [];
 
   function processGroup(
     group: GroupedItem<TableRow>,
-    parentPath: string[] = [],
+    parentPath: string[] = []
   ): ExpandableTableRow[] {
     const currentPath = [...parentPath, group.group];
     const subRows: ExpandableTableRow[] = [];
 
-    // Separate nested groups from individual data items
     const nestedGroups: GroupedItem<TableRow>[] = [];
     const individualItems: TableRow[] = [];
 
@@ -200,30 +179,25 @@ export function groupsToExpandableRows(
       }
     }
 
-    // Process nested groups recursively (they become expandable group headers)
     for (const nestedGroup of nestedGroups) {
       subRows.push(...processGroup(nestedGroup, currentPath));
     }
 
-    // Process individual data items (leaf nodes)
+    // Build breakdownDisplay: the first row shows all breakdown values;
+    // subsequent rows show the parent path's values, then the item's own.
     individualItems.forEach((item, index) => {
-      // Build breakdownDisplay: first row shows all values, subsequent rows show parent path + item values
       const breakdownDisplay: (string | null)[] = [];
       const breakdownValues = item.breakdownValues;
 
       for (let i = 0; i < breakdownCount; i++) {
         if (index === 0) {
-          // First row: show all breakdown values
+          breakdownDisplay.push(breakdownValues[i] ?? null);
+        } else if (i < currentPath.length) {
+          breakdownDisplay.push(currentPath[i] ?? null);
+        } else if (i < breakdownValues.length) {
           breakdownDisplay.push(breakdownValues[i] ?? null);
         } else {
-          // Subsequent rows: show parent path values, then item values
-          if (i < currentPath.length) {
-            breakdownDisplay.push(currentPath[i] ?? null);
-          } else if (i < breakdownValues.length) {
-            breakdownDisplay.push(breakdownValues[i] ?? null);
-          } else {
-            breakdownDisplay.push(null);
-          }
+          breakdownDisplay.push(null);
         }
       }
 
@@ -237,23 +211,18 @@ export function groupsToExpandableRows(
       });
     });
 
-    // If this group has subRows and is not the last breakdown level, create a group header row
-    // Don't create group headers for the last breakdown level (level === breakdownCount - 1)
-    // because the last breakdown should always be individual rows
-    // -1 is serie level (should be grouped)
-    // 0 to breakdownCount-2 are breakdown levels (should be grouped)
-    // breakdownCount-1 is the last breakdown level (should NOT be grouped, always individual)
+    // Every level groups into a header row except the last breakdown level
+    // (level === breakdownCount - 1), which always stays individual rows.
     const shouldCreateGroupHeader =
       subRows.length > 0 &&
       (group.level === -1 || group.level < breakdownCount - 1);
 
     if (shouldCreateGroupHeader) {
-      // Create a summary row for the group
       const groupItems = flattenGroupedItems(group.items);
       const summaryRow = createSummaryRow(
         groupItems,
         group.groupKey,
-        breakdownCount,
+        breakdownCount
       );
 
       return [
@@ -285,34 +254,31 @@ export function groupsToExpandableRows(
 export function groupsToTableRows<T extends TableRow>(
   groups: Array<GroupedItem<T>>,
   collapsedGroups: Set<string>,
-  breakdownCount: number,
+  breakdownCount: number
 ): GroupedTableRow[] {
   const rows: GroupedTableRow[] = [];
 
   function processGroup(
     group: GroupedItem<T>,
     parentPath: string[] = [],
-    parentGroupKey?: string,
+    parentGroupKey?: string
   ): void {
     const isGroupCollapsed = collapsedGroups.has(group.groupKey);
     const currentPath = [...parentPath, group.group];
 
     if (isGroupCollapsed) {
-      // Group is collapsed - add summary row
       const groupItems = flattenGroupedItems(group.items);
       if (groupItems.length > 0) {
         const summaryRow = createSummaryRow(
           groupItems,
           group.groupKey,
-          breakdownCount,
+          breakdownCount
         );
         rows.push(summaryRow);
       }
       return;
     }
 
-    // Group is expanded - process items
-    // Separate nested groups from actual items
     const nestedGroups: GroupedItem<T>[] = [];
     const actualItems: T[] = [];
 
@@ -324,26 +290,19 @@ export function groupsToTableRows<T extends TableRow>(
       }
     }
 
-    // Process actual items first
     actualItems.forEach((item, index) => {
       const breakdownDisplay: (string | null)[] = [];
       const breakdownValues = item.breakdownValues;
 
-      // For the first item in the group, show all breakdown values
-      // For subsequent items, show values based on hierarchy
       if (index === 0) {
-        // First row shows all breakdown values
         for (let i = 0; i < breakdownCount; i++) {
           breakdownDisplay.push(breakdownValues[i] ?? null);
         }
       } else {
-        // Subsequent rows: show values from parent path, then item values
         for (let i = 0; i < breakdownCount; i++) {
           if (i < currentPath.length) {
-            // Show value from parent group path
             breakdownDisplay.push(currentPath[i] ?? null);
           } else if (i < breakdownValues.length) {
-            // Show current breakdown value from the item
             breakdownDisplay.push(breakdownValues[i] ?? null);
           } else {
             breakdownDisplay.push(null);
@@ -359,7 +318,6 @@ export function groupsToTableRows<T extends TableRow>(
       });
     });
 
-    // Process nested groups
     for (const nestedGroup of nestedGroups) {
       processGroup(nestedGroup, currentPath, group.groupKey);
     }
@@ -372,9 +330,7 @@ export function groupsToTableRows<T extends TableRow>(
   return rows;
 }
 
-/**
- * Extract unique dates from all series
- */
+/** Extract unique dates from all series. */
 function getUniqueDates(series: IChartData['series']): string[] {
   const dateSet = new Set<string>();
   series.forEach((serie) => {
@@ -386,22 +342,22 @@ function getUniqueDates(series: IChartData['series']): string[] {
 }
 
 /**
- * Get breakdown property names from series
- * Breakdown values are in names.slice(1), so we need to infer the property names
- * from the breakdowns array or from the series structure
+ * Get breakdown property names from series. Breakdown values live in
+ * names.slice(1), so the property names have to be inferred from the
+ * breakdowns array or from the series structure.
  */
 function getBreakdownPropertyNames(
   series: IChartData['series'],
-  breakdowns: Array<{ name: string }>,
+  breakdowns: Array<{ name: string }>
 ): string[] {
-  // If we have breakdowns from state, use those
   if (breakdowns.length > 0) {
     return breakdowns.map((b) => getPropertyLabel(b.name));
   }
 
-  // Otherwise, infer from series names
   // All series should have the same number of breakdown values
-  if (series.length === 0) return [];
+  if (series.length === 0) {
+    return [];
+  }
   const firstSerie = series[0];
   const breakdownCount = firstSerie.names.length - 1;
   return Array.from({ length: breakdownCount }, (_, i) => `Breakdown ${i + 1}`);
@@ -412,7 +368,7 @@ function getBreakdownPropertyNames(
  */
 export function createFlatRows(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): TableRow[] {
   return series.map((serie) => {
     const dateValues: Record<string, number> = {};
@@ -436,14 +392,10 @@ export function createFlatRows(
   });
 }
 
-/**
- * Transform series into hierarchical groups
- * Uses the new groupByNames function for better structure
- * Groups by serie name first, then by breakdown values
- */
+/** Transform series into hierarchical groups: serie name, then breakdown values. */
 export function createGroupedRowsHierarchical(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): Array<GroupedItem<TableRow>> {
   const flatRows = createFlatRows(series, dates);
 
@@ -457,9 +409,8 @@ export function createGroupedRowsHierarchical(
     return [];
   }
 
-  // Create hierarchical groups using groupByNames
-  // Note: groupByNames expects items with a `names` array, so we create a temporary array
-  // This is a minor inefficiency but keeps groupByNames generic and reusable
+  // groupByNames expects items with a `names` array; building a temporary
+  // one here is a minor inefficiency that keeps groupByNames generic.
   const itemsWithNames = flatRows.map((row) => ({
     ...row,
     names: [row.serieName, ...row.breakdownValues],
@@ -470,35 +421,26 @@ export function createGroupedRowsHierarchical(
 
 /**
  * Transform series into grouped table rows (legacy flat format)
- * Groups rows hierarchically by breakdown values
  * @deprecated Use createGroupedRowsHierarchical + groupsToTableRows instead
  */
 export function createGroupedRows(
   series: IChartData['series'],
-  dates: string[],
+  dates: string[]
 ): GroupedTableRow[] {
   const flatRows = createFlatRows(series, dates);
 
-  // Sort by sum descending
   flatRows.sort((a, b) => b.sum - a.sum);
 
-  // Group rows by breakdown values hierarchically
   const grouped: GroupedTableRow[] = [];
   const breakdownCount = flatRows[0]?.breakdownValues.length ?? 0;
 
   if (breakdownCount === 0) {
-    // No breakdowns, just return flat rows
     return flatRows.map((row) => ({
       ...row,
       breakdownDisplay: [],
     }));
   }
 
-  // Group rows hierarchically by breakdown values
-  // We need to group by parent breakdowns first, then by child breakdowns
-  // This creates the nested structure shown in the user's example
-
-  // First, group by first breakdown value
   const groupsByFirstBreakdown = new Map<string, TableRow[]>();
   flatRows.forEach((row) => {
     const firstBreakdown = row.breakdownValues[0] ?? '';
@@ -508,35 +450,28 @@ export function createGroupedRows(
     groupsByFirstBreakdown.get(firstBreakdown)!.push(row);
   });
 
-  // Sort groups by sum of highest row in group
   const sortedGroups = Array.from(groupsByFirstBreakdown.entries()).sort(
     (a, b) => {
       const aMax = Math.max(...a[1].map((r) => r.sum));
       const bMax = Math.max(...b[1].map((r) => r.sum));
       return bMax - aMax;
-    },
+    }
   );
 
-  // Process each group hierarchically
   sortedGroups.forEach(([firstBreakdownValue, groupRows]) => {
-    // Within each first-breakdown group, sort by sum
     groupRows.sort((a, b) => b.sum - a.sum);
 
-    // Generate group key for this first-breakdown group
     const groupKey = firstBreakdownValue;
 
-    // For each row in the group
     groupRows.forEach((row, index) => {
       const breakdownDisplay: (string | null)[] = [];
       const firstRow = groupRows[0]!;
 
       if (index === 0) {
-        // First row shows all breakdown values
         breakdownDisplay.push(...row.breakdownValues);
       } else {
-        // Subsequent rows: show all values, but mark duplicates for muted styling
+        // Always show the value, even if it matches the first row.
         for (let i = 0; i < row.breakdownValues.length; i++) {
-          // Always show the value, even if it matches the first row
           breakdownDisplay.push(row.breakdownValues[i] ?? null);
         }
       }
@@ -552,17 +487,14 @@ export function createGroupedRows(
   return grouped;
 }
 
-/**
- * Create a summary row for a collapsed group
- */
+/** Create a summary row for a collapsed group. */
 export function createSummaryRow(
   groupRows: TableRow[],
   groupKey: string,
-  breakdownCount: number,
+  breakdownCount: number
 ): GroupedTableRow {
   const firstRow = groupRows[0]!;
 
-  // Aggregate metrics from all rows in the group
   const totalSum = groupRows.reduce((sum, row) => sum + row.sum, 0);
   const totalCount = groupRows.reduce((sum, row) => sum + row.count, 0);
   const totalAverage =
@@ -570,7 +502,6 @@ export function createSummaryRow(
   const totalMin = Math.min(...groupRows.map((row) => row.min));
   const totalMax = Math.max(...groupRows.map((row) => row.max));
 
-  // Aggregate date values across all rows
   const dateValues: Record<string, number> = {};
   groupRows.forEach((row) => {
     Object.keys(row.dateValues).forEach((date) => {
@@ -601,12 +532,10 @@ export function createSummaryRow(
   };
 }
 
-/**
- * Reorder breakdowns by number of unique values (fewest first)
- */
+/** Reorder breakdowns by number of unique values (fewest first). */
 function reorderBreakdownsByUniqueCount(
   series: IChartData['series'],
-  breakdownPropertyNames: string[],
+  breakdownPropertyNames: string[]
 ): {
   reorderedNames: string[];
   reorderMap: number[]; // Maps new index -> old index
@@ -620,7 +549,6 @@ function reorderBreakdownsByUniqueCount(
     };
   }
 
-  // Count unique values for each breakdown index
   const uniqueCounts = breakdownPropertyNames.map((_, index) => {
     const uniqueValues = new Set<string>();
     series.forEach((serie) => {
@@ -632,12 +560,10 @@ function reorderBreakdownsByUniqueCount(
     return { index, count: uniqueValues.size };
   });
 
-  // Sort by count (ascending - fewest first)
   uniqueCounts.sort((a, b) => a.count - b.count);
 
-  // Create reordered names and mapping
   const reorderedNames = uniqueCounts.map(
-    (item) => breakdownPropertyNames[item.index]!,
+    (item) => breakdownPropertyNames[item.index]!
   );
   const reorderMap = uniqueCounts.map((item) => item.index); // new index -> old index
   const reverseMap = new Array(breakdownPropertyNames.length);
@@ -648,13 +574,11 @@ function reorderBreakdownsByUniqueCount(
   return { reorderedNames, reorderMap, reverseMap };
 }
 
-/**
- * Transform chart data into table-ready format
- */
+/** Transform chart data into table-ready format. */
 export function transformToTableData(
   data: IChartData,
   breakdowns: Array<{ name: string }>,
-  grouped: boolean,
+  grouped: boolean
 ): {
   rows: TableRow[] | GroupedTableRow[];
   dates: string[];
@@ -663,18 +587,16 @@ export function transformToTableData(
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
     data.series,
-    breakdowns,
+    breakdowns
   );
 
-  // Reorder breakdowns by unique count (fewest first)
   const { reorderedNames: breakdownPropertyNames, reorderMap } =
     reorderBreakdownsByUniqueCount(data.series, originalBreakdownPropertyNames);
 
-  // Reorder breakdown values in series before creating rows
   const reorderedSeries = data.series.map((serie) => {
     const reorderedNames = [
-      serie.names[0], // Keep serie name first
-      ...reorderMap.map((oldIndex) => serie.names[oldIndex + 1] ?? ''), // Reorder breakdown values
+      serie.names[0],
+      ...reorderMap.map((oldIndex) => serie.names[oldIndex + 1] ?? ''),
     ];
     return {
       ...serie,
@@ -686,7 +608,6 @@ export function transformToTableData(
     ? createGroupedRows(reorderedSeries, dates)
     : createFlatRows(reorderedSeries, dates);
 
-  // Sort flat rows by sum descending
   if (!grouped) {
     (rows as TableRow[]).sort((a, b) => b.sum - a.sum);
   }
@@ -698,13 +619,10 @@ export function transformToTableData(
   };
 }
 
-/**
- * Transform chart data into hierarchical groups
- * Returns hierarchical structure for better group management
- */
+/** Transform chart data into hierarchical groups. */
 export function transformToHierarchicalGroups(
   data: IChartData,
-  breakdowns: Array<{ name: string }>,
+  breakdowns: Array<{ name: string }>
 ): {
   groups: Array<GroupedItem<TableRow>>;
   dates: string[];
@@ -713,18 +631,16 @@ export function transformToHierarchicalGroups(
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
     data.series,
-    breakdowns,
+    breakdowns
   );
 
-  // Reorder breakdowns by unique count (fewest first)
   const { reorderedNames: breakdownPropertyNames, reorderMap } =
     reorderBreakdownsByUniqueCount(data.series, originalBreakdownPropertyNames);
 
-  // Reorder breakdown values in series before creating rows
   const reorderedSeries = data.series.map((serie) => {
     const reorderedNames = [
-      serie.names[0], // Keep serie name first
-      ...reorderMap.map((oldIndex) => serie.names[oldIndex + 1] ?? ''), // Reorder breakdown values
+      serie.names[0],
+      ...reorderMap.map((oldIndex) => serie.names[oldIndex + 1] ?? ''),
     ];
     return {
       ...serie,

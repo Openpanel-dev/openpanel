@@ -9,9 +9,21 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const STATS = [
   { label: 'Visitors', value: 4128, formatted: null, change: 12, up: true },
-  { label: 'Page views', value: 12438, formatted: '12.4k', change: 8, up: true },
+  {
+    label: 'Page views',
+    value: 12_438,
+    formatted: '12.4k',
+    change: 8,
+    up: true,
+  },
   { label: 'Bounce rate', value: null, formatted: '42%', change: 3, up: false },
-  { label: 'Avg. session', value: null, formatted: '3m 23s', change: 5, up: true },
+  {
+    label: 'Avg. session',
+    value: null,
+    formatted: '3m 23s',
+    change: 5,
+    up: true,
+  },
 ];
 
 const SOURCES = [
@@ -38,7 +50,9 @@ function AreaChart({ data }: { data: number[] }) {
   const h = 64;
   const xStep = w / (data.length - 1);
   const pts = data.map((v, i) => ({ x: i * xStep, y: h - (v / max) * h }));
-  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
+  const line = pts
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`)
+    .join(' ');
   const area = `${line} L ${w},${h} L 0,${h} Z`;
   const last = pts[pts.length - 1];
 
@@ -87,7 +101,7 @@ export function WebAnalyticsIllustration() {
   }, []);
 
   return (
-    <div className="aspect-video col gap-2.5 p-5">
+    <div className="col aspect-video gap-2.5 p-5">
       {/* Header */}
       <div className="row items-center justify-between">
         <div className="row items-center gap-1.5">
@@ -95,7 +109,7 @@ export function WebAnalyticsIllustration() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </span>
-          <span className="text-[10px] font-medium text-muted-foreground">
+          <span className="font-medium text-[10px] text-muted-foreground">
             <NumberFlow value={liveVisitors} /> online now
           </span>
         </div>
@@ -111,7 +125,9 @@ export function WebAnalyticsIllustration() {
             className="col gap-0.5 rounded-lg border bg-card px-2 py-1.5"
             key={stat.label}
           >
-            <span className="text-[8px] text-muted-foreground">{stat.label}</span>
+            <span className="text-[8px] text-muted-foreground">
+              {stat.label}
+            </span>
             <span className="font-mono font-semibold text-xs leading-tight">
               {stat.formatted ??
                 (stat.value !== null ? (
@@ -128,8 +144,10 @@ export function WebAnalyticsIllustration() {
       </div>
 
       {/* Area chart */}
-      <div className="flex-1 col gap-1 overflow-hidden rounded-xl border bg-card px-3 pt-2 pb-1">
-        <span className="text-[8px] text-muted-foreground">Unique visitors</span>
+      <div className="col flex-1 gap-1 overflow-hidden rounded-xl border bg-card px-3 pt-2 pb-1">
+        <span className="text-[8px] text-muted-foreground">
+          Unique visitors
+        </span>
         <AreaChart data={VISITOR_DATA} />
         <div className="row justify-between px-0.5">
           {DAYS.map((d) => (

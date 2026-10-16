@@ -1,0 +1,19 @@
+analytics.example.com {
+    encode gzip
+    
+    handle_path /api* {
+        reverse_proxy op-api:3000
+    }
+
+    reverse_proxy /* op-dashboard:3000
+}
+
+worker.analytics.example.com {
+    encode gzip
+
+    basic_auth {
+        admin $2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+    }
+
+    reverse_proxy op-worker:3000
+}

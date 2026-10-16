@@ -27,7 +27,9 @@ export function ProductPage({ products, onAddToCart }: Props) {
     return (
       <div>
         <div className="page-title">Product not found</div>
-        <Link to="/"><button type="button">← Back to shop</button></Link>
+        <Link to="/">
+          <button type="button">← Back to shop</button>
+        </Link>
       </div>
     );
   }
@@ -48,9 +50,9 @@ export function ProductPage({ products, onAddToCart }: Props) {
             Lorem ipsum dolor sit amet consectetur adipiscing elit.
           </p>
           <button
-            type="button"
             className="primary"
             onClick={() => onAddToCart(product)}
+            type="button"
           >
             Add to cart
           </button>

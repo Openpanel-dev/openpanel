@@ -2,7 +2,7 @@ import {
   type FadeEdges,
   fadeGradientStops,
   resolveFadeSides,
-} from "./fade-edges";
+} from './fade-edges';
 
 interface AreaGradientDefsProps {
   gradientId: string;
@@ -75,7 +75,7 @@ export function AreaGradientDefs({
               <stop
                 key={stop.offset}
                 offset={stop.offset}
-                style={{ stopColor: "white", stopOpacity: stop.opacity }}
+                style={{ stopColor: 'white', stopOpacity: stop.opacity }}
               />
             ))}
           </linearGradient>

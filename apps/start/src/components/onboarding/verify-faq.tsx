@@ -1,4 +1,4 @@
-import type { IServiceProjectWithClients } from '@openpanel/db';
+import type { IServiceProjectWithClients } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { GlobeIcon, KeyIcon, UserIcon } from 'lucide-react';
 import { toast } from 'sonner';

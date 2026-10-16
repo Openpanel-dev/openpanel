@@ -1,12 +1,4 @@
-// import resolveConfig from 'tailwindcss/resolveConfig';
-
-import { chartColors } from '@openpanel/constants';
-
-// import tailwinConfig from '../../tailwind.config';
-
-// export const resolvedTailwindConfig = resolveConfig(tailwinConfig);
-
-// export const theme = resolvedTailwindConfig.theme as Record<string, any>;
+import { chartColors } from '@openpanel/core/modules/report/report.constants';
 
 export function getChartColor(index: number): string {
   return chartColors[index % chartColors.length]?.main || chartColors[0].main;

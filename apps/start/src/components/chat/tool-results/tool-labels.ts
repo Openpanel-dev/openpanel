@@ -27,10 +27,7 @@ const VERB_PREFIXES: Array<[string, string]> = [
   ['gsc_', 'Loading SEO'],
 ];
 
-const PHRASES: Record<
-  string,
-  { active: string; done: string }
-> = {
+const PHRASES: Record<string, { active: string; done: string }> = {
   // Discovery
   list_event_names: { active: 'Looking up event names', done: 'Event names' },
   list_event_properties: {
@@ -186,6 +183,9 @@ const PHRASES: Record<
     active: 'Loading property distribution',
     done: 'Property distribution',
   },
+  // Retired server-side — it was a second wire name over
+  // `list_event_properties`' handler — but conversations saved before that
+  // still replay tool calls under this name, so the label stays.
   list_properties_for_event: {
     active: 'Loading properties',
     done: 'Event properties',
@@ -258,9 +258,14 @@ const PHRASES: Record<
 
 export type ToolPhrasePhase = 'active' | 'done';
 
-export function getToolPhrase(toolName: string, phase: ToolPhrasePhase): string {
+export function getToolPhrase(
+  toolName: string,
+  phase: ToolPhrasePhase
+): string {
   const explicit = PHRASES[toolName];
-  if (explicit) return explicit[phase];
+  if (explicit) {
+    return explicit[phase];
+  }
 
   const matchedPrefix = VERB_PREFIXES.find(([p]) => toolName.startsWith(p));
   const verb = matchedPrefix?.[0] ?? '';

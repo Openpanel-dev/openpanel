@@ -9,10 +9,10 @@ import { NodeIcon } from './icons/node-icon';
 import { ReactIcon } from './icons/react-icon';
 import { RemixIcon } from './icons/remix-icon';
 import { RestIcon } from './icons/rest-icon';
+import { RubyIcon } from './icons/ruby-icon';
+import { RustIcon } from './icons/rust-icon';
 import { SwiftIcon } from './icons/swift-icon';
 import { VueIcon } from './icons/vue-icon';
-import { RustIcon } from './icons/rust-icon';
-import { RubyIcon } from './icons/ruby-icon';
 
 export type Framework = {
   key: string;

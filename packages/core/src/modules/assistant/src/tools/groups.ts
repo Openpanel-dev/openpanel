@@ -1,0 +1,238 @@
+import { z } from 'zod';
+import type { ServiceDeps } from '../../../../services';
+import { queryEventsCore } from '../../../event/event.service';
+import {
+  findGroupsCore,
+  getGroupCore,
+  getGroupMemberProfiles,
+} from '../../../group/group.service';
+import { chatTool, dashboardUrl, truncateRows } from './helpers';
+
+/** How many members `get_group_metrics` pulls before bucketing activity. */
+const GROUP_METRICS_MEMBER_LIMIT = 1000;
+/** How many of those members' recent events back the 7d/30d activity counts. */
+const GROUP_METRICS_EVENT_LIMIT = 1000;
+/** How many same-type peers `compare_groups` looks at. */
+const PEER_GROUP_LIMIT = 100;
+
+export const getGroupFull = (deps: ServiceDeps) =>
+  chatTool(
+    {
+      name: 'get_group_full',
+      description:
+        'One-shot deep dive: group info + member count + first 10 members + recent events from members. CALL THIS FIRST for "tell me about this group".',
+      schema: z.object({
+        groupId: z.string().optional(),
+      }),
+    },
+    async ({ groupId }, context) => {
+      const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
+      const id = groupId || defaultGroupId;
+      const orgPath = (path = '') =>
+        dashboardUrl(
+          deps.config,
+          context.organizationId,
+          context.projectId,
+          path
+        );
+
+      const group = await getGroupCore(deps, {
+        projectId: context.projectId,
+        groupId: id,
+        memberLimit: 10,
+      });
+
+      // `profileIds IN (...)` lets the DB narrow instead of post-filtering a feed.
+      const memberIds = group.members.map((m) => m.id);
+      const recentEvents = memberIds.length
+        ? await queryEventsCore(deps, {
+            projectId: context.projectId,
+            profileIds: memberIds,
+            limit: 10,
+          })
+        : [];
+
+      return {
+        ...group,
+        recent_events: recentEvents,
+        dashboard_url: orgPath(`/groups/${id}`),
+      };
+    }
+  );
+
+export const getGroupMembers = (deps: ServiceDeps) =>
+  chatTool(
+    {
+      name: 'get_group_members',
+      description: 'Paginated list of profiles in this group.',
+      schema: z.object({
+        groupId: z.string().optional(),
+        limit: z.number().min(1).max(100).default(20).optional(),
+        search: z.string().optional(),
+      }),
+    },
+    async ({ groupId, limit, search }, context) => {
+      const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
+      const id = groupId || defaultGroupId;
+      const orgPath = (path = '') =>
+        dashboardUrl(
+          deps.config,
+          context.organizationId,
+          context.projectId,
+          path
+        );
+
+      const result = await getGroupMemberProfiles(deps, {
+        projectId: context.projectId,
+        groupId: id,
+        take: limit ?? 20,
+        search,
+      });
+      return {
+        group_id: id,
+        total_count: result.count,
+        members: result.data.map((p) => ({
+          ...p,
+          dashboard_url: orgPath(`/profiles/${p.id}`),
+        })),
+      };
+    }
+  );
+
+export const getGroupEvents = (deps: ServiceDeps) =>
+  chatTool(
+    {
+      name: 'get_group_events',
+      description: 'Recent events from members of this group.',
+      schema: z.object({
+        groupId: z.string().optional(),
+        eventNames: z.array(z.string()).optional(),
+        limit: z.number().min(1).max(100).default(50).optional(),
+      }),
+    },
+    async ({ groupId, eventNames, limit }, context) => {
+      const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
+      const id = groupId || defaultGroupId;
+
+      const members = await getGroupMemberProfiles(deps, {
+        projectId: context.projectId,
+        groupId: id,
+        take: 100,
+      });
+      if (members.data.length === 0) {
+        return { group_id: id, events: [], note: 'Group has no members' };
+      }
+
+      const events = await queryEventsCore(deps, {
+        projectId: context.projectId,
+        profileIds: members.data.map((m) => m.id),
+        eventNames,
+        limit: limit ?? 50,
+      });
+
+      return truncateRows(events, 100);
+    }
+  );
+
+export const getGroupMetrics = (deps: ServiceDeps) =>
+  chatTool(
+    {
+      name: 'get_group_metrics',
+      description: `Aggregate metrics for this group: total members, and how many of them were active in the last 7 days / 30 days. Activity is derived from the group members' most recent ${GROUP_METRICS_EVENT_LIMIT} events, so very large groups are undercounted.`,
+      schema: z.object({
+        groupId: z.string().optional(),
+      }),
+    },
+    async ({ groupId }, context) => {
+      const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
+      const id = groupId || defaultGroupId;
+
+      const members = await getGroupMemberProfiles(deps, {
+        projectId: context.projectId,
+        groupId: id,
+        take: GROUP_METRICS_MEMBER_LIMIT,
+      });
+
+      if (members.data.length === 0) {
+        return { group_id: id, total_members: 0, note: 'Group has no members' };
+      }
+
+      // `profileIds IN (...)` lets ClickHouse narrow: a project-wide feed would
+      // miss members whose activity falls outside the last N raw events.
+      const memberIds = members.data.map((m) => m.id);
+      const recentEvents = await queryEventsCore(deps, {
+        projectId: context.projectId,
+        profileIds: memberIds,
+        startDate: new Date(Date.now() - 30 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+        limit: GROUP_METRICS_EVENT_LIMIT,
+      });
+      const activeIds7d = new Set<string>();
+      const activeIds30d = new Set<string>();
+      const sevenDaysAgo = Date.now() - 7 * 86_400_000;
+      for (const e of recentEvents) {
+        if (!e.profile_id) {
+          continue;
+        }
+        activeIds30d.add(e.profile_id);
+        if (new Date(e.created_at).getTime() >= sevenDaysAgo) {
+          activeIds7d.add(e.profile_id);
+        }
+      }
+
+      return {
+        group_id: id,
+        total_members: members.count,
+        active_last_7_days: activeIds7d.size,
+        active_last_30_days: activeIds30d.size,
+      };
+    }
+  );
+
+export const compareGroups = (deps: ServiceDeps) =>
+  chatTool(
+    {
+      name: 'compare_groups',
+      description:
+        "Compare this group's member count against how many other groups of the same type exist, and list a few of those peers by name. Peer member counts and peer activity are NOT fetched — do not claim a ranking.",
+      schema: z.object({
+        groupId: z.string().optional(),
+      }),
+    },
+    async ({ groupId }, context) => {
+      const defaultGroupId = context.pageContext?.ids?.groupId ?? '';
+      const id = groupId || defaultGroupId;
+
+      const thisGroup = await getGroupCore(deps, {
+        projectId: context.projectId,
+        groupId: id,
+        memberLimit: 0,
+      });
+
+      const peers = await findGroupsCore(deps, {
+        projectId: context.projectId,
+        type: thisGroup.group.type,
+        limit: PEER_GROUP_LIMIT,
+      });
+
+      if (peers.length === 0) {
+        return { this_group: thisGroup, peers: [], note: 'No peer groups' };
+      }
+
+      // `findGroupsCore` returns no memberCount (that is `IServiceGroupStats`, a
+      // separate query), so peers are listed without rankings.
+      return {
+        this_group: {
+          id: thisGroup.group.id,
+          name: thisGroup.group.name,
+          member_count: thisGroup.member_count,
+        },
+        peer_count: peers.length,
+        top_peers: peers.slice(0, 5).map((g) => ({
+          id: g.id,
+          name: g.name,
+        })),
+      };
+    }
+  );

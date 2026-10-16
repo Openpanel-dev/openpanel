@@ -1,12 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterInputs } from '@/trpc/client';
-import { useQuery } from '@tanstack/react-query';
 
 export function useEventProperties(
   params: RouterInputs['chart']['properties'],
   options?: {
     enabled: boolean;
-  },
+  }
 ) {
   const trpc = useTRPC();
   const query = useQuery(
@@ -15,7 +15,7 @@ export function useEventProperties(
         !!params.projectId && typeof options?.enabled !== 'undefined'
           ? options.enabled
           : true,
-    }),
+    })
   );
   return query.data ?? [];
 }

@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { type SpringConfig, useChartConfig } from "../chart-config-context";
+import { motion, useSpring } from 'motion/react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { type SpringConfig, useChartConfig } from '../chart-config-context';
 import {
   chartCssVars,
   type LineConfig,
   useChart,
   useChartStable,
-} from "../chart-context";
-import { weekdayDateFmt } from "../chart-formatters";
-import { DateTicker } from "./date-ticker";
-import { TooltipBox } from "./tooltip-box";
-import { TooltipContent, type TooltipRow } from "./tooltip-content";
-import { TooltipDot } from "./tooltip-dot";
-import { TooltipIndicator } from "./tooltip-indicator";
+} from '../chart-context';
+import { weekdayDateFmt } from '../chart-formatters';
+import { DateTicker } from './date-ticker';
+import { TooltipBox } from './tooltip-box';
+import { TooltipContent, type TooltipRow } from './tooltip-content';
+import { TooltipDot } from './tooltip-dot';
+import { TooltipIndicator } from './tooltip-indicator';
 
 export interface ChartTooltipProps {
   /** Whether to show the date pill at bottom. Default: true */
@@ -66,7 +66,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   rows: rowsRenderer,
   dotColor: dotColorProp,
   children,
-  className = "",
+  className = '',
   container,
   springConfig,
   boxSpringConfig,
@@ -86,7 +86,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     barXAccessor,
   } = useChart();
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
   const discreteInteraction = dateLabels.length > 60;
 
   const visible = tooltipData !== null;
@@ -123,10 +123,10 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
         return tooltipRows[index].color;
       }
       if (dotColorProp != null) {
-        if (typeof dotColorProp === "function" && tooltipData) {
+        if (typeof dotColorProp === 'function' && tooltipData) {
           return dotColorProp(tooltipData.point, line);
         }
-        if (typeof dotColorProp === "string") {
+        if (typeof dotColorProp === 'string') {
           return dotColorProp;
         }
       }
@@ -134,12 +134,11 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     };
   }, [dotColorProp, rowsRenderer, tooltipData, tooltipRows]);
 
-  // Resolve indicator color (static or from hovered point)
   const indicatorColor = useMemo(() => {
     if (indicatorColorProp == null) {
       return chartCssVars.crosshair;
     }
-    if (typeof indicatorColorProp === "function") {
+    if (typeof indicatorColorProp === 'function') {
       return tooltipData
         ? indicatorColorProp(tooltipData.point)
         : chartCssVars.crosshair;
@@ -147,16 +146,13 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     return indicatorColorProp;
   }, [indicatorColorProp, tooltipData]);
 
-  // Title from date or category
   const title = useMemo(() => {
     if (!tooltipData) {
       return undefined;
     }
-    // For bar charts (horizontal or vertical), use the category name
     if (barXAccessor) {
       return barXAccessor(tooltipData.point);
     }
-    // For line/area charts, use the date
     return weekdayDateFmt.format(xAccessor(tooltipData.point));
   }, [tooltipData, barXAccessor, xAccessor]);
 
@@ -211,7 +207,6 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
         </svg>
       )}
 
-      {/* Tooltip Box */}
       <TooltipBox
         className={className}
         containerHeight={height}
@@ -268,7 +263,7 @@ export function ChartTooltip(props: ChartTooltipProps) {
   return <ChartTooltipInner {...props} container={container} />;
 }
 
-ChartTooltip.displayName = "ChartTooltip";
+ChartTooltip.displayName = 'ChartTooltip';
 
 interface DatePillTrackerProps {
   enabled: boolean;
@@ -310,7 +305,7 @@ function DatePillTrackerInner({
       className="pointer-events-none absolute z-50"
       style={{
         left: discreteInteraction ? xWithMargin : animatedX,
-        transform: "translateX(-50%)",
+        transform: 'translateX(-50%)',
         bottom: 4,
       }}
     >

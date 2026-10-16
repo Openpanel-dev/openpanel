@@ -1,4 +1,4 @@
-import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
+import type { IClickhouseEvent, IServiceEvent } from '@openpanel/core';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
@@ -12,6 +12,7 @@ import {
 } from '@/components/overview/overview-widget';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { ReportChartShortcut } from '@/components/report-chart/shortcut';
+import Syntax from '@/components/syntax';
 import { Button } from '@/components/ui/button';
 import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget, WidgetBody } from '@/components/widget';
@@ -23,7 +24,6 @@ import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
-import Syntax from '@/components/syntax';
 
 interface Props {
   id: string;
@@ -78,7 +78,9 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
     },
   };
   const [widget, setWidget] = useState(TABS.essentials);
-  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>('table');
+  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>(
+    'table'
+  );
   const trpc = useTRPC();
   const query = useSuspenseQuery(
     trpc.event.details.queryOptions({
@@ -186,30 +188,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         <div className="row items-center justify-between">
           <div className="title">{event.name}</div>
           <div className="row items-center gap-2 pr-2">
-            {/* <Button
-                size="icon"
-                variant={'ghost'}
-                onClick={() => {
-                  const event = new KeyboardEvent('keydown', {
-                    key: 'ArrowLeft',
-                  });
-                  dispatchEvent(event);
-                }}
-              >
-                <ArrowLeftIcon className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant={'ghost'}
-                onClick={() => {
-                  const event = new KeyboardEvent('keydown', {
-                    key: 'ArrowRight',
-                  });
-                  dispatchEvent(event);
-                }}
-              >
-                <ArrowRightIcon className="size-4" />
-              </Button> */}
             <Button onClick={() => popModal()} size="icon" variant={'ghost'}>
               <XIcon className="size-4" />
             </Button>
@@ -233,9 +211,9 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         {profile && (
           <ProjectLink
             className="card col gap-2 p-4 py-2 hover:bg-def-100"
-            to="/profiles/$profileId"
-            params={{ profileId: profile.id }}
             onClick={() => popModal()}
+            params={{ profileId: profile.id }}
+            to="/profiles/$profileId"
           >
             <div className="row items-center justify-between gap-2">
               <div className="row min-w-0 items-center gap-2">
@@ -275,34 +253,37 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
             <div className="mb-2 flex justify-between font-medium">
               <div>Properties</div>
               <button
-                type="button"
+                className="text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() =>
                   setPropertiesMode((p) => (p === 'table' ? 'json' : 'table'))
                 }
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
               >
                 {propertiesMode === 'table' ? 'View JSON' : 'View Table'}
               </button>
             </div>
             {propertiesMode === 'table' && (
-            <KeyValueGrid
-              columns={1}
-              copyable
-              data={properties}
-              onItemClick={(item) => {
-                popModal();
-                setFilter(`properties.${item.name}`, item.value as any);
-              }}
-              renderValue={(item) => (
-                <div className="flex items-center gap-2">
-                  <span className="font-mono">{String(item.value)}</span>
-                  <FilterIcon className="size-3 shrink-0" />
-                </div>
-              )}
-            />
+              <KeyValueGrid
+                columns={1}
+                copyable
+                data={properties}
+                onItemClick={(item) => {
+                  popModal();
+                  setFilter(`properties.${item.name}`, item.value as any);
+                }}
+                renderValue={(item) => (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{String(item.value)}</span>
+                    <FilterIcon className="size-3 shrink-0" />
+                  </div>
+                )}
+              />
             )}
             {propertiesMode === 'json' && (
-              <Syntax code={JSON.stringify(properties, null, 2)} language="json" />
+              <Syntax
+                code={JSON.stringify(properties, null, 2)}
+                language="json"
+              />
             )}
           </section>
         )}
@@ -397,7 +378,6 @@ function EventDetailsSkeleton() {
         </WidgetButtons>
       </WidgetHead>
       <WidgetBody className="col gap-4 bg-def-100">
-        {/* Profile skeleton */}
         <div className="card col gap-2 p-4 py-2">
           <div className="row items-center justify-between gap-2">
             <div className="row min-w-0 items-center gap-2">
@@ -416,7 +396,6 @@ function EventDetailsSkeleton() {
           <div className="h-4 w-64 animate-pulse rounded bg-muted" />
         </div>
 
-        {/* Properties skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-20 animate-pulse rounded bg-muted" />
@@ -434,7 +413,6 @@ function EventDetailsSkeleton() {
           </div>
         </section>
 
-        {/* Information skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-24 animate-pulse rounded bg-muted" />
@@ -452,7 +430,6 @@ function EventDetailsSkeleton() {
           </div>
         </section>
 
-        {/* Chart skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div className="h-5 w-40 animate-pulse rounded bg-muted" />

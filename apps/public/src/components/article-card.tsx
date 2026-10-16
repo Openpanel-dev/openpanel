@@ -18,23 +18,23 @@ export function ArticleCard({
 }) {
   return (
     <Link
+      className="col overflow-hidden rounded-lg border bg-background-light transition-all duration-300 hover:scale-105 hover:shadow-background-dark hover:shadow-lg"
       href={url}
       key={url}
-      className="border rounded-lg overflow-hidden bg-background-light col hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-background-dark"
     >
       <Image
-        src={cover}
         alt={title}
-        width={323}
-        height={181}
         className="w-full"
+        height={181}
+        src={cover}
+        width={323}
       />
-      <span className="p-4 col flex-1">
-        {tag && <span className="font-mono text-xs mb-2">{tag}</span>}
-        <span className="flex-1 mb-6">
-          <h2 className="text-xl font-semibold">{title}</h2>
+      <span className="col flex-1 p-4">
+        {tag && <span className="mb-2 font-mono text-xs">{tag}</span>}
+        <span className="mb-6 flex-1">
+          <h2 className="font-semibold text-xl">{title}</h2>
         </span>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {[team, date.toLocaleDateString()].filter(Boolean).join(' · ')}
         </p>
       </span>

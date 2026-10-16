@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OnboardingLeftPanel } from '@/components/onboarding-left-panel';
+import { isSignedIn } from '@/utils/route-session';
 
 export const Route = createFileRoute('/_login')({
   beforeLoad: async ({ context }) => {
-    if (context.session?.session) {
+    if (await isSignedIn(context)) {
       throw redirect({ to: '/' });
     }
   },

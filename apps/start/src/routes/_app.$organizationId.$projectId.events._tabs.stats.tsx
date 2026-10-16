@@ -1,3 +1,5 @@
+import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -9,12 +11,8 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 
-import type { IChartEventItem } from '@openpanel/validation';
-
-import { createFileRoute } from '@tanstack/react-router';
-
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/events/_tabs/stats',
+  '/_app/$organizationId/$projectId/events/_tabs/stats'
 )({
   component: Component,
 });
@@ -38,7 +36,10 @@ function Component() {
     <div>
       <div className="mb-2 flex items-center gap-2">
         <OverviewFilterButton enableEventsFilter />
-        <OverviewFiltersButtons className="justify-end p-0" />
+        <OverviewFiltersButtons
+          className="justify-end p-0"
+          filterModal={{ enableEventsFilter: true }}
+        />
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Widget className="w-full">
@@ -47,9 +48,9 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              chartType="histogram"
               projectId={projectId}
               range="30d"
-              chartType="histogram"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -67,24 +68,24 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Share of events</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              options={{
-                renderSerieName(names) {
-                  return names[1];
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
                 },
-              }}
-              projectId={projectId}
-              range="30d"
+              ]}
               chartType="pie"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
+              options={{
+                renderSerieName(names) {
+                  return names[1];
                 },
-              ]}
+              }}
+              projectId={projectId}
+              range="30d"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -111,24 +112,24 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Events by name</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              options={{
-                renderSerieName(names) {
-                  return names[1];
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
                 },
-              }}
-              projectId={projectId}
-              range="30d"
+              ]}
               chartType="bar"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
+              options={{
+                renderSerieName(names) {
+                  return names[1];
                 },
-              ]}
+              }}
+              projectId={projectId}
+              range="30d"
               series={
                 events && events.length > 0
                   ? events.map((name) => ({
@@ -155,10 +156,17 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">Events over time</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              breakdowns={[
+                {
+                  id: 'A',
+                  name: 'name',
+                },
+              ]}
+              chartType="linear"
               options={{
                 renderSerieName(names) {
                   return names[1];
@@ -166,13 +174,6 @@ function Component() {
               }}
               projectId={projectId}
               range="30d"
-              chartType="linear"
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
-                },
-              ]}
               series={
                 events && events.length > 0
                   ? events.map((name) => ({

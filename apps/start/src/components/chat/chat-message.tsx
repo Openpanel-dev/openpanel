@@ -1,10 +1,10 @@
-import { cn } from '@/utils/cn';
 import type { UIMessage } from '@better-agent/client';
 import { ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ChatMarkdown } from './chat-markdown';
 import { chatToolRenderers, DefaultToolResult } from './tool-results/registry';
 import type { ToolResultPart } from './tool-results/types';
+import { cn } from '@/utils/cn';
 
 /**
  * Renders a single message by switching over `message.parts[i].type`.
@@ -32,8 +32,10 @@ export function ChatMessage({
 }) {
   const isUser = message.role === 'user';
 
-  // Index tool results by callId so we can attach them to their call.
-  const resultByCallId = new Map<string, { result?: unknown; status: string }>();
+  const resultByCallId = new Map<
+    string,
+    { result?: unknown; status: string }
+  >();
   for (const part of message.parts) {
     if (part.type === 'tool-result') {
       resultByCallId.set(part.callId, {
@@ -49,7 +51,7 @@ export function ChatMessage({
     <div
       className={cn(
         'flex flex-col gap-2',
-        isUser ? 'items-end' : 'items-start',
+        isUser ? 'items-end' : 'items-start'
       )}
     >
       {message.parts.map((part, idx) => {
@@ -58,8 +60,8 @@ export function ChatMessage({
             if (isUser) {
               return (
                 <div
+                  className="text max-w-[90%] whitespace-pre-wrap break-words rounded-lg bg-primary px-3 py-2 text-primary-foreground leading-[1.5]"
                   key={`${message.localId}-text-${idx}`}
-                  className="rounded-lg px-3 py-2 text leading-[1.5] whitespace-pre-wrap break-words max-w-[90%] bg-primary text-primary-foreground"
                 >
                   {part.text}
                 </div>
@@ -67,8 +69,8 @@ export function ChatMessage({
             }
             return (
               <div
+                className="w-full max-w-full"
                 key={`${message.localId}-text-${idx}`}
-                className="max-w-full w-full"
               >
                 <ChatMarkdown text={part.text} />
               </div>
@@ -90,11 +92,9 @@ export function ChatMessage({
             const hasFollowingPart = idx < lastIdx;
             return (
               <ReasoningBlock
+                complete={stateComplete || hasFollowingPart || !runStillActive}
                 key={`${message.localId}-reasoning-${idx}`}
                 text={part.text}
-                complete={
-                  stateComplete || hasFollowingPart || !runStillActive
-                }
               />
             );
           }
@@ -110,16 +110,17 @@ export function ChatMessage({
             if (!toolName) {
               return (
                 <div
-                  key={part.callId}
                   className="flex items-center gap-2 py-1.5 text-sm"
+                  key={part.callId}
                 >
                   <span className="op-shimmer font-medium">Thinking…</span>
                 </div>
               );
             }
             const Renderer =
-              chatToolRenderers[`tool-${toolName}` as keyof typeof chatToolRenderers] ??
-              DefaultToolResult;
+              chatToolRenderers[
+                `tool-${toolName}` as keyof typeof chatToolRenderers
+              ] ?? DefaultToolResult;
             const toolPart: ToolResultPart = {
               type: `tool-${toolName}`,
               toolCallId: part.callId,
@@ -130,7 +131,7 @@ export function ChatMessage({
                 matched?.status === 'error' ? 'Tool failed' : undefined,
             };
             return (
-              <div key={part.callId} className="w-full max-w-full">
+              <div className="w-full max-w-full" key={part.callId}>
                 <Renderer part={toolPart} />
               </div>
             );
@@ -177,7 +178,7 @@ function ReasoningBlock({
           <span className="op-shimmer font-medium">Thinking…</span>
         </div>
         {latestLine && (
-          <div className="mt-1 text-sm text-muted-foreground/80 italic line-clamp-1">
+          <div className="mt-1 line-clamp-1 text-muted-foreground/80 text-sm italic">
             {latestLine}
           </div>
         )}
@@ -186,11 +187,11 @@ function ReasoningBlock({
   }
 
   return (
-    <div className="w-full max-w-full mb-2">
+    <div className="mb-2 w-full max-w-full">
       <button
-        type="button"
+        className="flex items-center gap-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        type="button"
       >
         <ChevronRightIcon
           className={cn('size-3 transition-transform', open && 'rotate-90')}
@@ -200,8 +201,8 @@ function ReasoningBlock({
       {open && (
         <div className="mt-2">
           <ChatMarkdown
+            className="text-muted-foreground text-sm leading-normal"
             text={trimmed}
-            className="text-sm text-muted-foreground leading-normal"
           />
         </div>
       )}
@@ -211,13 +212,23 @@ function ReasoningBlock({
 
 function derivePartState(
   callState: string | undefined,
-  resultStatus: string | undefined,
+  resultStatus: string | undefined
 ): string {
-  if (resultStatus === 'success') return 'output-available';
-  if (resultStatus === 'error') return 'output-error';
-  if (resultStatus === 'pending') return 'input-available';
-  if (callState === 'input-streaming') return 'input-streaming';
-  if (callState === 'input-complete') return 'input-available';
+  if (resultStatus === 'success') {
+    return 'output-available';
+  }
+  if (resultStatus === 'error') {
+    return 'output-error';
+  }
+  if (resultStatus === 'pending') {
+    return 'input-available';
+  }
+  if (callState === 'input-streaming') {
+    return 'input-streaming';
+  }
+  if (callState === 'input-complete') {
+    return 'input-available';
+  }
   return 'input-streaming';
 }
 

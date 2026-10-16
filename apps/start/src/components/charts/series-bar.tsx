@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { Transition } from "motion/react";
-import { motion } from "motion/react";
-import { useMemo } from "react";
-import { chartCssVars, useChart } from "./chart-context";
-import { transitionWithDelay } from "./motion-utils";
-import { computeSeriesBarWidth } from "./series-bar-layout";
+import type { Transition } from 'motion/react';
+import { motion } from 'motion/react';
+import { useMemo } from 'react';
+import { chartCssVars, useChart } from './chart-context';
+import { transitionWithDelay } from './motion-utils';
+import { computeSeriesBarWidth } from './series-bar-layout';
 
 function computeSeriesBarLayout(input: {
   stacked: boolean;
@@ -177,7 +177,7 @@ export function SeriesBar({
     data.length > 1 ? staggerSpread / 1000 / data.length : 0;
   if (barScale) {
     console.warn(
-      "SeriesBar is for time-based ComposedChart / LineChart context. Use Bar inside BarChart for categorical x."
+      'SeriesBar is for time-based ComposedChart / LineChart context. Use Bar inside BarChart for categorical x.'
     );
     return null;
   }
@@ -188,7 +188,7 @@ export function SeriesBar({
     <g className="series-bar">
       {data.map((d, i) => {
         const value = d[dataKey];
-        if (typeof value !== "number") {
+        if (typeof value !== 'number') {
           return null;
         }
 
@@ -256,7 +256,7 @@ export function SeriesBar({
   );
 }
 
-SeriesBar.displayName = "SeriesBar";
+SeriesBar.displayName = 'SeriesBar';
 
 interface SeriesBarRectProps {
   x: number;

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import type * as React from "react";
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
-import { chartCssVars } from "../chart-context";
+import { AnimatePresence, motion } from 'motion/react';
+import type * as React from 'react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { chartCssVars } from '../chart-context';
+import { cn } from '@/lib/utils';
 
 // Fan configuration
 const FAN_RADIUS = 50;
@@ -29,7 +29,7 @@ export interface ChartMarker {
   /** URL to navigate to when clicked */
   href?: string;
   /** Open href in new tab. Default: false */
-  target?: "_blank" | "_self";
+  target?: '_blank' | '_self';
 }
 
 export interface MarkerGroupProps {
@@ -108,22 +108,22 @@ const markerEntranceVariants = {
   hidden: {
     scale: 0.85,
     opacity: 0,
-    filter: "blur(2px)",
+    filter: 'blur(2px)',
   },
   visible: {
     scale: 1,
     opacity: 1,
-    filter: "blur(0px)",
+    filter: 'blur(0px)',
   },
   fanned: {
     scale: 0.6,
     opacity: 0,
-    filter: "blur(2px)",
+    filter: 'blur(2px)',
   },
   muted: {
     scale: 1,
     opacity: 0.4,
-    filter: "blur(0px)",
+    filter: 'blur(0px)',
   },
 };
 
@@ -156,11 +156,7 @@ export function MarkerGroup({
   const hasMultiple = markers.length > 1;
   const fannedMarkers =
     maxFanned !== undefined ? markers.slice(0, maxFanned) : markers;
-  const currentVariant = shouldFan
-    ? "fanned"
-    : isMuted
-      ? "muted"
-      : "visible";
+  const currentVariant = shouldFan ? 'fanned' : isMuted ? 'muted' : 'visible';
 
   const getCirclePosition = (index: number, total: number) => {
     const startAngle = -90 - FAN_ANGLE / 2;
@@ -195,7 +191,6 @@ export function MarkerGroup({
 
   return (
     <>
-      {/* Position group - no interaction */}
       <g transform={`translate(${x}, ${y})`}>
         {/* Vertical guide line - non-interactive, rendered first (behind marker) */}
         {showLine && lineHeight > 0 && (
@@ -216,8 +211,8 @@ export function MarkerGroup({
             strokeDasharray="4,4"
             strokeLinecap="round"
             strokeWidth={1}
-            style={{ pointerEvents: "none" }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            style={{ pointerEvents: 'none' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             x1={0}
             x2={0}
             y1={size / 2 + 4}
@@ -225,19 +220,18 @@ export function MarkerGroup({
           />
         )}
 
-        {/* Interactive marker group */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Chart marker interaction */}
         <g
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onMouseMove={handleMouseMove}
-          style={{ cursor: "pointer" }}
+          style={{ cursor: 'pointer' }}
         >
           <motion.g
             animate={currentVariant}
-            initial={animate ? "hidden" : currentVariant}
+            initial={animate ? 'hidden' : currentVariant}
             transition={{
-              type: "spring",
+              type: 'spring',
               stiffness: 300,
               damping: 25,
               delay: animationDelay,
@@ -253,7 +247,6 @@ export function MarkerGroup({
               y={-size}
             />
 
-            {/* Main marker */}
             <MarkerCircle
               borderColor={borderColor}
               borderWidth={borderWidth}
@@ -263,14 +256,13 @@ export function MarkerGroup({
               size={size}
             />
 
-            {/* Count badge */}
             <AnimatePresence>
               {hasMultiple && !shouldFan && (
                 <motion.g
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
                   initial={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 >
                   <circle
                     cx={size / 2 + badgeOffset}
@@ -296,7 +288,6 @@ export function MarkerGroup({
         </g>
       </g>
 
-      {/* Portal for fanned circles */}
       {containerRef?.current &&
         createPortal(
           // biome-ignore lint/a11y/noStaticElementInteractions: Marker hover portal
@@ -314,7 +305,7 @@ export function MarkerGroup({
               width: FAN_RADIUS * 2 + size,
               height: FAN_RADIUS * 2 + size,
               zIndex: 100,
-              pointerEvents: shouldFan ? "auto" : "none",
+              pointerEvents: shouldFan ? 'auto' : 'none',
             }}
           >
             {/* Center point offset - all fanned markers are positioned relative to this */}
@@ -351,7 +342,7 @@ export function MarkerGroup({
                           top: -size / 2,
                         }}
                         transition={{
-                          type: "spring",
+                          type: 'spring',
                           stiffness: 400,
                           damping: 22,
                           delay: index * 0.04,
@@ -387,7 +378,7 @@ export function MarkerGroup({
                       left: -size * 0.25,
                       top: -size * 0.25,
                     }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   >
                     <div
                       className="h-full w-full rounded-full"
@@ -410,7 +401,7 @@ interface MarkerCircleProps {
   color?: string;
   onClick?: () => void;
   href?: string;
-  target?: "_blank" | "_self";
+  target?: '_blank' | '_self';
   isClickable?: boolean;
   /** Edge-to-edge icon (no 4px inset). */
   iconFill?: boolean;
@@ -448,15 +439,15 @@ function MarkerCircle({
       >
         <div
           style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             color: chartCssVars.markerForeground,
             fontSize: size * 0.5,
-            overflow: "hidden",
-            borderRadius: "50%",
+            overflow: 'hidden',
+            borderRadius: '50%',
           }}
         >
           {icon}
@@ -472,7 +463,7 @@ function MarkerCircleHTML({
   color,
   onClick,
   href,
-  target = "_self",
+  target = '_self',
   isClickable = false,
   iconFill = false,
   borderColor,
@@ -486,8 +477,8 @@ function MarkerCircleHTML({
     if (onClick) {
       onClick();
     } else if (href) {
-      if (target === "_blank") {
-        window.open(href, "_blank", "noopener,noreferrer");
+      if (target === '_blank') {
+        window.open(href, '_blank', 'noopener,noreferrer');
       } else {
         window.location.href = href;
       }
@@ -498,8 +489,8 @@ function MarkerCircleHTML({
   return (
     <motion.div
       className={cn(
-        "relative flex h-full w-full items-center justify-center rounded-full shadow-lg",
-        hasAction && "cursor-pointer"
+        'relative flex h-full w-full items-center justify-center rounded-full shadow-lg',
+        hasAction && 'cursor-pointer'
       )}
       onClick={hasAction ? handleClick : undefined}
       style={{
@@ -508,12 +499,12 @@ function MarkerCircleHTML({
         fontSize: size * 0.5,
         color: chartCssVars.markerForeground,
         padding: inset,
-        overflow: "hidden",
+        overflow: 'hidden',
       }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
       whileHover={
         hasAction
-          ? { scale: 1.15, boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }
+          ? { scale: 1.15, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }
           : undefined
       }
       whileTap={hasAction ? { scale: 0.95 } : undefined}
@@ -523,6 +514,6 @@ function MarkerCircleHTML({
   );
 }
 
-MarkerGroup.displayName = "MarkerGroup";
+MarkerGroup.displayName = 'MarkerGroup';
 
 export default MarkerGroup;

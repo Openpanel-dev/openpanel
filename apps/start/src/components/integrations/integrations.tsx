@@ -1,8 +1,7 @@
-import type { RouterOutputs } from '@/trpc/client';
 import {
-  INTEGRATION_DESCRIPTORS,
   type IIntegrationType,
-} from '@openpanel/validation';
+  INTEGRATION_DESCRIPTORS,
+} from '@openpanel/core/modules/integration/integration.constants';
 import { BoxIcon, CloudIcon, DatabaseIcon, WebhookIcon } from 'lucide-react';
 import { DiscordIntegrationForm } from './forms/discord-integration';
 import { GCSExportIntegrationForm } from './forms/gcs-export-integration';
@@ -13,6 +12,7 @@ import {
   IntegrationCardLogo,
   IntegrationCardLogoImage,
 } from './integration-card';
+import type { RouterOutputs } from '@/trpc/client';
 
 type IntegrationFormComponent = React.ComponentType<{
   defaultValues?: RouterOutputs['integration']['get'];
@@ -42,55 +42,55 @@ const placeholderIcon = (
  */
 export const CLIENT_INTEGRATIONS: Record<IIntegrationType, IClientIntegration> =
   {
-  slack: {
-    type: 'slack',
-    icon: (
-      <IntegrationCardLogoImage
-        src="https://play-lh.googleusercontent.com/mzJpTCsTW_FuR6YqOPaLHrSEVCSJuXzCljdxnCKhVZMcu6EESZBQTCHxMh8slVtnKqo"
-        backgroundColor="#481449"
-      />
-    ),
-    Form: SlackIntegrationForm,
-  },
-  discord: {
-    type: 'discord',
-    icon: (
-      <IntegrationCardLogoImage
-        src="https://static.vecteezy.com/system/resources/previews/006/892/625/non_2x/discord-logo-icon-editorial-free-vector.jpg"
-        backgroundColor="#5864F2"
-      />
-    ),
-    Form: DiscordIntegrationForm,
-  },
-  webhook: {
-    type: 'webhook',
-    icon: (
-      <IntegrationCardLogo className="bg-foreground text-background">
-        <WebhookIcon className="size-10" />
-      </IntegrationCardLogo>
-    ),
-    Form: WebhookIntegrationForm,
-  },
-  app: { type: 'app', icon: placeholderIcon },
-  email: { type: 'email', icon: placeholderIcon },
-  s3_export: {
-    type: 's3_export',
-    icon: (
-      <IntegrationCardLogo className="bg-[#FF9900] text-white">
-        <CloudIcon className="size-10" />
-      </IntegrationCardLogo>
-    ),
-    Form: S3ExportIntegrationForm,
-  },
-  gcs_export: {
-    type: 'gcs_export',
-    icon: (
-      <IntegrationCardLogo className="bg-[#4285F4] text-white">
-        <DatabaseIcon className="size-10" />
-      </IntegrationCardLogo>
-    ),
-    Form: GCSExportIntegrationForm,
-  },
+    slack: {
+      type: 'slack',
+      icon: (
+        <IntegrationCardLogoImage
+          backgroundColor="#481449"
+          src="https://play-lh.googleusercontent.com/mzJpTCsTW_FuR6YqOPaLHrSEVCSJuXzCljdxnCKhVZMcu6EESZBQTCHxMh8slVtnKqo"
+        />
+      ),
+      Form: SlackIntegrationForm,
+    },
+    discord: {
+      type: 'discord',
+      icon: (
+        <IntegrationCardLogoImage
+          backgroundColor="#5864F2"
+          src="https://static.vecteezy.com/system/resources/previews/006/892/625/non_2x/discord-logo-icon-editorial-free-vector.jpg"
+        />
+      ),
+      Form: DiscordIntegrationForm,
+    },
+    webhook: {
+      type: 'webhook',
+      icon: (
+        <IntegrationCardLogo className="bg-foreground text-background">
+          <WebhookIcon className="size-10" />
+        </IntegrationCardLogo>
+      ),
+      Form: WebhookIntegrationForm,
+    },
+    app: { type: 'app', icon: placeholderIcon },
+    email: { type: 'email', icon: placeholderIcon },
+    s3_export: {
+      type: 's3_export',
+      icon: (
+        <IntegrationCardLogo className="bg-[#FF9900] text-white">
+          <CloudIcon className="size-10" />
+        </IntegrationCardLogo>
+      ),
+      Form: S3ExportIntegrationForm,
+    },
+    gcs_export: {
+      type: 'gcs_export',
+      icon: (
+        <IntegrationCardLogo className="bg-[#4285F4] text-white">
+          <DatabaseIcon className="size-10" />
+        </IntegrationCardLogo>
+      ),
+      Form: GCSExportIntegrationForm,
+    },
   };
 
 export interface IIntegrationCatalogEntry {
@@ -106,7 +106,7 @@ export interface IIntegrationCatalogEntry {
  */
 export const INTEGRATIONS: IIntegrationCatalogEntry[] =
   INTEGRATION_DESCRIPTORS.filter(
-    (d) => !('hidden' in d.catalog && d.catalog.hidden),
+    (d) => !('hidden' in d.catalog && d.catalog.hidden)
   ).map((d) => ({
     type: d.type,
     name: d.catalog.name,

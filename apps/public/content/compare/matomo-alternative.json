@@ -9,12 +9,7 @@
   "hero": {
     "heading": "Best Matomo Alternative",
     "subheading": "OpenPanel is a modern, open-source alternative to Matomo. Get powerful web and product analytics with a cleaner interface, truly cookie-free tracking by default, and no premium plugins required for essential features.",
-    "badges": [
-      "Open-source",
-      "Cookie-free",
-      "EU-only hosting",
-      "Self-hostable"
-    ]
+    "badges": ["Open-source", "Cookie-free", "EU-only hosting", "Self-hostable"]
   },
   "competitor": {
     "name": "Matomo",

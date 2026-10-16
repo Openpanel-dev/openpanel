@@ -38,7 +38,7 @@ import { OpenPanel } from './index';
           // Otherwise return the property from op (for things like options, etc.)
           return value;
         },
-      },
+      }
     );
 
     window.op = opCallable;

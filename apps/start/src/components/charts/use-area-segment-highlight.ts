@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo } from "react";
-import type { TooltipData } from "./chart-context";
-import type { ChartSelection } from "./use-chart-interaction";
+import { useCallback, useMemo } from 'react';
+import type { TooltipData } from './chart-context';
+import type { ChartSelection } from './use-chart-interaction';
 
 interface UseAreaSegmentHighlightOptions {
   data: Record<string, unknown>[];
@@ -85,7 +85,7 @@ export function useAreaSegmentHighlight({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : 0;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : 0;
     },
     [dataKey, yScale]
   );

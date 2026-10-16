@@ -156,13 +156,28 @@
       { "title": "Python analytics setup", "url": "/guides/python-analytics" }
     ],
     "articles": [
-      { "title": "How to self-host OpenPanel", "url": "/articles/how-to-self-host-openpanel" },
-      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" },
-      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" }
+      {
+        "title": "How to self-host OpenPanel",
+        "url": "/articles/how-to-self-host-openpanel"
+      },
+      {
+        "title": "Best open source analytics tools",
+        "url": "/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "Cookieless analytics explained",
+        "url": "/articles/cookieless-analytics"
+      }
     ],
     "comparisons": [
-      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" },
-      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" },
+      {
+        "title": "OpenPanel vs PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "title": "OpenPanel vs Plausible",
+        "url": "/compare/plausible-alternative"
+      },
       { "title": "OpenPanel vs Umami", "url": "/compare/umami-alternative" }
     ]
   },

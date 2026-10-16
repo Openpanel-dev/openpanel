@@ -1,7 +1,6 @@
-import { cn } from '@/utils/cn';
 import { Asterisk, ChevronRight } from 'lucide-react';
-
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
+import { cn } from '@/utils/cn';
 
 interface RenderDotsProps extends React.HTMLAttributes<HTMLDivElement> {
   children: string;
@@ -30,15 +29,15 @@ export function RenderDots({
                 key={str + (index as number)}
               >
                 {index !== 0 && (
-                  <ChevronRight className="relative top-[0.9px] !h-3 !w-3 flex-shrink-0" />
+                  <ChevronRight className="!h-3 !w-3 relative top-[0.9px] flex-shrink-0" />
                 )}
                 {str.includes('[*]') ? (
                   <>
                     {str.replace('[*]', '')}
-                    <Asterisk className="relative top-[0.9px] !h-3 !w-3 flex-shrink-0" />
+                    <Asterisk className="!h-3 !w-3 relative top-[0.9px] flex-shrink-0" />
                   </>
                 ) : str === '*' ? (
-                  <Asterisk className="relative top-[0.9px] !h-3 !w-3 flex-shrink-0" />
+                  <Asterisk className="!h-3 !w-3 relative top-[0.9px] flex-shrink-0" />
                 ) : (
                   str
                 )}

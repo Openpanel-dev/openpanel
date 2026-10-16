@@ -1,9 +1,9 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { ColumnCreatedAt } from '@/components/column-created-at';
-import { Badge } from '@/components/ui/badge';
+import type { IServiceGroup } from '@openpanel/core';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { IServiceGroup } from '@openpanel/db';
+import { ColumnCreatedAt } from '@/components/column-created-at';
+import { Badge } from '@/components/ui/badge';
+import { useAppParams } from '@/hooks/use-app-params';
 
 export type IServiceGroupWithStats = IServiceGroup & {
   memberCount: number;
@@ -42,9 +42,7 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
     {
       accessorKey: 'type',
       header: 'Type',
-      cell: ({ row }) => (
-        <Badge variant="outline">{row.original.type}</Badge>
-      ),
+      cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
     },
     {
       accessorKey: 'memberCount',

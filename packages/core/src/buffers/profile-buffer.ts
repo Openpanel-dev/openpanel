@@ -1,0 +1,362 @@
+import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { getRedisCache, type Redis } from '@openpanel/redis';
+import { deepMergeObjects, getSafeJson } from '@openpanel/shared';
+import { omit, uniq } from 'ramda';
+import type { IClickhouseProfile } from '../modules/profile/profile.service';
+import { TABLE_NAMES } from '../shared/ch-tables';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+
+// Equivalent of `SELECT ... FROM profiles FINAL` but expressed via GROUP BY +
+// argMax. ReplicatedReplacingMergeTree uses `last_seen_at` as the version
+// column, so argMax(col, last_seen_at) yields the same value FINAL would
+// produce. Avoiding FINAL lets CH use the primary key (project_id, id) to
+// scan instead of merging parts at query time — order(s) of magnitude
+// faster on the profile-buffer's fetch path.
+//
+// `p.last_seen_at` is qualified with the FROM-clause table alias because
+// the SELECT exposes a `last_seen_at` aggregate alias, and CH resolves
+// bare column refs against the alias list first — causing ILLEGAL_AGGREGATION
+// inside the argMax/max calls. Qualifying with `p.` bypasses the alias
+// lookup and binds to the raw column.
+const PROFILE_LATEST_AGGREGATE_COLUMNS = sql.join(
+  [
+    sql`id`,
+    sql`project_id`,
+    sql`argMax(first_name, p.last_seen_at) AS first_name`,
+    sql`argMax(last_name, p.last_seen_at) AS last_name`,
+    sql`argMax(email, p.last_seen_at) AS email`,
+    sql`argMax(avatar, p.last_seen_at) AS avatar`,
+    sql`argMax(properties, p.last_seen_at) AS properties`,
+    sql`argMax(is_external, p.last_seen_at) AS is_external`,
+    sql`argMax(groups, p.last_seen_at) AS groups`,
+    // created_at doesn't change between rows for the same profile, but
+    // min() is safe and matches "first seen" semantics if there ever is a
+    // discrepancy.
+    sql`min(created_at) AS created_at`,
+    sql`max(p.last_seen_at) AS last_seen_at`,
+  ],
+  ', '
+);
+
+const DEFAULT_BATCH_SIZE = 200;
+const DEFAULT_CHUNK_SIZE = 1000;
+const DEFAULT_TTL_IN_SECONDS = 60 * 60;
+const DEFAULT_FETCH_CHUNK_SIZE = 50;
+
+export class ProfileBuffer extends BaseBuffer {
+  private readonly batchSize =
+    this.deps.config.buffers.profile.batchSize ?? DEFAULT_BATCH_SIZE;
+  private readonly chunkSize =
+    this.deps.config.buffers.profile.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  private readonly ttlInSeconds =
+    this.deps.config.buffers.profile.ttlSeconds ?? DEFAULT_TTL_IN_SECONDS;
+  /** Max profiles per ClickHouse IN-clause fetch to keep query size bounded */
+  private readonly fetchChunkSize =
+    this.deps.config.buffers.profile.fetchChunkSize ?? DEFAULT_FETCH_CHUNK_SIZE;
+
+  private readonly redisKey = 'profile-buffer';
+  private readonly redisProfilePrefix = 'profile-cache:';
+
+  private readonly redis: Redis;
+
+  constructor(deps: BufferDeps) {
+    super(deps, {
+      name: 'profile',
+      onFlush: async () => {
+        await this.processBuffer();
+      },
+    });
+    this.redis = getRedisCache();
+  }
+
+  private getProfileCacheKey({
+    projectId,
+    profileId,
+  }: {
+    profileId: string;
+    projectId: string;
+  }) {
+    return `${this.redisProfilePrefix}${projectId}:${profileId}`;
+  }
+
+  public async fetchFromCache(
+    profileId: string,
+    projectId: string
+  ): Promise<IClickhouseProfile | null> {
+    const cacheKey = this.getProfileCacheKey({ profileId, projectId });
+    const cached = await this.redis.get(cacheKey);
+    if (!cached) {
+      return null;
+    }
+    return getSafeJson<IClickhouseProfile>(cached);
+  }
+
+  public async setCache(profile: IClickhouseProfile): Promise<void> {
+    const cacheKey = this.getProfileCacheKey({
+      profileId: profile.id,
+      projectId: profile.project_id,
+    });
+    await this.redis.set(
+      cacheKey,
+      JSON.stringify(profile),
+      'EX',
+      this.ttlInSeconds
+    );
+  }
+
+  async add(profile: IClickhouseProfile, isFromEvent = false) {
+    return this.timeAdd(async () => {
+      try {
+        if (isFromEvent) {
+          const cacheKey = this.getProfileCacheKey({
+            profileId: profile.id,
+            projectId: profile.project_id,
+          });
+          const exists = await this.redis.exists(cacheKey);
+          if (exists === 1) {
+            this.reportAddSkipped('cached');
+            return;
+          }
+        }
+
+        await this.redis.rpush(this.redisKey, JSON.stringify(profile));
+      } catch (error) {
+        this.logger.error({ err: error, profile }, 'Failed to add profile');
+      }
+    });
+  }
+
+  private mergeProfiles(
+    existing: IClickhouseProfile | null,
+    incoming: IClickhouseProfile
+  ): IClickhouseProfile {
+    if (!existing) {
+      return incoming;
+    }
+
+    let profile = incoming;
+    if (
+      existing.properties.device !== 'server' &&
+      incoming.properties.device === 'server'
+    ) {
+      profile = {
+        ...incoming,
+        properties: omit(
+          [
+            'city',
+            'country',
+            'region',
+            'longitude',
+            'latitude',
+            'os',
+            'osVersion',
+            'browser',
+            'device',
+            'isServer',
+            'os_version',
+            'browser_version',
+          ],
+          incoming.properties
+        ),
+      };
+    }
+
+    return {
+      // `created_at` is preserved (existing wins → first seen stays put).
+      // `last_seen_at` flows through from incoming so the RMT version advances.
+      // `groups` get unioned below.
+      ...deepMergeObjects(existing, omit(['created_at', 'groups'], profile)),
+      groups: uniq([...(existing.groups ?? []), ...(incoming.groups ?? [])]),
+    };
+  }
+
+  private async batchFetchFromClickhouse(
+    profiles: IClickhouseProfile[]
+  ): Promise<Map<string, IClickhouseProfile>> {
+    const result = new Map<string, IClickhouseProfile>();
+
+    // Non-external (anonymous/device) profiles get a 2-day recency filter to
+    // avoid pulling stale anonymous sessions from far back.
+    const external = profiles.filter((p) => p.is_external !== false);
+    const nonExternal = profiles.filter((p) => p.is_external === false);
+
+    const fetchGroup = async (
+      group: IClickhouseProfile[],
+      withDateFilter: boolean
+    ) => {
+      for (const chunk of this.chunks(group, this.fetchChunkSize)) {
+        const tuples = sql.join(
+          chunk.map(
+            (p) =>
+              sql`(${sql.string(String(p.id))}, ${sql.string(p.project_id)})`
+          ),
+          ', '
+        );
+        try {
+          // Qualify with `p.`: a bare `last_seen_at` resolves to the aggregate
+          // alias and is illegal in WHERE (ILLEGAL_AGGREGATION).
+          const rows = await this.chQuery<IClickhouseProfile>(
+            sql`SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
+            FROM ${sql.id(TABLE_NAMES.profiles)} AS p
+            WHERE (p.id, p.project_id) IN (${tuples})
+            ${withDateFilter ? sql`AND p.last_seen_at > now() - INTERVAL 2 DAY` : sql.empty}
+            GROUP BY p.id, p.project_id`
+          );
+          for (const row of rows) {
+            result.set(`${row.project_id}:${row.id}`, row);
+          }
+        } catch (error) {
+          this.logger.warn(
+            { err: error, chunkSize: chunk.length },
+            'Failed to batch fetch profiles from Clickhouse, proceeding without existing data'
+          );
+        }
+      }
+    };
+
+    await Promise.all([
+      fetchGroup(external, false),
+      fetchGroup(nonExternal, true),
+    ]);
+
+    return result;
+  }
+
+  protected getRedisListKey(): string {
+    return this.redisKey;
+  }
+
+  async processBuffer() {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  private async processBatch(): Promise<number> {
+    const lrangeStart = performance.now();
+    const rawProfiles = await this.redis.lrange(
+      this.redisKey,
+      0,
+      this.batchSize - 1
+    );
+    const lrangeMs = performance.now() - lrangeStart;
+
+    if (rawProfiles.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return 0;
+    }
+
+    // Yields to the event loop periodically so concurrent add() calls and
+    // BullMQ heartbeats progress: deepMergeObjects on nested `properties` is
+    // the hottest CPU stage of any buffer. Narrow band: parse + deep merge
+    // is a heavy loop.
+    const mergeYieldEvery = this.getYieldInterval(rawProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
+    const mergedInBatch = new Map<string, IClickhouseProfile>();
+    for (let i = 0; i < rawProfiles.length; i++) {
+      const profile = getSafeJson<IClickhouseProfile>(rawProfiles[i]!);
+      if (!profile) {
+        continue;
+      }
+      const key = `${profile.project_id}:${profile.id}`;
+      mergedInBatch.set(
+        key,
+        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile)
+      );
+      if ((i + 1) % mergeYieldEvery === 0) {
+        await this.yieldToEventLoop();
+      }
+    }
+
+    const uniqueProfiles = Array.from(mergedInBatch.values());
+
+    const cacheKeys = uniqueProfiles.map((p) =>
+      this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id })
+    );
+    const cacheResults = await this.redis.mget(...cacheKeys);
+
+    const existingByKey = new Map<string, IClickhouseProfile>();
+    const cacheMisses: IClickhouseProfile[] = [];
+    for (let i = 0; i < uniqueProfiles.length; i++) {
+      const uniqueProfile = uniqueProfiles[i];
+      if (uniqueProfile) {
+        const key = `${uniqueProfile.project_id}:${uniqueProfile.id}`;
+        const cached = cacheResults[i]
+          ? getSafeJson<IClickhouseProfile>(cacheResults[i]!)
+          : null;
+        if (cached) {
+          existingByKey.set(key, cached);
+        } else {
+          cacheMisses.push(uniqueProfile);
+        }
+      }
+    }
+
+    // Fetch cache misses from ClickHouse in bounded chunks, timed apart from
+    // ch.insert because the fetch can dominate flush time.
+    let chFetchMs: number | undefined;
+    if (cacheMisses.length > 0) {
+      const chFetchStart = performance.now();
+      const clickhouseResults =
+        await this.batchFetchFromClickhouse(cacheMisses);
+      chFetchMs = performance.now() - chFetchStart;
+      for (const [key, profile] of clickhouseResults) {
+        existingByKey.set(key, profile);
+      }
+    }
+
+    // Final merge: in-batch profile + existing (cache or ClickHouse), same
+    // band as the in-batch merge.
+    const finalYieldEvery = this.getYieldInterval(uniqueProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
+    const toInsert: IClickhouseProfile[] = [];
+    const multi = this.redis.multi();
+
+    for (let i = 0; i < uniqueProfiles.length; i++) {
+      const profile = uniqueProfiles[i]!;
+      const key = `${profile.project_id}:${profile.id}`;
+      const merged = this.mergeProfiles(
+        existingByKey.get(key) ?? null,
+        profile
+      );
+      toInsert.push(merged);
+      multi.set(
+        this.getProfileCacheKey({
+          projectId: profile.project_id,
+          profileId: profile.id,
+        }),
+        JSON.stringify(merged),
+        'EX',
+        this.ttlInSeconds
+      );
+      if ((i + 1) % finalYieldEvery === 0) {
+        await this.yieldToEventLoop();
+      }
+    }
+
+    const ch = this.resolveCh();
+    const chStart = performance.now();
+    await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
+      ch.insert({
+        table: TABLE_NAMES.profiles,
+        values: chunk,
+        format: 'JSONEachRow',
+        clickhouse_settings: this.getClickhouseSettings(),
+      })
+    );
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    multi.ltrim(this.redisKey, rawProfiles.length, -1);
+    await multi.exec();
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: rawProfiles.length,
+      phases: { lrangeMs, chFetchMs, chInsertMs, trimMs },
+    });
+    return rawProfiles.length;
+  }
+}

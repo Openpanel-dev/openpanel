@@ -9,7 +9,7 @@ const config = {
     unoptimized: true,
     domains: ['localhost', 'openpanel.dev', 'api.openpanel.dev'],
   },
-  serverExternalPackages: ['@hyperdx/node-opentelemetry', '@openpanel/geo', 'shiki'],
+  serverExternalPackages: ['@hyperdx/node-opentelemetry', 'shiki'],
   redirects: [
     {
       source: '/articles/top-7-open-source-web-analytics-tools',

@@ -3,12 +3,12 @@ import type { IconProps } from './types';
 export function RestIcon({ className }: IconProps) {
   return (
     <svg
-      width="512"
+      className={className}
+      fill="none"
       height="513"
       viewBox="0 0 512 513"
-      fill="none"
+      width="512"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
     >
       <path
         d="M346.706 381.093H140.062C134.263 381.093 129.513 376.342 129.513 370.544V164.459C129.513 160.616 126.369 157.473 122.527 157.473C118.685 157.473 115.541 160.616 115.541 164.459V370.544C115.541 384.097 126.509 395.065 140.062 395.065H346.706C350.548 395.065 353.692 391.921 353.692 388.079C353.692 384.236 350.618 381.093 346.706 381.093Z"
