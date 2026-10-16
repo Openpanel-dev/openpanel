@@ -87,16 +87,12 @@ function Pages({
         setApi={setApi}
       >
         <CarouselContent className="h-full">
-          {series.map((serie, index) => (
+          {series.map((serie) => (
             <CarouselItem
-              className={cn(
-                'h-full pl-0',
-                CARD_BASIS[perPage],
-                index % perPage !== 0 && 'border-l'
-              )}
+              className={cn('h-full pl-0', CARD_BASIS[perPage])}
               key={serie.id}
             >
-              <MetricCard metric={metric} serie={serie} unit={unit} />
+              <MetricCard fill metric={metric} serie={serie} unit={unit} />
             </CarouselItem>
           ))}
         </CarouselContent>

@@ -27,20 +27,13 @@ export function Chart({ data }: Props) {
   return (
     <div
       className={cn(
-        'grid grid-cols-1 gap-4',
-        isEditMode && 'md:grid-cols-2 lg:grid-cols-3'
+        'card grid grid-cols-2 overflow-hidden rounded-md',
+        isEditMode && 'md:grid-cols-4'
       )}
     >
-      {series.map((serie) => {
-        return (
-          <MetricCard
-            key={serie.id}
-            metric={metric}
-            serie={serie}
-            unit={unit}
-          />
-        );
-      })}
+      {series.map((serie) => (
+        <MetricCard key={serie.id} metric={metric} serie={serie} unit={unit} />
+      ))}
     </div>
   );
 }
