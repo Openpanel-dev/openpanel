@@ -22,9 +22,14 @@ const TILE_DEFAULT_SIZE = { w: 6, h: 4 } as const;
 // drag would hijack scrolling on a phone.
 const SINGLE_COLUMN_MAX_WIDTH = 640;
 
-type DashboardReport = NonNullable<IServiceReport>;
+export type DashboardReport = NonNullable<IServiceReport>;
+/** What placing a report on the grid needs; the dashboards list has reports in a lighter shape than the editor. */
+export interface LayoutSource {
+  id: string;
+  layout?: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'> | null;
+}
 
-function toLayout(reports: DashboardReport[]): Layout {
+export function toLayout(reports: LayoutSource[]): Layout {
   return reports.map((report, index) => ({
     i: report.id,
     x: report.layout?.x ?? (index % 2) * TILE_DEFAULT_SIZE.w,
