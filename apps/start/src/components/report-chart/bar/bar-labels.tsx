@@ -14,7 +14,13 @@ import { cn } from '@/utils/cn';
  * HTML over the chart, like bklit's own axes, because the bar y-axis only
  * renders short plain-text labels.
  */
-export function BarLabels({ rowsById }: { rowsById: Map<string, BarRow> }) {
+export function BarLabels({
+  rowsById,
+  comparesPrevious,
+}: {
+  rowsById: Map<string, BarRow>;
+  comparesPrevious: boolean;
+}) {
   const { containerRef, barScale, margin, data, hoveredBarIndex } = useChart();
   const number = useNumber();
   const {
@@ -73,6 +79,9 @@ export function BarLabels({ rowsById }: { rowsById: Map<string, BarRow> }) {
               <span className="font-mono font-semibold text-sm">
                 {number.short(row.count)}
               </span>
+              {comparesPrevious && !row.previous && row.count > 0 && (
+                <DeltaChip size="sm">New</DeltaChip>
+              )}
               {row.previousDiff?.diff != null && (
                 <DeltaChip
                   size="sm"

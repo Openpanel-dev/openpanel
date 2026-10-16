@@ -396,8 +396,9 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
   const number = useNumber();
   const hasValue = row.value != null;
   const prev = row.previous ?? null;
-  const showPrev = prev != null && prev !== 0;
-  const showDiff = row.showDiff !== false && showPrev;
+  const showPrev = prev != null;
+  // A change from zero has no percentage.
+  const showDiff = row.showDiff !== false && showPrev && prev !== 0;
   const diff =
     showDiff && hasValue ? getPreviousMetric(row.value!, prev) : null;
   const formatValue = (value: number) =>

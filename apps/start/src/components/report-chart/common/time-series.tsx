@@ -94,10 +94,11 @@ export function useTimeSeriesChart({
           icon: <SerieIcon name={payload.names} />,
           label: <SerieName name={payload.names} />,
           value: payload.count,
-          previous: payload.previous?.value,
+          // An empty previous period comes back without a value; it is 0, not unknown.
+          previous: previous ? (payload.previous?.value ?? 0) : undefined,
           format: formatValue,
         })),
-    [series, formatValue]
+    [series, formatValue, previous]
   );
   const tooltipExtra = useCallback(
     (point: TimeSeriesPoint) => {

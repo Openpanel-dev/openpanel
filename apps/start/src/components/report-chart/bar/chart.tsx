@@ -186,7 +186,7 @@ function BarRows({
             lineCap={4}
           />
         )}
-        <BarLabels rowsById={rowsById} />
+        <BarLabels comparesPrevious={Boolean(previous)} rowsById={rowsById} />
         <OPChartTooltip<BarRow>
           datePill={false}
           rows={(row) => [
