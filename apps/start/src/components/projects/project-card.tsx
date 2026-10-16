@@ -21,7 +21,7 @@ export function ProjectCardRoot({
   return (
     <div
       className={cn(
-        'card relative hover:-translate-y-px hover:shadow-sm',
+        'card relative hover:z-10 hover:-translate-y-px hover:shadow-sm',
         className
       )}
     >

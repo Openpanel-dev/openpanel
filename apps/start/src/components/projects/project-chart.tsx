@@ -14,7 +14,10 @@ const REVENUE_AXIS_ID = 'right';
 // Revenue bars sit in the lower half so the sessions line stays readable above them.
 const REVENUE_HEADROOM = 2;
 const REVENUE_MAX_BAR_SIZE = 20;
-const REVENUE_BAR_RADIUS = 5;
+// Thin bars: a larger radius rounds every corner into a pill.
+const REVENUE_BAR_RADIUS = 2;
+const HOVER_DOT_SIZE = 3;
+const HOVER_DOT_HALO_SCALE = 1.8;
 const LINE_WIDTH = 2;
 const AXIS_TICKS = 2;
 
@@ -83,6 +86,9 @@ export function ProjectChart({
           strokeWidth={LINE_WIDTH}
         />
         <OPChartTooltip<ChartPoint>
+          datePill={false}
+          dotHaloScale={HOVER_DOT_HALO_SCALE}
+          dotSize={HOVER_DOT_SIZE}
           rows={(point) => [
             {
               color: SESSIONS_COLOR,
