@@ -14,7 +14,8 @@ import {
 } from './reports-helpers';
 
 const SHOP = 'acme-shop';
-const DASHBOARD_URL = 'https://main.local.openpanel.cc';
+const DASHBOARD_URL =
+  process.env.DASHBOARD_URL ?? 'https://main.local.openpanel.cc';
 const PASSWORD = 'e2e-share-secret';
 
 interface ShareSettings {
