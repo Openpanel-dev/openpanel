@@ -8,7 +8,6 @@ import {
 import { useReportChartContext } from '../context';
 import { ComposedChart } from '@/components/charts/composed-chart';
 import { Grid } from '@/components/charts/grid';
-import { OPDatePill } from '@/components/charts/op-date-pill';
 import { OPReferences } from '@/components/charts/op-references';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { SeriesBar } from '@/components/charts/series-bar';
@@ -81,10 +80,8 @@ export function Chart({ data, series }: Props) {
           references={chart.references}
           rows={chart.tooltipRows}
           showCrosshair={false}
-          showDatePill={false}
           showDots={false}
         />
-        <OPDatePill interval={chart.interval} />
         <PointClick<TimeSeriesPoint> onClick={chart.menu.openMenu} />
       </ComposedChart>
     </TimeSeriesFrame>

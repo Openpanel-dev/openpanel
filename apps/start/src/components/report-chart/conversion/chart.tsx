@@ -9,7 +9,6 @@ import { POINT_MARKER, previousPeriodColor } from '../common/time-series';
 import { useReportChartContext } from '../context';
 import { Grid } from '@/components/charts/grid';
 import { Line, LineChart } from '@/components/charts/line-chart';
-import { OPDatePill } from '@/components/charts/op-date-pill';
 import { OPReferences } from '@/components/charts/op-references';
 import {
   OPChartTooltip,
@@ -173,10 +172,8 @@ export function Chart({
             references={references.data}
             rows={tooltipRows}
             showCrosshair
-            showDatePill={false}
             showDots
           />
-          <OPDatePill interval={interval} />
           {!shareId && <PointClick<ConversionPoint> onClick={addReference} />}
         </LineChart>
         <div

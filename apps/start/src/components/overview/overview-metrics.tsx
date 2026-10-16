@@ -8,7 +8,6 @@ import { ComposedChart } from '../charts/composed-chart';
 import { Grid } from '../charts/grid';
 import { Line } from '../charts/line';
 import { useDashedTail } from '../charts/op-dashed-tail';
-import { OPDatePill } from '../charts/op-date-pill';
 import { OPReferences } from '../charts/op-references';
 import { OPReferrerSpikes } from '../charts/op-referrer-spikes';
 import { OPSeriesDots } from '../charts/op-series-dots';
@@ -385,8 +384,6 @@ function Chart({
           strokeWidth={1.5}
         />
       )}
-
-      <OPDatePill interval={interval} />
       <OPSeriesDots
         dots={[
           { dataKey: activeMetric.key, color: primaryColor },
@@ -442,7 +439,6 @@ function Chart({
 
           return rows;
         }}
-        showDatePill={false}
         showDots={false}
         spikes={flatSpikes}
       />

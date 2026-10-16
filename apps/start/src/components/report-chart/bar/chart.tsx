@@ -188,6 +188,7 @@ function BarRows({
         )}
         <BarLabels rowsById={rowsById} />
         <OPChartTooltip<BarRow>
+          datePill={false}
           rows={(row) => [
             {
               color: BAR_COLOR,

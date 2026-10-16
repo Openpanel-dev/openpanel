@@ -4,6 +4,7 @@ import { getPreviousMetric } from '../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { useChart } from './chart-context';
 import type { ChartMarker } from './markers/marker-group';
+import { OPDatePill } from './op-date-pill';
 import { type OPReferenceItem, toChartMarkers } from './op-references';
 import type { OPReferrerSpikeItem } from './op-referrer-spikes';
 import { ChartTooltip, type ChartTooltipProps } from './tooltip/chart-tooltip';
@@ -68,6 +69,8 @@ export interface OPChartTooltipProps<T extends Record<string, unknown>>
   referencesLimit?: number;
   /** Auto-detected referrer spikes; the matching bucket's spike is shown below. */
   spikes?: OPReferrerSpikeItem[] | null;
+  /** Show the hovered date (or category) in a pill on the x axis. Default: true. */
+  datePill?: boolean;
 }
 
 export function OPChartTooltip<T extends Record<string, unknown>>({
@@ -79,6 +82,7 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   references,
   referencesLimit = 3,
   spikes,
+  datePill = true,
   ...rest
 }: OPChartTooltipProps<T>) {
   const referenceMarkers = useMemo(
@@ -87,22 +91,26 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   );
 
   return (
-    <ChartTooltip
-      {...rest}
-      content={({ point }) => (
-        <OPTooltipBody
-          extra={extra ? extra(point as T) : null}
-          interval={interval}
-          minWidth={minWidth}
-          point={point as T}
-          referenceMarkers={referenceMarkers}
-          referencesLimit={referencesLimit}
-          rows={rows(point as T)}
-          spikes={spikes ?? null}
-          title={title ? title(point as T) : undefined}
-        />
-      )}
-    />
+    <>
+      <ChartTooltip
+        {...rest}
+        content={({ point }) => (
+          <OPTooltipBody
+            extra={extra ? extra(point as T) : null}
+            interval={interval}
+            minWidth={minWidth}
+            point={point as T}
+            referenceMarkers={referenceMarkers}
+            referencesLimit={referencesLimit}
+            rows={rows(point as T)}
+            spikes={spikes ?? null}
+            title={title ? title(point as T) : undefined}
+          />
+        )}
+        showDatePill={false}
+      />
+      {datePill && <OPDatePill interval={interval} />}
+    </>
   );
 }
 

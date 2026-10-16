@@ -99,6 +99,7 @@ export function Chart({ data }: Props) {
           strokeWidth={1.5}
         />
         <OPChartTooltip<RetentionPoint>
+          datePill={false}
           rows={(point) => [
             {
               color: RETENTION_COLOR,
@@ -112,7 +113,6 @@ export function Chart({ data }: Props) {
             },
           ]}
           showCrosshair
-          showDatePill={false}
           showDots
           title={(point) => (
             <span className="capitalize">
