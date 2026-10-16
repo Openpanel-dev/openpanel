@@ -1,7 +1,7 @@
 import { round } from '@openpanel/shared';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useElementSize } from 'usehooks-ts';
+import { getLabelNames } from '../common/label-names';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useElementSize } from '@/hooks/use-element-size';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -67,7 +68,7 @@ export function Chart({ data }: Props) {
     report: { metric, limit, previous },
   } = useReportChartContext();
   const isTile = layout === 'fill';
-  const [sizeRef, { width = 0, height = 0 }] = useElementSize();
+  const [sizeRef, { width, height }] = useElementSize();
   const { series } = useVisibleSeries(data, { limit: ALL_SERIES_LIMIT });
   const total = data.metrics.sum || 1;
 
@@ -78,16 +79,12 @@ export function Chart({ data }: Props) {
           serie.names.some((name) => name.toLowerCase().includes(query))
         )
       : series;
-    const isSharedEvent =
-      new Set(series.map((serie) => serie.names[0])).size === 1;
+    const labelNames = getLabelNames(series);
     return sortSeries(matching, sortBy).map(
       (serie): BarRow => ({
         id: serie.id,
         names: serie.names,
-        labelNames:
-          isSharedEvent && serie.names.length > 1
-            ? serie.names.slice(1)
-            : serie.names,
+        labelNames: labelNames(serie.names),
         count: serie.metrics.sum,
         previous: previous
           ? serie.metrics.previous?.[metric]?.value
