@@ -24,6 +24,7 @@ Last synced from the registry on 2026-10-15. Fetch every item (and its `registry
 | 21 | tooltip dot for a missing value sits at the top | **open**: re-apply in `tooltip/chart-tooltip.tsx` |
 | 22 | no stacked areas | **open**: re-apply `baselineKey` in `area.tsx` |
 | 23 | sankey links have no gap | **open**: re-apply `linkGap` in `sankey/sankey-link.tsx` |
+| 24 | no fixed y domain (percent axes reach 120%) | **open**: re-apply `yDomain` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
 
 `chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
 
@@ -634,5 +635,23 @@ Links that leave or enter a node side by side read as one block, most of all whe
 **Fix (applied locally)**
 
 `<SankeyLink linkGap={n}>` takes `n` pixels off every link's stroke width, leaving a hairline between neighbouring bands. The report sankey passes 2.
+
+`shadcn add` reverts.
+
+---
+
+## 24. The y domain always gets 10% headroom
+
+**Symptom**
+
+A chart of percentages tops out at 120%, which reads as if conversion could exceed 100%.
+
+**Cause**
+
+`resolveTimeSeriesYDomain` in `time-series-chart-shell.tsx` returns `[0, max * 1.1]` and `niceYDomain` rounds it; there is no way to pin the domain.
+
+**Fix (applied locally)**
+
+`TimeSeriesChartInner` and `LineChart` take `yDomain?: [number, number]`, used as is when set. The conversion report passes `[0, 100]`.
 
 `shadcn add` reverts.

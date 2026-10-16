@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import type { LineConfig, Margin } from './chart-context';
 import { ChartLoadingLabel } from './chart-loading-label';
 import { ParentSize } from './chart-parent-size';
@@ -25,6 +24,7 @@ import {
 } from './chart-phase';
 import { Line, type LineProps } from './line';
 import { TimeSeriesChartInner } from './time-series-chart-shell';
+import { cn } from '@/lib/utils';
 
 export interface LineChartProps {
   /** Data array - each item should have a date field and numeric values */
@@ -63,6 +63,8 @@ export interface LineChartProps {
   onPhaseChange?: (phase: ChartPhase) => void;
   /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
   formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain, used as is: no headroom and no rounding. */
+  yDomain?: [number, number];
   /** Child components (Line, Grid, ChartTooltip, etc.) */
   children: ReactNode;
 }
@@ -160,6 +162,7 @@ interface ChartInnerProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPhaseChange: (phase: ChartPhase) => void;
   formatDateLabel?: (date: Date) => string;
+  yDomain?: [number, number];
 }
 
 function ChartInner({
@@ -183,6 +186,7 @@ function ChartInner({
   containerRef,
   onPhaseChange,
   formatDateLabel,
+  yDomain,
 }: ChartInnerProps) {
   const lines = useMemo(() => extractLineConfigs(children), [children]);
 
@@ -207,6 +211,7 @@ function ChartInner({
       xDataKey={xDataKey}
       xDomain={xDomain}
       xDomainSlotCount={xDomainSlotCount}
+      yDomain={yDomain}
       yDomainTween={yDomainTween}
       yDomainTweenDuration={yDomainTweenDuration}
     >
@@ -235,6 +240,7 @@ export function LineChart({
   style,
   onPhaseChange,
   formatDateLabel,
+  yDomain,
   children,
 }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -288,6 +294,7 @@ export function LineChart({
             xDataKey={xDataKey}
             xDomain={xDomain}
             xDomainSlotCount={xDomainSlotCount}
+            yDomain={yDomain}
             yDomainTween={yDomainTween}
             yDomainTweenDuration={yDomainTweenDuration}
           >

@@ -28,6 +28,7 @@ import { getChartColor } from '@/utils/theme';
 const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
 const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
 const MARKERS_MAX_POINTS = 30;
+const PERCENT_DOMAIN: [number, number] = [0, 100];
 
 type ConversionSeries = RouterOutputs['chart']['conversion']['current'];
 type ConversionPoint = Record<string, unknown> & { date: string };
@@ -57,7 +58,13 @@ export function Chart({
     })
   );
   const averageRate = average(
-    series.map((serie) => average(serie.data.map((item) => item.rate)))
+    series.map((serie) =>
+      average(
+        serie.data.map((item) => item.rate),
+        true
+      )
+    ),
+    true
   );
   const averageColor = getChartColor(series.length);
   const rechartData = useConversionRechartDataModel(series);
@@ -128,6 +135,7 @@ export function Chart({
           margin={hideXAxis && hideYAxis ? BARE_MARGIN : AXIS_MARGIN}
           style={{ touchAction: 'pan-y' }}
           xDataKey="date"
+          yDomain={PERCENT_DOMAIN}
         >
           <Grid horizontal />
           {!hideYAxis && (

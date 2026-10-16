@@ -181,6 +181,8 @@ export interface TimeSeriesChartInnerProps {
   onPhaseChange?: (phase: ChartPhase) => void;
   /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
   formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain, used as is: no headroom and no rounding. */
+  yDomain?: [number, number];
 }
 
 export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
@@ -222,6 +224,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   tweenYDomainOnXDomainChange = false,
   onPhaseChange,
   formatDateLabel = shortDateFmt.format,
+  yDomain,
 }: TimeSeriesChartInnerProps) {
   // Unique per instance — shared clipPath ids crop later charts (#226).
   const uniqueClipPathId = `${clipPathId}-${useId().replace(/:/g, '')}`;
@@ -231,6 +234,9 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
 
   const resolveYDomain = useCallback(
     (sourceData: Record<string, unknown>[], dataKeys: string[]) => {
+      if (yDomain) {
+        return yDomain;
+      }
       const axisGroups = groupLinesByYAxisId(lines);
       const usesDefaultOnly =
         axisGroups.size === 1 && axisGroups.has(DEFAULT_Y_AXIS_ID);
@@ -240,7 +246,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
           : undefined;
       return resolveTimeSeriesYDomain(sourceData, dataKeys, domainMax);
     },
-    [lines, yScaleDomainMax]
+    [lines, yScaleDomainMax, yDomain]
   );
 
   const skeletonData = useMemo(() => {
