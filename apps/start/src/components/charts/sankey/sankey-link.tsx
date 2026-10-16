@@ -55,6 +55,8 @@ export interface SankeyLinkProps {
   strokeOpacity?: number;
   /** Opacity when another link/node is hovered. Default: 0.1 */
   fadedOpacity?: number;
+  /** Pixels taken off each link's width, so adjacent links read as separate bands. Default: 0 */
+  linkGap?: number;
   /** Use gradient from source to target color. Default: true */
   useGradient?: boolean;
   /** Custom function to get node color (for gradient) */
@@ -173,6 +175,7 @@ export function SankeyLink({
   stroke,
   strokeOpacity = 0.5,
   fadedOpacity = 0.1,
+  linkGap = 0,
   useGradient = true,
   getNodeColor,
   getLinkColor,
@@ -267,7 +270,7 @@ export function SankeyLink({
       {/* Links */}
       {links.map((link, index) => {
         const path = createPath(link);
-        const linkWidth = link.width ?? 1;
+        const linkWidth = Math.max(1, (link.width ?? 1) - linkGap);
 
         // Skip if path is empty
         if (!path || path.trim() === '') {

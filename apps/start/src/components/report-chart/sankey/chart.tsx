@@ -13,15 +13,23 @@ import {
 import { useElementSize } from '@/hooks/use-element-size';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
 import { truncate } from '@/utils/truncate';
 
 // Roughly one character of the 12px label font, to fit labels in their margin.
 const LABEL_CHAR_WIDTH = 7;
 const LABEL_SHARE = 0.2;
 const LABEL_MAX_WIDTH = 170;
-const VERTICAL_MARGIN = 16;
-const NODE_WIDTH = 10;
-const NODE_PADDING = 14;
+const VERTICAL_MARGIN = 24;
+const NODE_WIDTH = 12;
+const NODE_PADDING = 28;
+const NODE_RADIUS = 4;
+const LINK_GAP = 2;
+const LINK_OPACITY = 0.45;
+// Where a session starts or ends is context, not a step: drawn muted so the
+// flow between real events stands out.
+const SESSION_BOUNDARIES = new Set(['session_start', 'session_end']);
+const BOUNDARY_COLOR = 'var(--def-300)';
 
 interface ReportSankeyData {
   nodes: Array<{
@@ -57,6 +65,13 @@ export function Chart({ data }: { data: ReportSankeyData }) {
       data.nodes.map((node, index) => [node.id, index])
     );
     const targets = new Set(data.links.map((link) => link.target));
+    const colorByLabel = new Map<string, string>();
+    for (const node of data.nodes) {
+      const label = node.label || node.id;
+      if (!(SESSION_BOUNDARIES.has(label) || colorByLabel.has(label))) {
+        colorByLabel.set(label, getChartColor(colorByLabel.size));
+      }
+    }
     return {
       nodes: data.nodes.map(
         (node): SankeyNodeInfo => ({
@@ -64,7 +79,7 @@ export function Chart({ data }: { data: ReportSankeyData }) {
           // bklit counts a source by its outgoing flow, every other node by its incoming flow.
           category: targets.has(node.id) ? undefined : 'source',
           label: node.label || node.id,
-          color: node.nodeColor,
+          color: colorByLabel.get(node.label || node.id) ?? BOUNDARY_COLOR,
           step: node.step,
         })
       ),
@@ -116,8 +131,12 @@ export function Chart({ data }: { data: ReportSankeyData }) {
             nodePadding={NODE_PADDING}
             nodeWidth={NODE_WIDTH}
           >
-            <SankeyLink getNodeColor={nodeColor} strokeOpacity={0.3} />
-            <SankeyNode getNodeColor={nodeColor} lineCap={2} />
+            <SankeyLink
+              getNodeColor={nodeColor}
+              linkGap={LINK_GAP}
+              strokeOpacity={LINK_OPACITY}
+            />
+            <SankeyNode getNodeColor={nodeColor} lineCap={NODE_RADIUS} />
             <SankeyTooltip
               linkContent={({ link }) => {
                 const source = link.source as unknown as SankeyNodeInfo & {

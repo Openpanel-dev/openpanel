@@ -23,6 +23,7 @@ Last synced from the registry on 2026-10-15. Fetch every item (and its `registry
 | 20 | x-axis date labels are always `Sep 25` | **open**: re-apply `formatDateLabel` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
 | 21 | tooltip dot for a missing value sits at the top | **open**: re-apply in `tooltip/chart-tooltip.tsx` |
 | 22 | no stacked areas | **open**: re-apply `baselineKey` in `area.tsx` |
+| 23 | sankey links have no gap | **open**: re-apply `linkGap` in `sankey/sankey-link.tsx` |
 
 `chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
 
@@ -625,5 +626,19 @@ Report area charts are stacked (each series on top of the ones before it); bklit
 **Fix (applied locally)**
 
 `<Area baselineKey="…">` reads each point's baseline from that key and passes it to visx's `AreaClosed` as `y0`. The report area chart pre-computes a `:stack` top and `:stack-base` per series (`report-chart/area/chart.tsx`, `stackSeries`) and plots the tops, so the y-domain and the tooltip dots follow the stacked values while the tooltip rows show the raw counts.
+
+`shadcn add` reverts.
+
+---
+
+## 23. Sankey links touch, so neighbouring flows merge
+
+**Symptom**
+
+Links that leave or enter a node side by side read as one block, most of all when the nodes share a colour.
+
+**Fix (applied locally)**
+
+`<SankeyLink linkGap={n}>` takes `n` pixels off every link's stroke width, leaving a hairline between neighbouring bands. The report sankey passes 2.
 
 `shadcn add` reverts.
