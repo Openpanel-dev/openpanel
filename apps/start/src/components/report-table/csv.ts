@@ -10,10 +10,15 @@ export function buildCsv<Row>(
   identity: ReportRowIdentity<Row>,
   columns: ReportColumn<Row>[]
 ) {
-  const header = [identity.header, ...columns.map((column) => column.header)];
+  // A column without a header holds row actions, not data.
+  const dataColumns = columns.filter((column) => column.header !== '');
+  const header = [
+    identity.header,
+    ...dataColumns.map((column) => column.header),
+  ];
   const lines = rows.map((row) => [
     identity.searchText(row),
-    ...columns.map((column) => String(column.value(row) ?? '')),
+    ...dataColumns.map((column) => String(column.value(row) ?? '')),
   ]);
   return [header, ...lines]
     .map((line) => line.map(escapeCell).join(','))

@@ -50,6 +50,9 @@ interface ReportDataTableProps<Row> {
   /** Enables the "Download CSV" button, named after this. */
   csvFilename?: string;
   searchable?: boolean;
+  /** Clicking a row reports its id; `activeId` highlights the chosen one. */
+  onRowClick?: (id: string) => void;
+  activeId?: string;
   className?: string;
 }
 
@@ -68,6 +71,8 @@ export function ReportDataTable<Row>({
   onUnselectAll,
   csvFilename,
   searchable = true,
+  onRowClick,
+  activeId,
   className,
 }: ReportDataTableProps<Row>) {
   const formatCell = useCellFormatter();
@@ -142,17 +147,24 @@ export function ReportDataTable<Row>({
     const id = row.id;
     const isSelected = selectedIds?.has(id) ?? true;
     const color = identity.color?.(row.original);
+    const RowTag = onRowClick ? 'button' : 'div';
     return (
-      <div
+      <RowTag
         className={cn(
-          'group/row flex border-border border-b transition-colors hover:bg-def-100',
-          !isSelected && 'opacity-50'
+          'group/row flex w-full border-border border-b text-left transition-colors hover:bg-def-100',
+          !isSelected && 'opacity-50',
+          activeId === id && 'bg-def-100'
         )}
         key={id}
+        onClick={onRowClick ? () => onRowClick(id) : undefined}
         style={{ height: ROW_HEIGHT, minWidth: totalWidth, ...style }}
+        type={onRowClick ? 'button' : undefined}
       >
         <div
-          className="sticky left-0 z-10 flex shrink-0 items-center gap-2 bg-card px-3 group-hover/row:bg-def-100"
+          className={cn(
+            'sticky left-0 z-10 flex shrink-0 items-center gap-2 bg-card px-3 group-hover/row:bg-def-100',
+            activeId === id && 'bg-def-100'
+          )}
           style={{ width: identityWidth }}
         >
           {onToggleRow && (
@@ -160,6 +172,7 @@ export function ReportDataTable<Row>({
               aria-label={`Show ${identity.searchText(row.original)}`}
               checked={isSelected}
               onCheckedChange={() => onToggleRow(id)}
+              onClick={(event) => event.stopPropagation()}
             />
           )}
           {color && (
@@ -181,7 +194,7 @@ export function ReportDataTable<Row>({
             row={row.original}
           />
         ))}
-      </div>
+      </RowTag>
     );
   };
 
