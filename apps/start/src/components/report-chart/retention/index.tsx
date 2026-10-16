@@ -22,8 +22,7 @@ export function ReportRetentionChart() {
       (item.filters ?? []).filter((filter) => filter.name !== 'name')
     ),
   ];
-  const isEnabled =
-    firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
+  const hasEvents = firstEvent.length > 0 && secondEvent.length > 0;
 
   const retentionOptions =
     report.options?.type === 'retention' ? report.options : undefined;
@@ -47,12 +46,12 @@ export function ReportRetentionChart() {
       },
       {
         placeholderData: keepPreviousData,
-        enabled: isEnabled,
+        enabled: hasEvents && !isLazyLoading,
       }
     )
   );
 
-  if (!isEnabled) {
+  if (!hasEvents) {
     return <Disabled />;
   }
 
