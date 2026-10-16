@@ -2,7 +2,6 @@
 
 import { motion } from 'motion/react';
 import { memo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 import {
   defaultHeatmapColorScale,
   type HeatmapLevelStyles,
@@ -15,6 +14,7 @@ import {
   isHeatmapHoverEffectEnabled,
   resolveHeatmapHoverStyle,
 } from './heatmap-utils';
+import { cn } from '@/lib/utils';
 
 export const HEATMAP_LEGEND_LEVELS = [0, 1, 2, 3, 4] as const;
 

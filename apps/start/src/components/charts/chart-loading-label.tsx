@@ -1,13 +1,13 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { cn } from '@/lib/utils';
 import { ShimmeringText } from '../shimmering-text';
 import {
   LINE_LOADING_PULSE_EASE,
   LOADING_LABEL_EXIT_S,
   LOADING_LABEL_EXIT_Y_PX,
 } from './line-loading-timing';
+import { cn } from '@/lib/utils';
 
 export interface ChartLoadingLabelProps {
   /** Label shown centered over the chart. */

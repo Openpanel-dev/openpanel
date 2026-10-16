@@ -4,9 +4,9 @@ import { motion, useSpring } from 'motion/react';
 import type { RefObject } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { type SpringConfig, useChartConfig } from '../chart-config-context';
 import { chartCssVars } from '../chart-context';
+import { cn } from '@/lib/utils';
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */

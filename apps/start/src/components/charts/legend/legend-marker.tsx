@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { useLegendItem } from './legend-context';
+import { cn } from '@/lib/utils';
 
 export interface LegendMarkerProps {
   /** Marker size class. Default: "h-2.5 w-2.5" */

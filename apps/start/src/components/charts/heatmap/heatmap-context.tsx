@@ -13,7 +13,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import type { Margin } from '../chart-context';
 import type { ChartPhase, ChartStatus } from '../chart-phase';
 import {
@@ -24,6 +23,7 @@ import type {
   HeatmapSeparatorLayout,
   HeatmapWeekStartDay,
 } from './heatmap-utils';
+import { cn } from '@/lib/utils';
 
 type HeatmapTimeScale = ReturnType<typeof scaleTime<number>>;
 type HeatmapLinearScale = ReturnType<typeof scaleLinear<number>>;

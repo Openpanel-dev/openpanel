@@ -1,8 +1,8 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { intFmt } from '../chart-formatters';
 import { useLegendItem } from './legend-context';
+import { cn } from '@/lib/utils';
 
 export interface LegendValueProps {
   /** Value class name. Default: "text-sm tabular-nums" */

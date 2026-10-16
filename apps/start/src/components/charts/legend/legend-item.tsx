@@ -1,8 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 import { useLegend, useLegendItem } from './legend-context';
+import { cn } from '@/lib/utils';
 
 export interface LegendItemProps {
   /** Container class name */

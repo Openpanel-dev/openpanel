@@ -2,7 +2,6 @@
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { useHeatmap } from './heatmap-context';
 import {
   formatHeatmapYAxisLabel,
@@ -12,6 +11,7 @@ import {
   resolveHeatmapRowOpacity,
   shouldShowHeatmapYAxisTick,
 } from './heatmap-utils';
+import { cn } from '@/lib/utils';
 
 export interface HeatmapYAxisProps {
   /** Additional class name for labels */

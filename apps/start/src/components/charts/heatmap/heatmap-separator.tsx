@@ -2,7 +2,6 @@
 
 import { memo, useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
 import { useHeatmap } from './heatmap-context';
 import {
   buildHeatmapSeparatorGradientStops,
@@ -12,6 +11,7 @@ import {
   type HeatmapSeparatorStrokeStyle,
   resolveHeatmapSeparatorStrokeDasharray,
 } from './heatmap-utils';
+import { cn } from '@/lib/utils';
 
 /** Marker for reliably identifying {@link HeatmapSeparator} in chart child trees. */
 export const HEATMAP_SEPARATOR_MARKER = '__isHeatmapSeparator' as const;

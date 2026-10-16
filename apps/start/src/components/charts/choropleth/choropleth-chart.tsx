@@ -14,7 +14,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { ParentSize } from '../chart-parent-size';
 import {
   type ChoroplethFeature,
@@ -29,6 +28,7 @@ import {
 import { ChoroplethFeature as ChoroplethFeatureLayer } from './choropleth-feature';
 import { ChoroplethGraticule as ChoroplethGraticuleLayer } from './choropleth-graticule';
 import { ChoroplethTooltip as ChoroplethTooltipLayer } from './choropleth-tooltip';
+import { cn } from '@/lib/utils';
 
 export interface ChoroplethChartProps {
   /** GeoJSON FeatureCollection data */

@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { ParentSize } from '../chart-parent-size';
 import {
   type Margin,
@@ -21,6 +20,7 @@ import {
   SankeyProvider,
   type SankeyTooltipData,
 } from './sankey-context';
+import { cn } from '@/lib/utils';
 
 export interface SankeyData {
   nodes: SankeyNodeDatum[];

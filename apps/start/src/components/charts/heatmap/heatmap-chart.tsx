@@ -13,7 +13,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import type { Margin } from '../chart-context';
 import { ChartLoadingLabel } from '../chart-loading-label';
 import {
@@ -58,6 +57,7 @@ import {
   type HeatmapWeekStartDay,
   rotateHeatmapColumnBins,
 } from './heatmap-utils';
+import { cn } from '@/lib/utils';
 
 export type HeatmapLayout = 'fluid' | 'fill';
 

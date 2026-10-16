@@ -13,7 +13,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { DEFAULT_ANIMATION_EASING } from './animation';
 import type { BarProps } from './bar';
 import { topSquareCenterY } from './bar-squares-layout';
@@ -50,6 +49,7 @@ import {
   normalizeYAxisId,
   wrapSingleYScale,
 } from './y-axis-scales';
+import { cn } from '@/lib/utils';
 
 /** Skeleton bars to show when `status="loading"` and `data` is empty. */
 const FALLBACK_LOADING_BARS = 12;

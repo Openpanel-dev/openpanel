@@ -16,7 +16,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { ParentSize } from './chart-parent-size';
 import {
   defaultPieColors,
@@ -25,6 +24,7 @@ import {
   type PieData,
   PieProvider,
 } from './pie-context';
+import { cn } from '@/lib/utils';
 
 /** Default hover offset in pixels */
 export const DEFAULT_HOVER_OFFSET = 10;

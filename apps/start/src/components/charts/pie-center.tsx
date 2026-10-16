@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 import {
   chartCenterContainerClassName,
   chartCenterLabelClassName,
@@ -13,6 +12,7 @@ import {
   defaultChartStatFlowFormat,
 } from './chart-stat-flow';
 import { usePieHover, usePieStable } from './pie-context';
+import { cn } from '@/lib/utils';
 
 export interface PieCenterProps {
   /** Label shown below the value. Default: "Total" when not hovering */

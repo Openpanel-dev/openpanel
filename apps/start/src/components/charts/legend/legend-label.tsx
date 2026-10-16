@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { useLegendItem } from './legend-context';
+import { cn } from '@/lib/utils';
 
 export interface LegendLabelProps {
   /** Label class name. Default: "text-sm font-medium" */

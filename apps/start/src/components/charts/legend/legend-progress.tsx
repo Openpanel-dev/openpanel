@@ -1,8 +1,8 @@
 'use client';
 
 import { Progress } from '@base-ui/react/progress';
-import { cn } from '@/lib/utils';
 import { useLegendItem } from './legend-context';
+import { cn } from '@/lib/utils';
 
 export interface LegendProgressProps {
   /** Track class name */

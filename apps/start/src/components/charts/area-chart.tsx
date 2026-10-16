@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { cn } from '@/lib/utils';
 import { Area, type AreaProps } from './area';
 import type { LineConfig, Margin } from './chart-context';
 import { ChartLoadingLabel } from './chart-loading-label';
@@ -25,6 +24,7 @@ import {
 } from './chart-phase';
 import { PatternArea } from './pattern-area';
 import { TimeSeriesChartInner } from './time-series-chart-shell';
+import { cn } from '@/lib/utils';
 
 export interface AreaChartProps {
   /** Data array - each item should have a date field and numeric values */

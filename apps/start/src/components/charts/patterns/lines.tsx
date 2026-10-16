@@ -2,9 +2,10 @@
  * Ported from @visx/pattern 4.0.0 (https://github.com/airbnb/visx).
  * MIT License — Copyright (c) 2017-2018 Harrison Shoff. See ./LICENSE-visx-pattern.
  */
-import { cn } from '@/lib/utils';
+
 import { PatternOrientation, type PatternOrientationType } from './constants';
 import { Pattern } from './pattern';
+import { cn } from '@/lib/utils';
 
 export function pathForOrientation({
   height,
