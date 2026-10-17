@@ -89,12 +89,16 @@ export function effectiveProjectGrants(member: {
   if (member.legacyGrants.length === 0) {
     return { projectScope: member.projectScope, projects: member.projects };
   }
+  // project_access has no unique key; a read row among duplicates wins.
+  const levels = new Map<string, AccessLevel | null>();
+  for (const grant of member.legacyGrants) {
+    const isRead =
+      grant.level === 'read' || levels.get(grant.projectId) === 'read';
+    levels.set(grant.projectId, isRead ? 'read' : null);
+  }
   return {
     projectScope: 'selected',
-    projects: member.legacyGrants.map((grant) => ({
-      projectId: grant.projectId,
-      level: grant.level === 'read' ? 'read' : null,
-    })),
+    projects: [...levels].map(([projectId, level]) => ({ projectId, level })),
   };
 }
 

@@ -131,3 +131,27 @@ test('without legacy rows the member scope and rows apply as stored', () => {
     projects: [{ projectId: 'a', level: null }],
   });
 });
+
+test('duplicate legacy rows for one project keep the read restriction', () => {
+  for (const legacyGrants of [
+    [
+      { projectId: 'a', level: 'write' as const },
+      { projectId: 'a', level: 'read' as const },
+    ],
+    [
+      { projectId: 'a', level: 'read' as const },
+      { projectId: 'a', level: 'admin' as const },
+    ],
+  ]) {
+    expect(
+      effectiveProjectGrants({
+        projectScope: 'all',
+        projects: [],
+        legacyGrants,
+      })
+    ).toEqual({
+      projectScope: 'selected',
+      projects: [{ projectId: 'a', level: 'read' }],
+    });
+  }
+});

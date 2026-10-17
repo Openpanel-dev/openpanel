@@ -63,11 +63,14 @@ function scopeMembers() {
 function copyGrants() {
   return db.$executeRaw`
     INSERT INTO member_projects ("memberId", "projectId", "level")
-    SELECT m.id, pa."projectId", CASE WHEN pa.level = 'read' THEN 'read'::"AccessLevel" END
+    SELECT m.id, pa."projectId",
+      CASE WHEN bool_or(pa.level = 'read') THEN 'read'::"AccessLevel" END
     FROM project_access pa
     JOIN members m
       ON m."userId" = pa."userId"
      AND m."organizationId" = pa."organizationId"
+    -- project_access has no unique key; a read row among duplicates wins.
+    GROUP BY m.id, pa."projectId"
     ON CONFLICT DO NOTHING
   `;
 }
