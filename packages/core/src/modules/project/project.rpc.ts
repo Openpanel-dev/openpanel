@@ -88,16 +88,11 @@ export const projectRouter = createTRPCRouter({
         throw new TRPCForbiddenError('Organization is required');
       }
 
-      const access = await ctx.services.auth.getOrganizationAccess({
+      await ctx.services.auth.requireOrganizationAdmin({
         userId,
         organizationId: input.organizationId,
+        message: 'Only organization admins can create projects',
       });
-
-      if (access?.role !== 'org:admin') {
-        throw new TRPCForbiddenError(
-          'Only organization admins can create projects'
-        );
-      }
 
       const { project, client } =
         await ctx.services.project.createProjectForOrganization(

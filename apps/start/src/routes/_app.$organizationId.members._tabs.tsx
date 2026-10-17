@@ -1,3 +1,4 @@
+import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import {
   createFileRoute,
   Outlet,
@@ -26,7 +27,7 @@ export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
         organizationId: params.organizationId,
       })
     );
-    if (access?.role !== 'org:admin') {
+    if (!(access && isOrganizationAdminRole(access.role))) {
       throw redirect({
         to: '/$organizationId',
         params: { organizationId: params.organizationId },

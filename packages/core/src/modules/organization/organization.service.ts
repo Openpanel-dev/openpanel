@@ -3,9 +3,9 @@
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
+  AccessLevel,
   Invite,
   Prisma,
-  ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
 import { DateTime, generateSecureId } from '@openpanel/shared';
@@ -19,21 +19,37 @@ import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import {
+  effectiveProjectGrants,
   getOrganizationAccess,
   getProjectAccess,
 } from '../../shared/access-lookups';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { replicatedTarget, TABLE_NAMES } from '../../shared/ch-tables';
-import { DEFAULT_TIMEZONE, isValidTimezone } from './organization.constants';
+import {
+  DEFAULT_TIMEZONE,
+  type InvitableRole,
+  type IProjectAccessGrant,
+  isValidTimezone,
+  normalizeOrganizationRole,
+  type OrganizationRole,
+  type ProjectScope,
+  resolveOrganizationRole,
+  STORED_ADMIN_ROLES,
+  toStoredOrganizationRole,
+} from './organization.constants';
 
 export type IServiceOrganization = Awaited<
   ReturnType<typeof getOrganizationById>
 >;
-export type IServiceInvite = Invite;
-export type IServiceMember = Prisma.MemberGetPayload<{
-  include: { user: true };
-}> & { access: ProjectAccess[] };
-export type IServiceProjectAccess = ProjectAccess;
+export type IServiceInvite = Omit<Invite, 'role'> & { role: OrganizationRole };
+export type IServiceMember = Omit<
+  Prisma.MemberGetPayload<{ include: { user: true } }>,
+  'role' | 'projectScope'
+> & {
+  role: OrganizationRole;
+  projectScope: ProjectScope;
+  projects: { projectId: string; level: AccessLevel | null }[];
+};
 
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end long after tracking stopped), so they are not billable activity.
@@ -114,9 +130,9 @@ export const getOrganizationByProjectIdCached = cacheablePerDb(
 export async function getInvites(
   deps: ServiceDeps,
   organizationId: string
-): Promise<Invite[]> {
+): Promise<IServiceInvite[]> {
   const db = deps.db;
-  return db.invite.findMany({
+  const invites = await db.invite.findMany({
     where: {
       organizationId,
     },
@@ -124,6 +140,10 @@ export async function getInvites(
       createdAt: 'desc',
     },
   });
+  return invites.map((invite) => ({
+    ...invite,
+    role: normalizeOrganizationRole(invite.role),
+  }));
 }
 
 export async function getInviteById(deps: ServiceDeps, inviteId: string) {
@@ -159,7 +179,7 @@ export async function getMembers(
   organizationId: string
 ): Promise<IServiceMember[]> {
   const db = deps.db;
-  const [members, access] = await Promise.all([
+  const [members, legacyGrants] = await Promise.all([
     db.member.findMany({
       where: {
         organizationId,
@@ -169,19 +189,70 @@ export async function getMembers(
       },
       include: {
         user: true,
+        projects: { select: { projectId: true, level: true } },
+        organization: { select: { createdByUserId: true } },
       },
     }),
     db.projectAccess.findMany({
-      where: {
-        organizationId,
-      },
+      where: { organizationId },
+      select: { userId: true, projectId: true, level: true },
     }),
   ]);
 
-  return members.map((member) => ({
+  // The same projection the access lookup applies, so the edit modal never
+  // starts from "all projects" for a member an old pod restricted.
+  return members.map(({ organization, ...member }) => ({
     ...member,
-    access: access.filter((a) => a.userId === member.userId),
-  })) as IServiceMember[];
+    ...effectiveProjectGrants({
+      projectScope: member.projectScope,
+      projects: member.projects,
+      legacyGrants: legacyGrants.filter(
+        (grant) => grant.userId === member.userId
+      ),
+    }),
+    role: resolveOrganizationRole({ ...member, organization }),
+  }));
+}
+
+/**
+ * Write a member's project grants to both tables. `project_access` is the
+ * previous build's source of truth and is kept in step for one more build so
+ * a rollback changes nobody's access; the next build drops it.
+ */
+function writeMemberProjects(
+  deps: ServiceDeps,
+  member: { id: string; userId: string; organizationId: string },
+  projectScope: ProjectScope,
+  grants: IProjectAccessGrant[]
+) {
+  const db = deps.db;
+  const selected = projectScope === 'all' ? [] : grants;
+  return [
+    db.member.update({
+      where: { id: member.id },
+      data: { projectScope },
+    }),
+    db.memberProject.deleteMany({ where: { memberId: member.id } }),
+    db.memberProject.createMany({
+      data: selected.map((grant) => ({
+        memberId: member.id,
+        projectId: grant.projectId,
+        // Write is what the role gives; only a restriction is worth storing.
+        level: grant.level === 'read' ? 'read' : null,
+      })),
+    }),
+    db.projectAccess.deleteMany({
+      where: { userId: member.userId, organizationId: member.organizationId },
+    }),
+    db.projectAccess.createMany({
+      data: selected.map((grant) => ({
+        userId: member.userId,
+        organizationId: member.organizationId,
+        projectId: grant.projectId,
+        level: grant.level,
+      })),
+    }),
+  ];
 }
 
 /**
@@ -239,11 +310,25 @@ export async function connectUserToOrganization(
     throw new Error('Invite expired');
   }
 
+  // Invites written before the scope column, or by the previous image during
+  // a rolling deploy, carry their restriction only in `projectAccess`.
+  const projectScope: ProjectScope =
+    invite.projectAccess.length > 0 ? 'selected' : invite.projectScope;
+
+  const existing = await db.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId: invite.organizationId,
+        userId: user.id,
+      },
+    },
+  });
+
   // The invite might be consumed by a user who is already a member of the
   // organization (e.g. accepting it a second time). Upsert atomically against
   // the (organizationId, userId) unique constraint so concurrent consumption
   // cannot create duplicate membership rows; an existing membership is reused
-  // unchanged and the invite is still consumed below.
+  // unchanged, grants included, and the invite is still consumed below.
   const member = await db.member.upsert({
     where: {
       organizationId_userId: {
@@ -258,19 +343,23 @@ export async function connectUserToOrganization(
       role: invite.role,
       email: user.email,
       invitedById: invite.createdById,
+      projectScope,
     },
   });
 
-  for (const grant of invite.projectAccess) {
-    await db.projectAccess.create({
-      data: {
-        projectId: grant.projectId,
-        userId: user.id,
-        organizationId: invite.organizationId,
-        // The level the inviting admin chose, not a hardcoded default.
-        level: grant.level,
-      },
-    });
+  if (!existing) {
+    await db.$transaction(
+      writeMemberProjects(
+        deps,
+        {
+          id: member.id,
+          userId: user.id,
+          organizationId: invite.organizationId,
+        },
+        projectScope,
+        invite.projectAccess
+      )
+    );
   }
 
   await clearMemberAccessCache(deps, {
@@ -583,7 +672,7 @@ export async function runDeleteCron(
     where: {
       OR: [
         { deleteAt: { lte: now } },
-        { members: { none: { role: 'org:admin' } } },
+        { members: { none: { role: { in: [...STORED_ADMIN_ROLES] } } } },
       ],
     },
     include: { projects: { select: { id: true } } },
@@ -727,8 +816,9 @@ export async function inviteUserToOrganization(
   input: {
     organizationId: string;
     email: string;
-    role: 'org:admin' | 'org:member';
-    access: { projectId: string; level: 'read' | 'write' }[];
+    role: InvitableRole;
+    projectScope: ProjectScope;
+    access: IProjectAccessGrant[];
     invitedById: string;
   }
 ): Promise<InviteUserResult> {
@@ -769,20 +859,18 @@ export async function inviteUserToOrganization(
     );
   }
 
-  await assertProjectsInOrganization(
-    deps,
-    input.organizationId,
-    input.access ?? []
-  );
+  const access = input.projectScope === 'all' ? [] : input.access;
+  await assertProjectsInOrganization(deps, input.organizationId, access);
 
   const invite = await db.invite.create({
     data: {
       id: generateSecureId('invite'),
       email,
       organizationId: input.organizationId,
-      role: input.role,
+      role: toStoredOrganizationRole(input.role),
       createdById: input.invitedById,
-      projectAccess: input.access ?? [],
+      projectScope: input.projectScope,
+      projectAccess: access,
       expiresAt: new Date(Date.now() + INVITE_EXPIRY_MS),
     },
     include: {
@@ -918,9 +1006,10 @@ export async function updateOrganizationMemberAccess(
   input: {
     organizationId: string;
     targetUserId: string;
-    access: { projectId: string; level: 'read' | 'write' }[];
+    projectScope: ProjectScope;
+    access: IProjectAccessGrant[];
   }
-) {
+): Promise<void> {
   const db = deps.db;
 
   // The rows below are keyed on a user this never confirmed was a member, so
@@ -935,31 +1024,25 @@ export async function updateOrganizationMemberAccess(
   if (!member) {
     throw new TRPCNotFoundError('User is not a member of this organization');
   }
-  await assertProjectsInOrganization(deps, input.organizationId, input.access);
+  const access = input.projectScope === 'all' ? [] : input.access;
+  await assertProjectsInOrganization(deps, input.organizationId, access);
 
-  const result = await db.$transaction([
-    db.projectAccess.deleteMany({
-      where: {
+  await db.$transaction(
+    writeMemberProjects(
+      deps,
+      {
+        id: member.id,
         userId: input.targetUserId,
         organizationId: input.organizationId,
       },
-    }),
-    db.projectAccess.createMany({
-      // The level the admin chose; a hardcoded 'read' hid that nothing enforced
-      // levels (GHSA-f9rx-pxgw-c6rg).
-      data: input.access.map((grant) => ({
-        userId: input.targetUserId,
-        organizationId: input.organizationId,
-        projectId: grant.projectId,
-        level: grant.level,
-      })),
-    }),
-  ]);
+      input.projectScope,
+      access
+    )
+  );
   await clearMemberAccessCache(deps, {
     userId: input.targetUserId,
     organizationId: input.organizationId,
   });
-  return result;
 }
 
 export function createOrganizationService(
@@ -993,11 +1076,10 @@ export function createOrganizationService(
     ): Promise<void> => removeOrganizationMember(deps, input),
     updateMemberAccess: (
       input: Parameters<typeof updateOrganizationMemberAccess>[1]
-    ): ReturnType<typeof updateOrganizationMemberAccess> =>
-      updateOrganizationMemberAccess(deps, input),
+    ): Promise<void> => updateOrganizationMemberAccess(deps, input),
     members: (organizationId: string): Promise<IServiceMember[]> =>
       getMembers(deps, organizationId),
-    invitations: (organizationId: string): Promise<Invite[]> =>
+    invitations: (organizationId: string): Promise<IServiceInvite[]> =>
       getInvites(deps, organizationId),
     getInvite: (inviteId: string): ReturnType<typeof getInviteById> =>
       getInviteById(deps, inviteId),

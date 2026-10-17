@@ -10,6 +10,7 @@ import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { getMemberProjectGrants } from '../../shared/access-lookups';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { hashClientSecret } from '../../shared/client-secret';
@@ -86,7 +87,7 @@ export async function getProjects(
     return [];
   }
 
-  const [projects, members, access] = await Promise.all([
+  const [projects, member] = await Promise.all([
     deps.db.project.findMany({
       where: {
         organizationId,
@@ -95,31 +96,19 @@ export async function getProjects(
         eventsCount: 'desc',
       },
     }),
-    deps.db.member.findMany({
-      where: {
-        userId,
-        organizationId,
-      },
-    }),
-    deps.db.projectAccess.findMany({
-      where: {
-        userId,
-        organizationId,
-      },
-    }),
+    getMemberProjectGrants(deps.db, { userId, organizationId }),
   ]);
 
-  if (members.length === 0) {
+  if (!member) {
     return [];
   }
 
-  if (access.length > 0) {
-    return projects.filter((project) =>
-      access.some((a) => a.projectId === project.id)
-    );
+  if (member.projectScope === 'all') {
+    return projects;
   }
 
-  return projects;
+  const selected = new Set(member.projects.map((row) => row.projectId));
+  return projects.filter((project) => selected.has(project.id));
 }
 
 /**

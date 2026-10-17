@@ -5,8 +5,13 @@
 //
 // `getProjectById` is spelled here because `shared/` sits below `modules/`.
 
-import type { AccessLevel } from '@openpanel/db/src/prisma-client';
+import type {
+  AccessLevel,
+  Member,
+  ProjectScope,
+} from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
+import type { Db } from '../context';
 
 // Lazy: `context.ts` value-imports `services.ts`, and a static import would
 // drag the whole services graph into everything that reaches this file.
@@ -36,6 +41,99 @@ export function canWriteProject(access: IProjectAccess | null): boolean {
   return !!access && WRITE_LEVELS.has(access.level);
 }
 
+/** The one role that only reads. Spelled here so `shared/` carries no other role vocabulary. */
+const READ_ONLY_ROLE = 'viewer';
+
+/**
+ * The project access rule, pure so tests and the access snapshot can run it
+ * without a database. `all` follows every project of the organization;
+ * `selected` means the member's rows and nothing else. A row's `level` only
+ * ever restricts below what the role gives.
+ */
+export function resolveProjectAccess(member: {
+  role: string;
+  projectScope: ProjectScope;
+  grant: { level: AccessLevel | null } | null;
+}): IProjectAccess | null {
+  const roleLevel: AccessLevel =
+    member.role === READ_ONLY_ROLE ? 'read' : 'write';
+  if (member.projectScope === 'all') {
+    return { level: roleLevel };
+  }
+  if (!member.grant) {
+    return null;
+  }
+  if (roleLevel === 'read') {
+    return { level: 'read' };
+  }
+  return { level: member.grant.level ?? roleLevel };
+}
+
+interface MemberGrant {
+  projectId: string;
+  level: AccessLevel | null;
+}
+
+/**
+ * The scope and grants to apply for a member while `project_access` is still
+ * written. New code keeps that table identical to `member_projects` (empty for
+ * `all`), so legacy rows only differ when the previous image wrote them during
+ * a rolling deploy; they then win, or an old pod restricting a member would
+ * leave them on `all`. Remove with `project_access`.
+ */
+export function effectiveProjectGrants(member: {
+  projectScope: ProjectScope;
+  projects: MemberGrant[];
+  legacyGrants: { projectId: string; level: AccessLevel }[];
+}): { projectScope: ProjectScope; projects: MemberGrant[] } {
+  if (member.legacyGrants.length === 0) {
+    return { projectScope: member.projectScope, projects: member.projects };
+  }
+  // project_access has no unique key; a read row among duplicates wins.
+  const levels = new Map<string, AccessLevel | null>();
+  for (const grant of member.legacyGrants) {
+    const isRead =
+      grant.level === 'read' || levels.get(grant.projectId) === 'read';
+    levels.set(grant.projectId, isRead ? 'read' : null);
+  }
+  return {
+    projectScope: 'selected',
+    projects: [...levels].map(([projectId, level]) => ({ projectId, level })),
+  };
+}
+
+/** Loads what `effectiveProjectGrants` needs for one membership, or null when there is none. */
+export async function getMemberProjectGrants(
+  db: Db,
+  { userId, organizationId }: { userId: string; organizationId: string }
+): Promise<{
+  role: string;
+  projectScope: ProjectScope;
+  projects: MemberGrant[];
+} | null> {
+  const [member, legacyGrants] = await Promise.all([
+    db.member.findFirst({
+      where: { organizationId, userId },
+      select: {
+        role: true,
+        projectScope: true,
+        projects: { select: { projectId: true, level: true } },
+      },
+    }),
+    db.projectAccess.findMany({
+      where: { organizationId, userId },
+      select: { projectId: true, level: true },
+    }),
+  ]);
+  if (!member) {
+    return null;
+  }
+  return {
+    role: member.role,
+    ...effectiveProjectGrants({ ...member, legacyGrants }),
+  };
+}
+
 /**
  * Resolve a user's access to one project.
  *
@@ -44,11 +142,12 @@ export function canWriteProject(access: IProjectAccess | null): boolean {
  * and 26 of 29 mutating procedures skipped the level check (GHSA-f9rx-pxgw-c6rg).
  * With one shape, omitting the check is a type error.
  *
- * The cache key is versioned: changing the return shape without renaming it
- * would serve old-shape entries for up to 5 minutes across a rolling deploy.
+ * The cache key is versioned: changing the rule or the return shape without
+ * renaming it would serve old entries for up to 5 minutes across a rolling
+ * deploy.
  */
 export const getProjectAccess = cacheable(
-  'getProjectAccessV2',
+  'getProjectAccessV3',
   async ({
     userId,
     projectId,
@@ -62,35 +161,21 @@ export const getProjectAccess = cacheable(
         return null;
       }
 
-      const db = await unscopedDb();
-      const [projectAccess, member] = await Promise.all([
-        db.projectAccess.findMany({
-          where: {
-            userId,
-            organizationId: project.organizationId,
-          },
-        }),
-        db.member.findFirst({
-          where: {
-            organizationId: project.organizationId,
-            userId,
-          },
-        }),
-      ]);
+      const member = await getMemberProjectGrants(await unscopedDb(), {
+        userId,
+        organizationId: project.organizationId,
+      });
 
       if (!member) {
         return null;
       }
 
-      // No explicit per-project grants means org-wide default access, and the
-      // default is write.
-      if (projectAccess.length === 0) {
-        return { level: 'write' };
-      }
-
-      const row = projectAccess.find((item) => item.projectId === projectId);
-
-      return row ? { level: row.level } : null;
+      return resolveProjectAccess({
+        role: member.role,
+        projectScope: member.projectScope,
+        grant:
+          member.projects.find((row) => row.projectId === projectId) ?? null,
+      });
     } catch (_err) {
       return null;
     }
@@ -98,21 +183,27 @@ export const getProjectAccess = cacheable(
   60 * 5
 );
 
+/** The membership row plus what the auth module needs to derive the owner role. */
+export type IOrganizationAccess = Member & {
+  organization: { createdByUserId: string | null };
+};
+
 export const getOrganizationAccess = cacheable(
-  'getOrganizationAccess',
+  'getOrganizationAccessV2',
   async ({
     userId,
     organizationId,
   }: {
     userId: string;
     organizationId: string;
-  }) => {
+  }): Promise<IOrganizationAccess | null> => {
     const db = await unscopedDb();
     return db.member.findFirst({
       where: {
         userId,
         organizationId,
       },
+      include: { organization: { select: { createdByUserId: true } } },
     });
   },
   60 * 5

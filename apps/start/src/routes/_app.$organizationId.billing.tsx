@@ -1,3 +1,4 @@
+import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/_app/$organizationId/billing')({
         organizationId: params.organizationId,
       })
     );
-    if (access?.role !== 'org:admin') {
+    if (!(access && isOrganizationAdminRole(access.role))) {
       throw redirect({
         to: '/$organizationId',
         params: { organizationId: params.organizationId },

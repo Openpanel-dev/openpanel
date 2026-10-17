@@ -65,18 +65,23 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'access',
+      accessorKey: 'projects',
       header: 'Access',
       cell: ({ row }) => {
-        const access = row.original.access ?? [];
-        if (access.length === 0) {
+        if (row.original.projectScope === 'all') {
           return <div className="text-muted-foreground">All projects</div>;
+        }
+        if (row.original.projects.length === 0) {
+          return <div className="text-muted-foreground">No projects</div>;
         }
         return (
           <div className="row flex-wrap gap-2">
-            {row.original.access?.map((item) => (
+            {row.original.projects.map((item) => (
               <Badge key={item.projectId} variant={'outline'}>
                 {item.projectId}
+                {item.level === 'read' || row.original.role === 'viewer'
+                  ? ' (read-only)'
+                  : ''}
               </Badge>
             ))}
           </div>

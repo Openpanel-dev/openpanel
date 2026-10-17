@@ -64,7 +64,8 @@ test('inviteUser rejects an unauthenticated caller', async () => {
     caller.inviteUser({
       organizationId: 'org_1',
       email: 'a@example.com',
-      role: 'org:member',
+      role: 'member',
+      projectScope: 'all',
       access: [],
     })
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });

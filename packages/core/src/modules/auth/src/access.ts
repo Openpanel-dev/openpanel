@@ -36,6 +36,8 @@ export interface AccessLookups<
     userId: string;
     organizationId: string;
   }): Promise<TOrganizationAccess | null>;
+  /** role in {owner, admin}. */
+  isOrganizationAdmin(access: TOrganizationAccess | null): boolean;
   getProjectById(
     projectId: string
   ): Promise<{ organizationId: string | null } | null>;
@@ -62,13 +64,11 @@ export interface AccessChecks<
   }): Promise<TOrganizationAccess>;
 }
 
-const ORGANIZATION_ADMIN_ROLE = 'org:admin';
-
 /**
  * The permission ladder. Two independent controls:
  *
- *  - ADMIN is the organization role (`member.role === 'org:admin'`). It gates
- *    destruction and billing.
+ *  - ADMIN is the organization role (owner or admin). It gates destruction
+ *    and billing.
  *  - WRITE is the per-project access level. It gates every mutation; `admin`
  *    level counts as a superset of `write`.
  *  - READ is the floor: membership of the project.
@@ -127,7 +127,7 @@ export function createAccessChecks<
       organizationId,
     });
 
-    if (access?.role !== ORGANIZATION_ADMIN_ROLE) {
+    if (!(access && lookups.isOrganizationAdmin(access))) {
       throw new TRPCForbiddenError(message);
     }
 
