@@ -634,7 +634,10 @@ function SegmentLabel({
     </span>
   );
   const labelEl = showLabels && (
-    <span className="whitespace-nowrap font-medium text-muted-foreground text-xs">
+    <span
+      className="max-w-full truncate whitespace-nowrap px-1 font-medium text-muted-foreground text-xs"
+      title={stage.label}
+    >
       {stage.label}
     </span>
   );
@@ -663,7 +666,7 @@ function SegmentLabel({
             <div className="flex flex-1 items-center justify-center">
               {pctEl}
             </div>
-            <div className="flex h-[16%] items-start justify-center pt-1">
+            <div className="flex h-[16%] w-full min-w-0 items-start justify-center pt-1">
               {labelEl}
             </div>
           </>

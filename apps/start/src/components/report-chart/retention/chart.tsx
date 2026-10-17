@@ -1,6 +1,7 @@
 import { average, round } from '@openpanel/shared';
 import { curveMonotoneX } from 'd3-shape';
 import { useCallback, useMemo } from 'react';
+import { useChartChrome } from '../common/chart-size';
 import { useReportChartContext } from '../context';
 import { Area, AreaChart } from '@/components/charts/area-chart';
 import { Grid } from '@/components/charts/grid';
@@ -16,8 +17,6 @@ import { getChartColor } from '@/utils/theme';
 // bklit's x axis is a time axis; periods since the cohort start are laid out
 // as consecutive days from the epoch and read back by the axis formatter.
 const PERIOD_MS = 86_400_000;
-const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
-const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
 const RETENTION_COLOR = getChartColor(0);
 const AVERAGE_COLOR = getChartColor(1);
 
@@ -41,8 +40,8 @@ export function Chart({ data }: Props) {
   const {
     report: { interval },
     isEditMode,
-    options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
+  const chrome = useChartChrome();
   const number = useNumber();
   const averageRow = data[0];
   const averageRate = average(averageRow?.percentages ?? [], true) * 100;
@@ -75,13 +74,13 @@ export function Chart({ data }: Props) {
         className="h-full"
         data={points}
         formatDateLabel={formatPeriod}
-        margin={hideXAxis && hideYAxis ? BARE_MARGIN : AXIS_MARGIN}
+        margin={chrome.margin}
         style={{ touchAction: 'pan-y' }}
         xDataKey="date"
       >
         <Grid horizontal />
-        {!hideYAxis && <YAxis formatValue={(value) => `${value}%`} />}
-        {!hideXAxis && <XAxis />}
+        {chrome.showYAxis && <YAxis formatValue={(value) => `${value}%`} />}
+        {chrome.showXAxis && <XAxis numTicks={chrome.xAxisTicks} />}
         <Area
           animate={false}
           curve={curveMonotoneX}

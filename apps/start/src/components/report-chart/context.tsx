@@ -4,6 +4,7 @@ import type {
 } from '@openpanel/core/modules/report/report.constants';
 import isEqual from 'lodash.isequal';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { ChartSizeTier } from './common/chart-size';
 
 export interface ReportChartContextType {
   options: Partial<{
@@ -25,6 +26,8 @@ export interface ReportChartContextType {
   // `fill` takes the parent's height (a dashboard tile); `aspect` sizes the
   // chart from its width (the editor, chat, modals, share pages).
   layout: 'fill' | 'aspect';
+  /** From the chart's measured width; decides axes, ticks and legend size. */
+  sizeTier: ChartSizeTier;
   shareId?: string;
   reportId?: string;
 }
