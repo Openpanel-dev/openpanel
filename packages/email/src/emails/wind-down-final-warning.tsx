@@ -53,10 +53,7 @@ export function WindDownFinalWarning({
           code.
         </Text>
       ) : null}
-      <Text>
-        Start a plan before {deleteDate} to cancel the deletion. Everything is
-        restored right away.
-      </Text>
+      <Text>Start a plan before {deleteDate} to cancel the deletion.</Text>
       <Text>
         <Button href={withUtm(billingUrl, 'wind-down-final-warning')}>
           Keep my data
