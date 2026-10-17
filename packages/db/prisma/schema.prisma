@@ -465,15 +465,19 @@ model ReportLayout {
   reportId String @unique @db.Uuid
   report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  // Grid position and size
+  // The grid the layout was saved on: 12 (× 100px rows) before code migration
+  // 25, 24 (× 42px rows) after. Writers set it, so a row without it is old.
+  gridColumns Int @default(12)
+
+  // Grid position and size, in 24-column × 42px-row units
   x Int @default(0)
   y Int @default(0)
-  w Int @default(4)
-  h Int @default(3)
+  w Int @default(8)
+  h Int @default(6)
 
   // Optional: store additional layout preferences
-  minW Int? @default(2)
-  minH Int? @default(2)
+  minW Int? @default(4)
+  minH Int? @default(4)
   maxW Int?
   maxH Int?
 

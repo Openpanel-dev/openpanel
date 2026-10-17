@@ -4,7 +4,11 @@ import type { CoreConfig } from '../../../../config';
 import type { ServiceDeps } from '../../../../services';
 import { getId } from '../../../../slug-id';
 import { getProjectById } from '../../../project/project.service';
-import { zReport } from '../../../report/report.constants';
+import {
+  GRID_COLUMNS,
+  GRID_ROW_HEIGHT,
+  zReport,
+} from '../../../report/report.constants';
 import { requireDashboard } from './dashboard-access';
 import { dashboardBaseUrl } from './dashboard-links';
 import {
@@ -50,15 +54,19 @@ const reportSchema = zReport
     }
   });
 
+const GRID_DESCRIPTION = `Grid units: ${GRID_COLUMNS} columns across the dashboard, rows ${GRID_ROW_HEIGHT}px tall. A half-width chart is w ${GRID_COLUMNS / 2}, h 8.`;
+const zColumn = z.number().int().nonnegative().max(GRID_COLUMNS);
+const zColumnSpan = z.number().int().positive().max(GRID_COLUMNS);
+
 const layoutSchema = z
   .object({
-    x: z.number().int().nonnegative(),
+    x: zColumn,
     y: z.number().int().nonnegative(),
-    w: z.number().int().positive(),
+    w: zColumnSpan,
     h: z.number().int().positive(),
-    minW: z.number().int().positive().optional(),
+    minW: zColumnSpan.optional(),
     minH: z.number().int().positive().optional(),
-    maxW: z.number().int().positive().optional(),
+    maxW: zColumnSpan.optional(),
     maxH: z.number().int().positive().optional(),
   })
   .superRefine((layout, ctx) => {
@@ -617,7 +625,9 @@ function registerDashboardWriteTools(
         .string()
         .uuid()
         .describe('The report ID whose layout should change'),
-      layout: layoutSchema.describe('The report grid layout'),
+      layout: layoutSchema.describe(
+        `The report grid layout. ${GRID_DESCRIPTION}`
+      ),
     },
     async ({ projectId: inputProjectId, reportId, layout }) =>
       withErrorHandling(deps, async () => {
@@ -626,8 +636,8 @@ function registerDashboardWriteTools(
         await requireReport(db, projectId, reportId);
         return db.reportLayout.upsert({
           where: { reportId },
-          create: { reportId, ...layout },
-          update: layout,
+          create: { reportId, ...layout, gridColumns: GRID_COLUMNS },
+          update: { ...layout, gridColumns: GRID_COLUMNS },
         });
       })
   );

@@ -7,6 +7,14 @@
 import { z } from 'zod';
 
 export const DEFAULT_ASPECT_RATIO = 0.5625;
+
+// Dashboard grid units. With the 16px gap, 2 rows of 42px are exactly as tall
+// as one row of the former 100px grid, and 24 columns line up with the former
+// 12, which is what lets the layout migration keep every tile in place.
+export const GRID_COLUMNS = 24;
+export const GRID_ROW_HEIGHT = 42;
+export const GRID_GAP = 16;
+export const GRID_MAX_ROWS = 2000;
 export const NOT_SET_VALUE = '(not set)';
 
 export const timeWindows = {

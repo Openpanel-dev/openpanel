@@ -23,7 +23,7 @@ import type {
   IReport,
   IReportOptions,
 } from './report.constants';
-import { alphabetIds, lineTypes } from './report.constants';
+import { alphabetIds, GRID_COLUMNS, lineTypes } from './report.constants';
 import { getChartStartEndDate } from './src/chart-dates';
 import { mergeGlobalFilters, onlyReportEvents } from './src/series';
 
@@ -414,8 +414,8 @@ export async function updateReportLayouts(
     input.items.map(({ reportId, layout }) =>
       db.reportLayout.upsert({
         where: { reportId },
-        create: { reportId, ...layout },
-        update: layout,
+        create: { reportId, ...layout, gridColumns: GRID_COLUMNS },
+        update: { ...layout, gridColumns: GRID_COLUMNS },
       })
     )
   );

@@ -33,11 +33,11 @@ export const CHART_TYPE_ICONS: Record<IChartType, LucideIcon> = {
 
 // Shown rows: a short dashboard still looks like a dashboard, a long one is cut
 // rather than shrunk to specks.
-const MIN_ROWS = 6;
-const MAX_ROWS = 14;
+const MIN_ROWS = 12;
+const MAX_ROWS = 28;
 // A tile shows its chart icon only when it is big enough to hold one.
-const ICON_MIN_WIDTH_COLUMNS = 3;
-const ICON_MIN_HEIGHT_ROWS = 2;
+const ICON_MIN_WIDTH_COLUMNS = 6;
+const ICON_MIN_HEIGHT_ROWS = 4;
 const ICON_SIZE = 14;
 
 function iconFor(chartType: IChartType | undefined) {

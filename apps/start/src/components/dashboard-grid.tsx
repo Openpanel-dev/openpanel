@@ -1,4 +1,9 @@
 import type { IServiceReport } from '@openpanel/core';
+import {
+  GRID_COLUMNS,
+  GRID_GAP,
+  GRID_ROW_HEIGHT,
+} from '@openpanel/core/modules/report/report.constants';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   GridLayout,
@@ -10,14 +15,16 @@ import {
   verticalCompactor,
 } from 'react-grid-layout';
 
+export {
+  GRID_COLUMNS,
+  GRID_GAP,
+  GRID_ROW_HEIGHT,
+} from '@openpanel/core/modules/report/report.constants';
 export type { Layout, LayoutItem } from 'react-grid-layout';
 
-export const GRID_COLUMNS = 12;
-export const GRID_ROW_HEIGHT = 100;
-export const GRID_GAP = 16;
-export const TILE_MIN_SIZE = { minW: 3, minH: 3 } as const;
+export const TILE_MIN_SIZE = { minW: 6, minH: 6 } as const;
 const RESIZE_HANDLES: readonly ResizeHandleAxis[] = ['se', 'sw', 'ne', 'nw'];
-const TILE_DEFAULT_SIZE = { w: 6, h: 4 } as const;
+const TILE_DEFAULT_SIZE = { w: 12, h: 8 } as const;
 // Narrower than this and tiles stack in one column with no drag, since a
 // drag would hijack scrolling on a phone.
 const SINGLE_COLUMN_MAX_WIDTH = 640;
@@ -26,18 +33,35 @@ export type DashboardReport = NonNullable<IServiceReport>;
 /** What placing a report on the grid needs; the dashboards list has reports in a lighter shape than the editor. */
 export interface LayoutSource {
   id: string;
-  layout?: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'> | null;
+  layout?:
+    | (Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'> & { gridColumns?: number })
+    | null;
 }
 
 export function toLayout(reports: LayoutSource[]): Layout {
-  return reports.map((report, index) => ({
-    i: report.id,
-    x: report.layout?.x ?? (index % 2) * TILE_DEFAULT_SIZE.w,
-    y: report.layout?.y ?? Math.floor(index / 2) * TILE_DEFAULT_SIZE.h,
-    w: report.layout?.w ?? TILE_DEFAULT_SIZE.w,
-    h: report.layout?.h ?? TILE_DEFAULT_SIZE.h,
-    ...TILE_MIN_SIZE,
-  }));
+  return reports.map((report, index) => {
+    const saved = report.layout;
+    if (!saved) {
+      return {
+        i: report.id,
+        x: (index % 2) * TILE_DEFAULT_SIZE.w,
+        y: Math.floor(index / 2) * TILE_DEFAULT_SIZE.h,
+        ...TILE_DEFAULT_SIZE,
+        ...TILE_MIN_SIZE,
+      };
+    }
+    // A layout not yet moved by the grid migration is drawn at the same size
+    // on the finer grid; its next save stores it in the new units.
+    const scale = GRID_COLUMNS / (saved.gridColumns ?? GRID_COLUMNS);
+    return {
+      i: report.id,
+      x: saved.x * scale,
+      y: saved.y * scale,
+      w: saved.w * scale,
+      h: saved.h * scale,
+      ...TILE_MIN_SIZE,
+    };
+  });
 }
 
 function toSingleColumn(layout: Layout): Layout {
