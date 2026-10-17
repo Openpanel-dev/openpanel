@@ -137,21 +137,45 @@ Rules:
 - If the system prompt gives attribution lines for commit messages, append
   them.
 
-## 4. Confirm, then merge
+## 4. Ship and merge
 
 Show the user the subject and body, and say which version bump it causes
 (minor for `feat`, otherwise patch) and whether the base is `main` (releases)
-or another branch. Point out anything breaking. Then ask with
-`AskUserQuestion`: merge as written, or change it. If the user asked to merge
-without confirming, skip the question.
+or another branch.
 
-Write the body to a temp file so Markdown survives quoting, then merge:
+Ask with `AskUserQuestion` (merge as written, or change it) only when the
+merge is a minor bump (`feat`) or the diff breaks something a self-hoster
+must act on. Point out the breakage in the question. Otherwise do not ask:
+show the message and continue. Never ask about anything else, such as extra
+guards, smoke tests or follow-up work. Mention those in the report instead.
+
+Write the body to a temp file so Markdown survives quoting:
 
 ```bash
 body_file=$(mktemp)
 cat > "$body_file" <<'EOF'
 ...body...
 EOF
+```
+
+With no PR yet, push and open one with the same subject (without the
+`(#N)` suffix) and body:
+
+```bash
+git push -u origin HEAD
+gh pr create --base <base> --title "<subject>" --body-file "$body_file"
+```
+
+Wait for the required checks, then apply the stop conditions from step 1.
+If a required check fails, stop, name it, and leave the PR open:
+
+```bash
+gh pr checks <pr> --required --watch --fail-fast
+```
+
+Merge, with the `(#N)` suffix on the subject:
+
+```bash
 gh pr merge <pr> --squash --subject "<subject>" --body-file "$body_file"
 rm "$body_file"
 ```
