@@ -1,6 +1,7 @@
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
   chartColors,
@@ -511,8 +512,8 @@ export async function getUserFlowCore(
   const { timezone } = await getSettingsForProject(deps, input.projectId);
   const result = await getSankey(deps, {
     projectId: input.projectId,
-    startDate: input.startDate,
-    endDate: input.endDate,
+    startDate: toRangeBoundaryLiteral(input.startDate, 'start'),
+    endDate: toRangeBoundaryLiteral(input.endDate, 'end'),
     steps: input.steps ?? DEFAULT_SANKEY_STEPS,
     mode: input.mode,
     startEvent: toChartEvent(input.startEvent),
