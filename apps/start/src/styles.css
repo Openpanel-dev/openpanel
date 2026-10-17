@@ -560,13 +560,94 @@ button {
 
 /* While a tile moves, nothing under the pointer reacts: no chart tooltips,
    no hover states, no text selection. The gesture itself runs on document
-   listeners, so the tiles need no pointer events until it ends. */
-.react-grid-layout:has(.react-draggable-dragging, .resizing) .react-grid-item
-  > * {
+   listeners, so the tiles need no pointer events until it ends.
+   `data-gesture` is set once a drag passes its threshold; the library marks
+   the tile as dragging on mouse-down, which would swallow a click on the title. */
+[data-gesture] .react-grid-item > * {
   pointer-events: none;
   user-select: none;
 }
-html:has(.react-grid-item.react-draggable-dragging),
-.react-grid-item.react-draggable-dragging {
+html:has([data-gesture] .react-grid-item.react-draggable-dragging),
+[data-gesture] .react-grid-item.react-draggable-dragging {
   cursor: grabbing;
+}
+
+/* The dragged tile lifts off the grid. */
+[data-gesture] .react-grid-item.react-draggable-dragging > * {
+  transform: scale(1.02);
+  box-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.35);
+  transition: transform 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-gesture] .react-grid-item.react-draggable-dragging > * {
+    transform: none;
+  }
+}
+
+/* Edges resize along one axis through invisible 8px strips; the corners keep
+   the library's grip. */
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w {
+  margin: 0;
+  transform: none;
+  background: none;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n::after,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s::after,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e::after,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w::after {
+  display: none;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
+  left: 20px;
+  right: 20px;
+  width: auto;
+  height: 8px;
+  cursor: ns-resize;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n {
+  top: -4px;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
+  bottom: -4px;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w {
+  top: 20px;
+  bottom: 20px;
+  width: 8px;
+  height: auto;
+  cursor: ew-resize;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e {
+  right: -4px;
+}
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w {
+  left: -4px;
+}
+
+/* While resizing, the chart keeps its starting size (dimmed and clipped) and
+   the tile shows the size it will snap to. */
+.react-grid-item.resizing {
+  overflow: hidden;
+}
+.react-grid-item.resizing [data-tile-body] {
+  opacity: 0.5;
+}
+.react-grid-item.resizing[data-tile-size]::after {
+  content: attr(data-tile-size);
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
 }

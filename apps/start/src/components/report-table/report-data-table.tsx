@@ -32,6 +32,8 @@ import { cn } from '@/utils/cn';
 export const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 32;
 const MAX_TABLE_HEIGHT = 600;
+// A dashboard tile lifts the cap and lets the table fill the tile instead.
+const MAX_TABLE_HEIGHT_VAR = `var(--report-table-max-height, ${MAX_TABLE_HEIGHT}px)`;
 // Below this many rows the DOM is small enough to render whole.
 const VIRTUALIZE_FROM = 40;
 const VIRTUAL_OVERSCAN = 8;
@@ -208,7 +210,7 @@ export function ReportDataTable<Row>({
   };
 
   return (
-    <div className={cn('col', className)} data-report-table>
+    <div className={cn('col min-h-0 flex-1', className)} data-report-table>
       <Toolbar
         onDownload={
           csvFilename
@@ -229,9 +231,9 @@ export function ReportDataTable<Row>({
         search={search}
       />
       <div
-        className="scrollbar-thin relative overflow-auto"
+        className="scrollbar-thin relative min-h-0 flex-1 overflow-auto"
         ref={scrollRef}
-        style={{ maxHeight: MAX_TABLE_HEIGHT }}
+        style={{ maxHeight: MAX_TABLE_HEIGHT_VAR }}
       >
         <div
           className="sticky top-0 z-20 flex min-w-full border-border border-b bg-card"
@@ -361,9 +363,9 @@ function Toolbar({
     return null;
   }
   return (
-    <div className="flex items-center gap-2 border-border border-b p-2">
+    <div className="flex flex-wrap items-center gap-2 border-border border-b p-2">
       {onSearch && (
-        <div className="relative flex-1 md:max-w-xs">
+        <div className="relative min-w-32 flex-1 md:max-w-xs">
           <SearchIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-8"

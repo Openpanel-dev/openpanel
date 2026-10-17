@@ -8,6 +8,7 @@ import {
   type ChartClickMenuHandle,
   type ChartClickMenuItem,
 } from './chart-click-menu';
+import { useChartChrome } from './chart-size';
 import { getCurve } from './curve';
 import { SerieIcon } from './serie-icon';
 import { SerieName } from './serie-name';
@@ -29,8 +30,6 @@ import { getChartColor } from '@/utils/theme';
 const TOOLTIP_SERIES_LIMIT = 3;
 const MARKERS_MAX_POINTS = 8;
 const PREVIOUS_PERIOD_OPACITY = '30%';
-const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
-const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
 
 /** Small point markers for sparse series; bklit's default ring is sized for hero charts. */
 export const POINT_MARKER = { radius: 3, strokeWidth: 0, ringGap: 0 };
@@ -61,8 +60,8 @@ export function useTimeSeriesChart({
       breakdowns,
     },
     shareId,
-    options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
+  const chrome = useChartChrome();
   const trpc = useTRPC();
   const number = useNumber();
   const references = useQuery(
@@ -184,12 +183,10 @@ export function useTimeSeriesChart({
     references: references.data,
     previous,
     interval,
-    hideXAxis,
-    hideYAxis,
+    ...chrome,
     dashFromIndex,
     curve: getCurve(lineType),
     showMarkers: chartData.length <= MARKERS_MAX_POINTS,
-    margin: hideXAxis && hideYAxis ? BARE_MARGIN : AXIS_MARGIN,
     formatDateLabel,
     formatAxisValue: number.short,
     tooltipRows,
@@ -225,16 +222,23 @@ export function TimeSeriesFrame({
         >
           {children}
         </div>
-        {series.length > 1 && <SeriesLegend series={series} />}
+        <SeriesLegend series={series} />
       </div>
     </ChartClickMenu>
   );
 }
 
 function SeriesLegend({ series }: { series: IVisibleSeries }) {
+  const { legendLimit } = useChartChrome();
+  const hasRoom = legendLimit > 0;
+  if (series.length < 2 || !hasRoom) {
+    return null;
+  }
+  const shown = series.slice(0, legendLimit);
+  const hiddenCount = series.length - shown.length;
   return (
     <div className="flex shrink-0 flex-wrap justify-center gap-x-4 gap-y-1 pt-2 text-xs">
-      {series.map((serie) => (
+      {shown.map((serie) => (
         <div
           className="flex items-center gap-1"
           key={serie.id}
@@ -244,6 +248,9 @@ function SeriesLegend({ series }: { series: IVisibleSeries }) {
           <SerieName className="font-semibold" name={serie.names} />
         </div>
       ))}
+      {hiddenCount > 0 && (
+        <div className="text-muted-foreground">+{hiddenCount} more</div>
+      )}
     </div>
   );
 }

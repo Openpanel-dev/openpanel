@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';
+import { useChartChrome } from '../common/chart-size';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
@@ -21,7 +22,6 @@ import { getChartColor } from '@/utils/theme';
 type FunnelData = RouterOutputs['chart']['funnel'];
 type Funnel = FunnelData['current'][number];
 
-const BREAKDOWN_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
 const BREAKDOWN_BAR_GAP = 0.25;
 
 export function Chart({
@@ -124,6 +124,7 @@ function BreakdownBars({
   visibleBreakdowns: Funnel[];
 }) {
   const number = useNumber();
+  const chrome = useChartChrome();
   const breakdowns = useMemo(
     () =>
       visibleBreakdowns.map((breakdown, visibleIndex) => {
@@ -177,12 +178,12 @@ function BreakdownBars({
           barGap={BREAKDOWN_BAR_GAP}
           className="h-full"
           data={rows}
-          margin={BREAKDOWN_MARGIN}
+          margin={chrome.margin}
           xDataKey="name"
         >
           <Grid horizontal />
-          <YAxis formatValue={(value) => `${value}%`} />
-          <BarXAxis />
+          {chrome.showYAxis && <YAxis formatValue={(value) => `${value}%`} />}
+          {chrome.showXAxis && <BarXAxis />}
           {breakdowns.map((breakdown) => (
             <Bar
               animate={false}
@@ -198,9 +199,9 @@ function BreakdownBars({
           />
         </BarChart>
       </div>
-      {breakdowns.length > 1 && (
+      {breakdowns.length > 1 && chrome.legendLimit > 0 && (
         <div className="flex shrink-0 flex-wrap justify-center gap-x-4 gap-y-1 pt-2 text-xs">
-          {breakdowns.map((breakdown) => (
+          {breakdowns.slice(0, chrome.legendLimit).map((breakdown) => (
             <div
               className="flex items-center gap-1"
               key={breakdown.key}
@@ -210,6 +211,11 @@ function BreakdownBars({
               <SerieName className="font-semibold" name={breakdown.names} />
             </div>
           ))}
+          {breakdowns.length > chrome.legendLimit && (
+            <div className="text-muted-foreground">
+              +{breakdowns.length - chrome.legendLimit} more
+            </div>
+          )}
         </div>
       )}
     </div>

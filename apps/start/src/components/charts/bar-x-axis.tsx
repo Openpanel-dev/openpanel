@@ -18,6 +18,8 @@ export interface BarXAxisProps {
 interface BarXAxisLabelProps {
   label: string;
   x: number;
+  /** The label's band; a longer label is cut off instead of overlapping its neighbours. */
+  maxWidth: number;
   crosshairX: number | null;
   isHovering: boolean;
   tickerHalfWidth: number;
@@ -26,6 +28,7 @@ interface BarXAxisLabelProps {
 function BarXAxisLabel({
   label,
   x,
+  maxWidth,
   crosshairX,
   isHovering,
   tickerHalfWidth,
@@ -43,22 +46,24 @@ function BarXAxisLabel({
     }
   }
 
-  // Zero-width container approach for perfect centering
+  // Centred on x and as wide as the label may be, so a long label truncates
+  // instead of overlapping its neighbours.
   return (
     <div
       className="absolute"
       style={{
-        left: x,
+        left: x - maxWidth / 2,
         bottom: 12,
-        width: 0,
+        width: maxWidth,
         display: 'flex',
         justifyContent: 'center',
       }}
     >
       <motion.span
         animate={{ opacity }}
-        className={cn('whitespace-nowrap text-chart-label text-xs')}
+        className={cn('truncate whitespace-nowrap text-chart-label text-xs')}
         initial={{ opacity: 1 }}
+        title={label}
         transition={{ duration: 0.4, ease: 'easeInOut' }}
       >
         {label}
@@ -128,6 +133,10 @@ const BarXAxisInner = memo(function BarXAxisInner({
     maxLabels,
   ]);
 
+  // Each shown label may take the bands of the labels skipped next to it.
+  const labelWidth =
+    (bandWidth ?? 0) *
+    Math.max(1, data.length / Math.max(1, labelsToShow.length));
   const isHovering = tooltipData !== null;
   const crosshairX = tooltipData ? tooltipData.x + margin.left : null;
 
@@ -139,6 +148,7 @@ const BarXAxisInner = memo(function BarXAxisInner({
           isHovering={isHovering}
           key={`${item.label}-${item.x}`}
           label={item.label}
+          maxWidth={labelWidth}
           tickerHalfWidth={tickerHalfWidth}
           x={item.x}
         />

@@ -1,6 +1,10 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { ServiceDeps } from '../../services';
-import type { IChartEventFilter, IChartEventItem } from './report.constants';
+import {
+  GRID_COLUMNS,
+  type IChartEventFilter,
+  type IChartEventItem,
+} from './report.constants';
 import { transformFilter, updateReportLayouts } from './report.service';
 import { mergeGlobalFilters } from './src/series';
 
@@ -139,8 +143,8 @@ describe('updateReportLayouts', () => {
     expect(upsert).toHaveBeenCalledTimes(2);
     expect(upsert).toHaveBeenCalledWith({
       where: { reportId: 'r2' },
-      create: { reportId: 'r2', ...layout, x: 6 },
-      update: { ...layout, x: 6 },
+      create: { reportId: 'r2', ...layout, x: 6, gridColumns: GRID_COLUMNS },
+      update: { ...layout, x: 6, gridColumns: GRID_COLUMNS },
     });
   });
 

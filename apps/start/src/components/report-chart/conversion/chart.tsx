@@ -1,6 +1,7 @@
 import { average, round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+import { useChartChrome } from '../common/chart-size';
 import { getCurve } from '../common/curve';
 import { PointClick } from '../common/point-click';
 import { SerieIcon } from '../common/serie-icon';
@@ -25,8 +26,6 @@ import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
-const AXIS_MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
-const BARE_MARGIN = { top: 12, right: 12, bottom: 12, left: 12 };
 const MARKERS_MAX_POINTS = 30;
 const PERCENT_DOMAIN: [number, number] = [0, 100];
 
@@ -45,8 +44,8 @@ export function Chart({
     report: { interval, projectId, startDate, endDate, range, lineType },
     isEditMode,
     shareId,
-    options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
+  const chrome = useChartChrome();
   const number = useNumber();
   const trpc = useTRPC();
   const references = useQuery(
@@ -132,16 +131,16 @@ export function Chart({
           className="h-full"
           data={chartData}
           formatDateLabel={formatDateLabel}
-          margin={hideXAxis && hideYAxis ? BARE_MARGIN : AXIS_MARGIN}
+          margin={chrome.margin}
           style={{ touchAction: 'pan-y' }}
           xDataKey="date"
           yDomain={PERCENT_DOMAIN}
         >
           <Grid horizontal />
-          {!hideYAxis && (
+          {chrome.showYAxis && (
             <YAxis formatValue={(value) => `${number.short(value)}%`} />
           )}
-          {!hideXAxis && <XAxis />}
+          {chrome.showXAxis && <XAxis numTicks={chrome.xAxisTicks} />}
           {series.map((serie) => (
             <Line
               animate={false}
@@ -191,9 +190,9 @@ export function Chart({
           Average ({round(averageRate, 2)}%)
         </div>
       </div>
-      {series.length > 1 && (
+      {series.length > 1 && chrome.legendLimit > 0 && (
         <div className="flex shrink-0 flex-wrap justify-center gap-x-4 gap-y-1 pt-2 text-xs">
-          {series.map((serie) => (
+          {series.slice(0, chrome.legendLimit).map((serie) => (
             <div
               className="flex items-center gap-1"
               key={serie.id}
@@ -203,6 +202,11 @@ export function Chart({
               <SerieName className="font-semibold" name={seriesNames(serie)} />
             </div>
           ))}
+          {series.length > chrome.legendLimit && (
+            <div className="text-muted-foreground">
+              +{series.length - chrome.legendLimit} more
+            </div>
+          )}
         </div>
       )}
     </div>

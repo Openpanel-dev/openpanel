@@ -24,7 +24,7 @@ export function PageHeader({
         )}
         {children}
       </div>
-      <div className="row gap-2">{actions}</div>
+      <div className="row flex-wrap gap-2">{actions}</div>
     </div>
   );
 }

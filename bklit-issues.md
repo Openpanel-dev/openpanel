@@ -25,6 +25,9 @@ Last synced from the registry on 2026-10-15. Fetch every item (and its `registry
 | 22 | no stacked areas | **open**: re-apply `baselineKey` in `area.tsx` |
 | 23 | sankey links have no gap | **open**: re-apply `linkGap` in `sankey/sankey-link.tsx` |
 | 24 | no fixed y domain (percent axes reach 120%) | **open**: re-apply `yDomain` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
+| 25 | no per-axis domain, no reversed axis, `SeriesBar` ignores `yAxisId` | **open**: re-apply `yDomains` / `yReversed` in `time-series-chart-shell.tsx`, `composed-chart.tsx`, `line-chart.tsx`, `y-axis-scales.ts`, `y-domain-utils.ts`, and `yAxisId` in `series-bar.tsx` |
+| 26 | dashed tail overlaps the solid stroke on steep curves | **open**: re-apply the clip-based `dash-tail-stroke.tsx` |
+| 27 | funnel stage and bar-axis labels overlap their neighbours | **open**: re-apply the truncation in `funnel-chart.tsx` and `bar-x-axis.tsx` |
 
 `chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
 
@@ -653,5 +656,59 @@ A chart of percentages tops out at 120%, which reads as if conversion could exce
 **Fix (applied locally)**
 
 `TimeSeriesChartInner` and `LineChart` take `yDomain?: [number, number]`, used as is when set. The conversion report passes `[0, 100]`.
+
+`shadcn add` reverts.
+
+---
+
+## 25. One y domain for every axis, no reversed axis
+
+**Symptom**
+
+A small chart with two series of different size (clicks and impressions, sessions and revenue) flattens the smaller one, and search position, where 1 is best, draws upside down.
+
+**Cause**
+
+`ComposedChart` and `LineChart` take one fixed `yDomain` at most, `SeriesBar` always uses the primary scale, and every scale maps the smallest value to the bottom.
+
+**Fix (applied locally)**
+
+`TimeSeriesChartInner` and `ComposedChart` take `yDomains?: Record<yAxisId, [number, number]>`; `LineChart` takes `yReversed`, passed through to `buildYScalesFromDomains(..., reversed)`. `SeriesBar` takes `yAxisId` and reads `useYScale(yAxisId)`, and `ComposedChart` registers the axis id of every `Line`, `Area` and `SeriesBar`. The project card and GSC position chart use these.
+
+`shadcn add` reverts.
+
+---
+
+## 26. The dashed tail overlaps the solid stroke on steep curves
+
+**Symptom**
+
+When the last days of a line rise steeply, the solid line runs up the rise on top of the dashed tail.
+
+**Cause**
+
+`DashTailStroke` split the path by length, with the length at the dash start estimated as `dashFromIndex / (n - 1) * totalLength`. That assumes every day's stretch of curve is equally long; a flat line followed by a spike breaks it.
+
+**Fix (applied locally)**
+
+Both halves draw the full path, each clipped at the dash start x: the solid head to its left, the dashed tail to its right. `findPathLengthAtX` and the length estimate are gone.
+
+`shadcn add` reverts.
+
+---
+
+## 27. Funnel stage and bar-axis labels overlap their neighbours
+
+**Symptom**
+
+In a narrow tile, long step names (`signup_completed`, `first_event_received`) under a funnel or a grouped bar chart run into each other.
+
+**Cause**
+
+The labels are `whitespace-nowrap` with no width limit.
+
+**Fix (applied locally)**
+
+Funnel stage labels truncate to their segment (`max-w-full truncate` in a full-width cell); `BarXAxis` labels truncate to the bands they cover. Both carry the full name as `title`.
 
 `shadcn add` reverts.

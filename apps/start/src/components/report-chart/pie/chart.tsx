@@ -1,5 +1,6 @@
 import { round } from '@openpanel/shared';
 import { useMemo, useState } from 'react';
+import { useChartChrome } from '../common/chart-size';
 import { getLabelNames } from '../common/label-names';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
@@ -25,6 +26,8 @@ interface Props {
 
 export function Chart({ series }: Props) {
   const { isEditMode } = useReportChartContext();
+  const { legendLimit } = useChartChrome();
+  const showLegend = legendLimit > 0;
   const number = useNumber();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [frameRef, frame] = useElementSize();
@@ -43,7 +46,10 @@ export function Chart({ series }: Props) {
     }));
   }, [series]);
 
-  const isSideLegend = frame.width > frame.height * SIDE_LEGEND_RATIO;
+  const legendSlices = slices.slice(0, legendLimit);
+  const hiddenSliceCount = slices.length - legendSlices.length;
+  const isSideLegend =
+    showLegend && frame.width > frame.height * SIDE_LEGEND_RATIO;
   const pieSize = Math.min(pieBox.width, pieBox.height);
   const innerRadius = Math.max(
     0,
@@ -98,45 +104,52 @@ export function Chart({ series }: Props) {
             </div>
           )}
         </div>
-        <ul
-          className={cn(
-            'col min-h-0 shrink-0 gap-0.5 overflow-y-auto text-sm',
-            isSideLegend ? 'w-1/2 max-w-72' : 'max-h-[40%] w-full'
-          )}
-        >
-          {slices.map((slice, index) => (
-            <li key={slice.id}>
-              <button
-                className={cn(
-                  'flex w-full items-center gap-2 rounded px-1.5 py-1 text-left transition-opacity',
-                  hoveredIndex !== null &&
-                    hoveredIndex !== index &&
-                    'opacity-50'
-                )}
-                onBlur={() => setHoveredIndex(null)}
-                onFocus={() => setHoveredIndex(index)}
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                type="button"
-              >
-                <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ background: slice.color }}
-                />
-                <SerieIcon name={slice.names} />
-                <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
-                  <SerieName name={slice.names} />
-                </div>
-                <span className="font-mono font-semibold">
-                  {number.short(slice.value)}
-                </span>
-                <span className="w-12 text-right font-mono text-muted-foreground">
-                  {slice.share}%
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {showLegend && (
+          <ul
+            className={cn(
+              'col min-h-0 shrink-0 gap-0.5 overflow-y-auto text-sm',
+              isSideLegend ? 'w-1/2 max-w-72' : 'max-h-[40%] w-full'
+            )}
+          >
+            {legendSlices.map((slice, index) => (
+              <li key={slice.id}>
+                <button
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded px-1.5 py-1 text-left transition-opacity',
+                    hoveredIndex !== null &&
+                      hoveredIndex !== index &&
+                      'opacity-50'
+                  )}
+                  onBlur={() => setHoveredIndex(null)}
+                  onFocus={() => setHoveredIndex(index)}
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  type="button"
+                >
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ background: slice.color }}
+                  />
+                  <SerieIcon name={slice.names} />
+                  <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
+                    <SerieName name={slice.names} />
+                  </div>
+                  <span className="font-mono font-semibold">
+                    {number.short(slice.value)}
+                  </span>
+                  <span className="w-12 text-right font-mono text-muted-foreground">
+                    {slice.share}%
+                  </span>
+                </button>
+              </li>
+            ))}
+            {hiddenSliceCount > 0 && (
+              <li className="px-1.5 py-1 text-muted-foreground text-xs">
+                +{hiddenSliceCount} more
+              </li>
+            )}
+          </ul>
+        )}
       </div>
     </div>
   );

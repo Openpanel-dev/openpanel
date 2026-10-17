@@ -52,8 +52,8 @@ export function Chart({ data, series }: Props) {
         xDataKey="date"
       >
         <Grid horizontal />
-        {!chart.hideYAxis && <YAxis formatValue={chart.formatAxisValue} />}
-        {!chart.hideXAxis && <XAxis />}
+        {chart.showYAxis && <YAxis formatValue={chart.formatAxisValue} />}
+        {chart.showXAxis && <XAxis numTicks={chart.xAxisTicks} />}
         {showPreviousBars &&
           series.map((serie) => (
             <SeriesBar

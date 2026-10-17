@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
+import { useTileViews } from '@/hooks/use-tile-views';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -178,6 +179,7 @@ function Component() {
     })
   );
 
+  const { unsavedViews, changeView } = useTileViews({ dashboardId, projectId });
   const resetLayout = useMutation(
     trpc.report.resetLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
@@ -241,24 +243,33 @@ function Component() {
   );
   const tiles = useMemo(
     () =>
-      filteredReports.map((report) => (
-        <div key={report.id}>
-          <ReportItem
-            endDate={endDate}
-            interval={interval}
-            onDelete={(reportId) => deleteReport({ reportId })}
-            onDuplicate={(reportId) => duplicateReport({ reportId })}
-            onMove={moveReport}
-            organizationId={organizationId}
-            projectId={projectId}
-            range={range}
-            report={report}
-            startDate={startDate}
-          />
-        </div>
-      )),
+      filteredReports.map((report) => {
+        const unsavedView = unsavedViews[report.id];
+        return (
+          <div key={report.id}>
+            <ReportItem
+              endDate={endDate}
+              interval={interval}
+              onDelete={(reportId) => deleteReport({ reportId })}
+              onDuplicate={(reportId) => duplicateReport({ reportId })}
+              onMove={moveReport}
+              onViewChange={changeView}
+              organizationId={organizationId}
+              projectId={projectId}
+              range={range}
+              report={
+                unsavedView
+                  ? { ...report, display: { view: unsavedView } }
+                  : report
+              }
+              startDate={startDate}
+            />
+          </div>
+        );
+      }),
     [
       filteredReports,
+      unsavedViews,
       endDate,
       interval,
       range,
@@ -268,6 +279,7 @@ function Component() {
       deleteReport,
       duplicateReport,
       moveReport,
+      changeView,
     ]
   );
 

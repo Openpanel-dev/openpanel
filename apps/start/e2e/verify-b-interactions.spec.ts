@@ -230,11 +230,11 @@ test('dashboard grid: drag, resize, persist, reset layout', async ({
     const resized = await boxes();
     expect(resized.one?.height ?? 0).toBeGreaterThan(initial.one.height + 80);
 
-    // --- drag card two by its handle to the left column
-    const grip = two.locator('.drag-handle').first();
+    // --- drag card two by its header to the left column
+    const grip = two.locator('.tile-header').first();
     const gripBox = await grip.boundingBox();
     if (!gripBox) {
-      throw new Error('no drag handle');
+      throw new Error('no tile header');
     }
     saved = layoutSaved();
     await page.mouse.move(
@@ -267,6 +267,26 @@ test('dashboard grid: drag, resize, persist, reset layout', async ({
     expect(Math.round(reloaded.two?.y ?? 0)).toBe(
       Math.round(dragged.two?.y ?? 0)
     );
+
+    // --- switch a tile to its table: same size, and it stays a table
+    const displaySaved = page.waitForResponse((response) =>
+      response.url().includes('/trpc/report.updateDisplay')
+    );
+    await two.hover();
+    await two.getByRole('button', { name: 'Show table' }).click();
+    expect((await displaySaved).status()).toBe(200);
+    const tableView = two.locator('[data-tile-view="table"]');
+    await expect(tableView.locator('[data-report-table]')).toBeVisible();
+    const asTable = await two.boundingBox();
+    expect(Math.round(asTable?.height ?? 0)).toBe(
+      Math.round(reloaded.two?.height ?? 0)
+    );
+    await shot(page, 'item13-grid-table-view');
+    await page.reload();
+    await expect(tableView).toBeVisible({ timeout: 30_000 });
+    await two.hover();
+    await two.getByRole('button', { name: 'Show chart' }).click();
+    await expect(tableView).toHaveCount(0);
 
     // --- reset layout
     await page.locator('button:has(svg.lucide-ellipsis)').first().click();

@@ -8,6 +8,7 @@ import {
   mock,
 } from 'bun:test';
 import { z } from 'zod';
+import { GRID_COLUMNS } from '../../../report/report.constants';
 
 const mockDb = {
   $transaction: mock(),
@@ -599,8 +600,19 @@ describe('dashboard management behavior', () => {
         minH: 2,
         maxW: 8,
         maxH: 8,
+        gridColumns: GRID_COLUMNS,
       },
-      update: { x: 1, y: 2, w: 4, h: 3, minW: 2, minH: 2, maxW: 8, maxH: 8 },
+      update: {
+        x: 1,
+        y: 2,
+        w: 4,
+        h: 3,
+        minW: 2,
+        minH: 2,
+        maxW: 8,
+        maxH: 8,
+        gridColumns: GRID_COLUMNS,
+      },
     });
   });
 });
