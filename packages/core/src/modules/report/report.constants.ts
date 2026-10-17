@@ -774,6 +774,14 @@ export const zChartEventItem = z.discriminatedUnion('type', [
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
   name: z.string(),
+  step: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe(
+      'Funnel only: 1-based step whose event the value is read from. Defaults to the first step.'
+    ),
 });
 
 export const zChartSeries = z

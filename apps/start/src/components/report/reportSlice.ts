@@ -57,6 +57,19 @@ const initialState: InitialState = {
   visibleSeries: undefined,
 };
 
+// A breakdown step past the last event series would silently fall back to the
+// first step in the query, so drop it to keep the editor and the chart in step.
+function clearStaleBreakdownSteps(state: InitialState) {
+  const eventCount = state.series.filter(
+    (item) => item.type === 'event'
+  ).length;
+  for (const breakdown of state.breakdowns) {
+    if (breakdown.step && breakdown.step > eventCount) {
+      breakdown.step = undefined;
+    }
+  }
+}
+
 export const reportSlice = createSlice({
   name: 'report',
   initialState,
@@ -130,6 +143,7 @@ export const reportSlice = createSlice({
       state.series = state.series.filter((event) => {
         return event.id !== action.payload.id;
       });
+      clearStaleBreakdownSteps(state);
     },
     changeEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
@@ -139,6 +153,7 @@ export const reportSlice = createSlice({
         }
         return event;
       });
+      clearStaleBreakdownSteps(state);
     },
 
     // Previous
