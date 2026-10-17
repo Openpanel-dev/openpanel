@@ -146,36 +146,37 @@ async function diff(
     expectPath ? ((await Bun.file(expectPath).json()) as string[]) : []
   );
 
-  const differences: string[] = [];
+  const differences: { key: string; text: string }[] = [];
   for (const [key, line] of before) {
     const other = after.get(key);
     if (!other) {
-      differences.push(`removed  ${key}`);
+      differences.push({ key, text: `removed  ${key}` });
       continue;
     }
     const changed = (['read', 'write', 'orgAdmin'] as const).filter(
       (field) => line[field] !== other[field]
     );
     if (changed.length > 0) {
-      differences.push(
-        `changed  ${key}  ${changed.map((field) => `${field}: ${line[field]} -> ${other[field]}`).join(', ')}`
-      );
+      const detail = changed
+        .map((field) => `${field}: ${line[field]} -> ${other[field]}`)
+        .join(', ');
+      differences.push({ key, text: `changed  ${key}  ${detail}` });
     }
   }
   for (const key of after.keys()) {
     if (!before.has(key)) {
-      differences.push(`added    ${key}`);
+      differences.push({ key, text: `added    ${key}` });
     }
   }
 
   const unexpected = differences.filter(
-    (line) => !expected.has(line.slice('changed  '.length).split('  ')[0] ?? '')
+    (difference) => !expected.has(difference.key)
   );
   console.log(
     `${before.size} lines before, ${after.size} after, ${differences.length} differences, ${unexpected.length} unexpected`
   );
-  for (const line of differences) {
-    console.log(line);
+  for (const difference of differences) {
+    console.log(difference.text);
   }
   return unexpected.length === 0 ? 0 : 1;
 }

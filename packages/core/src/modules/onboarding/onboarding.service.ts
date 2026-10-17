@@ -33,8 +33,18 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
-  const members = await deps.db.member.count({ where: { userId } });
-  return { canSkip: members > 0 };
+  // Sequential, not Promise.all: the early return below skips the projectAccess query
+  // for any user with a membership, which a parallel fetch would give up.
+  const db = deps.db;
+  const members = await db.member.count({ where: { userId } });
+  if (members > 0) {
+    return { canSkip: true };
+  }
+
+  // Rows without a membership never granted access, but they did let the user
+  // past onboarding; kept until `project_access` is dropped.
+  const projectAccess = await db.projectAccess.count({ where: { userId } });
+  return { canSkip: projectAccess > 0 };
 }
 
 async function createOrGetOnboardingOrganization(

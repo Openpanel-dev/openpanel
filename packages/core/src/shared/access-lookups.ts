@@ -11,6 +11,7 @@ import type {
   ProjectScope,
 } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
+import type { Db } from '../context';
 
 // Lazy: `context.ts` value-imports `services.ts`, and a static import would
 // drag the whole services graph into everything that reaches this file.
@@ -68,6 +69,67 @@ export function resolveProjectAccess(member: {
   return { level: member.grant.level ?? roleLevel };
 }
 
+interface MemberGrant {
+  projectId: string;
+  level: AccessLevel | null;
+}
+
+/**
+ * The scope and grants to apply for a member while `project_access` is still
+ * written. New code keeps that table identical to `member_projects` (empty for
+ * `all`), so legacy rows only differ when the previous image wrote them during
+ * a rolling deploy; they then win, or an old pod restricting a member would
+ * leave them on `all`. Remove with `project_access`.
+ */
+export function effectiveProjectGrants(member: {
+  projectScope: ProjectScope;
+  projects: MemberGrant[];
+  legacyGrants: { projectId: string; level: AccessLevel }[];
+}): { projectScope: ProjectScope; projects: MemberGrant[] } {
+  if (member.legacyGrants.length === 0) {
+    return { projectScope: member.projectScope, projects: member.projects };
+  }
+  return {
+    projectScope: 'selected',
+    projects: member.legacyGrants.map((grant) => ({
+      projectId: grant.projectId,
+      level: grant.level === 'read' ? 'read' : null,
+    })),
+  };
+}
+
+/** Loads what `effectiveProjectGrants` needs for one membership, or null when there is none. */
+export async function getMemberProjectGrants(
+  db: Db,
+  { userId, organizationId }: { userId: string; organizationId: string }
+): Promise<{
+  role: string;
+  projectScope: ProjectScope;
+  projects: MemberGrant[];
+} | null> {
+  const [member, legacyGrants] = await Promise.all([
+    db.member.findFirst({
+      where: { organizationId, userId },
+      select: {
+        role: true,
+        projectScope: true,
+        projects: { select: { projectId: true, level: true } },
+      },
+    }),
+    db.projectAccess.findMany({
+      where: { organizationId, userId },
+      select: { projectId: true, level: true },
+    }),
+  ]);
+  if (!member) {
+    return null;
+  }
+  return {
+    role: member.role,
+    ...effectiveProjectGrants({ ...member, legacyGrants }),
+  };
+}
+
 /**
  * Resolve a user's access to one project.
  *
@@ -95,17 +157,9 @@ export const getProjectAccess = cacheable(
         return null;
       }
 
-      const db = await unscopedDb();
-      const member = await db.member.findFirst({
-        where: {
-          organizationId: project.organizationId,
-          userId,
-        },
-        select: {
-          role: true,
-          projectScope: true,
-          projects: { where: { projectId }, select: { level: true } },
-        },
+      const member = await getMemberProjectGrants(await unscopedDb(), {
+        userId,
+        organizationId: project.organizationId,
       });
 
       if (!member) {
@@ -115,7 +169,8 @@ export const getProjectAccess = cacheable(
       return resolveProjectAccess({
         role: member.role,
         projectScope: member.projectScope,
-        grant: member.projects[0] ?? null,
+        grant:
+          member.projects.find((row) => row.projectId === projectId) ?? null,
       });
     } catch (_err) {
       return null;

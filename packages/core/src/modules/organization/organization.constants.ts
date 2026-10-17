@@ -26,8 +26,12 @@ export const ORGANIZATION_ROLES = [
 export const zOrganizationRole = z.enum(ORGANIZATION_ROLES);
 export type OrganizationRole = z.infer<typeof zOrganizationRole>;
 
-/** Owner is derived from who created the organization, never assigned. */
-export const zInvitableRole = z.enum(['admin', 'member', 'viewer']);
+/**
+ * Owner is derived from who created the organization, never assigned. Viewer
+ * is not offered until the stored roles are renamed: the previous image does
+ * not know it and would give a viewer write access after a rollback.
+ */
+export const zInvitableRole = z.enum(['admin', 'member']);
 export type InvitableRole = z.infer<typeof zInvitableRole>;
 
 const ORGANIZATION_ADMIN_ROLES: ReadonlySet<OrganizationRole> = new Set([

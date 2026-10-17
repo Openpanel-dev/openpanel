@@ -19,6 +19,11 @@ import { getIsDry, printBoxMessage, shortId, slugify } from './helpers';
  *
  * Levels: `read` was a deliberate restriction and is kept. `write` and `admin`
  * were the unenforced defaults, so they become NULL and derive from the role.
+ *
+ * Pending invites got the column default `all`; one with grants was
+ * restricted and becomes `selected`. `project_access` rows with no membership
+ * are reported and left alone: they never granted access, so making them
+ * memberships would.
  */
 
 const SLUG_SUFFIX_ATTEMPTS = 5;
@@ -67,6 +72,36 @@ function copyGrants() {
   `;
 }
 
+async function countInvitesToScope(): Promise<number> {
+  const rows = await db.$queryRaw<Count[]>`
+    SELECT COUNT(*) AS count FROM invites
+    WHERE "projectScope" = 'all' AND jsonb_array_length("projectAccess") > 0
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
+function scopeInvites() {
+  return db.$executeRaw`
+    UPDATE invites
+    SET "projectScope" = 'selected'
+    WHERE "projectScope" = 'all'
+      AND jsonb_array_length("projectAccess") > 0
+  `;
+}
+
+async function countGrantsWithoutMembership(): Promise<number> {
+  const rows = await db.$queryRaw<Count[]>`
+    SELECT COUNT(*) AS count
+    FROM project_access pa
+    WHERE NOT EXISTS (
+      SELECT 1 FROM members m
+      WHERE m."userId" = pa."userId"
+        AND m."organizationId" = pa."organizationId"
+    )
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
 async function backfillSlugs(isDry: boolean): Promise<number> {
   const organizations = await db.organization.findMany({
     where: { slug: null },
@@ -102,30 +137,39 @@ async function backfillSlugs(isDry: boolean): Promise<number> {
 export async function up() {
   const isDry = getIsDry();
 
-  const [membersToScope, grantsToCopy] = await Promise.all([
-    countMembersToScope(),
-    db.projectAccess.count(),
-  ]);
+  const [membersToScope, grantsToCopy, invitesToScope, orphanGrants] =
+    await Promise.all([
+      countMembersToScope(),
+      db.projectAccess.count(),
+      countInvitesToScope(),
+      countGrantsWithoutMembership(),
+    ]);
+  const orphanLine = `project_access rows without a membership, left as is: ${orphanGrants}`;
 
   if (isDry) {
     const slugs = await backfillSlugs(true);
     printBoxMessage('🧪 Dry run: member project scope', [
       `Members to set to "selected": ${membersToScope}`,
       `project_access rows to copy: ${grantsToCopy}`,
+      `Pending invites to set to "selected": ${invitesToScope}`,
+      orphanLine,
       `Organizations without a slug: ${slugs}`,
     ]);
     return;
   }
 
-  const [scoped, copied] = await db.$transaction([
+  const [scoped, copied, invitesScoped] = await db.$transaction([
     scopeMembers(),
     copyGrants(),
+    scopeInvites(),
   ]);
   const slugs = await backfillSlugs(false);
 
   printBoxMessage('✅ Member project scope', [
     `Members set to "selected": ${scoped}`,
     `member_projects rows inserted: ${copied} (of ${grantsToCopy} grants)`,
+    `Pending invites set to "selected": ${invitesScoped}`,
+    orphanLine,
     `Organization slugs set: ${slugs}`,
   ]);
 }

@@ -291,11 +291,25 @@ export async function connectUserToOrganization(
     throw new Error('Invite expired');
   }
 
+  // Invites written before the scope column, or by the previous image during
+  // a rolling deploy, carry their restriction only in `projectAccess`.
+  const projectScope: ProjectScope =
+    invite.projectAccess.length > 0 ? 'selected' : invite.projectScope;
+
+  const existing = await db.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId: invite.organizationId,
+        userId: user.id,
+      },
+    },
+  });
+
   // The invite might be consumed by a user who is already a member of the
   // organization (e.g. accepting it a second time). Upsert atomically against
   // the (organizationId, userId) unique constraint so concurrent consumption
   // cannot create duplicate membership rows; an existing membership is reused
-  // unchanged and the invite is still consumed below.
+  // unchanged, grants included, and the invite is still consumed below.
   const member = await db.member.upsert({
     where: {
       organizationId_userId: {
@@ -310,18 +324,24 @@ export async function connectUserToOrganization(
       role: invite.role,
       email: user.email,
       invitedById: invite.createdById,
-      projectScope: invite.projectScope,
+      projectScope,
     },
   });
 
-  await db.$transaction(
-    writeMemberProjects(
-      deps,
-      { id: member.id, userId: user.id, organizationId: invite.organizationId },
-      invite.projectScope,
-      invite.projectAccess
-    )
-  );
+  if (!existing) {
+    await db.$transaction(
+      writeMemberProjects(
+        deps,
+        {
+          id: member.id,
+          userId: user.id,
+          organizationId: invite.organizationId,
+        },
+        projectScope,
+        invite.projectAccess
+      )
+    );
+  }
 
   await clearMemberAccessCache(deps, {
     userId: user.id,

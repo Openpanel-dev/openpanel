@@ -231,6 +231,20 @@ const project = {
 };
 
 const member = {
+  findUnique: mock(
+    async ({
+      where,
+    }: {
+      where: {
+        organizationId_userId: { organizationId: string; userId: string };
+      };
+    }) =>
+      [...memberStore.values()].find(
+        (m) =>
+          m.organizationId === where.organizationId_userId.organizationId &&
+          m.userId === where.organizationId_userId.userId
+      ) ?? null
+  ),
   count: mock(
     async ({ where }: { where: { userId: string; organizationId: string } }) =>
       [...memberStore.values()].filter(
@@ -795,6 +809,68 @@ test('updateOrganizationMemberAccess with scope all clears both tables', async (
   expect(memberProjectStore).toHaveLength(0);
   expect(projectAccessStore.size).toBe(0);
   expect(memberStore.get('member_1')?.projectScope).toBe('all');
+});
+
+test("connectUserToOrganization keeps an existing member's scope and grants", async () => {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+    projectScope: 'all',
+  });
+  inviteStore.set('invite_1', {
+    id: 'invite_1',
+    email: 'a@example.com',
+    organizationId: 'org_1',
+    role: 'org:member',
+    createdById: 'user_admin',
+    projectScope: 'selected',
+    projectAccess: [],
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: EPOCH,
+  });
+
+  await subject.connectUserToOrganization(deps, {
+    user: { id: 'user_1', email: 'a@example.com' } as never,
+    inviteId: 'invite_1',
+  });
+
+  expect(memberStore.get('member_1')?.projectScope).toBe('all');
+  expect(memberProjectStore).toHaveLength(0);
+  expect(inviteStore.has('invite_1')).toBe(false);
+});
+
+// Invites from before the scope column, or from the previous image during a
+// rolling deploy, default to `all` and carry the restriction only in grants.
+test('connectUserToOrganization treats an invite with grants as selected whatever its stored scope', async () => {
+  projectStore.set('proj_1', {
+    id: 'proj_1',
+    organizationId: 'org_1',
+    deleteAt: null,
+  });
+  inviteStore.set('invite_1', {
+    id: 'invite_1',
+    email: 'a@example.com',
+    organizationId: 'org_1',
+    role: 'org:member',
+    createdById: 'user_admin',
+    projectScope: 'all',
+    projectAccess: [{ projectId: 'proj_1', level: 'write' }],
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: EPOCH,
+  });
+
+  const created = await subject.connectUserToOrganization(deps, {
+    user: { id: 'user_1', email: 'a@example.com' } as never,
+    inviteId: 'invite_1',
+  });
+
+  expect(memberStore.get(created.id)?.projectScope).toBe('selected');
+  expect(memberProjectStore).toEqual([
+    { memberId: created.id, projectId: 'proj_1', level: null },
+  ]);
 });
 
 test('connectUserToOrganization writes the invite grants to both tables, keeping only read as a level', async () => {

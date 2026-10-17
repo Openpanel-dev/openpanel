@@ -79,7 +79,9 @@ export function useColumns() {
             {row.original.projects.map((item) => (
               <Badge key={item.projectId} variant={'outline'}>
                 {item.projectId}
-                {item.level === 'read' ? ' (read-only)' : ''}
+                {item.level === 'read' || row.original.role === 'viewer'
+                  ? ' (read-only)'
+                  : ''}
               </Badge>
             ))}
           </div>

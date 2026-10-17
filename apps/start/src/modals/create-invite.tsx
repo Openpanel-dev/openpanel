@@ -144,18 +144,12 @@ export default function CreateInvite() {
                         Admin
                       </Label>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem id="viewer" value="viewer" />
-                      <Label className="mb-0" htmlFor="viewer">
-                        Viewer
-                      </Label>
-                    </div>
                   </RadioGroup>
                 )}
               />
               <p className="mt-1 text-muted-foreground text-sm">
                 Admins manage members and projects. Members can edit the
-                projects they have access to. Viewers can only look.
+                projects they have access to.
               </p>
             </div>
             <Controller

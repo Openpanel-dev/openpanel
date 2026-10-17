@@ -3,7 +3,7 @@
 // change to either side shows up as a diff rather than as a surprised member.
 
 import { expect, test } from 'bun:test';
-import { resolveProjectAccess } from './access-lookups';
+import { effectiveProjectGrants, resolveProjectAccess } from './access-lookups';
 
 test('scope all follows the role: write for members and admins, read for viewers', () => {
   for (const role of ['org:admin', 'org:member', 'admin', 'member', 'owner']) {
@@ -99,4 +99,35 @@ test('the migrated shape gives the same verdict as the legacy rule for every row
       expect(current).toEqual(expected);
     }
   }
+});
+
+test('legacy rows written by the previous image override a stale all scope', () => {
+  expect(
+    effectiveProjectGrants({
+      projectScope: 'all',
+      projects: [],
+      legacyGrants: [
+        { projectId: 'a', level: 'read' },
+        { projectId: 'b', level: 'write' },
+      ],
+    })
+  ).toEqual({
+    projectScope: 'selected',
+    projects: [
+      { projectId: 'a', level: 'read' },
+      { projectId: 'b', level: null },
+    ],
+  });
+});
+
+test('without legacy rows the member scope and rows apply as stored', () => {
+  const member = {
+    projectScope: 'selected' as const,
+    projects: [{ projectId: 'a', level: null }],
+    legacyGrants: [],
+  };
+  expect(effectiveProjectGrants(member)).toEqual({
+    projectScope: 'selected',
+    projects: [{ projectId: 'a', level: null }],
+  });
 });

@@ -10,6 +10,7 @@ import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { getMemberProjectGrants } from '../../shared/access-lookups';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { hashClientSecret } from '../../shared/client-secret';
@@ -95,13 +96,7 @@ export async function getProjects(
         eventsCount: 'desc',
       },
     }),
-    deps.db.member.findFirst({
-      where: {
-        userId,
-        organizationId,
-      },
-      select: { projectScope: true, projects: { select: { projectId: true } } },
-    }),
+    getMemberProjectGrants(deps.db, { userId, organizationId }),
   ]);
 
   if (!member) {
