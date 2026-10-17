@@ -29,22 +29,23 @@ const listCustomEventsCached = cacheablePerDeps(
   CUSTOM_EVENTS_CACHE_SECONDS
 );
 
-async function assertNameIsFree(
-  deps: ServiceDeps,
-  input: { projectId: string; name: string; id?: string }
-): Promise<void> {
-  const existing = await deps.db.customEvent.findFirst({
-    where: {
-      projectId: input.projectId,
-      name: input.name,
-      id: input.id ? { not: input.id } : undefined,
-    },
-    select: { id: true },
-  });
-  if (existing) {
-    throw new TRPCBadRequestError(
-      `A custom event named "${input.name}" already exists`
-    );
+const UNIQUE_VIOLATION = 'P2002';
+
+/** Turns the `(projectId, name)` unique index firing into a message the user can act on. */
+async function withUniqueName<T>(name: string, write: Promise<T>): Promise<T> {
+  try {
+    return await write;
+  } catch (error) {
+    const isUniqueViolation =
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { code?: unknown }).code === UNIQUE_VIOLATION;
+    if (isUniqueViolation) {
+      throw new TRPCBadRequestError(
+        `A custom event named "${name}" already exists`
+      );
+    }
+    throw error;
   }
 }
 
@@ -52,8 +53,10 @@ async function createCustomEvent(
   deps: ServiceDeps,
   input: ICustomEventInput
 ): Promise<CustomEvent> {
-  await assertNameIsFree(deps, input);
-  const created = await deps.db.customEvent.create({ data: input });
+  const created = await withUniqueName(
+    input.name,
+    deps.db.customEvent.create({ data: input })
+  );
   await listCustomEventsCached.clear(deps, input.projectId);
   return created;
 }
@@ -62,11 +65,13 @@ async function updateCustomEvent(
   deps: ServiceDeps,
   { id, projectId, name, items }: ICustomEventUpdate
 ): Promise<CustomEvent> {
-  await assertNameIsFree(deps, { id, projectId, name });
-  const updated = await deps.db.customEvent.update({
-    where: { id, projectId },
-    data: { name, items },
-  });
+  const updated = await withUniqueName(
+    name,
+    deps.db.customEvent.update({
+      where: { id, projectId },
+      data: { name, items },
+    })
+  );
   await listCustomEventsCached.clear(deps, projectId);
   return updated;
 }

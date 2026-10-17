@@ -15,6 +15,7 @@ export function CustomEvents() {
     trpc.customEvent.delete.mutationOptions({
       onSuccess() {
         queryClient.invalidateQueries(trpc.customEvent.list.pathFilter());
+        queryClient.invalidateQueries(trpc.chart.pathFilter());
       },
       onError: handleError,
     })

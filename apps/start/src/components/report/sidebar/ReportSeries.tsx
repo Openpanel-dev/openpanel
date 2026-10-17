@@ -148,9 +148,10 @@ export function ReportSeries() {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
-  // Retention takes plain event names, so it cannot resolve a custom event.
+  // Retention and user flow match stored event names, so they cannot resolve a custom event.
+  const supportsCustomEvents = !(isSelectManyEvents || isSankey);
   const projectCustomEvents = useCustomEvents(projectId);
-  const customEvents = isSelectManyEvents ? [] : projectCustomEvents;
+  const customEvents = supportsCustomEvents ? projectCustomEvents : [];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
