@@ -79,7 +79,10 @@ export default function EditMember(member: EditMemberProps) {
             Cancel
           </Button>
           <Button
-            disabled={mutation.isPending}
+            disabled={
+              mutation.isPending ||
+              (projectScope === 'selected' && access.length === 0)
+            }
             onClick={() =>
               mutation.mutate({
                 userId: member.user!.id,

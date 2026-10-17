@@ -3,8 +3,8 @@
 
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
+  AccessLevel,
   Invite,
-  MemberProject,
   Prisma,
   User,
 } from '@openpanel/db/src/prisma-client';
@@ -19,6 +19,7 @@ import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import {
+  effectiveProjectGrants,
   getOrganizationAccess,
   getProjectAccess,
 } from '../../shared/access-lookups';
@@ -42,10 +43,13 @@ export type IServiceOrganization = Awaited<
 >;
 export type IServiceInvite = Omit<Invite, 'role'> & { role: OrganizationRole };
 export type IServiceMember = Omit<
-  Prisma.MemberGetPayload<{ include: { user: true; projects: true } }>,
-  'role'
-> & { role: OrganizationRole };
-export type IServiceMemberProject = MemberProject;
+  Prisma.MemberGetPayload<{ include: { user: true } }>,
+  'role' | 'projectScope'
+> & {
+  role: OrganizationRole;
+  projectScope: ProjectScope;
+  projects: { projectId: string; level: AccessLevel | null }[];
+};
 
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end long after tracking stopped), so they are not billable activity.
@@ -175,22 +179,37 @@ export async function getMembers(
   organizationId: string
 ): Promise<IServiceMember[]> {
   const db = deps.db;
-  const members = await db.member.findMany({
-    where: {
-      organizationId,
-      userId: {
-        not: null,
+  const [members, legacyGrants] = await Promise.all([
+    db.member.findMany({
+      where: {
+        organizationId,
+        userId: {
+          not: null,
+        },
       },
-    },
-    include: {
-      user: true,
-      projects: true,
-      organization: { select: { createdByUserId: true } },
-    },
-  });
+      include: {
+        user: true,
+        projects: { select: { projectId: true, level: true } },
+        organization: { select: { createdByUserId: true } },
+      },
+    }),
+    db.projectAccess.findMany({
+      where: { organizationId },
+      select: { userId: true, projectId: true, level: true },
+    }),
+  ]);
 
+  // The same projection the access lookup applies, so the edit modal never
+  // starts from "all projects" for a member an old pod restricted.
   return members.map(({ organization, ...member }) => ({
     ...member,
+    ...effectiveProjectGrants({
+      projectScope: member.projectScope,
+      projects: member.projects,
+      legacyGrants: legacyGrants.filter(
+        (grant) => grant.userId === member.userId
+      ),
+    }),
     role: resolveOrganizationRole({ ...member, organization }),
   }));
 }

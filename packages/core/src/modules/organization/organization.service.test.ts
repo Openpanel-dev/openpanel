@@ -811,6 +811,31 @@ test('updateOrganizationMemberAccess with scope all clears both tables', async (
   expect(memberStore.get('member_1')?.projectScope).toBe('all');
 });
 
+// An old pod accepting a restricted invite mid-deploy leaves the member on the
+// default `all` with only legacy rows; the list must not show "All projects".
+test("getMembers reports legacy grants as the member's selection", async () => {
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_1',
+    userId: 'user_1',
+    role: 'org:member',
+    email: 'a@example.com',
+    projectScope: 'all',
+  });
+  projectAccessStore.set('access_1', {
+    id: 'access_1',
+    userId: 'user_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    level: 'read',
+  });
+
+  const [member] = await subject.getMembers(deps, 'org_1');
+
+  expect(member?.projectScope).toBe('selected');
+  expect(member?.projects).toEqual([{ projectId: 'proj_1', level: 'read' }]);
+});
+
 test("connectUserToOrganization keeps an existing member's scope and grants", async () => {
   memberStore.set('member_1', {
     id: 'member_1',

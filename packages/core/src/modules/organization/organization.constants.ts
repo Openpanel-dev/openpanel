@@ -97,25 +97,43 @@ export function isOrganizationAdminRole(role: OrganizationRole): boolean {
 export const zProjectScope = z.enum(['all', 'selected']);
 export type ProjectScope = z.infer<typeof zProjectScope>;
 
-export const zMemberProjectAccess = z.object({
-  projectScope: zProjectScope,
-  access: z.array(zProjectAccessGrant),
-});
+export const SELECT_A_PROJECT_MESSAGE = 'Select at least one project';
 
-export const zInviteUser = z.object({
-  email: z.string().max(MAX_EMAIL).email(),
-  organizationId: z.string().max(MAX_ID),
-  role: zInvitableRole,
-  projectScope: zProjectScope,
-  access: z.array(zProjectAccessGrant),
-});
+/**
+ * The previous image reads "no project_access rows" as every project, so an
+ * empty selection would widen access on an old pod or after a rollback.
+ * Allowed again once `project_access` is dropped.
+ */
+function hasGrantsWhenSelected(value: {
+  projectScope: ProjectScope;
+  access: unknown[];
+}): boolean {
+  return value.projectScope === 'all' || value.access.length > 0;
+}
 
-export const zUpdateMemberAccess = z.object({
-  userId: z.string(),
-  organizationId: z.string(),
-  projectScope: zProjectScope,
-  access: z.array(zProjectAccessGrant),
-});
+const SELECTED_NEEDS_GRANTS = {
+  message: SELECT_A_PROJECT_MESSAGE,
+  path: ['access'],
+};
+
+export const zInviteUser = z
+  .object({
+    email: z.string().max(MAX_EMAIL).email(),
+    organizationId: z.string().max(MAX_ID),
+    role: zInvitableRole,
+    projectScope: zProjectScope,
+    access: z.array(zProjectAccessGrant),
+  })
+  .refine(hasGrantsWhenSelected, SELECTED_NEEDS_GRANTS);
+
+export const zUpdateMemberAccess = z
+  .object({
+    userId: z.string(),
+    organizationId: z.string(),
+    projectScope: zProjectScope,
+    access: z.array(zProjectAccessGrant),
+  })
+  .refine(hasGrantsWhenSelected, SELECTED_NEEDS_GRANTS);
 
 export const DEFAULT_TIMEZONE = 'UTC';
 

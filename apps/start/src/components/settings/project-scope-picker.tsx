@@ -1,6 +1,7 @@
-import type {
-  IProjectAccessGrant,
-  ProjectScope,
+import {
+  type IProjectAccessGrant,
+  type ProjectScope,
+  SELECT_A_PROJECT_MESSAGE,
 } from '@openpanel/core/modules/organization/organization.constants';
 import { useId } from 'react';
 import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
@@ -58,7 +59,7 @@ export function ProjectScopePicker({
           />
           {access.length === 0 && (
             <p className="text-muted-foreground text-sm">
-              No projects selected: the member will not see any project.
+              {SELECT_A_PROJECT_MESSAGE}
             </p>
           )}
         </>
