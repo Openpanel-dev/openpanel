@@ -1,236 +1,89 @@
-import { useQuery } from '@tanstack/react-query';
-import { BookmarkIcon, UsersIcon } from 'lucide-react';
-import { useCallback } from 'react';
+import { PointClick } from '../common/point-click';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { useXAxisProps, useYAxisProps } from '../common/axis';
-import {
-  ChartClickMenu,
-  type ChartClickMenuItem,
-} from '../common/chart-click-menu';
-import { ReportChartTooltip } from '../common/report-chart-tooltip';
-import { ReportTable } from '../common/report-table';
+  previousPeriodColor,
+  TimeSeriesFrame,
+  type TimeSeriesPoint,
+  useTimeSeriesChart,
+} from '../common/time-series';
 import { useReportChartContext } from '../context';
-import { changeVisibleSeries } from '@/components/report/reportSlice';
-import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
-import { useTheme } from '@/hooks/use-theme';
-import { useVisibleSeries } from '@/hooks/use-visible-series';
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal } from '@/modals';
-import { useDispatch } from '@/redux';
+import { ComposedChart } from '@/components/charts/composed-chart';
+import { Grid } from '@/components/charts/grid';
+import { OPReferences } from '@/components/charts/op-references';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
+import { SeriesBar } from '@/components/charts/series-bar';
+import { XAxis } from '@/components/charts/x-axis';
+import { YAxis } from '@/components/charts/y-axis';
+import type { IVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
-import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
+
+const BAR_RADIUS = 4;
+// Room between stacked segments so each reads as its own rounded block, like the bar chart's rows.
+const STACK_GAP = 2;
+const MAX_BAR_WIDTH = 48;
 
 interface Props {
   data: IChartData;
+  series: IVisibleSeries;
 }
 
-function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
-  const themeMode = useTheme();
-  const styles = getComputedStyle(document.documentElement);
-  const def100 = styles.getPropertyValue('--def-100');
-  const def300 = styles.getPropertyValue('--def-300');
-  const bg = themeMode?.theme === 'dark' ? def100 : def300;
-  return (
-    <rect
-      {...{ x, y, width, height, top, left, right, bottom }}
-      fill={bg}
-      fillOpacity={0.5}
-      rx="3"
-    />
-  );
-}
-
-export function Chart({ data }: Props) {
+export function Chart({ data, series }: Props) {
   const {
-    isEditMode,
-    shareId,
-    report: {
-      previous,
-      interval,
-      projectId,
-      startDate,
-      endDate,
-      range,
-      series: reportSeries,
-      breakdowns,
-      options: reportOptions,
-      visibleSeries: savedVisibleSeries,
-    },
-    options: { hideXAxis, hideYAxis },
+    report: { options },
   } = useReportChartContext();
-  const dispatch = useDispatch();
-
-  const histogramOptions =
-    reportOptions?.type === 'histogram' ? reportOptions : undefined;
-  const isStacked = histogramOptions?.stacked ?? false;
-  const trpc = useTRPC();
-  const references = useQuery(
-    trpc.reference.getChartReferences.queryOptions({
-      projectId,
-      startDate,
-      endDate,
-      range,
-    })
-  );
-  const { series, setVisibleSeries } = useVisibleSeries(data, {
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
-  const rechartData = useRechartDataModel(series);
-  const yAxisProps = useYAxisProps({
-    hide: hideYAxis,
-  });
-  const xAxisProps = useXAxisProps({
-    hide: hideXAxis,
-    interval,
-  });
-
-  const getMenuItems = useCallback(
-    (e: any, clickedData: any): ChartClickMenuItem[] => {
-      const items: ChartClickMenuItem[] = [];
-
-      // Both actions need a signed-in member, which a share visitor is not.
-      if (shareId || !clickedData?.date) {
-        return items;
-      }
-
-      // View Users - only show if we have projectId
-      if (projectId) {
-        items.push({
-          label: 'View Users',
-          icon: <UsersIcon size={16} />,
-          onClick: () => {
-            pushModal('ViewChartUsers', {
-              type: 'chart',
-              chartData: data,
-              report: {
-                projectId,
-                series: reportSeries,
-                breakdowns: breakdowns || [],
-                interval,
-                startDate,
-                endDate,
-                range,
-                previous,
-                chartType: 'histogram',
-                metric: 'sum',
-              },
-              date: clickedData.date,
-            });
-          },
-        });
-      }
-
-      // Add Reference - always show
-      items.push({
-        label: 'Add Reference',
-        icon: <BookmarkIcon size={16} />,
-        onClick: () => {
-          pushModal('AddReference', {
-            datetime: new Date(clickedData.date).toISOString(),
-          });
-        },
-      });
-
-      return items;
-    },
-    [
-      shareId,
-      projectId,
-      data,
-      reportSeries,
-      breakdowns,
-      interval,
-      startDate,
-      endDate,
-      range,
-      previous,
-    ]
-  );
+  const chart = useTimeSeriesChart({ data, series, chartType: 'histogram' });
+  const isStacked = options?.type === 'histogram' && options.stacked === true;
+  // Stacking applies to every bar series, so stacked histograms show the
+  // previous period in the tooltip only.
+  const showPreviousBars = chart.previous && !isStacked;
 
   return (
-    <ReportChartTooltip.TooltipProvider references={references.data}>
-      <ChartClickMenu getMenuItems={getMenuItems}>
-        <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-          <ResponsiveContainer>
-            <BarChart data={rechartData}>
-              <CartesianGrid
-                className="stroke-def-200"
-                strokeDasharray="3 3"
-                vertical={false}
-              />
-              <Tooltip
-                content={<ReportChartTooltip.Tooltip />}
-                cursor={<BarHover />}
-              />
-              <YAxis {...yAxisProps} />
-              <XAxis {...xAxisProps} scale={'auto'} type="category" />
-              {previous
-                ? series.map((serie) => {
-                    return (
-                      <Bar
-                        dataKey={`${serie.id}:prev:count`}
-                        fill={getChartColor(serie.index)}
-                        fillOpacity={0.3}
-                        key={`${serie.id}:prev`}
-                        name={`${serie.id}:prev`}
-                        radius={5}
-                        stackId={isStacked ? 'prev' : undefined}
-                      />
-                    );
-                  })
-                : null}
-              {series.map((serie) => {
-                return (
-                  <Bar
-                    dataKey={`${serie.id}:count`}
-                    fill={getChartColor(serie.index)}
-                    fillOpacity={1}
-                    key={serie.id}
-                    name={serie.id}
-                    radius={isStacked ? 0 : 4}
-                    stackId={isStacked ? 'current' : undefined}
-                  />
-                );
-              })}
-              {references.data?.map((ref) => (
-                <ReferenceLine
-                  fontSize={10}
-                  key={ref.id}
-                  label={{
-                    value: ref.title,
-                    position: 'centerTop',
-                    fill: '#334155',
-                    fontSize: 12,
-                  }}
-                  stroke={'oklch(from var(--foreground) l c h / 0.1)'}
-                  strokeDasharray={'3 3'}
-                  x={ref.date.getTime()}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        {isEditMode && (
-          <ReportTable
-            data={data}
-            setVisibleSeries={setVisibleSeries}
-            visibleSeries={series}
+    <TimeSeriesFrame chartType="histogram" menu={chart.menu} series={series}>
+      <ComposedChart
+        animationDuration={0}
+        aspectRatio="auto"
+        className="h-full"
+        data={chart.chartData}
+        formatDateLabel={chart.formatDateLabel}
+        margin={chart.margin}
+        maxBarSize={MAX_BAR_WIDTH}
+        stacked={isStacked}
+        stackGap={isStacked ? STACK_GAP : 0}
+        xDataKey="date"
+      >
+        <Grid horizontal />
+        {!chart.hideYAxis && <YAxis formatValue={chart.formatAxisValue} />}
+        {!chart.hideXAxis && <XAxis />}
+        {showPreviousBars &&
+          series.map((serie) => (
+            <SeriesBar
+              animate={false}
+              dataKey={`${serie.id}:prev:count`}
+              fill={previousPeriodColor(serie.index)}
+              key={`${serie.id}:prev`}
+              radius={BAR_RADIUS}
+            />
+          ))}
+        {series.map((serie) => (
+          <SeriesBar
+            animate={false}
+            dataKey={`${serie.id}:count`}
+            fill={getChartColor(serie.index)}
+            key={serie.id}
+            radius={BAR_RADIUS}
           />
-        )}
-      </ChartClickMenu>
-    </ReportChartTooltip.TooltipProvider>
+        ))}
+        <OPReferences items={chart.references} />
+        <OPChartTooltip<TimeSeriesPoint>
+          extra={chart.tooltipExtra}
+          interval={chart.interval}
+          references={chart.references}
+          rows={chart.tooltipRows}
+          showCrosshair={false}
+          showDots={false}
+        />
+        <PointClick<TimeSeriesPoint> onClick={chart.menu.openMenu} />
+      </ComposedChart>
+    </TimeSeriesFrame>
   );
 }

@@ -17,6 +17,9 @@ import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
 
 const PRIMARY_COLOR = 'var(--chart-0)';
 const METRIC_ERROR_LABEL = 'Could not load';
+// A tall card's bars get the report bars' rounding; the 40px sparkline's thin bars only a hint of it.
+const BAR_RADIUS = 4;
+const SPARKLINE_BAR_RADIUS = 1;
 
 export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
@@ -43,6 +46,8 @@ interface MetricCardProps {
   interval?: IInterval;
   /** Range drives the default label ("Last 30 days") and dashed-tail logic. */
   range?: keyof typeof timeWindows;
+  /** Stretch to the parent's height; the sparkline takes the extra room. */
+  fill?: boolean;
 }
 
 export function OverviewMetricCard({
@@ -57,6 +62,7 @@ export function OverviewMetricCard({
   isError = false,
   interval = 'day',
   range,
+  fill = false,
 }: MetricCardProps) {
   const formatDate = useFormatDateInterval({ interval, short: false });
   const [hover, setHover] = useState<
@@ -76,7 +82,11 @@ export function OverviewMetricCard({
   const hasValue = !(isLoading || isError);
 
   return (
-    <MetricCardShell active={active} onClick={onClick}>
+    <MetricCardShell
+      active={active}
+      className={cn(fill && 'h-full')}
+      onClick={onClick}
+    >
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
           <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -100,7 +110,7 @@ export function OverviewMetricCard({
         </div>
       </div>
 
-      <div className="mt-1.5 h-[40px]">
+      <div className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}>
         {data.length > 0 && (
           <BarChart
             animationDuration={0}
@@ -117,7 +127,7 @@ export function OverviewMetricCard({
               dataKey="current"
               fadedOpacity={0.35}
               fill={PRIMARY_COLOR}
-              lineCap={1}
+              lineCap={fill ? BAR_RADIUS : SPARKLINE_BAR_RADIUS}
             />
           </BarChart>
         )}

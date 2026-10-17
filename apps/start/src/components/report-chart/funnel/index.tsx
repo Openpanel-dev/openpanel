@@ -1,15 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useChartInput, useReportChartContext } from '../context';
-import { BreakdownList } from './breakdown-list';
-import { Chart, Summary } from './chart';
+import { BreakdownTable } from './breakdown-table';
+import { Chart } from './steps-chart';
+import { StepsTable } from './steps-table';
+import { Summary } from './summary';
 import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useDispatch } from '@/redux';
+import type { RouterOutputs } from '@/trpc/client';
 
 export function ReportFunnelChart() {
   const { isLazyLoading, report, shareId, isEditMode } =
@@ -30,14 +35,18 @@ export function ReportFunnelChart() {
   );
 
   // Hook for limiting which breakdowns are shown in the chart only
-  const { breakdowns: visibleBreakdowns, setVisibleSeries } =
-    useVisibleFunnelBreakdowns(res.data?.current ?? [], {
-      limit: 10,
-      savedVisibleSeries: report.visibleSeries,
-      onVisibleSeriesChange: isEditMode
-        ? (ids) => dispatch(changeVisibleSeries(ids))
-        : undefined,
-    });
+  const {
+    breakdowns: visibleBreakdowns,
+    setVisibleSeries,
+    reset,
+    isDefaultSelection,
+  } = useVisibleFunnelBreakdowns(res.data?.current ?? [], {
+    limit: 10,
+    savedVisibleSeries: report.visibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
 
   if (isLazyLoading || res.isLoading) {
     return <Loading />;
@@ -51,18 +60,91 @@ export function ReportFunnelChart() {
     return <Empty />;
   }
 
-  const hasBreakdowns = res.data.current.length > 1;
+  return (
+    <FunnelWithTables
+      data={res.data}
+      isDefaultSelection={isDefaultSelection}
+      isEditMode={isEditMode}
+      reset={reset}
+      setVisibleSeries={setVisibleSeries}
+      visibleBreakdowns={visibleBreakdowns}
+    />
+  );
+}
+
+function FunnelWithTables({
+  data,
+  isEditMode,
+  visibleBreakdowns,
+  setVisibleSeries,
+  reset,
+  isDefaultSelection,
+}: {
+  data: RouterOutputs['chart']['funnel'];
+  isEditMode: boolean;
+  visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
+  setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
+  reset: () => void;
+  isDefaultSelection: boolean;
+}) {
+  const hasBreakdowns = data.current.length > 1;
+  const [selectedId, setSelectedId] = useState<string>();
+  const visibleIds = useMemo(
+    () => new Set(visibleBreakdowns.map((item) => item.id)),
+    [visibleBreakdowns]
+  );
+  const toggle = useCallback(
+    (id: string) =>
+      setVisibleSeries((ids) =>
+        ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]
+      ),
+    [setVisibleSeries]
+  );
+  const activeIndex = Math.max(
+    0,
+    data.current.findIndex((item) => item.id === selectedId)
+  );
+  const active = data.current[activeIndex];
 
   return (
-    <div className="col gap-4">
-      {hasBreakdowns && <Summary data={res.data} />}
-      <Chart data={res.data} visibleBreakdowns={visibleBreakdowns} />
-      <BreakdownList
-        data={res.data}
-        setVisibleSeries={setVisibleSeries}
-        visibleSeriesIds={visibleBreakdowns.map((b) => b.id)}
-      />
-    </div>
+    <ChartWithTable
+      chart={<Chart data={data} visibleBreakdowns={visibleBreakdowns} />}
+      sizesItself
+      summary={hasBreakdowns && <Summary data={data} />}
+      tables={
+        <>
+          {hasBreakdowns && (
+            <TableCard>
+              <BreakdownTable
+                activeId={active?.id}
+                data={data}
+                onReset={isEditMode && !isDefaultSelection ? reset : undefined}
+                onSelect={setSelectedId}
+                onToggle={isEditMode ? toggle : undefined}
+                onUnselectAll={
+                  isEditMode && visibleBreakdowns.length > 0
+                    ? () => setVisibleSeries([])
+                    : undefined
+                }
+                visibleIds={visibleIds}
+              />
+            </TableCard>
+          )}
+          {active && (
+            <TableCard
+              title={
+                hasBreakdowns && `Steps for ${active.breakdowns.join(' › ')}`
+              }
+            >
+              <StepsTable
+                funnel={active}
+                previous={data.previous?.[activeIndex] ?? null}
+              />
+            </TableCard>
+          )}
+        </>
+      }
+    />
   );
 }
 

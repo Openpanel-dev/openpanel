@@ -2,6 +2,32 @@
 
 Tracking upstream bugs in `@bklitui/ui` (https://ui.bklit.com / `/Users/lindesvard/Projects/bklit-ui`) that we have patched locally after `shadcn add`. Re-running `shadcn add` will regress these fixes — re-apply from this file.
 
+## Re-vendoring
+
+Last synced from the registry on 2026-10-15. Fetch every item (and its `registryDependencies`) into a scratch directory, diff against `apps/start/src/components/charts/`, copy over, then `bunx biome format --write` the folder and re-apply the patches marked **open** below.
+
+| # | Patch | Status |
+|---|---|---|
+| 1 | `require("react-dom")` | fixed upstream |
+| 2 | registry lags local source | obsolete, registry is current |
+| 3 | dark `--chart-*` overrides | **open**: re-apply in `styles.css` after `shadcn add` |
+| 4 | no dual Y axis | **open**: workaround in `overview-metrics.tsx` |
+| 5 | `tickMode="data"` | **open**: pass it per chart |
+| 6 | svg clips markers | fixed upstream (`overflow-visible`) |
+| 7 | tooltip ignores markers | **open**: ours, `op-tooltip.tsx` |
+| 8 | missing values | **open**: re-apply in `line.tsx` / `area.tsx` |
+| 9 | slow hover springs | **open**: configured, not patched (`ChartConfigProvider` in `providers.tsx`) |
+| 10–16, 18 | hover performance, `useId`, memo splits, stable context, `console.log` | fixed upstream |
+| 17 | `series-point-marker` variants per render | obsolete: the marker is `memo`ed and its variants only drive the mount animation |
+| 19 | marker badge props | **open**: re-apply in `markers/marker-group.tsx` |
+| 20 | x-axis date labels are always `Sep 25` | **open**: re-apply `formatDateLabel` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
+| 21 | tooltip dot for a missing value sits at the top | **open**: re-apply in `tooltip/chart-tooltip.tsx` |
+| 22 | no stacked areas | **open**: re-apply `baselineKey` in `area.tsx` |
+| 23 | sankey links have no gap | **open**: re-apply `linkGap` in `sankey/sankey-link.tsx` |
+| 24 | no fixed y domain (percent axes reach 120%) | **open**: re-apply `yDomain` in `time-series-chart-shell.tsx` / `line-chart.tsx` |
+
+`chart-loading-label.tsx` imports `../components/shimmering-text`, which does not resolve with the registry's own targets; it is patched to `../shimmering-text`.
+
 ---
 
 ## 1. `require("react-dom")` breaks under Vite / ESM bundlers
@@ -77,13 +103,7 @@ The injection also collapses onto a single line, mangling the `.dark` block form
 
 **Fix**
 
-After re-installing, manually remove the appended `--chart-1..5`, `--chart-background`, `--chart-foreground`, `--chart-grid`, `--chart-crosshair`, `--chart-marker-*`, `--chart-ring-background`, `--chart-label`, `--chart-foreground-muted` lines from `.dark`. Keep only:
-
-```css
---chart-tooltip-background: oklch(from var(--foreground) l c h / 0.92);
---chart-tooltip-foreground: var(--background);
---chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
-```
+After re-installing, remove everything the injection appended to `.dark`. The `:root` tokens (including `--chart-tooltip-*`, which follow `--card` / `--foreground`) already adapt to the theme.
 
 OpenPanel's bklit tokens in `:root` map back to existing vars so a single `:root` block is enough — see the head of `apps/start/src/styles.css`.
 
@@ -191,17 +211,7 @@ The fallback `0` is a raw SVG y coordinate, not a data-domain zero. In SVG y=0 i
 
 **Symptom:** in `OverviewLineChart`, hovering at a date where one of the series has no datapoint shows tooltip value `0` for that series, but its hover dot sits at the very top of the chart at Y=max instead of at Y=0.
 
-**Fix (applied locally)** in `apps/start/src/components/charts/line.tsx` and `area.tsx`:
-
-```ts
-const getY = useCallback((d) => {
-  const value = d[dataKey];
-  if (typeof value === "number") {
-    return yScale(value) ?? yScale(0) ?? 0;
-  }
-  return yScale(0) ?? 0;
-}, [dataKey, yScale]);
-```
+**Fix (applied locally)** in `apps/start/src/components/charts/line.tsx` and `area.tsx`: a `hasValue` callback passed as `defined` to the `LinePath` / `AreaClosed`, so a missing value leaves a gap instead of a point at y=0 or the ceiling. The animated transition path (`use-animated-series-path.ts`) still interpolates through gaps; it only shows during a data change.
 
 `shadcn add` will revert these — re-patch from this file.
 
@@ -221,7 +231,7 @@ Bklit ships hover-related springs that feel sluggish compared to recharts' no-an
 
 Plus our own `apps/start/src/components/charts/op-date-pill.tsx` (`SPRING`).
 
-`shadcn add` reverts the bklit ones. If hover ever starts feeling laggy again, re-tune these spring constants.
+Upstream now reads these from `ChartConfigProvider` (`chart-config-context.tsx`), so we no longer patch the files: `providers.tsx` wraps the app in a provider with `{ stiffness: 1000, damping: 60 }` for the tooltip, tooltip box and highlight springs.
 
 ---
 
@@ -563,3 +573,85 @@ Backward compat preserved (defaults off). Used by `op-marker-layer.tsx` to give 
 Also requires `report-chart/common/serie-icon.tsx`'s `fill?: boolean` prop (our own file, no shadcn regression risk) — when set, images render `size-full rounded-full object-cover` instead of the default `max-h-4` cap so they actually fill the larger `foreignObject`.
 
 `shadcn add` reverts the bklit patch.
+
+---
+
+## 20. X-axis labels ignore the interval
+
+**Symptom**
+
+An hourly or minute report shows the same day label (`Sep 25`) on every tick and in the crosshair pill.
+
+**Cause**
+
+`time-series-chart-shell.tsx` builds `dateLabels` with `shortDateFmt` unconditionally; there is no prop to format them.
+
+**Fix (applied locally)**
+
+`TimeSeriesChartInner` and `LineChart` take `formatDateLabel?: (date: Date) => string` (default `shortDateFmt.format`), used for `dateLabels`. `AreaChart` forwards it too. The report charts pass `formatDateInterval({ interval, short: true })`.
+
+`shadcn add` reverts.
+
+---
+
+## 21. Tooltip dot for a series without a value is drawn at the top
+
+**Symptom**
+
+Hovering a point where one series has no value (e.g. the previous period of a range that has no earlier data) shows that series' dot at the very top of the chart.
+
+**Cause**
+
+`use-chart-interaction.ts` only writes `yPositions[dataKey]` for numeric values, but `chart-tooltip.tsx` renders every line's `TooltipDot` with `y={yPositions[dataKey] ?? 0}`.
+
+**Fix (applied locally)**
+
+The dot's `visible` is false when `yPositions[line.dataKey]` is undefined.
+
+`shadcn add` reverts.
+
+---
+
+## 22. `<Area>` cannot stack
+
+**Symptom**
+
+Report area charts are stacked (each series on top of the ones before it); bklit's `<Area>` always fills down to zero.
+
+**Fix (applied locally)**
+
+`<Area baselineKey="…">` reads each point's baseline from that key and passes it to visx's `AreaClosed` as `y0`. The report area chart pre-computes a `:stack` top and `:stack-base` per series (`report-chart/area/chart.tsx`, `stackSeries`) and plots the tops, so the y-domain and the tooltip dots follow the stacked values while the tooltip rows show the raw counts.
+
+`shadcn add` reverts.
+
+---
+
+## 23. Sankey links touch, so neighbouring flows merge
+
+**Symptom**
+
+Links that leave or enter a node side by side read as one block, most of all when the nodes share a colour.
+
+**Fix (applied locally)**
+
+`<SankeyLink linkGap={n}>` takes `n` pixels off every link's stroke width, leaving a hairline between neighbouring bands. The report sankey passes 2.
+
+`shadcn add` reverts.
+
+---
+
+## 24. The y domain always gets 10% headroom
+
+**Symptom**
+
+A chart of percentages tops out at 120%, which reads as if conversion could exceed 100%.
+
+**Cause**
+
+`resolveTimeSeriesYDomain` in `time-series-chart-shell.tsx` returns `[0, max * 1.1]` and `niceYDomain` rounds it; there is no way to pin the domain.
+
+**Fix (applied locally)**
+
+`TimeSeriesChartInner` and `LineChart` take `yDomain?: [number, number]`, used as is when set. The conversion report passes `[0, 100]`.
+
+`shadcn add` reverts.

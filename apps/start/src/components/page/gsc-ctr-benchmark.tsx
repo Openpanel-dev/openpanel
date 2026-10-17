@@ -1,20 +1,16 @@
+import { Bar } from '@/components/charts/bar';
+import { BarChart } from '@/components/charts/bar-chart';
+import { BarXAxis } from '@/components/charts/bar-x-axis';
+import { Grid } from '@/components/charts/grid';
 import {
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
+  OPLineChartLegend,
+  type OPLineChartSeries,
+} from '@/components/charts/op-line-chart';
 import {
-  ChartTooltipHeader,
-  ChartTooltipItem,
-  createChartTooltip,
-} from '@/components/charts/chart-tooltip';
-import {
-  useYAxisProps,
-  X_AXIS_STYLE_PROPS,
-} from '@/components/report-chart/common/axis';
+  OPChartTooltip,
+  type OPTooltipRow,
+} from '@/components/charts/op-tooltip';
+import { YAxis } from '@/components/charts/y-axis';
 import { Skeleton } from '@/components/skeleton';
 import { getChartColor } from '@/utils/theme';
 
@@ -42,66 +38,42 @@ const BENCHMARK: Record<number, number> = {
   20: 0.7,
 };
 
+const POSITION_COUNT = 20;
+// Pages with fewer impressions than this have too noisy a CTR to average.
+const MIN_IMPRESSIONS = 10;
+const PAGES_PER_POSITION = 5;
+const MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
+const BAR_GAP = 0.3;
+const BAR_RADIUS = 2;
+const AXIS_LABEL_COUNT = 5;
+
+const YOUR_CTR_SERIES: OPLineChartSeries = {
+  dataKey: 'yourCtr',
+  label: 'Your CTR',
+  color: getChartColor(0),
+};
+const BENCHMARK_SERIES: OPLineChartSeries = {
+  dataKey: 'benchmark',
+  label: 'Benchmark',
+  color: `color-mix(in oklch, ${getChartColor(3)} 60%, transparent)`,
+};
+
 interface PageEntry {
   path: string;
   ctr: number;
   impressions: number;
 }
 
-interface ChartData {
+interface ChartRow {
+  [key: string]: unknown;
   position: number;
+  label: string;
   yourCtr: number | null;
   benchmark: number;
   pages: PageEntry[];
 }
 
-const { TooltipProvider, Tooltip } = createChartTooltip<
-  ChartData,
-  Record<string, unknown>
->(({ data }) => {
-  const item = data[0];
-  if (!item) {
-    return null;
-  }
-  return (
-    <>
-      <ChartTooltipHeader>
-        <div>Position #{item.position}</div>
-      </ChartTooltipHeader>
-      {item.yourCtr != null && (
-        <ChartTooltipItem color={getChartColor(0)}>
-          <div className="flex justify-between gap-8 font-medium font-mono">
-            <span>Your avg CTR</span>
-            <span>{item.yourCtr.toFixed(1)}%</span>
-          </div>
-        </ChartTooltipItem>
-      )}
-      <ChartTooltipItem color={getChartColor(3)}>
-        <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Benchmark</span>
-          <span>{item.benchmark.toFixed(1)}%</span>
-        </div>
-      </ChartTooltipItem>
-      {item.pages.length > 0 && (
-        <div className="mt-1.5 border-t pt-1.5">
-          {item.pages.map((p) => (
-            <div
-              className="flex items-center justify-between gap-4 py-0.5"
-              key={p.path}
-            >
-              <span className="max-w-40 truncate font-mono text-muted-foreground text-xs">
-                {p.path}
-              </span>
-              <span className="shrink-0 font-mono text-xs tabular-nums">
-                {(p.ctr * 100).toFixed(1)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-});
+const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
 interface GscCtrBenchmarkProps {
   data: Array<{
@@ -114,115 +86,131 @@ interface GscCtrBenchmarkProps {
 }
 
 export function GscCtrBenchmark({ data, isLoading }: GscCtrBenchmarkProps) {
-  const yAxisProps = useYAxisProps();
-
   const grouped = new Map<number, { ctrSum: number; pages: PageEntry[] }>();
-  for (const d of data) {
-    const pos = Math.round(d.position);
-    if (pos < 1 || pos > 20 || d.impressions < 10) {
+  for (const row of data) {
+    const position = Math.round(row.position);
+    const outOfRange = position < 1 || position > POSITION_COUNT;
+    if (outOfRange || row.impressions < MIN_IMPRESSIONS) {
       continue;
     }
-    let path = d.page;
+    let path = row.page;
     try {
-      path = new URL(d.page).pathname;
+      path = new URL(row.page).pathname;
     } catch {
       // keep as-is
     }
-    const entry = grouped.get(pos) ?? { ctrSum: 0, pages: [] };
-    entry.ctrSum += d.ctr * 100;
-    entry.pages.push({ path, ctr: d.ctr, impressions: d.impressions });
-    grouped.set(pos, entry);
+    const entry = grouped.get(position) ?? { ctrSum: 0, pages: [] };
+    entry.ctrSum += row.ctr * 100;
+    entry.pages.push({ path, ctr: row.ctr, impressions: row.impressions });
+    grouped.set(position, entry);
   }
 
-  const chartData: ChartData[] = Array.from({ length: 20 }, (_, i) => {
-    const pos = i + 1;
-    const entry = grouped.get(pos);
+  const rows: ChartRow[] = Array.from({ length: POSITION_COUNT }, (_, i) => {
+    const position = i + 1;
+    const entry = grouped.get(position);
     const pages = entry
-      ? [...entry.pages].sort((a, b) => b.ctr - a.ctr).slice(0, 5)
+      ? [...entry.pages]
+          .sort((a, b) => b.ctr - a.ctr)
+          .slice(0, PAGES_PER_POSITION)
       : [];
     return {
-      position: pos,
+      position,
+      label: `#${position}`,
       yourCtr: entry ? entry.ctrSum / entry.pages.length : null,
-      benchmark: BENCHMARK[pos] ?? 0,
+      benchmark: BENCHMARK[position] ?? 0,
       pages,
     };
   });
 
-  const hasAnyData = chartData.some((d) => d.yourCtr != null);
+  const hasAnyData = rows.some((row) => row.yourCtr != null);
+  const legend = hasAnyData
+    ? [YOUR_CTR_SERIES, BENCHMARK_SERIES]
+    : [BENCHMARK_SERIES];
 
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-medium text-sm">CTR vs Position</h3>
-        <div className="flex items-center gap-4 text-muted-foreground text-xs">
-          {hasAnyData && (
-            <span className="flex items-center gap-1.5">
-              <span
-                className="h-0.5 w-3 rounded-full"
-                style={{ backgroundColor: getChartColor(0) }}
-              />
-              Your CTR
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <span
-              className="h-0.5 w-3 rounded-full opacity-60"
-              style={{ backgroundColor: getChartColor(3) }}
-            />
-            Benchmark
-          </span>
-        </div>
+        <OPLineChartLegend series={legend} />
       </div>
       {isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : (
-        <TooltipProvider>
-          <ResponsiveContainer height={160} width="100%">
-            <ComposedChart data={chartData}>
-              <CartesianGrid
-                className="stroke-border"
-                horizontal
-                strokeDasharray="3 3"
-                vertical={false}
-              />
-              <XAxis
-                {...X_AXIS_STYLE_PROPS}
-                dataKey="position"
-                domain={[1, 20]}
-                tickFormatter={(v: number) => `#${v}`}
-                ticks={[1, 5, 10, 15, 20]}
-                type="number"
-              />
-              <YAxis
-                {...yAxisProps}
-                domain={[0, 'auto']}
-                tickFormatter={(v: number) => `${v}%`}
-              />
-              <Tooltip />
-              <Line
-                activeDot={{ r: 4 }}
-                connectNulls={false}
-                dataKey="yourCtr"
-                dot={{ r: 3, fill: getChartColor(0) }}
-                isAnimationActive={false}
-                stroke={getChartColor(0)}
-                strokeWidth={2}
-                type="monotone"
-              />
-              <Line
-                dataKey="benchmark"
-                dot={false}
-                isAnimationActive={false}
-                stroke={getChartColor(3)}
-                strokeDasharray="4 3"
-                strokeOpacity={0.6}
-                strokeWidth={1.5}
-                type="monotone"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </TooltipProvider>
+        <BarChart
+          animationDuration={0}
+          aspectRatio="auto"
+          barGap={BAR_GAP}
+          className="h-40"
+          data={rows}
+          margin={MARGIN}
+          xDataKey="label"
+        >
+          <Grid horizontal />
+          <YAxis formatValue={(value) => `${value}%`} />
+          <BarXAxis maxLabels={AXIS_LABEL_COUNT} />
+          <Bar
+            animate={false}
+            dataKey={YOUR_CTR_SERIES.dataKey}
+            fill={YOUR_CTR_SERIES.color}
+            lineCap={BAR_RADIUS}
+          />
+          <Bar
+            animate={false}
+            dataKey={BENCHMARK_SERIES.dataKey}
+            fill={BENCHMARK_SERIES.color}
+            lineCap={BAR_RADIUS}
+          />
+          <OPChartTooltip<ChartRow>
+            datePill={false}
+            extra={renderPages}
+            rows={tooltipRows}
+            showDots={false}
+            title={(row) => `Position ${row.label}`}
+          />
+        </BarChart>
       )}
+    </div>
+  );
+}
+
+function tooltipRows(row: ChartRow): OPTooltipRow[] {
+  const rows: OPTooltipRow[] = [];
+  if (row.yourCtr != null) {
+    rows.push({
+      color: YOUR_CTR_SERIES.color,
+      label: YOUR_CTR_SERIES.label,
+      value: row.yourCtr,
+      format: formatPercent,
+    });
+  }
+  rows.push({
+    color: getChartColor(3),
+    label: BENCHMARK_SERIES.label,
+    value: row.benchmark,
+    format: formatPercent,
+  });
+  return rows;
+}
+
+function renderPages(row: ChartRow) {
+  if (row.pages.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mt-1 border-t pt-1.5">
+      {row.pages.map((page) => (
+        <div
+          className="flex items-center justify-between gap-4 py-0.5"
+          key={page.path}
+        >
+          <span className="max-w-40 truncate font-mono text-muted-foreground text-xs">
+            {page.path}
+          </span>
+          <span className="shrink-0 font-mono text-xs tabular-nums">
+            {formatPercent(page.ctr * 100)}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

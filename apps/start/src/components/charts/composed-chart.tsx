@@ -41,6 +41,10 @@ export interface ComposedChartProps {
   stacked?: boolean;
   /** Gap in px between stacked segments. Default: 0 */
   stackGap?: number;
+  /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
+  formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain per `yAxisId`; axes not listed keep their data-driven domain. */
+  yDomains?: Record<string, [number, number]>;
 }
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -80,6 +84,7 @@ function tryAppendSeriesBar(
     dataKey: props.dataKey,
     stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
     strokeWidth: 0,
+    yAxisId: props.yAxisId,
   });
   return true;
 }
@@ -95,6 +100,7 @@ function tryAppendLine(child: ReactElement, lines: LineConfig[]): boolean {
       dataKey: props.dataKey,
       stroke: props.stroke || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2.5,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -111,6 +117,7 @@ function tryAppendArea(child: ReactElement, lines: LineConfig[]): boolean {
       dataKey: props.dataKey,
       stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -186,6 +193,8 @@ interface ChartInnerProps {
   barGap?: number;
   stacked?: boolean;
   stackGap?: number;
+  formatDateLabel?: (date: Date) => string;
+  yDomains?: Record<string, [number, number]>;
 }
 
 function ChartInner({
@@ -205,6 +214,8 @@ function ChartInner({
   barGap,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
+  yDomains,
 }: ChartInnerProps) {
   const { lines, barDataKeys } = useMemo(
     () => extractComposedSeries(children),
@@ -258,12 +269,14 @@ function ChartInner({
       containerRef={containerRef}
       data={data}
       enterTransition={enterTransition}
+      formatDateLabel={formatDateLabel}
       height={height}
       lines={lines}
       margin={margin}
       revealSignature={revealSignature}
       width={width}
       xDataKey={xDataKey}
+      yDomains={yDomains}
       yScaleDomainMax={yScaleDomainMax}
     >
       {children}
@@ -287,6 +300,8 @@ export function ComposedChart({
   barGap = 4,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
+  yDomains,
 }: ComposedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
@@ -295,7 +310,7 @@ export function ComposedChart({
     <div
       className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: 'none' }}
+      style={{ aspectRatio, touchAction: 'pan-y' }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
@@ -307,6 +322,7 @@ export function ComposedChart({
             containerRef={containerRef}
             data={data}
             enterTransition={enterTransition}
+            formatDateLabel={formatDateLabel}
             height={height}
             margin={margin}
             maxBarSize={maxBarSize}
@@ -315,6 +331,7 @@ export function ComposedChart({
             stackGap={stackGap}
             width={width}
             xDataKey={xDataKey}
+            yDomains={yDomains}
           >
             {children}
           </ChartInner>

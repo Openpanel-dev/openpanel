@@ -5,7 +5,25 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { decide } from './next-version';
 
+// A git hook (pre-push runs this suite) exports GIT_DIR and friends, which win
+// over `cwd`: this suite once committed, tagged and set user/core.bare on the
+// real repository. Every git call here, and in the code under test, is pinned
+// to the scratch repository instead.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('GIT_')) {
+    delete process.env[key];
+  }
+}
+
 const repo = mkdtempSync(join(tmpdir(), 'op-release-'));
+if (!repo.startsWith(tmpdir())) {
+  throw new Error(`refusing to run git outside the temp dir: ${repo}`);
+}
+process.env.GIT_DIR = join(repo, '.git');
+process.env.GIT_WORK_TREE = repo;
+process.env.GIT_CONFIG_NOSYSTEM = '1';
+process.env.GIT_CONFIG_GLOBAL = '/dev/null';
+
 const run = (...args: string[]) =>
   execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
 const commit = (message: string) => {

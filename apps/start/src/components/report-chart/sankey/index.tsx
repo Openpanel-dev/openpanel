@@ -1,11 +1,13 @@
 import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { PathsTable } from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportSankeyChart() {
@@ -67,9 +69,15 @@ export function ReportSankeyChart() {
   }
 
   return (
-    <div className="col gap-4">
-      <Chart data={res.data} />
-    </div>
+    <ChartWithTable
+      chart={<Chart data={res.data} />}
+      sizesItself
+      tables={
+        <TableCard>
+          <PathsTable data={res.data} />
+        </TableCard>
+      }
+    />
   );
 }
 

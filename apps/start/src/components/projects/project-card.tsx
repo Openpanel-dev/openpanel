@@ -21,7 +21,7 @@ export function ProjectCardRoot({
   return (
     <div
       className={cn(
-        'card relative hover:-translate-y-px hover:shadow-sm',
+        'card relative hover:z-10 hover:-translate-y-px hover:shadow-sm',
         className
       )}
     >
@@ -88,7 +88,7 @@ function ProjectChartOuter({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ProjectChart color={'blue'} data={data?.chart || []} />
+      <ProjectChart data={data?.chart || []} />
     </FadeIn>
   );
 }

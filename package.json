@@ -36,7 +36,8 @@
     }
   },
   "patchedDependencies": {
-    "@polar-sh/sdk@0.49.0": "patches/@polar-sh__sdk.patch"
+    "@polar-sh/sdk@0.49.0": "patches/@polar-sh__sdk.patch",
+    "react-grid-layout@2.3.0": "patches/react-grid-layout@2.3.0.patch"
   },
   "overrides": {
     "esm-env": "npm:esm-env-runtime@^0.1.0",

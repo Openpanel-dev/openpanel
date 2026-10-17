@@ -1,16 +1,27 @@
 'use client';
 
-import { ParentSize } from '@visx/responsive';
 import type { Transition } from 'motion/react';
 import {
   Children,
+  type CSSProperties,
   isValidElement,
   type ReactElement,
   type ReactNode,
+  useCallback,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import type { LineConfig, Margin } from './chart-context';
+import { ChartLoadingLabel } from './chart-loading-label';
+import { ParentSize } from './chart-parent-size';
+import {
+  type ChartPhase,
+  type ChartStatus,
+  DEFAULT_CHART_STATUS,
+  DEFAULT_Y_DOMAIN_TWEEN_MS,
+  resolveRestingChartPhase,
+} from './chart-phase';
 import { Line, type LineProps } from './line';
 import { TimeSeriesChartInner } from './time-series-chart-shell';
 import { cn } from '@/lib/utils';
@@ -28,10 +39,34 @@ export interface LineChartProps {
   animationEasing?: string;
   enterTransition?: Transition;
   revealSignature?: string;
-  /** Aspect ratio as "width / height". Default: "2 / 1" */
+  /** Aspect ratio as "width / height". Default: "2 / 1". Omit to fill a sized parent. */
   aspectRatio?: string;
   /** Additional class name for the container */
   className?: string;
+  /** Loading vs ready — drives chart phase and loading chrome. Default: `"ready"`. */
+  status?: ChartStatus;
+  /** Centered shimmer label while loading. */
+  loadingLabel?: string;
+  /** Animate y-domain over this duration (ms) on status transitions. Default: 500. */
+  yDomainTweenDuration?: number;
+  /** Animate y-domain when status or target domain changes. Default: true */
+  yDomainTween?: boolean;
+  /** Visible x-domain for brush zoom. */
+  xDomain?: [Date, Date];
+  /** Full dataset length for x-scale padding when `xDomain` is set. */
+  xDomainSlotCount?: number;
+  /** Tween y-domain when brush changes the visible x-range. Default: false */
+  tweenYDomainOnXDomainChange?: boolean;
+  /** Inline container styles (e.g. fixed height for brush strip). */
+  style?: CSSProperties;
+  /** Fires when the internal chart phase changes (e.g. OG capture readiness). */
+  onPhaseChange?: (phase: ChartPhase) => void;
+  /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
+  formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain, used as is: no headroom and no rounding. */
+  yDomain?: [number, number];
+  /** Smallest value at the top, for "lower is better" metrics. */
+  yReversed?: boolean;
   /** Child components (Line, Grid, ChartTooltip, etc.) */
   children: ReactNode;
 }
@@ -41,6 +76,7 @@ const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 /** Series renderers that carry a dataKey but must not drive the shared y-domain. */
 const LINE_DOMAIN_EXCLUDED_NAMES = new Set([
   'ProfitLossLine',
+  'LineSeriesTerminalMarker',
   'Area',
   'SeriesBar',
   'Scatter',
@@ -91,6 +127,7 @@ function extractLineConfigs(children: ReactNode): LineConfig[] {
           dataKey: props.dataKey,
           stroke: props.stroke || 'var(--chart-line-primary)',
           strokeWidth: props.strokeWidth || 2.5,
+          yAxisId: props.yAxisId,
         });
         return;
       }
@@ -116,8 +153,19 @@ interface ChartInnerProps {
   animationEasing?: string;
   enterTransition?: Transition;
   revealSignature?: string;
+  chartStatus: ChartStatus;
+  loadingLabel?: string;
+  yDomainTweenDuration: number;
+  yDomainTween: boolean;
+  xDomain?: [Date, Date];
+  xDomainSlotCount?: number;
+  tweenYDomainOnXDomainChange?: boolean;
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  onPhaseChange: (phase: ChartPhase) => void;
+  formatDateLabel?: (date: Date) => string;
+  yDomain?: [number, number];
+  yReversed?: boolean;
 }
 
 function ChartInner({
@@ -130,8 +178,19 @@ function ChartInner({
   animationEasing,
   enterTransition,
   revealSignature,
+  chartStatus,
+  loadingLabel,
+  yDomainTweenDuration,
+  yDomainTween,
+  xDomain,
+  xDomainSlotCount,
+  tweenYDomainOnXDomainChange,
   children,
   containerRef,
+  onPhaseChange,
+  formatDateLabel,
+  yDomain,
+  yReversed,
 }: ChartInnerProps) {
   const lines = useMemo(() => extractLineConfigs(children), [children]);
 
@@ -139,16 +198,27 @@ function ChartInner({
     <TimeSeriesChartInner
       animationDuration={animationDuration}
       animationEasing={animationEasing}
+      chartStatus={chartStatus}
       clipPathId="chart-grow-clip"
       containerRef={containerRef}
       data={data}
       enterTransition={enterTransition}
+      formatDateLabel={formatDateLabel}
       height={height}
       lines={lines}
+      loadingLabel={loadingLabel}
       margin={margin}
+      onPhaseChange={onPhaseChange}
       revealSignature={revealSignature}
+      tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
       width={width}
       xDataKey={xDataKey}
+      xDomain={xDomain}
+      xDomainSlotCount={xDomainSlotCount}
+      yDomain={yDomain}
+      yDomainTween={yDomainTween}
+      yDomainTweenDuration={yDomainTweenDuration}
+      yReversed={yReversed}
     >
       {children}
     </TimeSeriesChartInner>
@@ -165,35 +235,86 @@ export function LineChart({
   revealSignature,
   aspectRatio = '2 / 1',
   className = '',
+  status = DEFAULT_CHART_STATUS,
+  loadingLabel,
+  yDomainTweenDuration = DEFAULT_Y_DOMAIN_TWEEN_MS,
+  yDomainTween = true,
+  xDomain,
+  xDomainSlotCount,
+  tweenYDomainOnXDomainChange = false,
+  style,
+  onPhaseChange,
+  formatDateLabel,
+  yDomain,
+  yReversed,
   children,
 }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
+  const [chartPhase, setChartPhase] = useState<ChartPhase>(() =>
+    resolveRestingChartPhase(status)
+  );
+  const handlePhaseChange = useCallback(
+    (phase: ChartPhase) => {
+      setChartPhase(phase);
+      onPhaseChange?.(phase);
+    },
+    [onPhaseChange]
+  );
+
+  const showLoadingLabel = Boolean(
+    loadingLabel?.trim() &&
+      (chartPhase === 'loading' ||
+        chartPhase === 'exiting' ||
+        chartPhase === 'gridTweenReady' ||
+        chartPhase === 'revealingLoading')
+  );
 
   return (
     <div
       className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: 'none' }}
+      style={{
+        ...(aspectRatio ? { aspectRatio } : undefined),
+        touchAction: 'none',
+        ...style,
+      }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
           <ChartInner
             animationDuration={animationDuration}
             animationEasing={animationEasing}
+            chartStatus={status}
             containerRef={containerRef}
             data={data}
             enterTransition={enterTransition}
+            formatDateLabel={formatDateLabel}
             height={height}
+            loadingLabel={loadingLabel}
             margin={margin}
+            onPhaseChange={handlePhaseChange}
             revealSignature={revealSignature}
+            tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
             width={width}
             xDataKey={xDataKey}
+            xDomain={xDomain}
+            xDomainSlotCount={xDomainSlotCount}
+            yDomain={yDomain}
+            yDomainTween={yDomainTween}
+            yDomainTweenDuration={yDomainTweenDuration}
+            yReversed={yReversed}
           >
             {children}
           </ChartInner>
         )}
       </ParentSize>
+      {showLoadingLabel ? (
+        <ChartLoadingLabel
+          exiting={chartPhase !== 'loading'}
+          text={loadingLabel}
+        />
+      ) : null}
     </div>
   );
 }

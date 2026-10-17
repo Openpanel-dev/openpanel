@@ -61,22 +61,25 @@ function OPDatePillInner({
   interval?: IInterval;
   tooltipData: TooltipData;
 }) {
-  const { data, xAccessor, margin, width } = useChartStable();
+  const { data, xAccessor, margin, width, barScale, barXAccessor } =
+    useChartStable();
 
   const xCenter = tooltipData.x + margin.left;
   const animatedX = useSpring(xCenter, SPRING);
   animatedX.set(xCenter);
 
-  const label = useMemo(
-    () =>
-      formatPillDate(
-        xAccessor(tooltipData.point),
-        interval ?? 'day',
-        data,
-        xAccessor
-      ),
-    [tooltipData, data, xAccessor, interval]
-  );
+  const label = useMemo(() => {
+    // A category bar chart has no dates; its x value is the category name.
+    if (barScale && barXAccessor) {
+      return barXAccessor(tooltipData.point);
+    }
+    return formatPillDate(
+      xAccessor(tooltipData.point),
+      interval ?? 'day',
+      data,
+      xAccessor
+    );
+  }, [tooltipData, data, xAccessor, interval, barScale, barXAccessor]);
 
   // Stable across hovers — depends only on chart dimensions.
   const maxWidth = useMemo(
@@ -133,7 +136,8 @@ function formatPillDate(
   xAccessor: (d: Record<string, unknown>) => Date
 ): string {
   const first = data[0] ? xAccessor(data[0]) : date;
-  const last = data[data.length - 1] ? xAccessor(data[data.length - 1]!) : date;
+  const lastPoint = data.at(-1);
+  const last = lastPoint ? xAccessor(lastPoint) : date;
   const spanHours = Math.max(0, differenceInHours(last, first));
 
   const dayMonth = `${SHORT_MONTHS[date.getMonth()]} ${date.getDate()}`;

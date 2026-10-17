@@ -1,3 +1,9 @@
+/**
+ * Which side(s) of a series should fade to transparent at the chart edges.
+ * - `true`  → fade both edges (default for `<Line>`)
+ * - `false` → no fade (default for `<Area>`)
+ * - `"left"` / `"right"` → fade only that side
+ */
 export type FadeEdges = boolean | 'left' | 'right';
 
 export interface FadeSides {
@@ -38,4 +44,15 @@ export function fadeGradientStops(sides: FadeSides): FadeGradientStop[] {
     { offset: '85%', opacity: 1 },
     { offset: '100%', opacity: sides.right ? 0 : 1 },
   ];
+}
+
+/** Horizontal fade gradient pinned to the chart viewport (not the series path bounds). */
+export function viewportFadeGradientAttrs(innerWidth: number) {
+  return {
+    gradientUnits: 'userSpaceOnUse' as const,
+    x1: 0,
+    x2: innerWidth,
+    y1: 0,
+    y2: 0,
+  };
 }

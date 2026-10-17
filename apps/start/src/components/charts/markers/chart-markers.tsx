@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { chartCssVars, useChart } from '../chart-context';
+import { chartCssVars, useChart, useChartHover } from '../chart-context';
 import { type ChartMarker, MarkerGroup } from './marker-group';
 
 export interface ChartMarkersProps {
@@ -31,7 +31,7 @@ export function MarkerTooltipContent({ markers }: MarkerTooltipContentProps) {
   const hiddenCount = markers.length - MAX_TOOLTIP_MARKERS;
 
   return (
-    <div className="mt-2 space-y-2 border-chart-tooltip-muted border-t pt-2">
+    <div className="mt-2 space-y-2 border-t pt-2">
       {visibleMarkers.map((marker) => {
         const isClickable = !!(marker.onClick || marker.href);
         return (
@@ -83,6 +83,12 @@ export function MarkerTooltipContent({ markers }: MarkerTooltipContentProps) {
   );
 }
 
+/**
+ * Date markers drawn above the plot. Markers sit 8px above the plot top and
+ * the count badge reaches ~33px above it (at the default `size`), so keep
+ * `margin.top` ≥ 36 if the chart's container clips its overflow. Chart SVGs
+ * are `overflow: visible` and markers render outside the series reveal clip.
+ */
 export function ChartMarkers({
   items,
   size = 28,
@@ -190,7 +196,7 @@ export function ChartMarkers({
 
 // Hook to get active markers for tooltip
 export function useActiveMarkers(items: ChartMarker[]) {
-  const { tooltipData } = useChart();
+  const { tooltipData } = useChartHover();
 
   return useMemo(() => {
     if (!tooltipData) {

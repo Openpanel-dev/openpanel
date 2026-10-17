@@ -38,11 +38,14 @@ export function useVisibleFunnelBreakdowns(
   const [visibleSeries, setVisibleSeries] = useState<string[]>(() =>
     resolveIds(data ?? [])
   );
+  // What the chart first showed for this set of series; "Reset" goes back to it.
+  const defaultIdsRef = useRef(visibleSeries);
 
   const prevKeyRef = useRef(seriesKey);
   if (prevKeyRef.current !== seriesKey) {
     prevKeyRef.current = seriesKey;
-    setVisibleSeries(resolveIds(data ?? []));
+    defaultIdsRef.current = resolveIds(data ?? []);
+    setVisibleSeries(defaultIdsRef.current);
   }
 
   const handleSet = useCallback<React.Dispatch<React.SetStateAction<string[]>>>(
@@ -56,13 +59,23 @@ export function useVisibleFunnelBreakdowns(
     []
   );
 
+  const defaultIds = defaultIdsRef.current;
+  const isDefaultSelection =
+    defaultIds.length === visibleSeries.length &&
+    defaultIds.every((id) => visibleSeries.includes(id));
+  const resetRef = useRef<() => void>(() => undefined);
+  resetRef.current = () => handleSet(defaultIds);
+  const reset = useCallback(() => resetRef.current(), []);
+
   return useMemo(
     () => ({
+      isDefaultSelection,
+      reset,
       breakdowns: data
         .map((item, index) => ({ ...item, index }))
         .filter((item) => visibleSeries.includes(item.id)),
       setVisibleSeries: handleSet,
     }),
-    [visibleSeries, data, handleSet]
+    [visibleSeries, data, handleSet, isDefaultSelection, reset]
   );
 }

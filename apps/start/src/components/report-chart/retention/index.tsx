@@ -1,11 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
+import { ChartWithTable, TableCard } from '../common/chart-with-table';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
-import CohortTable from './table';
+import { CohortTable } from './table';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
@@ -22,8 +23,7 @@ export function ReportRetentionChart() {
       (item.filters ?? []).filter((filter) => filter.name !== 'name')
     ),
   ];
-  const isEnabled =
-    firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
+  const hasEvents = firstEvent.length > 0 && secondEvent.length > 0;
 
   const retentionOptions =
     report.options?.type === 'retention' ? report.options : undefined;
@@ -47,12 +47,12 @@ export function ReportRetentionChart() {
       },
       {
         placeholderData: keepPreviousData,
-        enabled: isEnabled,
+        enabled: hasEvents && !isLazyLoading,
       }
     )
   );
 
-  if (!isEnabled) {
+  if (!hasEvents) {
     return <Disabled />;
   }
 
@@ -69,12 +69,14 @@ export function ReportRetentionChart() {
   }
 
   return (
-    <div className="col gap-4">
-      <AspectContainer>
-        <Chart data={res.data} />
-      </AspectContainer>
-      <CohortTable data={res.data} />
-    </div>
+    <ChartWithTable
+      chart={<Chart data={res.data} />}
+      tables={
+        <TableCard>
+          <CohortTable data={res.data} />
+        </TableCard>
+      }
+    />
   );
 }
 

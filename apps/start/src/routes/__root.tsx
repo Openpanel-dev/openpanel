@@ -8,8 +8,6 @@ import { useEffect } from 'react';
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import type { AppRouter } from '@openpanel/core';
 import type { QueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';

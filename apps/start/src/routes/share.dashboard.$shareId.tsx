@@ -1,10 +1,11 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { useMemo } from 'react';
 import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
+import { DashboardGrid, useDashboardLayout } from '@/components/dashboard-grid';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import { GrafanaGrid, useReportLayouts } from '@/components/grafana-grid';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -95,6 +96,8 @@ function RouteComponent() {
   });
 
   const share = shareQuery.data;
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
+  const [layout] = useDashboardLayout(reports);
 
   if (!share) {
     throw notFound();
@@ -108,11 +111,6 @@ function RouteComponent() {
 
   const isHeaderVisible =
     header !== '0' && header !== 0 && header !== 'false' && header !== false;
-
-  const reports = reportsQuery.data ?? [];
-
-  // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(reports);
 
   return (
     <div>
@@ -144,7 +142,7 @@ function RouteComponent() {
         ) : reports.length === 0 ? (
           <FullPageEmptyState title="No reports" />
         ) : (
-          <GrafanaGrid layouts={layouts}>
+          <DashboardGrid layout={layout}>
             {reports.map((report) => (
               <div key={report.id}>
                 <ReportItemReadOnly
@@ -157,7 +155,7 @@ function RouteComponent() {
                 />
               </div>
             ))}
-          </GrafanaGrid>
+          </DashboardGrid>
         )}
       </div>
     </div>

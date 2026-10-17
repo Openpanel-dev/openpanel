@@ -2,6 +2,7 @@ import {
   type FadeEdges,
   fadeGradientStops,
   resolveFadeSides,
+  viewportFadeGradientAttrs,
 } from './fade-edges';
 
 interface AreaGradientDefsProps {
@@ -12,6 +13,8 @@ interface AreaGradientDefsProps {
   fill: string;
   fillOpacity: number;
   gradientToOpacity: number;
+  /** 0–1: where the bottom stop sits (1 = full-height gradient). */
+  gradientSpan?: number;
   resolvedStroke: string;
   isPatternFill: boolean;
   fadeEdges: FadeEdges;
@@ -27,6 +30,7 @@ export function AreaGradientDefs({
   fill,
   fillOpacity,
   gradientToOpacity,
+  gradientSpan = 1,
   resolvedStroke,
   isPatternFill,
   fadeEdges,
@@ -40,6 +44,8 @@ export function AreaGradientDefs({
   const strokeStops = sides.any ? fadeGradientStops(sides) : null;
   const showEdgeMask = sides.any && !isPatternFill;
   const edgeStops = showEdgeMask ? fadeGradientStops(sides) : null;
+  const span = Math.min(1, Math.max(0.01, gradientSpan));
+  const midOffset = `${span * 100}%`;
 
   return (
     <defs>
@@ -50,14 +56,23 @@ export function AreaGradientDefs({
             style={{ stopColor: fill, stopOpacity: fillOpacity }}
           />
           <stop
-            offset="100%"
+            offset={midOffset}
             style={{ stopColor: fill, stopOpacity: gradientToOpacity }}
           />
+          {span < 1 ? (
+            <stop
+              offset="100%"
+              style={{ stopColor: fill, stopOpacity: gradientToOpacity }}
+            />
+          ) : null}
         </linearGradient>
       )}
 
       {strokeStops ? (
-        <linearGradient id={strokeGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+        <linearGradient
+          id={strokeGradientId}
+          {...viewportFadeGradientAttrs(innerWidth)}
+        >
           {strokeStops.map((stop) => (
             <stop
               key={stop.offset}
@@ -70,7 +85,10 @@ export function AreaGradientDefs({
 
       {edgeStops ? (
         <>
-          <linearGradient id={edgeGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+          <linearGradient
+            id={edgeGradientId}
+            {...viewportFadeGradientAttrs(innerWidth)}
+          >
             {edgeStops.map((stop) => (
               <stop
                 key={stop.offset}

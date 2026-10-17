@@ -1,227 +1,191 @@
 import { average, sum } from '@openpanel/shared';
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  GitBranch,
-  Hash,
-  Percent,
-  Target,
-  Trophy,
-} from 'lucide-react';
-import type React from 'react';
 import { useMemo } from 'react';
+import { getPreviousMetric } from '../../../utils/previous-metric';
+import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { SerieIcon } from '../common/serie-icon';
+import { Stat, StatStrip } from '../common/stat-strip';
 import { useReportChartContext } from '../context';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
 
-const SUMMARY_ICONS: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
-  Flow: GitBranch,
-  'Average conversion rate': Percent,
-  'Total conversions': Target,
-  'Previous period average conversion rate': Percent,
-  'Previous period total conversions': Hash,
-  'Best breakdown (avg)': Trophy,
-  'Worst breakdown (avg)': ArrowDownRight,
-  'Best conversion rate': ArrowUpRight,
-  'Worst conversion rate': ArrowDownRight,
-};
+type ConversionData = RouterOutputs['chart']['conversion'];
+type Serie = ConversionData['current'][number];
+type Point = Serie['data'][number];
 
 interface Props {
-  data: RouterOutputs['chart']['conversion'];
+  data: ConversionData;
 }
 
+interface DayMatch {
+  serie: Serie;
+  point: Point;
+}
+
+const averageRate = (serie: { data: { rate: number }[] }) =>
+  average(
+    serie.data.map((item) => item.rate),
+    true
+  );
+
+/** The report's headline numbers: overall conversion, how many converted, and the best and worst day and breakdown. */
 export function Summary({ data }: Props) {
   const number = useNumber();
   const { report } = useReportChartContext();
+  const hasBreakdowns = data.current.length > 1;
+  const flow = report.series
+    .filter((item) => item.type === 'event')
+    .map((item) => item.displayName || item.name)
+    .join(' → ');
 
-  const bestConversionRateMatch = useMemo(() => {
-    return data.current.reduce(
-      (acc, serie, serieIndex) => {
-        const serieMax = serie.data.reduce(
-          (maxInSerie, item, dataIndex) => {
-            if (item.rate > maxInSerie.rate) {
-              return { rate: item.rate, serieIndex, dataIndex };
-            }
-            return maxInSerie;
-          },
-          { rate: 0, serieIndex, dataIndex: 0 }
-        );
-
-        return serieMax.rate > acc.rate ? serieMax : acc;
-      },
-      {
-        rate: 0,
-        serieIndex: 0,
-        dataIndex: 0,
-      }
+  const stats = useMemo(() => {
+    const conversions = sumOf(data.current, 'conversions');
+    const opportunities = sumOf(data.current, 'total');
+    const previousConversions = data.previous?.length
+      ? sumOf(data.previous, 'conversions')
+      : null;
+    const previousOpportunities = data.previous?.length
+      ? sumOf(data.previous, 'total')
+      : null;
+    // Conversions over opportunities, not a mean of daily rates: a day with
+    // one visitor should not weigh as much as a day with a hundred.
+    const rate = overallRate(conversions, opportunities);
+    const previousRate =
+      previousConversions === null || previousOpportunities === null
+        ? null
+        : overallRate(previousConversions, previousOpportunities);
+    const days = data.current.flatMap((serie) =>
+      serie.data
+        .filter((point) => point.total > 0)
+        .map((point): DayMatch => ({ serie, point }))
     );
-  }, [data.current]);
-
-  const worstConversionRateMatch = useMemo(() => {
-    return data.current.reduce(
-      (acc, serie, serieIndex) => {
-        const serieMin = serie.data.reduce(
-          (minInSerie, item, dataIndex) => {
-            if (item.rate < minInSerie.rate) {
-              return { rate: item.rate, serieIndex, dataIndex };
-            }
-            return minInSerie;
-          },
-          { rate: 100, serieIndex, dataIndex: 0 }
-        );
-
-        return serieMin.rate < acc.rate ? serieMin : acc;
-      },
-      {
-        rate: 100,
-        serieIndex: 0,
-        dataIndex: 0,
-      }
+    const bySerie = [...data.current].sort(
+      (a, b) => averageRate(b) - averageRate(a)
     );
-  }, [data.current]);
-  const bestConversionRate =
-    data.current[bestConversionRateMatch.serieIndex]?.data[
-      bestConversionRateMatch.dataIndex
-    ];
-  const worstConversionRate =
-    data.current[worstConversionRateMatch.serieIndex]?.data[
-      worstConversionRateMatch.dataIndex
-    ];
+    return {
+      rate,
+      previousRate,
+      conversions,
+      previousConversions,
+      opportunities,
+      bestDay: maxBy(days, (day) => day.point.rate),
+      worstDay: minBy(days, (day) => day.point.rate),
+      bestSerie: bySerie[0],
+      worstSerie: bySerie.at(-1),
+    };
+  }, [data]);
 
-  const bestAverageConversionRateMatch = data.current.reduce(
-    (acc, serie) => {
-      const averageRate = average(serie.data.map((item) => item.rate));
-      return averageRate > acc.averageRate ? { serie, averageRate } : acc;
-    },
-    { serie: data.current[0], averageRate: 0 }
-  );
-  const worstAverageConversionRateMatch = data.current.reduce(
-    (acc, serie) => {
-      const averageRate = average(serie.data.map((item) => item.rate));
-      return averageRate < acc.averageRate ? { serie, averageRate } : acc;
-    },
-    { serie: data.current[0], averageRate: 100 }
-  );
-
-  const averageConversionRate = average(
-    data.current.map((serie) => {
-      return average(serie.data.map((item) => item.rate));
-    }, 0)
-  );
-
-  const averageConversionRatePrevious =
-    average(
-      data.previous?.map((serie) => {
-        return average(serie.data.map((item) => item.rate));
-      }) ?? []
-    ) ?? 0;
-
-  const sumConversions = data.current.reduce((acc, serie) => {
-    return acc + sum(serie.data.map((item) => item.conversions));
-  }, 0);
-  const sumConversionsPrevious = data.previous?.reduce((acc, serie) => {
-    return acc + sum(serie.data.map((item) => item.conversions));
-  }, 0);
-
-  const hasManySeries = data.current.length > 1;
-
-  const keyValueData = useMemo(() => {
-    const flowLabel = report.series
-      .filter((item) => item.type === 'event')
-      .map((e) => e.displayName || e.name)
-      .join(' → ');
-    const items: { name: string; value: React.ReactNode }[] = [
-      { name: 'Flow', value: flowLabel },
-      {
-        name: 'Average conversion rate',
-        value: number.formatWithUnit(averageConversionRate / 100, '%'),
-      },
-      { name: 'Total conversions', value: sumConversions },
-    ];
-    if (data.previous != null) {
-      items.push(
-        {
-          name: 'Previous period average conversion rate',
-          value: number.formatWithUnit(
-            averageConversionRatePrevious / 100,
-            '%'
-          ),
-        },
-        {
-          name: 'Previous period total conversions',
-          value: sumConversionsPrevious ?? 0,
-        }
-      );
-    }
-    if (hasManySeries && bestAverageConversionRateMatch) {
-      items.push({
-        name: 'Best breakdown (avg)',
-        value: `${bestAverageConversionRateMatch.serie?.breakdowns.join(', ')} with ${number.formatWithUnit(bestAverageConversionRateMatch.averageRate / 100, '%')}`,
-      });
-    }
-    if (hasManySeries && worstAverageConversionRateMatch) {
-      items.push({
-        name: 'Worst breakdown (avg)',
-        value: `${worstAverageConversionRateMatch.serie?.breakdowns.join(', ')} with ${number.formatWithUnit(worstAverageConversionRateMatch.averageRate / 100, '%')}`,
-      });
-    }
-    if (bestConversionRate) {
-      const breakdowns = bestConversionRate.serie.breakdowns.join(', ');
-      items.push({
-        name: 'Best conversion rate',
-        value: breakdowns
-          ? `${number.formatWithUnit(bestConversionRate.rate / 100, '%')} on ${breakdowns} at ${formatDate(new Date(bestConversionRate.date))}`
-          : `${number.formatWithUnit(bestConversionRate.rate / 100, '%')} at ${formatDate(new Date(bestConversionRate.date))}`,
-      });
-    }
-    if (worstConversionRate) {
-      const breakdowns = worstConversionRate.serie.breakdowns.join(', ');
-      items.push({
-        name: 'Worst conversion rate',
-        value: breakdowns
-          ? `${number.formatWithUnit(worstConversionRate.rate / 100, '%')} on ${breakdowns} at ${formatDate(new Date(worstConversionRate.date))}`
-          : `${number.formatWithUnit(worstConversionRate.rate / 100, '%')} at ${formatDate(new Date(worstConversionRate.date))}`,
-      });
-    }
-    return items;
-  }, [
-    report.series,
-    averageConversionRate,
-    sumConversions,
-    data.previous,
-    averageConversionRatePrevious,
-    sumConversionsPrevious,
-    hasManySeries,
-    bestAverageConversionRateMatch,
-    worstAverageConversionRateMatch,
-    bestConversionRate,
-    worstConversionRate,
-    number,
-  ]);
+  const formatRate = (value: number) => number.formatWithUnit(value / 100, '%');
 
   return (
-    <div className="my-4 space-y-3">
-      <div className="row flex-wrap gap-2">
-        {keyValueData.map((item) => {
-          const Icon = SUMMARY_ICONS[item.name];
-          return (
-            <div
-              className="card row items-center justify-between gap-4 p-4 py-3 font-medium"
-              key={item.name}
-            >
-              <span className="row items-center gap-2 text-muted-foreground">
-                {Icon != null && <Icon className="size-4 shrink-0" />}
-                {item.name}
-              </span>
-              <span>{item.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <StatStrip
+      className={cn('md:grid-cols-4', hasBreakdowns && 'lg:grid-cols-6')}
+    >
+      <Stat
+        change={
+          stats.previousRate !== null && (
+            <PreviousDiffIndicatorPure
+              {...getPreviousMetric(stats.rate, stats.previousRate)}
+              size="xs"
+            />
+          )
+        }
+        detail={flow}
+        label="Conversion"
+        value={formatRate(stats.rate)}
+      />
+      <Stat
+        change={
+          stats.previousConversions !== null && (
+            <PreviousDiffIndicatorPure
+              {...getPreviousMetric(
+                stats.conversions,
+                stats.previousConversions
+              )}
+              size="xs"
+            />
+          )
+        }
+        detail={`of ${number.format(stats.opportunities)} opportunities`}
+        label="Conversions"
+        value={number.format(stats.conversions)}
+      />
+      <Stat
+        detail={stats.bestDay && <DayDetail match={stats.bestDay} />}
+        label="Best day"
+        value={stats.bestDay ? formatRate(stats.bestDay.point.rate) : '–'}
+      />
+      <Stat
+        detail={stats.worstDay && <DayDetail match={stats.worstDay} />}
+        label="Worst day"
+        value={stats.worstDay ? formatRate(stats.worstDay.point.rate) : '–'}
+      />
+      {hasBreakdowns && stats.bestSerie && (
+        <Stat
+          detail={<Breakdown serie={stats.bestSerie} />}
+          label="Best breakdown"
+          value={formatRate(averageRate(stats.bestSerie))}
+        />
+      )}
+      {hasBreakdowns && stats.worstSerie && (
+        <Stat
+          detail={<Breakdown serie={stats.worstSerie} />}
+          label="Worst breakdown"
+          value={formatRate(averageRate(stats.worstSerie))}
+        />
+      )}
+    </StatStrip>
+  );
+}
+
+function DayDetail({ match }: { match: DayMatch }) {
+  const hasBreakdown = match.serie.breakdowns.length > 0;
+  return (
+    <>
+      {formatDate(new Date(match.point.date))}
+      {hasBreakdown && (
+        <>
+          <span>·</span>
+          <Breakdown serie={match.serie} />
+        </>
+      )}
+    </>
+  );
+}
+
+function Breakdown({ serie }: { serie: Serie }) {
+  return (
+    <>
+      <SerieIcon name={serie.breakdowns} />
+      <span className="truncate">{serie.breakdowns.join(' › ')}</span>
+    </>
+  );
+}
+
+function sumOf(
+  series: { data: { conversions: number; total: number }[] }[],
+  key: 'conversions' | 'total'
+) {
+  return sum(series.flatMap((serie) => serie.data.map((item) => item[key])));
+}
+
+function overallRate(conversions: number, opportunities: number) {
+  return opportunities > 0 ? (conversions / opportunities) * 100 : 0;
+}
+
+function maxBy<T>(items: T[], score: (item: T) => number) {
+  return items.reduce<T | undefined>(
+    (best, item) =>
+      best === undefined || score(item) > score(best) ? item : best,
+    undefined
+  );
+}
+
+function minBy<T>(items: T[], score: (item: T) => number) {
+  return items.reduce<T | undefined>(
+    (worst, item) =>
+      worst === undefined || score(item) < score(worst) ? item : worst,
+    undefined
   );
 }

@@ -389,26 +389,36 @@ interface ReportLayoutInput {
   maxH?: number;
 }
 
-export async function updateReportLayout(
+export async function updateReportLayouts(
   deps: ServiceDeps,
   input: {
-    reportId: string;
-    layout: ReportLayoutInput;
+    dashboardId: string;
+    items: { reportId: string; layout: ReportLayoutInput }[];
   }
 ) {
   const db = deps.db;
-  const { reportId, layout } = input;
-
-  return db.reportLayout.upsert({
-    where: {
-      reportId,
-    },
-    create: {
-      reportId,
-      ...layout,
-    },
-    update: layout,
+  const reportIds = input.items.map((item) => item.reportId);
+  const reportsOnDashboard = await db.report.findMany({
+    where: { id: { in: reportIds }, dashboardId: input.dashboardId },
+    select: { id: true },
   });
+  const knownIds = new Set(reportsOnDashboard.map((report) => report.id));
+  const foreignIds = reportIds.filter((id) => !knownIds.has(id));
+  if (foreignIds.length > 0) {
+    throw new TRPCBadRequestError(
+      `Reports do not belong to this dashboard: ${foreignIds.join(', ')}`
+    );
+  }
+
+  return db.$transaction(
+    input.items.map(({ reportId, layout }) =>
+      db.reportLayout.upsert({
+        where: { reportId },
+        create: { reportId, ...layout },
+        update: layout,
+      })
+    )
+  );
 }
 
 export async function getReportLayouts(
@@ -489,9 +499,10 @@ export function createReportService(
       deleteReport(deps, reportId),
     duplicateReport: (report: DbReport): ReturnType<typeof duplicateReport> =>
       duplicateReport(deps, report),
-    updateReportLayout: (
-      input: Parameters<typeof updateReportLayout>[1]
-    ): ReturnType<typeof updateReportLayout> => updateReportLayout(deps, input),
+    updateReportLayouts: (
+      input: Parameters<typeof updateReportLayouts>[1]
+    ): ReturnType<typeof updateReportLayouts> =>
+      updateReportLayouts(deps, input),
     getReportLayouts: (
       input: Parameters<typeof getReportLayouts>[1]
     ): ReturnType<typeof getReportLayouts> => getReportLayouts(deps, input),

@@ -4,7 +4,11 @@
 // through `ctx.services.auth` is the only check that fires.
 
 import { z } from 'zod';
-import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { zReport } from './report.constants';
 
@@ -23,6 +27,27 @@ const zReportLayout = z.object({
   maxW: zGridSpan.optional(),
   maxH: z.number().int().min(1).max(GRID_MAX_ROWS).optional(),
 });
+
+// Project access only proves the caller owns `projectId`. Binding the
+// caller-supplied `dashboardId` to that project as well is what stops a
+// dashboard from another organization being rewritten through these handlers.
+async function requireDashboardWrite(
+  ctx: Pick<TrpcContext, 'services'> & { session: { userId: string } },
+  { dashboardId, projectId }: { dashboardId: string; projectId: string }
+) {
+  await ctx.services.auth.requireProjectAccess({
+    userId: ctx.session.userId,
+    projectId,
+    level: 'write',
+  });
+  const dashboard = await ctx.services.dashboard.getDashboardById(
+    dashboardId,
+    projectId
+  );
+  if (!dashboard) {
+    throw new TRPCNotFoundError('Dashboard not found');
+  }
+}
 
 export const reportRouter = createTRPCRouter({
   list: protectedProcedure
@@ -150,21 +175,19 @@ export const reportRouter = createTRPCRouter({
       return report;
     }),
 
-  updateLayout: protectedProcedure
+  updateLayouts: protectedProcedure
     .input(
       z.object({
-        reportId: z.string(),
-        layout: zReportLayout,
+        dashboardId: z.string(),
+        projectId: z.string(),
+        items: z
+          .array(z.object({ reportId: z.string(), layout: zReportLayout }))
+          .min(1),
       })
     )
-    .mutation(async ({ input: { reportId, layout }, ctx }) => {
-      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
-      await ctx.services.auth.requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-      return ctx.services.report.updateReportLayout({ reportId, layout });
+    .mutation(async ({ input: { dashboardId, projectId, items }, ctx }) => {
+      await requireDashboardWrite(ctx, { dashboardId, projectId });
+      return ctx.services.report.updateReportLayouts({ dashboardId, items });
     }),
 
   resetLayout: protectedProcedure
@@ -175,24 +198,7 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
-      await ctx.services.auth.requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-        level: 'write',
-      });
-
-      // The access check above only proves the caller owns `projectId`. Bind
-      // the caller-supplied `dashboardId` to that project as well before
-      // deleting anything, otherwise a dashboard from another organization
-      // can be wiped through this handler.
-      const dashboard = await ctx.services.dashboard.getDashboardById(
-        dashboardId,
-        projectId
-      );
-      if (!dashboard) {
-        throw new TRPCNotFoundError('Dashboard not found');
-      }
-
+      await requireDashboardWrite(ctx, { dashboardId, projectId });
       return ctx.services.report.resetReportLayouts({
         dashboardId,
         projectId,

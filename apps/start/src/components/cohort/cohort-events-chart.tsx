@@ -1,73 +1,36 @@
+import { curveMonotoneX } from 'd3-shape';
 import { ActivityIcon } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Tooltip as RechartTooltip,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
-import {
-  useXAxisProps,
-  useYAxisProps,
-} from '@/components/report-chart/common/axis';
+import { Area, AreaChart } from '@/components/charts/area-chart';
+import { Grid } from '@/components/charts/grid';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
+import { XAxis } from '@/components/charts/x-axis';
+import { YAxis } from '@/components/charts/y-axis';
 import { Widget, WidgetBody } from '@/components/widget';
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 
-type Props = {
-  data: { date: string; count: number }[];
-};
+const MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
+const FILL_OPACITY = 0.3;
+const COLOR = getChartColor(0);
 
-function Tooltip(props: any) {
-  const number = useNumber();
-  const formatDate = useFormatDateInterval({ interval: 'day', short: false });
-  const payload = props.payload?.[0]?.payload;
-
-  if (!payload) {
-    return null;
-  }
-
-  return (
-    <div className="flex min-w-[160px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
-      <div className="text-muted-foreground text-sm">
-        {formatDate(new Date(payload.timestamp))}
-      </div>
-      <div className="flex items-center gap-2">
-        <div
-          className="h-10 w-1 rounded-full"
-          style={{ background: getChartColor(0) }}
-        />
-        <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">Events</div>
-          <div
-            className="font-semibold text-lg"
-            style={{ color: getChartColor(0) }}
-          >
-            {number.format(payload.count)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+interface Point {
+  [key: string]: unknown;
+  date: string;
+  count: number;
 }
 
+interface Props {
+  data: Point[];
+}
+
+const formatDateLabel = (date: Date) =>
+  formatDateInterval({ interval: 'day', date, short: true });
+
 export function CohortEventsChart({ data }: Props) {
-  const xAxisProps = useXAxisProps({ interval: 'day' });
-  const yAxisProps = useYAxisProps({});
-  const color = getChartColor(0);
-
-  const chartData = data.map((item) => ({
-    date: item.date,
-    timestamp: new Date(item.date).getTime(),
-    count: item.count,
-  }));
-
-  const gradientId = 'cohortEventsGradient';
-  const total = data.reduce((acc, d) => acc + d.count, 0);
+  const number = useNumber();
+  const total = data.reduce((acc, point) => acc + point.count, 0);
 
   return (
     <Widget className="w-full">
@@ -82,40 +45,40 @@ export function CohortEventsChart({ data }: Props) {
             No events yet
           </p>
         ) : (
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <RechartTooltip
-                  content={<Tooltip />}
-                  cursor={{ stroke: color, strokeOpacity: 0.3 }}
-                />
-                <Area
-                  dataKey="count"
-                  dot={false}
-                  fill={`url(#${gradientId})`}
-                  isAnimationActive={false}
-                  stroke={color}
-                  strokeWidth={2}
-                  type="monotone"
-                />
-                <XAxis {...xAxisProps} />
-                <YAxis {...yAxisProps} />
-                <CartesianGrid
-                  className="stroke-border"
-                  horizontal={true}
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                  vertical={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <AreaChart
+            animationDuration={0}
+            aspectRatio="auto"
+            className="h-[200px]"
+            data={data}
+            formatDateLabel={formatDateLabel}
+            margin={MARGIN}
+            xDataKey="date"
+          >
+            <Grid horizontal />
+            <YAxis formatValue={number.short} />
+            <XAxis />
+            <Area
+              animate={false}
+              curve={curveMonotoneX}
+              dataKey="count"
+              fill={COLOR}
+              fillOpacity={FILL_OPACITY}
+              stroke={COLOR}
+            />
+            <OPChartTooltip<Point>
+              interval="day"
+              rows={(point) => [
+                {
+                  color: COLOR,
+                  label: 'Events',
+                  value: point.count,
+                  format: number.format,
+                },
+              ]}
+              showCrosshair
+              showDots
+            />
+          </AreaChart>
         )}
       </WidgetBody>
     </Widget>

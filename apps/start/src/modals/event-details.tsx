@@ -340,6 +340,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           <div className="card p-4">
             <ReportChartShortcut
               chartType="linear"
+              options={{ hideTable: true }}
               projectId={event.projectId}
               series={[
                 {

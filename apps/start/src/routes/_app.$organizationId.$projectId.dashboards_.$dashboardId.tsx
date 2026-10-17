@@ -9,15 +9,17 @@ import {
   ShareIcon,
   TrashIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  DashboardGrid,
+  isSameTilePosition,
+  type Layout,
+  TILE_MIN_SIZE,
+  useDashboardLayout,
+} from '@/components/dashboard-grid';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import {
-  GrafanaGrid,
-  type Layout,
-  useReportLayouts,
-} from '@/components/grafana-grid';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -121,10 +123,8 @@ function Component() {
     })
   );
 
-  const reports = reportsQuery.data ?? [];
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const dashboard = dashboardQuery.data;
-  const [isGridReady, setIsGridReady] = useState(false);
-  const [enableTransitions, setEnableTransitions] = useState(false);
   const [search, setSearch] = useState('');
 
   const filteredReports = useMemo(() => {
@@ -134,19 +134,6 @@ function Component() {
     }
     return reports.filter((r) => r.name?.toLowerCase().includes(q));
   }, [reports, search]);
-
-  // Wait for initial render to ensure grid has proper dimensions
-  useEffect(() => {
-    if (reports.length > 0 && !isGridReady) {
-      // Small delay to ensure container has rendered with proper width
-      const timer = setTimeout(() => {
-        setIsGridReady(true);
-        // Enable transitions after initial render
-        setTimeout(() => setEnableTransitions(true), 100);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [reports.length, isGridReady]);
 
   const reportDeletion = useMutation(
     trpc.report.delete.mutationOptions({
@@ -170,12 +157,23 @@ function Component() {
     })
   );
 
-  const updateLayout = useMutation(
-    trpc.report.updateLayout.mutationOptions({
-      onError: handleErrorToastOptions({}),
-      onSuccess() {
-        // Silently refetch reports (which includes layouts)
-        reportsQuery.refetch();
+  const reportsQueryKey = trpc.report.list.queryKey({ dashboardId, projectId });
+  const { mutate: saveLayouts } = useMutation(
+    trpc.report.updateLayouts.mutationOptions({
+      onSuccess(savedLayouts) {
+        queryClient.setQueryData(reportsQueryKey, (current) =>
+          current?.map((report) => ({
+            ...report,
+            layout:
+              savedLayouts.find((saved) => saved.reportId === report.id) ??
+              report.layout,
+          }))
+        );
+      },
+      onError(error) {
+        handleErrorToastOptions({})(error);
+        // The grid already shows the rejected layout; the saved one is the rollback.
+        queryClient.invalidateQueries({ queryKey: reportsQueryKey });
       },
     })
   );
@@ -190,8 +188,7 @@ function Component() {
     })
   );
 
-  // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(filteredReports);
+  const [layout, setLayout] = useDashboardLayout(filteredReports);
 
   const dashboardPrimer = useMemo(
     () => ({
@@ -208,74 +205,70 @@ function Component() {
 
   useDashboardPageContext(dashboardId, dashboardPrimer);
 
-  const handleLayoutChange = useCallback((newLayout: Layout[]) => {
-    // This is called during dragging/resizing, we'll save on drag/resize stop
-  }, []);
-
-  const handleDragStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after drag stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
-      });
+  const saveLayout = useCallback(
+    (newLayout: Layout) => {
+      const items = newLayout
+        .filter((item) => {
+          const saved = reports.find((report) => report.id === item.i)?.layout;
+          return !(saved && isSameTilePosition(item, saved));
+        })
+        .map((item) => ({
+          reportId: item.i,
+          layout: {
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: item.h,
+            minW: item.minW ?? TILE_MIN_SIZE.minW,
+            minH: item.minH ?? TILE_MIN_SIZE.minH,
+          },
+        }));
+      if (items.length === 0) {
+        return;
+      }
+      saveLayouts({ dashboardId, projectId, items });
     },
-    [reports, updateLayout]
+    [reports, saveLayouts, dashboardId, projectId]
   );
 
-  const handleResizeStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after resize stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
-      });
-    },
-    [reports, updateLayout]
+  // The grid re-renders on every drag frame; tiles that keep their element
+  // identity are skipped by the grid's memo, so no chart renders mid-drag.
+  const deleteReport = reportDeletion.mutate;
+  const duplicateReport = reportDuplicate.mutate;
+  const moveReport = useCallback(
+    (reportId: string) => pushModal('MoveReport', { reportId, dashboardId }),
+    [dashboardId]
+  );
+  const tiles = useMemo(
+    () =>
+      filteredReports.map((report) => (
+        <div key={report.id}>
+          <ReportItem
+            endDate={endDate}
+            interval={interval}
+            onDelete={(reportId) => deleteReport({ reportId })}
+            onDuplicate={(reportId) => duplicateReport({ reportId })}
+            onMove={moveReport}
+            organizationId={organizationId}
+            projectId={projectId}
+            range={range}
+            report={report}
+            startDate={startDate}
+          />
+        </div>
+      )),
+    [
+      filteredReports,
+      endDate,
+      interval,
+      range,
+      startDate,
+      organizationId,
+      projectId,
+      deleteReport,
+      duplicateReport,
+      moveReport,
+    ]
   );
 
   if (!dashboard) {
@@ -376,7 +369,7 @@ function Component() {
             Create report
           </LinkButton>
         </FullPageEmptyState>
-      ) : !isGridReady || reportsQuery.isLoading ? (
+      ) : reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ReportItemSkeleton />
           <ReportItemSkeleton />
@@ -390,38 +383,15 @@ function Component() {
           <p>No reports match "{search}". Try a different search.</p>
         </FullPageEmptyState>
       ) : (
-        <GrafanaGrid
-          isDraggable={!search}
-          isResizable={!search}
-          layouts={layouts}
-          onDragStop={handleDragStop}
-          onLayoutChange={handleLayoutChange}
-          onResizeStop={handleResizeStop}
-          transitions={enableTransitions}
+        <DashboardGrid
+          isEditable={!search}
+          layout={layout}
+          onDragStop={saveLayout}
+          onLayoutChange={setLayout}
+          onResizeStop={saveLayout}
         >
-          {filteredReports.map((report) => (
-            <div key={report.id}>
-              <ReportItem
-                endDate={endDate}
-                interval={interval}
-                onDelete={(reportId) => {
-                  reportDeletion.mutate({ reportId });
-                }}
-                onDuplicate={(reportId) => {
-                  reportDuplicate.mutate({ reportId });
-                }}
-                onMove={(reportId) => {
-                  pushModal('MoveReport', { reportId, dashboardId });
-                }}
-                organizationId={organizationId}
-                projectId={projectId}
-                range={range}
-                report={report}
-                startDate={startDate}
-              />
-            </div>
-          ))}
-        </GrafanaGrid>
+          {tiles}
+        </DashboardGrid>
       )}
     </PageContainer>
   );

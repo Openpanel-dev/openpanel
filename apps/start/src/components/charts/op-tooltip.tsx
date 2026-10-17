@@ -4,6 +4,7 @@ import { getPreviousMetric } from '../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { useChart } from './chart-context';
 import type { ChartMarker } from './markers/marker-group';
+import { OPDatePill } from './op-date-pill';
 import { type OPReferenceItem, toChartMarkers } from './op-references';
 import type { OPReferrerSpikeItem } from './op-referrer-spikes';
 import { ChartTooltip, type ChartTooltipProps } from './tooltip/chart-tooltip';
@@ -29,6 +30,8 @@ export interface OPTooltipRow {
   value?: number | null;
   /** How to format `value`. Default: 'count' (locale string). */
   unit?: OPTooltipUnit;
+  /** Formats `value` and `previous`; wins over `unit`. */
+  format?: (value: number) => string;
   /** Optional previous-period value — shown as "(prev)" next to value */
   previous?: number | null;
   /** Whether higher previous is better (e.g. bounce rate is inverted) */
@@ -66,6 +69,8 @@ export interface OPChartTooltipProps<T extends Record<string, unknown>>
   referencesLimit?: number;
   /** Auto-detected referrer spikes; the matching bucket's spike is shown below. */
   spikes?: OPReferrerSpikeItem[] | null;
+  /** Show the hovered date (or category) in a pill on the x axis. Default: true. */
+  datePill?: boolean;
 }
 
 export function OPChartTooltip<T extends Record<string, unknown>>({
@@ -77,6 +82,7 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   references,
   referencesLimit = 3,
   spikes,
+  datePill = true,
   ...rest
 }: OPChartTooltipProps<T>) {
   const referenceMarkers = useMemo(
@@ -85,22 +91,26 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   );
 
   return (
-    <ChartTooltip
-      {...rest}
-      content={({ point }) => (
-        <OPTooltipBody
-          extra={extra ? extra(point as T) : null}
-          interval={interval}
-          minWidth={minWidth}
-          point={point as T}
-          referenceMarkers={referenceMarkers}
-          referencesLimit={referencesLimit}
-          rows={rows(point as T)}
-          spikes={spikes ?? null}
-          title={title ? title(point as T) : undefined}
-        />
-      )}
-    />
+    <>
+      <ChartTooltip
+        {...rest}
+        content={({ point }) => (
+          <OPTooltipBody
+            extra={extra ? extra(point as T) : null}
+            interval={interval}
+            minWidth={minWidth}
+            point={point as T}
+            referenceMarkers={referenceMarkers}
+            referencesLimit={referencesLimit}
+            rows={rows(point as T)}
+            spikes={spikes ?? null}
+            title={title ? title(point as T) : undefined}
+          />
+        )}
+        showDatePill={false}
+      />
+      {datePill && <OPDatePill interval={interval} />}
+    </>
   );
 }
 
@@ -374,10 +384,7 @@ export function OPTooltipCard({
 }) {
   return (
     <div
-      className={cn(
-        'col gap-2 rounded-xl border border-border/60 p-3 text-foreground shadow-xl',
-        className
-      )}
+      className={cn('col gap-2 p-3 text-foreground', className)}
       style={style}
     >
       {children}
@@ -389,10 +396,13 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
   const number = useNumber();
   const hasValue = row.value != null;
   const prev = row.previous ?? null;
-  const showPrev = prev != null && prev !== 0;
-  const showDiff = row.showDiff !== false && showPrev;
+  const showPrev = prev != null;
+  // A change from zero has no percentage.
+  const showDiff = row.showDiff !== false && showPrev && prev !== 0;
   const diff =
     showDiff && hasValue ? getPreviousMetric(row.value!, prev) : null;
+  const formatValue = (value: number) =>
+    row.format ? row.format(value) : formatOPValue(value, row.unit, number);
 
   return (
     <div className="flex gap-2">
@@ -407,10 +417,10 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
         {hasValue && (
           <div className="flex items-center justify-between gap-8 font-medium font-mono">
             <div className="row items-baseline gap-1">
-              <span>{formatOPValue(row.value!, row.unit, number)}</span>
+              <span>{formatValue(row.value!)}</span>
               {showPrev && (
                 <span className="text-muted-foreground">
-                  ({formatOPValue(prev, row.unit, number)})
+                  ({formatValue(prev)})
                 </span>
               )}
               {row.percentage != null && (

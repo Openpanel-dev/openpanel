@@ -22,7 +22,11 @@ import {
   useContext,
   useMemo,
 } from 'react';
+import type { ChartPhase, ChartStatus } from './chart-phase';
+import type { ReferenceAreaConfig } from './reference-area-config';
 import type { ChartSelection } from './use-chart-interaction';
+import { DEFAULT_Y_AXIS_ID } from './y-axis-scales';
+import type { YDomain } from './y-domain-utils';
 
 // CSS variable references for theming
 export const chartCssVars = {
@@ -43,6 +47,8 @@ export const chartCssVars = {
   badgeForeground: 'var(--chart-marker-badge-foreground)',
   segmentBackground: 'var(--chart-segment-background)',
   segmentLine: 'var(--chart-segment-line)',
+  brushBorder: 'var(--chart-brush-border)',
+  tooltipBackground: 'var(--chart-tooltip-background)',
 };
 
 /** Default scatter series colors from the chart palette (`--chart-1` … `--chart-5`). */
@@ -78,6 +84,8 @@ export interface LineConfig {
   dataKey: string;
   stroke: string;
   strokeWidth: number;
+  /** Scale group id (Recharts `yAxisId`). Default: `"left"`. */
+  yAxisId?: string | number;
 }
 
 /**
@@ -117,7 +125,10 @@ export interface ChartContextValue extends ChartHoverContextValue {
 
   // Scales
   xScale: ScaleTime<number, number>;
+  /** Primary (left) y-scale — alias for `yScales[DEFAULT_Y_AXIS_ID]`. */
   yScale: ScaleLinear<number, number>;
+  /** Per-axis y-scales keyed by `yAxisId`. */
+  yScales: Record<string, ScaleLinear<number, number>>;
 
   // Dimensions
   width: number;
@@ -135,6 +146,21 @@ export interface ChartContextValue extends ChartHoverContextValue {
   // Line configurations (extracted from children)
   lines: LineConfig[];
 
+  /** {@link ReferenceArea} bands — drives y-axis label colors in range. */
+  referenceAreas: ReferenceAreaConfig[];
+
+  // Loading / lifecycle (LineChart status transitions)
+  chartPhase: ChartPhase;
+  chartStatus: ChartStatus;
+  /** Centered label while `chartPhase` shows loading chrome. */
+  loadingLabel?: string;
+  /** Y-domain tween duration when transitioning loading ↔ ready (ms). */
+  yDomainTweenDuration: number;
+  /** Nice’d y-domains per axis from skeleton data (placeholder). */
+  yDomainSkeletonByAxis: Record<string, YDomain>;
+  /** Nice’d y-domains per axis from the current target data. */
+  yDomainTargetByAxis: Record<string, YDomain>;
+
   // Animation state
   isLoaded: boolean;
   animationDuration: number;
@@ -144,12 +170,19 @@ export interface ChartContextValue extends ChartHoverContextValue {
   enterTransition?: Transition;
   /** Increments when enter animation should replay. */
   revealEpoch?: number;
+  /** Fired when a one-shot loading pulse (exit / enter) completes. */
+  notifyLoadingPulseComplete?: () => void;
 
   // X accessor - how to get the x value from data points
   xAccessor: (d: Record<string, unknown>) => Date;
 
   // Pre-computed date labels for ticker animation
   dateLabels: string[];
+
+  /** Active brush zoom range — when set, axis ticks align to visible data rows. */
+  xDomain?: [Date, Date];
+  /** Full dataset length when brush zoom is enabled (for zoom vs full-range detection). */
+  xDomainSlotCount?: number;
 
   // Bar chart specific (optional - only present in BarChart)
   /** Band scale for categorical x-axis (bar charts) */
@@ -164,6 +197,8 @@ export interface ChartContextValue extends ChartHoverContextValue {
   stacked?: boolean;
   /** Stack offsets: Map of data index -> Map of dataKey -> cumulative offset */
   stackOffsets?: Map<number, Map<string, number>>;
+  /** Squares variant — snap tooltip to top square and size ring dots. */
+  squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
 
   // ComposedChart + SeriesBar (optional)
   /** `SeriesBar` dataKeys in tree order, for grouped columns at each x */
@@ -214,6 +249,7 @@ export function ChartProvider({
       renderData: value.renderData,
       xScale: value.xScale,
       yScale: value.yScale,
+      yScales: value.yScales,
       width: value.width,
       height: value.height,
       innerWidth: value.innerWidth,
@@ -222,13 +258,23 @@ export function ChartProvider({
       columnWidth: value.columnWidth,
       containerRef: value.containerRef,
       lines: value.lines,
+      referenceAreas: value.referenceAreas,
+      chartPhase: value.chartPhase,
+      chartStatus: value.chartStatus,
+      loadingLabel: value.loadingLabel,
+      yDomainTweenDuration: value.yDomainTweenDuration,
+      yDomainSkeletonByAxis: value.yDomainSkeletonByAxis,
+      yDomainTargetByAxis: value.yDomainTargetByAxis,
       isLoaded: value.isLoaded,
       animationDuration: value.animationDuration,
       animationEasing: value.animationEasing,
       enterTransition: value.enterTransition,
       revealEpoch: value.revealEpoch,
+      notifyLoadingPulseComplete: value.notifyLoadingPulseComplete,
       xAccessor: value.xAccessor,
       dateLabels: value.dateLabels,
+      xDomain: value.xDomain,
+      xDomainSlotCount: value.xDomainSlotCount,
       barScale: value.barScale,
       bandWidth: value.bandWidth,
       barXAccessor: value.barXAccessor,
@@ -248,6 +294,7 @@ export function ChartProvider({
       value.renderData,
       value.xScale,
       value.yScale,
+      value.yScales,
       value.width,
       value.height,
       value.innerWidth,
@@ -256,13 +303,23 @@ export function ChartProvider({
       value.columnWidth,
       value.containerRef,
       value.lines,
+      value.referenceAreas,
+      value.chartPhase,
+      value.chartStatus,
+      value.loadingLabel,
+      value.yDomainTweenDuration,
+      value.yDomainSkeletonByAxis,
+      value.yDomainTargetByAxis,
       value.isLoaded,
       value.animationDuration,
       value.animationEasing,
       value.enterTransition,
       value.revealEpoch,
+      value.notifyLoadingPulseComplete,
       value.xAccessor,
       value.dateLabels,
+      value.xDomain,
+      value.xDomainSlotCount,
       value.barScale,
       value.bandWidth,
       value.barXAccessor,
@@ -325,6 +382,16 @@ export function useChartStable(): ChartStableContextValue {
     );
   }
   return context;
+}
+
+/** Y-scale for a series axis (`yAxisId` on Line / Area / YAxis). */
+export function useYScale(
+  yAxisId?: string | number
+): ScaleLinear<number, number> {
+  const { yScales, yScale } = useChartStable();
+  const id =
+    yAxisId == null || yAxisId === '' ? DEFAULT_Y_AXIS_ID : String(yAxisId);
+  return yScales[id] ?? yScale;
 }
 
 /**

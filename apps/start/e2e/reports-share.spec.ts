@@ -14,7 +14,8 @@ import {
 } from './reports-helpers';
 
 const SHOP = 'acme-shop';
-const DASHBOARD_URL = 'https://main.local.openpanel.cc';
+const DASHBOARD_URL =
+  process.env.DASHBOARD_URL ?? 'https://main.local.openpanel.cc';
 const PASSWORD = 'e2e-share-secret';
 
 interface ShareSettings {
@@ -239,7 +240,7 @@ test('share reports of several chart types and open them logged out', async ({
       anonymous.page.getByText('E2E reports shared linear')
     ).toBeVisible({ timeout: 45_000 });
     await expect(
-      anonymous.page.locator('svg.recharts-surface').first()
+      anonymous.page.locator('[data-report-chart="linear"] svg').first()
     ).toBeVisible({ timeout: 45_000 });
     await shot(anonymous.page, 'share-11-public-report');
     expect(problems.responses).toEqual([]);

@@ -6,7 +6,9 @@ import {
   defaultScatterColors,
   useChartHover,
   useChartStable,
+  useYScale,
 } from './chart-context';
+import { useChartLegendHover } from './chart-legend-hover';
 import {
   getSeriesMarkerVisualExtent,
   SeriesPointMarker,
@@ -61,7 +63,6 @@ export function SeriesMarkers({
   const {
     data,
     xScale,
-    yScale,
     innerWidth,
     enterTransition,
     animationDuration,
@@ -77,6 +78,7 @@ export function SeriesMarkers({
   }, [lines, dataKey]);
 
   const seriesConfig = lines[seriesIndex];
+  const yScale = useYScale(seriesConfig?.yAxisId);
   const seriesColor =
     defaultScatterColors[seriesIndex % defaultScatterColors.length] ??
     defaultScatterColors[0];
@@ -199,6 +201,7 @@ export function SeriesMarkers({
         enabled={fadeOnHover}
         inactiveBlur={inactiveBlur}
         inactiveOpacity={inactiveOpacity}
+        seriesIndex={seriesIndex}
       >
         {baseMarkers}
       </SeriesMarkersDimWrapper>
@@ -218,6 +221,7 @@ interface SeriesMarkersDimWrapperProps {
   enabled: boolean;
   inactiveOpacity: number;
   inactiveBlur: number;
+  seriesIndex: number;
   children: ReactNode;
 }
 
@@ -230,10 +234,14 @@ function SeriesMarkersDimWrapper({
   enabled,
   inactiveOpacity,
   inactiveBlur,
+  seriesIndex,
   children,
 }: SeriesMarkersDimWrapperProps) {
   const { tooltipData } = useChartHover();
-  const dimBase = enabled && tooltipData !== null;
+  const { hoveredIndex: legendHoveredIndex } = useChartLegendHover();
+  const isLegendDimmed =
+    legendHoveredIndex !== null && legendHoveredIndex !== seriesIndex;
+  const dimBase = enabled && (tooltipData !== null || isLegendDimmed);
   return (
     <g
       opacity={dimBase ? inactiveOpacity : 1}

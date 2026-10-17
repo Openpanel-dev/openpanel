@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
 
 @import "tw-animate-css";
 
@@ -98,10 +99,10 @@ code {
   --chart-line-secondary: var(--chart-1);
   --chart-crosshair: oklch(from var(--foreground) l c h / 0.4);
   --chart-grid: var(--border);
-  /* Outer tooltip box is transparent — OPTooltipCard owns the visible card. */
-  --chart-tooltip-background: transparent;
-  --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  /* Slightly see-through so the chart's blur shows, opaque enough to read over bright series. */
+  --chart-tooltip-background: oklch(from var(--card) l c h / 0.9);
+  --chart-tooltip-foreground: var(--foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
   --chart-marker-background: var(--def-100);
   --chart-marker-border: var(--border);
   --chart-marker-foreground: var(--foreground);
@@ -113,6 +114,17 @@ code {
   --chart-marker-badge-foreground: var(--background);
   --chart-ring-background: oklch(from var(--foreground) l c h / 0.12);
   --chart-label: var(--muted-foreground);
+  --chart-scale-01: color-mix(in oklab, var(--chart-0) 8%, var(--card));
+  --chart-scale-02: color-mix(in oklab, var(--chart-0) 28%, var(--card));
+  --chart-scale-03: color-mix(in oklab, var(--chart-0) 50%, var(--card));
+  --chart-scale-04: color-mix(in oklab, var(--chart-0) 75%, var(--card));
+  --chart-scale-05: var(--chart-0);
+  --chart-scale-pattern-color: var(--def-100);
+  --legend: var(--card);
+  --legend-foreground: var(--foreground);
+  --legend-muted: var(--def-100);
+  --legend-muted-foreground: var(--muted-foreground);
+  --legend-track: var(--def-200);
 }
 
 .dark {
@@ -148,27 +160,6 @@ code {
   --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --ring: oklch(87.6% 0 0); /* hsl(0, 0%, 83.9%) -> #d6d6d6 */
-
-  /* Bklit chart tokens (dark) — OpenPanel chart palette (--chart-0..12) stays
-     theme-agnostic and is defined in :root only, so we do NOT redefine it here. */
-  --chart-tooltip-background: transparent;
-  --chart-tooltip-foreground: var(--background);
-  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
-  --chart-1: oklch(1 0 none);
-  --chart-2: oklch(0.73 0 none);
-  --chart-3: oklch(0.51 0 none);
-  --chart-4: oklch(0.39 0 none);
-  --chart-5: oklch(0.32 0 none);
-  --chart-background: oklch(0.145 0 0);
-  --chart-foreground: oklch(0.45 0 0);
-  --chart-foreground-muted: oklch(0.65 0.01 260);
-  --chart-crosshair: oklch(0.45 0 0);
-  --chart-grid: oklch(0.25 0 0);
-  --chart-marker-background: oklch(0.25 0.01 260);
-  --chart-marker-border: oklch(0.4 0.01 260);
-  --chart-marker-foreground: oklch(0.9 0 0);
-  --chart-ring-background: oklch(0.35 0.01 260 / 0.25);
-  --chart-label: oklch(0.75 0.01 260);
 }
 
 @theme {
@@ -331,12 +322,6 @@ code {
   }
 }
 
-/* Rechart styles from globals.css */
-.recharts-wrapper .recharts-cartesian-grid-horizontal line:first-child,
-.recharts-wrapper .recharts-cartesian-grid-horizontal line:last-child {
-  stroke-opacity: 0;
-}
-
 button {
   @apply cursor-pointer;
 }
@@ -355,6 +340,7 @@ button {
 }
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
@@ -539,12 +525,48 @@ button {
   --chart-line-secondary: var(----chart-line-secondary);
   --color-chart-crosshair: var(----chart-crosshair);
   --color-chart-grid: var(----chart-grid);
-  --color-chart-tooltip-background: var(----chart-tooltip-background);
-  --color-chart-tooltip-foreground: var(----chart-tooltip-foreground);
-  --color-chart-tooltip-muted: var(----chart-tooltip-muted);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
   --color-chart-marker-background: var(----chart-marker-background);
   --color-chart-marker-border: var(----chart-marker-border);
   --color-chart-marker-foreground: var(----chart-marker-foreground);
   --color-chart-ring-background: var(----chart-ring-background);
   --color-chart-label: var(----chart-label);
+}
+
+/* Dashboard grid: only tiles making room animate; the one under the pointer
+   follows it 1:1. */
+.react-grid-item.cssTransforms {
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+.react-grid-item.react-draggable-dragging,
+.react-grid-item.resizing {
+  transition: none;
+}
+.react-grid-item.react-grid-placeholder {
+  background: color-mix(in oklch, var(--primary) 8%, transparent);
+  opacity: 1;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-grid-item.cssTransforms,
+  .react-grid-item.react-grid-placeholder {
+    transition: none;
+  }
+}
+
+/* While a tile moves, nothing under the pointer reacts: no chart tooltips,
+   no hover states, no text selection. The gesture itself runs on document
+   listeners, so the tiles need no pointer events until it ends. */
+.react-grid-layout:has(.react-draggable-dragging, .resizing) .react-grid-item
+  > * {
+  pointer-events: none;
+  user-select: none;
+}
+html:has(.react-grid-item.react-draggable-dragging),
+.react-grid-item.react-draggable-dragging {
+  cursor: grabbing;
 }

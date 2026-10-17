@@ -3,34 +3,31 @@ import type {
   IReportInput,
 } from '@openpanel/core/modules/report/report.constants';
 import isEqual from 'lodash.isequal';
-import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-export type ReportChartContextType = {
+export interface ReportChartContextType {
   options: Partial<{
     columns: React.ReactNode[];
     hideLegend: boolean;
+    /** Show the chart alone, without the series tables an editor shows under it. */
+    hideTable: boolean;
     hideXAxis: boolean;
     hideYAxis: boolean;
     aspectRatio: number;
     maxHeight: number;
     minHeight: number;
-    maxDomain: number;
-    onClick: (serie: IChartSerie) => void;
     renderSerieName: (names: string[]) => React.ReactNode;
     renderSerieIcon: (serie: IChartSerie) => React.ReactNode;
-    dropdownMenuContent: (serie: IChartSerie) => {
-      icon: LucideIcon;
-      title: string;
-      onClick: () => void;
-    }[];
   }>;
   report: IReportInput & { id?: string };
   isLazyLoading: boolean;
   isEditMode: boolean;
+  // `fill` takes the parent's height (a dashboard tile); `aspect` sizes the
+  // chart from its width (the editor, chat, modals, share pages).
+  layout: 'fill' | 'aspect';
   shareId?: string;
   reportId?: string;
-};
+}
 
 type ReportChartContextProviderProps = ReportChartContextType & {
   children: React.ReactNode;
