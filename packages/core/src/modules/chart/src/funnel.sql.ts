@@ -17,6 +17,7 @@ import type {
 } from '../../report/report.constants';
 import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
+import { eventMatchCondition, eventNamesOf } from './event-match';
 import {
   buildGroupsQuery,
   buildInlineCohortJoin,
@@ -104,7 +105,7 @@ export function knownFunnelBreakdowns(
 }
 
 /**
- * One `<filters> AND events.name = <name>` per step. Exported because each
+ * One `<filters> AND <event match>` per step. Exported because each
  * step's complete condition has to appear twice — inside windowFunnel and in
  * the row-level pre-filter — and funnel.sql.test.ts counts exactly that.
  */
@@ -123,10 +124,9 @@ export function funnelStepConditions(
     const filters = Object.values(
       getEventFiltersWhereClause(event.filters, projectId, 'events')
     ).map((clause) => fragmentWithProfileRefs(clause, profilePropertyKeys));
-    return sql.join(
-      [...filters, sql`events.name = ${sql.string(event.name)}`],
-      ' AND '
-    );
+    const eventMatch = eventMatchCondition(event, projectId, 'events');
+    const parts = eventMatch ? [...filters, eventMatch] : filters;
+    return parts.length > 0 ? sql.join(parts, ' AND ') : sql`1`;
   });
 }
 
@@ -301,7 +301,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   });
 
   const dateRange = sql`created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})`;
-  const eventNames = eventSeries.map((event) => event.name);
+  const eventNames = eventSeries.flatMap(eventNamesOf);
   const columns = profileCteColumns(input, profileFilters, profileKeys);
   const activeProfiles = profileIdsInWindow({
     projectId,
@@ -340,7 +340,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ' OR '
   )})`;
 
-  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange} AND events.name IN ${sql.array('String', eventNames)} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
+  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `

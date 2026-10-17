@@ -14,6 +14,7 @@ import Confirm from './confirm';
 import ConfirmDeleteAccount from './confirm-delete-account';
 import ConfirmDeleteOrganization from './confirm-delete-organization';
 import CreateInvite from './create-invite';
+import CustomEvent from './custom-event';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
 import DisableTwoFactor from './disable-two-factor';
@@ -56,6 +57,7 @@ const modals = {
   OverviewTopGenericModal,
   RequestPasswordReset,
   EditEvent,
+  CustomEvent,
   EditMember,
   EventDetails,
   InsightDetails,

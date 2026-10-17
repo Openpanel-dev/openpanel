@@ -41,6 +41,7 @@ import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
 import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useCustomEvents } from '@/hooks/use-custom-events';
 import { useDebounceFn } from '@/hooks/use-debounce-fn';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useDispatch, useSelector } from '@/redux';
@@ -147,6 +148,9 @@ export function ReportSeries() {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
+  // Retention takes plain event names, so it cannot resolve a custom event.
+  const projectCustomEvents = useCustomEvents(projectId);
+  const customEvents = isSelectManyEvents ? [] : projectCustomEvents;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -303,6 +307,7 @@ export function ReportSeries() {
                     <>
                       <ComboboxEvents
                         className="flex-1"
+                        customEvents={customEvents}
                         items={eventNames}
                         multiple={isSelectManyEvents as false}
                         onChange={(value) => {
@@ -326,13 +331,29 @@ export function ReportSeries() {
                                     ...event,
                                     type: 'event',
                                     name: value,
+                                    customEventId: undefined,
                                     filters: [],
                                   }
                             )
                           );
                         }}
+                        onSelectCustomEvent={(customEvent) => {
+                          dispatch(
+                            changeEvent({
+                              ...event,
+                              type: 'event',
+                              name: customEvent.name,
+                              customEventId: customEvent.id,
+                              filters: [],
+                            })
+                          );
+                        }}
                         placeholder="Select event"
                         searchable
+                        selectedCustomEventId={
+                          (event as IChartEventItem & { type: 'event' })
+                            .customEventId
+                        }
                         value={
                           (isSelectManyEvents
                             ? ((
@@ -378,6 +399,7 @@ export function ReportSeries() {
             <div className="flex gap-2">
               <ComboboxEvents
                 className="flex-1"
+                customEvents={customEvents}
                 disabled={isAddEventDisabled || isSankeyEventLimitReached}
                 items={eventNames}
                 onChange={(value) => {
@@ -406,6 +428,17 @@ export function ReportSeries() {
                       })
                     );
                   }
+                }}
+                onSelectCustomEvent={(customEvent) => {
+                  dispatch(
+                    addSerie({
+                      type: 'event',
+                      name: customEvent.name,
+                      customEventId: customEvent.id,
+                      segment: 'event',
+                      filters: [],
+                    })
+                  );
                 }}
                 placeholder="Select event"
                 searchable

@@ -138,6 +138,7 @@ export {
   getClientByIdCached,
 } from './modules/client/client.service';
 export { createConversationService } from './modules/conversation/conversation.service';
+export type { IServiceCustomEvent } from './modules/custom-event/custom-event.service';
 export type {
   IServiceDashboard,
   IServiceDashboards,

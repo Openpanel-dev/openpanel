@@ -674,8 +674,9 @@ describe('profile join window', () => {
         interval: 'day',
         group: 'profile_id',
         funnelWindowSeconds: 3600,
-        firstEventName: 'screen_view',
-        secondEventName: 'sign_up',
+        firstEventMatch: sql`events.name = ${sql.string('screen_view')}`,
+        secondEventMatch: sql`events.name = ${sql.string('sign_up')}`,
+        eventNames: ['screen_view', 'sign_up'],
         firstEventWhere: null,
         secondEventWhere: null,
         breakdownSelects: [sql`${expression} as b_0`],
@@ -798,5 +799,41 @@ describe('chartBucketProfilesQuery', () => {
 
     expect(rendered.text).toEndWith('LIMIT 1000');
     await explain(rendered);
+  });
+});
+
+describe('custom event series', () => {
+  const customEvent = event({
+    name: 'Used navigation',
+    anyOf: [
+      { name: 'menu_open', filters: [] },
+      {
+        name: 'screen_view',
+        filters: [{ name: 'path', operator: 'is', value: ['/nav'] }],
+      },
+    ],
+  });
+
+  it('matches any item, each with its own filters', async () => {
+    const rendered = await getChartSql({
+      event: customEvent,
+      breakdowns: [breakdown('country')],
+      ...base,
+    });
+    expect(rendered.text).toContain(
+      "(e.name IN ('menu_open') OR (e.name = 'screen_view' AND path = '/nav'))"
+    );
+    expect(rendered.text).toContain("'Used navigation' as label_0");
+    await explain(rendered);
+  });
+
+  it('aggregate chart parses and resolves', async () => {
+    await explain(
+      await getAggregateChartSql({
+        event: customEvent,
+        breakdowns: [],
+        ...base,
+      })
+    );
   });
 });

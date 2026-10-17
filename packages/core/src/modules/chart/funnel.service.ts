@@ -2,6 +2,7 @@ import { ifNaN } from '@openpanel/shared';
 import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
+import { expandCustomEvents } from '../custom-event/custom-event.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,
@@ -112,7 +113,10 @@ export async function buildFunnelBase(
 ): Promise<FunnelBase> {
   const breakdowns = knownFunnelBreakdowns(initialBreakdowns);
   const eventSeries = onlyReportEvents(
-    mergeGlobalFilters(series, globalFilters)
+    mergeGlobalFilters(
+      await expandCustomEvents(deps, projectId, series),
+      globalFilters
+    )
   );
   const cohortMetadata = await fetchCohortsMetadata(
     deps,

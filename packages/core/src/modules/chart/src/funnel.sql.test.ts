@@ -447,3 +447,35 @@ describe('funnel.sql / profile-property narrowing', () => {
     );
   });
 });
+
+describe('funnel.sql — custom event steps', () => {
+  const customEventStep = event({
+    id: 'A',
+    name: 'Used navigation',
+    anyOf: [
+      { name: 'menu_open', filters: [] },
+      { name: 'tab_switch', filters: [] },
+      {
+        name: 'screen_view',
+        filters: [{ name: 'path', operator: 'is', value: ['/nav'] }],
+      },
+    ],
+  });
+  const series = [customEventStep, event({ id: 'B', name: 'sign_up' })];
+
+  it('scans every step name with one IN and keeps per-item filters inside the step', async () => {
+    const { text } = render(await chartStatement({ series }));
+    expect(text).toContain(
+      "events.name IN ('menu_open', 'tab_switch', 'screen_view', 'sign_up')"
+    );
+    expect(text).toContain(
+      "(events.name IN ('menu_open', 'tab_switch') OR (events.name = 'screen_view' AND "
+    );
+    expect(text).not.toContain("events.name = 'Used navigation'");
+  });
+
+  it('parses and resolves', async () => {
+    await explain(await chartStatement({ series }));
+    await explain(await profilesStatement({ series }));
+  });
+});

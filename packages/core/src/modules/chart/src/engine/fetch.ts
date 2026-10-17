@@ -158,6 +158,7 @@ function queryEvent(event: EventDefinition): IGetChartDataInput['event'] {
     filters: event.filters,
     displayName: event.displayName,
     property: event.property,
+    anyOf: event.anyOf,
   };
 }
 
