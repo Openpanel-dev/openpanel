@@ -105,16 +105,31 @@ export function isSameTilePosition(a: TilePosition, b: TilePosition) {
   return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
 }
 
-// The grid owns the layout while the user drags; saved positions only seed it.
+/**
+ * The grid owns the layout while the user drags; saved positions only seed it.
+ * A new set of reports re-seeds it during render rather than in an effect, so
+ * a tile added to a mounted grid arrives together with its layout entry. With
+ * an effect the grid first saw the tile without one, placed it itself, and the
+ * two layouts overwrote each other until React stopped the update loop.
+ */
 export function useDashboardLayout(reports: DashboardReport[]) {
   const savedLayout = useMemo(() => toLayout(reports), [reports]);
-  const [layout, setLayout] = useState(savedLayout);
+  const [state, setState] = useState({
+    seed: savedLayout,
+    layout: savedLayout,
+  });
+  if (state.seed !== savedLayout) {
+    setState({ seed: savedLayout, layout: savedLayout });
+  }
+  const setLayout = useCallback(
+    (layout: Layout) => setState((current) => ({ ...current, layout })),
+    []
+  );
 
-  useEffect(() => {
-    setLayout(savedLayout);
-  }, [savedLayout]);
-
-  return [layout, setLayout] as const;
+  return [
+    state.seed === savedLayout ? state.layout : savedLayout,
+    setLayout,
+  ] as const;
 }
 
 function hasScrollingAncestor(element: HTMLElement | null) {
