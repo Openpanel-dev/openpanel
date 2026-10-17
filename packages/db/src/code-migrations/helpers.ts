@@ -117,15 +117,3 @@ export function writeSqlDump(migrationUrl: string, sqls: string[]) {
       .join(STATEMENT_SEPARATOR)
   );
 }
-
-const NON_SLUG_CHARACTERS = /[^a-z0-9]+/g;
-const EDGE_DASHES = /^-+|-+$/g;
-
-/** ASCII-only on purpose: a migration must not pull in core's slugify. */
-export function slugify(value: string): string {
-  return value
-    .normalize('NFKD')
-    .toLowerCase()
-    .replace(NON_SLUG_CHARACTERS, '-')
-    .replace(EDGE_DASHES, '');
-}

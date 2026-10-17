@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
-import { shortId, slug, stripTrailingSlash } from '@openpanel/shared';
+import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
@@ -79,7 +79,8 @@ async function createOrGetOnboardingOrganization(
         subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
         timezone: input.timezone,
         onboarding: '',
-        slug: `${slug(input.organization) || 'organization'}-${shortId().toLowerCase()}`,
+        // Equal to the id so it is unique; see code migration 26.
+        slug: organizationId,
       },
     }),
     db.member.create({
