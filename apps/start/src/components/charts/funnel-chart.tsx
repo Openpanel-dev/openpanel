@@ -635,7 +635,7 @@ function SegmentLabel({
   );
   const labelEl = showLabels && (
     <span
-      className="max-w-full truncate whitespace-nowrap px-1 font-medium text-muted-foreground text-xs"
+      className="min-w-0 max-w-full truncate whitespace-nowrap px-1 font-medium text-muted-foreground text-xs"
       title={stage.label}
     >
       {stage.label}
@@ -729,7 +729,7 @@ function SegmentLabel({
     >
       <div
         className={cn(
-          'flex gap-1.5',
+          'flex min-w-0 max-w-full gap-1.5',
           isVerticalStack
             ? cn('flex-col', itemsMap[isHorizontal ? 'center' : align])
             : cn('flex-row', itemsMap.center)

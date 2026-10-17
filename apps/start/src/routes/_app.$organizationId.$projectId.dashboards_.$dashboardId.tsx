@@ -1,4 +1,3 @@
-import type { IReportDisplay } from '@openpanel/core/modules/report/report.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
+import { useTileViews } from '@/hooks/use-tile-views';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -179,27 +179,7 @@ function Component() {
     })
   );
 
-  const { mutate: saveDisplay } = useMutation(
-    trpc.report.updateDisplay.mutationOptions({
-      onError(error) {
-        // A read-only member keeps the switched view locally; it just isn't saved.
-        if (error.data?.code !== 'FORBIDDEN') {
-          handleErrorToastOptions({})(error);
-        }
-      },
-    })
-  );
-  const changeView = useCallback(
-    (reportId: string, view: IReportDisplay['view']) => {
-      queryClient.setQueryData(reportsQueryKey, (current) =>
-        current?.map((report) =>
-          report.id === reportId ? { ...report, display: { view } } : report
-        )
-      );
-      saveDisplay({ reportId, display: { view } });
-    },
-    [queryClient, reportsQueryKey, saveDisplay]
-  );
+  const { unsavedViews, changeView } = useTileViews({ dashboardId, projectId });
   const resetLayout = useMutation(
     trpc.report.resetLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
@@ -263,25 +243,33 @@ function Component() {
   );
   const tiles = useMemo(
     () =>
-      filteredReports.map((report) => (
-        <div key={report.id}>
-          <ReportItem
-            endDate={endDate}
-            interval={interval}
-            onDelete={(reportId) => deleteReport({ reportId })}
-            onDuplicate={(reportId) => duplicateReport({ reportId })}
-            onMove={moveReport}
-            onViewChange={changeView}
-            organizationId={organizationId}
-            projectId={projectId}
-            range={range}
-            report={report}
-            startDate={startDate}
-          />
-        </div>
-      )),
+      filteredReports.map((report) => {
+        const unsavedView = unsavedViews[report.id];
+        return (
+          <div key={report.id}>
+            <ReportItem
+              endDate={endDate}
+              interval={interval}
+              onDelete={(reportId) => deleteReport({ reportId })}
+              onDuplicate={(reportId) => duplicateReport({ reportId })}
+              onMove={moveReport}
+              onViewChange={changeView}
+              organizationId={organizationId}
+              projectId={projectId}
+              range={range}
+              report={
+                unsavedView
+                  ? { ...report, display: { view: unsavedView } }
+                  : report
+              }
+              startDate={startDate}
+            />
+          </div>
+        );
+      }),
     [
       filteredReports,
+      unsavedViews,
       endDate,
       interval,
       range,

@@ -46,6 +46,8 @@ export function Chart({ series }: Props) {
     }));
   }, [series]);
 
+  const legendSlices = slices.slice(0, legendLimit);
+  const hiddenSliceCount = slices.length - legendSlices.length;
   const isSideLegend =
     showLegend && frame.width > frame.height * SIDE_LEGEND_RATIO;
   const pieSize = Math.min(pieBox.width, pieBox.height);
@@ -109,7 +111,7 @@ export function Chart({ series }: Props) {
               isSideLegend ? 'w-1/2 max-w-72' : 'max-h-[40%] w-full'
             )}
           >
-            {slices.map((slice, index) => (
+            {legendSlices.map((slice, index) => (
               <li key={slice.id}>
                 <button
                   className={cn(
@@ -141,6 +143,11 @@ export function Chart({ series }: Props) {
                 </button>
               </li>
             ))}
+            {hiddenSliceCount > 0 && (
+              <li className="px-1.5 py-1 text-muted-foreground text-xs">
+                +{hiddenSliceCount} more
+              </li>
+            )}
           </ul>
         )}
       </div>

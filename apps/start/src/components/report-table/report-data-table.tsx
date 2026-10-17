@@ -363,9 +363,9 @@ function Toolbar({
     return null;
   }
   return (
-    <div className="flex items-center gap-2 border-border border-b p-2">
+    <div className="flex flex-wrap items-center gap-2 border-border border-b p-2">
       {onSearch && (
-        <div className="relative flex-1 md:max-w-xs">
+        <div className="relative min-w-32 flex-1 md:max-w-xs">
           <SearchIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-8"
