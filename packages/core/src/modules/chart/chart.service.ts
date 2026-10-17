@@ -4,6 +4,7 @@
 import { getChartPrevStartEndDate } from '@openpanel/shared';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
+import { expandCustomEvents } from '../custom-event/custom-event.service';
 import { getEventMetasCached } from '../event/event.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
@@ -627,7 +628,11 @@ export async function getChartBucketProfiles(
   deps: ServiceDeps,
   input: ChartBucketProfilesRequest
 ): Promise<IServiceProfile[]> {
-  const serie = input.series[0];
+  const [serie] = await expandCustomEvents(
+    deps,
+    input.projectId,
+    input.series.slice(0, 1)
+  );
   if (!serie) {
     throw new Error('Series not found');
   }

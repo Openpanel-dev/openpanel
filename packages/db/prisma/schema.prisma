@@ -285,6 +285,7 @@ model Project {
   shareReports      ShareReport[]
   shareWidgets      ShareWidget[]
   meta              EventMeta[]
+  customEvents      CustomEvent[]
   references        Reference[]
   access            ProjectAccess[]
   notificationRules NotificationRule[]
@@ -564,6 +565,21 @@ model EventMeta {
 
   @@unique([name, projectId])
   @@map("event_meta")
+}
+
+model CustomEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  /// [IPrismaCustomEventItems]
+  items     Json
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([projectId, name])
+  @@map("custom_events")
 }
 
 model Reference {

@@ -9,6 +9,7 @@ import { createSankeyService } from './modules/chart/sankey.service';
 import { createClientService } from './modules/client/client.service';
 import { createCohortService } from './modules/cohort/cohort.service';
 import { createConversationService } from './modules/conversation/conversation.service';
+import { createCustomEventService } from './modules/custom-event/custom-event.service';
 import { createDashboardService } from './modules/dashboard/dashboard.service';
 import { createEventService } from './modules/event/event.service';
 import { createExportService } from './modules/export/export.service';
@@ -67,6 +68,7 @@ export interface Services {
   onboarding: ReturnType<typeof createOnboardingService>;
   notification: ReturnType<typeof createNotificationService>;
   session: ReturnType<typeof createSessionService>;
+  customEvent: ReturnType<typeof createCustomEventService>;
   event: ReturnType<typeof createEventService>;
   profile: ReturnType<typeof createProfileService>;
   group: ReturnType<typeof createGroupService>;
@@ -116,6 +118,7 @@ export function createServices(deps: ServiceDeps): Services {
     onboarding: createOnboardingService(deps, services),
     notification: createNotificationService(deps, services),
     session: createSessionService(deps, services),
+    customEvent: createCustomEventService(deps, services),
     event: createEventService(deps, services),
     profile: createProfileService(deps, services),
     group: createGroupService(deps, services),

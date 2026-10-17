@@ -1,4 +1,5 @@
 import type { ServiceDeps } from '../../../../services';
+import { expandCustomEvents } from '../../../custom-event/custom-event.service';
 import { getSettingsForProject } from '../../../organization/organization.service';
 import type {
   IChartEvent,
@@ -58,12 +59,14 @@ export async function normalize(
     (input as { series?: LegacySeriesItem[] }).series ??
     (input as { events?: LegacySeriesItem[] }).events ??
     [];
+  const series = await expandCustomEvents(
+    deps,
+    input.projectId,
+    rawSeries.map(toSeriesDefinition)
+  );
   return {
     ...input,
-    series: mergeGlobalFilters(
-      rawSeries.map(toSeriesDefinition),
-      input.globalFilters
-    ),
+    series: mergeGlobalFilters(series, input.globalFilters),
     startDate,
     endDate,
     timezone,

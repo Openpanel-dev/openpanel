@@ -40,6 +40,7 @@ function stubJobCtx(
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
     session: {} as Services['session'],
+    customEvent: {} as Services['customEvent'],
     event: {} as Services['event'],
     profile: {} as Services['profile'],
     group: {} as Services['group'],

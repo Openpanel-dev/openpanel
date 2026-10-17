@@ -45,8 +45,11 @@ export interface ConversionQueryInput {
   group: ConversionGroup;
   /** Funnel window in seconds. */
   funnelWindowSeconds: number;
-  firstEventName: string;
-  secondEventName: string;
+  /** Each step's event-name condition (`null` matches every event). */
+  firstEventMatch: SqlFragment | null;
+  secondEventMatch: SqlFragment | null;
+  /** Names both steps read, for the row pre-filter; `'*'` disables it. */
+  eventNames: string[];
   /** Compiled filters per step (`null` when the step has no filters). */
   firstEventWhere: SqlFragment | null;
   secondEventWhere: SqlFragment | null;
@@ -61,10 +64,12 @@ export interface ConversionQueryInput {
   cohortJoins: SqlFragment[];
 }
 
-function stepCondition(name: string, where: SqlFragment | null): SqlFragment {
-  return where
-    ? sql`(events.name = ${sql.string(name)} AND ${where})`
-    : sql`events.name = ${sql.string(name)}`;
+function stepCondition(
+  match: SqlFragment | null,
+  where: SqlFragment | null
+): SqlFragment {
+  const parts = [match, where].filter((part) => part !== null);
+  return parts.length > 0 ? sql`(${sql.join(parts, ' AND ')})` : sql`1`;
 }
 
 function profileJoin(
@@ -104,8 +109,9 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
     interval,
     group,
     funnelWindowSeconds,
-    firstEventName,
-    secondEventName,
+    firstEventMatch,
+    secondEventMatch,
+    eventNames,
     firstEventWhere,
     secondEventWhere,
     breakdownSelects,
@@ -121,7 +127,6 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
   );
   const outerKeys = [sql`event_day`, ...breakdownAliases];
   const converted = sql`countIf(steps >= ${sql.uint64(CONVERTED_STEP_COUNT)})`;
-  const eventNames = [firstEventName, secondEventName];
   const dateRange = sql`created_at BETWEEN toDateTime(${sql.string(startDate)}) AND toDateTime(${sql.string(endDate)})`;
   const activeProfiles = profileIdsInWindow({
     projectId,
@@ -153,15 +158,15 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
           ${innerBreakdownSelects}
           windowFunnel(${sql.uint64(funnelWindowSeconds)})(
             toDateTime(created_at),
-            ${stepCondition(firstEventName, firstEventWhere)},
-            ${stepCondition(secondEventName, secondEventWhere)}
+            ${stepCondition(firstEventMatch, firstEventWhere)},
+            ${stepCondition(secondEventMatch, secondEventWhere)}
           ) as steps
         FROM ${sql.id(CHART_TABLE.events)}
         ${profileJoin(profileJoinFields, projectId, activeProfiles)}
         ${groupJoin(needsGroupArrayJoin, projectId)}
         ${sql.join(cohortJoins, ' ')}
         WHERE project_id = ${sql.string(projectId)}
-          AND events.name IN ${sql.array('String', eventNames)}
+          ${eventNames.includes('*') ? sql.empty : sql`AND events.name IN ${sql.array('String', eventNames)}`}
           AND ${dateRange}
         GROUP BY ${groupKey}${innerBreakdownGroupBy})
       ) WHERE steps > 0 GROUP BY ${sql.join(outerKeys)} ORDER BY ${sql.join(outerKeys.map((key) => sql`${key} ASC`))}`;

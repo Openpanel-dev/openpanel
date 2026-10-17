@@ -7,6 +7,7 @@ import { chartRouter } from './modules/chart/chart.rpc';
 import { clientRouter } from './modules/client/client.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
+import { customEventRouter } from './modules/custom-event/custom-event.rpc';
 import { dashboardRouter } from './modules/dashboard/dashboard.rpc';
 import { emailRouter } from './modules/email/email.rpc';
 import { eventRouter } from './modules/event/event.rpc';
@@ -54,6 +55,7 @@ export const appRouter = createTRPCRouter({
   integration: integrationRouter,
   subscription: subscriptionRouter,
   session: sessionRouter,
+  customEvent: customEventRouter,
   event: eventRouter,
   profile: profileRouter,
   group: groupRouter,

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { CustomEvents } from '@/components/settings/custom-events';
 import EditProjectFilters from '@/components/settings/edit-project-filters';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -26,5 +27,10 @@ function Component() {
     return <div>Project not found</div>;
   }
 
-  return <EditProjectFilters project={query.data} />;
+  return (
+    <div className="col gap-8">
+      <CustomEvents />
+      <EditProjectFilters project={query.data} />
+    </div>
+  );
 }

@@ -20,6 +20,7 @@ import type {
 } from '../../report/report.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
 import { formatClickhouseDate } from './dates';
+import { eventMatchCondition, eventNamesOf } from './event-match';
 import {
   buildAllCohortsLabelExpr,
   buildAllCohortsMembershipQuery,
@@ -78,7 +79,7 @@ const PROFILE_COLUMNS = [
 
 export type ChartQueryEvent = Pick<
   IChartEvent,
-  'name' | 'segment' | 'filters' | 'property'
+  'name' | 'segment' | 'filters' | 'property' | 'anyOf'
 >;
 
 /** Breakdowns after `resolveChartBreakdowns`, plus the cohort rows they need. */
@@ -301,11 +302,10 @@ function chartBody({
   where.projectId = sql`project_id = ${sql.string(projectId)}`;
 
   const select: Parts = {};
-  if (event.name !== '*') {
-    select.label_0 = sql`${sql.string(event.name)} as label_0`;
-    where.eventName = sql`e.name = ${sql.string(event.name)}`;
-  } else {
-    select.label_0 = sql`'*' as label_0`;
+  select.label_0 = sql`${sql.string(event.name)} as label_0`;
+  const eventMatch = eventMatchCondition(event, projectId, EVENTS_ALIAS);
+  if (eventMatch) {
+    where.eventName = eventMatch;
   }
   const dateRange = dateRangeWhere(startDate, endDate);
   Object.assign(where, dateRange);
@@ -330,7 +330,7 @@ function chartBody({
       projectId,
       profileIdsInWindow({
         projectId,
-        eventNames: [event.name],
+        eventNames: eventNamesOf(event),
         window: Object.values(dateRange),
       })
     );
@@ -655,7 +655,7 @@ export interface ChartBucketProfilesInput {
   /** Bucket start as a `YYYY-MM-DD HH:mm:ss` string. */
   bucketDate: string;
   interval: IInterval;
-  event: Pick<IChartEvent, 'name' | 'filters'>;
+  event: Pick<IChartEvent, 'name' | 'filters' | 'anyOf'>;
   breakdowns: Record<string, string>;
   /** Cap on the ids handed to the drill-down modal. */
   limit: number;
@@ -711,8 +711,9 @@ export function chartBucketProfilesQuery(
   where.projectId = sql`project_id = ${sql.string(projectId)}`;
   const dateRange = bucketEquals(interval, bucketDate);
   where.dateRange = dateRange;
-  if (event.name !== '*') {
-    where.eventName = sql`name = ${sql.string(event.name)}`;
+  const eventMatch = eventMatchCondition(event, projectId);
+  if (eventMatch) {
+    where.eventName = eventMatch;
   }
 
   const joins: Parts = {};
@@ -726,7 +727,7 @@ export function chartBucketProfilesQuery(
     const fields = sql.join(profileFieldsToSelect(profileRefs), ', ');
     const activeProfiles = profileIdsInWindow({
       projectId,
-      eventNames: [event.name],
+      eventNames: eventNamesOf(event),
       window: [dateRange],
     });
     joins.profiles = sql`LEFT ANY JOIN (SELECT id, ${fields} FROM ${sql.id(CHART_TABLE.profiles)} WHERE project_id = ${sql.string(projectId)} AND ${activeProfiles} GROUP BY id) as profile on profile.id = profile_id`;

@@ -713,6 +713,30 @@ export const zChartEventSegment = z
   .default('event')
   .describe('Defines how the event data should be segmented or aggregated');
 
+const JOINED_FILTER_PREFIXES = ['profile.', 'group.'];
+const COHORT_OPERATORS: string[] = ['inCohort', 'notInCohort'];
+
+// Item filters compile inline on the events row; profile, group and cohort
+// filters need joins the chart builds per series, so they stay series-level.
+const zCustomEventItemFilter = zChartEventFilter.refine(
+  (filter) =>
+    !(
+      JOINED_FILTER_PREFIXES.some((prefix) => filter.name.startsWith(prefix)) ||
+      COHORT_OPERATORS.includes(filter.operator)
+    ),
+  'Custom event filters may only use event properties'
+);
+
+export const zCustomEventItem = z.object({
+  name: z.string().min(1).describe('An event name as tracked'),
+  filters: z
+    .array(zCustomEventItemFilter)
+    .default([])
+    .describe('Filters that narrow this event, AND-ed together'),
+});
+
+export type ICustomEventItem = z.infer<typeof zCustomEventItem>;
+
 export const zChartEvent = z.object({
   id: z
     .string()
@@ -734,6 +758,16 @@ export const zChartEvent = z.object({
     .array(zChartEventFilter)
     .default([])
     .describe('Filters applied specifically to this event'),
+  customEventId: z
+    .string()
+    .optional()
+    .describe(
+      'A saved custom event this series counts instead of `name`; resolved to `anyOf` at query time'
+    ),
+  anyOf: z
+    .array(zCustomEventItem)
+    .optional()
+    .describe('Matches any of these events, each with its own filters'),
 });
 
 export const zChartFormula = z.object({

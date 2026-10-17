@@ -1,5 +1,10 @@
 import { PopoverPortal } from '@radix-ui/react-popover';
-import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronsUpDown,
+  GanttChartIcon,
+  LayersIcon,
+} from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import { EventIcon } from '../events/event-icon';
@@ -57,7 +62,22 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   disabled?: boolean;
   multiple?: TMultiple;
   maxDisplayItems?: number;
+  /** Listed above the events; picking one calls `onSelectCustomEvent`. */
+  customEvents?: CustomEventOption[];
+  selectedCustomEventId?: string;
+  onSelectCustomEvent?: (customEvent: CustomEventOption) => void;
 }
+
+interface CustomEventOption {
+  id: string;
+  name: string;
+}
+
+type EventOption = RouterOutputs['chart']['events'][number];
+
+type Row =
+  | { key: string; kind: 'custom'; customEvent: CustomEventOption }
+  | { key: string; kind: 'event'; item: EventOption };
 
 export function ComboboxEvents<
   T extends string,
@@ -76,6 +96,9 @@ export function ComboboxEvents<
   items,
   multiple = false as TMultiple,
   maxDisplayItems = 2,
+  customEvents = [],
+  selectedCustomEventId,
+  onSelectCustomEvent,
 }: ComboboxProps<T, TMultiple>) {
   const number = useNumber();
   const [open, setOpen] = React.useState(false);
@@ -98,6 +121,24 @@ export function ComboboxEvents<
     selectedValues.length > 0 && selectedValues[0]
       ? find(selectedValues[0])
       : null;
+  const currentCustomEvent = customEvents.find(
+    (customEvent) => customEvent.id === selectedCustomEventId
+  );
+
+  const matchesSearch = (name: string) =>
+    search === '' || name.toLowerCase().includes(search.toLowerCase());
+  const rows: Row[] = [
+    ...customEvents
+      .filter((customEvent) => matchesSearch(customEvent.name))
+      .map((customEvent) => ({
+        key: `custom:${customEvent.id}`,
+        kind: 'custom' as const,
+        customEvent,
+      })),
+    ...items
+      .filter((item) => matchesSearch(item.name))
+      .map((item) => ({ key: item.name, kind: 'event' as const, item })),
+  ];
 
   const handleSelection = (selectedValue: string) => {
     if (multiple) {
@@ -112,7 +153,27 @@ export function ComboboxEvents<
     }
   };
 
+  const renderTriggerIcon = () => {
+    if (currentCustomEvent) {
+      return <LayersIcon className="mr-2 shrink-0" size={16} />;
+    }
+    if (current?.meta) {
+      return (
+        <EventIcon
+          className="mr-2 shrink-0"
+          meta={current.meta}
+          name={current.name}
+          size="xs"
+        />
+      );
+    }
+    return <GanttChartIcon className="mr-2 shrink-0" size={16} />;
+  };
+
   const renderTriggerContent = () => {
+    if (currentCustomEvent) {
+      return currentCustomEvent.name;
+    }
     if (selectedValues.length === 0) {
       return placeholder;
     }
@@ -144,16 +205,7 @@ export function ComboboxEvents<
           variant="outline"
         >
           <div className="flex min-w-0 items-center">
-            {current?.meta ? (
-              <EventIcon
-                className="mr-2 shrink-0"
-                meta={current.meta}
-                name={current.name}
-                size="xs"
-              />
-            ) : (
-              <GanttChartIcon className="mr-2 shrink-0" size={16} />
-            )}
+            {renderTriggerIcon()}
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {renderTriggerContent()}
             </span>
@@ -179,30 +231,59 @@ export function ComboboxEvents<
             <CommandEmpty>Nothing selected</CommandEmpty>
             <VirtualList
               className="w-[33em] max-sm:max-w-[100vw]"
-              data={items.filter((item) => {
-                if (search === '') {
-                  return true;
-                }
-                return item.name.toLowerCase().includes(search.toLowerCase());
-              })}
+              data={rows}
               height={300}
               itemHeight={32}
-              itemKey="value"
+              itemKey="key"
             >
-              {(item) => {
+              {(row) => {
+                if (row.kind === 'custom') {
+                  const isSelected =
+                    row.customEvent.id === selectedCustomEventId;
+                  return (
+                    <CommandItem
+                      className={cn(
+                        'gap-4 p-4 py-2.5',
+                        isSelected && 'bg-accent'
+                      )}
+                      key={row.key}
+                      onSelect={() => {
+                        onSelectCustomEvent?.(row.customEvent);
+                        setOpen(false);
+                      }}
+                      value={row.key}
+                    >
+                      {isSelected ? (
+                        <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <LayersIcon className="h-4 w-4 flex-shrink-0" />
+                      )}
+                      <span className="flex-1 truncate font-medium">
+                        {row.customEvent.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Custom event
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                const { item } = row;
+                const isSelected =
+                  !currentCustomEvent &&
+                  selectedValues.includes(item.name as T);
                 return (
                   <CommandItem
                     className={cn(
                       'gap-4 p-4 py-2.5',
-                      selectedValues.includes(item.name as T) && 'bg-accent'
+                      isSelected && 'bg-accent'
                     )}
-                    key={item.name}
-                    onSelect={(currentValue) => {
+                    key={row.key}
+                    onSelect={() => {
                       handleSelection(item.name);
                     }}
                     value={item.name}
                   >
-                    {selectedValues.includes(item.name as T) ? (
+                    {isSelected ? (
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />
                     ) : (
                       <EventIcon meta={item.meta} name={item.name} size="sm" />

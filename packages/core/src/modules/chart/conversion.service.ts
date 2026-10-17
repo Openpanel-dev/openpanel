@@ -1,12 +1,14 @@
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
+import { expandCustomEvents } from '../custom-event/custom-event.service';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { JOINABLE_PROFILE_COLUMNS } from './chart.constants';
 import { compiledText } from './src/compiled';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
+import { eventMatchCondition, eventNamesOf } from './src/event-match';
 import {
   buildInlineCohortJoin,
   collectBreakdownCohortIds,
@@ -88,7 +90,10 @@ export async function getConversion(
     timezone,
   }: ConversionChartInput
 ) {
-  const mergedSeries = mergeGlobalFilters(series, globalFilters);
+  const mergedSeries = mergeGlobalFilters(
+    await expandCustomEvents(deps, projectId, series),
+    globalFilters
+  );
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
   const funnelWindow =
@@ -165,8 +170,9 @@ export async function getConversion(
       interval,
       group,
       funnelWindowSeconds: funnelWindow * SECONDS_PER_HOUR,
-      firstEventName: eventA.name,
-      secondEventName: eventB.name,
+      firstEventMatch: eventMatchCondition(eventA, projectId, 'events'),
+      secondEventMatch: eventMatchCondition(eventB, projectId, 'events'),
+      eventNames: [...eventNamesOf(eventA), ...eventNamesOf(eventB)],
       firstEventWhere: whereA,
       secondEventWhere: whereB,
       breakdownSelects,

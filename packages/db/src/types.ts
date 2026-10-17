@@ -12,7 +12,10 @@ import type { IIntegrationConfig } from '@openpanel/core/modules/integration/int
 import type { INotificationRuleConfig } from '@openpanel/core/modules/notification/notification.constants';
 import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
 import type { IProjectFilters } from '@openpanel/core/modules/project/project.constants';
-import type { IWidgetOptions } from '@openpanel/core/modules/report/report.constants';
+import type {
+  ICustomEventItem,
+  IWidgetOptions,
+} from '@openpanel/core/modules/report/report.constants';
 
 declare global {
   namespace PrismaJson {
@@ -28,6 +31,7 @@ declare global {
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
     type IPrismaCohortDefinition = CohortDefinition;
+    type IPrismaCustomEventItems = ICustomEventItem[];
     // Each ChatMessage row stores one Better Agent `ConversationItem`
     // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
     // here to avoid pulling `@better-agent/core` into @openpanel/db's
