@@ -23,7 +23,7 @@ function seededMcp(w: {
 // which type-checks this file in its own tests; a field the hub does not know fails there.
 export default {
   name: 'openpanel',
-  baseBranch: 'rewrite/v2',
+  baseBranch: 'main',
   worktreesDir: '.worktrees',
   github: 'Openpanel-dev/openpanel',
   domains: { local: 'local.openpanel.cc', remote: 'openpanel.cc' },
