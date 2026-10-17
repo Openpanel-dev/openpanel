@@ -279,7 +279,8 @@ describe('funnel.sql / buildFunnelBase — unknown breakdowns', () => {
 
     // Both sides must resolve the same breakdown to the same b_N index,
     // otherwise the breakdownValues filter targets the wrong column.
-    const attribution = 'argMinIf(`profile.properties.plan`, created_at,';
+    const attribution =
+      "tuple(ifNull(toString(`profile.properties.plan`), ''))";
     expect(render(chart).sql).toContain(attribution);
     expect(render(profiles).sql).toContain(attribution);
     await explain(chart);
@@ -342,14 +343,14 @@ describe('funnel.sql / funnel CTE — step pre-filter', () => {
 });
 
 describe('funnel.sql / buildFunnelBase — breakdown attribution', () => {
-  // The breakdown value must be read at the user's FIRST funnel step, not used
+  // The breakdown value must be read from the user's funnel sequence, not used
   // as a windowFunnel GROUP BY key. Per-row grouping splits a user's steps
   // across buckets whenever the property isn't identical on every step, so the
   // sequence never connects and downstream steps show 0.
   it('attributes event-property breakdowns at the entry step', async () => {
     const sql = await chartSql([breakdown('properties.experiment')]);
     expect(await chartText([breakdown('properties.experiment')])).toContain(
-      "argMinIf(properties['experiment'], created_at,"
+      "tuple(ifNull(toString(properties['experiment']), ''))"
     );
     // The windowFunnel aggregation groups by the primary key only; b_0 is an
     // aggregate, not a grouping key. (The outer chart GROUP BY level, b_0 is
@@ -368,7 +369,7 @@ describe('funnel.sql / buildFunnelBase — breakdown attribution', () => {
     // A user in three groups should appear in all three funnels, so group.*
     // breakdowns keep the ARRAY JOIN fan-out and per-row GROUP BY.
     const sql = await chartSql([breakdown('group.plan')]);
-    expect(sql).not.toContain('argMinIf');
+    expect(sql).not.toContain('step_events');
     expect(sql).toMatch(/GROUP BY session_id, b_0/);
   });
 

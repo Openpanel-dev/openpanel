@@ -44,11 +44,27 @@ export type FunnelGroup = (typeof FUNNEL_GROUPS)[number];
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
 
+export function didNotReachStepLabel(step: number): string {
+  return `Did not reach step ${step}`;
+}
+
+/** The 1-based step a breakdown reads its value from; out-of-range falls back to the first. */
+function breakdownStep(breakdown: IChartBreakdown, stepCount: number): number {
+  const step = breakdown.step ?? 1;
+  return step <= stepCount ? step : 1;
+}
+
 /** What the profiles join may select: the joinable columns plus the key. */
 const FUNNEL_JOIN_COLUMNS = [...JOINABLE_PROFILE_COLUMNS, 'id'];
 
 /** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
 const EVENTS_ALIAS = 'events';
+
+/** The per-group array of step matches the breakdown replays read. */
+const STEP_EVENTS_ALIAS = 'step_events';
+
+/** The step bitmask in `step_events` is a UInt64. */
+const MAX_SEQUENCED_STEPS = 64;
 
 // windowFunnel runs in its default (>=) ordering on purpose. 'strict_increase'
 // resets step 1 on every matching row and then rejects a later step at the
@@ -131,13 +147,86 @@ export function funnelStepConditions(
 }
 
 /**
- * Attribute each breakdown to its value at the user's FIRST funnel step, as a
- * per-group aggregate (argMinIf) — not by adding it to the windowFunnel GROUP
- * BY. Grouping the sequence by a per-row value splits a user's steps across
- * buckets whenever the value isn't identical on every step (e.g. an experiment
- * tag set on the entry event but absent on the conversion event): the later
- * step lands in a separate bucket, the windowFunnel sequence never connects,
- * and downstream steps show 0.
+ * Each user's step matches as `(timestamp, step, breakdown values)`, in the
+ * order windowFunnel processes them: by time, then by step. A row matching
+ * several steps appears once per step. Rows are aggregated as a step bitmask
+ * and expanded afterwards, because building a small array per row was most of
+ * the query's cost.
+ */
+function matchedStepEvents(
+  stepConditions: SqlFragment[],
+  values: SqlFragment[]
+): SqlFragment {
+  if (stepConditions.length > MAX_SEQUENCED_STEPS) {
+    throw new Error(
+      `Funnel breakdowns support at most ${MAX_SEQUENCED_STEPS} steps`
+    );
+  }
+  const stepMask = stepConditions
+    .map(
+      (condition, index) =>
+        sql`toUInt64(${condition}) * ${sql.uint64(2n ** BigInt(index))}`
+    )
+    .reduce((sum, term) => sql`${sum} + ${term}`);
+  const valueTuple = sql`tuple(${sql.join(
+    values.map((value) => sql`ifNull(toString(${value}), '')`)
+  )})`;
+  const rows = sql`groupArray((toInt64(toUnixTimestamp64Milli(created_at)), ${stepMask}, ${valueTuple}))`;
+  return sql`arraySort(e -> (e.1, e.2), arrayFlatten(arrayMap(matched_row -> arrayMap(step_index -> (matched_row.1, step_index, matched_row.3), arrayFilter(step_index -> bitTest(matched_row.2, step_index - 1), range(1, ${sql.uint64(stepConditions.length)} + 1))), ${rows}))) AS ${compiledText(STEP_EVENTS_ALIAS)}`;
+}
+
+/**
+ * Replays windowFunnel over `step_events` so a breakdown reads its value from
+ * the event in the chain that reached the user's deepest level, not just any
+ * event matching the step. Each level keeps its chain's start time and the
+ * value picked up at `step`; a step extends the previous level's chain when it
+ * lands inside the window, exactly as windowFunnel does, and the first chain
+ * to reach a new deepest level wins.
+ */
+function valueAtStepInSequence(input: {
+  valueIndex: number;
+  step: number;
+  stepCount: number;
+  windowMilliseconds: number;
+}): SqlFragment {
+  const stepCount = sql.uint64(input.stepCount);
+  const step = sql.uint64(input.step);
+  const valueIndex = sql.uint64(input.valueIndex);
+  const window = sql.uint64(input.windowMilliseconds);
+  const carried = sql`if(e.2 = ${step}, tupleElement(e.3, ${valueIndex}), if(e.2 = 1, '', acc.2[e.2 - 1]))`;
+  return sql`arrayFold((acc, e) -> if(e.2 = 1 OR (acc.1[e.2 - 1] >= 0 AND e.1 <= acc.1[e.2 - 1] + ${window}), (arrayMap((chain_start, level_index) -> if(level_index = e.2, if(e.2 = 1, e.1, acc.1[e.2 - 1]), chain_start), acc.1, range(1, ${stepCount} + 1)), arrayMap((chain_value, level_index) -> if(level_index = e.2, ${carried}, chain_value), acc.2, range(1, ${stepCount} + 1)), if(e.2 > acc.3, e.2, acc.3), if(e.2 > acc.3, ${carried}, acc.4)), acc), ${compiledText(STEP_EVENTS_ALIAS)}, (arrayWithConstant(${stepCount}, toInt64(-1)), arrayWithConstant(${stepCount}, ''), toUInt64(0), '')).4`;
+}
+
+function breakdownExpression(
+  input: FunnelBaseInput,
+  breakdown: IChartBreakdown,
+  profilePropertyKeys: string[]
+): SqlFragment {
+  const cohortId = extractCohortId(breakdown.name);
+  const cohortName = cohortId
+    ? input.cohortMetadata.get(cohortId)?.name
+    : undefined;
+  return fragmentWithProfileRefs(
+    getSelectPropertyKey(
+      breakdown.name,
+      input.projectId,
+      cohortId ?? undefined,
+      cohortName
+    ),
+    profilePropertyKeys
+  );
+}
+
+/**
+ * Breakdowns are per-group aggregates read from the user's funnel sequence,
+ * not windowFunnel GROUP BY keys. Grouping the sequence by a per-row value
+ * splits a user's steps across buckets whenever the value isn't identical on
+ * every step (e.g. an experiment tag set on the entry event but absent on the
+ * conversion event), so downstream steps show 0.
+ *
+ * With a later step, users who never reached it get their own bucket, since a
+ * property that only exists on that step would otherwise lump them into
+ * "Not set" with users whose value really is empty.
  *
  * `group.*` breakdowns are the exception: their ARRAY JOIN fans each event out
  * per group, and grouping by the group value is intentional — a user in three
@@ -146,28 +235,35 @@ export function funnelStepConditions(
 function breakdownSelects(
   input: FunnelBaseInput,
   profilePropertyKeys: string[],
-  firstStepCondition: SqlFragment
+  stepConditions: SqlFragment[]
 ): SqlFragment[] {
-  return input.breakdowns.map((breakdown, index) => {
-    const cohortId = extractCohortId(breakdown.name);
-    const cohortName = cohortId
-      ? input.cohortMetadata.get(cohortId)?.name
-      : undefined;
-    const expression = fragmentWithProfileRefs(
-      getSelectPropertyKey(
-        breakdown.name,
-        input.projectId,
-        cohortId ?? undefined,
-        cohortName
-      ),
-      profilePropertyKeys
-    );
+  const sequenced = input.breakdowns.filter(
+    (breakdown) => !breakdown.name.startsWith('group.')
+  );
+  const selects = input.breakdowns.map((breakdown, index) => {
     const alias = compiledText(`b_${index}`);
     if (breakdown.name.startsWith('group.')) {
-      return sql`${expression} as ${alias}`;
+      return sql`${breakdownExpression(input, breakdown, profilePropertyKeys)} as ${alias}`;
     }
-    return sql`argMinIf(${expression}, created_at, ${firstStepCondition}) as ${alias}`;
+    const step = breakdownStep(breakdown, stepConditions.length);
+    const value = valueAtStepInSequence({
+      valueIndex: sequenced.indexOf(breakdown) + 1,
+      step,
+      stepCount: stepConditions.length,
+      windowMilliseconds: input.funnelWindowMilliseconds,
+    });
+    if (step === 1) {
+      return sql`${value} as ${alias}`;
+    }
+    return sql`if(level >= ${sql.uint64(step)}, ${value}, ${sql.string(didNotReachStepLabel(step))}) as ${alias}`;
   });
+  if (sequenced.length === 0) {
+    return selects;
+  }
+  const values = sequenced.map((breakdown) =>
+    breakdownExpression(input, breakdown, profilePropertyKeys)
+  );
+  return [matchedStepEvents(stepConditions, values), ...selects];
 }
 
 /**
@@ -276,11 +372,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     projectId,
     profileKeys.keys
   );
-  const selects = breakdownSelects(
-    input,
-    profileKeys.keys,
-    conditions[0] as SqlFragment
-  );
+  const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
