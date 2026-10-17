@@ -12,6 +12,8 @@ export interface ReportChartContextType {
     hideLegend: boolean;
     /** Show the chart alone, without the series tables an editor shows under it. */
     hideTable: boolean;
+    /** A dashboard tile's choice between its chart and its table. */
+    view: 'chart' | 'table';
     hideXAxis: boolean;
     hideYAxis: boolean;
     aspectRatio: number;

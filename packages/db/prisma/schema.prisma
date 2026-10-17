@@ -445,6 +445,8 @@ model Report {
   funnelWindow  Float?
   /// [IReportOptions]
   options       Json?
+  /// How a dashboard tile shows the report: { view: 'chart' | 'table' }
+  display       Json?
   visibleSeries String[]
   startDate     String?
   endDate       String?

@@ -1,3 +1,4 @@
+import type { IReportDisplay } from '@openpanel/core/modules/report/report.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
@@ -178,6 +179,27 @@ function Component() {
     })
   );
 
+  const { mutate: saveDisplay } = useMutation(
+    trpc.report.updateDisplay.mutationOptions({
+      onError(error) {
+        // A read-only member keeps the switched view locally; it just isn't saved.
+        if (error.data?.code !== 'FORBIDDEN') {
+          handleErrorToastOptions({})(error);
+        }
+      },
+    })
+  );
+  const changeView = useCallback(
+    (reportId: string, view: IReportDisplay['view']) => {
+      queryClient.setQueryData(reportsQueryKey, (current) =>
+        current?.map((report) =>
+          report.id === reportId ? { ...report, display: { view } } : report
+        )
+      );
+      saveDisplay({ reportId, display: { view } });
+    },
+    [queryClient, reportsQueryKey, saveDisplay]
+  );
   const resetLayout = useMutation(
     trpc.report.resetLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
@@ -249,6 +271,7 @@ function Component() {
             onDelete={(reportId) => deleteReport({ reportId })}
             onDuplicate={(reportId) => duplicateReport({ reportId })}
             onMove={moveReport}
+            onViewChange={changeView}
             organizationId={organizationId}
             projectId={projectId}
             range={range}
@@ -268,6 +291,7 @@ function Component() {
       deleteReport,
       duplicateReport,
       moveReport,
+      changeView,
     ]
   );
 

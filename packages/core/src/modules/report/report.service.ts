@@ -23,7 +23,14 @@ import type {
   IReport,
   IReportOptions,
 } from './report.constants';
-import { alphabetIds, GRID_COLUMNS, lineTypes } from './report.constants';
+import {
+  alphabetIds,
+  DEFAULT_REPORT_DISPLAY,
+  GRID_COLUMNS,
+  type IReportDisplay,
+  lineTypes,
+  zReportDisplay,
+} from './report.constants';
 import { getChartStartEndDate } from './src/chart-dates';
 import { mergeGlobalFilters, onlyReportEvents } from './src/series';
 
@@ -77,8 +84,10 @@ export function transformReport(
 ): IReport & {
   id: string;
   layout?: ReportLayout | null;
+  display: IReportDisplay;
 } {
   const options = report.options as IReportOptions | null | undefined;
+  const display = zReportDisplay.safeParse(report.display);
 
   return {
     id: report.id,
@@ -101,6 +110,7 @@ export function transformReport(
     unit: report.unit ?? undefined,
     layout: report.layout ?? undefined,
     options: options ?? undefined,
+    display: display.success ? display.data : DEFAULT_REPORT_DISPLAY,
     visibleSeries: report.visibleSeries ?? undefined,
     startDate: report.startDate ?? undefined,
     endDate: report.endDate ?? undefined,
@@ -273,6 +283,17 @@ export async function createReport(
       dashboardId: input.dashboardId,
       ...reportWriteData(input.report),
     },
+  });
+}
+
+export async function updateReportDisplay(
+  deps: ServiceDeps,
+  input: { reportId: string; display: IReportDisplay }
+) {
+  return deps.db.report.update({
+    where: { id: input.reportId },
+    data: { display: input.display },
+    select: { id: true, display: true },
   });
 }
 
@@ -503,6 +524,10 @@ export function createReportService(
       input: Parameters<typeof updateReportLayouts>[1]
     ): ReturnType<typeof updateReportLayouts> =>
       updateReportLayouts(deps, input),
+    updateReportDisplay: (
+      input: Parameters<typeof updateReportDisplay>[1]
+    ): ReturnType<typeof updateReportDisplay> =>
+      updateReportDisplay(deps, input),
     getReportLayouts: (
       input: Parameters<typeof getReportLayouts>[1]
     ): ReturnType<typeof getReportLayouts> => getReportLayouts(deps, input),

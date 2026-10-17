@@ -1,11 +1,17 @@
-import { timeWindows } from '@openpanel/core/modules/report/report.constants';
+import {
+  type IReportDisplay,
+  timeWindows,
+} from '@openpanel/core/modules/report/report.constants';
 import { useRouter } from '@tanstack/react-router';
 import {
+  ChartLineIcon,
   CopyIcon,
   LayoutPanelTopIcon,
   MoreHorizontal,
+  TableIcon,
   Trash,
 } from 'lucide-react';
+import { useState } from 'react';
 import { ReportChart } from '@/components/report-chart';
 import {
   DropdownMenu,
@@ -15,6 +21,40 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+
+type TileView = IReportDisplay['view'];
+
+/** Shown on hover (always on touch): switches the tile between chart and table. */
+function TileViewToggle({
+  chartType,
+  view,
+  onChange,
+}: {
+  chartType: string;
+  view: TileView;
+  onChange: (view: TileView) => void;
+}) {
+  // A metric tile is already its numbers; it has no table.
+  if (chartType === 'metric') {
+    return null;
+  }
+  const isTable = view === 'table';
+  const label = isTable ? 'Show chart' : 'Show table';
+  return (
+    <button
+      aria-label={label}
+      className="flex h-8 w-8 items-center justify-center rounded opacity-0 transition-opacity hover:border focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+      onClick={(event) => {
+        event.stopPropagation();
+        onChange(isTable ? 'chart' : 'table');
+      }}
+      title={label}
+      type="button"
+    >
+      {isTable ? <ChartLineIcon size={16} /> : <TableIcon size={16} />}
+    </button>
+  );
+}
 
 export function ReportItemSkeleton() {
   return (
@@ -45,6 +85,7 @@ export function ReportItem({
   onDelete,
   onDuplicate,
   onMove,
+  onViewChange,
 }: {
   report: any;
   organizationId: string;
@@ -56,12 +97,14 @@ export function ReportItem({
   onDelete: (reportId: string) => void;
   onDuplicate: (reportId: string) => void;
   onMove?: (reportId: string) => void;
+  onViewChange: (reportId: string, view: TileView) => void;
 }) {
   const router = useRouter();
   const chartRange = report.range;
+  const view: TileView = report.display?.view ?? 'chart';
 
   return (
-    <div className="card flex h-full flex-col">
+    <div className="card group flex h-full flex-col">
       <div className="tile-header flex items-center justify-between border-border border-b p-4 leading-none hover:bg-muted/50 [&_svg]:hover:opacity-100">
         <div
           className="-m-4 flex-1 cursor-pointer p-4"
@@ -124,6 +167,11 @@ export function ReportItem({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <TileViewToggle
+            chartType={report.chartType}
+            onChange={(next) => onViewChange(report.id, next)}
+            view={view}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
               <MoreHorizontal size={16} />
@@ -174,6 +222,7 @@ export function ReportItem({
       >
         <ReportChart
           layout="fill"
+          options={{ view }}
           report={{
             ...report,
             range: range ?? report.range,
@@ -203,9 +252,11 @@ export function ReportItemReadOnly({
   interval: any;
 }) {
   const chartRange = report.range;
+  // A share page viewer can switch the view but never saves it.
+  const [view, setView] = useState<TileView>(report.display?.view ?? 'chart');
 
   return (
-    <div className="card flex h-full flex-col">
+    <div className="card group flex h-full flex-col">
       <div className="flex items-center justify-between border-border border-b p-4 leading-none">
         <div className="flex-1">
           <div className="font-medium">{report.name}</div>
@@ -234,6 +285,11 @@ export function ReportItemReadOnly({
             </div>
           )}
         </div>
+        <TileViewToggle
+          chartType={report.chartType}
+          onChange={setView}
+          view={view}
+        />
       </div>
       <div
         className={cn(
@@ -243,6 +299,7 @@ export function ReportItemReadOnly({
       >
         <ReportChart
           layout="fill"
+          options={{ view }}
           report={{
             ...report,
             range: range ?? report.range,
