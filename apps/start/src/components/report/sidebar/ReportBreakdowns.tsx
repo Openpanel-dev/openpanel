@@ -89,7 +89,9 @@ export function ReportBreakdowns() {
                       )
                     }
                     placeholder="Select step"
-                    value={String(item.step ?? 1)}
+                    value={String(
+                      item.step && item.step <= stepItems.length ? item.step : 1
+                    )}
                   />
                 </div>
               )}
