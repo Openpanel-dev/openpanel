@@ -84,7 +84,7 @@
     "fix": "ultracite fix"
   },
   "simple-git-hooks": {
-    "pre-push": "[ -n \"$SKIP_HOOKS\" ] || (bun run typecheck && bun run test)"
+    "pre-push": "sh tooling/scripts/pre-push.sh"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "catalog:",
