@@ -230,11 +230,11 @@ test('dashboard grid: drag, resize, persist, reset layout', async ({
     const resized = await boxes();
     expect(resized.one?.height ?? 0).toBeGreaterThan(initial.one.height + 80);
 
-    // --- drag card two by its handle to the left column
-    const grip = two.locator('.drag-handle').first();
+    // --- drag card two by its header to the left column
+    const grip = two.locator('.tile-header').first();
     const gripBox = await grip.boundingBox();
     if (!gripBox) {
-      throw new Error('no drag handle');
+      throw new Error('no tile header');
     }
     saved = layoutSaved();
     await page.mouse.move(

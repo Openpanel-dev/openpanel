@@ -62,7 +62,7 @@ export function ReportItem({
 
   return (
     <div className="card flex h-full flex-col">
-      <div className="flex items-center justify-between border-border border-b p-4 leading-none hover:bg-muted/50 [&_svg]:hover:opacity-100">
+      <div className="tile-header flex items-center justify-between border-border border-b p-4 leading-none hover:bg-muted/50 [&_svg]:hover:opacity-100">
         <div
           className="-m-4 flex-1 cursor-pointer p-4"
           onClick={(event) => {
@@ -124,22 +124,6 @@ export function ReportItem({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="drag-handle cursor-move rounded p-2 hover:bg-muted">
-            <svg
-              className="opacity-30 hover:opacity-100"
-              fill="currentColor"
-              height="16"
-              viewBox="0 0 16 16"
-              width="16"
-            >
-              <circle cx="4" cy="4" r="1.5" />
-              <circle cx="4" cy="8" r="1.5" />
-              <circle cx="4" cy="12" r="1.5" />
-              <circle cx="12" cy="4" r="1.5" />
-              <circle cx="12" cy="8" r="1.5" />
-              <circle cx="12" cy="12" r="1.5" />
-            </svg>
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
               <MoreHorizontal size={16} />
@@ -186,6 +170,7 @@ export function ReportItem({
           'min-h-0 flex-1 overflow-hidden p-4',
           report.chartType === 'metric' && 'p-0'
         )}
+        data-tile-body
       >
         <ReportChart
           layout="fill"
