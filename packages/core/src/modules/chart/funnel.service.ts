@@ -1,6 +1,7 @@
 import { ifNaN } from '@openpanel/shared';
 import { last, reverse } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
+import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,
@@ -354,8 +355,8 @@ export async function getFunnelCore(
 
   const result = await getFunnel(deps, {
     projectId: input.projectId,
-    startDate: input.startDate,
-    endDate: input.endDate,
+    startDate: toRangeBoundaryLiteral(input.startDate, 'start'),
+    endDate: toRangeBoundaryLiteral(input.endDate, 'end'),
     series: eventSeries,
     breakdowns: [],
     chartType: 'funnel',

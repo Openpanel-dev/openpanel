@@ -90,7 +90,7 @@ beforeAll(async () => {
   );
   await bootstrapTestDatabases();
   await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
-  pinFixtureClock();
+  CHARLIE_DAY = fixtures.timeAgo(pinFixtureClock(), 5).slice(0, 10);
   await fixtures.setupFixtures(TEST_PROJECT_ID);
 
   const { testServiceDeps } = await import('../../../../../test/service-deps');
@@ -119,6 +119,9 @@ const CTX = {
 
 /** What `createMcpServer` hands every tool at runtime. Built in `beforeAll`. */
 let TOOLS: McpToolDeps;
+
+/** `YYYY-MM-DD` of charlie's first session, the only fixture events on that day. */
+let CHARLIE_DAY: string;
 
 function makeServer() {
   const handlers = new Map<string, (input: unknown) => Promise<unknown>>();
@@ -703,6 +706,49 @@ describe('get_user_flow', () => {
       // endEvent intentionally omitted
     });
     expect(res.error).toContain('endEvent');
+  });
+});
+
+// A bare `endDate` names a whole day: asking for one day must not come back empty.
+describe('a date-only endDate includes that day', () => {
+  it('query_events returns the events of a single day', async () => {
+    const server = makeServer();
+    registerEventTools(server as any, TOOLS);
+    const res = await server.invoke('query_events', {
+      projectId: TEST_PROJECT_ID,
+      startDate: CHARLIE_DAY,
+      endDate: CHARLIE_DAY,
+    });
+    const events = rowsOf(res);
+    expect(events.length).toBe(5);
+    expect(events.every((e) => e.profile_id === FIXTURE.profiles.charlie)).toBe(
+      true
+    );
+  });
+
+  it('get_funnel counts a conversion on a single day', async () => {
+    const server = makeServer();
+    registerFunnelTools(server as any, TOOLS);
+    const res = await server.invoke('get_funnel', {
+      projectId: TEST_PROJECT_ID,
+      startDate: CHARLIE_DAY,
+      endDate: CHARLIE_DAY,
+      steps: ['session_start', 'purchase'],
+    });
+    expect(res.completedUsers).toBe(1);
+  });
+
+  it('get_user_flow finds the flow of a single day', async () => {
+    const server = makeServer();
+    registerUserFlowTools(server as any, TOOLS);
+    const res = await server.invoke('get_user_flow', {
+      projectId: TEST_PROJECT_ID,
+      startDate: CHARLIE_DAY,
+      endDate: CHARLIE_DAY,
+      startEvent: 'session_start',
+      mode: 'after',
+    });
+    expect(res.node_count).toBeGreaterThan(0);
   });
 });
 

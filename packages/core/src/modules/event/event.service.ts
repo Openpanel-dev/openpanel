@@ -6,6 +6,7 @@ import { clone, mergeDeepRight, uniq } from 'ramda';
 import { cacheablePerDeps } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
+import { toRangeBoundaryLiteral } from '../../shared/ch-dates';
 import { stripFixedStringPadding } from '../../shared/ch-fixed-string';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { buildFilterWhere } from '../chart/src/table-filter-where';
@@ -977,8 +978,8 @@ function queryEventsDateRange(
     input.endDate
   );
   return {
-    start: formatClickhouseDate(new Date(startDate)),
-    end: formatClickhouseDate(new Date(endDate)),
+    start: toRangeBoundaryLiteral(startDate, 'start'),
+    end: toRangeBoundaryLiteral(endDate, 'end'),
   };
 }
 
