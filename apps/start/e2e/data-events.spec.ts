@@ -387,6 +387,41 @@ test.describe('events list', () => {
     });
   });
 
+  test('stats tab follows the range, interval and event pickers', async ({
+    page,
+  }) => {
+    const problems = watch(page);
+    await open(
+      page,
+      `${SHOP}/events/stats?range=today&overrideInterval=hour&events=add_to_cart`
+    );
+    await expect(
+      page.getByRole('button', { name: 'Today', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Hour', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('combobox').filter({ hasText: 'add_to_cart' })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'add_to_cart', exact: true })
+    ).toBeVisible();
+    // Every widget (time series and aggregates alike) is limited to the
+    // picked event, and the time series are bucketed by hour.
+    await expect(
+      page.getByText('Events by name', { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText('add_to_cart').first()).toBeVisible();
+    await expect(page.getByText('screen_view')).toHaveCount(0);
+    await expect(page.getByText('00:00').first()).toBeVisible();
+    await page.screenshot({
+      path: `${SHOTS}/events-stats-filtered.png`,
+      fullPage: true,
+    });
+    expect(problems).toEqual([]);
+  });
+
   test('mobile viewport has no horizontal page scroll', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, `${SHOP}/events`);
