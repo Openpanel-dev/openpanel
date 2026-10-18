@@ -393,7 +393,7 @@ test.describe('events list', () => {
     const problems = watch(page);
     await open(
       page,
-      `${SHOP}/events/stats?range=today&overrideInterval=hour&events=add_to_cart`
+      `${SHOP}/events/stats?range=today&overrideInterval=hour&events=add_to_cart,search`
     );
     await expect(
       page.getByRole('button', { name: 'Today', exact: true })
@@ -404,17 +404,32 @@ test.describe('events list', () => {
     await expect(
       page.getByRole('combobox').filter({ hasText: 'add_to_cart' })
     ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'add_to_cart', exact: true })
-    ).toBeVisible();
-    // Every widget (time series and aggregates alike) is limited to the
-    // picked event, and the time series are bucketed by hour.
-    await expect(
-      page.getByText('Events by name', { exact: true })
-    ).toBeVisible();
-    await expect(page.getByText('add_to_cart').first()).toBeVisible();
-    await expect(page.getByText('screen_view')).toHaveCount(0);
-    await expect(page.getByText('00:00').first()).toBeVisible();
+    for (const event of ['add_to_cart', 'search']) {
+      await expect(
+        page.getByRole('button', { name: event, exact: true })
+      ).toBeVisible();
+    }
+    // Every widget (time series and aggregates alike) shows exactly the
+    // picked events (two, so the time series render a legend), and both
+    // time series are bucketed by hour.
+    const card = (title: string) =>
+      page
+        .locator('div.card')
+        .filter({ has: page.locator('.title', { hasText: title }) });
+    for (const title of [
+      'Events over time',
+      'Share of events',
+      'Events by name',
+      'Trend by event',
+    ]) {
+      for (const event of ['add_to_cart', 'search']) {
+        await expect(card(title).getByText(event).first()).toBeVisible();
+      }
+      await expect(card(title).getByText('screen_view')).toHaveCount(0);
+    }
+    for (const title of ['Events over time', 'Trend by event']) {
+      await expect(card(title).getByText('00:00').first()).toBeVisible();
+    }
     await page.screenshot({
       path: `${SHOTS}/events-stats-filtered.png`,
       fullPage: true,
