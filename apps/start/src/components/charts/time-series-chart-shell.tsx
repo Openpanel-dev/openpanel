@@ -316,6 +316,16 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     [children]
   );
 
+  const slotCount =
+    xDomain && xDomainSlotCount != null
+      ? xDomainSlotCount
+      : visiblePlotData.length;
+  // Bars are centred on their x, so with a range that starts at 0 the first
+  // and last bar spill into the margins and over the y-axis labels. Start the
+  // range half a slot in, like a band scale, whenever bars are drawn.
+  const hasBars = (composedBarDataKeys?.length ?? 0) > 0;
+  const xInset = hasBars && slotCount > 0 ? innerWidth / slotCount / 2 : 0;
+
   const xScale = useMemo(() => {
     const minTime = xDomain
       ? xDomain[0].getTime()
@@ -330,10 +340,10 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     }
 
     return scaleTime({
-      range: [0, innerWidth],
+      range: [xInset, innerWidth - xInset],
       domain: [minTime, maxTime],
     });
-  }, [innerWidth, plotData, projectionConfigs, xAccessor, xDomain]);
+  }, [innerWidth, xInset, plotData, projectionConfigs, xAccessor, xDomain]);
 
   // When brushing, keep the full series for path rendering so edge fades stay
   // anchored to the viewport while the line pans through them. Y-domain and
@@ -350,15 +360,11 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   }, [seriesSourceData, innerWidth, lines]);
 
   const columnWidth = useMemo(() => {
-    const slotCount =
-      xDomain && xDomainSlotCount != null
-        ? xDomainSlotCount
-        : visiblePlotData.length;
     if (slotCount < 2) {
       return 0;
     }
-    return innerWidth / (slotCount - 1);
-  }, [innerWidth, visiblePlotData.length, xDomain, xDomainSlotCount]);
+    return (innerWidth - 2 * xInset) / (slotCount - 1);
+  }, [innerWidth, xInset, slotCount]);
 
   const yDomainSkeletonByAxis = useMemo(
     () =>
