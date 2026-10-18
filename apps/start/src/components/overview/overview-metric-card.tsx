@@ -20,6 +20,8 @@ const METRIC_ERROR_LABEL = 'Could not load';
 // A tall card's bars get the report bars' rounding; the 40px sparkline's thin bars only a hint of it.
 const BAR_RADIUS = 4;
 const SPARKLINE_BAR_RADIUS = 1;
+// Below this a count fits the card in full ("25,412"); above it we compact to "12M".
+const FULL_NUMBER_LIMIT = 10_000_000;
 
 export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
@@ -221,5 +223,10 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
     );
   }
 
-  return <span className={VALUE_CLASS}>{number.short(value)}</span>;
+  const fitsInFull = Math.abs(value) < FULL_NUMBER_LIMIT;
+  return (
+    <span className={VALUE_CLASS}>
+      {fitsInFull ? number.format(value) : number.short(value)}
+    </span>
+  );
 }
