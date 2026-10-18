@@ -24,7 +24,7 @@
     "headquarters": "Estonia"
   },
   "overview": {
-    "title": "Plausible is good at one thing. Here's where that stops.",
+    "title": "What Plausible does well, and where it stops",
     "paragraphs": [
       "Plausible is a well-made tool. The dashboard fits on one screen, the script is under 1 KB, and nobody on your team needs training to read it. If you run a blog, a docs site or a marketing site, it does the job and you can stop reading here.",
       "The limit is by design. Plausible counts visitors anonymously and never ties events to a person, so it can't answer questions that need a person: what share of last month's signups came back this week, which accounts use a feature, what a single user did before they churned. Its funnels (2 to 8 steps) and user journeys exist, but only on the Business plan, and they count visitors within a visit rather than following a user over weeks.",
@@ -307,7 +307,7 @@
     },
     "competitor": {
       "model": "Monthly pageviews, features by plan",
-      "description": "10k pageviews: $9 Starter, $19 Business. 100k: $19 / $39. 1M: $69 / $139. 10M: $169 / $339. Yearly billing gives 2 months free. Funnels and user journeys need Business.",
+      "description": "Starter / Growth / Business at 10k pageviews: $9 / $14 / $19. 100k: $19 / $29 / $39. 1M: $69 / $104 / $139. 10M: $169 / $254 / $339. Yearly billing gives 2 months free. Funnels and user journeys need Business.",
       "free_tier": "No free tier (30-day trial)",
       "pricing_url": "https://plausible.io/#pricing"
     }
@@ -381,7 +381,7 @@
   },
   "faqs": {
     "title": "Frequently asked questions",
-    "intro": "Questions people ask when comparing the two.",
+    "intro": "Short answers, including the cases where Plausible wins.",
     "items": [
       {
         "question": "Is OpenPanel as privacy-friendly as Plausible?",

@@ -8,7 +8,7 @@
   },
   "hero": {
     "heading": "OpenPanel vs PostHog",
-    "subheading": "PostHog is a large developer platform: analytics, feature flags, experiments, surveys, error tracking and a data warehouse. OpenPanel does product and web analytics only, with a much smaller script, no cookies by default and a self-hosted setup you can run on one server. This page compares the two on the things that decide a switch.",
+    "subheading": "PostHog is a large developer platform: analytics, feature flags, experiments, surveys, error tracking and a data warehouse. OpenPanel does product and web analytics only, with a much smaller script, no cookies by default and a self-hosted setup you can run on one server.",
     "badges": [
       "3 KB script",
       "Cookie-free by default",
@@ -20,14 +20,14 @@
     "name": "PostHog",
     "logo": "/logos/posthog.svg",
     "url": "https://posthog.com",
-    "short_description": "All-in-one product analytics platform for developers with features like analytics, feature flags, session replay, and surveys.",
+    "short_description": "Developer platform that bundles product analytics, session replay, feature flags, experiments, surveys and error tracking.",
     "founded": 2020,
     "headquarters": "San Francisco, California, USA"
   },
   "overview": {
     "title": "When OpenPanel is the better PostHog alternative",
     "paragraphs": [
-      "Most teams that look for a PostHog alternative use a fraction of it. They track events, build funnels and retention charts, watch some session replays, and never touch feature flags or surveys. For that work, PostHog's breadth costs you in page weight, setup and pricing you have to model per product.",
+      "If your team uses PostHog to track events, build funnels and retention charts and watch session replays, and never opens feature flags or surveys, you still carry the rest: a larger script, a heavier self-hosted stack and a separate meter for each product.",
       "The script size difference is large. OpenPanel's web script is 3.3 KB gzipped. PostHog's main browser bundle (posthog-js 1.438, dist/array.js) is about 105 KB gzipped when we measured it in October 2026. On a marketing site or a storefront, that is weight your visitors download before anything else runs.",
       "Privacy defaults differ too. PostHog's JavaScript library stores its state in localStorage plus a first-party cookie unless you change persistence. OpenPanel sets no cookies: it identifies anonymous visitors with a daily-rotating salted hash, so you can run it without a consent banner in most setups.",
       "PostHog is the better choice if you want one vendor for analytics, feature flags, A/B experiments with statistics, surveys and error tracking, or if you want to write SQL against your data. OpenPanel has none of those products, and we would rather you know that before you migrate."
@@ -338,7 +338,7 @@
       },
       {
         "title": "Rebuild the reports you use",
-        "description": "Recreate your main funnels, retention charts and dashboards in OpenPanel. Most teams have fewer than ten they look at weekly."
+        "description": "Recreate your main funnels, retention charts and dashboards in OpenPanel."
       },
       {
         "title": "Compare numbers for two weeks",
@@ -360,7 +360,7 @@
   },
   "use_cases": {
     "title": "Where OpenPanel fits better",
-    "intro": "These are the cases where people switch and stay.",
+    "intro": "Four situations where the switch pays off.",
     "items": [
       {
         "title": "You only use PostHog for analytics",
