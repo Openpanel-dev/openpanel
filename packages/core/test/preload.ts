@@ -3,12 +3,16 @@
 // idempotent and cheap.
 //
 // The pins below are a safety property: a test must not reach a real database
-// because someone's .env happened to be loaded. Kept in step with
-// test/databases.ts by hand.
-process.env.DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:23432/openpanel_test?schema=public';
-process.env.CLICKHOUSE_URL = 'http://localhost:23123/openpanel_test';
-process.env.REDIS_URL = 'redis://localhost:23379';
+// because someone's .env happened to be loaded.
+import {
+  TEST_CLICKHOUSE_URL,
+  TEST_DATABASE_URL,
+  TEST_REDIS_URL,
+} from '../../../test/databases';
+
+process.env.DATABASE_URL = TEST_DATABASE_URL;
+process.env.CLICKHOUSE_URL = TEST_CLICKHOUSE_URL;
+process.env.REDIS_URL = TEST_REDIS_URL;
 process.env.SELF_HOSTED = 'true';
 // Unsubscribe links are HMAC-signed with no default secret, so a test that
 // exercises one needs a key.
