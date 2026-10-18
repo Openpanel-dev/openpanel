@@ -12,6 +12,7 @@ import {
   type SequenceSubject,
   step,
 } from '../email/src/sequence';
+import { toStoredOrganizationRole } from '../organization/organization.constants';
 import {
   getOrganizationById,
   getOrganizationEventsCount,
@@ -35,15 +36,15 @@ export async function canSkipOnboarding(
   // Sequential, not Promise.all: the early return below skips the projectAccess query
   // for any user with a membership, which a parallel fetch would give up.
   const db = deps.db;
-  const members = await db.member.findMany({ where: { userId } });
-  if (members.length > 0) {
+  const members = await db.member.count({ where: { userId } });
+  if (members > 0) {
     return { canSkip: true };
   }
 
-  const projectAccess = await db.projectAccess.findMany({
-    where: { userId },
-  });
-  return { canSkip: projectAccess.length > 0 };
+  // Rows without a membership never granted access, but they did let the user
+  // past onboarding; kept until `project_access` is dropped.
+  const projectAccess = await db.projectAccess.count({ where: { userId } });
+  return { canSkip: projectAccess > 0 };
 }
 
 async function createOrGetOnboardingOrganization(
@@ -62,9 +63,9 @@ async function createOrGetOnboardingOrganization(
   const db = deps.db;
   const organizationId = await getId(deps, 'organization', input.organization);
 
-  // Create the organization and its owner (org:admin member) atomically. The
-  // `delete` cron treats an organization with no org:admin member as ownerless
-  // and removes it, so an organization must never exist without one.
+  // Create the organization and its owner atomically. The `delete` cron
+  // treats an organization with no admin member as ownerless and removes it,
+  // so an organization must never exist without one.
   const [organization] = await db.$transaction([
     db.organization.create({
       data: {
@@ -78,13 +79,15 @@ async function createOrGetOnboardingOrganization(
         subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
         timezone: input.timezone,
         onboarding: '',
+        // Equal to the id so it is unique; see code migration 26.
+        slug: organizationId,
       },
     }),
     db.member.create({
       data: {
         email: (await getUserById(deps, userId)).email,
         organizationId,
-        role: 'org:admin',
+        role: toStoredOrganizationRole('owner'),
         userId,
       },
     }),

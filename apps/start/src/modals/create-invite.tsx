@@ -6,7 +6,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
-import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
+import { ProjectScopePicker } from '@/components/settings/project-scope-picker';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -35,14 +35,17 @@ export default function CreateInvite() {
 
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
-    resolver: zodResolver(zInviteUser),
-    defaultValues: {
-      organizationId,
-      access: [],
-      role: 'org:member',
-    },
-  });
+  const { register, handleSubmit, formState, reset, control, watch } =
+    useForm<IForm>({
+      resolver: zodResolver(zInviteUser),
+      defaultValues: {
+        organizationId,
+        projectScope: 'all',
+        access: [],
+        role: 'member',
+      },
+    });
+  const projectScope = watch('projectScope');
 
   const mutation = useMutation(
     trpc.organization.inviteUser.mutationOptions({
@@ -130,13 +133,13 @@ export default function CreateInvite() {
                     ref={field.ref}
                   >
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem id="member" value="org:member" />
+                      <RadioGroupItem id="member" value="member" />
                       <Label className="mb-0" htmlFor="member">
                         Member
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem id="admin" value="org:admin" />
+                      <RadioGroupItem id="admin" value="admin" />
                       <Label className="mb-0" htmlFor="admin">
                         Admin
                       </Label>
@@ -144,21 +147,30 @@ export default function CreateInvite() {
                   </RadioGroup>
                 )}
               />
+              <p className="mt-1 text-muted-foreground text-sm">
+                Admins manage members and projects. Members can edit the
+                projects they have access to.
+              </p>
             </div>
             <Controller
               control={control}
               name="access"
               render={({ field }) => (
                 <div>
-                  <Label>Restrict access</Label>
-                  <ProjectAccessGrants
-                    onChange={field.onChange}
-                    projects={projects}
-                    value={field.value}
+                  <Label>Project access</Label>
+                  <Controller
+                    control={control}
+                    name="projectScope"
+                    render={({ field: scopeField }) => (
+                      <ProjectScopePicker
+                        access={field.value}
+                        onAccessChange={field.onChange}
+                        onScopeChange={scopeField.onChange}
+                        projectScope={projectScope}
+                        projects={projects}
+                      />
+                    )}
                   />
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    Leave empty to give access to all projects
-                  </p>
                 </div>
               )}
             />

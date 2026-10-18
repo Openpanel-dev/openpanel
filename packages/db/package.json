@@ -11,6 +11,7 @@
     "migrate:deploy:db": "bun run with-env prisma migrate deploy",
     "migrate:deploy": "bun run migrate:deploy:db && bun run migrate:deploy:code",
     "duplicate-events": "bun run with-env bun ./scripts/find-duplicate-events.ts",
+    "access-snapshot": "bun run with-env bun ./scripts/access-snapshot.ts",
     "test": "bun test --isolate",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"

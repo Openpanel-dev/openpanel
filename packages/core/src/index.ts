@@ -235,6 +235,7 @@ export {
 export { checkNotificationRulesForEvent } from './modules/notification/src/notification-dispatch';
 export { createOnboardingService } from './modules/onboarding/onboarding.service';
 export type {
+  IServiceInvite,
   IServiceMember,
   IServiceOrganization,
 } from './modules/organization/organization.service';
@@ -363,12 +364,16 @@ export {
 } from './rpc/handler';
 export type { AppRouter } from './rpc.router';
 export { appRouter } from './rpc.router';
-export type { IProjectAccess } from './shared/access-lookups';
+export type {
+  IOrganizationAccess,
+  IProjectAccess,
+} from './shared/access-lookups';
 export {
   canWriteProject,
   getClientAccess,
   getOrganizationAccess,
   getProjectAccess,
+  resolveProjectAccess,
 } from './shared/access-lookups';
 export {
   DEFAULT_IP_HEADER_ORDER,

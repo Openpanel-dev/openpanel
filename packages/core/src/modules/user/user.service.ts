@@ -86,7 +86,7 @@ export async function listUserDeletionBlockers(
  * Hard delete the user. Cascades clean up sessions, accounts, totp,
  * twoFactorChallenges, members, projectAccess, invites and conversations.
  * Organizations the user created have `createdByUserId`/`subscriptionCreatedByUserId`
- * set to null (SetNull); any org left without an org:admin member is then
+ * set to null (SetNull); any org left without an admin member is then
  * removed by the organization module's `delete` cron.
  */
 export async function deleteUserAccount(

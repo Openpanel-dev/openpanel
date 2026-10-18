@@ -90,6 +90,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationId,
         email: input.email,
         role: input.role,
+        projectScope: input.projectScope,
         access: input.access,
         invitedById: userId,
       });
@@ -144,6 +145,7 @@ export const organizationRouter = createTRPCRouter({
       return ctx.services.organization.updateMemberAccess({
         organizationId: input.organizationId,
         targetUserId: input.userId,
+        projectScope: input.projectScope,
         access: input.access,
       });
     }),

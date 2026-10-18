@@ -1,4 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/core';
+import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { differenceInMonths } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -48,7 +49,8 @@ export default function YearlySwitchPrompt({
       { enabled: eligible && !dismissed }
     )
   );
-  const isAdmin = accessQuery.data?.role === 'org:admin';
+  const isAdmin =
+    !!accessQuery.data && isOrganizationAdminRole(accessQuery.data.role);
 
   const currentProductQuery = useQuery(
     trpc.subscription.getCurrent.queryOptions(

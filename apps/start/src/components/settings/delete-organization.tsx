@@ -1,4 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/core';
+import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
@@ -9,7 +10,9 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
-type Props = { organization: IServiceOrganization };
+interface Props {
+  organization: IServiceOrganization;
+}
 
 export default function DeleteOrganization({ organization }: Props) {
   const trpc = useTRPC();
@@ -35,7 +38,7 @@ export default function DeleteOrganization({ organization }: Props) {
   );
 
   // Only admins can delete the organization. The server enforces this too.
-  if (myAccess?.role !== 'org:admin') {
+  if (!(myAccess && isOrganizationAdminRole(myAccess.role))) {
     return null;
   }
 

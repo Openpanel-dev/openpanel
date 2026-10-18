@@ -63,7 +63,11 @@ afterAll(() => {
 // `ctx.services.auth` binds these lookups, so mocking them makes
 // `getProjectAccess`/`getOrganizationAccess` observable from the test.
 let projectAccess: { level: string } | null = null;
-let organizationAccess: { role: string } | null = null;
+let organizationAccess: {
+  role: string;
+  userId: string;
+  organization: { createdByUserId: string | null };
+} | null = null;
 const getProjectAccess = mock(async () => projectAccess);
 const getOrganizationAccess = mock(async () => organizationAccess);
 mock.module('../../shared/access-lookups', () => ({
@@ -289,7 +293,11 @@ test('wsOrganizationEvents: session but no org access -> "No access" then close'
 // receive other organizations' ids (the filter itself is asserted in realtime.service.test.ts).
 test('wsOrganizationEvents: subscribes scoped to the organization the caller is a member of', async () => {
   session = { userId: 'user_1' };
-  organizationAccess = { role: 'org:member' };
+  organizationAccess = {
+    role: 'org:member',
+    userId: 'user_1',
+    organization: { createdByUserId: null },
+  };
 
   const { ws } = await connect('/live/organization/org_1');
 
