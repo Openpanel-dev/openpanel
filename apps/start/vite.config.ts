@@ -49,6 +49,10 @@ const config = defineConfig({
       '@visx/responsive',
       'lodash',
       'react-svg-worldmap',
+      // react-svg-worldmap requires d3-geo v2 (CommonJS) while the choropleth
+      // uses v3 (ESM, no default export). Left external, both import the one
+      // d3-geo the server output ships, and v2's default import fails on v3.
+      'd3-geo',
     ],
   },
 });
