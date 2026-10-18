@@ -64,7 +64,7 @@
       },
       {
         "title": "Open source (AGPL-3.0)",
-        "description": "Read the code, report bugs, submit PRs. No proprietary black boxes. The self-hosted version is identical to cloud — no artificial feature limits."
+        "description": "Read the code, report bugs, submit PRs. No proprietary black boxes. Self-hosting is the full product — no artificial feature limits."
       },
       {
         "title": "Event-based data model",

@@ -4,6 +4,7 @@ import * as TabsComponents from 'fumadocs-ui/components/tabs';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import * as icons from 'lucide-react';
 import type { MDXComponents } from 'mdx/types';
+import { ArticleCta } from '@/components/article-cta';
 import { FaqItem, Faqs } from '@/components/faq';
 import { Figure } from '@/components/figure';
 import { WindowImage } from '@/components/window-image';
@@ -17,6 +18,7 @@ export function getMDXComponents(components?: MDXComponents) {
     Accordion,
     Accordions,
     ...components,
+    ArticleCta,
     Faqs,
     FaqItem,
     WindowImage,
