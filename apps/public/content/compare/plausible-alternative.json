@@ -23,6 +23,11 @@
     "short_description": "Cookieless web analytics with a one-page dashboard, hosted in Germany and built by a small bootstrapped team.",
     "headquarters": "Estonia"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-10-18",
+    "prices_checked": "2026-10-18"
+  },
   "overview": {
     "title": "What Plausible does well, and where it stops",
     "paragraphs": [
@@ -78,6 +83,28 @@
         "label": "Tracking script",
         "openpanel": "About 3 KB gzipped",
         "competitor": "Under 1 KB"
+      }
+    ]
+  },
+  "competitor_strengths": {
+    "title": "Where Plausible is better",
+    "intro": "For traffic stats on a content site, these are good reasons to stay.",
+    "items": [
+      {
+        "title": "A smaller script",
+        "description": "Plausible's tracker is under 1 KB. OpenPanel's is about 3 KB gzipped. Both are small next to most analytics tools, but Plausible is smaller."
+      },
+      {
+        "title": "A dashboard nobody has to learn",
+        "description": "Plausible puts everything for a site on one page. OpenPanel has more reports, which also means more to learn."
+      },
+      {
+        "title": "Google Analytics import",
+        "description": "Plausible can import your Google Analytics history. OpenPanel can't, so a switch from GA starts with an empty chart."
+      },
+      {
+        "title": "Lower prices for traffic stats only",
+        "description": "If you only need pageviews and sources, Plausible Starter is cheaper from 1M pageviews up: $69 against $90 at 1M, and $169 against $350 at 10M."
       }
     ]
   },
@@ -310,7 +337,29 @@
       "description": "Starter / Growth / Business at 10k pageviews: $9 / $14 / $19. 100k: $19 / $29 / $39. 1M: $69 / $104 / $139. 10M: $169 / $254 / $339. Yearly billing gives 2 months free. Funnels and user journeys need Business.",
       "free_tier": "No free tier (30-day trial)",
       "pricing_url": "https://plausible.io/#pricing"
-    }
+    },
+    "volumes": [
+      {
+        "volume": "10k pageviews",
+        "openpanel": "$5",
+        "competitor": "$9 Starter, $14 Growth, $19 Business"
+      },
+      {
+        "volume": "100k pageviews",
+        "openpanel": "$20",
+        "competitor": "$19 Starter, $29 Growth, $39 Business"
+      },
+      {
+        "volume": "1M pageviews",
+        "openpanel": "$90",
+        "competitor": "$69 Starter, $104 Growth, $139 Business"
+      },
+      {
+        "volume": "10M pageviews",
+        "openpanel": "$350",
+        "competitor": "$169 Starter, $254 Growth, $339 Business"
+      }
+    ]
   },
   "migration": {
     "title": "Moving from Plausible to OpenPanel",
@@ -355,17 +404,29 @@
       {
         "title": "You need retention by signup cohort",
         "description": "\"Of the people who signed up in March, how many still use it?\" needs a stable user ID. Plausible doesn't keep one; OpenPanel builds the cohort table from your signup and return events.",
-        "icon": "users"
+        "icon": "users",
+        "screenshot": {
+          "src": "/features/feature-retention.webp",
+          "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
+        }
       },
       {
         "title": "You want funnels without a Business plan",
         "description": "At 100k pageviews, Plausible Business costs $39 a month for funnels and custom properties. OpenPanel's 100k tier costs $20 with funnels, retention and user flows included.",
-        "icon": "trending-up"
+        "icon": "trending-up",
+        "screenshot": {
+          "src": "/features/feature-funnel-report.webp",
+          "alt": "OpenPanel funnel report showing conversion between steps"
+        }
       },
       {
         "title": "Support asks what a specific user did",
         "description": "OpenPanel user profiles list every event and session for one person, so you can answer a support ticket without guessing.",
-        "icon": "user-check"
+        "icon": "user-check",
+        "screenshot": {
+          "src": "/features/feature-profiles-details.webp",
+          "alt": "OpenPanel user profile with the person's properties and event history"
+        }
       },
       {
         "title": "You have a mobile app as well as a website",

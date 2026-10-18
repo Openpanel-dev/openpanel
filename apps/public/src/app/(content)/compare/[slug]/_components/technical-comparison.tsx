@@ -7,12 +7,15 @@ interface TechnicalComparisonProps {
   competitorName: string;
 }
 
-function renderValue(value: string | string[]) {
+function TechnicalValue({ value }: { value: string | string[] }) {
   if (Array.isArray(value)) {
     return (
-      <ul className="col gap-1">
-        {value.map((item, idx) => (
-          <li className="text-sm" key={idx}>
+      <ul className="flex flex-wrap gap-1.5">
+        {value.map((item) => (
+          <li
+            className="rounded-md border bg-muted/30 px-2 py-0.5 text-xs"
+            key={item}
+          >
             {item}
           </li>
         ))}
@@ -54,11 +57,13 @@ export function TechnicalComparison({
                   )}
                   key={item.label}
                 >
-                  <td className="p-4 font-medium">{item.label}</td>
-                  <td className="p-4">{renderValue(item.openpanel)}</td>
-                  <td className="p-4 text-muted-foreground">
+                  <td className="p-4 align-top font-medium">{item.label}</td>
+                  <td className="p-4 align-top">
+                    <TechnicalValue value={item.openpanel} />
+                  </td>
+                  <td className="p-4 align-top text-muted-foreground">
                     <div className="col gap-1">
-                      {renderValue(item.competitor)}
+                      <TechnicalValue value={item.competitor} />
                       {item.notes && (
                         <span className="mt-1 text-muted-foreground/70 text-xs">
                           {item.notes}

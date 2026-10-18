@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { CompareCard } from './_components/compare-card';
-import { CompareHero } from './[slug]/_components/compare-hero';
+import { CompareIndexHero } from './_components/compare-index-hero';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Section, SectionHeader } from '@/components/section';
 import { WindowImage } from '@/components/window-image';
@@ -33,7 +33,7 @@ export default async function CompareIndexPage() {
 
   return (
     <div>
-      <CompareHero hero={heroData} />
+      <CompareIndexHero {...heroData} />
 
       <div className="container my-16">
         <WindowImage

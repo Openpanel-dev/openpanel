@@ -24,6 +24,11 @@
     "founded": 2020,
     "headquarters": "San Francisco, California, USA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-10-18",
+    "prices_checked": "2026-10-18"
+  },
   "overview": {
     "title": "When OpenPanel is the better PostHog alternative",
     "paragraphs": [
@@ -83,6 +88,28 @@
         "label": "Feature flags, experiments, surveys",
         "openpanel": "No",
         "competitor": "Yes"
+      }
+    ]
+  },
+  "competitor_strengths": {
+    "title": "Where PostHog is better",
+    "intro": "If any of these matter to you, PostHog is the better pick.",
+    "items": [
+      {
+        "title": "Feature flags and experiments",
+        "description": "PostHog ships feature flags and A/B tests with significance testing in the same product as its analytics. OpenPanel can break any report down by a variant property, but it has no flag delivery and no experiment statistics."
+      },
+      {
+        "title": "Surveys, heatmaps and error tracking",
+        "description": "PostHog has all three, each with its own free allowance. OpenPanel has none of them, so you would add a separate tool for each one you need."
+      },
+      {
+        "title": "SQL in the dashboard",
+        "description": "HogQL lets you write SQL against your events from the PostHog UI. OpenPanel has a visual report builder. Self-hosters can query ClickHouse directly, but there is no SQL editor in the dashboard."
+      },
+      {
+        "title": "A free plan for small products",
+        "description": "The first 1M analytics events each month are free on PostHog. OpenPanel Cloud has no free plan: you get a 30-day trial, and self-hosting is the free option."
       }
     ]
   },
@@ -320,7 +347,24 @@
       "description": "Product analytics is free for the first 1M events a month, then $0.00005 per event up to 2M and $0.0000343 per event from 2M to 15M, so 10M events cost about $324. Session replay, feature flags, surveys and error tracking each have their own free allowance and meter.",
       "free_tier": "1M analytics events and 5K session replays a month",
       "pricing_url": "https://posthog.com/pricing"
-    }
+    },
+    "volumes": [
+      {
+        "volume": "100k events",
+        "openpanel": "$20",
+        "competitor": "$0"
+      },
+      {
+        "volume": "1M events",
+        "openpanel": "$90",
+        "competitor": "$0"
+      },
+      {
+        "volume": "10M events",
+        "openpanel": "$350",
+        "competitor": "about $324 (analytics events only)"
+      }
+    ]
   },
   "migration": {
     "title": "Moving from PostHog to OpenPanel",
@@ -365,7 +409,11 @@
       {
         "title": "You only use PostHog for analytics",
         "description": "If your PostHog usage is events, funnels, retention and replay, OpenPanel covers it with one price and one script.",
-        "icon": "target"
+        "icon": "target",
+        "screenshot": {
+          "src": "/features/feature-retention.webp",
+          "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
+        }
       },
       {
         "title": "Page weight shows up in your Core Web Vitals",
@@ -375,7 +423,11 @@
       {
         "title": "You want analytics without a cookie banner",
         "description": "OpenPanel stores nothing in the browser by default. PostHog needs a persistence change, and turning persistence off makes every page load a new anonymous user.",
-        "icon": "shield"
+        "icon": "shield",
+        "screenshot": {
+          "src": "/features/feature-overview-main.webp",
+          "alt": "OpenPanel web analytics overview with visitors, sessions, pageviews and bounce rate"
+        }
       },
       {
         "title": "You want to self-host and have support for it",

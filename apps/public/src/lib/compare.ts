@@ -27,6 +27,12 @@ export interface CompareCompetitor {
   headquarters?: string;
 }
 
+export interface CompareMeta {
+  author: string;
+  updated: string;
+  prices_checked?: string;
+}
+
 export interface CompareSummary {
   title: string;
   intro: string;
@@ -78,6 +84,24 @@ export interface ComparePricing {
     free_tier?: string;
     pricing_url?: string;
   };
+  volumes?: ComparePriceAtVolume[];
+}
+
+export interface ComparePriceAtVolume {
+  volume: string;
+  openpanel: string;
+  competitor: string;
+}
+
+export interface CompareStrength {
+  title: string;
+  description: string;
+}
+
+export interface CompareStrengths {
+  title: string;
+  intro: string;
+  items: CompareStrength[];
 }
 
 export interface CompareTrust {
@@ -93,10 +117,16 @@ export interface CompareTrustCompliance {
   competitor: CompareTrust;
 }
 
+export interface CompareScreenshot {
+  src: string;
+  alt: string;
+}
+
 export interface CompareUseCase {
   title: string;
   description: string;
   icon?: string;
+  screenshot?: CompareScreenshot;
 }
 
 export interface CompareUseCases {
@@ -114,14 +144,6 @@ export interface CompareFaqs {
   title: string;
   intro: string;
   items: CompareFaq[];
-}
-
-export interface CompareBenefitsSection {
-  label?: string;
-  title: string;
-  description: string;
-  cta?: CompareCta;
-  benefits: string[];
 }
 
 export interface CompareTechnicalItem {
@@ -182,9 +204,11 @@ export interface CompareData {
   seo: CompareSeo;
   hero: CompareHero;
   competitor: CompareCompetitor;
+  meta?: CompareMeta;
   overview?: CompareOverview;
   summary_comparison: CompareSummary;
   highlights: CompareHighlights;
+  competitor_strengths?: CompareStrengths;
   feature_comparison: CompareFeatureComparison;
   technical_comparison?: CompareTechnicalComparison;
   pricing: ComparePricing;
@@ -192,7 +216,6 @@ export interface CompareData {
   trust_and_compliance?: CompareTrustCompliance;
   use_cases: CompareUseCases;
   faqs: CompareFaqs;
-  benefits_section?: CompareBenefitsSection;
   related_links?: RelatedLinks;
   ctas: {
     primary: CompareCta;
