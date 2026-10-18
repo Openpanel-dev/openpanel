@@ -1,11 +1,21 @@
-import type { IChartEventItem } from '@openpanel/core/modules/report/report.constants';
+import type {
+  IChartBreakdown,
+  IChartEventItem,
+  IHistogramOptions,
+} from '@openpanel/core/modules/report/report.constants';
 import { createFileRoute } from '@tanstack/react-router';
+import { useMemo } from 'react';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
 } from '@/components/overview/filters/overview-filters-buttons';
+import { OverviewInterval } from '@/components/overview/overview-interval';
+import { OverviewRange } from '@/components/overview/overview-range';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { ReportChartShortcut } from '@/components/report-chart/shortcut';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { useEventNames } from '@/hooks/use-event-names';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
@@ -17,53 +27,76 @@ export const Route = createFileRoute(
   component: Component,
 });
 
+const BREAKDOWN_BY_EVENT_NAME: IChartBreakdown[] = [{ id: 'A', name: 'name' }];
+const STACKED_HISTOGRAM: IHistogramOptions = {
+  type: 'histogram',
+  stacked: true,
+};
+// Breaking down by `name` nests the event under itself; show only the event.
+const breakdownChartOptions = {
+  hideTable: true,
+  renderSerieName(names: string[]) {
+    return names.at(-1);
+  },
+};
+
 function Component() {
   const { projectId } = Route.useParams();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
-  const [events] = useEventQueryNamesFilter();
-  const fallback: IChartEventItem[] = [
-    {
-      id: 'A',
-      name: '*',
-      displayName: 'All events',
+  const [eventNames, setEventNames] = useEventQueryNamesFilter();
+  const availableEvents = useEventNames({ projectId, anyEvents: false });
+
+  const series = useMemo<IChartEventItem[]>(() => {
+    const names = eventNames.length > 0 ? eventNames : ['*'];
+    return names.map((name) => ({
+      id: name,
+      name,
+      displayName: name === '*' ? 'All events' : name,
       segment: 'event',
       filters: filters ?? [],
       type: 'event',
-    },
-  ];
+    }));
+  }, [eventNames, filters]);
+
+  const timeWindow = { range, startDate, endDate, interval };
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2">
-        <OverviewFilterButton enableEventsFilter />
+      <div className="col mb-2 gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <OverviewRange />
+          <OverviewInterval />
+          <ComboboxEvents
+            items={availableEvents}
+            maxDisplayItems={2}
+            multiple
+            onChange={setEventNames}
+            placeholder="All events"
+            searchable
+            value={eventNames}
+          />
+          <OverviewFilterButton enableEventsFilter />
+        </div>
         <OverviewFiltersButtons
-          className="justify-end p-0"
+          className="p-0"
           filterModal={{ enableEventsFilter: true }}
         />
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Events per day</span>
+            <span className="title">Events over time</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              breakdowns={BREAKDOWN_BY_EVENT_NAME}
               chartType="histogram"
-              options={{ hideTable: true }}
+              options={breakdownChartOptions}
               projectId={projectId}
-              range="30d"
-              series={
-                events && events.length > 0
-                  ? events.map((name) => ({
-                      id: name,
-                      name,
-                      displayName: name,
-                      segment: 'event',
-                      filters: filters ?? [],
-                      type: 'event',
-                    }))
-                  : fallback
-              }
+              reportOptions={STACKED_HISTOGRAM}
+              series={series}
+              {...timeWindow}
             />
           </WidgetBody>
         </Widget>
@@ -73,42 +106,12 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
-                },
-              ]}
+              breakdowns={BREAKDOWN_BY_EVENT_NAME}
               chartType="pie"
-              options={{
-                hideTable: true,
-                renderSerieName(names) {
-                  return names.at(-1);
-                },
-              }}
+              options={breakdownChartOptions}
               projectId={projectId}
-              range="30d"
-              series={
-                events && events.length > 0
-                  ? events.map((name) => ({
-                      id: name,
-                      name,
-                      displayName: name,
-                      segment: 'event',
-                      filters: filters ?? [],
-                      type: 'event',
-                    }))
-                  : [
-                      {
-                        id: 'A',
-                        name: '*',
-                        displayName: 'All events',
-                        segment: 'event',
-                        filters: filters ?? [],
-                        type: 'event',
-                      },
-                    ]
-              }
+              series={series}
+              {...timeWindow}
             />
           </WidgetBody>
         </Widget>
@@ -118,87 +121,27 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
-                },
-              ]}
+              breakdowns={BREAKDOWN_BY_EVENT_NAME}
               chartType="bar"
-              options={{
-                hideTable: true,
-                renderSerieName(names) {
-                  return names.at(-1);
-                },
-              }}
+              options={breakdownChartOptions}
               projectId={projectId}
-              range="30d"
-              series={
-                events && events.length > 0
-                  ? events.map((name) => ({
-                      id: name,
-                      name,
-                      displayName: name,
-                      segment: 'event',
-                      filters: filters ?? [],
-                      type: 'event',
-                    }))
-                  : [
-                      {
-                        id: 'A',
-                        name: '*',
-                        displayName: 'All events',
-                        segment: 'event',
-                        filters: filters ?? [],
-                        type: 'event',
-                      },
-                    ]
-              }
+              series={series}
+              {...timeWindow}
             />
           </WidgetBody>
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Events over time</span>
+            <span className="title">Trend by event</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
-              breakdowns={[
-                {
-                  id: 'A',
-                  name: 'name',
-                },
-              ]}
+              breakdowns={BREAKDOWN_BY_EVENT_NAME}
               chartType="linear"
-              options={{
-                hideTable: true,
-                renderSerieName(names) {
-                  return names.at(-1);
-                },
-              }}
+              options={breakdownChartOptions}
               projectId={projectId}
-              range="30d"
-              series={
-                events && events.length > 0
-                  ? events.map((name) => ({
-                      id: name,
-                      name,
-                      displayName: name,
-                      segment: 'event',
-                      filters: filters ?? [],
-                      type: 'event',
-                    }))
-                  : [
-                      {
-                        id: 'A',
-                        name: '*',
-                        displayName: 'All events',
-                        segment: 'event',
-                        filters: filters ?? [],
-                        type: 'event',
-                      },
-                    ]
-              }
+              series={series}
+              {...timeWindow}
             />
           </WidgetBody>
         </Widget>

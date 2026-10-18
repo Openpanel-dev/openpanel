@@ -366,14 +366,21 @@ test.describe('events list', () => {
   test('stats tab renders its four charts', async ({ page }) => {
     await open(page, `${SHOP}/events/stats`);
     for (const title of [
-      'Events per day',
+      'Events over time',
       'Share of events',
       'Events by name',
-      'Events over time',
+      'Trend by event',
     ]) {
       await expect(page.getByText(title, { exact: true })).toBeVisible();
     }
     await expect(page.getByText('screen_view').first()).toBeVisible();
+    // The toolbar carries its own range, interval and event pickers.
+    await expect(
+      page.getByRole('button', { name: 'Day', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('combobox').filter({ hasText: 'All events' })
+    ).toBeVisible();
     await page.screenshot({
       path: `${SHOTS}/events-stats.png`,
       fullPage: true,
