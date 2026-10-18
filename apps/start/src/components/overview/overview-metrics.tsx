@@ -369,7 +369,6 @@ function Chart({
       <Line
         curve={curveMonotoneX}
         dataKey={`prev_${activeMetric.key}`}
-        fadeEdges
         key={`prev-${activeMetric.key}`}
         stroke={PREV_LINE_COLOR}
         strokeWidth={2}
@@ -379,7 +378,6 @@ function Chart({
         <Line
           curve={curveMonotoneX}
           dataKey="revenue_norm"
-          fadeEdges
           stroke={REVENUE_COLOR}
           strokeWidth={1.5}
         />
