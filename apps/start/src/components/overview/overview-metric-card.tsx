@@ -205,9 +205,12 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
   }
 
   if (unit === 'currency') {
+    const amount = value / 100;
     return (
       <span className={VALUE_CLASS}>
-        {number.currency(value / 100, { short: true })}
+        {number.currency(amount, {
+          short: Math.abs(amount) >= FULL_NUMBER_LIMIT,
+        })}
       </span>
     );
   }
