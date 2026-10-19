@@ -366,18 +366,75 @@ test.describe('events list', () => {
   test('stats tab renders its four charts', async ({ page }) => {
     await open(page, `${SHOP}/events/stats`);
     for (const title of [
-      'Events per day',
+      'Events over time',
       'Share of events',
       'Events by name',
-      'Events over time',
+      'Trend by event',
     ]) {
       await expect(page.getByText(title, { exact: true })).toBeVisible();
     }
     await expect(page.getByText('screen_view').first()).toBeVisible();
+    // The toolbar carries its own range, interval and event pickers.
+    await expect(
+      page.getByRole('button', { name: 'Day', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('combobox').filter({ hasText: 'All events' })
+    ).toBeVisible();
     await page.screenshot({
       path: `${SHOTS}/events-stats.png`,
       fullPage: true,
     });
+  });
+
+  test('stats tab follows the range, interval and event pickers', async ({
+    page,
+  }) => {
+    const problems = watch(page);
+    await open(
+      page,
+      `${SHOP}/events/stats?range=today&overrideInterval=hour&events=add_to_cart,search`
+    );
+    await expect(
+      page.getByRole('button', { name: 'Today', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Hour', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('combobox').filter({ hasText: 'add_to_cart' })
+    ).toBeVisible();
+    for (const event of ['add_to_cart', 'search']) {
+      await expect(
+        page.getByRole('button', { name: event, exact: true })
+      ).toBeVisible();
+    }
+    // Every widget (time series and aggregates alike) shows exactly the
+    // picked events (two, so the time series render a legend), and both
+    // time series are bucketed by hour.
+    const card = (title: string) =>
+      page
+        .locator('div.card')
+        .filter({ has: page.locator('.title', { hasText: title }) });
+    for (const title of [
+      'Events over time',
+      'Share of events',
+      'Events by name',
+      'Trend by event',
+    ]) {
+      for (const event of ['add_to_cart', 'search']) {
+        await expect(card(title).getByText(event).first()).toBeVisible();
+      }
+      await expect(card(title).getByText('screen_view')).toHaveCount(0);
+    }
+    for (const title of ['Events over time', 'Trend by event']) {
+      await expect(card(title).getByText('00:00').first()).toBeVisible();
+    }
+    await page.screenshot({
+      path: `${SHOTS}/events-stats-filtered.png`,
+      fullPage: true,
+    });
+    expect(problems).toEqual([]);
   });
 
   test('mobile viewport has no horizontal page scroll', async ({ page }) => {
