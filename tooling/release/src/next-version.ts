@@ -1,6 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import semver from 'semver';
 import { git, gitOrNull, lines } from './git';
+import { RELEASE_PATHSPEC } from './release-scope';
 
 export type Bump = 'patch' | 'minor' | 'major';
 
@@ -23,7 +24,8 @@ export const bumpFor = (message: string): Bump => {
   if (message.includes(MAJOR_MARKER)) {
     return 'major';
   }
-  const subject = message.split('\n', 1)[0]?.trim() ?? '';
+  // Every `git log` entry after the first starts with the newline that ended the previous one.
+  const subject = message.trim().split('\n', 1)[0] ?? '';
   const isFeature =
     message.includes(MINOR_MARKER) || FEATURE_SUBJECT.test(subject);
   return isFeature ? 'minor' : 'patch';
@@ -86,7 +88,7 @@ export const decide = (sha: string): Decision => {
   );
   const previous = previousTag ? versionOf(previousTag) : null;
   const range = previousTag ? `${previousTag}..${sha}` : sha;
-  const messages = git('log', '--format=%B%x00', range)
+  const messages = git('log', '--format=%B%x00', range, ...RELEASE_PATHSPEC)
     .split('\0')
     .filter((message) => message.trim());
   const bump = highestBump(messages);
