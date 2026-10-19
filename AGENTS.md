@@ -177,7 +177,7 @@ ones. So write every change in two parts:
   background, and it must:
   - stay correct while ingestion and the dashboard read and write the table. If the
     write path reads the table back (the profile buffer does), copy before you swap;
-    otherwise swap first and copy after;
+    otherwise swap first and copy after (`28-sessions-sort-key-id.ts`);
   - be safe to rerun from any point, since a process can die mid-way and another one
     resumes it;
   - never be something a blocking migration depends on.
