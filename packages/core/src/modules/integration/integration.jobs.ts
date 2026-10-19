@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 import {
+  createRedisExportClaim,
   type ExportClickhouse,
   type ExportDb,
   runFlushExportsCron,
@@ -30,6 +31,7 @@ export const integrationCronJobs = {
             config,
             ctx.config
           ),
+        claimExport: createRedisExportClaim(ctx.redis),
       });
     },
   }),

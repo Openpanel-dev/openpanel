@@ -3,6 +3,7 @@
 
 import { describe, expect, it, mock } from 'bun:test';
 import { gunzipSync } from 'node:zlib';
+import { getRedisCache } from '@openpanel/redis';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import type { Logger } from '../../../logger';
 import {
@@ -16,6 +17,7 @@ import {
   serializeManifest,
 } from './export';
 import {
+  createRedisExportClaim,
   type ExportIntegrationRow,
   type ExportWatermarkRow,
   type FlushExportsDeps,
@@ -80,6 +82,7 @@ const watermark: ExportWatermarkRow = {
 function fakeDeps(rows: unknown[][]) {
   const uploads: { key: string; contentType: string }[] = [];
   const watermarkUpdates: unknown[] = [];
+  const releaseClaim = mock(async () => undefined);
   const windows = [...rows];
   const query = mock(async () => ({
     json: async () => windows.shift() ?? [],
@@ -114,9 +117,10 @@ function fakeDeps(rows: unknown[][]) {
           return { key };
         },
       }) as never,
+    claimExport: async () => releaseClaim,
   };
 
-  return { deps, uploads, watermarkUpdates, query };
+  return { deps, uploads, watermarkUpdates, query, releaseClaim };
 }
 
 describe('runFlushExportsCron', () => {
@@ -160,6 +164,84 @@ describe('runFlushExportsCron', () => {
 
     // Two rows is far under BATCH_SIZE, so one window is the whole backlog.
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips an export another run has claimed', async () => {
+    const { deps, uploads, watermarkUpdates, query } = fakeDeps([
+      [1, 2, 3].map(chEvent),
+    ]);
+    deps.claimExport = async () => null;
+
+    await runFlushExportsCron(deps);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(uploads).toHaveLength(0);
+    expect(watermarkUpdates).toHaveLength(0);
+  });
+
+  it('releases the claim after a successful export', async () => {
+    const { deps, releaseClaim } = fakeDeps([[1, 2, 3].map(chEvent)]);
+
+    await runFlushExportsCron(deps);
+
+    expect(releaseClaim).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases the claim when the export fails', async () => {
+    const { deps, releaseClaim } = fakeDeps([[1, 2, 3].map(chEvent)]);
+    deps.createAdapter = () =>
+      ({
+        upload: async () => {
+          throw new Error('bucket unavailable');
+        },
+      }) as never;
+
+    await expect(runFlushExportsCron(deps)).rejects.toThrow(
+      'exports failed with a retryable provider error'
+    );
+    expect(releaseClaim).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createRedisExportClaim', () => {
+  const redis = getRedisCache();
+  const claim = createRedisExportClaim(redis);
+  const projectId = 'proj_claim_test';
+  const claimKey = (integrationId: string) =>
+    `lock:flush-exports:${projectId}:${integrationId}`;
+
+  it('grants one claim at a time per export', async () => {
+    await redis.del(claimKey('int_a'), claimKey('int_b'));
+
+    const first = await claim(projectId, 'int_a');
+    expect(first).not.toBeNull();
+    expect(await claim(projectId, 'int_a')).toBeNull();
+    // A different integration is a different export.
+    const other = await claim(projectId, 'int_b');
+    expect(other).not.toBeNull();
+
+    await first?.();
+    const again = await claim(projectId, 'int_a');
+    expect(again).not.toBeNull();
+
+    await again?.();
+    await other?.();
+  });
+
+  it('a release whose claim expired does not free the next holder', async () => {
+    await redis.del(claimKey('int_c'));
+
+    const stale = await claim(projectId, 'int_c');
+    // Simulate the TTL running out while the first run is still going.
+    await redis.del(claimKey('int_c'));
+    const current = await claim(projectId, 'int_c');
+    expect(current).not.toBeNull();
+
+    await stale?.();
+    expect(await claim(projectId, 'int_c')).toBeNull();
+
+    await current?.();
+    expect(await redis.exists(claimKey('int_c'))).toBe(0);
   });
 });
 
