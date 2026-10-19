@@ -128,10 +128,12 @@ Sessions are updated on each event and flushed to ClickHouse separately.
 | Variable | Default | What it controls |
 |---|---|---|
 | `SESSION_BUFFER_BATCH_SIZE` | `10000` | Session rows read per batch |
-| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | Session rows per ClickHouse insert |
+| `SESSION_BUFFER_CHUNK_SIZE` | same as the batch size | Session rows per ClickHouse insert |
+
+Leave `SESSION_BUFFER_CHUNK_SIZE` unset so each batch is written in a single insert. With smaller chunks, a chunk that fails sends the whole batch back for a retry, and the chunks that had already landed are written twice, which corrupts those sessions.
 
 ```bash
-SESSION_BUFFER_CHUNK_SIZE=2000
+SESSION_BUFFER_BATCH_SIZE=20000
 ```
 
 ### Profile buffer
@@ -200,7 +202,7 @@ Every flush ends in a ClickHouse insert. When workers and ClickHouse share a mac
 
 ### What to watch
 
-- **Kafka consumer lag** for the `KAFKA_CONSUMER_GROUP` group (`openpanel-events` by default): `docker compose exec op-rp rpk group describe openpanel-events`.
+- **Kafka consumer lag** for your `KAFKA_CONSUMER_GROUP`: `docker compose exec op-rp rpk group describe openpanel-events`, replacing `openpanel-events` (the default) if you set a different group.
 - **Buffer backlog:** `buffer_flush_llen_at_start` on a worker's `/metrics` endpoint, or the length of the `event_buffer:queue` and `session-buffer` lists in Redis.
 - **Insert latency:** `buffer_ch_insert_duration_ms` on the same endpoint. If it rises with load, ClickHouse is the limit.
 
@@ -219,9 +221,6 @@ DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=pu
 # Event buffer
 EVENT_BUFFER_BATCH_SIZE=10000
 EVENT_BUFFER_CHUNK_SIZE=2000
-
-# Session buffer
-SESSION_BUFFER_CHUNK_SIZE=2000
 
 # Profile buffer
 PROFILE_BUFFER_BATCH_SIZE=500

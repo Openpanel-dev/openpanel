@@ -101,7 +101,7 @@ export interface ExportDb {
   exportWatermark: {
     findUnique(args: unknown): Promise<ExportWatermarkRow | null>;
     create(args: unknown): Promise<unknown>;
-    update(args: unknown): Promise<unknown>;
+    updateMany(args: unknown): Promise<{ count: number }>;
   };
 }
 
@@ -419,12 +419,16 @@ async function saveCursor(
   cursor: Cursor,
   deps: FlushExportsDeps
 ): Promise<void> {
-  await deps.db.exportWatermark.update({
-    where: { projectId_integrationId: { projectId, integrationId } },
-    data: {
-      lastInsertedAt: convertClickhouseDateToJs(cursor.insertedAt),
-      lastEventId: cursor.eventId,
+  const lastInsertedAt = convertClickhouseDateToJs(cursor.insertedAt);
+  // Forward only: a run that outlived its claim must not rewind a watermark
+  // that a later run has already moved past.
+  await deps.db.exportWatermark.updateMany({
+    where: {
+      projectId,
+      integrationId,
+      lastInsertedAt: { lte: lastInsertedAt },
     },
+    data: { lastInsertedAt, lastEventId: cursor.eventId },
   });
 }
 

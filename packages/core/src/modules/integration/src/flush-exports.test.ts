@@ -95,9 +95,9 @@ function fakeDeps(rows: unknown[][]) {
       exportWatermark: {
         findUnique: async () => watermark,
         create: async () => ({}),
-        update: async (args) => {
+        updateMany: async (args) => {
           watermarkUpdates.push(args);
-          return {};
+          return { count: 1 };
         },
       },
     },
@@ -142,6 +142,22 @@ describe('runFlushExportsCron', () => {
       data: {
         lastEventId: '00000000-0000-0000-0000-000000000003',
         lastInsertedAt: new Date('2026-08-26T11:03:00.000Z'),
+      },
+    });
+  });
+
+  it('never moves the watermark backwards', async () => {
+    const { deps, watermarkUpdates } = fakeDeps([[1, 2, 3].map(chEvent)]);
+
+    await runFlushExportsCron(deps);
+
+    // Only applies while the stored watermark is not newer than this run's,
+    // so a run that outlived its claim cannot undo a later run's progress.
+    expect(watermarkUpdates[0]).toMatchObject({
+      where: {
+        projectId: 'proj_1',
+        integrationId: 'int_1',
+        lastInsertedAt: { lte: new Date('2026-08-26T11:03:00.000Z') },
       },
     });
   });

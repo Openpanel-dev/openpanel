@@ -275,9 +275,9 @@ export class BaseBuffer {
 
   /**
    * Run `fn` over `items` with a bounded concurrency. Preserves order of
-   * `results`. If any worker throws, the helper propagates the first error
-   * (consistent with `Promise.all`); other in-flight promises run to
-   * completion but their resolved values/errors are discarded.
+   * `results`. After the first failure no new item starts, and the call
+   * rejects with that error only once the items already running have settled,
+   * so nothing is still writing when the caller releases its flush lock.
    */
   protected async parallelLimit<T, R>(
     items: T[],
@@ -296,13 +296,18 @@ export class BaseBuffer {
     }
     const results = new Array<R>(items.length);
     let nextIndex = 0;
+    const failures: unknown[] = [];
     const worker = async (): Promise<void> => {
-      while (true) {
+      while (failures.length === 0) {
         const idx = nextIndex++;
         if (idx >= items.length) {
           return;
         }
-        results[idx] = await fn(items[idx] as T, idx);
+        try {
+          results[idx] = await fn(items[idx] as T, idx);
+        } catch (error) {
+          failures.push(error);
+        }
       }
     };
     const workers = Array.from(
@@ -310,6 +315,9 @@ export class BaseBuffer {
       () => worker()
     );
     await Promise.all(workers);
+    if (failures.length > 0) {
+      throw failures[0];
+    }
     return results;
   }
 

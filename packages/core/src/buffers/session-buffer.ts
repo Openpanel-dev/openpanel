@@ -86,13 +86,15 @@ function pickUtm(
 
 // Large enough that a busy session's versions share a batch and squash.
 const DEFAULT_BATCH_SIZE = 10_000;
-const DEFAULT_CHUNK_SIZE = 1000;
 
 export class SessionBuffer extends BaseBuffer {
   private readonly batchSize =
     this.deps.config.buffers.session.batchSize ?? DEFAULT_BATCH_SIZE;
+  // One insert per batch by default: a failed chunk keeps the whole batch
+  // queued, so chunks that already landed would be inserted again, and a
+  // duplicated sign row corrupts the collapsed session.
   private readonly chunkSize =
-    this.deps.config.buffers.session.chunkSize ?? DEFAULT_CHUNK_SIZE;
+    this.deps.config.buffers.session.chunkSize ?? this.batchSize;
 
   private readonly squashEnabled = this.deps.config.buffers.session.squash;
   private readonly idleTimeoutMs = resolveSessionTimeoutMs(this.deps.config);

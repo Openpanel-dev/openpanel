@@ -544,6 +544,60 @@ describe('SessionBuffer', () => {
     expect(await buffer.getBufferSize()).toBe(10);
   });
 
+  it('inserts a whole batch in one insert by default', async () => {
+    const buffer = new SessionBuffer(bufferDepsWithCh({ insert: chInsert }));
+    // More rows than any fixed chunk size short of the batch size would allow
+    // in one insert.
+    const rows = Array.from({ length: ROWS_OVER_OLD_CHUNK_SIZE }, (_, i) =>
+      JSON.stringify({ id: `session-${i}`, sign: 1, version: 1, duration: 0 })
+    );
+    await redis.rpush('session-buffer', ...rows);
+
+    await buffer.processBuffer();
+
+    expect(chInsert).toHaveBeenCalledTimes(1);
+    expect(chInsert.mock.calls[0]?.[0].values).toHaveLength(
+      ROWS_OVER_OLD_CHUNK_SIZE
+    );
+  });
+
+  it('after a failed chunk starts no new chunk and rejects once the running ones finish', async () => {
+    const config = testCoreConfig();
+    config.buffers.session.chunkSize = 2;
+    const buffer = new SessionBuffer(
+      bufferDepsWithCh({ insert: chInsert }, config)
+    );
+    const t0 = Date.now();
+    for (let i = 0; i < 20; i++) {
+      await buffer.ingest(
+        makePayload({
+          deviceId: `device-${i}`,
+          sessionId: `session-${i}`,
+          createdAt: new Date(t0),
+        })
+      );
+    }
+
+    let started = 0;
+    let finished = 0;
+    chInsert.mockImplementation(async ({ values }) => {
+      started += 1;
+      if (values.some((row) => row.device_id === 'device-0')) {
+        throw new Error('ClickHouse unavailable');
+      }
+      await Bun.sleep(INSERT_LATENCY_MS);
+      finished += 1;
+    });
+
+    await expect(buffer.processBuffer()).rejects.toThrow(
+      'ClickHouse unavailable'
+    );
+    // Ten chunks, five at a time: the first wave runs, nothing after it.
+    expect(started).toBe(BUFFER_CH_INSERT_CONCURRENCY_DEFAULT);
+    expect(finished).toBe(BUFFER_CH_INSERT_CONCURRENCY_DEFAULT - 1);
+    expect(await buffer.getBufferSize()).toBe(20);
+  });
+
   it('reports read, transform, insert and trim timings', async () => {
     const buffer = bufferWithBatchSize(1000);
     const observations: FlushObservation[] = [];
@@ -568,6 +622,9 @@ describe('SessionBuffer', () => {
 });
 
 const INSERT_LATENCY_MS = 10;
+const ROWS_OVER_OLD_CHUNK_SIZE = 1500;
+/** `testCoreConfig()` leaves it unset, so the base buffer's default of 5 applies. */
+const BUFFER_CH_INSERT_CONCURRENCY_DEFAULT = 5;
 
 const MONITOR_SENTINEL = 'session-buffer-test-done';
 const MONITOR_POLL_MS = 5;

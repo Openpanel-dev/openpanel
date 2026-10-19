@@ -1097,13 +1097,13 @@ SESSION_BUFFER_BATCH_SIZE=20000
 
 **Type**: `number`
 **Required**: No
-**Default**: Buffer-specific default
+**Default**: Same as `SESSION_BUFFER_BATCH_SIZE`
 
-Chunk size for session buffer operations.
+Session rows per ClickHouse insert. By default each batch is one insert. A smaller value splits the batch into chunks inserted in parallel, but if one chunk fails the whole batch is retried and the chunks that already landed are written twice, which corrupts those sessions. Leave it unset unless a single insert is too large for your ClickHouse.
 
 **Example**:
 ```bash
-SESSION_BUFFER_CHUNK_SIZE=1000
+SESSION_BUFFER_CHUNK_SIZE=10000
 ```
 
 ### EVENT_BUFFER_BATCH_SIZE
