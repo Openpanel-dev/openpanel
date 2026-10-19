@@ -1,4 +1,4 @@
-import { useChat } from '@ai-sdk/react';
+import { Chat, useChat } from '@ai-sdk/react';
 import type {
   ChatLaunchHint,
   NavigateInput,
@@ -84,6 +84,73 @@ function fillRoute(
   return `${base}${path}`;
 }
 
+interface ChatHandlers {
+  onToolCall: (toolCall: {
+    toolName: string;
+    toolCallId: string;
+    input: unknown;
+  }) => void;
+  onTitle: (title: string) => void;
+  onFinish: () => void;
+}
+
+interface ChatEntry {
+  chat: Chat<AssistantUIMessage>;
+  handlers: ChatHandlers | null;
+}
+
+/** Newest chats stay; the page rarely touches more than a handful per visit. */
+const MAX_CACHED_CHATS = 20;
+
+/**
+ * One Chat per conversation id, outside React. The chat page remounts on the
+ * first send (the URL gains the conversation id), and a remount must pick up
+ * the stream in flight instead of starting a new, empty chat.
+ */
+const chats = new Map<string, ChatEntry>();
+
+function getChatEntry(
+  id: string,
+  initialMessages: AssistantUIMessage[],
+  transport: DefaultChatTransport<AssistantUIMessage>
+): ChatEntry {
+  const existing = chats.get(id);
+  if (existing) {
+    return existing;
+  }
+  const entry: ChatEntry = {
+    chat: null as unknown as Chat<AssistantUIMessage>,
+    handlers: null,
+  };
+  entry.chat = new Chat<AssistantUIMessage>({
+    id,
+    messages: initialMessages,
+    transport,
+    sendAutomaticallyWhen: (state) =>
+      lastAssistantMessageIsCompleteWithToolCalls(state) ||
+      lastAssistantMessageIsCompleteWithApprovalResponses(state),
+    onToolCall: ({ toolCall }) => {
+      if (!toolCall.dynamic) {
+        entry.handlers?.onToolCall(toolCall);
+      }
+    },
+    onData: (part) => {
+      if (part.type === 'data-title') {
+        entry.handlers?.onTitle(part.data.title);
+      }
+    },
+    onFinish: () => entry.handlers?.onFinish(),
+  });
+  chats.set(id, entry);
+  if (chats.size > MAX_CACHED_CHATS) {
+    const oldest = chats.keys().next().value;
+    if (oldest !== undefined && oldest !== id) {
+      chats.delete(oldest);
+    }
+  }
+  return entry;
+}
+
 export interface ChatSessionOptions {
   conversationId: string;
   initialMessages: AssistantUIMessage[];
@@ -131,17 +198,10 @@ export function useChatSession(options: ChatSessionOptions) {
     queryClient.invalidateQueries(trpc.conversation.list.pathFilter());
   }, [queryClient, trpc]);
 
-  const chat = useChat<AssistantUIMessage>({
-    id: options.conversationId,
-    messages: options.initialMessages,
-    transport,
-    sendAutomaticallyWhen: (state) =>
-      lastAssistantMessageIsCompleteWithToolCalls(state) ||
-      lastAssistantMessageIsCompleteWithApprovalResponses(state),
-    onToolCall: ({ toolCall }) => {
-      if (toolCall.dynamic) {
-        return;
-      }
+  // The handlers close over router and modal state, so the cached Chat reads
+  // the latest ones through the registry instead of the ones it was built with.
+  const handlers: ChatHandlers = {
+    onToolCall: (toolCall) => {
       if (toolCall.toolName === 'navigate') {
         const input = toolCall.input as NavigateInput;
         // Offered as a link, not followed: moving away mid-answer loses the answer.
@@ -162,13 +222,16 @@ export function useChatSession(options: ChatSessionOptions) {
         });
       }
     },
-    onData: (part) => {
-      if (part.type === 'data-title') {
-        setTitle(part.data.title);
-      }
-    },
+    onTitle: setTitle,
     onFinish: invalidateList,
-  });
+  };
+  const entry = getChatEntry(
+    options.conversationId,
+    options.initialMessages,
+    transport
+  );
+  entry.handlers = handlers;
+  const chat = useChat<AssistantUIMessage>({ chat: entry.chat });
 
   useEffect(() => {
     setTitle(options.initialTitle);

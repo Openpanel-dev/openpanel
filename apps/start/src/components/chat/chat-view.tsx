@@ -64,6 +64,7 @@ export function ChatView({
   const { messages, status, sendMessage, stop, regenerate, error, title } =
     session;
   const busy = status === 'submitted' || status === 'streaming';
+
   const hasMessages = messages.length > 0;
 
   useEffect(() => {

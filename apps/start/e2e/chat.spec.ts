@@ -34,7 +34,9 @@ test.describe('AI chat', () => {
     const composer = page.getByPlaceholder('Ask AI anything…');
     await composer.fill('What changed this week?');
     await composer.press('Enter');
-    await expect(page).toHaveURL(/\/chat\?.*q=/);
+    // The question is sent on arrival and the URL settles on the new conversation.
+    await expect(page.getByText('What changed this week?')).toBeVisible();
+    await expect(page).toHaveURL(/\/chat\?.*c=/);
   });
 
   test('a question gets an answer and the conversation is listed', async ({
