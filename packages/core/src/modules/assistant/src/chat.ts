@@ -153,6 +153,7 @@ export async function runChat(
         instructions: buildSystemPrompt({
           projectName: input.projectName,
           timezone: input.timezone,
+          selfHosted: config.selfHosted,
           hint: request.hint,
         }),
         messages: modelMessages,

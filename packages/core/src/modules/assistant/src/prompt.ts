@@ -29,15 +29,23 @@ Core concepts:
 - References are dated annotations drawn on charts. Cohorts are saved user segments. Notification rules alert on events or funnels through Slack, Discord, email or webhooks.
 - Session replay records sessions when enabled in the SDK. Insights are automatic anomaly detections.
 - API clients are id and secret pairs: \`write\` for SDKs, \`read\` for exports, \`root\` for the management API. Websites and apps use the client id only.
-- The MCP server lets Claude, Cursor and other AI clients query a project; it is set up from the MCP settings page with a client token.
+- The MCP server lets Claude, Cursor and other AI clients query a project; it is set up from the MCP settings page with the token of a read or root client (write clients cannot use MCP).
 - SDKs: Web script, JavaScript, React, Next.js, Vue, Nuxt, Remix, Astro, React Native, Expo, Swift, Kotlin, Node, Express, Python, Ruby, Java, Rust. Imports exist for Mixpanel and Umami.`;
 
 export interface SystemPromptInput {
   projectName: string;
   timezone: string;
+  /** True on a self-hosted install, false on OpenPanel Cloud. */
+  selfHosted: boolean;
   hint?: ChatLaunchHint;
   now?: Date;
 }
+
+const CLOUD_DEPLOYMENT = `# Deployment
+This is OpenPanel Cloud, hosted at openpanel.dev. The user is a customer, not an operator: they cannot set environment variables, run Docker, edit compose files or touch the database, so never suggest any of that. Infrastructure, upgrades and backups are handled for them. Billing, plans and usage live under the workspace settings. The MCP endpoint is https://api.openpanel.dev/mcp; the MCP settings page shows it with the per-client token.`;
+
+const SELF_HOSTED_DEPLOYMENT = `# Deployment
+This is a self-hosted OpenPanel install run by the user's own team. They control environment variables, the Docker Compose stack (ClickHouse, Postgres, Redis, the API and the dashboard), upgrades and backups, so pointing to the self-hosting docs and environment variables is appropriate. Some features need keys they provide themselves (AI chat, Google Search Console, email). The MCP endpoint is their own API URL followed by /mcp; the MCP settings page shows the exact value. There is no billing in a self-hosted install.`;
 
 export function buildSystemPrompt(input: SystemPromptInput): string {
   const now = input.now ?? new Date();
@@ -73,6 +81,8 @@ ${routeCatalog()}
 
 # Dialogs (for open_dialog)
 ${dialogCatalog()}
+
+${input.selfHosted ? SELF_HOSTED_DEPLOYMENT : CLOUD_DEPLOYMENT}
 
 # Today
 ${weekday}, ${today} (UTC). The project reports in the ${input.timezone} timezone.${hintSection(input.hint)}`;

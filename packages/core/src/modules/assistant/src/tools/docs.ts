@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import type { ChatToolContext } from '../context';
 
 /** The public docs rendered for LLMs, one section per page. */
 const DOCS_URL = 'https://openpanel.dev/llms-full.txt';
@@ -14,6 +15,8 @@ const SECTION_SEPARATOR = /\n---\n/;
 const TITLE_LINE = /^## (.+)$/m;
 const URL_LINE = /^URL: (\S+)$/m;
 const NON_WORD = /[^a-z0-9]+/;
+/** Pages that only make sense when you run OpenPanel yourself. */
+const SELF_HOSTING_DOCS = '/docs/self-hosting';
 
 interface DocSection {
   title: string;
@@ -70,7 +73,11 @@ function countOccurrences(haystack: string, needle: string): number {
   return count;
 }
 
-export function rankSections(sections: DocSection[], query: string) {
+export function rankSections(
+  sections: DocSection[],
+  query: string,
+  options: { selfHosted: boolean }
+) {
   const terms = query
     .toLowerCase()
     .split(NON_WORD)
@@ -79,6 +86,10 @@ export function rankSections(sections: DocSection[], query: string) {
     return [];
   }
   return sections
+    .filter(
+      (section) =>
+        options.selfHosted || !section.url.includes(SELF_HOSTING_DOCS)
+    )
     .map((section) => {
       let score = 0;
       for (const term of terms) {
@@ -102,7 +113,7 @@ export function rankSections(sections: DocSection[], query: string) {
     }));
 }
 
-export function docsTools() {
+export function docsTools(ctx: Pick<ChatToolContext, 'config'>) {
   return {
     search_docs: tool({
       description:
@@ -111,7 +122,11 @@ export function docsTools() {
       execute: async ({ query }) => {
         try {
           const sections = await loadSections();
-          return { results: rankSections(sections, query) };
+          return {
+            results: rankSections(sections, query, {
+              selfHosted: ctx.config.selfHosted,
+            }),
+          };
         } catch (error) {
           return {
             error: `Documentation is not reachable right now (${error instanceof Error ? error.message : 'unknown error'}). Answer from what you know and point to https://openpanel.dev/docs.`,

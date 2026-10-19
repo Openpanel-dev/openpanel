@@ -1,7 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import { rankSections } from './docs';
 
+const SELF_HOSTING_SECTION = {
+  title: 'Environment variables',
+  url: 'https://openpanel.dev/docs/self-hosting/environment-variables',
+  body: 'OPENAI_API_KEY enables the MCP and chat features on your own install.',
+  lowerTitle: 'environment variables',
+  lowerBody:
+    'openai_api_key enables the mcp and chat features on your own install.',
+};
+
 const sections = [
+  SELF_HOSTING_SECTION,
   {
     title: 'MCP Server',
     url: 'https://openpanel.dev/docs/mcp',
@@ -24,13 +34,29 @@ describe('rankSections', () => {
   test('title matches outrank body matches', () => {
     const results = rankSections(
       sections,
-      'how do I connect the MCP server to Claude'
+      'how do I connect the MCP server to Claude',
+      { selfHosted: false }
     );
     expect(results[0]?.title).toBe('MCP Server');
   });
 
   test('short words and unknown terms match nothing', () => {
-    expect(rankSections(sections, 'an it')).toEqual([]);
-    expect(rankSections(sections, 'kubernetes')).toEqual([]);
+    expect(rankSections(sections, 'an it', { selfHosted: true })).toEqual([]);
+    expect(rankSections(sections, 'kubernetes', { selfHosted: true })).toEqual(
+      []
+    );
+  });
+
+  test('self-hosting pages are hidden on Cloud and shown on a self-hosted install', () => {
+    const cloud = rankSections(sections, 'environment variables mcp', {
+      selfHosted: false,
+    });
+    expect(cloud.some((result) => result.url.includes('/self-hosting/'))).toBe(
+      false
+    );
+    const own = rankSections(sections, 'environment variables mcp', {
+      selfHosted: true,
+    });
+    expect(own[0]?.title).toBe('Environment variables');
   });
 });

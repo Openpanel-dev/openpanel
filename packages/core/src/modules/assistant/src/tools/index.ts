@@ -21,7 +21,7 @@ export function createChatTools(ctx: ChatToolContext) {
     ...referenceTools(ctx),
     ...seoTools(ctx),
     ...dashboardTools(ctx),
-    ...docsTools(),
+    ...docsTools(ctx),
     ...clientTools(),
   };
 }
