@@ -1,3 +1,4 @@
+import type { Prisma } from '../generated/prisma/client';
 import { db } from '../prisma-client';
 import type { IChartEvent, IChartEventItem, IChartFormula } from './constants';
 import { printBoxMessage, shortId } from './helpers';
@@ -77,7 +78,9 @@ export async function up() {
     await db.report.update({
       where: { id: report.id },
       data: {
-        events: migratedSeries,
+        // `events` has no PrismaJson annotation; the engine's series type is
+        // plain JSON, so the cast only tells Prisma so.
+        events: migratedSeries as unknown as Prisma.InputJsonValue,
       },
     });
 
