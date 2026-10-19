@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import OpenAI from 'openai';
 import { git, lines } from './git';
+import { RELEASE_PATHSPEC } from './release-scope';
 
 // OpenAI's top model: there are only a handful of public releases a year, and
 // these notes are what self-hosters read, so quality wins over cost here.
@@ -127,7 +128,8 @@ export const readCommits = (from: string, to: string): Commit[] =>
     'log',
     '--no-merges',
     `--format=%H${FIELD}%s${FIELD}%b${RECORD}`,
-    `${from}..${to}`
+    `${from}..${to}`,
+    ...RELEASE_PATHSPEC
   )
     .split(RECORD)
     .map((record) => record.trim())
