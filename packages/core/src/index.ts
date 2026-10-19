@@ -96,8 +96,11 @@ export {
 // `registry` itself is not exported: a caller that can reach it could start a
 // second collector graph outside a module.
 export { registerDefaultMetrics } from './metrics';
-// `ChatApp` stays a type so no value of the assistant module reaches a browser bundle.
-export type { ChatApp } from './modules/assistant/assistant.service';
+// Type-only: no value of the assistant module reaches a browser bundle.
+export type {
+  AssistantUIMessage,
+  AssistantUIMessagePart,
+} from './modules/assistant/assistant.service';
 export { createAssistantService } from './modules/assistant/assistant.service';
 export {
   Arctic,

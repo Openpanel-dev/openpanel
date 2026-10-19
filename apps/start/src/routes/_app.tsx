@@ -1,6 +1,12 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router';
 import { ConstructionIcon } from 'lucide-react';
-import { ChatDrawerSlot } from '@/components/chat/chat-drawer-slot';
+import { useEffect } from 'react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
@@ -19,6 +25,7 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   const { isMaintenance } = useAppContext();
+  useChatShortcut();
 
   if (isMaintenance) {
     return (
@@ -48,7 +55,28 @@ function AppLayout() {
         <div className="block h-16 lg:hidden" />
         <Outlet />
       </div>
-      <ChatDrawerSlot />
     </div>
   );
+}
+
+/** ⌘J / Ctrl+J opens the chat for the current project. */
+function useChatShortcut() {
+  const navigate = useNavigate();
+  const { organizationId, projectId } = useParams({ strict: false });
+  useEffect(() => {
+    if (!(organizationId && projectId)) {
+      return;
+    }
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        navigate({
+          to: '/$organizationId/$projectId/chat',
+          params: { organizationId, projectId },
+        });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate, organizationId, projectId]);
 }

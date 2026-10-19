@@ -37,6 +37,6 @@ function Component() {
   const { reportId } = Route.useParams();
   const trpc = useTRPC();
   const query = useSuspenseQuery(trpc.report.get.queryOptions({ reportId }));
-  useReportEditorContext(query.data ?? null);
+  useReportEditorContext(query.data?.id ?? null);
   return <ReportEditor report={query.data} />;
 }

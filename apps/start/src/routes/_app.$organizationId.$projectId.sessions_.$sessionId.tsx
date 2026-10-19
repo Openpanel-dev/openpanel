@@ -145,20 +145,7 @@ function Component() {
     trpc.session.byId.queryOptions({ sessionId, projectId })
   );
 
-  useEntityPageContext(
-    'sessionDetail',
-    { sessionId },
-    {
-      duration: session.duration,
-      eventCount: session.eventCount,
-      screenViewCount: session.screenViewCount,
-      country: session.country,
-      device: session.device,
-      isBounce: session.isBounce,
-      entryPath: session.entryPath,
-      exitPath: session.exitPath,
-    }
-  );
+  useEntityPageContext('session', { sessionId });
 
   const { data: eventsData } = useSuspenseQuery(
     trpc.event.events.queryOptions({

@@ -1,26 +1,13 @@
 // One short OpenAI call that turns a lapsed trial's recent stats into a
 // two-sentence pitch. A throw means "no pitch", never a failed email: the job
 // falls back to a deterministic sentence built from the same facts.
-import { betterAgent, defineAgent } from '@better-agent/core';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
-import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
+import { resolveOpenAITaskModel } from '../../assistant/src/providers';
 
-const WIN_BACK_MODEL_ID = 'gpt-4-1-mini';
-
-// Preferred model and fallback are both OpenAI.
 const WIN_BACK_PROVIDER = 'openai';
-
-function winBackModel(config: CoreConfig) {
-  const entry =
-    ALLOWED_MODELS.find((m) => m.id === WIN_BACK_MODEL_ID) ??
-    ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
-  if (!entry) {
-    throw new Error('No OpenAI model available for win-back pitch');
-  }
-  return resolveModel(config, entry);
-}
 
 export interface WinBackPitchInput {
   projectName: string;
@@ -33,10 +20,6 @@ export interface WinBackPitchInput {
 }
 
 const winBackOutputSchema = z.object({ pitch: z.string() });
-const winBackOutputJsonSchema = z.toJSONSchema(winBackOutputSchema, {
-  target: 'draft-07',
-});
-
 const INSTRUCTION = `You write one short paragraph for an email to someone whose analytics trial expired months ago but whose website is still sending us tracking data. They have not looked at their dashboard in a long time. The email's goal is to get them to subscribe before we stop recording their events.
 
 You receive their real stats from the recent window. Write 1-2 plain sentences with the most interesting concrete facts. The reader should think "huh, I didn't know that", not "I am being marketed to". The paragraph sits inside an email written in the founder's own casual voice, so it must read like a person, not a report.
@@ -54,44 +37,22 @@ Rules:
 - No em dashes.
 - Contractions are fine.`;
 
-let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp(config: CoreConfig) {
-  if (_app) {
-    return _app;
-  }
-  const agent = defineAgent({
-    name: 'win-back-pitch',
-    description: 'Writes a wind-down win-back paragraph (one-shot).',
-    model: winBackModel(config),
-    contextSchema: z.object({}),
-    outputSchema: {
-      schema: winBackOutputJsonSchema,
-      name: 'win_back_pitch',
-      strict: true,
-    },
-    instruction: () => INSTRUCTION,
-    tools: () => [],
-    maxSteps: 1,
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-  } as any);
-  _app = betterAgent({ agents: [agent] });
-  return _app;
-}
-
 export async function generateWinBackPitch(
   config: CoreConfig,
   input: WinBackPitchInput
 ): Promise<string> {
-  const result = (await callProvider(WIN_BACK_PROVIDER, () =>
-    getApp(config).run('win-back-pitch', {
-      input: JSON.stringify(input),
-      context: {},
-      // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-    } as any)
-  )) as { structured?: { pitch: string } };
+  const result = await callProvider(WIN_BACK_PROVIDER, () =>
+    generateText({
+      model: resolveOpenAITaskModel(config, 'small'),
+      instructions: INSTRUCTION,
+      prompt: JSON.stringify(input),
+      reasoning: 'low',
+      output: Output.object({ schema: winBackOutputSchema }),
+    })
+  );
 
   // The instruction bans em dashes, but the model slips one in often enough
   // that a prompt rule alone won't hold across hundreds of sends. Commas read
   // fine in every construction it produces them in.
-  return (result.structured?.pitch ?? '').replace(/\s*[—–]\s*/g, ', ').trim();
+  return (result.output?.pitch ?? '').replace(/\s*[—–]\s*/g, ', ').trim();
 }

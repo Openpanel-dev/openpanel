@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { useChatState } from '@/components/chat/chat-context';
+import { useChatLaunch } from '@/components/chat/chat-launch';
 import { SidebarChatComposer } from '@/components/chat/sidebar-chat-composer';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -99,7 +99,7 @@ export default function SidebarProjectMenu({
 
 export function ActionCTAButton() {
   const navigate = useNavigate();
-  const { openChatForContext } = useChatState();
+  const launchChat = useChatLaunch();
 
   const ACTIONS = [
     {
@@ -119,7 +119,7 @@ export function ActionCTAButton() {
     {
       label: 'Ask AI',
       icon: SparklesIcon,
-      onClick: () => openChatForContext(),
+      onClick: () => launchChat(),
     },
     {
       label: 'Create dashboard',

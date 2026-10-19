@@ -38,17 +38,7 @@ function Component() {
     })
   );
 
-  useEntityPageContext(
-    'profileDetail',
-    { profileId },
-    {
-      country: profile.data?.properties.country,
-      device: profile.data?.properties.device,
-      browser: profile.data?.properties.browser,
-      os: profile.data?.properties.os,
-      email: profile.data?.email,
-    }
-  );
+  useEntityPageContext('profile', { profileId });
 
   const { activeTab, tabs } = usePageTabs([
     {

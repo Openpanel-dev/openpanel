@@ -5,7 +5,7 @@
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import {
   getAvailableChatModels,
-  PREFERRED_DEFAULT_MODEL_ID,
+  getDefaultChatModelId,
 } from './assistant.constants';
 
 export const chatRouter = createTRPCRouter({
@@ -14,13 +14,10 @@ export const chatRouter = createTRPCRouter({
       openai: Boolean(ctx.config.ai.openai.apiKey),
       anthropic: Boolean(ctx.config.ai.anthropic.apiKey),
     };
-    const models = getAvailableChatModels(providers);
-    const preferred = models.find((m) => m.id === PREFERRED_DEFAULT_MODEL_ID);
-    const defaultModelId = preferred?.id ?? models[0]?.id ?? null;
     return {
       providers,
-      models,
-      defaultModelId,
+      models: getAvailableChatModels(providers),
+      defaultModelId: getDefaultChatModelId(providers),
     };
   }),
 });

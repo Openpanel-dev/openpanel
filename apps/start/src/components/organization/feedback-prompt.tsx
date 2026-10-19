@@ -1,3 +1,4 @@
+import { useLocation } from '@tanstack/react-router';
 import { useEffect, useMemo } from 'react';
 import { PromptCard } from '@/components/organization/prompt-card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,8 @@ const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
 export default function FeedbackPrompt() {
   const { isSelfHosted, isDemo } = useAppContext();
+  // The chat page owns the bottom of the screen; the card would cover the composer.
+  const onChatPage = useLocation().pathname.endsWith('/chat');
   const [feedbackPromptSeen, setFeedbackPromptSeen] = useCookieStore(
     'feedback-prompt-seen',
     '',
@@ -16,7 +19,7 @@ export default function FeedbackPrompt() {
   );
 
   const shouldShow = useMemo(() => {
-    if (isSelfHosted) {
+    if (isSelfHosted || onChatPage) {
       return false;
     }
 

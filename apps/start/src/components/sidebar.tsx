@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useChatState } from './chat/chat-context';
+import { useChatLaunch } from './chat/chat-launch';
 import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
@@ -80,7 +80,7 @@ export function SidebarContainer({
   const location = useLocation();
   const { isSelfHosted } = useAppContext();
   const { projectId } = useParams({ strict: false });
-  const { isOpen: chatOpen, openChatForContext, closeChat } = useChatState();
+  const launchChat = useChatLaunch();
 
   useEffect(() => {
     setActive(false);
@@ -149,9 +149,7 @@ export function SidebarContainer({
                 <button
                   aria-label="Open AI chat"
                   className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                  onClick={() =>
-                    chatOpen ? closeChat() : openChatForContext()
-                  }
+                  onClick={() => launchChat()}
                   title="Open AI chat (⌘J)"
                   type="button"
                 >
