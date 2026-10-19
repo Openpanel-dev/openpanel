@@ -339,7 +339,18 @@ export function chartModelSummary(
     interval: output.report.interval,
     summary: output.summary,
     dashboardUrl: output.dashboardUrl,
+    ...(usesRevenue(output.report)
+      ? {
+          note: 'Revenue sums here are in cents; divide by 100 for the amount.',
+        }
+      : {}),
   };
+}
+
+function usesRevenue(report: IReportInput): boolean {
+  return report.series.some(
+    (serie) => serie.type === 'event' && serie.property === 'revenue'
+  );
 }
 
 export function chartToModelOutput(

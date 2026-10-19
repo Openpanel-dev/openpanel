@@ -94,7 +94,7 @@ function Component() {
         initialQuestion={q}
         initialTitle={conversationQuery.data?.title ?? null}
         key={conversationId}
-        models={modelsQuery.data.models}
+        models={modelsQuery.data.canChooseModel ? modelsQuery.data.models : []}
         onFirstMessage={() => setSearch({ c: conversationId })}
         onNewConversation={() => {
           setDraftId(newConversationId());

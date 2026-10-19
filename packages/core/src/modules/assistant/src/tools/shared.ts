@@ -90,3 +90,16 @@ export function errorResult(
 ) {
   return { error: message, ...extra };
 }
+
+const CENTS_PER_UNIT = 100;
+
+/** Revenue is stored in minor units (cents); the chat talks in currency units like the dashboard. */
+export function revenueToUnits<T extends { revenue?: number | null }>(
+  rows: T[]
+): T[] {
+  return rows.map((row) =>
+    typeof row.revenue === 'number'
+      ? { ...row, revenue: row.revenue / CENTS_PER_UNIT }
+      : row
+  );
+}

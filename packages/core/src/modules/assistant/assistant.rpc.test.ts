@@ -54,6 +54,7 @@ test('models returns no models and a null default with no provider keys set', as
     providers: { openai: false, anthropic: false },
     models: [],
     defaultModelId: null,
+    canChooseModel: false,
   });
 });
 

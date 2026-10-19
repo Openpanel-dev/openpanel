@@ -29,15 +29,27 @@ export function TableCard({
   title,
   rows,
   total,
+  preferredColumns,
+  onRowClick,
 }: {
   title: string;
   rows: Record<string, unknown>[];
   total?: number;
+  /** Shown first when present in the rows; the rest fill up to the column cap. */
+  preferredColumns?: string[];
+  onRowClick?: (row: Record<string, unknown>) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const columns = Object.keys(rows[0] ?? {})
-    .filter((key) => !key.startsWith('__') && key !== 'url')
-    .slice(0, MAX_COLUMNS);
+  const available = Object.keys(rows[0] ?? {}).filter(
+    (key) => !key.startsWith('__') && key !== 'url'
+  );
+  const preferred = (preferredColumns ?? []).filter((key) =>
+    available.includes(key)
+  );
+  const columns = [
+    ...preferred,
+    ...available.filter((key) => !preferred.includes(key)),
+  ].slice(0, Math.max(MAX_COLUMNS, preferred.length));
   const visible = showAll ? rows : rows.slice(0, COLLAPSED_ROWS);
   const hidden = rows.length - visible.length;
 
@@ -76,8 +88,22 @@ export function TableCard({
           <tbody>
             {visible.map((row, index) => (
               <tr
-                className="border-t"
+                className={cn(
+                  'border-t',
+                  onRowClick && 'cursor-pointer hover:bg-muted/50'
+                )}
                 key={`${index}-${cell(row[columns[0] ?? ''])}`}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === 'Enter') {
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
               >
                 {columns.map((column) => (
                   <td

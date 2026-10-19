@@ -18,6 +18,8 @@ export const chatRouter = createTRPCRouter({
       providers,
       models: getAvailableChatModels(providers),
       defaultModelId: getDefaultChatModelId(providers),
+      // Cloud runs one vetted model; a self-hoster pays for their own keys and picks.
+      canChooseModel: ctx.config.selfHosted,
     };
   }),
 });

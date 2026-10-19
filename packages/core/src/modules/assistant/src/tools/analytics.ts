@@ -23,7 +23,7 @@ import {
   runReportConfig,
   summarizeChartData,
 } from './charts';
-import { resolveRange, truncateRows } from './shared';
+import { resolveRange, revenueToUnits, truncateRows } from './shared';
 
 const TRAFFIC_COLUMNS = [
   'referrer_name',
@@ -226,7 +226,10 @@ export function analyticsTools(ctx: ChatToolContext) {
           report,
           summary: {
             dimension,
-            ...truncateRows(rows as Record<string, unknown>[], limit),
+            ...truncateRows(
+              revenueToUnits(rows as { revenue?: number }[]),
+              limit
+            ),
           },
         };
         return output;
@@ -270,7 +273,7 @@ export function analyticsTools(ctx: ChatToolContext) {
           startDate: range.startDate,
           endDate: range.endDate,
         });
-        return truncateRows(rows, input.limit);
+        return truncateRows(revenueToUnits(rows), input.limit);
       },
     }),
 
@@ -303,7 +306,7 @@ export function analyticsTools(ctx: ChatToolContext) {
           startDate: range.startDate,
           endDate: range.endDate,
         });
-        return truncateRows(rows, input.limit);
+        return truncateRows(revenueToUnits(rows), input.limit);
       },
     }),
 

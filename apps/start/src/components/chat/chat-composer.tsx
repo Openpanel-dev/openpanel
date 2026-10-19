@@ -86,11 +86,15 @@ export function ChatComposer({
           value={text}
         />
         <div className="flex items-center justify-between gap-2 px-2 pb-2">
-          <ChatModelPicker
-            models={models}
-            onChange={onModelChange}
-            value={modelId}
-          />
+          {models.length > 0 ? (
+            <ChatModelPicker
+              models={models}
+              onChange={onModelChange}
+              value={modelId}
+            />
+          ) : (
+            <span />
+          )}
           {busy ? (
             <Button
               aria-label="Stop generating"
