@@ -46,6 +46,7 @@ export default function CreateInvite() {
       },
     });
   const projectScope = watch('projectScope');
+  const isViewer = watch('role') === 'viewer';
 
   const mutation = useMutation(
     trpc.organization.inviteUser.mutationOptions({
@@ -170,6 +171,7 @@ export default function CreateInvite() {
                     render={({ field: scopeField }) => (
                       <ProjectScopePicker
                         access={field.value}
+                        isReadOnly={isViewer}
                         onAccessChange={field.onChange}
                         onScopeChange={scopeField.onChange}
                         projectScope={projectScope}

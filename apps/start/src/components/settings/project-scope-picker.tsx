@@ -14,6 +14,7 @@ interface ProjectScopePickerProps {
   onScopeChange: (projectScope: ProjectScope) => void;
   onAccessChange: (access: IProjectAccessGrant[]) => void;
   projects: { id: string; name: string }[];
+  isReadOnly?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ export function ProjectScopePicker({
   onScopeChange,
   onAccessChange,
   projects,
+  isReadOnly,
 }: ProjectScopePickerProps) {
   const allId = useId();
   const selectedId = useId();
@@ -53,6 +55,7 @@ export function ProjectScopePicker({
       {projectScope === 'selected' && (
         <>
           <ProjectAccessGrants
+            isReadOnly={isReadOnly}
             onChange={onAccessChange}
             projects={projects}
             value={access}
