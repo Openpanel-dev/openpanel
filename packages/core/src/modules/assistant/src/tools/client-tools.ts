@@ -24,7 +24,7 @@ export function clientTools() {
       outputSchema: z.object({ opened: z.string() }),
     }),
     open_dialog: tool({
-      description: `Open a creation dialog in the dashboard, prefilled where possible, so the user only has to press save. Dialogs:\n${catalog(CHAT_DIALOGS)}`,
+      description: `Offer the user a button that opens a creation dialog, prefilled where possible, so they only have to press save. Say what the dialog is for before offering it. Dialogs:\n${catalog(CHAT_DIALOGS)}`,
       inputSchema: zOpenDialogInput,
       outputSchema: z.object({ opened: z.string() }),
     }),

@@ -27,7 +27,7 @@ function clientType(value: string | undefined) {
 }
 
 /** Each dialog takes only the fields it has; anything else in the prefill is dropped. */
-function openDialog(input: OpenDialogInput): void {
+export function openDialog(input: OpenDialogInput): void {
   const prefill = input.prefill ?? {};
   switch (input.dialog) {
     case 'addClient':
@@ -154,7 +154,7 @@ export function useChatSession(options: ChatSessionOptions) {
       }
       if (toolCall.toolName === 'open_dialog') {
         const input = toolCall.input as OpenDialogInput;
-        openDialog(input);
+        // Offered as a button, not opened: a dialog appearing mid-answer is confusing.
         chat.addToolOutput({
           tool: 'open_dialog',
           toolCallId: toolCall.toolCallId,

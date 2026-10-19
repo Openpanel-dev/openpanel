@@ -7,7 +7,8 @@ import {
   CHAT_ROUTES,
 } from '@openpanel/core/modules/assistant/assistant.constants';
 import { Link } from '@tanstack/react-router';
-import { ArrowRightIcon, BookOpenIcon, UserIcon } from 'lucide-react';
+import { ArrowRightIcon, BookOpenIcon, PlusIcon, UserIcon } from 'lucide-react';
+import { openDialog } from '../use-chat-session';
 import CopyInput from '@/components/forms/copy-input';
 
 export function NavigateCard({
@@ -35,11 +36,16 @@ export function NavigateCard({
 }
 
 export function DialogCard({ input }: { input: OpenDialogInput }) {
+  const label = CHAT_DIALOGS[input.dialog]?.label ?? input.dialog;
   return (
-    <div className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-      <ArrowRightIcon className="size-3.5 text-muted-foreground" />
-      <span>Opened {CHAT_DIALOGS[input.dialog]?.label ?? input.dialog}</span>
-    </div>
+    <button
+      className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-sm transition-colors hover:bg-muted/60"
+      onClick={() => openDialog(input)}
+      type="button"
+    >
+      <PlusIcon className="size-3.5 text-muted-foreground" />
+      {label}
+    </button>
   );
 }
 

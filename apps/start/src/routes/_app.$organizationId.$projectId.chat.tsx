@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { ChatNotConfigured } from '@/components/chat/chat-empty';
+import { ChatLayout, ChatPaneLoading } from '@/components/chat/chat-layout';
 import { ChatView } from '@/components/chat/chat-view';
 import type { AssistantUIMessage } from '@/components/chat/types';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -37,6 +38,8 @@ function Component() {
   const modelsQuery = useQuery(trpc.chat.models.queryOptions());
   // A fresh id per new chat; it becomes the URL once the first message is sent.
   const [draftId, setDraftId] = useState(newConversationId);
+  // The title streams in while the first answer is generated.
+  const [liveTitle, setLiveTitle] = useState<string | null>(null);
   const conversationId = c ?? draftId;
 
   // A chat started here lives in memory until its first turn is saved; only
@@ -80,28 +83,44 @@ function Component() {
       </ChatFrame>
     );
   }
-  if (shouldLoad && conversationQuery.isPending) {
-    return <FullPageLoadingState />;
-  }
+
+  const loading = shouldLoad && conversationQuery.isPending;
+  const activeTitle = liveTitle ?? conversationQuery.data?.title ?? null;
 
   return (
     <ChatFrame>
-      <ChatView
-        conversationId={conversationId}
-        defaultModelId={modelsQuery.data.defaultModelId}
-        hint={hint}
-        initialMessages={initialMessages}
-        initialQuestion={q}
-        initialTitle={conversationQuery.data?.title ?? null}
-        key={conversationId}
-        models={modelsQuery.data.canChooseModel ? modelsQuery.data.models : []}
-        onFirstMessage={() => setSearch({ c: conversationId })}
-        onNewConversation={() => {
+      <ChatLayout
+        activeId={c ?? null}
+        activeTitle={c ? activeTitle : null}
+        onNew={() => {
           setDraftId(newConversationId());
+          setLiveTitle(null);
           setSearch({});
         }}
-        onSelectConversation={(id) => setSearch({ c: id })}
-      />
+        onSelect={(id) => {
+          setLiveTitle(null);
+          setSearch({ c: id });
+        }}
+      >
+        {loading ? (
+          <ChatPaneLoading />
+        ) : (
+          <ChatView
+            conversationId={conversationId}
+            defaultModelId={modelsQuery.data.defaultModelId}
+            hint={hint}
+            initialMessages={initialMessages}
+            initialQuestion={q}
+            initialTitle={conversationQuery.data?.title ?? null}
+            key={conversationId}
+            models={
+              modelsQuery.data.canChooseModel ? modelsQuery.data.models : []
+            }
+            onFirstMessage={() => setSearch({ c: conversationId })}
+            onTitleChange={setLiveTitle}
+          />
+        )}
+      </ChatLayout>
     </ChatFrame>
   );
 }

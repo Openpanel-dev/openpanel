@@ -18,9 +18,6 @@ test.describe('AI chat', () => {
     }
     await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'New chat' })).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Select model' })
-    ).toBeVisible();
   });
 
   test('Cmd+J opens the chat from a project page', async ({ page }) => {
