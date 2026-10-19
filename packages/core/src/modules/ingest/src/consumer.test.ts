@@ -15,11 +15,12 @@ import {
   type DeadLetterRecord,
   type DeadLetterRedisClient,
 } from '@openpanel/redis';
-import type { EachBatchPayload, KafkaMessage } from 'kafkajs';
+import type { Consumer, EachBatchPayload, KafkaMessage } from 'kafkajs';
 import {
   createEventsBatchHandler,
   type DeadLetterMessage,
   type EventsBatchHandlerDeps,
+  startKafkaEventsConsumer,
 } from './consumer';
 
 const PARTITION = 7;
@@ -876,5 +877,46 @@ describe('dead letter to a capped redis list', () => {
       'parse_error'
     );
     expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
+  });
+});
+
+describe('startKafkaEventsConsumer', () => {
+  test('a partition with no committed offset starts at its oldest message', async () => {
+    const subscribe = mock(
+      async (_options: { topic: string; fromBeginning?: boolean }) => undefined
+    );
+    const consumer = {
+      connect: mock(async () => undefined),
+      subscribe,
+      on: mock(() => () => undefined),
+      run: mock(async () => undefined),
+      stop: mock(async () => undefined),
+      disconnect: mock(async () => undefined),
+      events: {
+        HEARTBEAT: 'consumer.heartbeat',
+        GROUP_JOIN: 'consumer.group_join',
+        REBALANCING: 'consumer.rebalancing',
+        CRASH: 'consumer.crash',
+        DISCONNECT: 'consumer.disconnect',
+        REQUEST_TIMEOUT: 'consumer.network.request_timeout',
+      },
+    };
+    const { deps } = makeDeps();
+    const { topic: _topic, ...batch } = deps;
+
+    await startKafkaEventsConsumer({
+      createConsumer: () => consumer as unknown as Consumer,
+      logger: deps.logger,
+      kafkaLogger: deps.logger,
+      topic: TOPIC,
+      partitionsConsumedConcurrently: 1,
+      batch,
+    });
+
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(subscribe).toHaveBeenCalledWith({
+      topic: TOPIC,
+      fromBeginning: true,
+    });
   });
 });
