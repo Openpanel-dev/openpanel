@@ -36,11 +36,71 @@ const redis = {
 };
 // insight.service.ts never touches ClickHouse directly (it's PG-only, via
 // $executeRaw above), so `deps.ch` stays unbuilt.
+// One active project in an organization with an all-scope member, a member
+// granted this project and a member granted another one.
+const digestProject = { id: 'p1', name: 'Project', organizationId: 'org_1' };
+const project = {
+  findMany: mock(async () => [
+    { ...digestProject, organization: { subscriptionState: 'active' } },
+  ]),
+};
+const projectInsight = { findMany: mock(async () => []) };
+const member = {
+  findMany: mock(async () => [
+    {
+      userId: 'u_all',
+      role: 'org:member',
+      projectScope: 'all',
+      projects: [],
+      user: { email: 'all@example.com' },
+    },
+    {
+      userId: 'u_this',
+      role: 'org:member',
+      projectScope: 'selected',
+      projects: [{ projectId: 'p1', level: null }],
+      user: { email: 'this@example.com' },
+    },
+    {
+      userId: 'u_other',
+      role: 'org:member',
+      projectScope: 'selected',
+      projects: [{ projectId: 'p_other', level: null }],
+      user: { email: 'other@example.com' },
+    },
+  ]),
+};
+const projectAccess = { findMany: mock(async () => []) };
+
 const deps = {
-  db: { $executeRaw },
+  db: { $executeRaw, project, projectInsight, member, projectAccess },
   redis,
   config: testCoreConfig(),
 } as unknown as import('../../services').ServiceDeps;
+
+const overviewSummary = {
+  unique_visitors: 10,
+  total_sessions: 12,
+  total_screen_views: 30,
+  bounce_rate: 40,
+};
+const getAnalyticsOverviewCore = mock(async () => ({
+  summary: overviewSummary,
+}));
+mock.module('../overview/overview.service', () => ({
+  getAnalyticsOverviewCore,
+}));
+
+const generateWeeklyNarrative = mock(async () => 'A good week.');
+mock.module('./src/narrative', () => ({ generateWeeklyNarrative }));
+
+const sentEmails: { to: string; template: string }[] = [];
+mock.module('../../clients/email', () => ({
+  sendEmail: (template: string, options: { to: string }) => {
+    sentEmails.push({ to: options.to, template });
+    return Promise.resolve();
+  },
+}));
 
 const spikesQuery = mock(async () => [
   { anchorDate: '2026-09-01', spikes: [] },
@@ -181,4 +241,31 @@ test('createInsightService binds every InsightService method', () => {
   ] as const) {
     expect(typeof service[method]).toBe('function');
   }
+});
+
+test('sendWeeklyDigests mails only the members who can open the project', async () => {
+  const noop = () => undefined;
+  const logger: import('../../logger').Logger = {
+    fatal: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    child: () => logger,
+  };
+
+  const result = await subject.sendWeeklyDigests(deps, logger);
+
+  expect(getAnalyticsOverviewCore).toHaveBeenCalledTimes(2);
+  expect(member.findMany).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: { organizationId: 'org_1', user: { deletedAt: null } },
+    })
+  );
+  expect(result).toEqual({ projects: 1, sent: 1 });
+  expect(sentEmails).toEqual([
+    { to: 'all@example.com', template: 'weekly-digest' },
+    { to: 'this@example.com', template: 'weekly-digest' },
+  ]);
 });
