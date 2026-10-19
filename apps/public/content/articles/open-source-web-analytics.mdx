@@ -115,7 +115,7 @@ After your 30-day free trial, you pick the plan that covers your monthly events.
 OpenPanel can replace Mixpanel, Amplitude, and Google Analytics by offering both product and web analytics in a single, privacy-friendly platform. It tracks events, pageviews, user journeys, funnels, and retention — all without cookies.
 </FaqItem>
 <FaqItem question="What's included in the open source version of OpenPanel?">
-Everything — custom dashboards, charts, real-time views, user/session drill-downs, funnels, retention, and all SDKs ship under an AGPL-3.0 license with no feature gating. The self-hosted version is identical to the cloud version.
+Everything — custom dashboards, charts, real-time views, user/session drill-downs, funnels and retention — ships in the AGPL-3.0 platform with no feature gating. The SDKs are MIT. Self-hosting is the full product, with releases arriving a month or two after Cloud.
 </FaqItem>
 <FaqItem question="What are the hosting requirements for OpenPanel?">
 A mid-range VPS (approximately 4 vCPU, 8 GB RAM, SSD) running Docker Compose is sufficient for most projects. Scale vertically as event volume grows. A decent VPS costs $20-50/month and can handle millions of events.
@@ -124,6 +124,13 @@ A mid-range VPS (approximately 4 vCPU, 8 GB RAM, SSD) running Docker Compose is 
 Yes. OpenPanel Cloud starts with a 30-day free trial (no credit card required), then switches to usage-based tiers — for example, $20/month for 100K events or $90/month for 1M events.
 </FaqItem>
 </Faqs>
+
+<ArticleCta
+  id="open-source-web-analytics-openpanel"
+  title="Try the open source option with product analytics built in"
+  description="Start a 30-day cloud trial and set up a funnel or retention report on your own events in a few minutes. Prefer to run it yourself? The AGPL-3.0 platform self-hosts with Docker Compose."
+  secondary={{ text: 'Self-host OpenPanel', href: '/docs/self-hosting/self-hosting' }}
+/>
 
 ### Alternative to OpenPanel
 **Plausible Analytics**  
@@ -183,7 +190,7 @@ Anonymous events are 55-80% cheaper than identified events, which can significan
 PostHog uses volume-based step-down pricing. After the first 1M free events, you pay $0.00005 per event for the next million, then the rate drops as volume increases. A company sending 12M events monthly would pay approximately $393/month.
 </FaqItem>
 <FaqItem question="What's the difference between PostHog and OpenPanel?">
-OpenPanel is more affordable than PostHog once you exceed 1 million events, making it a cost-effective choice for growing projects. While PostHog offers a broader range of features (flags, experiments, surveys, error tracking), OpenPanel focuses on web and product analytics with simpler self-hosting and identical cloud/self-hosted feature parity.
+OpenPanel is more affordable than PostHog once you exceed 1 million events, making it a cost-effective choice for growing projects. While PostHog offers a broader range of features (flags, experiments, surveys, error tracking), OpenPanel focuses on web and product analytics with simpler self-hosting and no feature gating between cloud and self-hosted.
 </FaqItem>
 <FaqItem question="What tools can PostHog replace?">
 By bundling product analytics, web analytics, session replay, feature flags, experiments, error tracking, and surveys, PostHog can replace Mixpanel, Amplitude, Google Analytics, Hotjar/FullStory, and LaunchDarkly in one stack.

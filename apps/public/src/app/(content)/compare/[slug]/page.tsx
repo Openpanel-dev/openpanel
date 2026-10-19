@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
-import { BenefitsSection } from './_components/benefits-section';
 import { CompareFaq } from './_components/compare-faq';
 import { CompareHero } from './_components/compare-hero';
 import { CompareOverview } from './_components/compare-overview';
 import { ComparisonTable } from './_components/comparison-table';
-import { FeaturesShowcase } from './_components/features-showcase';
+import { CompetitorStrengths } from './_components/competitor-strengths';
 import { MigrationSection } from './_components/migration-section';
 import { PricingSection } from './_components/pricing-section';
 import { RelatedLinksSection } from './_components/related-links';
+import { Scorecard } from './_components/scorecard';
 import { TechnicalComparison } from './_components/technical-comparison';
 import { UseCases } from './_components/use-cases';
-import { WhoShouldChoose } from './_components/who-should-choose';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { WindowImage } from '@/components/window-image';
+import type { CompareData } from '@/lib/compare';
 import { getAllCompareSlugs, getCompareData } from '@/lib/compare';
-import { url } from '@/lib/layout.shared';
+import { getAuthor, url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 
 export async function generateStaticParams() {
@@ -46,6 +45,34 @@ export async function generateMetadata({
   });
 }
 
+function buildJsonLd(data: CompareData, pageUrl: string) {
+  const author = data.meta ? getAuthor(data.meta.author) : undefined;
+  const article = {
+    '@type': 'Article',
+    headline: data.seo.title,
+    description: data.seo.description,
+    url: pageUrl,
+    ...(data.meta && { dateModified: data.meta.updated }),
+    ...(author && {
+      author: { '@type': 'Person', name: author.name, url: author.url },
+    }),
+    publisher: {
+      '@type': 'Organization',
+      name: 'OpenPanel',
+      logo: { '@type': 'ImageObject', url: url('/logo.png') },
+    },
+  };
+  const faqPage = {
+    '@type': 'FAQPage',
+    mainEntity: data.faqs.items.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  };
+  return { '@context': 'https://schema.org', '@graph': [article, faqPage] };
+}
+
 export default async function ComparePage({
   params,
 }: {
@@ -58,166 +85,52 @@ export default async function ComparePage({
     return notFound();
   }
 
-  const pageUrl = url(`/compare/${slug}`);
-
-  // Create JSON-LD schema
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: data.seo.title,
-    description: data.seo.description,
-    url: pageUrl,
-    publisher: {
-      '@type': 'Organization',
-      name: 'OpenPanel',
-      logo: {
-        '@type': 'ImageObject',
-        url: url('/logo.webp'),
-      },
-    },
-  };
-
-  // Build ToC items
-  const tocItems = [
-    ...(data.overview ? [{ id: 'overview', label: data.overview.title }] : []),
-    { id: 'who-should-choose', label: data.summary_comparison.title },
-    { id: 'comparison', label: data.highlights.title },
-    { id: 'features', label: data.feature_comparison.title },
-    ...(data.technical_comparison
-      ? [{ id: 'technical', label: data.technical_comparison.title }]
-      : []),
-    { id: 'pricing', label: data.pricing.title },
-    ...(data.migration
-      ? [{ id: 'migration', label: data.migration.title }]
-      : []),
-    { id: 'use-cases', label: data.use_cases.title },
-    ...(data.benefits_section
-      ? [{ id: 'benefits', label: data.benefits_section.title }]
-      : []),
-    { id: 'faq', label: data.faqs.title },
-  ];
+  const competitorName = data.competitor.name;
 
   return (
     <div>
       <Script
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(buildJsonLd(data, url(`/compare/${slug}`))),
+        }}
         id="compare-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <CompareHero hero={data.hero} tocItems={tocItems} />
+      <CompareHero
+        competitor={data.competitor}
+        hero={data.hero}
+        meta={data.meta}
+        summary={data.summary_comparison}
+      />
 
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Dashboard Overview"
-          caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
-          srcDark="/screenshots/overview-dark.webp"
-          srcLight="/screenshots/overview-light.webp"
-        />
-      </div>
+      <Scorecard competitorName={competitorName} highlights={data.highlights} />
 
-      {data.overview && (
-        <div id="overview">
-          <CompareOverview overview={data.overview} />
-        </div>
+      {data.competitor_strengths && (
+        <CompetitorStrengths strengths={data.competitor_strengths} />
       )}
 
-      <div id="who-should-choose">
-        <WhoShouldChoose
-          competitorName={data.competitor.name}
-          summary={data.summary_comparison}
-        />
-      </div>
+      <PricingSection competitorName={competitorName} pricing={data.pricing} />
 
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Dashboard"
-          caption="Comprehensive analytics dashboard with real-time insights and customizable views."
-          srcDark="/screenshots/dashboard-dark.webp"
-          srcLight="/screenshots/dashboard-light.webp"
-        />
-      </div>
+      {data.overview && <CompareOverview overview={data.overview} />}
 
-      <div id="comparison">
-        <ComparisonTable
-          competitorName={data.competitor.name}
-          featureComparison={data.feature_comparison}
-          highlights={data.highlights}
-        />
-      </div>
-      <div id="features">
-        <FeaturesShowcase featureComparison={data.feature_comparison} />
-      </div>
-
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Real-time Analytics"
-          caption="Track events in real-time as they happen with instant updates and live monitoring."
-          srcDark="/screenshots/realtime-dark.webp"
-          srcLight="/screenshots/realtime-light.webp"
-        />
-      </div>
+      <UseCases useCases={data.use_cases} />
 
       {data.technical_comparison && (
-        <div id="technical">
-          <TechnicalComparison
-            competitorName={data.competitor.name}
-            technical={data.technical_comparison}
-          />
-        </div>
-      )}
-
-      <div id="pricing">
-        <PricingSection
-          competitorName={data.competitor.name}
-          pricing={data.pricing}
+        <TechnicalComparison
+          competitorName={competitorName}
+          technical={data.technical_comparison}
         />
-      </div>
-
-      {data.migration && (
-        <div id="migration">
-          <MigrationSection migration={data.migration} />
-        </div>
       )}
 
-      <div id="use-cases">
-        <UseCases useCases={data.use_cases} />
-      </div>
+      {data.migration && <MigrationSection migration={data.migration} />}
 
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Reports"
-          caption="Generate detailed reports and insights with customizable metrics and visualizations."
-          srcDark="/screenshots/report-dark.webp"
-          srcLight="/screenshots/report-light.webp"
-        />
-      </div>
+      <ComparisonTable
+        competitorName={competitorName}
+        featureComparison={data.feature_comparison}
+      />
 
-      {data.benefits_section && (
-        <>
-          <div id="benefits">
-            <BenefitsSection
-              benefits={data.benefits_section.benefits}
-              cta={data.benefits_section.cta}
-              description={data.benefits_section.description}
-              label={data.benefits_section.label}
-              title={data.benefits_section.title}
-            />
-          </div>
-          <div className="container my-16">
-            <WindowImage
-              alt="OpenPanel User Profiles"
-              caption="Deep dive into individual user profiles with complete event history and behavior tracking."
-              srcDark="/screenshots/profile-dark.webp"
-              srcLight="/screenshots/profile-light.webp"
-            />
-          </div>
-        </>
-      )}
-
-      <div id="faq">
-        <CompareFaq faqs={data.faqs} />
-      </div>
+      <CompareFaq faqs={data.faqs} />
 
       {data.related_links && (
         <RelatedLinksSection relatedLinks={data.related_links} />
@@ -226,8 +139,8 @@ export default async function ComparePage({
       <CtaBanner
         ctaLink={data.ctas.primary.href}
         ctaText={data.ctas.primary.label}
-        description="Test OpenPanel free for 30 days, you'll not be charged anything unless you upgrade to a paid plan."
-        title={'Ready to make the switch?'}
+        description="Try OpenPanel free for 30 days. You won't be charged unless you pick a paid plan."
+        title="Try it on your own data"
       />
     </div>
   );

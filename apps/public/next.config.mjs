@@ -10,33 +10,30 @@ const config = {
     domains: ['localhost', 'openpanel.dev', 'api.openpanel.dev'],
   },
   serverExternalPackages: ['@hyperdx/node-opentelemetry', 'shiki'],
-  redirects: [
-    {
-      source: '/articles/top-7-open-source-web-analytics-tools',
-      destination: '/articles/self-hosted-web-analytics',
-      permanent: true,
-    },
-    {
-      source: '/articles/alternatives-to-mixpanel',
-      destination: '/articles/mixpanel-alternatives',
-      permanent: true,
-    },
-    {
-      source: '/articles/vs-mixpanel',
-      destination: '/compare/mixpanel-alternative',
-      permanent: true,
-    },
-    {
-      source: '/articles/open-source-web-analytics',
-      destination: '/articles/self-hosted-web-analytics',
-      permanent: true,
-    },
-    {
-      source: '/open-source-analytics',
-      destination: '/articles/self-hosted-web-analytics',
-      permanent: true,
-    },
-  ],
+  async redirects() {
+    return [
+      {
+        source: '/articles/top-7-open-source-web-analytics-tools',
+        destination: '/articles/open-source-web-analytics',
+        permanent: true,
+      },
+      {
+        source: '/articles/alternatives-to-mixpanel',
+        destination: '/articles/mixpanel-alternatives',
+        permanent: true,
+      },
+      {
+        source: '/articles/vs-mixpanel',
+        destination: '/compare/mixpanel-alternative',
+        permanent: true,
+      },
+      {
+        source: '/open-source-analytics',
+        destination: '/articles/self-hosted-web-analytics',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withMDX(config);

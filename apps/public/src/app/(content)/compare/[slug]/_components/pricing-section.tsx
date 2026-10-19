@@ -1,49 +1,79 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { ArrowRightIcon, CheckIcon } from 'lucide-react';
+import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Section, SectionHeader } from '@/components/section';
-import type { ComparePricing } from '@/lib/compare';
+import type { ComparePriceAtVolume, ComparePricing } from '@/lib/compare';
 
 interface PricingSectionProps {
   pricing: ComparePricing;
   competitorName: string;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
+function VolumeTable({
+  volumes,
+  competitorName,
+}: {
+  volumes: ComparePriceAtVolume[];
+  competitorName: string;
+}) {
+  return (
+    <div className="mt-10 overflow-x-auto rounded-2xl border">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b bg-muted/30 text-sm">
+            <th className="p-4 font-medium text-muted-foreground">
+              Monthly volume
+            </th>
+            <th className="p-4 font-semibold">OpenPanel</th>
+            <th className="p-4 font-semibold">{competitorName}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {volumes.map((row) => (
+            <tr className="border-b align-top last:border-b-0" key={row.volume}>
+              <th className="p-4 font-medium text-sm" scope="row">
+                {row.volume}
+              </th>
+              <td className="p-4 text-sm tabular-nums">{row.openpanel}</td>
+              <td className="p-4 text-muted-foreground text-sm tabular-nums">
+                {row.competitor}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
-};
-
-function parseDescription(description: string) {
-  // Split by periods followed by space and capital letter, or by newlines
-  const sentences = description
-    .split(/(?<=\.)\s+(?=[A-Z])/)
-    .filter((s) => s.trim().length > 0);
-  return sentences;
+function PricingModel({
+  name,
+  model,
+  description,
+  children,
+}: {
+  name: string;
+  model: string;
+  description: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="col gap-3 rounded-2xl border p-6">
+      <div className="col gap-1">
+        <h3 className="font-semibold text-lg">{name}</h3>
+        <p className="font-medium text-muted-foreground text-sm">{model}</p>
+      </div>
+      <p className="text-muted-foreground text-sm leading-relaxed">
+        {description}
+      </p>
+      {children}
+    </div>
+  );
 }
 
 export function PricingSection({
   pricing,
   competitorName,
 }: PricingSectionProps) {
-  const openpanelPoints = parseDescription(pricing.openpanel.description);
-  const competitorPoints = parseDescription(pricing.competitor.description);
-
   return (
     <Section className="container">
       <SectionHeader
@@ -51,137 +81,41 @@ export function PricingSection({
         title={pricing.title}
         variant="sm"
       />
-
-      {/* Pricing comparison */}
-      <motion.div
-        className="mt-12 grid gap-6 md:grid-cols-2"
-        initial="hidden"
-        variants={containerVariants}
-        viewport={{ once: true, margin: '-100px' }}
-        whileInView="visible"
-      >
-        {/* OpenPanel Card */}
-        <motion.div
-          className="col group relative gap-4 overflow-hidden rounded-2xl border bg-background p-6 transition-all duration-300 hover:border-emerald-500/30"
-          variants={cardVariants}
+      {pricing.volumes && (
+        <VolumeTable
+          competitorName={competitorName}
+          volumes={pricing.volumes}
+        />
+      )}
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <PricingModel
+          description={pricing.openpanel.description}
+          model={pricing.openpanel.model}
+          name="OpenPanel"
+        />
+        <PricingModel
+          description={pricing.competitor.description}
+          model={pricing.competitor.model}
+          name={competitorName}
         >
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-br light:from-emerald-800/10 light:via-transparent light:to-green-900/10 opacity-100 blur-2xl transition-opacity duration-500 group-hover:opacity-150 dark:from-emerald-500/5 dark:via-transparent dark:to-green-500/5" />
-          <div className="col relative z-10 gap-3">
-            <div className="col gap-2">
-              <h3 className="font-semibold text-xl">OpenPanel</h3>
-              <p className="font-medium text-muted-foreground text-sm">
-                {pricing.openpanel.model}
-              </p>
-            </div>
-            <div className="col mt-2 gap-2">
-              {openpanelPoints.map((point, index) => (
-                <motion.div
-                  className="row group/item items-start gap-2"
-                  initial={{ opacity: 0, x: -10 }}
-                  key={index}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                >
-                  <CheckIcon className="mt-0.5 size-4 shrink-0 text-emerald-600 transition-transform duration-300 group-hover/item:scale-110 dark:text-emerald-400" />
-                  <p className="flex-1 text-muted-foreground text-sm transition-colors duration-300 group-hover/item:text-foreground">
-                    {point.trim()}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-            <motion.div
-              className="col mt-2 gap-2"
-              initial={{ opacity: 0 }}
-              transition={{ delay: 0.3 }}
-              viewport={{ once: true }}
-              whileInView={{ opacity: 1 }}
+          {pricing.competitor.free_tier && (
+            <p className="text-muted-foreground text-xs">
+              Free tier: {pricing.competitor.free_tier}
+            </p>
+          )}
+          {pricing.competitor.pricing_url && (
+            <Link
+              className="row items-center gap-1 text-primary text-xs hover:underline"
+              href={pricing.competitor.pricing_url}
+              rel="noopener noreferrer nofollow"
+              target="_blank"
             >
-              <div className="row items-center gap-2 rounded-lg border border-emerald-500/10 bg-muted/30 p-3">
-                <span className="font-medium text-muted-foreground text-xs">
-                  Free tier:
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  Self-hosting (unlimited events)
-                </span>
-              </div>
-              <div className="row items-center gap-2 rounded-lg border border-emerald-500/10 bg-muted/30 p-3">
-                <span className="font-medium text-muted-foreground text-xs">
-                  Free trial:
-                </span>
-                <span className="text-muted-foreground text-xs">30 days</span>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Competitor Card */}
-        <motion.div
-          className="col group relative gap-4 overflow-hidden rounded-2xl border bg-background p-6 transition-all duration-300 hover:border-orange-500/30"
-          variants={cardVariants}
-        >
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-br light:from-orange-800/10 light:via-transparent light:to-amber-900/10 opacity-100 blur-2xl transition-opacity duration-500 group-hover:opacity-150 dark:from-orange-500/5 dark:via-transparent dark:to-amber-500/5" />
-          <div className="col relative z-10 gap-3">
-            <div className="col gap-2">
-              <h3 className="font-semibold text-xl">{competitorName}</h3>
-              <p className="font-medium text-muted-foreground text-sm">
-                {pricing.competitor.model}
-              </p>
-            </div>
-            <div className="col mt-2 gap-2">
-              {competitorPoints.map((point, index) => (
-                <motion.div
-                  className="row group/item items-start gap-2"
-                  initial={{ opacity: 0, x: -10 }}
-                  key={index}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                >
-                  <CheckIcon className="mt-0.5 size-4 shrink-0 text-orange-600 transition-transform duration-300 group-hover/item:scale-110 dark:text-orange-400" />
-                  <p className="flex-1 text-muted-foreground text-sm transition-colors duration-300 group-hover/item:text-foreground">
-                    {point.trim()}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-            {pricing.competitor.free_tier && (
-              <motion.div
-                className="row mt-2 items-center gap-2 rounded-lg border border-orange-500/10 bg-muted/30 p-3"
-                initial={{ opacity: 0 }}
-                transition={{ delay: 0.3 }}
-                viewport={{ once: true }}
-                whileInView={{ opacity: 1 }}
-              >
-                <span className="font-medium text-muted-foreground text-xs">
-                  Free tier:
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {pricing.competitor.free_tier}
-                </span>
-              </motion.div>
-            )}
-            {pricing.competitor.pricing_url && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                transition={{ delay: 0.4 }}
-                viewport={{ once: true }}
-                whileInView={{ opacity: 1 }}
-              >
-                <Link
-                  className="row group/link mt-2 items-center gap-2 text-primary text-xs transition-colors duration-300 hover:text-primary/80"
-                  href={pricing.competitor.pricing_url}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <span>View pricing</span>
-                  <ArrowRightIcon className="size-3 transition-transform duration-300 group-hover/link:translate-x-1" />
-                </Link>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
+              {competitorName} pricing page
+              <ArrowRightIcon className="size-3" />
+            </Link>
+          )}
+        </PricingModel>
+      </div>
     </Section>
   );
 }

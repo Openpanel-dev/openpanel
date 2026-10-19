@@ -2,278 +2,269 @@
   "slug": "plausible-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Plausible Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Plausible alternative? OpenPanel adds product analytics, user identification, and deeper insights to privacy-first web analytics. Open source and free to self-host.",
+    "title": "Plausible Alternative with Retention and User Profiles",
+    "description": "OpenPanel vs Plausible: both are cookieless and AGPL. OpenPanel adds retention, cohorts and user profiles. Prices at 10k to 10M pageviews, and when to stay put.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Plausible Alternative",
-    "subheading": "Love Plausible's simplicity and privacy focus? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - while staying lightweight and cookie-free by default.",
+    "heading": "A Plausible alternative for when pageviews stop being enough",
+    "subheading": "Plausible tells you how many people came and where from. It can't tell you whether the people who signed up in March are still around in May, because it never knows who anyone is. OpenPanel keeps the cookieless web dashboard and adds retention, cohorts and user profiles on the same events.",
     "badges": [
-      "Open-source",
-      "Privacy-first",
-      "Product Analytics",
-      "Cookie-free"
+      "AGPL-3.0, like Plausible",
+      "Cookieless by default",
+      "Retention and cohorts",
+      "Free to self-host"
     ]
   },
   "competitor": {
     "name": "Plausible Analytics",
     "logo": "/logos/plausible.svg",
     "url": "https://plausible.io",
-    "short_description": "Privacy-focused, lightweight Google Analytics alternative for websites with EU-based hosting and simple dashboard.",
-    "founded": 2018,
-    "headquarters": "Tartu, Estonia"
+    "short_description": "Cookieless web analytics with a one-page dashboard, hosted in Germany and built by a small bootstrapped team.",
+    "headquarters": "Estonia"
+  },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-10-18",
+    "prices_checked": "2026-10-18"
   },
   "overview": {
-    "title": "Why consider OpenPanel over Plausible?",
+    "title": "What Plausible does well, and where it stops",
     "paragraphs": [
-      "Plausible Analytics has earned a strong reputation as a lightweight, privacy-first alternative to Google Analytics. Its simple dashboard and cookie-free tracking make it a great choice for bloggers and content sites that need basic traffic metrics without the complexity. But as your product grows, you'll quickly hit the limits of what Plausible can offer.",
-      "OpenPanel shares Plausible's commitment to privacy \u2014 cookie-free tracking, no consent banners, and EU-based data processing \u2014 but goes significantly further with full product analytics capabilities. Where Plausible gives you pageviews, referrers, and country breakdowns, OpenPanel adds funnels, retention analysis, cohort breakdowns, user profiles, and A/B testing. It's the best of both worlds: Plausible-style simplicity for web analytics combined with Mixpanel-style depth for product analytics.",
-      "Self-hosting is another area where OpenPanel has a clear advantage. Plausible Community Edition requires you to set up and manage PostgreSQL and ClickHouse separately. OpenPanel ships a one-command setup script for its Docker Compose stack (ClickHouse, Postgres, and Redis), making deployment and maintenance far simpler. And like Plausible, OpenPanel is free and unlimited to self-host; its cloud starts at $2.50/month for 5,000 events after a 30-day trial.",
-      "If you've outgrown simple web analytics and need to understand how users actually interact with your product \u2014 without adding a second analytics tool \u2014 OpenPanel is a natural next step from Plausible."
+      "Plausible is a well-made tool. The dashboard fits on one screen, the script is under 1 KB, and nobody on your team needs training to read it. If you run a blog, a docs site or a marketing site, it does the job and you can stop reading here.",
+      "The limit is by design. Plausible counts visitors anonymously and never ties events to a person, so it can't answer questions that need a person: what share of last month's signups came back this week, which accounts use a feature, what a single user did before they churned. Its funnels (2 to 8 steps) and user journeys exist, but only on the Business plan, and they count visitors within a visit rather than following a user over weeks.",
+      "OpenPanel tracks the same pageviews and referrers without cookies, then lets you call identify() when someone logs in. From that point the same events feed retention tables, cohorts you can reuse as filters, user profiles with their full event history, and funnels you can break down by any property. You don't need a second tool for the logged-in part of your product.",
+      "Self-hosting is the other difference. Plausible Community Edition ships twice a year and leaves out funnels, user journeys and revenue goals. OpenPanel's self-hosted version is the full product, with releases arriving a month or two after Cloud."
     ]
   },
   "summary_comparison": {
-    "title": "OpenPanel vs Plausible: Which is right for you?",
-    "intro": "Both are privacy-focused analytics platforms. Plausible focuses on simple web traffic metrics. OpenPanel adds product analytics with user identification.",
-    "one_liner": "Plausible excels at simple web analytics; OpenPanel adds product analytics, user identification, and simpler self-hosting.",
+    "title": "OpenPanel vs Plausible: which one fits",
+    "intro": "Both are open source under AGPL-3.0, both are cookieless, and both host their cloud in Germany. The split is anonymous traffic stats versus product analytics on identified users.",
+    "one_liner": "Pick Plausible for traffic stats on a content site. Pick OpenPanel when you also need to know what logged-in users do over time.",
     "best_for_openpanel": [
-      "SaaS products needing user-level analytics and retention tracking",
-      "Teams outgrowing simple web analytics needing product features",
-      "Apps requiring user identification for logged-in users",
-      "Mobile app developers needing native iOS, Android, React Native, Flutter SDKs"
+      "SaaS and apps that need retention by signup cohort",
+      "Teams that want funnels and user flows without paying for a Business tier",
+      "Products with logged-in users you need to look up one by one",
+      "Self-hosters who want funnels and retention, not a reduced community edition",
+      "Mobile apps: there are Swift, Kotlin and React Native SDKs"
     ],
     "best_for_competitor": [
-      "Simple content sites and blogs wanting traffic stats only",
-      "Teams valuing the sub-1KB script size above all else",
-      "Users wanting Google Search Console integration in dashboard",
-      "Organizations prioritizing Germany/EU-only data hosting"
+      "Blogs, docs and marketing sites that only need traffic numbers",
+      "Teams that want the smallest possible script (under 1 KB)",
+      "Anyone who needs to import years of Google Analytics history",
+      "People who value a dashboard nobody has to learn"
     ]
   },
   "highlights": {
-    "title": "Key differences at a glance",
-    "intro": "Here's how OpenPanel and Plausible compare on key factors.",
+    "title": "The differences that decide it",
+    "intro": "Most rows in a feature table match. These are the ones that don't.",
     "items": [
       {
-        "label": "Analytics Depth",
-        "openpanel": "Web + Product Analytics",
-        "competitor": "Web Analytics Only",
-        "notes": "OpenPanel combines web analytics with product analytics - funnels, retention, cohorts, and user profiles. Plausible focuses purely on website traffic metrics."
+        "label": "Who it knows about",
+        "openpanel": "Anonymous visitors, plus identified users after you call identify()",
+        "competitor": "Anonymous visitors only, by design"
       },
       {
-        "label": "User Identification",
-        "openpanel": "Yes - Track individual users",
-        "competitor": "No - Anonymous aggregate only",
-        "notes": "OpenPanel lets you identify and track individual users across sessions. Plausible intentionally doesn't track individuals - all data is anonymous and aggregate."
+        "label": "Retention and cohorts",
+        "openpanel": "Retention tables, curves and saved cohorts on every plan",
+        "competitor": "Not available"
       },
       {
-        "label": "SDK Size",
-        "openpanel": "2.3 KB",
-        "competitor": "< 1 KB",
-        "notes": "Plausible's script is extremely lightweight at under 1KB. OpenPanel's 2.3KB SDK is still very light but includes more functionality."
+        "label": "Funnels",
+        "openpanel": "Steps from any event, a conversion window, breakdown by any property",
+        "competitor": "2 to 8 steps, Business plan only"
       },
       {
-        "label": "Cookie-Free",
-        "openpanel": "Yes (by default)",
-        "competitor": "Yes (by default)",
-        "notes": "Both platforms are cookie-free by default and don't require consent banners under GDPR for basic analytics."
+        "label": "Self-hosted version",
+        "openpanel": "Full product; releases follow Cloud by a month or two",
+        "competitor": "Community Edition: twice a year, no funnels, user journeys or revenue goals"
       },
       {
-        "label": "Self-Hosting Complexity",
-        "openpanel": "Docker Compose with one-command setup script",
-        "competitor": "Docker Compose with PostgreSQL + ClickHouse",
-        "notes": "Both are Docker Compose stacks. OpenPanel ships a one-command setup script that handles DB init, SSL, and config — Plausible Community Edition requires manual PostgreSQL + ClickHouse configuration."
+        "label": "Tracking script",
+        "openpanel": "About 3 KB gzipped",
+        "competitor": "Under 1 KB"
+      }
+    ]
+  },
+  "competitor_strengths": {
+    "title": "Where Plausible is better",
+    "intro": "For traffic stats on a content site, these are good reasons to stay.",
+    "items": [
+      {
+        "title": "A smaller script",
+        "description": "Plausible's tracker is under 1 KB. OpenPanel's is about 3 KB gzipped. Both are small next to most analytics tools, but Plausible is smaller."
+      },
+      {
+        "title": "A dashboard nobody has to learn",
+        "description": "Plausible puts everything for a site on one page. OpenPanel has more reports, which also means more to learn."
+      },
+      {
+        "title": "Google Analytics import",
+        "description": "Plausible can import your Google Analytics history. OpenPanel can't, so a switch from GA starts with an empty chart."
+      },
+      {
+        "title": "Lower prices for traffic stats only",
+        "description": "If you only need pageviews and sources, Plausible Starter is cheaper from 1M pageviews up: $69 against $90 at 1M, and $169 against $350 at 10M."
       }
     ]
   },
   "feature_comparison": {
     "title": "Feature comparison",
-    "intro": "Both are privacy-focused, but with different capabilities and depths.",
+    "intro": "Plausible plan names are noted where a feature needs a specific tier. Checked against plausible.io on October 18, 2026.",
     "groups": [
       {
-        "group": "Web Analytics",
+        "group": "Web analytics",
         "features": [
           {
-            "name": "Page Views & Visitors",
+            "name": "Visitors, pageviews, bounce rate, visit duration",
             "openpanel": true,
             "competitor": true
           },
           {
-            "name": "Traffic Sources",
+            "name": "Referrers and UTM parameters",
             "openpanel": true,
             "competitor": true
           },
           {
-            "name": "Geographic Data",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Both offer country, region, and city-level data"
-          },
-          {
-            "name": "Device & Browser",
+            "name": "Country, region and city",
             "openpanel": true,
             "competitor": true
           },
           {
-            "name": "UTM Campaign Tracking",
+            "name": "Devices, browsers, operating systems",
             "openpanel": true,
             "competitor": true
           },
           {
-            "name": "Real-Time Dashboard",
+            "name": "Realtime view",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Google Search Console data",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Annotations on charts",
             "openpanel": true,
             "competitor": true
           }
         ]
       },
       {
-        "group": "Product Analytics",
+        "group": "Product analytics",
         "features": [
           {
-            "name": "Custom Event Tracking",
+            "name": "Custom events",
             "openpanel": true,
             "competitor": true,
-            "notes": "Plausible calls these 'Goals'"
+            "notes": "Plausible calls them goals"
           },
           {
-            "name": "Funnel Analysis",
+            "name": "Custom properties on events",
             "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible added funnels (2-8 steps) in 2022"
+            "competitor": "Business plan"
           },
           {
-            "name": "Retention Analysis",
+            "name": "Funnels",
             "openpanel": true,
-            "competitor": false,
-            "notes": "Plausible focuses on aggregate metrics, not user retention"
+            "competitor": "Business plan, 2 to 8 steps"
           },
           {
-            "name": "User Profiles",
+            "name": "Funnel breakdown by property",
             "openpanel": true,
             "competitor": false,
-            "notes": "Plausible intentionally doesn't track individual users"
+            "notes": "Plausible funnels can be filtered by source, page, device or location"
           },
           {
-            "name": "Cohort Analysis",
+            "name": "User journeys / user flows",
             "openpanel": true,
-            "competitor": false,
-            "notes": "Plausible's anonymous model doesn't support cohorts"
+            "competitor": "Business plan",
+            "notes": "OpenPanel shows flows before, after or between events as a sankey"
           },
           {
-            "name": "User Path Analysis",
+            "name": "Retention and cohort tables",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Saved cohorts usable as filters",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "User profiles with event history",
             "openpanel": true,
             "competitor": false,
-            "notes": "Plausible shows entry/exit pages but not user journeys"
+            "notes": "Plausible never identifies individual users"
+          },
+          {
+            "name": "Group (account) analytics for B2B",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Revenue tracking",
+            "openpanel": true,
+            "competitor": "Business plan"
+          },
+          {
+            "name": "Session replay",
+            "openpanel": "Opt-in",
+            "competitor": false
           }
         ]
       },
       {
-        "group": "Advanced Features",
+        "group": "Reports and alerts",
         "features": [
           {
-            "name": "A/B Testing",
+            "name": "Custom dashboards and saved reports",
             "openpanel": true,
             "competitor": false,
-            "notes": "Plausible is analytics-only, no experimentation"
+            "notes": "Plausible has one fixed dashboard per site"
           },
           {
-            "name": "Revenue Tracking",
+            "name": "Shared and embedded dashboards",
             "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible added revenue goals for e-commerce"
+            "competitor": "Growth plan and up"
           },
           {
-            "name": "Custom Properties",
+            "name": "Email and Slack reports or alerts",
             "openpanel": true,
-            "competitor": true,
-            "notes": "Both support custom dimensions/properties"
+            "competitor": true
           },
           {
-            "name": "Email/Slack Reports",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Both offer scheduled reports and alerts"
-          },
-          {
-            "name": "Google Search Console",
+            "name": "Import from Google Analytics",
             "openpanel": false,
-            "competitor": true,
-            "notes": "Plausible has native GSC integration"
-          },
-          {
-            "name": "Google Analytics Import",
-            "openpanel": false,
-            "competitor": true,
-            "notes": "Plausible can import historical GA data"
+            "competitor": true
           }
         ]
       },
       {
-        "group": "Privacy & Compliance",
+        "group": "Privacy and hosting",
         "features": [
           {
-            "name": "Cookie-Free by Default",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Both are cookieless by default"
-          },
-          {
-            "name": "No Consent Banner Required",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Both claim no consent needed for basic analytics"
-          },
-          {
-            "name": "GDPR Compliant",
+            "name": "Cookieless by default",
             "openpanel": true,
             "competitor": true
           },
           {
-            "name": "EU Data Hosting",
+            "name": "Cloud hosted in Germany",
             "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible hosted in Falkenstein, Germany (Hetzner)"
+            "competitor": true
           },
           {
-            "name": "Self-Hosting Option",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible Community Edition is free and open-source"
+            "name": "Open source license",
+            "openpanel": "AGPL-3.0 (SDKs MIT)",
+            "competitor": "AGPL-3.0"
           },
           {
-            "name": "IP Anonymization",
+            "name": "Self-hosted funnels and journeys",
             "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible hashes IPs for counting, never stores them"
-          }
-        ]
-      },
-      {
-        "group": "Integrations",
-        "features": [
-          {
-            "name": "REST API",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible has Stats API and Events API"
-          },
-          {
-            "name": "Data Export",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "CSV export available on both"
-          },
-          {
-            "name": "WordPress Plugin",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "Plausible has official WordPress plugin"
-          },
-          {
-            "name": "NPM Package",
-            "openpanel": true,
-            "competitor": true,
-            "notes": "plausible-tracker package available"
+            "competitor": false,
+            "notes": "Not included in Plausible Community Edition"
           }
         ]
       }
@@ -281,204 +272,210 @@
   },
   "technical_comparison": {
     "title": "Technical comparison",
-    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "intro": "What you install and what you run.",
     "items": [
       {
-        "label": "SDK Size",
-        "openpanel": "2.3 KB (gzipped)",
-        "competitor": "< 1 KB (gzipped), modular extensions available",
+        "label": "Tracking script",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only if you enable it",
+        "competitor": "Under 1 KB",
         "notes": null
       },
       {
-        "label": "Platforms",
+        "label": "SDKs",
         "openpanel": [
-          "JavaScript/TypeScript",
+          "Script tag",
+          "JavaScript / Web",
           "React",
           "Next.js",
           "Vue",
           "Astro",
           "Remix",
+          "Express / Node.js",
           "React Native",
-          "Flutter",
-          "iOS (Swift)",
-          "Android (Kotlin)",
-          "Node.js",
+          "Swift (iOS)",
+          "Kotlin (Android)",
           "Python",
-          "Ruby",
-          "Rust",
-          "Java",
-          "PHP"
+          "REST API"
         ],
         "competitor": [
-          "JavaScript (browser)",
-          "React (via npm)",
-          "Next.js",
-          "Vue",
-          "WordPress",
-          "Ghost",
-          "Wix",
-          "Squarespace",
-          "Webflow"
+          "Script tag",
+          "npm tracker",
+          "WordPress plugin",
+          "Events API"
         ],
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel), Ruby, Rust and Java."
+      },
+      {
+        "label": "Self-hosting stack",
+        "openpanel": "Docker Compose: ClickHouse, Postgres and Redis, set up by one command",
+        "competitor": "Docker Compose: ClickHouse and Postgres",
         "notes": null
       },
       {
-        "label": "Open Source",
-        "openpanel": "Yes - AGPL-3.0",
-        "competitor": "Yes - AGPL-3.0",
-        "notes": "Both are open source and AGPL-3.0 licensed."
-      },
-      {
-        "label": "Self Hosting",
-        "openpanel": "Docker Compose, guided setup wizard",
-        "competitor": "Docker Compose with PostgreSQL + ClickHouse (2GB RAM minimum)",
+        "label": "Self-hosted release cadence",
+        "openpanel": "Follows Cloud by a month or two",
+        "competitor": "Community Edition, twice a year",
         "notes": null
       },
       {
-        "label": "Database",
-        "openpanel": "ClickHouse (analytics) + PostgreSQL (config) + Redis",
-        "competitor": "PostgreSQL (user data) + ClickHouse (analytics data)",
-        "notes": null
-      },
-      {
-        "label": "Data Retention",
-        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
-        "competitor": "Unlimited on cloud, configurable for self-hosted",
-        "notes": null
-      },
-      {
-        "label": "Language",
-        "openpanel": "TypeScript/Node.js",
-        "competitor": "Elixir",
+        "label": "Self-hosted support",
+        "openpanel": "GitHub issues and Discord",
+        "competitor": "Community support only",
         "notes": null
       }
     ]
   },
   "pricing": {
-    "title": "Pricing comparison",
-    "intro": "Neither has a free cloud tier. Both are free to self-host; OpenPanel's cloud starts at $2.50/month.",
+    "title": "Pricing at the same traffic",
+    "intro": "Plausible bills by monthly pageviews and puts funnels, user journeys and custom properties on Business. OpenPanel bills by events with every feature on every tier; one pageview is one event, and custom events count too. Plausible prices from plausible.io, October 18, 2026, monthly billing.",
     "openpanel": {
-      "model": "Event-based, transparent",
-      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
+      "model": "Monthly event volume, all features included",
+      "description": "10k events: $5. 100k: $20. 1M: $90. 10M: $350. 30-day free trial, then paid; there is no free tier. Self-hosting is free with no event limit."
     },
     "competitor": {
-      "model": "Pageview-based with 30-day trial",
-      "description": "10K pageviews: $9/month. 100K: ~$19/month. 1M: ~$69/month. 10M: ~$299/month. All features included. Annual billing saves 2 months. No free tier for cloud (except self-hosted).",
-      "free_tier": "No free tier (30-day trial only)",
+      "model": "Monthly pageviews, features by plan",
+      "description": "Starter / Growth / Business at 10k pageviews: $9 / $14 / $19. 100k: $19 / $29 / $39. 1M: $69 / $104 / $139. 10M: $169 / $254 / $339. Yearly billing gives 2 months free. Funnels and user journeys need Business.",
+      "free_tier": "No free tier (30-day trial)",
       "pricing_url": "https://plausible.io/#pricing"
-    }
+    },
+    "volumes": [
+      {
+        "volume": "10k pageviews",
+        "openpanel": "$5",
+        "competitor": "$9 Starter, $14 Growth, $19 Business"
+      },
+      {
+        "volume": "100k pageviews",
+        "openpanel": "$20",
+        "competitor": "$19 Starter, $29 Growth, $39 Business"
+      },
+      {
+        "volume": "1M pageviews",
+        "openpanel": "$90",
+        "competitor": "$69 Starter, $104 Growth, $139 Business"
+      },
+      {
+        "volume": "10M pageviews",
+        "openpanel": "$350",
+        "competitor": "$169 Starter, $254 Growth, $339 Business"
+      }
+    ]
   },
   "migration": {
-    "title": "Migrating from Plausible to OpenPanel",
-    "intro": "Both use lightweight scripts and similar event tracking, making migration straightforward.",
+    "title": "Moving from Plausible to OpenPanel",
+    "intro": "There's no importer for Plausible data, so the usual path is to run both for a few weeks and switch once OpenPanel has enough history.",
     "difficulty": "easy",
-    "estimated_time": "30 minutes to 2 hours",
+    "estimated_time": "An hour of setup, then a few weeks running both",
     "steps": [
       {
-        "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts, so the transition is minimal."
+        "title": "Add OpenPanel next to Plausible",
+        "description": "Install the script tag or SDK and leave Plausible running. Both are cookieless, so your consent setup doesn't change."
       },
       {
-        "title": "Map Your Goals to Events",
-        "description": "Plausible 'Goals' become OpenPanel events. Custom events translate directly - plausible('signup') becomes op.track('signup')."
+        "title": "Rename your goals as events",
+        "description": "plausible('Signup', { props: { plan: 'pro' } }) becomes op.track('signup', { plan: 'pro' }). Pageview goals need nothing: OpenPanel records every pageview."
       },
       {
-        "title": "Set Up User Identification (New)",
-        "description": "Unlike Plausible, OpenPanel can identify users. Add op.identify() calls to unlock retention, cohorts, and user profiles."
+        "title": "Identify logged-in users",
+        "description": "Call op.identify({ profileId }) after login. This is the step Plausible can't do, and it's what retention, cohorts and user profiles need."
       },
       {
-        "title": "Configure Funnels and Dashboards",
-        "description": "Recreate your Plausible funnels in OpenPanel. You'll now have access to additional product analytics features."
+        "title": "Rebuild your funnels and dashboards",
+        "description": "Recreate your Plausible funnels, then add the retention report you couldn't have before."
       },
       {
-        "title": "Remove Plausible Script",
-        "description": "Once verified, remove the Plausible tracking script. Both are cookie-free so no consent changes needed."
+        "title": "Remove Plausible when you have enough history",
+        "description": "Compare a few weeks of numbers between the two dashboards, then drop the Plausible script and export anything you want to keep."
       }
     ],
     "sdk_compatibility": {
       "similar_api": true,
-      "notes": "Both use event-based tracking with similar APIs."
+      "notes": "Both track named events with a properties object, so goal calls map one to one."
     },
     "historical_data": {
       "can_import": false,
-      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+      "notes": "OpenPanel can't import Plausible history. Export it from Plausible as CSV before you cancel, and run both tools in parallel during the switch."
     }
   },
   "use_cases": {
-    "title": "Where OpenPanel is a better fit than Plausible",
-    "intro": "Choose OpenPanel when you need product analytics beyond simple web traffic.",
+    "title": "When OpenPanel is the better fit",
+    "intro": "If none of these describe you, Plausible is probably the simpler choice.",
     "items": [
       {
-        "title": "SaaS Products Needing User Analytics",
-        "description": "Plausible shows aggregate website traffic. If you need to understand individual user journeys, retention, and behavior within your product, OpenPanel adds these capabilities while staying privacy-friendly.",
-        "icon": "users"
+        "title": "You need retention by signup cohort",
+        "description": "\"Of the people who signed up in March, how many still use it?\" needs a stable user ID. Plausible doesn't keep one; OpenPanel builds the cohort table from your signup and return events.",
+        "icon": "users",
+        "screenshot": {
+          "src": "/features/feature-retention.webp",
+          "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
+        }
       },
       {
-        "title": "Teams Outgrowing Simple Web Analytics",
-        "description": "Started with Plausible for its simplicity but now need funnels with more steps, cohort analysis, or A/B testing? OpenPanel provides these without the complexity of enterprise tools.",
-        "icon": "trending-up"
+        "title": "You want funnels without a Business plan",
+        "description": "At 100k pageviews, Plausible Business costs $39 a month for funnels and custom properties. OpenPanel's 100k tier costs $20 with funnels, retention and user flows included.",
+        "icon": "trending-up",
+        "screenshot": {
+          "src": "/features/feature-funnel-report.webp",
+          "alt": "OpenPanel funnel report showing conversion between steps"
+        }
       },
       {
-        "title": "Apps Requiring User Identification",
-        "description": "Plausible intentionally doesn't identify users. If you need to track logged-in users, analyze customer segments, or measure retention, OpenPanel lets you do this while respecting privacy.",
-        "icon": "user-check"
+        "title": "Support asks what a specific user did",
+        "description": "OpenPanel user profiles list every event and session for one person, so you can answer a support ticket without guessing.",
+        "icon": "user-check",
+        "screenshot": {
+          "src": "/features/feature-profiles-details.webp",
+          "alt": "OpenPanel user profile with the person's properties and event history"
+        }
       },
       {
-        "title": "Mobile App Analytics",
-        "description": "Plausible is primarily designed for websites. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter with full product analytics capabilities.",
+        "title": "You have a mobile app as well as a website",
+        "description": "OpenPanel has Swift, Kotlin and React Native SDKs, and app and web events land in the same project.",
         "icon": "smartphone"
       },
       {
-        "title": "Simpler Self-Hosting",
-        "description": "Plausible CE requires you to configure PostgreSQL and ClickHouse separately. OpenPanel ships a one-command ./setup wizard that walks you through configuration and brings the whole Docker Compose stack up in minutes, making self-hosting far more straightforward.",
+        "title": "You self-host and want the whole product",
+        "description": "Plausible Community Edition leaves out funnels and user journeys and updates twice a year. OpenPanel self-hosts with every feature, and releases follow Cloud by a month or two.",
         "icon": "server"
       }
     ]
   },
   "faqs": {
     "title": "Frequently asked questions",
-    "intro": "Common questions about switching from Plausible to OpenPanel.",
+    "intro": "Short answers, including the cases where Plausible wins.",
     "items": [
       {
         "question": "Is OpenPanel as privacy-friendly as Plausible?",
-        "answer": "Yes! Both are cookie-free by default and don't require consent banners. The key difference is that OpenPanel allows optional user identification for product analytics, while Plausible is strictly anonymous. You control whether to identify users in OpenPanel."
+        "answer": "For anonymous traffic, yes: neither sets cookies, and both host their cloud in Germany. The difference is that OpenPanel lets you identify logged-in users. If you do, you're processing personal data about those users and should cover it in your privacy policy. If you never call identify, OpenPanel stays anonymous like Plausible."
       },
       {
-        "question": "Why switch from Plausible to OpenPanel?",
-        "answer": "Teams typically switch when they need product analytics capabilities: user identification, retention analysis, cohort analysis, and detailed funnel tracking. Plausible excels at simple web analytics, but if you're building a product and need to understand user behavior, OpenPanel provides these features while maintaining privacy."
+        "question": "Does Plausible have funnels?",
+        "answer": "Yes, on the Business plan. A Plausible funnel has 2 to 8 steps made of pageview or custom event goals, counted per visitor. It can't branch, and you can filter it but not break it down by a property. Funnels aren't included in the self-hosted Community Edition."
       },
       {
-        "question": "Does Plausible have a free tier?",
-        "answer": "No, Plausible Cloud requires a paid subscription starting at $9/month. They offer a 30-day free trial. The self-hosted Community Edition is free but requires you to manage PostgreSQL and ClickHouse infrastructure. OpenPanel is the same: no free cloud tier (30-day trial, then from $2.50/month for 5,000 events), but free and unlimited to self-host."
+        "question": "Is OpenPanel cheaper than Plausible?",
+        "answer": "It depends on which Plausible plan you'd need. Against Plausible Business, the plan with funnels, OpenPanel costs less at 10k, 100k and 1M pageviews ($5, $20, $90 against $19, $39, $139) and about the same at 10M ($350 against $339). Against Plausible Starter, OpenPanel costs less at 10k and more from 1M up. Custom events count toward OpenPanel's event total, so check your volume."
       },
       {
-        "question": "Which has the smaller tracking script?",
-        "answer": "Plausible wins here with a sub-1KB script. OpenPanel's 2.3KB script is still very lightweight but includes more functionality for product analytics. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel."
+        "question": "Does either have a free plan?",
+        "answer": "No. Both offer a 30-day trial on their cloud and are free to self-host. OpenPanel's self-hosted version includes every feature; Plausible Community Edition leaves out funnels, user journeys and revenue goals."
       },
       {
-        "question": "Can Plausible track mobile apps?",
-        "answer": "Not officially. Plausible is designed for web analytics and doesn't provide native mobile SDKs. You can send events via their API, but there are no mobile-specific metrics. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs."
+        "question": "Can I import my Plausible data into OpenPanel?",
+        "answer": "No. OpenPanel imports from Umami, Mixpanel and Amplitude, not Plausible. Run both tools side by side for a few weeks and export your Plausible stats as CSV before you cancel."
       },
       {
-        "question": "What will I lose switching from Plausible?",
-        "answer": "Plausible's Google Search Console integration and GA import tool are features OpenPanel doesn't have. If you rely heavily on these, consider your needs. However, you'll gain product analytics capabilities that Plausible doesn't offer."
+        "question": "What do I lose by leaving Plausible?",
+        "answer": "Google Analytics import, the sub-1 KB script, and a dashboard so simple nobody needs to learn it. OpenPanel has more reports, which also means more to learn."
       },
       {
-        "question": "How does self-hosting compare?",
-        "answer": "Plausible CE requires Docker Compose with PostgreSQL and ClickHouse (2GB RAM minimum). OpenPanel also uses Docker Compose (ClickHouse, Postgres, and Redis) but ships a one-command setup script that handles DB init, SSL, and config. Both use ClickHouse for analytics queries."
-      },
-      {
-        "question": "Is Plausible or OpenPanel better for blogs/content sites?",
-        "answer": "For simple content sites where you just need traffic stats, Plausible's simplicity is excellent. If you're running a SaaS, e-commerce, or any product where understanding user behavior matters, OpenPanel's product analytics features provide more value."
+        "question": "Which is better for a blog or docs site?",
+        "answer": "Plausible, unless you also have a product with logged-in users. For traffic stats alone, its simplicity is the point."
       }
     ]
   },
   "related_links": {
     "guides": [
-      {
-        "title": "Migrate from Google Analytics",
-        "url": "/guides/migrate-from-google-analytics"
-      },
       {
         "title": "Website analytics setup",
         "url": "/guides/website-analytics-setup"
@@ -490,12 +487,16 @@
     ],
     "articles": [
       {
-        "title": "9 best open source web analytics tools",
+        "title": "Self-hosted web analytics compared",
         "url": "/articles/self-hosted-web-analytics"
       },
       {
-        "title": "Cookieless analytics",
-        "url": "/articles/cookieless-analytics"
+        "title": "Open source analytics tools survey",
+        "url": "/articles/open-source-web-analytics"
+      },
+      {
+        "title": "What is cohort analysis?",
+        "url": "/articles/cohort-analysis"
       }
     ],
     "alternatives": [
@@ -515,7 +516,7 @@
   },
   "ctas": {
     "primary": {
-      "label": "Start with OpenPanel",
+      "label": "Start a 30-day trial",
       "href": "https://dashboard.openpanel.dev/onboarding"
     },
     "secondary": {

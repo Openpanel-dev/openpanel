@@ -425,24 +425,6 @@
       }
     ]
   },
-  "benefits_section": {
-    "label": "Why teams switch",
-    "title": "Everything you need, none of what you don't",
-    "description": "Amplitude packs in features most teams never use — and charges accordingly. OpenPanel focuses on the analytics that actually drive product decisions, at a price that makes sense from day one.",
-    "cta": {
-      "label": "Start free with OpenPanel",
-      "href": "https://dashboard.openpanel.dev/onboarding"
-    },
-    "benefits": [
-      "Event tracking, funnels, retention, and cohorts — without the enterprise learning curve",
-      "Cookie-free by default: no consent banners, no GDPR headaches for EU users",
-      "2.3 KB SDK vs Amplitude's 36–96 KB — real impact on page speed and Core Web Vitals",
-      "Self-host on your own infrastructure with Docker, or use our EU-only cloud",
-      "Transparent pricing from $2.50/month — no MTU surprises, no overage fees at 1.2x",
-      "Open source (AGPL-3.0): inspect the code, fork it, run it yourself",
-      "Web analytics and product analytics in one tool — no stitching together separate products"
-    ]
-  },
   "faqs": {
     "title": "Frequently asked questions",
     "intro": "Common questions about Amplitude alternatives and switching to OpenPanel.",

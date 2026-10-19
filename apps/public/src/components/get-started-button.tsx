@@ -7,14 +7,15 @@ export function GetStartedButton({
   text,
   href = 'https://dashboard.openpanel.dev/onboarding',
   className,
+  ...linkProps
 }: {
   text?: React.ReactNode;
   className?: string;
   href?: string;
-}) {
+} & Omit<React.ComponentProps<typeof Link>, 'href' | 'className'>) {
   return (
     <Button asChild className={cn('group', className)} size="lg">
-      <Link href={href}>
+      <Link href={href} {...linkProps}>
         {text ?? 'Start free trial'}
         <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-1 group-hover:scale-125" />
       </Link>
