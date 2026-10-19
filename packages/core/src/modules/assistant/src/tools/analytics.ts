@@ -71,11 +71,38 @@ function daysAgo(days: number): string {
     .slice(0, DATE_LENGTH);
 }
 
-function eventSeries(
-  name: string,
-  segment: 'event' | 'user',
-  displayName = name
-) {
+type Segment = NonNullable<
+  IReportInput['series'][number] extends infer S
+    ? S extends { type: 'event'; segment?: infer Seg }
+      ? Seg
+      : never
+    : never
+>;
+
+const HOURLY_MAX_DAYS = 2;
+const DAILY_MAX_DAYS = 90;
+const WEEKLY_MAX_DAYS = 366;
+
+/** The interval the dashboard itself would pick for a window. */
+function autoInterval(
+  startDate: string,
+  endDate: string
+): 'hour' | 'day' | 'week' | 'month' {
+  const days =
+    (new Date(endDate).getTime() - new Date(startDate).getTime()) / MS_PER_DAY;
+  if (days <= HOURLY_MAX_DAYS) {
+    return 'hour';
+  }
+  if (days <= DAILY_MAX_DAYS) {
+    return 'day';
+  }
+  if (days <= WEEKLY_MAX_DAYS) {
+    return 'week';
+  }
+  return 'month';
+}
+
+function eventSeries(name: string, segment: Segment, displayName = name) {
   return {
     id: name,
     type: 'event' as const,
@@ -92,26 +119,54 @@ export function analyticsTools(ctx: ChatToolContext) {
   return {
     get_overview: tool({
       description:
-        'Headline metrics for a period: unique visitors, sessions, pageviews, bounce rate, session duration, with a time series. Start here for "how are we doing" questions.',
+        'Headline metrics for a period with the previous period for comparison: unique visitors, sessions, pageviews, bounce rate, session duration. Renders a visitors-and-sessions chart with the previous period overlaid. Start here for "how are we doing" questions; one call covers both periods.',
       inputSchema: z.object({
         ...zOptionalRange,
-        interval: z.enum(['hour', 'day', 'week', 'month']).default('day'),
+        interval: z
+          .enum(['hour', 'day', 'week', 'month'])
+          .optional()
+          .describe('Defaults to what fits the range.'),
       }),
       execute: async ({ startDate, endDate, interval }) => {
         const range = resolveRange(ctx, { startDate, endDate });
-        return getAnalyticsOverviewCore(deps, {
+        const bucket = interval ?? autoInterval(range.startDate, range.endDate);
+        const overview = await getAnalyticsOverviewCore(deps, {
           projectId,
           startDate: range.startDate,
           endDate: range.endDate,
-          interval,
+          interval: bucket,
           filters: [],
         });
+        const report: IReportInput & { name: string } = {
+          projectId,
+          name: 'Visitors and sessions',
+          chartType: 'linear',
+          interval: bucket,
+          range: 'custom',
+          startDate: range.startDate,
+          endDate: range.endDate,
+          metric: 'sum',
+          previous: true,
+          breakdowns: [],
+          lineType: 'monotone',
+          series: [
+            eventSeries('screen_view', 'user', 'Unique visitors'),
+            eventSeries('screen_view', 'session', 'Sessions'),
+          ],
+        };
+        const output: ChartToolOutput = {
+          title: report.name,
+          report,
+          summary: overview.summary as unknown as Record<string, unknown>,
+        };
+        return output;
       },
+      toModelOutput: ({ output }) => chartToModelOutput(output),
     }),
 
     get_breakdown: tool({
       description:
-        'Top values of one dimension for a period: pages (`path`), referrers, UTM parameters, geography or device. Returns sessions, pageviews and share per value. Use create_chart instead when the user wants to see it as a chart.',
+        'Top values of one dimension for a period: pages (`path`), referrers, UTM parameters, geography or device. Renders a bar chart; you get sessions, pageviews and revenue per value.',
       inputSchema: z.object({
         dimension: z.enum(['path', ...TRAFFIC_COLUMNS]),
         ...zOptionalRange,
@@ -124,23 +179,51 @@ export function analyticsTools(ctx: ChatToolContext) {
       }),
       execute: async ({ dimension, startDate, endDate, limit }) => {
         const range = resolveRange(ctx, { startDate, endDate });
-        if (dimension === 'path') {
-          const pages = await getTopPagesCore(deps, {
-            projectId,
-            startDate: range.startDate,
-            endDate: range.endDate,
-            limit,
-          });
-          return { dimension, ...range, ...truncateRows(pages, limit) };
-        }
-        const rows = await getTrafficBreakdownCore(deps, {
+        const rows =
+          dimension === 'path'
+            ? await getTopPagesCore(deps, {
+                projectId,
+                startDate: range.startDate,
+                endDate: range.endDate,
+                limit,
+              })
+            : await getTrafficBreakdownCore(deps, {
+                projectId,
+                startDate: range.startDate,
+                endDate: range.endDate,
+                column: dimension,
+              });
+        const label =
+          dimension === 'path' ? 'pages' : dimension.replace(/_/g, ' ');
+        const report: IReportInput & { name: string } = {
           projectId,
+          name: `Top ${label}`,
+          chartType: 'bar',
+          interval: autoInterval(range.startDate, range.endDate),
+          range: 'custom',
           startDate: range.startDate,
           endDate: range.endDate,
-          column: dimension,
-        });
-        return { dimension, ...range, ...truncateRows(rows, limit) };
+          metric: 'sum',
+          previous: false,
+          limit,
+          breakdowns: [{ id: '1', name: dimension }],
+          series: [
+            dimension === 'path'
+              ? eventSeries('screen_view', 'event', 'Pageviews')
+              : eventSeries('screen_view', 'session', 'Sessions'),
+          ],
+        };
+        const output: ChartToolOutput = {
+          title: report.name,
+          report,
+          summary: {
+            dimension,
+            ...truncateRows(rows as Record<string, unknown>[], limit),
+          },
+        };
+        return output;
       },
+      toModelOutput: ({ output }) => chartToModelOutput(output),
     }),
 
     query_events: tool({

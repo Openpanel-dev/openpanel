@@ -12,6 +12,11 @@ import {
   SearchCard,
 } from './parts/result-cards';
 import { TableCard } from './parts/table-card';
+import {
+  isRichToolPart,
+  ToolActivityGroup,
+  type ToolPart,
+} from './parts/tool-activity-group';
 import { ToolActivity, ToolDone, ToolError } from './parts/tool-card';
 import { toolPhrase } from './tool-labels';
 import {
@@ -49,16 +54,44 @@ export function ChatMessage({
   const lastIndex = message.parts.length - 1;
   return (
     <div className="flex flex-col gap-3">
-      {message.parts.map((part, index) => (
-        <MessagePart
-          key={partKey(part, index)}
-          onApproval={onApproval}
-          part={part}
-          streaming={streaming && index === lastIndex}
-        />
-      ))}
+      {groupParts(message.parts).map((group, index) =>
+        Array.isArray(group) ? (
+          <ToolActivityGroup
+            key={group[0]?.toolCallId ?? index}
+            parts={group}
+          />
+        ) : (
+          <MessagePart
+            key={partKey(group.part, group.index)}
+            onApproval={onApproval}
+            part={group.part}
+            streaming={streaming && group.index === lastIndex}
+          />
+        )
+      )}
     </div>
   );
+}
+
+type PartGroup = ToolPart[] | { part: AssistantUIMessagePart; index: number };
+
+/** Plain tool calls that follow each other become one activity line. */
+function groupParts(parts: AssistantUIMessagePart[]): PartGroup[] {
+  const groups: PartGroup[] = [];
+  for (const [index, part] of parts.entries()) {
+    const isPlainTool = isToolUIPart(part) && !isRichToolPart(part);
+    const last = groups.at(-1);
+    if (isPlainTool && Array.isArray(last)) {
+      last.push(part as ToolPart);
+    } else if (isPlainTool) {
+      groups.push([part as ToolPart]);
+    } else if (part.type === 'step-start') {
+      // Step boundaries carry nothing to show and must not split a group.
+    } else {
+      groups.push({ part, index });
+    }
+  }
+  return groups;
 }
 
 function partKey(part: AssistantUIMessagePart, index: number): string {
@@ -84,18 +117,16 @@ function MessagePart({
     return <Reasoning streaming={streaming} text={part.text} />;
   }
   if (isToolUIPart(part)) {
-    return <ToolPart onApproval={onApproval} part={part} />;
+    return <ToolPartView onApproval={onApproval} part={part} />;
   }
   return null;
 }
 
-type ToolPartType = Extract<AssistantUIMessagePart, { toolCallId: string }>;
-
-function ToolPart({
+function ToolPartView({
   part,
   onApproval,
 }: {
-  part: ToolPartType;
+  part: ToolPart;
   onApproval: (approvalId: string, approved: boolean) => void;
 }) {
   const toolName = getToolName(part);
@@ -185,6 +216,9 @@ function ToolResult({
     return (
       <ClientCreatedCard client={output as { id?: string; secret?: string }} />
     );
+  }
+  if (isRowsOutput(output) && output.rows.length === 0) {
+    return <ToolDone output={output} toolName={toolName} />;
   }
   if (isRowsOutput(output)) {
     const title =

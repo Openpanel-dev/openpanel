@@ -110,7 +110,7 @@ describe('summarizeChartData', () => {
       ],
     });
     expect(summary.seriesCount).toBe(1);
-    const [serie] = summary.series as Array<Record<string, unknown>>;
+    const [serie] = summary.series as Record<string, unknown>[];
     expect(serie?.peak).toEqual({ date: '2026-10-02', value: 15 });
     expect(serie?.low).toEqual({ date: '2026-10-01', value: 5 });
     expect(serie?.data).toEqual([
