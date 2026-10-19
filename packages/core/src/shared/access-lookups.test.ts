@@ -3,7 +3,12 @@
 // change to either side shows up as a diff rather than as a surprised member.
 
 import { expect, test } from 'bun:test';
-import { effectiveProjectGrants, resolveProjectAccess } from './access-lookups';
+import type { Db } from '../context';
+import {
+  effectiveProjectGrants,
+  listProjectMemberEmails,
+  resolveProjectAccess,
+} from './access-lookups';
 
 test('scope all follows the role: write for members and admins, read for viewers', () => {
   for (const role of ['org:admin', 'org:member', 'admin', 'member', 'owner']) {
@@ -154,4 +159,68 @@ test('duplicate legacy rows for one project keep the read restriction', () => {
       projects: [{ projectId: 'a', level: 'read' }],
     });
   }
+});
+
+test('listProjectMemberEmails mails all-scope members and selected members with a row, nobody else', async () => {
+  const members = [
+    {
+      userId: 'u_all',
+      role: 'org:member',
+      projectScope: 'all',
+      projects: [],
+      user: { email: 'all@example.com' },
+    },
+    {
+      userId: 'u_this',
+      role: 'viewer',
+      projectScope: 'selected',
+      projects: [{ projectId: 'p1', level: 'read' }],
+      user: { email: 'this@example.com' },
+    },
+    {
+      userId: 'u_other',
+      role: 'org:admin',
+      projectScope: 'selected',
+      projects: [{ projectId: 'p2', level: null }],
+      user: { email: 'other@example.com' },
+    },
+    {
+      userId: 'u_legacy',
+      role: 'org:member',
+      projectScope: 'all',
+      projects: [],
+      user: { email: 'legacy@example.com' },
+    },
+    {
+      userId: 'u_dup',
+      role: 'org:member',
+      projectScope: 'all',
+      projects: [],
+      user: { email: 'all@example.com' },
+    },
+  ];
+  // A project_access row written by the previous image restricts u_legacy to p2.
+  const legacyGrants = [
+    { userId: 'u_legacy', projectId: 'p2', level: 'write' },
+  ];
+  const memberWhere: unknown[] = [];
+  const db = {
+    member: {
+      findMany: async ({ where }: { where: unknown }) => {
+        memberWhere.push(where);
+        return members;
+      },
+    },
+    projectAccess: { findMany: async () => legacyGrants },
+  } as unknown as Db;
+
+  const emails = await listProjectMemberEmails(db, {
+    organizationId: 'org_1',
+    projectId: 'p1',
+  });
+
+  expect(emails.sort()).toEqual(['all@example.com', 'this@example.com']);
+  expect(memberWhere).toEqual([
+    { organizationId: 'org_1', user: { deletedAt: null } },
+  ]);
 });
