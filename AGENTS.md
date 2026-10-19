@@ -219,6 +219,10 @@ to PR titles, which become the commit on a squash merge.
   upgrade. That is what the release notes' "Upgrade notes" are built from; add
   the matching `openpanel doctor` check in the same change (`self-hosting/cli`).
 - One logical change per commit. No "WIP", "fixes", or "address review".
+- A commit that only touches `apps/public` (the marketing site) never bumps
+  the version and is left out of the release notes
+  (`tooling/release/src/release-scope.ts`). Keep site changes in their own
+  commits and PRs so they stay out of the product's releases.
 
 **Agents never mark a commit as breaking.** Do not write `!` after the type
 (`feat!:`), a `BREAKING CHANGE:` footer, or `[major]`, even when the change
