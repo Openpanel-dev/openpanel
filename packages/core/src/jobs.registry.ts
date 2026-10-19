@@ -40,7 +40,7 @@ const COHORT_ATTEMPTS = 3;
 // `<KEY>_CONCURRENCY` overrides one of these at boot.
 const CONCURRENCY = {
   sessions: 1,
-  cron: 1,
+  cron: 4,
   notification: 1,
   import: 1,
   insights: 5,
@@ -63,7 +63,8 @@ const sessions = defineQueue('sessions', {
   },
 });
 
-// One queue, one worker at concurrency 1, every scheduled job in the system.
+// One queue for every scheduled job in the system. Each buffer flush takes its
+// own lock, so concurrency lets different buffers flush side by side.
 // Pausing it from bull-board halts all buffer flushing.
 const cron = defineQueue('cron', {
   defaults: {

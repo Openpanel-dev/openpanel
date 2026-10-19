@@ -808,6 +808,19 @@ Number of concurrent event processing jobs per worker.
 EVENT_JOB_CONCURRENCY=20
 ```
 
+### CRON_CONCURRENCY
+
+**Type**: `number`
+**Required**: No
+**Default**: `4`
+
+Number of scheduled jobs a worker runs at the same time: buffer flushes, the session reaper and the other cron jobs. Each buffer flush holds its own lock, so raising this lets different buffers flush in parallel without two workers flushing the same one. Raise it if one buffer's backlog keeps growing while the others drain.
+
+**Example**:
+```bash
+CRON_CONCURRENCY=6
+```
+
 ### GSC_CONCURRENCY
 
 **Type**: `number`
@@ -1183,13 +1196,13 @@ KAFKA_REBALANCE_TIMEOUT_MS=60000
 
 **Type**: `number`
 **Required**: No
-**Default**: Buffer-specific default
+**Default**: `10000`
 
-Batch size for session buffer operations.
+Session rows read from Redis per batch. Rows for the same session are squashed within a batch, so larger batches insert fewer rows.
 
 **Example**:
 ```bash
-SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_BATCH_SIZE=20000
 ```
 
 ### SESSION_BUFFER_CHUNK_SIZE

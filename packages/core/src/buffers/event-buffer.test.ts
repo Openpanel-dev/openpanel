@@ -651,6 +651,54 @@ describe('EventBuffer', () => {
     );
     expect(await eventBuffer.getBufferSize()).toBe(1);
   });
+
+  it('a flush drains a backlog larger than one batch', async () => {
+    const config = testCoreConfig();
+    config.buffers.event.batchSize = 3;
+    const eb = new EventBuffer(bufferDepsWithCh({ insert: chInsert }, config));
+    for (let i = 0; i < 10; i++) {
+      eb.add({
+        project_id: 'p13',
+        name: `event${i}`,
+        created_at: new Date().toISOString(),
+      } as any);
+    }
+    await eb.flush();
+
+    await eb.tryFlush({ trigger: 'cron' });
+
+    expect(chInsert).toHaveBeenCalledTimes(4);
+    const names: string[] = [];
+    for (const [options] of chInsert.mock.calls) {
+      const lines = await streamToLines(
+        (options as { values: Readable }).values
+      );
+      names.push(...lines.map((line) => JSON.parse(line).name));
+    }
+    expect(names).toEqual(Array.from({ length: 10 }, (_, i) => `event${i}`));
+    expect(await eb.getBufferSize()).toBe(0);
+  });
+
+  it('a failed batch stops the drain and keeps the rest queued', async () => {
+    const config = testCoreConfig();
+    config.buffers.event.batchSize = 3;
+    const eb = new EventBuffer(bufferDepsWithCh({ insert: chInsert }, config));
+    for (let i = 0; i < 10; i++) {
+      eb.add({
+        project_id: 'p14',
+        name: `event${i}`,
+        created_at: new Date().toISOString(),
+      } as any);
+    }
+    await eb.flush();
+
+    chInsert.mockResolvedValueOnce(undefined);
+    chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+    await expect(eb.processBuffer()).rejects.toThrow('ClickHouse unavailable');
+    expect(chInsert).toHaveBeenCalledTimes(2);
+    expect(await eb.getBufferSize()).toBe(7);
+  });
 });
 
 describe('extractProjectId', () => {

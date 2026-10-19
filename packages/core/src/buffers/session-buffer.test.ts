@@ -4,6 +4,7 @@ import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
+import type { FlushObservation } from './base-buffer';
 
 // The client comes in as `BufferDeps.ch` — no module mock needed for the flush
 // path at all. See event-buffer.test.ts's header.
@@ -474,7 +475,99 @@ describe('SessionBuffer', () => {
     expect(chInsert).toHaveBeenCalledTimes(4);
     expect(await buffer.getBufferSize()).toBe(0);
   });
+
+  it('inserts the chunks of one batch concurrently', async () => {
+    const config = testCoreConfig();
+    config.buffers.session.chunkSize = 2;
+    const buffer = new SessionBuffer(
+      bufferDepsWithCh({ insert: chInsert }, config)
+    );
+    const t0 = Date.now();
+    for (let i = 0; i < 10; i++) {
+      await buffer.ingest(
+        makePayload({
+          deviceId: `device-${i}`,
+          sessionId: `session-${i}`,
+          createdAt: new Date(t0),
+        })
+      );
+    }
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const insertedIds: string[] = [];
+    chInsert.mockImplementation(async ({ values }) => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await Bun.sleep(INSERT_LATENCY_MS);
+      insertedIds.push(...values.map((row) => row.device_id));
+      inFlight -= 1;
+    });
+
+    await buffer.processBuffer();
+
+    expect(chInsert).toHaveBeenCalledTimes(5);
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect(insertedIds.sort()).toEqual(
+      Array.from({ length: 10 }, (_, i) => `device-${i}`).sort()
+    );
+    expect(await buffer.getBufferSize()).toBe(0);
+  });
+
+  it('keeps the whole batch queued when one concurrent chunk fails', async () => {
+    const config = testCoreConfig();
+    config.buffers.session.chunkSize = 2;
+    const buffer = new SessionBuffer(
+      bufferDepsWithCh({ insert: chInsert }, config)
+    );
+    const t0 = Date.now();
+    for (let i = 0; i < 10; i++) {
+      await buffer.ingest(
+        makePayload({
+          deviceId: `device-${i}`,
+          sessionId: `session-${i}`,
+          createdAt: new Date(t0),
+        })
+      );
+    }
+
+    chInsert.mockImplementation(async ({ values }) => {
+      await Bun.sleep(INSERT_LATENCY_MS);
+      if (values.some((row) => row.device_id === 'device-5')) {
+        throw new Error('ClickHouse unavailable');
+      }
+    });
+
+    await expect(buffer.processBuffer()).rejects.toThrow(
+      'ClickHouse unavailable'
+    );
+    expect(await buffer.getBufferSize()).toBe(10);
+  });
+
+  it('reports read, transform, insert and trim timings', async () => {
+    const buffer = bufferWithBatchSize(1000);
+    const observations: FlushObservation[] = [];
+    buffer.flushObserver = (observation) => observations.push(observation);
+    await buffer.ingest(makePayload());
+
+    await buffer.tryFlush({ trigger: 'cron' });
+
+    expect(observations).toHaveLength(1);
+    const [observation] = observations;
+    expect(observation?.result).toBe('success');
+    expect(observation?.rowsProcessed).toBe(1);
+    for (const phase of [
+      'lrangeMs',
+      'transformMs',
+      'chInsertMs',
+      'trimMs',
+    ] as const) {
+      expect(observation?.phases?.[phase]).toBeGreaterThanOrEqual(0);
+    }
+  });
 });
+
+const INSERT_LATENCY_MS = 10;
 
 const MONITOR_SENTINEL = 'session-buffer-test-done';
 const MONITOR_POLL_MS = 5;

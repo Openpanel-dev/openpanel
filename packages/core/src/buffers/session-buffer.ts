@@ -84,7 +84,8 @@ function pickUtm(
   return v ? String(v) : '';
 }
 
-const DEFAULT_BATCH_SIZE = 1000;
+// Large enough that a busy session's versions share a batch and squash.
+const DEFAULT_BATCH_SIZE = 10_000;
 const DEFAULT_CHUNK_SIZE = 1000;
 
 export class SessionBuffer extends BaseBuffer {
@@ -529,15 +530,19 @@ export class SessionBuffer extends BaseBuffer {
 
   /** Inserts and trims one batch from the head of the list; returns its size. */
   private async processBatch(): Promise<number> {
+    const lrangeStart = performance.now();
     const events = await this.redis.lrange(
       this.redisKey,
       0,
       this.batchSize - 1
     );
+    const lrangeMs = performance.now() - lrangeStart;
     if (events.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
       return 0;
     }
 
+    const transformStart = performance.now();
     const parsed: IClickhouseSession[] = [];
     for (const e of events) {
       const s = getSafeJson<IClickhouseSession>(e);
@@ -558,23 +563,32 @@ export class SessionBuffer extends BaseBuffer {
     const sessions = this.squashEnabled
       ? this.squashSessionsByVersion(parsed)
       : parsed;
+    const transformMs = performance.now() - transformStart;
 
+    // Chunks may land in any order: VersionedCollapsingMergeTree collapses by
+    // (sign, version), not by insert order.
     const ch = this.resolveCh();
-    for (const chunk of this.chunks(sessions, this.chunkSize)) {
-      await ch.insert({
+    const chStart = performance.now();
+    await this.parallelLimit(this.chunks(sessions, this.chunkSize), (chunk) =>
+      ch.insert({
         table: TABLE_NAMES.sessions,
         values: chunk,
         format: 'JSONEachRow',
-      });
-    }
+      })
+    );
+    const chInsertMs = performance.now() - chStart;
 
     // Trim only after a successful insert — on failure the rows stay queued.
     // Don't swallow: let it propagate so the base flush records result:'error'
     // (and the next flush retries the still-queued rows).
+    const trimStart = performance.now();
     await this.redis.ltrim(this.redisKey, events.length, -1);
+    const trimMs = performance.now() - trimStart;
 
-    this.reportFlushStats({ rowsProcessed: events.length });
-    this.logger.debug({ count: events.length }, 'Processed sessions');
+    this.reportFlushStats({
+      rowsProcessed: events.length,
+      phases: { lrangeMs, transformMs, chInsertMs, trimMs },
+    });
     return events.length;
   }
 

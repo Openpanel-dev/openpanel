@@ -105,16 +105,16 @@ Events, sessions, and profiles flow through in-memory Redis buffers before being
 
 ### Event buffer
 
-The event buffer collects incoming events in Redis and flushes them to ClickHouse on a cron schedule.
+The event buffer collects incoming events in Redis and flushes them to ClickHouse on a cron schedule. Each flush keeps reading batches for up to 8 seconds, until the buffer is empty.
 
 | Variable | Default | What it controls |
 |---|---|---|
-| `EVENT_BUFFER_BATCH_SIZE` | `4000` | How many events are read from Redis and sent to ClickHouse per flush |
+| `EVENT_BUFFER_BATCH_SIZE` | `4000` | How many events are read from Redis and sent to ClickHouse per batch |
 | `EVENT_BUFFER_CHUNK_SIZE` | `1000` | How many events are sent in a single ClickHouse insert call |
 | `EVENT_BUFFER_MICRO_BATCH_MS` | `10` | How long (ms) to accumulate events in memory before writing to Redis |
 | `EVENT_BUFFER_MICRO_BATCH_SIZE` | `100` | Max events to accumulate before forcing a Redis write |
 
-For high throughput, increase `EVENT_BUFFER_BATCH_SIZE` so each flush processes more events. Keep `EVENT_BUFFER_CHUNK_SIZE` at or below `EVENT_BUFFER_BATCH_SIZE`.
+For high throughput, increase `EVENT_BUFFER_BATCH_SIZE` so each batch carries more events. Keep `EVENT_BUFFER_CHUNK_SIZE` at or below `EVENT_BUFFER_BATCH_SIZE`.
 
 ```bash
 EVENT_BUFFER_BATCH_SIZE=10000
@@ -127,11 +127,10 @@ Sessions are updated on each event and flushed to ClickHouse separately.
 
 | Variable | Default | What it controls |
 |---|---|---|
-| `SESSION_BUFFER_BATCH_SIZE` | `1000` | Events read per flush |
-| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | Events per ClickHouse insert |
+| `SESSION_BUFFER_BATCH_SIZE` | `10000` | Session rows read per batch |
+| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | Session rows per ClickHouse insert |
 
 ```bash
-SESSION_BUFFER_BATCH_SIZE=5000
 SESSION_BUFFER_CHUNK_SIZE=2000
 ```
 
@@ -234,7 +233,6 @@ EVENT_BUFFER_BATCH_SIZE=10000
 EVENT_BUFFER_CHUNK_SIZE=2000
 
 # Session buffer
-SESSION_BUFFER_BATCH_SIZE=5000
 SESSION_BUFFER_CHUNK_SIZE=2000
 
 # Profile buffer

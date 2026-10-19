@@ -59,6 +59,8 @@ export type FlushPhaseTimings = {
    *  fetch-existing-profile-for-merge step). Only buffers that read CH
    *  during flush will populate this. */
   chFetchMs?: number;
+  /** Parsing and reshaping rows between the read and the insert. */
+  transformMs?: number;
   chInsertMs?: number;
   trimMs?: number;
   /** Total time spent inside onFlush (subclass-specific processing) */
@@ -68,6 +70,7 @@ export type FlushPhaseTimings = {
 const FLUSH_PHASES = [
   'lrangeMs',
   'chFetchMs',
+  'transformMs',
   'chInsertMs',
   'trimMs',
   'onFlushMs',
@@ -422,6 +425,10 @@ export class BaseBuffer {
       chFetchMs:
         obs.phases?.chFetchMs != null
           ? Math.round(obs.phases.chFetchMs)
+          : undefined,
+      transformMs:
+        obs.phases?.transformMs != null
+          ? Math.round(obs.phases.transformMs)
           : undefined,
       chInsertMs:
         obs.phases?.chInsertMs != null
