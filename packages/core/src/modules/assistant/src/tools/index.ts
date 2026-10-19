@@ -1,5 +1,6 @@
 import type { ChatToolContext } from '../context';
 import { analyticsTools } from './analytics';
+import { billingTools } from './billing';
 import { chartTools } from './charts';
 import { clientTools } from './client-tools';
 import { dashboardTools } from './dashboards';
@@ -22,6 +23,7 @@ export function createChatTools(ctx: ChatToolContext) {
     ...referenceTools(ctx),
     ...seoTools(ctx),
     ...trackingTools(ctx),
+    ...billingTools(ctx),
     ...dashboardTools(ctx),
     ...docsTools(ctx),
     ...clientTools(),

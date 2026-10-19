@@ -4,6 +4,7 @@ import { ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ChatMarkdown } from './chat-markdown';
 import { ApprovalCard, ApprovalDecided } from './parts/approval-card';
+import { BillingCard, type BillingOutput } from './parts/billing-card';
 import { ChartCard } from './parts/chart-card';
 import { DiagnosisCard, type DiagnosisOutput } from './parts/diagnosis-card';
 import {
@@ -215,6 +216,9 @@ function ToolResult({
         session={hit.session ?? null}
       />
     );
+  }
+  if (toolName === 'get_billing') {
+    return <BillingCard output={output as BillingOutput} />;
   }
   if (toolName === 'diagnose_tracking') {
     return <DiagnosisCard output={output as DiagnosisOutput} />;
