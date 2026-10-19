@@ -9,6 +9,7 @@ import { entityTools } from './entities';
 import { referenceTools } from './references';
 import { searchTools } from './search';
 import { seoTools } from './seo';
+import { trackingTools } from './tracking';
 
 /** One tool set per turn; every tool closes over the checked context. */
 export function createChatTools(ctx: ChatToolContext) {
@@ -20,6 +21,7 @@ export function createChatTools(ctx: ChatToolContext) {
     ...entityTools(ctx),
     ...referenceTools(ctx),
     ...seoTools(ctx),
+    ...trackingTools(ctx),
     ...dashboardTools(ctx),
     ...docsTools(ctx),
     ...clientTools(),

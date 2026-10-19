@@ -63,6 +63,10 @@ const TOOL_PHRASES: Record<string, { active: string; done: string }> = {
   invite_member: { active: 'Sending the invite', done: 'Invite sent' },
   update_project: { active: 'Updating the project', done: 'Project updated' },
   search_docs: { active: 'Reading the docs', done: 'Docs checked' },
+  diagnose_tracking: {
+    active: 'Checking the tracking setup',
+    done: 'Tracking checked',
+  },
   navigate: { active: 'Opening the page', done: 'Opened' },
   open_dialog: { active: 'Opening the dialog', done: 'Dialog opened' },
 };

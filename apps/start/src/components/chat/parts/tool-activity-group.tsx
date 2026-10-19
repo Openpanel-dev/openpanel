@@ -41,6 +41,9 @@ function labelOf(part: ToolPart, status: ItemStatus): string {
       return 'No references in this window';
     }
   }
+  if (name === 'search') {
+    return 'Nothing matched the search';
+  }
   return toolPhrase(name, 'done');
 }
 
@@ -151,6 +154,14 @@ export function isRichToolPart(part: AssistantUIMessagePart): boolean {
   }
   const name = getToolName(part);
   const output = part.output as Record<string, unknown> | unknown[] | undefined;
+  if (name === 'search') {
+    const hit = output as
+      | { profiles?: unknown[]; session?: unknown; eventNames?: unknown[] }
+      | undefined;
+    return Boolean(
+      hit?.session || hit?.profiles?.length || hit?.eventNames?.length
+    );
+  }
   if (
     [
       'navigate',
@@ -158,6 +169,7 @@ export function isRichToolPart(part: AssistantUIMessagePart): boolean {
       'search_docs',
       'search',
       'create_client',
+      'diagnose_tracking',
     ].includes(name)
   ) {
     return true;

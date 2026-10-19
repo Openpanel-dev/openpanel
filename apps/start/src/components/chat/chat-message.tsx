@@ -1,9 +1,11 @@
+import { useNavigate } from '@tanstack/react-router';
 import { getToolName, isToolUIPart } from 'ai';
 import { ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ChatMarkdown } from './chat-markdown';
 import { ApprovalCard, ApprovalDecided } from './parts/approval-card';
 import { ChartCard } from './parts/chart-card';
+import { DiagnosisCard, type DiagnosisOutput } from './parts/diagnosis-card';
 import {
   ClientCreatedCard,
   DialogCard,
@@ -26,6 +28,8 @@ import {
   isErrorOutput,
   isRowsOutput,
 } from './types';
+import { useAppParams } from '@/hooks/use-app-params';
+import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
 export function ChatMessage({
@@ -212,6 +216,9 @@ function ToolResult({
       />
     );
   }
+  if (toolName === 'diagnose_tracking') {
+    return <DiagnosisCard output={output as DiagnosisOutput} />;
+  }
   if (toolName === 'create_client') {
     return (
       <ClientCreatedCard client={output as { id?: string; secret?: string }} />
@@ -225,7 +232,14 @@ function ToolResult({
       typeof input?.dimension === 'string'
         ? `Top ${String(input.dimension).replace(/_/g, ' ')}`
         : toolPhrase(toolName, 'done');
-    return <TableCard rows={output.rows} title={title} total={output.total} />;
+    return (
+      <RowsTable
+        rows={output.rows}
+        title={title}
+        toolName={toolName}
+        total={output.total}
+      />
+    );
   }
   if (
     Array.isArray(output) &&
@@ -239,6 +253,73 @@ function ToolResult({
     );
   }
   return <ToolDone output={output} toolName={toolName} />;
+}
+
+/** Columns worth seeing first for raw rows, and what a click on a row opens. */
+const PREFERRED_COLUMNS: Record<string, string[]> = {
+  query_events: [
+    'created_at',
+    'name',
+    'path',
+    'country',
+    'device',
+    'profile_id',
+  ],
+  query_sessions: [
+    'created_at',
+    'entry_path',
+    'referrer_name',
+    'country',
+    'device',
+    'duration',
+    'screen_view_count',
+  ],
+};
+
+function RowsTable({
+  rows,
+  title,
+  toolName,
+  total,
+}: {
+  rows: Record<string, unknown>[];
+  title: string;
+  toolName: string;
+  total?: number;
+}) {
+  const navigate = useNavigate();
+  const { organizationId, projectId } = useAppParams();
+  let onRowClick: ((row: Record<string, unknown>) => void) | undefined;
+  if (toolName === 'query_events') {
+    onRowClick = (row) => {
+      if (typeof row.id === 'string' && typeof row.created_at === 'string') {
+        pushModal('EventDetails', {
+          id: row.id,
+          createdAt: new Date(row.created_at),
+          projectId,
+        });
+      }
+    };
+  }
+  if (toolName === 'query_sessions') {
+    onRowClick = (row) => {
+      if (typeof row.id === 'string') {
+        navigate({
+          to: '/$organizationId/$projectId/sessions/$sessionId',
+          params: { organizationId, projectId, sessionId: row.id },
+        });
+      }
+    };
+  }
+  return (
+    <TableCard
+      onRowClick={onRowClick}
+      preferredColumns={PREFERRED_COLUMNS[toolName]}
+      rows={rows}
+      title={title}
+      total={total}
+    />
+  );
 }
 
 /** The model's reasoning: a shimmer while it streams, a disclosure afterwards. */
