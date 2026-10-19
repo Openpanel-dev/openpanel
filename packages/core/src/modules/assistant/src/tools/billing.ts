@@ -45,8 +45,20 @@ export interface BillingOutput {
 
 const iso = (date: Date | null | undefined) => date?.toISOString() ?? null;
 
+interface PlanOption {
+  productId: string;
+  productPriceId: string | null;
+  name: string;
+  eventsLimit: number | null;
+  price: number | null;
+  currency: string | null;
+  interval: string | null;
+  current: boolean;
+  unavailable: string | null;
+}
+
 export function billingTools(ctx: ChatToolContext) {
-  const { deps, organizationId } = ctx;
+  const { deps, organizationId, actions } = ctx;
   const billingUrl = `${ctx.config.dashboardUrl.replace(/\/$/, '')}/${organizationId}/settings`;
 
   return {
@@ -138,6 +150,74 @@ export function billingTools(ctx: ChatToolContext) {
           },
           billingUrl,
         };
+      },
+    }),
+
+    list_plans: tool({
+      description:
+        'The plans the workspace can move to, with price, interval and event limit, and which one is current. Call before change_plan so the user can pick.',
+      inputSchema: z.object({}),
+      execute: async (): Promise<
+        { plans: PlanOption[] } | { selfHosted: true; message: string }
+      > => {
+        if (ctx.config.selfHosted) {
+          return {
+            selfHosted: true,
+            message: 'Self-hosted installs have no plans.',
+          };
+        }
+        const [organization, products] = await Promise.all([
+          deps.db.organization.findUniqueOrThrow({
+            where: { id: organizationId },
+            select: { subscriptionProductId: true },
+          }),
+          actions.subscription.products({ organizationId }),
+        ]);
+        return {
+          plans: products.map((product) => {
+            const price = (product.prices?.[0] ?? null) as
+              | (PriceLike & { id?: string })
+              | null;
+            const limit = Number(product.metadata?.eventsLimit);
+            return {
+              productId: product.id,
+              productPriceId: price?.id ?? null,
+              name: product.name,
+              eventsLimit: Number.isFinite(limit) && limit > 0 ? limit : null,
+              price:
+                typeof price?.priceAmount === 'number'
+                  ? price.priceAmount / CENTS_PER_UNIT
+                  : null,
+              currency: price?.priceCurrency ?? null,
+              interval: product.recurringInterval ?? null,
+              current: product.id === organization.subscriptionProductId,
+              unavailable: product.disabled ?? null,
+            };
+          }),
+        };
+      },
+    }),
+
+    change_plan: tool({
+      description:
+        'Move the workspace to another plan. Asks the user to confirm. With an active paid subscription the change applies right away (Polar prorates it); otherwise the result is a checkout link the user completes on Polar. Only workspace admins can do this. Use productId and productPriceId from list_plans.',
+      inputSchema: z.object({
+        productId: z.string(),
+        productPriceId: z.string(),
+      }),
+      execute: async ({ productId, productPriceId }) => {
+        if (ctx.config.selfHosted) {
+          return { error: 'Self-hosted installs have no plans to change.' };
+        }
+        const result = await actions.subscription.checkout({
+          organizationId,
+          productId,
+          productPriceId,
+        });
+        if (result?.url) {
+          return { checkoutUrl: result.url, billingUrl };
+        }
+        return { changed: true, billingUrl };
       },
     }),
   };

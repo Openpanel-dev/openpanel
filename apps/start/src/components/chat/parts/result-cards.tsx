@@ -160,3 +160,28 @@ export function ClientCreatedCard({
     </div>
   );
 }
+
+export function PlanChangeCard({
+  output,
+}: {
+  output: { checkoutUrl?: string; changed?: boolean };
+}) {
+  if (output.checkoutUrl) {
+    return (
+      <a
+        className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-sm transition-colors hover:bg-muted/60"
+        href={output.checkoutUrl}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Continue to checkout
+        <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+      </a>
+    );
+  }
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2 text-sm">
+      Plan changed. Billing is prorated from today.
+    </div>
+  );
+}

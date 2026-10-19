@@ -171,6 +171,7 @@ export function isRichToolPart(part: AssistantUIMessagePart): boolean {
       'create_client',
       'diagnose_tracking',
       'get_billing',
+      'change_plan',
     ].includes(name)
   ) {
     return true;

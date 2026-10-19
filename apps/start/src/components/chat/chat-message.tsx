@@ -12,6 +12,7 @@ import {
   DialogCard,
   DocsCard,
   NavigateCard,
+  PlanChangeCard,
   SearchCard,
 } from './parts/result-cards';
 import { TableCard } from './parts/table-card';
@@ -216,6 +217,9 @@ function ToolResult({
         session={hit.session ?? null}
       />
     );
+  }
+  if (toolName === 'change_plan') {
+    return <PlanChangeCard output={output as { checkoutUrl?: string }} />;
   }
   if (toolName === 'get_billing') {
     return <BillingCard output={output as BillingOutput} />;

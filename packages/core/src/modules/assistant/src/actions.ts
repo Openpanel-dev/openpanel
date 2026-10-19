@@ -8,6 +8,7 @@ import { organizationRouter } from '../../organization/organization.rpc';
 import { projectRouter } from '../../project/project.rpc';
 import { referenceRouter } from '../../reference/reference.rpc';
 import { reportRouter } from '../../report/report.rpc';
+import { subscriptionRouter } from '../../subscription/subscription.rpc';
 
 const chatActionsRouter = createTRPCRouter({
   client: clientRouter,
@@ -16,6 +17,7 @@ const chatActionsRouter = createTRPCRouter({
   project: projectRouter,
   reference: referenceRouter,
   report: reportRouter,
+  subscription: subscriptionRouter,
 });
 
 export type ChatActions = ReturnType<typeof chatActionsRouter.createCaller>;

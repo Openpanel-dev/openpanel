@@ -64,6 +64,8 @@ const TOOL_PHRASES: Record<string, { active: string; done: string }> = {
   update_project: { active: 'Updating the project', done: 'Project updated' },
   search_docs: { active: 'Reading the docs', done: 'Docs checked' },
   get_billing: { active: 'Looking up the plan', done: 'Plan looked up' },
+  list_plans: { active: 'Listing plans', done: 'Plans listed' },
+  change_plan: { active: 'Changing the plan', done: 'Plan changed' },
   diagnose_tracking: {
     active: 'Checking the tracking setup',
     done: 'Tracking checked',
@@ -99,6 +101,8 @@ export function approvalPrompt(toolName: string, input: unknown): string {
       return `Invite ${String(fields.email ?? '')} as ${String(fields.role ?? 'member')}?`;
     case 'update_project':
       return 'Update the project settings?';
+    case 'change_plan':
+      return 'Change the workspace plan?';
     default:
       return `Run ${toolName.replace(/_/g, ' ')}?`;
   }

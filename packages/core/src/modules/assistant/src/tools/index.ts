@@ -40,4 +40,5 @@ export const CHAT_TOOL_APPROVAL = {
   create_client: 'user-approval',
   invite_member: 'user-approval',
   update_project: 'user-approval',
+  change_plan: 'user-approval',
 } as const satisfies Partial<Record<keyof ChatTools, 'user-approval'>>;
