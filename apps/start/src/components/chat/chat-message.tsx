@@ -236,10 +236,14 @@ function ToolResult({
     return <ToolDone output={output} toolName={toolName} />;
   }
   if (isRowsOutput(output)) {
-    const title =
-      typeof input?.dimension === 'string'
-        ? `Top ${String(input.dimension).replace(/_/g, ' ')}`
-        : toolPhrase(toolName, 'done');
+    const dimensions = Array.isArray(input?.dimensions)
+      ? (input.dimensions as string[]).join(' and ')
+      : typeof input?.dimension === 'string'
+        ? String(input.dimension)
+        : null;
+    const title = dimensions
+      ? `Top ${dimensions.replace(/_/g, ' ')}`
+      : toolPhrase(toolName, 'done');
     return (
       <RowsTable
         rows={output.rows}

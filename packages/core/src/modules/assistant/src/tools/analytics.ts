@@ -1,5 +1,7 @@
+import { sql } from '@openpanel/db';
 import { tool } from 'ai';
 import { z } from 'zod';
+import { chQuery } from '../../../../ch-query';
 import { getFunnelCore } from '../../../chart/funnel.service';
 import {
   getRetentionCohortCore,
@@ -235,6 +237,62 @@ export function analyticsTools(ctx: ChatToolContext) {
         return output;
       },
       toModelOutput: ({ output }) => chartToModelOutput(output),
+    }),
+
+    get_traffic_attribution: tool({
+      description:
+        'Sessions, pageviews and revenue grouped by one or two traffic dimensions at once (utm_source and utm_campaign, referrer_name and country, ...). Reads the sessions table, which carries UTM parameters, referrer and revenue together, so this is the tool for "which campaign brings the most revenue". Returns a table; charts cannot express this combination.',
+      inputSchema: z.object({
+        dimensions: z
+          .array(z.enum(TRAFFIC_COLUMNS))
+          .min(1)
+          .max(2)
+          .describe('One or two session columns to group by.'),
+        ...zOptionalRange,
+        sortBy: z
+          .enum(['revenue', 'sessions', 'pageviews'])
+          .default('sessions'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_BREAKDOWN_LIMIT)
+          .default(DEFAULT_BREAKDOWN_LIMIT),
+      }),
+      execute: async ({ dimensions, startDate, endDate, sortBy, limit }) => {
+        const range = resolveRange(ctx, { startDate, endDate });
+        const groupBy = sql.join(
+          dimensions.map((dimension) => sql.id(dimension, TRAFFIC_COLUMNS)),
+          ', '
+        );
+        const rows = await chQuery<Record<string, string | number>>(
+          deps,
+          sql`SELECT ${groupBy},
+                sum(sign) AS sessions,
+                sum(screen_view_count * sign) AS pageviews,
+                sum(revenue * sign) / 100 AS revenue
+              FROM sessions
+              WHERE project_id = ${sql.string(projectId)}
+                AND created_at BETWEEN toDateTime(${sql.string(range.startDate)}) AND toDateTime(${sql.string(range.endDate)})
+              GROUP BY ${groupBy}
+              HAVING sessions > 0
+              ORDER BY ${sql.id(sortBy, ['revenue', 'sessions', 'pageviews'])} DESC
+              LIMIT ${sql.uint64(limit)}`
+        );
+        return {
+          dimensions,
+          ...range,
+          ...truncateRows(
+            rows.map((row) => ({
+              ...row,
+              sessions: Number(row.sessions),
+              pageviews: Number(row.pageviews),
+              revenue: Number(row.revenue),
+            })),
+            limit
+          ),
+        };
+      },
     }),
 
     query_events: tool({

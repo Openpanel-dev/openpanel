@@ -8,8 +8,9 @@ const numberFormat = new Intl.NumberFormat('en-US', {
 });
 
 function cell(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '';
+  // An empty dimension (no UTM, no referrer) reads better named than blank.
+  if (value === null || value === undefined || value === '') {
+    return '(none)';
   }
   if (typeof value === 'number') {
     return numberFormat.format(value);

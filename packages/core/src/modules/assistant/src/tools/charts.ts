@@ -371,10 +371,19 @@ export async function createChartOutput(
     return built;
   }
   const data = await runReportConfig(ctx, built.config);
+  const summary = summarizeChartData(data);
+  if (
+    built.config.breakdowns.length > 0 &&
+    isFinalChart(data) &&
+    data.series.length <= 1
+  ) {
+    summary.note =
+      'The breakdown produced a single group, so the event does not carry that property. UTM parameters and referrers live on screen_view and session_start events, not on purchase or revenue events; for revenue by source or campaign use get_traffic_attribution.';
+  }
   return {
     title: input.title,
     report: built.config,
-    summary: summarizeChartData(data),
+    summary,
   };
 }
 

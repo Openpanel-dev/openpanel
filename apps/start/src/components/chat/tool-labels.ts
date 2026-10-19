@@ -12,6 +12,10 @@ const TOOL_PHRASES: Record<string, { active: string; done: string }> = {
     active: 'Fetching the overview',
     done: 'Fetched the overview',
   },
+  get_traffic_attribution: {
+    active: 'Attributing traffic',
+    done: 'Attribution ready',
+  },
   get_breakdown: {
     active: 'Breaking down the traffic',
     done: 'Breakdown fetched',
