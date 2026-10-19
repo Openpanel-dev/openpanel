@@ -136,6 +136,13 @@ const member = {
       projects: [{ projectId: 'proj_other', level: null }],
       user: { email: 'other@example.com' },
     },
+    {
+      userId: 'u_this',
+      role: 'org:member',
+      projectScope: 'selected',
+      projects: [{ projectId: 'proj_1', level: null }],
+      user: { email: 'this@example.com' },
+    },
   ]),
 };
 const projectAccess = { findMany: mock(async () => []) };
@@ -432,5 +439,6 @@ test('deliverNotification emails only the members who can open the project', asy
   expect(member.findMany).toHaveBeenCalled();
   expect(sentEmails).toEqual([
     { to: 'all@example.com', template: 'notification-rule' },
+    { to: 'this@example.com', template: 'notification-rule' },
   ]);
 });
