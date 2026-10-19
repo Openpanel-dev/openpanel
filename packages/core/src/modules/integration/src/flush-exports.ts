@@ -1,7 +1,9 @@
 // Prisma, ClickHouse and the object-store adapter factory are injected so the
 // orchestration is testable without `mock.module`.
 
-import { DateTime } from '@openpanel/shared';
+import type { Redis } from '@openpanel/redis';
+import { DateTime, generateSecureId } from '@openpanel/shared';
+import { defineRedisScript } from '../../../buffers/redis-script';
 import { isProviderError } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
@@ -32,6 +34,16 @@ const DEFAULT_LAG_SECONDS = 60;
 const DEFAULT_BATCH_SIZE = 50_000;
 const DEFAULT_MAX_BATCHES_PER_RUN = 20;
 const DEFAULT_CONCURRENCY = 4;
+// Outlives a full run (DEFAULT_MAX_BATCHES_PER_RUN uploads); a run that takes
+// longer loses the claim and may overlap, which at-least-once already allows.
+const EXPORT_CLAIM_TTL_MS = 15 * 60 * 1000;
+
+const releaseClaimScript = defineRedisScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0
+`);
 
 // Sentinel cursor id for the first window of a (project, integration). The
 // events `id` column is a UUID, so the tie-breaker must compare as UUID — an
@@ -89,7 +101,7 @@ export interface ExportDb {
   exportWatermark: {
     findUnique(args: unknown): Promise<ExportWatermarkRow | null>;
     create(args: unknown): Promise<unknown>;
-    update(args: unknown): Promise<unknown>;
+    updateMany(args: unknown): Promise<{ count: number }>;
   };
 }
 
@@ -101,6 +113,41 @@ export interface FlushExportsDeps {
   config: CoreConfig;
   /** Resolves the object-store adapter for an export config, or undefined. */
   createAdapter(config: ExportConfig): IObjectStoreAdapter | undefined;
+  /**
+   * Claims one (project, integration) for this run; null while another run
+   * holds it. Two overlapping runs would read the same watermark and upload the
+   * same window twice.
+   */
+  claimExport(
+    projectId: string,
+    integrationId: string
+  ): Promise<ReleaseClaim | null>;
+}
+
+export type ReleaseClaim = () => Promise<void>;
+
+/** `claimExport` backed by a Redis key per (project, integration). */
+export function createRedisExportClaim(
+  redis: Redis
+): FlushExportsDeps['claimExport'] {
+  return async (projectId, integrationId) => {
+    const key = `lock:flush-exports:${projectId}:${integrationId}`;
+    const token = generateSecureId('lock');
+    const claimed = await redis.set(
+      key,
+      token,
+      'PX',
+      EXPORT_CLAIM_TTL_MS,
+      'NX'
+    );
+    if (claimed !== 'OK') {
+      return null;
+    }
+    // Token-checked, so a run that outlived its claim never frees another's.
+    return async () => {
+      await releaseClaimScript(redis, [key], [token]);
+    };
+  };
 }
 
 function isExportConfig(config: IIntegrationConfig): config is ExportConfig {
@@ -200,6 +247,27 @@ export async function runFlushExportsCron(
 }
 
 async function processExport(
+  projectId: string,
+  integrationId: string,
+  config: ExportConfig,
+  deps: FlushExportsDeps
+): Promise<void> {
+  const release = await deps.claimExport(projectId, integrationId);
+  if (!release) {
+    deps.logger.debug(
+      { projectId, integrationId },
+      'Export already running in another cron run'
+    );
+    return;
+  }
+  try {
+    await exportWindows(projectId, integrationId, config, deps);
+  } finally {
+    await release();
+  }
+}
+
+async function exportWindows(
   projectId: string,
   integrationId: string,
   config: ExportConfig,
@@ -351,12 +419,16 @@ async function saveCursor(
   cursor: Cursor,
   deps: FlushExportsDeps
 ): Promise<void> {
-  await deps.db.exportWatermark.update({
-    where: { projectId_integrationId: { projectId, integrationId } },
-    data: {
-      lastInsertedAt: convertClickhouseDateToJs(cursor.insertedAt),
-      lastEventId: cursor.eventId,
+  const lastInsertedAt = convertClickhouseDateToJs(cursor.insertedAt);
+  // Forward only: a run that outlived its claim must not rewind a watermark
+  // that a later run has already moved past.
+  await deps.db.exportWatermark.updateMany({
+    where: {
+      projectId,
+      integrationId,
+      lastInsertedAt: { lte: lastInsertedAt },
     },
+    data: { lastInsertedAt, lastEventId: cursor.eventId },
   });
 }
 

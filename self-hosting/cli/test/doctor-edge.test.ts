@@ -230,3 +230,14 @@ describe('worker replicas', () => {
     expect(replicas).toBe(`${DOLLAR}{OP_WORKER_REPLICAS:-1}`);
   });
 });
+
+test('flags DATABASE_URL_REPLICA, which v3 no longer reads', () => {
+  const install = loadInstall(V1_FIXTURE);
+  install.env.set('DATABASE_URL_REPLICA', 'postgresql://replica:5432/postgres');
+
+  const finding = runDoctor(install).find(
+    (candidate) => candidate.id === 'env/removed-vars'
+  );
+
+  expect(finding?.title).toContain('DATABASE_URL_REPLICA');
+});

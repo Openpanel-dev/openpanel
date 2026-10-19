@@ -55,7 +55,7 @@ const PINNED_DEFAULTS = {
 
 const PINNED_CONCURRENCY = {
   sessions: 1,
-  cron: 1,
+  cron: 4,
   notification: 1,
   import: 1,
   insights: 5,

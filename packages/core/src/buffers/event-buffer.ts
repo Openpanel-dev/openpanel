@@ -385,6 +385,11 @@ export class EventBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
+    await this.drainBatches(this.batchSize, () => this.processBatch());
+  }
+
+  /** Inserts and trims one batch from the head of the queue; returns its size. */
+  private async processBatch(): Promise<number> {
     const redis = getRedisCache();
 
     const lrangeStart = performance.now();
@@ -397,7 +402,7 @@ export class EventBuffer extends BaseBuffer {
 
     if (queueEvents.length === 0) {
       this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
-      return;
+      return 0;
     }
 
     // The queued lines are already JSONEachRow, and the client's custom
@@ -444,6 +449,7 @@ export class EventBuffer extends BaseBuffer {
       rowsProcessed: queueEvents.length,
       phases: { lrangeMs, chInsertMs, trimMs },
     });
+    return queueEvents.length;
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {

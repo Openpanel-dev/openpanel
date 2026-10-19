@@ -46,19 +46,6 @@ Direct PostgreSQL connection string (bypasses connection pooling). Used for migr
 DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=public
 ```
 
-### DATABASE_URL_REPLICA
-
-**Type**: `string`
-**Required**: No
-**Default**: Same as `DATABASE_URL`
-
-Read replica connection string for read-heavy operations. If not set, uses the main database.
-
-**Example**:
-```bash
-DATABASE_URL_REPLICA=postgres://user:password@replica-host:5432/openpanel?schema=public
-```
-
 ### REDIS_URL
 
 **Type**: `string`
@@ -725,19 +712,6 @@ SELF_HOSTED=true
 
 ## Worker & Queue
 
-### WORKER_PORT
-
-**Type**: `number`
-**Required**: No
-**Default**: `3000`
-
-Port for the worker service to listen on.
-
-**Example**:
-```bash
-WORKER_PORT=3000
-```
-
 ### DISABLE_BULLBOARD
 
 **Type**: `boolean`
@@ -795,17 +769,17 @@ ENABLED_QUEUES=events,sessions,cron
 `events` is the Kafka-based events consumer — there is only one events transport now, so there is no separate `events_kafka` queue name. If you're upgrading from a version that used `ENABLED_QUEUES=events_kafka`, rename it to `ENABLED_QUEUES=events`; the old name is now rejected at boot. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events` and another pool with everything else.
 </Callout>
 
-### EVENT_JOB_CONCURRENCY
+### CRON_CONCURRENCY
 
 **Type**: `number`
 **Required**: No
-**Default**: `10`
+**Default**: `4`
 
-Number of concurrent event processing jobs per worker.
+Number of scheduled jobs a worker runs at the same time: buffer flushes, the session reaper and the other cron jobs. Each buffer flush holds its own lock, so raising this lets different buffers flush in parallel without two workers flushing the same one. Raise it if one buffer's backlog keeps growing while the others drain.
 
 **Example**:
 ```bash
-EVENT_JOB_CONCURRENCY=20
+CRON_CONCURRENCY=6
 ```
 
 ### GSC_CONCURRENCY
@@ -821,32 +795,6 @@ Number of [Google Search Console](/docs/self-hosting/google-search-console) sync
 GSC_CONCURRENCY=2
 ```
 
-### EVENT_BLOCKING_TIMEOUT_SEC
-
-**Type**: `number`
-**Required**: No
-**Default**: `1`
-
-Blocking timeout in seconds for event queue workers.
-
-**Example**:
-```bash
-EVENT_BLOCKING_TIMEOUT_SEC=2
-```
-
-### EVENTS_GROUP_QUEUES_SHARDS
-
-**Type**: `number`
-**Required**: No
-**Default**: `1`
-
-Number of shards for the events group queue. Increase for better performance with high event volume.
-
-**Example**:
-```bash
-EVENTS_GROUP_QUEUES_SHARDS=4
-```
-
 ### QUEUE_CLUSTER
 
 **Type**: `boolean`
@@ -855,61 +803,12 @@ EVENTS_GROUP_QUEUES_SHARDS=4
 
 Enable Redis cluster mode for queues. When enabled, queue names are wrapped with `{}` for Redis cluster sharding.
 
+Set it before the first start. Turning it on later renames every queue key, and jobs already queued under the old names are never processed.
+
 **Example**:
 ```bash
 QUEUE_CLUSTER=true
 ```
-
-### ORDERING_DELAY_MS
-
-**Type**: `number`
-**Required**: No
-**Default**: `100`
-
-Delay in milliseconds to hold events for correct ordering when events arrive out of order.
-
-**Example**:
-```bash
-ORDERING_DELAY_MS=200
-```
-
-<Callout type="warn">
-Should not exceed 500ms. Higher values may cause delays in event processing.
-</Callout>
-
-### AUTO_BATCH_MAX_WAIT_MS
-
-**Type**: `number`
-**Required**: No
-**Default**: `0` (disabled)
-
-Maximum wait time in milliseconds for auto-batching events. Experimental feature.
-
-**Example**:
-```bash
-AUTO_BATCH_MAX_WAIT_MS=100
-```
-
-<Callout type="warn">
-⚠️ **Experimental**: This feature is experimental and not used in production. Do not use unless you have a good understanding of the implications and specific performance requirements.
-</Callout>
-
-### AUTO_BATCH_SIZE
-
-**Type**: `number`
-**Required**: No
-**Default**: `0` (disabled)
-
-Batch size for auto-batching events. Experimental feature.
-
-**Example**:
-```bash
-AUTO_BATCH_SIZE=100
-```
-
-<Callout type="warn">
-⚠️ **Experimental**: This feature is experimental and not used in production. Do not use unless you have a good understanding of the implications and specific performance requirements.
-</Callout>
 
 ## Event Streaming (Kafka)
 
@@ -1068,6 +967,8 @@ Set this once, before the first `openpanel up`. The Kafka/Redpanda partitioner i
 
 Kafka consumer group ID used by the worker. All worker replicas with the same group ID share partition assignments cooperatively.
 
+Changing it on an existing install starts a new group, which reads the events topic from the oldest message it still retains (48 hours on the bundled Redpanda). Expect duplicate events for that window.
+
 **Example**:
 ```bash
 KAFKA_CONSUMER_GROUP=openpanel-events
@@ -1183,26 +1084,26 @@ KAFKA_REBALANCE_TIMEOUT_MS=60000
 
 **Type**: `number`
 **Required**: No
-**Default**: Buffer-specific default
+**Default**: `10000`
 
-Batch size for session buffer operations.
+Session rows read from Redis per batch. Rows for the same session are squashed within a batch, so larger batches insert fewer rows.
 
 **Example**:
 ```bash
-SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_BATCH_SIZE=20000
 ```
 
 ### SESSION_BUFFER_CHUNK_SIZE
 
 **Type**: `number`
 **Required**: No
-**Default**: Buffer-specific default
+**Default**: Same as `SESSION_BUFFER_BATCH_SIZE`
 
-Chunk size for session buffer operations.
+Session rows per ClickHouse insert. By default each batch is one insert. A smaller value splits the batch into chunks inserted in parallel, but if one chunk fails the whole batch is retried and the chunks that already landed are written twice, which corrupts those sessions. Leave it unset unless a single insert is too large for your ClickHouse.
 
 **Example**:
 ```bash
-SESSION_BUFFER_CHUNK_SIZE=1000
+SESSION_BUFFER_CHUNK_SIZE=10000
 ```
 
 ### EVENT_BUFFER_BATCH_SIZE
@@ -1268,6 +1169,19 @@ Time-to-live in seconds for profile buffer entries.
 **Example**:
 ```bash
 PROFILE_BUFFER_TTL_IN_SECONDS=3600
+```
+
+### BUFFER_CH_INSERT_CONCURRENCY
+
+**Type**: `number`
+**Required**: No
+**Default**: `5`
+
+How many ClickHouse inserts one buffer flush runs in parallel when it splits a batch into several chunks (`*_BUFFER_CHUNK_SIZE` rows each).
+
+**Example**:
+```bash
+BUFFER_CH_INSERT_CONCURRENCY=8
 ```
 
 ### BOT_BUFFER_BATCH_SIZE
@@ -1382,17 +1296,17 @@ IP_HEADER_ORDER=cf-connecting-ip,x-real-ip,x-forwarded-for
 The default order includes: `openpanel-client-ip`, `cf-connecting-ip`, `true-client-ip`, `x-client-ip`, `x-forwarded-for`, `x-real-ip`, and others. See the [source code](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts) for the complete default list.
 </Callout>
 
-### SHUTDOWN_GRACE_PERIOD_MS
+### SHUTDOWN_FORCE_EXIT_MS
 
 **Type**: `number`
 **Required**: No
-**Default**: `5000`
+**Default**: `20000`
 
-Grace period in milliseconds for graceful shutdown of services.
+How long, in milliseconds, a graceful shutdown may take before the process exits anyway with code 1. A shutdown stops consuming, writes buffered events to Redis and lets running scheduled jobs finish. Keep it below your orchestrator's kill timeout so the process can exit on its own.
 
 **Example**:
 ```bash
-SHUTDOWN_GRACE_PERIOD_MS=10000
+SHUTDOWN_FORCE_EXIT_MS=30000
 ```
 
 ### API_PORT
@@ -1401,7 +1315,7 @@ SHUTDOWN_GRACE_PERIOD_MS=10000
 **Required**: No
 **Default**: `3000`
 
-Port for the API service to listen on.
+Port for the API service to listen on. Workers listen on the same port for their health checks and `/metrics`.
 
 **Example**:
 ```bash

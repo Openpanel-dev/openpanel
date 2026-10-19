@@ -461,9 +461,13 @@ export async function startKafkaEventsConsumer(
     topic: deps.topic,
   });
   await consumer.connect();
+  // Only decides where a partition WITHOUT a committed offset starts: a new
+  // install, a new partition or a renamed group. From the newest message it
+  // would skip everything produced before this consumer first joined; from the
+  // oldest it can at worst re-read the topic's retention as duplicates.
   await consumer.subscribe({
     topic: deps.topic,
-    fromBeginning: false,
+    fromBeginning: true,
   });
 
   consumer.on(consumer.events.HEARTBEAT, deps.batch.onActivity);
