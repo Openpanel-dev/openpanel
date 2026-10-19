@@ -1,8 +1,8 @@
 /**
  * Which side(s) of a series should fade to transparent at the chart edges.
- * - `true`  → fade both edges (default for `<Line>`)
+ * - `true`  → fade both edges
  * - `false` → no fade (default for `<Area>`)
- * - `"left"` / `"right"` → fade only that side
+ * - `"left"` / `"right"` → fade only that side (`"left"` is the default for `<Line>`)
  */
 export type FadeEdges = boolean | 'left' | 'right';
 

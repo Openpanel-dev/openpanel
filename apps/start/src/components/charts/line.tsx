@@ -58,7 +58,7 @@ export interface LineProps {
    * Fade the line stroke toward transparent at the chart edges.
    * - `true` fades both edges, `false` disables the fade entirely.
    * - `"left"` / `"right"` fades only that side.
-   * Default: true
+   * Default: `"left"` — the right edge is usually "now" and must stay legible.
    */
   fadeEdges?: FadeEdges;
   /** Whether to show highlight segment on hover. Default: true */
@@ -213,7 +213,7 @@ export function Line({
   strokeWidth = 2.5,
   curve = curveNatural,
   animate = true,
-  fadeEdges = true,
+  fadeEdges = 'left',
   showHighlight = true,
   showMarkers = false,
   markers,
