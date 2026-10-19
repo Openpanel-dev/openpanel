@@ -155,23 +155,16 @@ PROFILE_BUFFER_CHUNK_SIZE=1000
 
 ## Scaling ingestion
 
-If the event queue is growing faster than workers can drain it, you have a few options.
+Events take two hops before they reach ClickHouse. The API writes each event to Kafka (the bundled Redpanda service). Workers consume it, update the visitor's session and profile, and append rows to Redis buffers. Scheduled flush jobs then move those buffers into ClickHouse in batches.
 
-Start vertical before going horizontal. Each worker replica adds overhead: more Redis connections, more ClickHouse connections, more memory. Increasing concurrency on an existing replica is almost always cheaper and more effective than adding another one.
+The two hops scale differently, so check which one is behind before changing anything:
 
-### Increase job concurrency (do this first)
+- **Kafka consumer lag is growing:** workers are not consuming fast enough. Add worker replicas.
+- **Lag is flat but the Redis buffers keep growing:** consuming keeps up and flushing does not. Let more flushes run at once, raise the batch sizes above, or give ClickHouse more resources.
 
-Each worker processes multiple jobs in parallel. The default is `10` per replica.
+### Add worker replicas
 
-```bash
-EVENT_JOB_CONCURRENCY=20
-```
-
-Raise this in steps and watch your queue depth. The limit is memory, not logic — values of `500`, `1000`, or even `2000+` are possible on hardware with enough RAM. Each concurrent job holds event data in memory, so monitor usage as you increase the value. Only add more replicas once concurrency alone stops helping.
-
-### Add more worker replicas
-
-If you have maxed out concurrency and the queue is still falling behind, add more replicas.
+Each partition of the events topic is consumed by one worker at a time. Adding replicas spreads the partitions across more workers, up to the partition count (24 by default). Replicas beyond that get no partitions to consume, though they still run flush and other scheduled jobs. Within one worker, `KAFKA_PARTITIONS_CONCURRENT` (default `8`) sets how many of its partitions it processes at the same time.
 
 In `docker-compose.yml`:
 
@@ -187,34 +180,29 @@ Or at runtime:
 docker compose up -d --scale op-worker=8
 ```
 
-### Shard the events queue
+The partition count is fixed when the topic is created. Raising it later means draining and recreating the topic, so pick it at install time. See [`KAFKA_EVENTS_TOPIC_PARTITIONS`](/docs/self-hosting/environment-variables#kafka_events_topic_partitions).
 
-<Callout type="warn">
-**Experimental.** Queue sharding requires either a Redis Cluster or Dragonfly. Dragonfly has seen minimal testing and Redis Cluster has not been tested at all. Do not use this in production without validating it in your environment first.
-</Callout>
+### Let buffers flush in parallel
 
-Redis is single-threaded, so a single queue instance can become the bottleneck at very high event rates. Queue sharding works around this by splitting the queue across multiple independent shards. Each shard can be backed by its own Redis instance, so the throughput scales with the number of instances rather than being capped by one core.
+Each buffer (events, sessions, profiles and a few smaller ones) is flushed by one worker at a time, so two workers never write the same rows. A flush keeps reading batches for up to 8 seconds, then hands over to the next scheduled run.
 
-Events are distributed across shards by project ID, so ordering within a project is preserved.
+Different buffers flush at the same time. `CRON_CONCURRENCY` (default `4`) sets how many scheduled jobs one worker runs at once, and every worker replica adds that many slots. If one buffer's backlog keeps growing while the others drain, raise it. Inside a single flush, `BUFFER_CH_INSERT_CONCURRENCY` (default `5`) sets how many ClickHouse inserts run in parallel.
 
 ```bash
-EVENTS_GROUP_QUEUES_SHARDS=4
-QUEUE_CLUSTER=true
+CRON_CONCURRENCY=6
 ```
 
-<Callout type="warn">
-Set `EVENTS_GROUP_QUEUES_SHARDS` before you have live traffic on the queue. Changing it while jobs are pending will cause those jobs to be looked up on the wrong shard and they will not be processed until the shard count is restored.
-</Callout>
+If you split workers into pools with [`ENABLED_QUEUES`](/docs/self-hosting/environment-variables#enabled_queues), the flushing happens in the pool that runs the `cron` queue.
 
-### Tune the ordering delay
+### Leave room for ClickHouse
 
-Events arriving out of order are held briefly before processing. The default is `100ms`.
+Every flush ends in a ClickHouse insert. When workers and ClickHouse share a machine, more worker replicas can make ingestion slower rather than faster, because they compete with ClickHouse for CPU. If insert times climb as you add workers, give ClickHouse its own resources before adding more.
 
-```bash
-ORDERING_DELAY_MS=100
-```
+### What to watch
 
-Lowering this reduces latency but increases the chance of out-of-order writes to ClickHouse. The value should not exceed `500ms`.
+- **Kafka consumer lag** for the `KAFKA_CONSUMER_GROUP` group (`openpanel-events` by default): `docker compose exec op-rp rpk group describe openpanel-events`.
+- **Buffer backlog:** `buffer_flush_llen_at_start` on a worker's `/metrics` endpoint, or the length of the `event_buffer:queue` and `session-buffer` lists in Redis.
+- **Insert latency:** `buffer_ch_insert_duration_ms` on the same endpoint. If it rises with load, ClickHouse is the limit.
 
 ---
 
@@ -238,9 +226,8 @@ SESSION_BUFFER_CHUNK_SIZE=2000
 # Profile buffer
 PROFILE_BUFFER_BATCH_SIZE=500
 
-# Queue
-EVENTS_GROUP_QUEUES_SHARDS=4
-EVENT_JOB_CONCURRENCY=20
+# Flushing
+CRON_CONCURRENCY=6
 ```
 
 Then start with more workers:
@@ -249,4 +236,4 @@ Then start with more workers:
 docker compose up -d --scale op-worker=8
 ```
 
-Monitor the Redis queue depth and ClickHouse insert latency as you tune. The right values depend on your hardware, event shape, and traffic pattern.
+Watch Kafka consumer lag, the Redis buffer backlog and ClickHouse insert latency as you tune. The right values depend on your hardware, event shape, and traffic pattern.
