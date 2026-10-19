@@ -6,6 +6,7 @@
 import { sendEmail } from '../../clients/email';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
+import { listProjectMemberEmails } from '../../shared/access-lookups';
 import { createEngine, type EngineConfig } from './src/engine';
 import {
   ENRICH_VERSION,
@@ -473,22 +474,10 @@ async function buildDigestData(
   };
 }
 
-async function recipientsForOrg(
-  deps: ServiceDeps,
-  organizationId: string
-): Promise<string[]> {
-  const db = deps.db;
-  const members = await db.member.findMany({
-    where: { organizationId },
-    select: { email: true },
-  });
-  return [...new Set(members.map((m) => m.email).filter(Boolean))];
-}
-
 /**
  * Per active project: week-over-week stats + the AI's email-worthy insights +
- * a generated narrative, mailed to org members. The `weeklyDigest` cron job
- * body.
+ * a generated narrative, mailed to the members who can open the project.
+ * The `weeklyDigest` cron job body.
  */
 export async function sendWeeklyDigests(
   deps: ServiceDeps,
@@ -524,7 +513,10 @@ export async function sendWeeklyDigests(
       if (skipped || !data) {
         continue;
       }
-      const emails = await recipientsForOrg(deps, project.organizationId);
+      const emails = await listProjectMemberEmails(db, {
+        organizationId: project.organizationId,
+        projectId: project.id,
+      });
       if (emails.length === 0) {
         continue;
       }

@@ -114,8 +114,46 @@ const integration = {
 };
 
 const project = {
-  findUniqueOrThrow: mock(async () => ({ organizationId: 'org_1' })),
+  findUniqueOrThrow: mock(async () => ({
+    name: 'Project',
+    organizationId: 'org_1',
+  })),
 };
+
+const member = {
+  findMany: mock(async () => [
+    {
+      userId: 'u_all',
+      role: 'org:member',
+      projectScope: 'all',
+      projects: [],
+      user: { email: 'all@example.com' },
+    },
+    {
+      userId: 'u_other',
+      role: 'org:member',
+      projectScope: 'selected',
+      projects: [{ projectId: 'proj_other', level: null }],
+      user: { email: 'other@example.com' },
+    },
+    {
+      userId: 'u_this',
+      role: 'org:member',
+      projectScope: 'selected',
+      projects: [{ projectId: 'proj_1', level: null }],
+      user: { email: 'this@example.com' },
+    },
+  ]),
+};
+const projectAccess = { findMany: mock(async () => []) };
+
+const sentEmails: { to: string; template: string }[] = [];
+mock.module('../../clients/email', () => ({
+  sendEmail: (template: string, options: { to: string }) => {
+    sentEmails.push({ to: options.to, template });
+    return Promise.resolve();
+  },
+}));
 
 // Every function under test takes `ServiceDeps`, so `deps.db` IS the fake
 // below. The `@openpanel/db/src/prisma-client` mock stays for `Prisma.JsonNull`
@@ -123,11 +161,12 @@ const project = {
 const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
   ...actualPrismaClient,
-  db: { notificationRule, integration, project },
+  db: { notificationRule, integration, project, member, projectAccess },
 }));
 
 const deps = {
-  db: { notificationRule, integration, project },
+  db: { notificationRule, integration, project, member, projectAccess },
+  config: {},
 } as unknown as import('../../services').ServiceDeps;
 
 let subject: typeof import('./notification.service');
@@ -138,6 +177,7 @@ beforeAll(async () => {
 beforeEach(() => {
   ruleStore.clear();
   integrationStore.clear();
+  sentEmails.length = 0;
   publishedEvents.length = 0;
   notificationRule.create.mockClear();
   notificationRule.update.mockClear();
@@ -384,5 +424,21 @@ test('deliverNotification publishes the app pseudo-integration instead of enqueu
         sendToApp: true,
       },
     },
+  ]);
+});
+
+test('deliverNotification emails only the members who can open the project', async () => {
+  await subject.deliverNotification(deps, {
+    projectId: 'proj_1',
+    title: 'Hello',
+    message: 'World',
+    sendToApp: false,
+    sendToEmail: true,
+  } as never);
+
+  expect(member.findMany).toHaveBeenCalled();
+  expect(sentEmails).toEqual([
+    { to: 'all@example.com', template: 'notification-rule' },
+    { to: 'this@example.com', template: 'notification-rule' },
   ]);
 });

@@ -8,6 +8,7 @@ import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { listProjectMemberEmails } from '../../shared/access-lookups';
 import type {
   IServiceCreateEventPayload,
   IServiceEvent,
@@ -260,18 +261,10 @@ export async function deliverNotification(
       where: { id: notification.projectId },
       select: { name: true, organizationId: true },
     });
-    const members = await db.member.findMany({
-      where: {
-        organizationId: project.organizationId,
-        user: { deletedAt: null },
-      },
-      include: { user: { select: { email: true } } },
+    const emails = await listProjectMemberEmails(db, {
+      organizationId: project.organizationId,
+      projectId: notification.projectId,
     });
-    const emails = new Set(
-      members.flatMap((member) =>
-        member.user?.email ? [member.user.email] : []
-      )
-    );
     for (const to of emails) {
       await sendEmail('notification-rule', {
         to,

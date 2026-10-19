@@ -135,6 +135,67 @@ export async function getMemberProjectGrants(
 }
 
 /**
+ * Emails of the members who can open one project, by the same rule as
+ * `getProjectAccess`. Per-project mail (weekly digests, notification rules)
+ * goes through this: mailing every member of the organization sends a
+ * `selected`-scope member reports for projects they cannot see.
+ */
+export async function listProjectMemberEmails(
+  db: Db,
+  { organizationId, projectId }: { organizationId: string; projectId: string }
+): Promise<string[]> {
+  const [members, legacyGrants] = await Promise.all([
+    db.member.findMany({
+      where: { organizationId, user: { deletedAt: null } },
+      select: {
+        userId: true,
+        role: true,
+        projectScope: true,
+        projects: { select: { projectId: true, level: true } },
+        user: { select: { email: true } },
+      },
+    }),
+    db.projectAccess.findMany({
+      where: { organizationId },
+      select: { userId: true, projectId: true, level: true },
+    }),
+  ]);
+
+  const legacyByUser = new Map<
+    string,
+    { projectId: string; level: AccessLevel }[]
+  >();
+  for (const grant of legacyGrants) {
+    const grants = legacyByUser.get(grant.userId) ?? [];
+    grants.push(grant);
+    legacyByUser.set(grant.userId, grants);
+  }
+
+  const emails = new Set<string>();
+  for (const member of members) {
+    const email = member.user?.email;
+    if (!email) {
+      continue;
+    }
+    const grants = effectiveProjectGrants({
+      ...member,
+      legacyGrants: member.userId
+        ? (legacyByUser.get(member.userId) ?? [])
+        : [],
+    });
+    const access = resolveProjectAccess({
+      role: member.role,
+      projectScope: grants.projectScope,
+      grant: grants.projects.find((row) => row.projectId === projectId) ?? null,
+    });
+    if (access) {
+      emails.add(email);
+    }
+  }
+  return [...emails];
+}
+
+/**
  * Resolve a user's access to one project.
  *
  * Returns a single shape, `{ level }` or `null`, on purpose: returning `true`
