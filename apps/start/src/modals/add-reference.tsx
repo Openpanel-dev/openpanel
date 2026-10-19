@@ -16,17 +16,23 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 type IForm = z.infer<typeof zCreateReference>;
 
 interface AddReferenceProps {
+  title?: string;
+  description?: string;
   datetime?: string;
 }
 
-export default function AddReference({ datetime }: AddReferenceProps = {}) {
+export default function AddReference({
+  title,
+  description,
+  datetime,
+}: AddReferenceProps = {}) {
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(zCreateReference),
     defaultValues: {
-      title: '',
-      description: '',
+      title: title ?? '',
+      description: description ?? '',
       projectId,
       datetime: datetime || new Date().toISOString(),
     },

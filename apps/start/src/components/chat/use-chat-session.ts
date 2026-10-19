@@ -5,6 +5,7 @@ import type {
   OpenDialogInput,
 } from '@openpanel/core/modules/assistant/assistant.constants';
 import { CHAT_ROUTES } from '@openpanel/core/modules/assistant/assistant.constants';
+import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DefaultChatTransport,
@@ -18,16 +19,55 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
-const DIALOG_MODALS = {
-  addClient: 'AddClient',
-  addDashboard: 'AddDashboard',
-  addReference: 'AddReference',
-  addNotificationRule: 'AddNotificationRule',
-  addIntegration: 'AddIntegration',
-  addProject: 'AddProject',
-  inviteMember: 'CreateInvite',
-  addCohort: 'AddCohort',
-} as const satisfies Record<OpenDialogInput['dialog'], string>;
+const CLIENT_TYPES = ['read', 'write', 'root'] as const;
+const DEFAULT_INTEGRATION_TYPE = 'webhook';
+
+function clientType(value: string | undefined) {
+  return CLIENT_TYPES.find((type) => type === value);
+}
+
+/** Each dialog takes only the fields it has; anything else in the prefill is dropped. */
+function openDialog(input: OpenDialogInput): void {
+  const prefill = input.prefill ?? {};
+  switch (input.dialog) {
+    case 'addClient':
+      pushModal('AddClient', {
+        name: prefill.name,
+        type: clientType(prefill.type),
+      });
+      return;
+    case 'addDashboard':
+      pushModal('AddDashboard', { name: prefill.name });
+      return;
+    case 'addReference':
+      pushModal('AddReference', {
+        title: prefill.title,
+        description: prefill.description,
+        datetime: prefill.datetime ?? prefill.date,
+      });
+      return;
+    case 'addNotificationRule':
+      pushModal('AddNotificationRule', { rule: undefined });
+      return;
+    case 'addIntegration':
+      pushModal('AddIntegration', {
+        type: (prefill.type ??
+          DEFAULT_INTEGRATION_TYPE) as IIntegrationConfig['type'],
+      });
+      return;
+    case 'addProject':
+      pushModal('AddProject');
+      return;
+    case 'inviteMember':
+      pushModal('CreateInvite');
+      return;
+    case 'addCohort':
+      pushModal('AddCohort');
+      return;
+    default:
+      return;
+  }
+}
 
 function fillRoute(
   input: NavigateInput,
@@ -114,12 +154,7 @@ export function useChatSession(options: ChatSessionOptions) {
       }
       if (toolCall.toolName === 'open_dialog') {
         const input = toolCall.input as OpenDialogInput;
-        const modal = DIALOG_MODALS[input.dialog];
-        // Dialog props vary per modal; the prefill is best effort.
-        (pushModal as unknown as (name: string, props?: unknown) => void)(
-          modal,
-          input.prefill
-        );
+        openDialog(input);
         chat.addToolOutput({
           tool: 'open_dialog',
           toolCallId: toolCall.toolCallId,

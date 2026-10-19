@@ -406,16 +406,16 @@ export const CHAT_DIALOGS = {
   addClient: {
     label: 'Create API client',
     description:
-      'Mint a client id and secret for an SDK or server. Fields: name, type (write | read | root).',
+      'Mint a client id and secret. Prefill: name, type (`write` for SDKs and websites, `read` for MCP and exports, `root` for the management API). The MCP token is only shown for read and root clients, so use `read` when the user wants MCP.',
   },
   addDashboard: {
     label: 'Create dashboard',
-    description: 'A new empty dashboard. Fields: name.',
+    description: 'A new empty dashboard. Prefill: name.',
   },
   addReference: {
     label: 'Add reference',
     description:
-      'Annotate a date on every chart (launch, campaign, deploy). Fields: title, description, datetime.',
+      'Annotate a date on every chart (launch, campaign, deploy). Prefill: title, description, datetime (ISO).',
   },
   addNotificationRule: {
     label: 'Create notification rule',
@@ -423,11 +423,12 @@ export const CHAT_DIALOGS = {
   },
   addIntegration: {
     label: 'Add integration',
-    description: 'Slack, Discord, webhook or export integrations. No prefill.',
+    description:
+      'Install an integration. Prefill: type (`slack`, `discord`, `webhook`, or another integration type).',
   },
   addProject: {
     label: 'Create project',
-    description: 'A new project in the workspace. Fields: name.',
+    description: 'A new project in the workspace. No prefill.',
   },
   inviteMember: {
     label: 'Invite member',

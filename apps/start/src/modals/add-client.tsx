@@ -24,13 +24,18 @@ const validation = z.object({
 
 type IForm = z.infer<typeof validation>;
 
-export default function AddClient() {
+export interface AddClientProps {
+  name?: string;
+  type?: IForm['type'];
+}
+
+export default function AddClient({ name, type }: AddClientProps = {}) {
   const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
     defaultValues: {
-      name: '',
-      type: 'write',
+      name: name ?? '',
+      type: type ?? 'write',
     },
   });
   const queryClient = useQueryClient();
