@@ -12,6 +12,7 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt({ ...base, selfHosted: false });
     expect(prompt).toContain('OpenPanel Cloud');
     expect(prompt).toContain('never suggest');
+    expect(prompt).toContain('mailto:hello@openpanel.dev');
     expect(prompt).not.toContain('self-hosted OpenPanel install');
   });
 
