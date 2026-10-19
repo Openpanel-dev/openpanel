@@ -102,9 +102,17 @@ function autoInterval(
   return 'month';
 }
 
-function eventSeries(name: string, segment: Segment, displayName = name) {
+/** Series ids are letters so two series on the same event stay distinct. */
+const SERIES_IDS = 'ABCDEFGHIJ'.split('');
+
+function eventSeries(
+  id: string,
+  name: string,
+  segment: Segment,
+  displayName = name
+) {
   return {
-    id: name,
+    id,
     type: 'event' as const,
     name,
     displayName,
@@ -150,8 +158,8 @@ export function analyticsTools(ctx: ChatToolContext) {
           breakdowns: [],
           lineType: 'monotone',
           series: [
-            eventSeries('screen_view', 'user', 'Unique visitors'),
-            eventSeries('screen_view', 'session', 'Sessions'),
+            eventSeries('A', 'screen_view', 'user', 'Unique visitors'),
+            eventSeries('B', 'screen_view', 'session', 'Sessions'),
           ],
         };
         const output: ChartToolOutput = {
@@ -209,8 +217,8 @@ export function analyticsTools(ctx: ChatToolContext) {
           breakdowns: [{ id: '1', name: dimension }],
           series: [
             dimension === 'path'
-              ? eventSeries('screen_view', 'event', 'Pageviews')
-              : eventSeries('screen_view', 'session', 'Sessions'),
+              ? eventSeries('A', 'screen_view', 'event', 'Pageviews')
+              : eventSeries('A', 'screen_view', 'session', 'Sessions'),
           ],
         };
         const output: ChartToolOutput = {
@@ -332,7 +340,7 @@ export function analyticsTools(ctx: ChatToolContext) {
           previous: false,
           breakdowns: [],
           lineType: 'monotone',
-          series: [eventSeries('screen_view', 'user', 'Active users')],
+          series: [eventSeries('A', 'screen_view', 'user', 'Active users')],
         };
         const [data, current] = await Promise.all([
           runReportConfig(ctx, report),
@@ -397,7 +405,9 @@ export function analyticsTools(ctx: ChatToolContext) {
             funnelGroup: groupBy,
             funnelWindow: windowHours * 3600,
           },
-          series: steps.map((name) => eventSeries(name, 'event')),
+          series: steps.map((name, index) =>
+            eventSeries(SERIES_IDS[index] ?? String(index), name, 'event')
+          ),
         };
         const numbers = await getFunnelCore(deps, {
           projectId,
@@ -434,7 +444,7 @@ export function analyticsTools(ctx: ChatToolContext) {
           metric: 'sum',
           previous: false,
           breakdowns: [],
-          series: [eventSeries('screen_view', 'user', 'Active users')],
+          series: [eventSeries('A', 'screen_view', 'user', 'Active users')],
         };
         const output: ChartToolOutput = {
           title: report.name,
@@ -477,9 +487,9 @@ export function analyticsTools(ctx: ChatToolContext) {
           startDate: range.startDate,
           endDate: range.endDate,
         });
-        const series = [eventSeries(startEvent, 'event')];
+        const series = [eventSeries('A', startEvent, 'event')];
         if (endEvent) {
-          series.push(eventSeries(endEvent, 'event'));
+          series.push(eventSeries('B', endEvent, 'event'));
         }
         const report: IReportInput & { name: string } = {
           projectId,
