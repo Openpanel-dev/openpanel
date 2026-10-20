@@ -142,6 +142,12 @@ export class BaseBuffer {
    * list insert the same batch twice and then trim a batch nobody inserted.
    */
   private lockLost = false;
+  /**
+   * One flush per buffer per process. The Redis lock keeps workers apart; this
+   * keeps the cron's concurrent runs apart, so `lockLost` always describes the
+   * one flush this instance is running.
+   */
+  private flushInFlight = false;
   onFlush: () => Promise<void> | void;
   enableParallelProcessing: boolean;
 
@@ -594,6 +600,29 @@ export class BaseBuffer {
       return;
     }
 
+    if (this.flushInFlight) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'locked',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+    this.flushInFlight = true;
+    try {
+      await this.flushUnderLock(trigger, startedAt, llenAtStart);
+    } finally {
+      this.flushInFlight = false;
+    }
+  }
+
+  private async flushUnderLock(
+    trigger: FlushTrigger,
+    startedAt: number,
+    llenAtStart: number | undefined
+  ): Promise<void> {
     const lockId = generateSecureId('lock');
     const acquired = await getRedisCache().set(
       this.lockKey,

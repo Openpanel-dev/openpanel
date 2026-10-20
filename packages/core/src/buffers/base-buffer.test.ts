@@ -53,6 +53,28 @@ describe('BaseBuffer flush lock', () => {
     expect(await redis.get('lock:lock-test')).toBeNull();
   });
 
+  it('one instance runs one flush at a time, whatever the cron concurrency', async () => {
+    let concurrentResult: FlushObservation['result'] | undefined;
+    let flushes = 0;
+    const buffer = new TestBuffer(async () => {
+      flushes += 1;
+      await sleep(200);
+    });
+    buffer.flushObserver = (obs) => {
+      if (obs.result !== 'success') {
+        concurrentResult = obs.result;
+      }
+    };
+
+    await Promise.all([
+      buffer.tryFlush({ trigger: 'cron' }),
+      buffer.tryFlush({ trigger: 'cron' }),
+    ]);
+
+    expect(flushes).toBe(1);
+    expect(concurrentResult).toBe('locked');
+  });
+
   it('stops draining once the lock is no longer its own', async () => {
     let batches = 0;
     const processBatch = async () => {
