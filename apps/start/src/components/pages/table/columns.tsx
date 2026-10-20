@@ -141,7 +141,7 @@ export function useColumns({
             <div className="flex items-center gap-2">
               {count}
               <span
-                className={`text-sm tabular-nums tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+                className={`text-2xs tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
               >
                 {isPos ? '+' : ''}
                 {pct.toFixed(1)}%
