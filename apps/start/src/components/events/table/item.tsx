@@ -134,7 +134,7 @@ export const EventItem = memo<EventItemProps>(
             className="border-neutral-200 border-t bg-def-100 p-4 py-2"
             data-slot="extra"
           >
-            <pre className="text-sm">
+            <pre className="text-xs">
               {JSON.stringify(event.properties, null, 2)}
             </pre>
           </div>

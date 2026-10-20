@@ -48,8 +48,8 @@ export default function Syntax({
           padding: '1rem',
           paddingTop: '0.5rem',
           paddingBottom: '0.5rem',
-          fontSize: 14,
-          lineHeight: 1.3,
+          fontSize: 12,
+          lineHeight: '18px',
         }}
         language={language}
         style={docco}

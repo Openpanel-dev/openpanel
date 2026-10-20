@@ -18,9 +18,7 @@ import { SidebarSectionLabel } from './sidebar-link';
 import SidebarOrganizationMenu, {
   ActionCTAButton as ActionOrganizationCTAButton,
 } from './sidebar-organization-menu';
-import SidebarProjectMenu, {
-  ActionCTAButton as ActionProjectCTAButton,
-} from './sidebar-project-menu';
+import SidebarProjectMenu from './sidebar-project-menu';
 import { Button } from './ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -54,7 +52,6 @@ export function Sidebar() {
   if (projectId && organizationId) {
     return (
       <SidebarContainer organizations={organizations} projects={projects}>
-        <ActionProjectCTAButton />
         <SidebarProjectMenu dashboards={dashboards} />
       </SidebarContainer>
     );

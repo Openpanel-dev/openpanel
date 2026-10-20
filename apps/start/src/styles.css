@@ -253,6 +253,14 @@ body {
     @apply bg-background text-foreground;
   }
 
+  /* Monospace reads a step larger than Inter, so code sits one size below body text. */
+  code,
+  kbd,
+  samp,
+  pre {
+    @apply text-xs;
+  }
+
   .h1 {
     @apply text-xl font-semibold;
   }
