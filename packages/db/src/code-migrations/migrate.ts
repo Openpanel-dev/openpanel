@@ -22,9 +22,11 @@ export async function runCodeMigrations(env: CodeMigrationEnv) {
     .readdirSync(MIGRATIONS_DIR)
     .filter((file) => {
       const version = file.split('-')[0];
+      // A migration's test sits beside it and must not run as a migration.
       return (
         !Number.isNaN(Number.parseInt(version ?? '', 10)) &&
-        file.endsWith('.ts')
+        file.endsWith('.ts') &&
+        !file.endsWith('.test.ts')
       );
     })
     .sort((a, b) => {
