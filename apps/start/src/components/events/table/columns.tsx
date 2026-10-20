@@ -1,5 +1,6 @@
 import type { IServiceEvent } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useEventDrawer } from '../use-event-drawer';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
@@ -11,6 +12,7 @@ import { pushModal } from '@/modals';
 import { getProfileName } from '@/utils/getters';
 
 export function useColumns() {
+  const { openEvent } = useEventDrawer();
   const number = useNumber();
   const columns: ColumnDef<IServiceEvent>[] = [
     {
@@ -77,10 +79,9 @@ export function useColumns() {
               <button
                 className="min-w-0 max-w-full truncate text-left font-medium hover:underline"
                 onClick={() => {
-                  pushModal('EventDetails', {
+                  openEvent({
                     id: row.original.id,
                     createdAt: row.original.createdAt,
-                    projectId: row.original.projectId,
                   });
                 }}
                 title={fullTitle}

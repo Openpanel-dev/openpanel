@@ -2,6 +2,7 @@ import type { IServiceEvent } from '@openpanel/core';
 import { memo } from 'react';
 import { Skeleton } from '../../skeleton';
 import { EventIcon } from '../event-icon';
+import { useEventDrawer } from '../use-event-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tooltiper } from '@/components/ui/tooltip';
@@ -18,6 +19,7 @@ interface EventItemProps {
 
 export const EventItem = memo<EventItemProps>(
   ({ event, viewOptions, className }) => {
+    const { openEvent } = useEventDrawer();
     let url: string | null = '';
     if (event.path && event.origin) {
       if (viewOptions.origin !== false && event.origin) {
@@ -48,19 +50,11 @@ export const EventItem = memo<EventItemProps>(
           )}
           data-slot="inner"
           onClick={() => {
-            pushModal('EventDetails', {
-              id: event.id,
-              projectId: event.projectId,
-              createdAt: event.createdAt,
-            });
+            openEvent({ id: event.id, createdAt: event.createdAt });
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              pushModal('EventDetails', {
-                id: event.id,
-                projectId: event.projectId,
-                createdAt: event.createdAt,
-              });
+              openEvent({ id: event.id, createdAt: event.createdAt });
             }
           }}
         >

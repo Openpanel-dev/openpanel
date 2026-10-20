@@ -11,6 +11,7 @@ import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 import EventListener from '../event-listener';
+import { useEventDrawer } from '../use-event-drawer';
 import { useColumns } from './columns';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import {
@@ -237,13 +238,13 @@ export const EventsTable = ({ query, showEventListener = false }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
 
-  const handleRowClick = useCallback((row: any) => {
-    pushModal('EventDetails', {
-      id: row.original.id,
-      createdAt: row.original.createdAt,
-      projectId: row.original.projectId,
-    });
-  }, []);
+  const { openEvent } = useEventDrawer();
+  const handleRowClick = useCallback(
+    (row: any) => {
+      openEvent({ id: row.original.id, createdAt: row.original.createdAt });
+    },
+    [openEvent]
+  );
 
   const data = useMemo(() => {
     if (isLoading) {

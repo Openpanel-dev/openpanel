@@ -96,7 +96,7 @@ export function OverviewLiveHistogram({
             />
           </span>
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5">
+        <div className="mt-1.5 flex items-baseline gap-0.5">
           <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums leading-4 tracking-tight">
             {number.short(displayCount)}
           </span>

@@ -2,9 +2,8 @@ import type { IClickhouseEvent, IServiceEvent } from '@openpanel/core';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
-import { Suspense, useState } from 'react';
-import { popModal } from '.';
-import { ModalContent } from './Modal/Container';
+import { Suspense, useEffect, useState } from 'react';
+import { useEventDrawer } from './use-event-drawer';
 import { ProjectLink } from '@/components/links';
 import {
   WidgetButtons,
@@ -15,21 +14,22 @@ import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import Syntax from '@/components/syntax';
 import { Button } from '@/components/ui/button';
 import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
-import { Widget, WidgetBody } from '@/components/widget';
+import { WidgetBody } from '@/components/widget';
+import { useAppParams } from '@/hooks/use-app-params';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
+import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 
-interface Props {
-  id: string;
-  createdAt?: Date;
-  projectId: string;
-}
+const WIDTH_STORAGE_KEY = 'op-event-drawer-width';
+const DEFAULT_WIDTH = 480;
+const MIN_WIDTH = 380;
+const MAX_WIDTH = 800;
 
 const filterable: Partial<Record<keyof IServiceEvent, keyof IClickhouseEvent>> =
   {
@@ -58,19 +58,91 @@ const TABS = {
 } as const;
 type Tab = (typeof TABS)[keyof typeof TABS];
 
-export default function EventDetails(props: Props) {
+/**
+ * Right-side drawer for one event. Mounts once in `_app.tsx` next to the chat
+ * drawer and, like it, pushes the page content aside on `lg+` instead of
+ * covering it, so the list stays usable while stepping through events.
+ */
+export function EventDrawer() {
+  const { projectId } = useAppParams();
+  const { eventId, createdAt, chatId, closeEvent } = useEventDrawer();
+  const { width, dragHandleProps } = useResizableDrawer({
+    defaultWidth: DEFAULT_WIDTH,
+    minWidth: MIN_WIDTH,
+    maxWidth: MAX_WIDTH,
+    storageKey: WIDTH_STORAGE_KEY,
+  });
+  const isOpen = Boolean(projectId && eventId);
+
+  // The chat drawer owns the same edge; it wins when it opens on top of us.
+  useEffect(() => {
+    if (isOpen && chatId !== null) {
+      closeEvent({ history: 'replace' });
+    }
+  }, [isOpen, chatId, closeEvent]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeEvent();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, closeEvent]);
+
+  if (!(projectId && eventId)) {
+    return null;
+  }
+
   return (
-    <ModalContent className="!p-0">
-      <Widget className="min-w-0 border-0 bg-transparent">
-        <Suspense fallback={<EventDetailsSkeleton />}>
-          <EventDetailsContent {...props} />
+    <>
+      {/* The aside is `fixed`; this spacer makes the page shrink on `lg+`. */}
+      <div aria-hidden className="hidden shrink-0 lg:block" style={{ width }} />
+      <aside
+        aria-label="Event details"
+        className="fixed top-0 right-0 z-40 flex h-screen flex-col border-l bg-background shadow-2xl"
+        style={{ width }}
+      >
+        <div
+          aria-label="Resize event details"
+          aria-valuemax={MAX_WIDTH}
+          aria-valuemin={MIN_WIDTH}
+          aria-valuenow={width}
+          className="absolute top-0 left-0 z-10 h-full w-1 cursor-ew-resize transition-colors hover:bg-border"
+          role="separator"
+          {...dragHandleProps}
+        />
+        <Suspense fallback={<EventDetailsSkeleton onClose={closeEvent} />}>
+          <EventDetailsContent
+            createdAt={createdAt}
+            id={eventId}
+            key={eventId}
+            onClose={closeEvent}
+            projectId={projectId}
+          />
         </Suspense>
-      </Widget>
-    </ModalContent>
+      </aside>
+    </>
   );
 }
 
-function EventDetailsContent({ id, createdAt, projectId }: Props) {
+interface ContentProps {
+  id: string;
+  createdAt?: Date;
+  projectId: string;
+  onClose: () => void;
+}
+
+function EventDetailsContent({
+  id,
+  createdAt,
+  projectId,
+  onClose,
+}: ContentProps) {
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
   const [tab, setTab] = useState<Tab>(TABS.pretty);
@@ -158,11 +230,16 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
 
   return (
     <>
-      <WidgetHead>
+      <WidgetHead className="shrink-0 rounded-none">
         <div className="row items-center justify-between">
-          <div className="title">{event.name}</div>
+          <div className="title truncate">{event.name}</div>
           <div className="row items-center gap-2 pr-2">
-            <Button onClick={() => popModal()} size="icon" variant={'ghost'}>
+            <Button
+              aria-label="Close event details"
+              onClick={onClose}
+              size="icon"
+              variant={'ghost'}
+            >
               <XIcon className="size-4" />
             </Button>
           </div>
@@ -181,12 +258,11 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           ))}
         </WidgetButtons>
       </WidgetHead>
-      <WidgetBody className="col gap-4 bg-def-100">
+      <WidgetBody className="col flex-1 gap-4 overflow-y-auto bg-def-100">
         {tab.id === TABS.raw.id && <Syntax code={eventJson} language="json" />}
         {tab.id === TABS.pretty.id && profile && (
           <ProjectLink
             className="card col gap-2 p-4 py-2 hover:bg-def-100"
-            onClick={() => popModal()}
             params={{ profileId: profile.id }}
             to="/profiles/$profileId"
           >
@@ -194,8 +270,11 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               <div className="row min-w-0 items-center gap-2">
                 {profile.avatar && (
                   <img
+                    alt=""
                     className="size-4 rounded-full bg-border"
+                    height={16}
                     src={profile.avatar}
+                    width={16}
                   />
                 )}
                 <div className="truncate font-medium">
@@ -214,10 +293,20 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               </div>
             </div>
             {!!session && (
-              <div className="text-sm">
-                This session has {session.screenViewCount} screen views and{' '}
-                {session.eventCount} events. Visit duration is{' '}
-                {fancyMinutes(session.duration / 1000)}.
+              <div className="text-muted-foreground">
+                This session has{' '}
+                <span className="font-medium text-foreground">
+                  {session.screenViewCount} screen views
+                </span>{' '}
+                and{' '}
+                <span className="font-medium text-foreground">
+                  {session.eventCount} events
+                </span>
+                . Visit duration is{' '}
+                <span className="font-medium text-foreground">
+                  {fancyMinutes(session.duration / 1000)}
+                </span>
+                .
               </div>
             )}
           </ProjectLink>
@@ -233,7 +322,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               copyable
               data={properties}
               onItemClick={(item) => {
-                popModal();
                 setFilter(`properties.${item.name}`, item.value as any);
               }}
               renderValue={(item) => (
@@ -258,7 +346,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 const isFilterable =
                   item.value && (filterable as any)[item.name];
                 if (isFilterable) {
-                  popModal();
                   setFilter(item.name as keyof IServiceEvent, item.value);
                 }
               }}
@@ -297,7 +384,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 className="text-muted-foreground hover:underline"
                 onClick={() => {
                   setEvents([event.name]);
-                  popModal();
                 }}
                 type="button"
               >
@@ -328,16 +414,23 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
   );
 }
 
-function EventDetailsSkeleton() {
+function EventDetailsSkeleton({ onClose }: { onClose: () => void }) {
   return (
     <>
-      <WidgetHead>
+      <WidgetHead className="shrink-0 rounded-none">
         <div className="row items-center justify-between">
-          <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+          <div className="p-4">
+            <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+          </div>
           <div className="row items-center gap-2 pr-2">
-            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
-            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
-            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
+            <Button
+              aria-label="Close event details"
+              onClick={onClose}
+              size="icon"
+              variant={'ghost'}
+            >
+              <XIcon className="size-4" />
+            </Button>
           </div>
         </div>
 
@@ -346,68 +439,36 @@ function EventDetailsSkeleton() {
           <div className="h-8 w-20 animate-pulse rounded bg-muted" />
         </WidgetButtons>
       </WidgetHead>
-      <WidgetBody className="col gap-4 bg-def-100">
+      <WidgetBody className="col flex-1 gap-4 overflow-y-auto bg-def-100">
         <div className="card col gap-2 p-4 py-2">
           <div className="row items-center justify-between gap-2">
             <div className="row min-w-0 items-center gap-2">
               <div className="size-4 animate-pulse rounded-full bg-muted" />
               <div className="h-4 w-24 animate-pulse rounded bg-muted" />
             </div>
-            <div className="row shrink-0 items-center gap-2">
-              <div className="row items-center gap-1">
-                <div className="size-4 animate-pulse rounded bg-muted" />
-                <div className="size-4 animate-pulse rounded bg-muted" />
-                <div className="size-4 animate-pulse rounded bg-muted" />
-              </div>
-              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-            </div>
+            <div className="h-4 w-32 animate-pulse rounded bg-muted" />
           </div>
           <div className="h-4 w-64 animate-pulse rounded bg-muted" />
         </div>
 
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-20 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                className="flex items-center justify-between rounded bg-muted/50 p-3"
-                key={i.toString()}
-              >
-                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-24 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                className="flex items-center justify-between rounded bg-muted/50 p-3"
-                key={i.toString()}
-              >
-                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-            <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="card p-4">
-            <div className="h-32 w-full animate-pulse rounded bg-muted" />
-          </div>
-        </section>
+        {[3, 6].map((rowCount) => (
+          <section key={rowCount}>
+            <div className="mb-2 flex justify-between font-medium">
+              <div className="h-5 w-20 animate-pulse rounded bg-muted" />
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: rowCount }).map((_, i) => (
+                <div
+                  className="flex items-center justify-between rounded bg-muted/50 p-3"
+                  key={i.toString()}
+                >
+                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
       </WidgetBody>
     </>
   );

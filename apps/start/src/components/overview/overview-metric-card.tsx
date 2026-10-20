@@ -102,7 +102,7 @@ export function OverviewMetricCard({
             />
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5">
+        <div className="my-1.5 flex items-baseline gap-0.5">
           {isLoading && <Skeleton className="h-5 w-20" />}
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
