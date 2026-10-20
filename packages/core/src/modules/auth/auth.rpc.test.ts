@@ -18,8 +18,8 @@ const COOKIE_OPTIONS: CookieOptions = {
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
-async function anonCaller() {
-  const { ctx } = stubHttpCtx({}, EMPTY_SESSION);
+async function anonCaller(config = testCoreConfig()) {
+  const { ctx } = stubHttpCtx({ config }, EMPTY_SESSION);
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
   });
@@ -57,6 +57,49 @@ test('providers reports which OAuth features are configured, as booleans only', 
   const providers = await authRouter.createCaller(trpcCtx).providers();
   expect(providers).toEqual({ google: true, github: false, gsc: true });
   expect(JSON.stringify(providers)).not.toContain('secret');
+});
+
+test('incomplete OAuth credentials hide the provider and reject sign-in', async () => {
+  for (const provider of ['github', 'google'] as const) {
+    for (const missing of [
+      'clientId',
+      'clientSecret',
+      'redirectUri',
+    ] as const) {
+      const config = testCoreConfig();
+      config.auth[provider] = {
+        clientId: 'fixture-id',
+        clientSecret: 'fixture-secret',
+        redirectUri: `https://api.example.com/oauth/${provider}/callback`,
+      };
+      config.auth[provider][missing] = '';
+      const caller = await anonCaller(config);
+      expect((await caller.providers())[provider]).toBe(false);
+      await expect(caller.signInOAuth({ provider })).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      });
+    }
+  }
+});
+
+test('Search Console can remain configured while Google sign-in is hidden', async () => {
+  const config = testCoreConfig();
+  config.auth.google = {
+    clientId: 'google-id',
+    clientSecret: 'google-secret',
+    redirectUri: '',
+  };
+  config.auth.googleGsc = {
+    ...config.auth.google,
+    redirectUri: 'https://api.example.com/gsc/callback',
+  };
+  expect(await (await anonCaller(config)).providers()).toEqual({
+    google: false,
+    github: false,
+    gsc: true,
+  });
+  config.auth.googleGsc.clientSecret = '';
+  expect((await (await anonCaller(config)).providers()).gsc).toBe(false);
 });
 
 test('totpStatus rejects an unauthenticated caller', async () => {
