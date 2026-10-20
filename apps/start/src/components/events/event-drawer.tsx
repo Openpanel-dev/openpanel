@@ -113,8 +113,8 @@ export function EventDrawer() {
           aria-valuemin={MIN_WIDTH}
           aria-valuenow={width}
           className="absolute top-0 left-0 z-10 h-full w-1 cursor-ew-resize transition-colors hover:bg-border"
-          role="separator"
           {...dragHandleProps}
+          role="separator"
         />
         <Suspense fallback={<EventDetailsSkeleton onClose={closeEvent} />}>
           <EventDetailsContent
@@ -326,7 +326,7 @@ function EventDetailsContent({
               }}
               renderValue={(item) => (
                 <div className="flex items-center gap-2">
-                  <span className="font-mono">{String(item.value)}</span>
+                  <span className="tabular-nums">{String(item.value)}</span>
                   <FilterIcon className="size-3 shrink-0" />
                 </div>
               )}
