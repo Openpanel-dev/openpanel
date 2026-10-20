@@ -377,6 +377,8 @@ function Chart({
         curve={curveMonotoneX}
         dataKey={`prev_${activeMetric.key}`}
         key={`prev-${activeMetric.key}`}
+        markers={POINT_MARKER}
+        showMarkers={showMarkers}
         stroke={PREV_LINE_COLOR}
         strokeWidth={2}
       />
