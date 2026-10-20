@@ -838,10 +838,21 @@ export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zCriteria = z.enum(['on_or_after', 'on']);
 
+export const conversionYAxisScales = {
+  fixed: 'Fixed (0–100%)',
+  auto: 'Auto',
+} as const;
+export const zConversionYAxisScale = z.enum(
+  objectToZodEnums(conversionYAxisScales)
+);
+export type IConversionYAxisScale = z.infer<typeof zConversionYAxisScale>;
+
+// Conversion reports share the funnel options (group, window) and add a y-axis scale.
 export const zFunnelOptions = z.object({
   type: z.literal('funnel'),
   funnelGroup: z.string().optional(),
   funnelWindow: z.number().optional(),
+  yAxisScale: zConversionYAxisScale.optional(),
 });
 
 export const zRetentionOptions = z.object({

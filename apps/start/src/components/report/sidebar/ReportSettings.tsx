@@ -1,6 +1,11 @@
-import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
+import type {
+  IChartMetric,
+  IConversionYAxisScale,
+} from '@openpanel/core/modules/report/report.constants';
+import { conversionYAxisScales } from '@openpanel/core/modules/report/report.constants';
 import { useMemo } from 'react';
 import {
+  changeConversionYAxisScale,
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
@@ -21,6 +26,9 @@ import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useDispatch, useSelector } from '@/redux';
+import { objectToZodEnums } from '@/utils/object-to-zod-enums';
+
+const DEFAULT_CONVERSION_Y_AXIS_SCALE: IConversionYAxisScale = 'fixed';
 
 export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
@@ -35,6 +43,8 @@ export function ReportSettings() {
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
   const funnelWindow = funnelOptions?.funnelWindow;
+  const conversionYAxisScale =
+    funnelOptions?.yAxisScale ?? DEFAULT_CONVERSION_Y_AXIS_SCALE;
 
   const histogramOptions = options?.type === 'histogram' ? options : undefined;
   const stacked = histogramOptions?.stacked ?? false;
@@ -44,7 +54,7 @@ export function ReportSettings() {
   const eventNames = useEventNames({ projectId });
 
   const fields = useMemo(() => {
-    const fields = [];
+    const fields: string[] = [];
 
     if (chartType !== 'retention' && chartType !== 'sankey') {
       fields.push('previous');
@@ -58,6 +68,10 @@ export function ReportSettings() {
     if (chartType === 'funnel' || chartType === 'conversion') {
       fields.push('funnelGroup');
       fields.push('funnelWindow');
+    }
+
+    if (chartType === 'conversion') {
+      fields.push('conversionYAxisScale');
     }
 
     if (chartType === 'sankey') {
@@ -209,6 +223,27 @@ export function ReportSettings() {
               placeholder="Default: 24h"
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
+            />
+          </div>
+        )}
+        {fields.includes('conversionYAxisScale') && (
+          <div className="flex items-center justify-between gap-4">
+            <Label className="mb-0 whitespace-nowrap font-medium">Y axis</Label>
+            <Combobox
+              align="end"
+              items={objectToZodEnums(conversionYAxisScales).map((key) => ({
+                label: conversionYAxisScales[key],
+                value: key,
+              }))}
+              onChange={(val) => {
+                dispatch(
+                  changeConversionYAxisScale(
+                    val === DEFAULT_CONVERSION_Y_AXIS_SCALE ? undefined : val
+                  )
+                );
+              }}
+              placeholder="Default: Fixed"
+              value={conversionYAxisScale}
             />
           </div>
         )}
