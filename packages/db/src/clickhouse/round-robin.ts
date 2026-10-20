@@ -15,6 +15,32 @@ export interface ClientSlot {
 }
 
 /**
+ * `CLICKHOUSE_URL` can carry `user:password@host`; retry logs still name the
+ * node so an operator can tell which one failed, so the credential is masked
+ * rather than the whole field dropped.
+ */
+export function maskUrlCredentials(url: string): string {
+  if (!url) {
+    return '<unset>';
+  }
+  try {
+    const masked = new URL(url);
+    if (masked.username) {
+      // A one-character user would make repeat() throw, and the catch below
+      // returns the URL unmasked — so clamp instead of going negative.
+      const tail = '*'.repeat(Math.max(0, masked.username.length - 2));
+      masked.username = `${masked.username.slice(0, 2)}${tail}`;
+    }
+    if (masked.password) {
+      masked.password = '***';
+    }
+    return masked.toString();
+  } catch {
+    return url;
+  }
+}
+
+/**
  * Four classes of error:
  *
  * - `node-down`: TCP/DNS/CONNECT-level failure. The node is genuinely
@@ -302,7 +328,7 @@ export async function withRoundRobinRetry<T>(
       if (attempt > 0) {
         picker.markHealthy(slot);
         logger.info(
-          { url: slot.url, attempt: attempt + 1 },
+          { url: maskUrlCredentials(slot.url), attempt: attempt + 1 },
           'CH operation succeeded after retry'
         );
       }
@@ -337,7 +363,7 @@ export async function withRoundRobinRetry<T>(
           code: (error as { code?: string })?.code,
           errClass,
           markedUnhealthy: errClass === 'node-down',
-          url: slot.url,
+          url: maskUrlCredentials(slot.url),
           attempt: attempt + 1,
           maxAttempts,
           nextDelayMs: delay,
