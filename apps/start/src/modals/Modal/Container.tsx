@@ -69,12 +69,12 @@ export function ModalHeader({
   return (
     <div
       className={cn(
-        'relative -m-6 mb-4 flex justify-between rounded-t-lg p-6 pb-0',
+        'relative -m-6 mb-2 flex justify-between p-6 pb-0',
         className
       )}
     >
       <div className="row relative w-full justify-between gap-4">
-        <div className="col flex-1 gap-2">
+        <div className="col flex-1 gap-1">
           <DialogTitle>{title}</DialogTitle>
           {!!text && <div className="text-muted-foreground">{text}</div>}
         </div>

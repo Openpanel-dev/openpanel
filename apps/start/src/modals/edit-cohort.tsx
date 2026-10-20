@@ -6,10 +6,10 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { CohortCriteriaBuilder } from '@/components/cohort/cohort-criteria-builder';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -116,14 +116,14 @@ export default function EditCohort(props: EditCohortProps) {
           />
         </div>
 
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
             Save changes
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

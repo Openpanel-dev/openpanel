@@ -1,7 +1,7 @@
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 
 export type ConfirmProps = {
   title: string;
@@ -20,7 +20,7 @@ export default function Confirm({
     <ModalContent>
       <ModalHeader title={title} />
       <p className="-mt-2 text-base">{text}</p>
-      <ButtonContainer>
+      <DialogFooter>
         <Button
           onClick={() => {
             popModal('Confirm');
@@ -38,7 +38,7 @@ export default function Confirm({
         >
           Yes
         </Button>
-      </ButtonContainer>
+      </DialogFooter>
     </ModalContent>
   );
 }

@@ -60,8 +60,8 @@ function DialogContent({
           'max-h-screen overflow-y-auto overflow-x-hidden', // Ensure the dialog is scrollable if it exceeds the screen height
           'mt-auto', // Add margin-top: auto for all screen sizes
           'transition-none focus:outline-none focus:ring-0',
-          'border bg-def-100 shadow-lg sm:rounded-lg md:max-h-[90vh]',
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-def-100 p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg [&>*]:min-w-0',
+          'border bg-card shadow-2xl sm:rounded-xl md:max-h-[90vh]',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-card p-6 shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg [&>*]:min-w-0',
           className
         )}
         data-slot="dialog-content"
@@ -96,7 +96,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+        '-mx-6 mt-2 -mb-6 flex flex-col-reverse gap-2 rounded-b-xl border-border border-t bg-def-100 px-6 py-4 sm:flex-row sm:justify-end',
         className
       )}
       data-slot="dialog-footer"
