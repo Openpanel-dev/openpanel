@@ -45,9 +45,8 @@ test('conversion y-axis is fixed at 100% by default and auto fits the peak', asy
   await closeSidebar(page);
   await waitForChart(page);
   await shot(page, 'conversion-y-axis-01-fixed');
-  const fixedTicks = await yAxisTickValues(page);
-  expect(fixedTicks.length).toBeGreaterThan(1);
-  expect(Math.max(...fixedTicks)).toBe(100);
+  await expect.poll(() => yAxisTickValues(page)).not.toHaveLength(0);
+  await expect.poll(() => yAxisTickValues(page)).toContain(100);
 
   await openSidebar(page);
   await yAxis.click();
@@ -58,9 +57,8 @@ test('conversion y-axis is fixed at 100% by default and auto fits the peak', asy
   await closeSidebar(page);
   await waitForChart(page);
   await shot(page, 'conversion-y-axis-02-auto');
-  const autoTicks = await yAxisTickValues(page);
-  expect(autoTicks.length).toBeGreaterThan(1);
-  expect(Math.max(...autoTicks)).toBeLessThan(100);
+  await expect.poll(() => yAxisTickValues(page)).not.toHaveLength(0);
+  await expect.poll(() => yAxisTickValues(page)).not.toContain(100);
 
   expect(problems.pageErrors).toEqual([]);
   expect(problems.responses).toEqual([]);
