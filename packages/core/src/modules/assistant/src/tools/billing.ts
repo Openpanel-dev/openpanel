@@ -4,7 +4,12 @@ import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getCurrentSubscriptionProduct } from '../../../subscription/subscription.service';
+import {
+  CHAT_MESSAGES_PER_DAY,
+  type ChatTier,
+} from '../../assistant.constants';
 import type { ChatToolContext } from '../context';
+import { readChatUsageToday, resolveChatTier } from '../limits';
 
 const CENTS_PER_UNIT = 100;
 const PERCENT = 100;
@@ -40,6 +45,11 @@ export interface BillingOutput {
     pauseAtPeriodEnd: boolean;
     resumesAt: string | null;
   };
+  assistant: {
+    tier: ChatTier;
+    messagesPerDay: number | null;
+    messagesToday: number;
+  };
   billingUrl: string;
 }
 
@@ -64,7 +74,7 @@ export function billingTools(ctx: ChatToolContext) {
   return {
     get_billing: tool({
       description:
-        "The workspace's plan and usage: which plan, its price and event limit, events used this billing period, renewal or trial end date, and whether it is canceling or paused. Use for any question about the plan, billing, limits or usage. Self-hosted installs have no billing.",
+        "The workspace's plan and usage: which plan, its price and event limit, events used this billing period, renewal or trial end date, whether it is canceling or paused, and the daily AI message allowance with today's use. Use for any question about the plan, billing, limits or usage. Self-hosted installs have no billing.",
       inputSchema: z.object({}),
       execute: async (): Promise<
         BillingOutput | { selfHosted: true; message: string }
@@ -111,6 +121,11 @@ export function billingTools(ctx: ChatToolContext) {
             ? productLimit
             : organization.subscriptionPeriodEventsLimit || null;
         const used = organization.subscriptionPeriodEventsCount;
+        const tier = resolveChatTier(organization, ctx.config.selfHosted);
+        const messagesToday = await readChatUsageToday(
+          deps.redis,
+          organizationId
+        );
 
         return {
           selfHosted: false,
@@ -147,6 +162,11 @@ export function billingTools(ctx: ChatToolContext) {
             canceledAt: iso(organization.subscriptionCanceledAt),
             pauseAtPeriodEnd: organization.subscriptionPauseAtPeriodEnd,
             resumesAt: iso(organization.subscriptionResumesAt),
+          },
+          assistant: {
+            tier,
+            messagesPerDay: CHAT_MESSAGES_PER_DAY[tier],
+            messagesToday,
           },
           billingUrl,
         };

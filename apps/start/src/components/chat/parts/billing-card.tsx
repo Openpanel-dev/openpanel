@@ -20,6 +20,10 @@ export interface BillingOutput {
     percentUsed: number | null;
     periodEnd: string | null;
   };
+  assistant?: {
+    messagesPerDay: number | null;
+    messagesToday: number;
+  };
   billingUrl?: string;
 }
 
@@ -91,6 +95,17 @@ export function BillingCard({ output }: { output: BillingOutput }) {
           />
         </div>
       </div>
+      {output.assistant && (
+        <div className="flex justify-between border-t px-4 py-2 text-xs">
+          <span className="text-muted-foreground">AI messages today</span>
+          <span className="font-mono tabular-nums">
+            {number.format(output.assistant.messagesToday)}
+            {output.assistant.messagesPerDay === null
+              ? ''
+              : ` / ${number.format(output.assistant.messagesPerDay)}`}
+          </span>
+        </div>
+      )}
       {path && (
         <div className="border-t px-4 py-2 text-xs">
           <Link className="text-primary underline underline-offset-2" to={path}>

@@ -190,6 +190,53 @@ export const zChatMessageMetadata = z.object({
 
 export type ChatMessageMetadata = z.infer<typeof zChatMessageMetadata>;
 
+/**
+ * Spend tiers for the chat. Cloud bands follow the plan's event limit;
+ * `unlimited` is a self-hosted install (its own API key), `blocked` is a
+ * workspace whose dashboard is already locked by billing.
+ */
+export const CHAT_TIERS = [
+  'trial',
+  'starter',
+  'growth',
+  'scale',
+  'unlimited',
+  'blocked',
+] as const;
+export type ChatTier = (typeof CHAT_TIERS)[number];
+
+/** Messages one workspace may send per UTC day. `null` is no cap. */
+export const CHAT_MESSAGES_PER_DAY: Record<ChatTier, number | null> = {
+  trial: 15,
+  starter: 20,
+  growth: 60,
+  scale: 200,
+  unlimited: null,
+  blocked: 0,
+};
+
+/** Plans up to this many events per month fall in the band. Above the last band is `scale`. */
+export const CHAT_TIER_EVENT_BANDS = {
+  starter: 100_000,
+  growth: 2_500_000,
+} as const;
+
+/** Per-user burst guard on every tier, so a stuck client or script cannot loop. */
+export const CHAT_BURST_LIMIT = { max: 6, windowMs: 60_000 } as const;
+
+export const CHAT_LIMIT_REASONS = ['daily', 'burst', 'blocked'] as const;
+
+/** Body of the 429 the chat route answers with. */
+export const zChatLimitError = z.object({
+  code: z.literal('chat_limit'),
+  reason: z.enum(CHAT_LIMIT_REASONS),
+  tier: z.enum(CHAT_TIERS),
+  limit: z.number(),
+  resetsAt: z.string(),
+  message: z.string(),
+});
+export type ChatLimitError = z.infer<typeof zChatLimitError>;
+
 /** Data parts the server streams besides the model output. */
 export type ChatDataParts = Record<'title', { title: string }>;
 

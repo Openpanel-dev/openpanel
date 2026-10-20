@@ -175,9 +175,27 @@ export async function runChat(
               return { modelId: entry.id, createdAt: startedAt };
             }
             if (part.type === 'finish') {
+              const durationMs = Date.now() - startedAt;
+              deps.logger.info(
+                {
+                  conversationId: request.id,
+                  organizationId: request.organizationId,
+                  projectId: request.projectId,
+                  userId: input.userId,
+                  modelId: entry.id,
+                  // Keys avoid "token": the log redaction masks any key containing it.
+                  usage: {
+                    input: part.totalUsage.inputTokens,
+                    output: part.totalUsage.outputTokens,
+                    total: part.totalUsage.totalTokens,
+                  },
+                  durationMs,
+                },
+                'chat turn finished'
+              );
               return {
                 totalTokens: part.totalUsage.totalTokens,
-                durationMs: Date.now() - startedAt,
+                durationMs,
               };
             }
             return undefined;

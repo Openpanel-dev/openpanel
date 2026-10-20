@@ -1,5 +1,6 @@
 import { AlertCircleIcon, ArrowDownIcon } from 'lucide-react';
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
+import { ChatLimitNotice, parseChatLimit } from './chat-limit-notice';
 import { ChatMessage } from './chat-message';
 import type { AssistantUIMessage } from './types';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ export function ChatMessages({
 }) {
   const active = status === 'submitted' || status === 'streaming';
   const lastIndex = messages.length - 1;
+  const limit = status === 'error' ? parseChatLimit(error) : null;
 
   return (
     <StickToBottom
@@ -38,7 +40,8 @@ export function ChatMessages({
         {status === 'submitted' && (
           <div className="op-shimmer font-medium text-sm">Thinking…</div>
         )}
-        {status === 'error' && (
+        {limit && <ChatLimitNotice limit={limit} />}
+        {status === 'error' && !limit && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-sm">
             <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
             <span className="flex-1">
