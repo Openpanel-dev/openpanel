@@ -52,6 +52,12 @@ const filterable: Partial<Record<keyof IServiceEvent, keyof IClickhouseEvent>> =
     origin: 'origin',
   };
 
+const TABS = {
+  pretty: { id: 'pretty', title: 'Pretty' },
+  raw: { id: 'raw', title: 'Raw' },
+} as const;
+type Tab = (typeof TABS)[keyof typeof TABS];
+
 export default function EventDetails(props: Props) {
   return (
     <ModalContent className="!p-0">
@@ -67,20 +73,7 @@ export default function EventDetails(props: Props) {
 function EventDetailsContent({ id, createdAt, projectId }: Props) {
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
-  const TABS = {
-    essentials: {
-      id: 'essentials',
-      title: 'Essentials',
-    },
-    detailed: {
-      id: 'detailed',
-      title: 'Detailed',
-    },
-  };
-  const [widget, setWidget] = useState(TABS.essentials);
-  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>(
-    'table'
-  );
+  const [tab, setTab] = useState<Tab>(TABS.pretty);
   const trpc = useTRPC();
   const query = useSuspenseQuery(
     trpc.event.details.queryOptions({
@@ -150,28 +143,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
       },
     ].map((item) => ({ ...item, event }));
 
-    if (widget.id === TABS.detailed.id) {
-      data.length = 0;
-      Object.entries(omit(['properties', 'profile', 'meta'], event)).forEach(
-        ([name, value]) => {
-          if (!name.startsWith('__')) {
-            data.push({
-              name: name as keyof IServiceEvent,
-              value: value as any,
-              event,
-            });
-          }
-        }
-      );
-    }
-
-    return data.filter((item) => {
-      if (widget.id === TABS.essentials.id) {
-        return !!item.value;
-      }
-
-      return true;
-    });
+    return data.filter((item) => !!item.value);
   })();
 
   const properties = Object.entries(event.properties)
@@ -181,6 +153,8 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
       value,
       event,
     }));
+  // The profile has its own card above; everything else is the event as the API returns it.
+  const eventJson = JSON.stringify(omit(['profile'], event), null, 2);
 
   return (
     <>
@@ -195,20 +169,21 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         </div>
 
         <WidgetButtons>
-          {Object.entries(TABS).map(([, tab]) => (
+          {Object.values(TABS).map((item) => (
             <button
-              className={cn(tab.id === widget.id && 'active')}
-              key={tab.id}
-              onClick={() => setWidget(tab)}
+              className={cn(item.id === tab.id && 'active')}
+              key={item.id}
+              onClick={() => setTab(item)}
               type="button"
             >
-              {tab.title}
+              {item.title}
             </button>
           ))}
         </WidgetButtons>
       </WidgetHead>
       <WidgetBody className="col gap-4 bg-def-100">
-        {profile && (
+        {tab.id === TABS.raw.id && <Syntax code={eventJson} language="json" />}
+        {tab.id === TABS.pretty.id && profile && (
           <ProjectLink
             className="card col gap-2 p-4 py-2 hover:bg-def-100"
             onClick={() => popModal()}
@@ -248,113 +223,106 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           </ProjectLink>
         )}
 
-        {properties.length > 0 && (
+        {tab.id === TABS.pretty.id && properties.length > 0 && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
               <div>Properties</div>
-              <button
-                className="text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() =>
-                  setPropertiesMode((p) => (p === 'table' ? 'json' : 'table'))
-                }
-                type="button"
-              >
-                {propertiesMode === 'table' ? 'View JSON' : 'View Table'}
-              </button>
             </div>
-            {propertiesMode === 'table' && (
-              <KeyValueGrid
-                columns={1}
-                copyable
-                data={properties}
-                onItemClick={(item) => {
-                  popModal();
-                  setFilter(`properties.${item.name}`, item.value as any);
-                }}
-                renderValue={(item) => (
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">{String(item.value)}</span>
-                    <FilterIcon className="size-3 shrink-0" />
-                  </div>
-                )}
-              />
-            )}
-            {propertiesMode === 'json' && (
-              <Syntax
-                code={JSON.stringify(properties, null, 2)}
-                language="json"
-              />
-            )}
+            <KeyValueGrid
+              columns={1}
+              copyable
+              data={properties}
+              onItemClick={(item) => {
+                popModal();
+                setFilter(`properties.${item.name}`, item.value as any);
+              }}
+              renderValue={(item) => (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono">{String(item.value)}</span>
+                  <FilterIcon className="size-3 shrink-0" />
+                </div>
+              )}
+            />
           </section>
         )}
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div>Information</div>
-          </div>
-          <KeyValueGrid
-            columns={1}
-            copyable
-            data={data}
-            onItemClick={(item) => {
-              const isFilterable = item.value && (filterable as any)[item.name];
-              if (isFilterable) {
-                popModal();
-                setFilter(item.name as keyof IServiceEvent, item.value);
-              }
-            }}
-            renderValue={(item) => {
-              const isFilterable = item.value && (filterable as any)[item.name];
-              if (isFilterable) {
-                return (
-                  <div className="flex items-center gap-2">
-                    <FieldValue
-                      event={event}
-                      name={item.name}
-                      value={item.value}
-                    />
-                    <FilterIcon className="size-3 shrink-0" />
-                  </div>
-                );
-              }
-
-              return (
-                <FieldValue event={event} name={item.name} value={item.value} />
-              );
-            }}
-          />
-        </section>
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div>All events for {event.name}</div>
-            <button
-              className="text-muted-foreground hover:underline"
-              onClick={() => {
-                setEvents([event.name]);
-                popModal();
+        {tab.id === TABS.pretty.id && (
+          <section>
+            <div className="mb-2 flex justify-between font-medium">
+              <div>Information</div>
+            </div>
+            <KeyValueGrid
+              columns={1}
+              copyable
+              data={data}
+              onItemClick={(item) => {
+                const isFilterable =
+                  item.value && (filterable as any)[item.name];
+                if (isFilterable) {
+                  popModal();
+                  setFilter(item.name as keyof IServiceEvent, item.value);
+                }
               }}
-              type="button"
-            >
-              Show all
-            </button>
-          </div>
-          <div className="card p-4">
-            <ReportChartShortcut
-              chartType="linear"
-              options={{ hideTable: true }}
-              projectId={event.projectId}
-              series={[
-                {
-                  id: 'A',
-                  name: event.name,
-                  displayName: 'Similar events',
-                  segment: 'event',
-                  filters: [],
-                  type: 'event',
-                },
-              ]}
+              renderValue={(item) => {
+                const isFilterable =
+                  item.value && (filterable as any)[item.name];
+                if (isFilterable) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <FieldValue
+                        event={event}
+                        name={item.name}
+                        value={item.value}
+                      />
+                      <FilterIcon className="size-3 shrink-0" />
+                    </div>
+                  );
+                }
+
+                return (
+                  <FieldValue
+                    event={event}
+                    name={item.name}
+                    value={item.value}
+                  />
+                );
+              }}
             />
-          </div>
-        </section>
+          </section>
+        )}
+        {tab.id === TABS.pretty.id && (
+          <section>
+            <div className="mb-2 flex justify-between font-medium">
+              <div>All events for {event.name}</div>
+              <button
+                className="text-muted-foreground hover:underline"
+                onClick={() => {
+                  setEvents([event.name]);
+                  popModal();
+                }}
+                type="button"
+              >
+                Show all
+              </button>
+            </div>
+            <div className="card p-4">
+              <ReportChartShortcut
+                chartType="linear"
+                options={{ hideTable: true }}
+                projectId={event.projectId}
+                series={[
+                  {
+                    id: 'A',
+                    name: event.name,
+                    displayName: 'Similar events',
+                    segment: 'event',
+                    filters: [],
+                    type: 'event',
+                  },
+                ]}
+              />
+            </div>
+          </section>
+        )}
       </WidgetBody>
     </>
   );
