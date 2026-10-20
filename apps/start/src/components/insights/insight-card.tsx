@@ -1,9 +1,7 @@
-import { FilterIcon, RotateCcwIcon, SparklesIcon } from 'lucide-react';
+import { FilterIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -99,98 +97,80 @@ export function InsightCard({
     return insight.displayName;
   };
 
+  const openDetails = () => pushModal('InsightDetails', { insight });
+
   return (
     <div
       className={cn(
-        'card group/card flex h-full flex-col p-4 transition-colors hover:bg-def-50',
+        'card group/card flex h-full cursor-pointer flex-col p-3 transition-colors hover:bg-def-50',
         className
       )}
+      onClick={openDetails}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openDetails();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <div
-        className={cn(
-          'row h-4 items-center justify-between',
-          onFilter && 'group-hover/card:hidden'
-        )}
-      >
-        <Badge className="-ml-2" variant="outline">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 truncate font-semibold text-sm">
+          {renderTitle()}
+        </div>
+        <div
+          className={cn(
+            'shrink-0 text-2xs text-muted-foreground',
+            onFilter && 'group-hover/card:hidden'
+          )}
+        >
           {formatWindowKind(insight.windowKind)}
-        </Badge>
-        {insight.severityBand && (
-          <div className="flex shrink-0 items-center gap-1">
-            <span
-              className={cn(
-                'h-2 w-2 rounded-full',
-                insight.severityBand === 'severe'
-                  ? 'bg-red-500'
-                  : insight.severityBand === 'moderate'
-                    ? 'bg-yellow-500'
-                    : 'bg-blue-500'
-              )}
-            />
-            <span className="text-2xs text-muted-foreground capitalize">
-              {insight.severityBand}
-            </span>
+        </div>
+        {onFilter && (
+          <div className="hidden shrink-0 items-center gap-2 group-hover/card:flex">
+            {availableMetrics.length > 1 && (
+              <button
+                className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMetricIndex((metricIndex + 1) % availableMetrics.length);
+                }}
+                type="button"
+              >
+                <RotateCcwIcon className="size-2.5" />
+                {metricKeyToLabel(
+                  availableMetrics[
+                    (metricIndex + 1) % availableMetrics.length
+                  ][0]
+                )}
+              </button>
+            )}
+            <button
+              className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFilter();
+              }}
+              type="button"
+            >
+              Filter <FilterIcon className="size-2.5" />
+            </button>
           </div>
         )}
       </div>
-      {onFilter && (
-        <div className="row hidden h-4 justify-between gap-2 group-hover/card:flex">
-          {availableMetrics.length > 1 ? (
-            <button
-              className="flex items-center gap-1 text-2xs text-muted-foreground capitalize"
-              onClick={() =>
-                setMetricIndex((metricIndex + 1) % availableMetrics.length)
-              }
-              type="button"
-            >
-              <RotateCcwIcon className="size-2" />
-              Show{' '}
-              {metricKeyToLabel(
-                availableMetrics[(metricIndex + 1) % availableMetrics.length][0]
-              )}
-            </button>
-          ) : (
-            <div />
-          )}
-          <button
-            className="flex items-center gap-1 text-2xs text-muted-foreground capitalize"
-            onClick={onFilter}
-            type="button"
-          >
-            Filter <FilterIcon className="size-2" />
-          </button>
-        </div>
-      )}
-      <div className="mt-2 line-clamp-2 font-semibold text-sm">
-        {renderTitle()}
-      </div>
 
       {insight.aiSummary && (
-        <p className="mt-1 line-clamp-3 text-muted-foreground text-xs">
+        <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
           {insight.aiSummary}
         </p>
       )}
 
-      <div className="mt-auto pt-2">
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="mb-1 text-2xs text-muted-foreground">
-              {metricLabel}
-            </div>
-
-            <div className="col gap-1">
-              <div className="font-semibold text-2xl tracking-tight">
-                {formatValue(currentValue)}
-              </div>
-
-              {compareValue != null && (
-                <div className="text-muted-foreground text-xs">
-                  vs {formatValue(compareValue)}
-                </div>
-              )}
-            </div>
+      <div className="mt-auto pt-3">
+        <div className="flex items-baseline gap-2">
+          <div className="font-semibold text-xl tabular-nums tracking-tight">
+            {formatValue(currentValue)}
           </div>
-
           <DeltaChip
             size="sm"
             variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
@@ -198,16 +178,10 @@ export function InsightCard({
             {deltaText}
           </DeltaChip>
         </div>
-
-        <Button
-          className="mt-2 -ml-2 h-7 self-start px-2 text-muted-foreground text-xs"
-          icon={SparklesIcon}
-          onClick={() => pushModal('InsightDetails', { insight })}
-          size="sm"
-          variant="ghost"
-        >
-          Why did this happen?
-        </Button>
+        <div className="mt-0.5 text-2xs text-muted-foreground">
+          {metricLabel}
+          {compareValue != null && ` · vs ${formatValue(compareValue)}`}
+        </div>
       </div>
     </div>
   );
