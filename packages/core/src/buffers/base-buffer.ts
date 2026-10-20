@@ -430,11 +430,15 @@ export class BaseBuffer {
     await releaseLockScript(getRedisCache(), [this.lockKey], [lockId]);
   }
 
-  private keepLockAlive(lockId: string): ReturnType<typeof setInterval> {
+  /** Returns the function that ends the keepalive for this flush. */
+  private keepLockAlive(lockId: string): () => void {
     const intervalMs = (this.lockTimeout * 1000) / LOCK_KEEPALIVE_PER_TTL;
     let ownershipLost = false;
-    return setInterval(async () => {
-      if (ownershipLost) {
+    // A renewal still in flight when the flush ends must not touch the flag
+    // of the next flush, which may already hold a new lock.
+    let stopped = false;
+    const interval = setInterval(async () => {
+      if (stopped || ownershipLost) {
         return;
       }
       try {
@@ -443,7 +447,7 @@ export class BaseBuffer {
           [this.lockKey],
           [lockId, String(this.lockTimeout)]
         );
-        if (extended === 1) {
+        if (stopped || extended === 1) {
           return;
         }
         ownershipLost = true;
@@ -453,6 +457,9 @@ export class BaseBuffer {
           'flush lock lost mid-flush; stopping before the next batch'
         );
       } catch (error) {
+        if (stopped) {
+          return;
+        }
         // A failed call says nothing about ownership: the key may still be
         // ours, so keep renewing for the batch in flight and start no new one.
         this.lockLost = true;
@@ -462,6 +469,10 @@ export class BaseBuffer {
         );
       }
     }, intervalMs);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
   }
 
   /**
@@ -604,7 +615,7 @@ export class BaseBuffer {
     }
 
     this.lockLost = false;
-    const keepAlive = this.keepLockAlive(lockId);
+    const stopKeepAlive = this.keepLockAlive(lockId);
     const onFlushStarted = performance.now();
     try {
       await this.onFlush();
@@ -635,7 +646,7 @@ export class BaseBuffer {
         err: error,
       });
     } finally {
-      clearInterval(keepAlive);
+      stopKeepAlive();
       await this.releaseLock(lockId);
     }
   }
