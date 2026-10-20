@@ -143,7 +143,7 @@ export default function OverviewMetrics({
 
       <div className="card p-4">
         <div className="-mt-1 flex items-center justify-between">
-          <div className="font-medium text-muted-foreground text-sm">
+          <div className="font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {activeMetric.title}
           </div>
           {import.meta.env.DEV && (
