@@ -203,7 +203,7 @@ export const OverviewWidgetTable = <T,>({
   return (
     <div className={cn(className)}>
       <WidgetTable
-        className={'@container min-h-[358px] text-sm'}
+        className={'@container min-h-[358px] text-xs'}
         columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
         columns={columnsWithSortableHeaders}
         data={sortedData}
