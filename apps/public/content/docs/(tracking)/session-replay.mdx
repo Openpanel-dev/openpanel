@@ -1,6 +1,6 @@
 ---
 title: Session Replay
-description: Record and replay user sessions to understand exactly what users did. Loaded asynchronously so it never bloats your analytics bundle.
+description: Record and replay user sessions with explicit npm recorder imports or automatic script-tag loading.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -8,7 +8,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 Session replay captures a structured recording of what users do in your app or website. You can replay any session to see which elements were clicked, how forms were filled, and where users ran into friction—without guessing.
 
 <Callout type="info">
-Session replay is **not enabled by default**. You explicitly opt in per-project. When disabled, the replay script is never downloaded, keeping your analytics bundle lean.
+Session replay is **not enabled by default**. Script-tag installs download the recorder only when replay starts. Npm bundles stay lean when they do not import the recorder subpath; setting `enabled: false` does not remove an explicit recorder import.
 </Callout>
 
 ## How it works
