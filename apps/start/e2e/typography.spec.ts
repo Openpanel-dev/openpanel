@@ -1,15 +1,15 @@
-// The dashboard's type defaults: Inter, 14px body text with a readable line
+// The dashboard's type defaults: Inter, 13px body text with a readable line
 // height. A custom scale once set every line-height equal to its font size,
 // which is what this guards against.
 
 import { expect, test } from './fixtures';
 
-const BODY_FONT_SIZE = '14px';
+const BODY_FONT_SIZE = '13px';
 const BODY_LINE_HEIGHT = '20px';
 const CAPTION_FONT_SIZE = '12px';
 const CAPTION_LINE_HEIGHT = '16px';
 
-test('text renders in Inter at 14px with a 20px line height', async ({
+test('text renders in Inter at 13px with a 20px line height', async ({
   page,
   seed,
 }) => {

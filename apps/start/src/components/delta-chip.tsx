@@ -3,19 +3,19 @@ import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const deltaChipVariants = cva(
-  'flex items-center justify-center gap-1 rounded-full font-semibold',
+  'flex items-center justify-center gap-0.5 font-medium tabular-nums',
   {
     variants: {
       variant: {
-        inc: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-        dec: 'bg-red-500/10 text-red-600 dark:text-red-400',
-        default: 'bg-muted text-muted-foreground',
+        inc: 'text-emerald-600 dark:text-emerald-400',
+        dec: 'text-red-600 dark:text-red-400',
+        default: 'text-muted-foreground',
       },
       size: {
-        xs: 'px-1.5 py-0 text-2xs leading-none',
-        sm: 'px-2 py-1 text-xs',
-        md: 'px-2 py-1 text-sm',
-        lg: 'px-2 py-1 text-base',
+        xs: 'text-2xs',
+        sm: 'text-2xs',
+        md: 'text-sm',
+        lg: 'text-base',
       },
     },
     defaultVariants: {
@@ -31,10 +31,10 @@ type DeltaChipProps = VariantProps<typeof deltaChipVariants> & {
 };
 
 const iconVariants: Record<NonNullable<DeltaChipProps['size']>, number> = {
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 20,
+  xs: 10,
+  sm: 10,
+  md: 14,
+  lg: 16,
 };
 
 const getVariant = (variant: DeltaChipProps['variant'], inverted?: boolean) => {

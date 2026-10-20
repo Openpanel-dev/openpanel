@@ -38,11 +38,11 @@ export function Stat({
 }) {
   return (
     <div className="col min-w-0 gap-1 px-4 py-3 shadow-[0_0_0_0.5px] shadow-border">
-      <span className="truncate font-medium text-2xs text-muted-foreground uppercase tracking-wider">
+      <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
         {label}
       </span>
       <span className="flex items-baseline gap-2">
-        <span className="truncate font-mono font-semibold text-xl tabular-nums tracking-tight">
+        <span className="truncate font-semibold text-xl tabular-nums tracking-tight">
           {value}
         </span>
         {change}

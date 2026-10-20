@@ -91,7 +91,7 @@ export function OverviewMetricCard({
     >
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate font-medium text-2xs text-muted-foreground uppercase tracking-wider">
+          <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
           {hasValue && (

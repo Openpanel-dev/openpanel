@@ -60,7 +60,7 @@ function SortableHeader({
   return (
     <button
       className={cn(
-        'row items-center gap-1 transition-opacity hover:opacity-80',
+        'row items-center gap-1 uppercase transition-opacity hover:opacity-80',
         isRightAligned && 'ml-auto justify-end'
       )}
       onClick={onClick}
@@ -192,7 +192,7 @@ export const OverviewWidgetTable = <T,>({
         className: cn(
           index === 0
             ? 'w-full min-w-0 text-left font-medium'
-            : 'text-right font-mono',
+            : 'text-right tabular-nums',
           // Remove old responsive logic - now handled by responsive prop
           column.className
         ),

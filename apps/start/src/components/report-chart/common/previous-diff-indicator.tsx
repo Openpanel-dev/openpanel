@@ -68,7 +68,7 @@ export function PreviousDiffIndicator({
     <>
       <div
         className={cn(
-          'flex items-center gap-1 font-medium font-mono',
+          'flex items-center gap-1 font-medium tabular-nums',
           size === 'lg' && 'gap-2',
           className
         )}

@@ -155,10 +155,25 @@ body {
     "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* Tailwind's scale, with one extra step below `xs` for micro labels and
-     stat-card captions. The dashboard's default text is `sm` (14px/20px). */
+  /* The dashboard's type scale. `sm` is the default for almost everything
+     (body, inputs, buttons); `3xs` is for uppercase micro labels and table
+     headers, `2xs` for captions and percentages beside 13px text, `xs` for
+     dense tables, `xl` for h1 and sheet/modal titles. Larger steps keep
+     Tailwind's defaults for display numbers. */
+  --text-3xs: 10px;
+  --text-3xs--line-height: 14px;
   --text-2xs: 11px;
   --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
 
   /* Sidebar rows: a touch smaller and lighter than body text; the fractional
      weight needs the variable font. */
@@ -239,11 +254,11 @@ body {
   }
 
   .h1 {
-    @apply text-2xl font-medium;
+    @apply text-xl font-semibold;
   }
 
   .h2 {
-    @apply text-xl font-medium;
+    @apply text-lg font-medium;
   }
 
   .h3 {
@@ -259,15 +274,15 @@ body {
   }
 
   .heading {
-    @apply text-2xl font-semibold;
+    @apply text-xl font-semibold;
   }
 
   .title {
-    @apply text-base font-semibold;
+    @apply text-lg font-semibold;
   }
 
   .subtitle {
-    @apply text-sm font-medium;
+    @apply text-base font-medium;
   }
 
   .card {

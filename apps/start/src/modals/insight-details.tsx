@@ -211,7 +211,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
                 Possibly related: {explanation.relatedReference}
               </p>
             )}
-            <p className="text-2xs text-muted-foreground uppercase tracking-wide">
+            <p className="text-3xs text-muted-foreground uppercase tracking-wide">
               Confidence: {explanation.confidence}
             </p>
           </div>
