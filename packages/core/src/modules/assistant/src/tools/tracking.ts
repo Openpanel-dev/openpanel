@@ -1,4 +1,4 @@
-import { sql } from '@openpanel/db';
+import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { safeFetch } from '@openpanel/shared/server';
 import { tool } from 'ai';
 import { z } from 'zod';

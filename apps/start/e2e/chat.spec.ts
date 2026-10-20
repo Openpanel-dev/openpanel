@@ -35,18 +35,22 @@ test.describe('AI chat', () => {
   }) => {
     await page.goto('/acme/acme-web', { waitUntil: 'networkidle' });
     const composer = page.getByPlaceholder('Ask AI anything…');
-    // Before hydration the form submits natively; type and submit until the app answers.
+    // Before hydration the form submits natively and hydration can clear a
+    // typed value, so type and submit until the question shows up in the chat
+    // (or the chat reports it is not configured).
+    const question = page.getByText('What changed this week?');
+    const notConfigured = page.getByText(NOT_CONFIGURED);
     await expect(async () => {
       await composer.fill('What changed this week?');
+      await expect(composer).toHaveValue('What changed this week?');
       await composer.press('Enter');
-      await expect(page).toHaveURL(/\/acme\/acme-web\/chat/, { timeout: 1000 });
+      await expect(question.or(notConfigured)).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 30_000 });
-    if (await page.getByText(NOT_CONFIGURED).isVisible()) {
+    if (await notConfigured.isVisible()) {
       test.skip();
       return;
     }
-    // The question is sent on arrival and the URL settles on the new conversation.
-    await expect(page.getByText('What changed this week?')).toBeVisible();
+    // The URL settles on the new conversation.
     await expect(page).toHaveURL(/\/chat\?.*c=/);
   });
 
