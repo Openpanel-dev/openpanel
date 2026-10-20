@@ -48,17 +48,19 @@ export interface TooltipBoxProps {
   backgroundColor?: string;
 }
 
+const DEFAULT_TOOLTIP_OFFSET = 12;
+
 /**
  * Popover-style panel: rounded, 1px border, soft layered shadow and a 1px
  * edge highlight (`before:`) — matches shadcn / coss popovers using only theme
  * tokens (`border`, `--radius`) and Tailwind utilities.
  */
 const TOOLTIP_PANEL_CLASS_NAME =
-  'relative min-w-[160px] rounded-xl border not-dark:bg-clip-padding text-chart-tooltip-foreground shadow-lg/5 before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-xl)-1px)] before:shadow-[0_1px_rgb(0_0_0/0.04)] dark:before:shadow-[0_-1px_rgb(255_255_255/0.06)]';
+  'relative min-w-[140px] rounded-lg border not-dark:bg-clip-padding text-chart-tooltip-foreground shadow-lg/5 before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_rgb(0_0_0/0.04)] dark:before:shadow-[0_-1px_rgb(255_255_255/0.06)]';
 
 /** Clips content to the panel's inner radius without clipping the edge highlight. */
 const TOOLTIP_PANEL_INNER_CLASS_NAME =
-  'overflow-hidden rounded-[calc(var(--radius-xl)-1px)]';
+  'overflow-hidden rounded-[calc(var(--radius-lg)-1px)]';
 
 // Inner-only-on-visible so `useSpring` initializes at the cursor's actual x/y
 // instead of (0, 0) on first hover.
@@ -84,7 +86,7 @@ function TooltipBoxInner({
   y,
   containerWidth,
   containerHeight,
-  offset = 16,
+  offset = DEFAULT_TOOLTIP_OFFSET,
   className = '',
   children,
   left: leftOverride,

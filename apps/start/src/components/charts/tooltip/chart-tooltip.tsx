@@ -436,7 +436,7 @@ function DatePillTrackerInner({
 
   return (
     <motion.div
-      className="pointer-events-none absolute z-50"
+      className="pointer-events-none absolute z-40"
       style={{
         left: discreteInteraction ? xWithMargin : animatedX,
         transform: 'translateX(-50%)',

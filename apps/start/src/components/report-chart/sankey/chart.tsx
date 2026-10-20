@@ -139,7 +139,7 @@ export function Chart({ data }: { data: ReportSankeyData }) {
                 const target = link.target as unknown as SankeyNodeInfo;
                 const sourceValue = source.value ?? 0;
                 return (
-                  <OPTooltipCard className="min-w-[220px]">
+                  <OPTooltipCard className="min-w-[200px]">
                     <div className="font-medium">
                       {source.label}
                       <ArrowRightIcon className="mx-2 inline-block size-3" />
@@ -165,7 +165,7 @@ export function Chart({ data }: { data: ReportSankeyData }) {
                 };
                 const value = info.value ?? 0;
                 return (
-                  <OPTooltipCard className="min-w-[220px]">
+                  <OPTooltipCard className="min-w-[200px]">
                     <div className="flex justify-between gap-4">
                       <span className="font-medium">{info.label}</span>
                       {info.step !== undefined && (

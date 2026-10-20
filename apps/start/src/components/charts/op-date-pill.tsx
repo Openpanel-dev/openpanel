@@ -91,9 +91,10 @@ function OPDatePillInner({
     return null;
   }
 
+  // Below the tooltip card (z-50) so the card wins when they overlap.
   return createPortal(
     <motion.div
-      className="pointer-events-none absolute z-50"
+      className="pointer-events-none absolute z-40"
       style={{
         left: animatedX,
         bottom: 4,

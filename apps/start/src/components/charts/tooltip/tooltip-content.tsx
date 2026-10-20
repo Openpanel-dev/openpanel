@@ -30,7 +30,7 @@ export function TooltipHeader({ children, className }: TooltipHeaderProps) {
   return (
     <div
       className={cn(
-        'border-b px-3.5 py-2.5 text-left font-medium text-chart-tooltip-foreground text-sm',
+        'border-b px-3 py-2 text-left font-medium text-chart-tooltip-foreground text-sm',
         className
       )}
     >
@@ -47,12 +47,12 @@ export function TooltipContent({ title, rows, children }: TooltipContentProps) {
     <div>
       {title && <TooltipHeader>{title}</TooltipHeader>}
       {hasBody && (
-        <div className="px-3.5 py-3">
+        <div className="px-3 py-2.5">
           {rows.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {rows.map((row) => (
                 <div
-                  className="flex items-center justify-between gap-6"
+                  className="flex items-center justify-between gap-5"
                   key={`${row.label}-${row.color}`}
                 >
                   <div className="flex min-w-0 items-center gap-2">
