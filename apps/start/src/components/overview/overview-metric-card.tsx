@@ -97,14 +97,16 @@ export function OverviewMetricCard({
             {label}
           </span>
           {hasValue && (
-            <PreviousDiffIndicatorPure
-              {...diff}
-              inverted={inverted}
-              size="xs"
-            />
+            <div className="absolute top-2.5 right-3">
+              <PreviousDiffIndicatorPure
+                {...diff}
+                inverted={inverted}
+                size="xs"
+              />
+            </div>
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+        <div className="-my-0.5 flex items-baseline gap-0.5 leading-none">
           {isLoading && <Skeleton className="h-5 w-20" />}
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
