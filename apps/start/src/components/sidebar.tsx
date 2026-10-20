@@ -136,7 +136,7 @@ export function SidebarContainer({
             projects={projects}
           />
         </div>
-        <div className="hide-scrollbar flex flex-1 flex-col gap-0.5 overflow-auto px-1 pb-4">
+        <div className="hide-scrollbar flex flex-1 flex-col gap-0.5 overflow-auto px-3 pb-4">
           {children}
         </div>
         <div className="relative shrink-0">
@@ -159,7 +159,7 @@ export function SidebarContainer({
               </span>
             </a>
           )}
-          <div className="flex items-center gap-0.5 border-border border-t px-1 py-2">
+          <div className="flex items-center gap-0.5 border-border border-t px-3 py-2">
             <FeedbackButton className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')} />
             <a
               className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')}

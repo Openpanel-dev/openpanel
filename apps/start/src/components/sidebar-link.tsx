@@ -7,7 +7,7 @@ const SIDEBAR_ICON_STROKE_WIDTH = 1.75;
 
 /** Shared look for every row in the sidebar; TanStack's Link sets `data-status`. */
 export const sidebarItemClassName = cn(
-  'group flex h-9 items-center gap-2.5 rounded-lg px-2 text-foregroundish text-nav',
+  'group flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-foregroundish text-nav',
   'transition-colors hover:bg-def-200 hover:text-foreground',
   'data-[status=active]:bg-def-200 data-[status=active]:text-foreground'
 );
@@ -37,7 +37,7 @@ export function SidebarSectionLabel({
   return (
     <div
       className={cn(
-        'mt-5 mb-1.5 px-2 font-medium text-muted-foreground text-xs first:mt-0',
+        'mt-5 mb-1.5 px-2.5 font-medium text-muted-foreground text-xs first:mt-0',
         className
       )}
     >
