@@ -136,7 +136,7 @@ export function ActionCTAButton() {
   }
 
   return (
-    <div className="mb-3">
+    <div className="mx-2 mb-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
