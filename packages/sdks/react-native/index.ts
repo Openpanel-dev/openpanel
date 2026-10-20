@@ -5,8 +5,9 @@ import type {
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 import * as Application from 'expo-application';
-import Constants from 'expo-constants';
+import * as ExpoConstants from 'expo-constants';
 import { AppState, Platform } from 'react-native';
+import { getWebViewUserAgent } from './user-agent';
 
 export * from '@openpanel/sdk';
 
@@ -59,7 +60,7 @@ export class OpenPanel extends OpenPanelBase {
       sdkVersion: process.env.REACT_NATIVE_VERSION!,
     });
 
-    this.api.addHeader('User-Agent', Constants.getWebViewUserAgentAsync());
+    this.api.addHeader('User-Agent', getWebViewUserAgent(ExpoConstants));
     this.storage = options.storage;
 
     if (options.networkInfo) {
