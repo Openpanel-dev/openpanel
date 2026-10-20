@@ -15,7 +15,7 @@ Session replay is **not enabled by default**. You explicitly opt in per-project.
 
 OpenPanel session replay is built on [rrweb](https://www.rrweb.io/), an open-source library for recording and replaying web sessions. It captures DOM mutations, mouse movements, scroll positions, and interactions as structured data—not video.
 
-The replay module is loaded **asynchronously** as a separate script (`op1-replay.js`). This means:
+For script-tag installs, the replay module is loaded **asynchronously** as a separate script (`op1-replay.js`). This means:
 
 - Your main tracking script (`op1.js`) stays lightweight even when replay is disabled
 - The replay module is only downloaded for sessions that are actually recorded
@@ -50,23 +50,28 @@ Add `sessionReplay` to your `init` call. The replay script loads automatically f
 
 ```ts title="op.ts"
 import { OpenPanel } from '@openpanel/web';
+import { startReplayRecorder } from '@openpanel/web/replay';
 
 const op = new OpenPanel({
   clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
   sessionReplay: {
     enabled: true,
+    recorder: startReplayRecorder,
   },
 });
 ```
 
-With the npm package, the replay module is a dynamic import code-split by your bundler. It is never included in your main bundle when session replay is disabled.
+Pass `recorder` from `@openpanel/web/replay` when enabling replay in the npm package. That keeps rrweb out of apps that never import the subpath. Script-tag installs still load `op1-replay.js` from the CDN automatically.
+
+When upgrading an npm integration, add this explicit recorder import if replay was previously enabled with only `enabled: true`. Without a recorder, the SDK logs a warning and does not record.
 
 ## Options
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | `boolean` | `false` | Enable session replay recording |
+| `recorder` | `function` | — | Required for the npm package: pass `startReplayRecorder` from `@openpanel/web/replay`. Not needed for script-tag installs |
 | `maskAllInputs` | `boolean` | `true` | Mask all input field values |
 | `maskAllText` | `boolean` | `true` | Mask all text content in the recording |
 | `unmaskTextSelector` | `string` | — | CSS selector for elements whose text should NOT be masked when `maskAllText` is true |
