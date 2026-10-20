@@ -374,6 +374,7 @@ function Chart({
       />
 
       <Line
+        animate={false}
         curve={curveMonotoneX}
         dataKey={`prev_${activeMetric.key}`}
         key={`prev-${activeMetric.key}`}
@@ -385,8 +386,10 @@ function Chart({
 
       {showRevenue && (
         <Line
+          animate={false}
           curve={curveMonotoneX}
           dataKey="revenue_norm"
+          key={`revenue-${activeMetric.key}`}
           markers={POINT_MARKER}
           showMarkers={showMarkers}
           stroke={REVENUE_COLOR}
