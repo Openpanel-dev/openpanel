@@ -64,11 +64,19 @@ const { values } = parseArgs({
   },
 });
 
-const devices = Number(values.devices);
-const perDevice = Number(values['per-device']);
-const concurrency = Number(values.concurrency);
-const propertyCount = Number(values.properties);
-const timeoutS = Number(values.timeout);
+function integerOption(name: string, raw: string, min: number): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < min) {
+    throw new Error(`--${name} must be an integer >= ${min}, got "${raw}"`);
+  }
+  return value;
+}
+
+const devices = integerOption('devices', values.devices, 1);
+const perDevice = integerOption('per-device', values['per-device'], 1);
+const concurrency = integerOption('concurrency', values.concurrency, 1);
+const propertyCount = integerOption('properties', values.properties, 0);
+const timeoutS = integerOption('timeout', values.timeout, 1);
 const total = devices * perDevice;
 const projectId = values.project;
 const runId = `${values.label}_${Date.now().toString(36)}`;
@@ -352,7 +360,8 @@ const peaks = {
   profileBuffer: 0,
 };
 
-const monitor = (async () => {
+/** Resolves true once everything landed, false on timeout. */
+const monitor = (async (): Promise<boolean> => {
   while (true) {
     const [buffers, kafka, inClickhouse] = await Promise.all([
       bufferSizes(),
@@ -371,19 +380,20 @@ const monitor = (async () => {
       if (!marks.kafkaDrained && kafka.lag === 0) {
         marks.kafkaDrained = t;
       }
-      if (!marks.eventsInClickhouse && inClickhouse >= total) {
+      // A rejected request wrote no event, so the target is what was accepted.
+      if (!marks.eventsInClickhouse && inClickhouse >= accepted) {
         marks.eventsInClickhouse = t;
       }
       const drained =
         buffers.event === 0 && buffers.session === 0 && buffers.profile === 0;
       if (marks.eventsInClickhouse && marks.kafkaDrained && drained) {
         marks.buffersDrained = t;
-        return;
+        return true;
       }
     }
     if (t > timeoutS) {
       log('TIMEOUT');
-      return;
+      return false;
     }
     await Bun.sleep(SAMPLE_INTERVAL_MS);
   }
@@ -394,14 +404,16 @@ marks.sendDone = elapsed();
 log(
   `send done at ${marks.sendDone.toFixed(1)}s (${(accepted / marks.sendDone).toFixed(0)} accepted requests/s)`
 );
-await monitor;
+const completed = await monitor;
+// On a timeout the rates are over the time the run was given.
+const runSeconds = completed ? marks.buffersDrained : elapsed();
 
 const cpuAfter = await redisCpuSeconds();
 reportRedisCost(statsBefore, await redisCommandStats());
 const redisCpu = cpuAfter.main - cpuBefore.main;
 const redisForkCpu = cpuAfter.children - cpuBefore.children;
 log(
-  `Redis CPU over the run: ${redisCpu.toFixed(1)} s = ${((1000 * redisCpu) / total).toFixed(3)} ms per business event (${((100 * redisCpu) / marks.buffersDrained).toFixed(0)}% of one core on average), plus ${redisForkCpu.toFixed(1)} s in snapshot forks`
+  `Redis CPU over the run: ${redisCpu.toFixed(1)} s = ${((1000 * redisCpu) / total).toFixed(3)} ms per business event (${((100 * redisCpu) / runSeconds).toFixed(0)}% of one core on average), plus ${redisForkCpu.toFixed(1)} s in snapshot forks`
 );
 
 const [eventCounts, sessionStarts, sessionCounts] = await Promise.all([
@@ -422,6 +434,7 @@ const [eventCounts, sessionStarts, sessionCounts] = await Promise.all([
 
 const summary = {
   run: runId,
+  completed,
   shape: {
     devices,
     perDevice,
@@ -436,7 +449,7 @@ const summary = {
   seconds: Object.fromEntries(
     Object.entries(marks).map(([key, value]) => [key, Number(value.toFixed(1))])
   ),
-  businessEventsPerSecond: Number((total / marks.buffersDrained).toFixed(0)),
+  businessEventsPerSecond: Number((accepted / runSeconds).toFixed(0)),
   peaks,
   redisCpuSeconds: Number(redisCpu.toFixed(2)),
   redisForkCpuSeconds: Number(redisForkCpu.toFixed(2)),
@@ -451,3 +464,6 @@ log(JSON.stringify(summary));
 await Bun.write(`${outPrefix}.json`, JSON.stringify(summary, null, 2));
 await admin.disconnect();
 redis.disconnect();
+if (!completed || failed > 0) {
+  process.exit(1);
+}

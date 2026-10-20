@@ -432,8 +432,9 @@ export class BaseBuffer {
 
   private keepLockAlive(lockId: string): ReturnType<typeof setInterval> {
     const intervalMs = (this.lockTimeout * 1000) / LOCK_KEEPALIVE_PER_TTL;
+    let ownershipLost = false;
     return setInterval(async () => {
-      if (this.lockLost) {
+      if (ownershipLost) {
         return;
       }
       try {
@@ -445,12 +446,15 @@ export class BaseBuffer {
         if (extended === 1) {
           return;
         }
+        ownershipLost = true;
         this.lockLost = true;
         this.logger.error(
           { lockKey: this.lockKey },
           'flush lock lost mid-flush; stopping before the next batch'
         );
       } catch (error) {
+        // A failed call says nothing about ownership: the key may still be
+        // ours, so keep renewing for the batch in flight and start no new one.
         this.lockLost = true;
         this.logger.error(
           { err: error, lockKey: this.lockKey },
