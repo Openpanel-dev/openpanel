@@ -139,7 +139,7 @@ export function MapBadgeDetailCard({
                                 .replaceAll('www.', '') || '(Not set)'}
                             </span>
                           </div>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (
@@ -160,7 +160,7 @@ export function MapBadgeDetailCard({
                           key={item.name}
                         >
                           <span className="truncate">{item.name}</span>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (
@@ -183,7 +183,7 @@ export function MapBadgeDetailCard({
                           <span className="truncate">
                             {item.path || '(Not set)'}
                           </span>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (

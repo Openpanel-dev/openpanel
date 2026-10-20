@@ -165,7 +165,7 @@ function Pill({
   return (
     <Tooltiper
       className={cn(
-        'inline-flex h-6 shrink-0 items-center gap-2 whitespace-nowrap rounded-full font-mono @3xl:text-muted-foreground text-xs',
+        'inline-flex h-6 shrink-0 items-center gap-2 whitespace-nowrap rounded-full @3xl:text-muted-foreground text-xs tabular-nums',
         className
       )}
       content={children}

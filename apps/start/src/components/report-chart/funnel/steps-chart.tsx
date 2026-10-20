@@ -99,13 +99,13 @@ function SingleFunnel({
         <div className="flex shrink-0 items-center justify-center gap-2 text-muted-foreground text-sm">
           <span>
             Conversion{' '}
-            <span className="font-mono font-semibold text-foreground">
+            <span className="font-semibold text-foreground tabular-nums">
               {number.formatWithUnit(conversion / 100, '%')}
             </span>
           </span>
           <span>
             previous{' '}
-            <span className="font-mono">
+            <span className="tabular-nums">
               {number.formatWithUnit(previousConversion / 100, '%')}
             </span>
           </span>

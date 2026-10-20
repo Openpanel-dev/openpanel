@@ -395,12 +395,12 @@ function TrafficSourceWidget({
         <h3 className="font-medium text-sm">{title}</h3>
         {!isLoading && total > 0 && (
           <div className="flex items-center gap-2">
-            <span className="font-medium font-mono text-sm tabular-nums">
+            <span className="font-medium text-sm tabular-nums tabular-nums">
               {total.toLocaleString()}
             </span>
             {pctChange !== null && (
               <span
-                className={`font-mono text-xs tabular-nums ${pctChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+                className={`text-xs tabular-nums tabular-nums ${pctChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
               >
                 {pctChange >= 0 ? '+' : ''}
                 {pctChange.toFixed(1)}%
@@ -443,10 +443,10 @@ function TrafficSourceWidget({
                   <span className="min-w-0 flex-1 truncate text-xs capitalize">
                     {engine.name.replace(/\..+$/, '')}
                   </span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums">
+                  <span className="shrink-0 text-xs tabular-nums tabular-nums">
                     {engine.sessions.toLocaleString()}
                   </span>
-                  <span className="shrink-0 font-mono text-muted-foreground text-xs">
+                  <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
                     {pct.toFixed(0)}%
                   </span>
                 </div>
@@ -661,7 +661,7 @@ function GscTable({
               return (
                 <div className="min-w-0 overflow-hidden">
                   <button
-                    className="block w-full truncate text-left font-mono text-xs hover:underline"
+                    className="block w-full truncate text-left text-xs tabular-nums hover:underline"
                     onClick={() => onRowClick?.(String(item[keyField]))}
                     type="button"
                   >
@@ -677,7 +677,7 @@ function GscTable({
             getSortValue: (item) => item.clicks,
             render(item) {
               return (
-                <span className="font-mono font-semibold text-xs">
+                <span className="font-semibold text-xs tabular-nums">
                   {item.clicks.toLocaleString()}
                 </span>
               );
@@ -689,7 +689,7 @@ function GscTable({
             getSortValue: (item) => item.impressions,
             render(item) {
               return (
-                <span className="font-mono font-semibold text-xs">
+                <span className="font-semibold text-xs tabular-nums">
                   {item.impressions.toLocaleString()}
                 </span>
               );
@@ -701,7 +701,7 @@ function GscTable({
             getSortValue: (item) => item.ctr,
             render(item) {
               return (
-                <span className="font-mono font-semibold text-xs">
+                <span className="font-semibold text-xs tabular-nums">
                   {(item.ctr * 100).toFixed(1)}%
                 </span>
               );
@@ -713,7 +713,7 @@ function GscTable({
             getSortValue: (item) => item.position,
             render(item) {
               return (
-                <span className="font-mono font-semibold text-xs">
+                <span className="font-semibold text-xs tabular-nums">
                   {item.position.toFixed(1)}
                 </span>
               );

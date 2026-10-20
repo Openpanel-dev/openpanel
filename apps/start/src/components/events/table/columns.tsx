@@ -225,7 +225,7 @@ export function useColumns() {
           <div className="flex flex-wrap gap-1">
             {groups.map((g) => (
               <span
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums"
                 key={g}
               >
                 {g}

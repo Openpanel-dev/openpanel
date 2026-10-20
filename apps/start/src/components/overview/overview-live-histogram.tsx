@@ -97,7 +97,7 @@ export function OverviewLiveHistogram({
           </span>
         </div>
         <div className="mt-1.5 flex items-baseline gap-0.5">
-          <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums leading-4 tracking-tight">
+          <span className="truncate font-semibold text-foreground text-xl tabular-nums tabular-nums leading-4 tracking-tight">
             {number.short(displayCount)}
           </span>
         </div>
@@ -112,7 +112,7 @@ export function OverviewLiveHistogram({
                   title={`${ref.referrer} · ${ref.count}`}
                 >
                   <SerieIcon name={ref.referrer} />
-                  <span className="font-mono tabular-nums">{ref.count}</span>
+                  <span className="tabular-nums">{ref.count}</span>
                 </div>
               ))}
             </div>

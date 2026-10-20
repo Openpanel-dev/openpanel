@@ -122,7 +122,7 @@ export default function DateTimePicker({
             </span>
             <div className="h-4 w-px bg-border" />
             <ClockIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium font-mono">
+            <span className="font-medium tabular-nums">
               {format(selectedDate, 'HH:mm')}
             </span>
           </div>
@@ -144,7 +144,7 @@ export default function DateTimePicker({
               {timeOptions.map((time) => (
                 <Button
                   className={cn(
-                    'mb-0.5 h-8 w-full justify-start font-mono text-xs transition-all duration-200',
+                    'mb-0.5 h-8 w-full justify-start text-xs tabular-nums transition-all duration-200',
                     currentTimeValue === time.value
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'hover:bg-muted'

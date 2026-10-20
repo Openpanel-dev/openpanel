@@ -179,7 +179,7 @@ export function MetricCardShell({
 }
 
 const VALUE_CLASS =
-  'truncate font-mono font-semibold text-foreground text-xl leading-4 tracking-tight tabular-nums';
+  'truncate tabular-nums font-semibold text-foreground text-xl leading-4 tracking-tight tabular-nums';
 
 function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
   const number = useNumber();
@@ -219,7 +219,7 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
     return (
       <>
         <span className={VALUE_CLASS}>{number.format(value)}</span>
-        <span className="font-medium font-mono text-muted-foreground text-sm">
+        <span className="font-medium text-muted-foreground text-sm tabular-nums">
           %
         </span>
       </>

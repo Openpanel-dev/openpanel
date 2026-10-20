@@ -233,7 +233,7 @@ export default function OverviewWeeklyTrends({
                                 </div>
                               </ChartTooltipHeader>
                               <ChartTooltipItem color="#10b981">
-                                <div className="flex items-center justify-between gap-6 font-medium font-mono text-sm">
+                                <div className="flex items-center justify-between gap-6 font-medium text-sm tabular-nums">
                                   <div className="text-muted-foreground">
                                     {activeMetric.label}
                                   </div>

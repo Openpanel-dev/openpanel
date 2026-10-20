@@ -202,7 +202,7 @@ function TooltipStats({
   return (
     <div className="flex gap-2">
       <div className="w-[3px] rounded-full" style={{ background: color }} />
-      <div className="col flex-1 gap-1 font-mono text-sm">
+      <div className="col flex-1 gap-1 text-sm tabular-nums">
         {rows.map(([label, value]) => (
           <div className="flex justify-between gap-8" key={label}>
             <span className="text-muted-foreground">{label}</span>

@@ -110,7 +110,7 @@ function renderReferrers(point: MinutePoint) {
                 {ref.referrer}
               </span>
             </div>
-            <span className="font-mono">{ref.count}</span>
+            <span className="tabular-nums">{ref.count}</span>
           </div>
         ))}
         {hidden > 0 && (
@@ -137,7 +137,7 @@ function Wrapper({ children, count, icons }: WrapperProps) {
         <div>{icons}</div>
       </div>
       <div className="col -mt-1 gap-2">
-        <div className="font-bold font-mono text-5xl">
+        <div className="font-bold text-5xl tabular-nums">
           <AnimatedNumber value={count} />
         </div>
       </div>

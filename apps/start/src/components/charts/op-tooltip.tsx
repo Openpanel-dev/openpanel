@@ -413,7 +413,7 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
           <span className="truncate font-medium">{row.label}</span>
         </div>
         {hasValue && (
-          <div className="flex items-center justify-between gap-8 font-medium font-mono">
+          <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
             <div className="row items-baseline gap-1">
               <span>{formatValue(row.value!)}</span>
               {showPrev && (
@@ -437,7 +437,7 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
           <div className="col gap-1 text-sm">
             {row.sub.map((s, i) => (
               <div
-                className="flex justify-between gap-8 font-medium font-mono"
+                className="flex justify-between gap-8 font-medium tabular-nums"
                 key={`${typeof s.label === 'string' ? s.label : i}-${i}`}
               >
                 <span className="text-muted-foreground">{s.label}</span>
