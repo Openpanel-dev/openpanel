@@ -46,7 +46,11 @@ export {
   isRetryableStatus,
   ProviderError,
 } from './clients/provider-error';
-export { KAFKA_SASL_MECHANISMS, type KafkaSaslMechanism } from './config';
+export {
+  type DevLoginConfig,
+  KAFKA_SASL_MECHANISMS,
+  type KafkaSaslMechanism,
+} from './config';
 export type {
   AppDeps,
   CoreConfig,

@@ -3,7 +3,11 @@
 // contradiction fails at boot. A blank `KEY=` counts as unset. Every issue is reported at once:
 // boot-critical values (roles, queues, Kafka wiring) fail, tuning knobs fall back to the module's default.
 
-import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
+import type {
+  CoreConfig,
+  DevLoginConfig,
+  KafkaSaslMechanism,
+} from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
 import { z } from 'zod';
 
@@ -64,6 +68,8 @@ const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
+/** `DEV_LOGIN=email/password`; the password may itself contain the separator. */
+const DEV_LOGIN_SEPARATOR = '/';
 
 /** The Kafka events consumer's token. The old `events_kafka` spelling gets its own error (`RENAMED_QUEUE_TOKENS`), not an alias. */
 export const KAFKA_QUEUE_TOKEN = 'events';
@@ -223,6 +229,43 @@ const positiveIntWithDefault = (fallback: number) =>
     blankToUndefined,
     z.coerce.number().int().positive().default(fallback)
   );
+
+/**
+ * `email/password`, split at the first separator. A value with no separator
+ * or an empty half fails boot: a dev login that cannot sign in is a typo.
+ */
+const devLoginSchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || parseDevLogin(value) !== undefined) {
+        return;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        // The value is a credential, so it stays out of the boot error.
+        message: `DEV_LOGIN must be "email${DEV_LOGIN_SEPARATOR}password", with neither half empty`,
+      });
+    })
+    .transform((value) =>
+      value === undefined ? undefined : parseDevLogin(value)
+    )
+);
+
+function parseDevLogin(value: string): DevLoginConfig | undefined {
+  const separatorAt = value.indexOf(DEV_LOGIN_SEPARATOR);
+  if (separatorAt === -1) {
+    return undefined;
+  }
+  const email = value.slice(0, separatorAt).trim();
+  const password = value.slice(separatorAt + DEV_LOGIN_SEPARATOR.length);
+  if (email === '' || password === '') {
+    return undefined;
+  }
+  return { email, password };
+}
 
 /** Comma-separated list; `undefined` when unset so the caller's order stands. */
 const optionalTokenList = z.preprocess(
@@ -388,6 +431,8 @@ const rawSchema = z.object({
 
   ALLOW_REGISTRATION: optionalString,
   ALLOW_INVITATION: optionalString,
+  /** A one-click sign-in on the login page; refused under NODE_ENV=production. */
+  DEV_LOGIN: devLoginSchema,
   GITHUB_CLIENT_ID: stringWithDefault(''),
   GITHUB_CLIENT_SECRET: stringWithDefault(''),
   GITHUB_REDIRECT_URI: stringWithDefault(''),
@@ -624,6 +669,18 @@ function checkKafkaSaslIsComplete(raw: RawEnv, ctx: z.RefinementCtx): void {
   }
 }
 
+/** A password-free sign-in button has no place on a production deployment. */
+function checkDevLoginIsNotProduction(raw: RawEnv, ctx: z.RefinementCtx): void {
+  if (raw.DEV_LOGIN === undefined || raw.NODE_ENV !== PRODUCTION) {
+    return;
+  }
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message:
+      'DEV_LOGIN is set while NODE_ENV=production — it puts a one-click sign-in on the login page, so unset it here.',
+  });
+}
+
 /** A CA or a verification switch on a plaintext connection does nothing. */
 function checkKafkaTlsOptionsHaveTls(raw: RawEnv, ctx: z.RefinementCtx): void {
   const hasTlsOptions =
@@ -800,6 +857,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       },
       google: { ...googleClient, redirectUri: raw.GOOGLE_REDIRECT_URI },
       googleGsc: { ...googleClient, redirectUri: raw.GSC_GOOGLE_REDIRECT_URI },
+      devLogin: raw.DEV_LOGIN,
     },
     cookies: {
       secret: raw.COOKIE_SECRET,
@@ -941,6 +999,7 @@ const envSchema = rawSchema
     checkKafkaHeartbeatFitsSession(raw, ctx);
     checkKafkaSaslIsComplete(raw, ctx);
     checkAdminAuthIsComplete(raw, ctx);
+    checkDevLoginIsNotProduction(raw, ctx);
     checkKafkaTlsOptionsHaveTls(raw, ctx);
     checkReaperDeadmanOutlivesSession(raw, ctx);
     checkVacuumOutlivesReaper(raw, ctx);

@@ -33,6 +33,8 @@ export const zSignInEmail = z.object({
 });
 export type ISignInEmail = z.infer<typeof zSignInEmail>;
 
+export const zSignInDev = z.object({ inviteId: zShortId.nullish() });
+
 export const zSignUpEmail = z
   .object({
     firstName: zPersonName,

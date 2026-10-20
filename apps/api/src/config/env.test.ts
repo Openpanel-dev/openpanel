@@ -214,6 +214,29 @@ describe('derived values, computed once in the transform', () => {
     );
   });
 
+  it('devLogin is DEV_LOGIN split at the first slash, so the password keeps its own', () => {
+    expect(loadConfig(base).core.auth.devLogin).toBeUndefined();
+    expect(
+      loadConfig({ ...base, DEV_LOGIN: 'admin@openpanel.local/openpanel' }).core
+        .auth.devLogin
+    ).toEqual({ email: 'admin@openpanel.local', password: 'openpanel' });
+    expect(
+      loadConfig({ ...base, DEV_LOGIN: 'admin@openpanel.local/a/b' }).core.auth
+        .devLogin
+    ).toEqual({ email: 'admin@openpanel.local', password: 'a/b' });
+    for (const malformed of ['admin@openpanel.local', '/pw', 'a@b.co/']) {
+      let message = '';
+      try {
+        loadConfig({ ...base, DEV_LOGIN: malformed });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toContain('DEV_LOGIN must be "email/password"');
+      // The value is a credential; the boot error must not echo it.
+      expect(message).not.toContain(malformed);
+    }
+  });
+
   it('clickhouseClustered is CLICKHOUSE_CLUSTER alone, the rule the migrations use', () => {
     expect(loadConfig(base).core.clickhouseClustered).toBe(false);
     expect(
@@ -382,6 +405,17 @@ describe('cross-field invariants, checked before the transform', () => {
     expect(() =>
       loadConfig({ ROLE: 'api', ENABLED_QUEUES: ' , ' })
     ).not.toThrow();
+  });
+
+  it('refuses DEV_LOGIN under NODE_ENV=production', () => {
+    const devLogin = { ...base, DEV_LOGIN: 'admin@openpanel.local/openpanel' };
+    expect(() => loadConfig({ ...devLogin, NODE_ENV: 'production' })).toThrow(
+      /DEV_LOGIN is set while NODE_ENV=production/
+    );
+    expect(() =>
+      loadConfig({ ...devLogin, NODE_ENV: 'development' })
+    ).not.toThrow();
+    expect(() => loadConfig(devLogin)).not.toThrow();
   });
 
   it('refuses LOG_EXPORTER=otlp without a HyperDX key', () => {
