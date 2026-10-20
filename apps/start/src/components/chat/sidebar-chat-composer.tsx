@@ -19,12 +19,12 @@ export function SidebarChatComposer() {
   return (
     <form
       className={cn(
-        'mb-4 flex items-center gap-2 rounded-md border border-border bg-def-100 pr-2 pl-3',
+        'mb-1 flex h-9 items-center gap-2.5 rounded-lg border border-border bg-def-100 pr-2 pl-2.5',
         'transition-all focus-within:border-def-400 focus-within:ring-1 focus-within:ring-ring'
       )}
       onSubmit={submit}
     >
-      <SparklesIcon className="size-5 shrink-0 text-muted-foreground" />
+      <SparklesIcon className="size-[18px] shrink-0 text-muted-foreground" />
       <input
         className={cn(
           'min-w-0 flex-1 bg-transparent py-2 font-medium text-foreground text-sm',

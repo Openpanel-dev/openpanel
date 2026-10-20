@@ -26,7 +26,7 @@ import {
   WorkflowIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { SidebarLink } from './sidebar-link';
+import { SidebarLink, SidebarSectionLabel } from './sidebar-link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,9 +48,7 @@ export default function SidebarProjectMenu({
   return (
     <>
       <SidebarChatComposer />
-      <div className="mb-2 font-medium text-muted-foreground text-xs">
-        Analytics
-      </div>
+      <SidebarSectionLabel>Analytics</SidebarSectionLabel>
       <SidebarLink href={'/'} icon={WallpaperIcon} label="Overview" />
       <SidebarLink
         href={'/dashboards'}
@@ -70,9 +68,7 @@ export default function SidebarProjectMenu({
       <SidebarLink href={'/profiles'} icon={UserCircleIcon} label="Profiles" />
       <SidebarLink href={'/groups'} icon={Building2Icon} label="Groups" />
       <SidebarLink href={'/cohorts'} icon={TargetIcon} label="Cohorts" />
-      <div className="mt-4 mb-2 font-medium text-muted-foreground text-xs">
-        Manage
-      </div>
+      <SidebarSectionLabel>Manage</SidebarSectionLabel>
       <SidebarLink
         exact={false}
         href={'/settings'}
@@ -155,19 +151,19 @@ export function ActionCTAButton() {
   }, []);
 
   return (
-    <div className="mb-2">
+    <div className="mb-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
+              'group flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-def-200 px-2.5 text-left',
               'font-medium text-foreground text-sm',
               'transition-colors hover:bg-def-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
             type="button"
           >
-            <PlusIcon className="size-5 shrink-0" />
+            <PlusIcon className="size-[18px] shrink-0" />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
               {/* `initial={false}` suppresses only the FIRST mount: framer writes
                   transform/opacity into the style attribute, and the SSR string

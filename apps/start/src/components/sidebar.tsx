@@ -1,13 +1,20 @@
 import type { IServiceOrganization } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
-import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
+import {
+  BookOpenIcon,
+  HeartIcon,
+  MenuIcon,
+  SparklesIcon,
+  XIcon,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useChatLaunch } from './chat/chat-launch';
 import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
 import ProjectSelector from './project-selector';
+import { SidebarSectionLabel } from './sidebar-link';
 import SidebarOrganizationMenu, {
   ActionCTAButton as ActionOrganizationCTAButton,
 } from './sidebar-organization-menu';
@@ -57,7 +64,7 @@ export function Sidebar() {
   return (
     <SidebarContainer organizations={organizations} projects={projects}>
       <ActionOrganizationCTAButton />
-      <div className="mb-2 font-medium text-muted-foreground">Organization</div>
+      <SidebarSectionLabel className="mt-2">Organization</SidebarSectionLabel>
       <SidebarOrganizationMenu
         organization={organizations.find((o) => o.id === organizationId)!}
       />
@@ -70,6 +77,11 @@ interface SidebarContainerProps {
   projects: Array<{ id: string; name: string; organizationId: string }>;
   children: React.ReactNode;
 }
+
+const SIDEBAR_FOOTER_BUTTON = cn(
+  'flex h-8 items-center justify-center gap-1.5 rounded-md font-medium text-muted-foreground text-xs',
+  'transition-colors hover:bg-def-200 hover:text-foreground'
+);
 
 export function SidebarContainer({
   organizations,
@@ -114,7 +126,7 @@ export function SidebarContainer({
             {active ? <XIcon size={16} /> : <MenuIcon size={16} />}
           </Button>
         </div>
-        <div className="flex h-16 shrink-0 items-center gap-2 border-border border-b px-4">
+        <div className="flex h-16 shrink-0 items-center gap-2 px-3">
           <Link to="/">
             <LogoSquare className="max-h-8" />
           </Link>
@@ -124,49 +136,50 @@ export function SidebarContainer({
             projects={projects}
           />
         </div>
-        <div
-          className={cn([
-            'hide-scrollbar flex-1 overflow-auto p-4',
-            "[&_a[data-status='active']]:bg-def-200",
-          ])}
-        >
+        <div className="hide-scrollbar flex flex-1 flex-col gap-0.5 overflow-auto px-3 pb-4">
           {children}
         </div>
-        <div className="relative">
+        <div className="relative shrink-0">
           <div className="pointer-events-none absolute right-0 bottom-full left-0 h-8 bg-gradient-to-t from-card to-card/0" />
-          <div className="border-border border-t bg-card">
-            <div className="flex items-center">
-              <FeedbackButton className="h-12 flex-1 whitespace-nowrap rounded-none border-border border-r px-4 text-muted-foreground outline-0 hover:bg-accent hover:text-accent-foreground" />
-              <a
-                className="flex h-12 flex-1 items-center justify-center gap-2 border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                href="https://openpanel.dev/docs"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Docs
-              </a>
-              {projectId && (
-                <button
-                  aria-label="Open AI chat"
-                  className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => launchChat()}
-                  title="Open AI chat (⌘J)"
-                  type="button"
-                >
-                  <SparklesIcon size={16} />
-                </button>
+          {isSelfHosted && (
+            <a
+              className={cn(
+                'mx-3 mb-2 flex h-9 items-center gap-2.5 rounded-lg bg-def-200 px-2.5 font-medium text-sm',
+                'text-foreground/75 transition-colors hover:bg-def-300 hover:text-foreground'
               )}
-              <ProfileToggle className="h-12 flex-1 rounded-none hover:bg-accent hover:text-accent-foreground" />
-            </div>
-            {isSelfHosted && (
-              <a
-                className="center-center flex h-12 cursor-pointer gap-2 border-border border-t px-4 font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                href="https://openpanel.dev/supporter"
+              href="https://openpanel.dev/supporter"
+            >
+              <HeartIcon className="size-[18px] shrink-0 text-rose-500" />
+              <span className="flex-1 truncate">Support us</span>
+              <span className="text-muted-foreground text-xs">
+                Pay what you want
+              </span>
+            </a>
+          )}
+          <div className="flex items-center gap-0.5 border-border border-t px-3 py-2">
+            <FeedbackButton className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')} />
+            <a
+              className={cn(SIDEBAR_FOOTER_BUTTON, 'px-2')}
+              href="https://openpanel.dev/docs"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <BookOpenIcon className="size-4" />
+              Docs
+            </a>
+            <div className="flex-1" />
+            {projectId && (
+              <button
+                aria-label="Open AI chat"
+                className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')}
+                onClick={() => launchChat()}
+                title="Open AI chat (⌘J)"
+                type="button"
               >
-                <span>Support Us</span>
-                <span>Pay What You Want</span>
-              </a>
+                <SparklesIcon className="size-4" />
+              </button>
             )}
+            <ProfileToggle className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')} />
           </div>
         </div>
       </div>
