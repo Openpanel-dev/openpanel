@@ -53,7 +53,7 @@ export function ChatLayout({
       </Sheet>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <Button
             aria-label="Conversations"
             className="lg:hidden"

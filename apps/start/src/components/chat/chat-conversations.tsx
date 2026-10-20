@@ -73,9 +73,9 @@ export function ChatConversations({
 
   return (
     <div className={cn('flex h-full min-h-0 flex-col', className)}>
-      <div className="p-3">
+      <div className="flex h-16 shrink-0 items-center px-3">
         <Button
-          className="w-full justify-start gap-2"
+          className="h-9 w-full justify-start gap-2"
           onClick={onNew}
           variant="outline"
         >
@@ -91,7 +91,7 @@ export function ChatConversations({
         )}
         {groups.map((group) => (
           <div className="mb-3" key={group.label}>
-            <div className="px-2 py-1 font-medium text-2xs text-muted-foreground uppercase tracking-wide">
+            <div className="mt-2 mb-1.5 px-2.5 font-medium text-muted-foreground text-xs">
               {group.label}
             </div>
             {group.items.map((conversation) => {
