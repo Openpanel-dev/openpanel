@@ -2,7 +2,6 @@
 // so access rules and side effects live in one place.
 import type { HttpCtx } from '../../../context';
 import { createTRPCRouter, makeTrpcContext } from '../../../rpc/base';
-import { clientRouter } from '../../client/client.rpc';
 import { dashboardRouter } from '../../dashboard/dashboard.rpc';
 import { organizationRouter } from '../../organization/organization.rpc';
 import { projectRouter } from '../../project/project.rpc';
@@ -11,7 +10,6 @@ import { reportRouter } from '../../report/report.rpc';
 import { subscriptionRouter } from '../../subscription/subscription.rpc';
 
 const chatActionsRouter = createTRPCRouter({
-  client: clientRouter,
   dashboard: dashboardRouter,
   organization: organizationRouter,
   project: projectRouter,

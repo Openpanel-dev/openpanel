@@ -9,7 +9,6 @@ import {
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BookOpenIcon, PlusIcon, UserIcon } from 'lucide-react';
 import { openDialog } from '../use-chat-session';
-import CopyInput from '@/components/forms/copy-input';
 
 export function NavigateCard({
   input,
@@ -137,25 +136,6 @@ export function SearchCard({
         <div className="mt-1 text-muted-foreground">
           Events: {eventNames.join(', ')}
         </div>
-      )}
-    </div>
-  );
-}
-
-export function ClientCreatedCard({
-  client,
-}: {
-  client: { id?: string; secret?: string; name?: string };
-}) {
-  return (
-    <div className="space-y-2 rounded-xl border bg-card px-4 py-3 text-sm">
-      <div className="font-medium">
-        Client {client.name ? `"${client.name}" ` : ''}created. Copy the secret
-        now, it is shown once.
-      </div>
-      {client.id && <CopyInput label="Client id" value={client.id} />}
-      {client.secret && (
-        <CopyInput label="Client secret" value={client.secret} />
       )}
     </div>
   );

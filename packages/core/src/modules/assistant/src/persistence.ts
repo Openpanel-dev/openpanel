@@ -30,6 +30,17 @@ export async function saveMessages(
   }
 ): Promise<void> {
   await deps.db.$transaction(async (tx) => {
+    // Message ids come from the client; one must not overwrite a row in another conversation.
+    const foreign = await tx.chatMessage.findFirst({
+      where: {
+        id: { in: input.messages.map((message) => message.id) },
+        conversationId: { not: input.conversationId },
+      },
+      select: { id: true },
+    });
+    if (foreign) {
+      throw new Error(`Message ${foreign.id} belongs to another conversation`);
+    }
     await tx.conversation.upsert({
       where: { id: input.conversationId },
       create: {

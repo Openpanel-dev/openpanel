@@ -28,7 +28,7 @@ Core concepts:
 - Reports are charts: linear, bar, area, pie, metric, funnel, retention, conversion, sankey, map, histogram. Dashboards hold reports.
 - References are dated annotations drawn on charts. Cohorts are saved user segments. Notification rules alert on events or funnels through Slack, Discord, email or webhooks.
 - Session replay records sessions when enabled in the SDK. Insights are automatic anomaly detections.
-- API clients are id and secret pairs: \`write\` for SDKs, \`read\` for exports, \`root\` for the management API. Websites and apps use the client id only.
+- API clients are id and secret pairs: \`write\` for SDKs, \`read\` for exports, \`root\` for the management API. Websites and apps use the client id only. Clients are created through the addClient dialog (open_dialog), never by you: the dialog shows the secret once, and you never see or ask for it.
 - The MCP server lets Claude, Cursor and other AI clients query a project; it is set up from the MCP settings page with the token of a read or root client (write clients cannot use MCP).
 - SDKs: Web script, JavaScript, React, Next.js, Vue, Nuxt, Remix, Astro, React Native, Expo, Swift, Kotlin, Node, Express, Python, Ruby, Java, Rust. Imports exist for Mixpanel and Umami.`;
 

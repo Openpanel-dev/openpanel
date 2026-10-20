@@ -63,7 +63,6 @@ const TOOL_PHRASES: Record<string, { active: string; done: string }> = {
   },
   save_chart: { active: 'Saving the chart', done: 'Chart saved' },
   create_reference: { active: 'Adding the reference', done: 'Reference added' },
-  create_client: { active: 'Creating the client', done: 'Client created' },
   invite_member: { active: 'Sending the invite', done: 'Invite sent' },
   update_project: { active: 'Updating the project', done: 'Project updated' },
   search_docs: { active: 'Reading the docs', done: 'Docs checked' },
@@ -99,8 +98,6 @@ export function approvalPrompt(toolName: string, input: unknown): string {
     }
     case 'create_reference':
       return `Add the reference "${String(fields.title ?? '')}" on ${String(fields.date ?? '')}?`;
-    case 'create_client':
-      return `Create the ${String(fields.type ?? 'write')} client "${String(fields.name ?? '')}"?`;
     case 'invite_member':
       return `Invite ${String(fields.email ?? '')} as ${String(fields.role ?? 'member')}?`;
     case 'update_project':

@@ -1,6 +1,5 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { CLIENT_TYPES } from '../../../client/client.service';
 import { listDashboardsCore } from '../../../dashboard/dashboard.service';
 import { listReportsCore } from '../../../report/report.service';
 import type { ChatToolContext } from '../context';
@@ -93,24 +92,6 @@ export function dashboardTools(ctx: ChatToolContext) {
           title: reference.title,
           url: dashboardUrl(ctx, '/references'),
         };
-      },
-    }),
-
-    create_client: tool({
-      description:
-        'Create an API client (client id and secret) for sending events from an SDK or server. Asks the user to confirm. The secret is shown once; `write` is right for apps and websites, `read` for export access, `root` for the management API.',
-      inputSchema: z.object({
-        name: z.string().min(1),
-        type: z.enum(CLIENT_TYPES).default('write'),
-      }),
-      execute: async ({ name, type }) => {
-        const client = await actions.client.create({
-          name,
-          projectId,
-          organizationId,
-          type,
-        });
-        return { ...client, url: dashboardUrl(ctx, '/settings/clients') };
       },
     }),
 

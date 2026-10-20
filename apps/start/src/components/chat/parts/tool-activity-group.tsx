@@ -168,7 +168,6 @@ export function isRichToolPart(part: AssistantUIMessagePart): boolean {
       'open_dialog',
       'search_docs',
       'search',
-      'create_client',
       'diagnose_tracking',
       'get_billing',
       'change_plan',

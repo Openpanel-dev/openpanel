@@ -52,18 +52,15 @@ export const assistantRoutes = defineRoutes((app) =>
         return status(404, { message: 'Conversation not found' });
       }
 
-      // Tool approvals and client tool results continue a turn already paid for.
-      const countsAsTurn =
-        chat.trigger === 'regenerate-message' || chat.message?.role === 'user';
-      if (countsAsTurn) {
-        const limited = await checkChatLimits(ctx, {
-          organizationId: organization.id,
-          userId,
-          tier: resolveChatTier(organization, ctx.config.selfHosted),
-        });
-        if (limited) {
-          return status(TOO_MANY_REQUESTS, limited);
-        }
+      // Every request runs the model, including approval and client-tool
+      // continuations; exempting any shape of body would let a crafted one through.
+      const limited = await checkChatLimits(ctx, {
+        organizationId: organization.id,
+        userId,
+        tier: resolveChatTier(organization, ctx.config.selfHosted),
+      });
+      if (limited) {
+        return status(TOO_MANY_REQUESTS, limited);
       }
 
       return ctx.services.assistant.runChat({

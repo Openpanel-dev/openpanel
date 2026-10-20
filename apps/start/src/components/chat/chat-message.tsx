@@ -8,7 +8,6 @@ import { BillingCard, type BillingOutput } from './parts/billing-card';
 import { ChartCard } from './parts/chart-card';
 import { DiagnosisCard, type DiagnosisOutput } from './parts/diagnosis-card';
 import {
-  ClientCreatedCard,
   DialogCard,
   DocsCard,
   NavigateCard,
@@ -226,11 +225,6 @@ function ToolResult({
   }
   if (toolName === 'diagnose_tracking') {
     return <DiagnosisCard output={output as DiagnosisOutput} />;
-  }
-  if (toolName === 'create_client') {
-    return (
-      <ClientCreatedCard client={output as { id?: string; secret?: string }} />
-    );
   }
   if (isRowsOutput(output) && output.rows.length === 0) {
     return <ToolDone output={output} toolName={toolName} />;
