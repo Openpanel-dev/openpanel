@@ -30,6 +30,7 @@ import {
   resetPasswordWithToken,
   setupTotp,
   signInToShare,
+  signInWithDevLogin,
   signInWithEmail,
   signInWithTotp,
   signOutUser,
@@ -68,6 +69,11 @@ export const authRouter = createTRPCRouter({
     .mutation(({ input, ctx }) =>
       signInWithEmail(ctx, input, ctx.setCookie, ctx.logger)
     ),
+
+  /** One click on a local box; `DEV_LOGIN` cannot be set in production. */
+  signInDev: publicProcedure.mutation(({ ctx }) =>
+    signInWithDevLogin(ctx, ctx.setCookie, ctx.logger)
+  ),
 
   signInTotp: publicProcedure
     .use(rateLimit({ max: 5, windowMs: 60_000 }))

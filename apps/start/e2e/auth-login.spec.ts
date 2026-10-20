@@ -2,6 +2,7 @@
 // shared auth state and signs in by itself, so the shared session is never touched.
 
 import {
+  apiUrl,
   FRESH_CONTEXT,
   gotoHydrated,
   hasHorizontalOverflow,
@@ -19,6 +20,7 @@ test.describe.configure({ timeout: 120_000 });
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const SIGN_IN_REQUEST = '/trpc/auth.signInEmail';
+const DEV_SIGN_IN_REQUEST = '/trpc/auth.signInDev';
 
 test('signed-out visitors are sent to /login from every protected route', async ({
   page,
@@ -216,4 +218,32 @@ test('a submit before hydration never puts the password in the URL', async ({
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForLoadState('load');
   expect(page.url()).not.toContain('super-secret-password');
+});
+
+test('the dev login button signs in with one click when DEV_LOGIN is set', async ({
+  page,
+  context,
+  seed,
+  request,
+}) => {
+  const providers = await request.get(`${apiUrl()}/trpc/auth.providers`);
+  const configured = (await providers.json()).result.data.json.devLogin;
+  test.skip(!configured, 'DEV_LOGIN is not set on this API');
+
+  const issues = watchIssues(page);
+  await gotoHydrated(page, '/login');
+  await page.screenshot({ path: `${SHOTS_DIR}/login-dev-button.png` });
+
+  const signedIn = page.waitForResponse((response) =>
+    response.url().includes(DEV_SIGN_IN_REQUEST)
+  );
+  await page.getByRole('button', { name: 'Dev login' }).click();
+  expect((await signedIn).status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`), {
+    timeout: 20_000,
+  });
+  expect((await context.cookies()).map((cookie) => cookie.name)).toContain(
+    'session'
+  );
+  expect(issues.unexpected()).toEqual([]);
 });

@@ -316,6 +316,7 @@ export interface ConfiguredProviders {
   google: boolean;
   github: boolean;
   gsc: boolean;
+  devLogin: boolean;
 }
 
 /** A provider counts as configured only when a sign-in could complete: the
@@ -323,12 +324,32 @@ export interface ConfiguredProviders {
 export function getConfiguredProviders(
   config: CoreConfig
 ): ConfiguredProviders {
-  const { google, github, googleGsc } = config.auth;
+  const { google, github, googleGsc, devLogin } = config.auth;
   return {
     google: Boolean(google.clientId && google.redirectUri),
     github: Boolean(github.clientId && github.redirectUri),
     gsc: Boolean(googleGsc.clientId && googleGsc.redirectUri),
+    devLogin: devLogin !== undefined,
   };
+}
+
+/**
+ * The configured `DEV_LOGIN` credentials go through the ordinary email
+ * sign-in, so the account must exist and the password must match; the
+ * credentials themselves never leave the API.
+ */
+export function signInWithDevLogin(
+  deps: ServiceDeps,
+  setCookie: ISetCookie,
+  logger: Pick<Logger, 'error'>
+): Promise<SignInEmailResult> {
+  const devLogin = deps.config.auth.devLogin;
+  if (!devLogin) {
+    throw new TRPCBadRequestError(
+      'Dev login is not configured on this deployment'
+    );
+  }
+  return signInWithEmail(deps, devLogin, setCookie, logger);
 }
 
 /**

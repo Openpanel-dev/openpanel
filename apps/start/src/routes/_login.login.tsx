@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 import { Or } from '@/components/auth/or';
+import { SignInDev } from '@/components/auth/sign-in-dev';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
@@ -109,6 +110,12 @@ function LoginPage() {
         inviteId={inviteId}
         isLastUsed={lastProvider === 'email'}
       />
+      {providers.devLogin && (
+        <>
+          <Or />
+          <SignInDev />
+        </>
+      )}
     </div>
   );
 }
