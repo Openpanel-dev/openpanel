@@ -149,7 +149,10 @@ export function SidebarContainer({
               )}
               href="https://openpanel.dev/supporter"
             >
-              <HeartIcon className="size-[18px] shrink-0 text-rose-500" />
+              <HeartIcon
+                className="size-4 shrink-0 text-rose-500"
+                strokeWidth={1.75}
+              />
               <span className="flex-1 truncate">Support us</span>
               <span className="text-muted-foreground text-xs">
                 Pay what you want

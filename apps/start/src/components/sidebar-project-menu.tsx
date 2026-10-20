@@ -163,7 +163,7 @@ export function ActionCTAButton() {
             )}
             type="button"
           >
-            <PlusIcon className="size-[18px] shrink-0" />
+            <PlusIcon className="size-4 shrink-0" strokeWidth={1.75} />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
               {/* `initial={false}` suppresses only the FIRST mount: framer writes
                   transform/opacity into the style attribute, and the SSR string

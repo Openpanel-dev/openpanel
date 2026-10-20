@@ -24,7 +24,10 @@ export function SidebarChatComposer() {
       )}
       onSubmit={submit}
     >
-      <SparklesIcon className="size-[18px] shrink-0 text-muted-foreground" />
+      <SparklesIcon
+        className="size-4 shrink-0 text-muted-foreground"
+        strokeWidth={1.75}
+      />
       <input
         className={cn(
           'min-w-0 flex-1 bg-transparent py-2 font-medium text-foreground text-sm',

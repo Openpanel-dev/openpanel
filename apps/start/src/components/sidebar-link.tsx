@@ -2,7 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import { ProjectLink } from '@/components/links';
 import { cn } from '@/utils/cn';
 
-const SIDEBAR_ICON_SIZE = 18;
+const SIDEBAR_ICON_SIZE = 16;
+const SIDEBAR_ICON_STROKE_WIDTH = 1.75;
 
 /** Shared look for every row in the sidebar; TanStack's Link sets `data-status`. */
 export const sidebarItemClassName = cn(
@@ -17,7 +18,13 @@ export const sidebarIconClassName = cn(
 );
 
 export function SidebarIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return <Icon className={sidebarIconClassName} size={SIDEBAR_ICON_SIZE} />;
+  return (
+    <Icon
+      className={sidebarIconClassName}
+      size={SIDEBAR_ICON_SIZE}
+      strokeWidth={SIDEBAR_ICON_STROKE_WIDTH}
+    />
+  );
 }
 
 export function SidebarSectionLabel({
