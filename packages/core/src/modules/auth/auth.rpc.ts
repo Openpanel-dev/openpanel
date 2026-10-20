@@ -73,6 +73,7 @@ export const authRouter = createTRPCRouter({
 
   /** One click on a local box; `DEV_LOGIN` cannot be set in production. */
   signInDev: publicProcedure
+    .use(rateLimit({ max: 10, windowMs: 60_000 }))
     .input(zSignInDev)
     .mutation(({ input, ctx }) =>
       signInWithDevLogin(ctx, input, ctx.setCookie, ctx.logger)
