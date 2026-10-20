@@ -340,6 +340,7 @@ export function getConfiguredProviders(
  */
 export function signInWithDevLogin(
   deps: ServiceDeps,
+  input: SignInDevInput,
   setCookie: ISetCookie,
   logger: Pick<Logger, 'error'>
 ): Promise<SignInEmailResult> {
@@ -349,7 +350,16 @@ export function signInWithDevLogin(
       'Dev login is not configured on this deployment'
     );
   }
-  return signInWithEmail(deps, devLogin, setCookie, logger);
+  return signInWithEmail(
+    deps,
+    { ...devLogin, inviteId: input.inviteId },
+    setCookie,
+    logger
+  );
+}
+
+export interface SignInDevInput {
+  inviteId?: string | null;
 }
 
 /**

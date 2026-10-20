@@ -13,6 +13,7 @@ import {
   zProvider,
   zRequestResetPassword,
   zResetPassword,
+  zSignInDev,
   zSignInEmail,
   zSignInShare,
   zSignUpEmail,
@@ -71,9 +72,11 @@ export const authRouter = createTRPCRouter({
     ),
 
   /** One click on a local box; `DEV_LOGIN` cannot be set in production. */
-  signInDev: publicProcedure.mutation(({ ctx }) =>
-    signInWithDevLogin(ctx, ctx.setCookie, ctx.logger)
-  ),
+  signInDev: publicProcedure
+    .input(zSignInDev)
+    .mutation(({ input, ctx }) =>
+      signInWithDevLogin(ctx, input, ctx.setCookie, ctx.logger)
+    ),
 
   signInTotp: publicProcedure
     .use(rateLimit({ max: 5, windowMs: 60_000 }))

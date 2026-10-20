@@ -245,7 +245,8 @@ const devLoginSchema = z.preprocess(
       }
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `DEV_LOGIN must be "email${DEV_LOGIN_SEPARATOR}password" (got "${value}")`,
+        // The value is a credential, so it stays out of the boot error.
+        message: `DEV_LOGIN must be "email${DEV_LOGIN_SEPARATOR}password", with neither half empty`,
       });
     })
     .transform((value) =>

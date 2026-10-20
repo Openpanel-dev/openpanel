@@ -80,7 +80,7 @@ test('providers says a dev login exists without reporting its credentials', asyn
 
 test('signInDev is refused when DEV_LOGIN is not configured', async () => {
   const caller = await anonCaller();
-  await expect(caller.signInDev()).rejects.toMatchObject({
+  await expect(caller.signInDev({})).rejects.toMatchObject({
     code: 'BAD_REQUEST',
     message: 'Dev login is not configured on this deployment',
   });

@@ -225,9 +225,15 @@ describe('derived values, computed once in the transform', () => {
         .devLogin
     ).toEqual({ email: 'admin@openpanel.local', password: 'a/b' });
     for (const malformed of ['admin@openpanel.local', '/pw', 'a@b.co/']) {
-      expect(() => loadConfig({ ...base, DEV_LOGIN: malformed })).toThrow(
-        /DEV_LOGIN must be "email\/password"/
-      );
+      let message = '';
+      try {
+        loadConfig({ ...base, DEV_LOGIN: malformed });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toContain('DEV_LOGIN must be "email/password"');
+      // The value is a credential; the boot error must not echo it.
+      expect(message).not.toContain(malformed);
     }
   });
 

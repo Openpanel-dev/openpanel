@@ -113,7 +113,7 @@ function LoginPage() {
       {providers.devLogin && (
         <>
           <Or />
-          <SignInDev />
+          <SignInDev inviteId={inviteId} />
         </>
       )}
     </div>
