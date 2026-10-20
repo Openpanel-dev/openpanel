@@ -59,6 +59,8 @@ model ChatMessage {
   role           String
   /// [IPrismaUIMessageParts]
   parts          Json
+  /// [IPrismaChatMessageMetadata]
+  metadata       Json?
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])

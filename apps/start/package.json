@@ -18,8 +18,8 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
+    "@ai-sdk/react": "4.0.148",
     "@base-ui/react": "1.9.0",
-    "@better-agent/client": "0.1.0-beta.3",
     "@codemirror/commands": "6.10.1",
     "@codemirror/lang-javascript": "6.2.4",
     "@codemirror/lang-json": "6.0.2",
@@ -97,6 +97,7 @@
     "@visx/scale": "4.0.1-alpha.0",
     "@visx/shape": "4.0.1-alpha.0",
     "@visx/zoom": "4.0.1-alpha.0",
+    "ai": "7.0.144",
     "bind-event-listener": "3.0.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

@@ -1,13 +1,7 @@
-import type {
-  PageContextPage,
-  PageContext as ValidatedPageContext,
-} from '@openpanel/core/modules/assistant/assistant.constants';
-import type {
-  IChartEventFilter,
-  IChartRange,
-  IInterval,
-  IReportInput,
-} from '@openpanel/core/modules/report/report.constants';
+import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+
+export type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
+
 import {
   createContext,
   type MutableRefObject,
@@ -20,56 +14,25 @@ import {
   useState,
 } from 'react';
 
-export type { PageContextPage };
-
 /**
- * What the chat backend needs to know about "what the user is currently
- * looking at".
- *
- * Same wire shape as `ValidatedPageContext` from
- * `@openpanel/core`'s assistant.constants, but with stricter typing for
- * `filters` / `reportDraft`. The validation
- * schema keeps those loose (`z.record(unknown)`) because Zod can't narrow
- * `IChartEventFilter` / `IReportInput` at the boundary; the server
- * re-narrows in `@openpanel/core`'s
- * `modules/assistant/src/tools/helpers.ts` (`pageContextFilters`).
- *
- * Each target page calls `usePageContext({...})` in an effect; the
- * provider stores the latest value. The chat drawer reads it via a ref so
- * it always sends the *current* page's context with each request, even on
- * an old conversation.
+ * What the chat is told about the page it was launched from: the page, an
+ * entity id, the visible date window. Pages register it; the launcher reads it.
  */
-export type PageContext = Omit<
-  ValidatedPageContext,
-  'filters' | 'reportDraft'
-> & {
-  filters?: {
-    range?: IChartRange;
-    startDate?: string;
-    endDate?: string;
-    interval?: IInterval;
-    eventNames?: string[];
-    eventFilters?: IChartEventFilter[];
-    search?: string;
-  };
-  reportDraft?: IReportInput;
-};
-
-type PageContextValue = {
-  context: PageContext | null;
-  setContext: (ctx: PageContext | null) => void;
-  ref: MutableRefObject<PageContext | null>;
-};
+interface PageContextValue {
+  context: ChatLaunchHint | null;
+  setContext: (hint: ChatLaunchHint | null) => void;
+  ref: MutableRefObject<ChatLaunchHint | null>;
+}
 
 const PageContextContext = createContext<PageContextValue | null>(null);
 
 export function PageContextProvider({ children }: { children: ReactNode }) {
-  const [context, setContextState] = useState<PageContext | null>(null);
-  const ref = useRef<PageContext | null>(null);
+  const [context, setContextState] = useState<ChatLaunchHint | null>(null);
+  const ref = useRef<ChatLaunchHint | null>(null);
 
-  const setContext = useCallback((ctx: PageContext | null) => {
-    ref.current = ctx;
-    setContextState(ctx);
+  const setContext = useCallback((hint: ChatLaunchHint | null) => {
+    ref.current = hint;
+    setContextState(hint);
   }, []);
 
   const value = useMemo(
@@ -92,36 +55,22 @@ function useInternalPageContext(): PageContextValue {
   return value;
 }
 
-/** Read the current page context from React state (causes re-renders). */
-export function usePageContextValue(): PageContext | null {
+export function usePageContextValue(): ChatLaunchHint | null {
   return useInternalPageContext().context;
 }
 
-/**
- * Read the current page context via ref. Use inside `useChat`'s
- * `prepareSendMessagesRequest` so the chat always sends the *latest*
- * page's context without forcing a hook re-run on every keystroke.
- */
-export function usePageContextRef(): MutableRefObject<PageContext | null> {
+/** The latest hint without re-rendering on every change; read it at launch time. */
+export function usePageContextRef(): MutableRefObject<ChatLaunchHint | null> {
   return useInternalPageContext().ref;
 }
 
-/**
- * Register a page context. The current page calls this in an effect; the
- * provider keeps the latest value. Cleanup clears it when the page
- * unmounts so a stale context doesn't leak between routes.
- *
- * The context is JSON-serialized for the dependency list to avoid
- * referential-equality re-renders on identical-but-new objects.
- */
-export function usePageContext(context: PageContext): void {
+/** Register the current page's hint; cleared when the page unmounts. */
+export function usePageContext(hint: ChatLaunchHint): void {
   const { setContext } = useInternalPageContext();
-  const serialized = JSON.stringify(context);
+  const serialized = JSON.stringify(hint);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: serialized is the stable dep
   useEffect(() => {
-    setContext(context);
+    setContext(JSON.parse(serialized) as ChatLaunchHint);
     return () => setContext(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serialized]);
+  }, [serialized, setContext]);
 }

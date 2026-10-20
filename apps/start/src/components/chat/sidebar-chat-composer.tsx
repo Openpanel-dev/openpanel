@@ -1,34 +1,18 @@
 import { ArrowUpIcon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useChatState } from './chat-context';
+import { useChatLaunch } from './chat-launch';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 
-/**
- * Compact "Ask AI" composer for the sidebar.
- *
- * Single-row layout:
- *   [✨] Ask AI anything…                 [⌘J] | [↑ send]
- *
- * The trailing slot shows the keyboard-shortcut hint while the input
- * is empty and swaps to a send button the moment the user starts
- * typing. Submitting stashes the draft on `chatState.pendingMessage`
- * and opens a fresh conversation — the drawer's runtime drains the
- * pending message once `useAgent` is ready.
- */
+/** The sidebar's one-line "Ask AI" box; submitting opens the chat page with the question. */
 export function SidebarChatComposer() {
-  const { setPendingMessage, openNewChat } = useChatState();
+  const launch = useChatLaunch();
   const [text, setText] = useState('');
   const hasText = text.trim().length > 0;
 
-  const submit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const value = text.trim();
-    if (!value) {
-      return;
-    }
-    setPendingMessage(value);
-    openNewChat();
+  const submit = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    launch(text);
     setText('');
   };
 
@@ -48,10 +32,10 @@ export function SidebarChatComposer() {
           'border-0 shadow-none outline-none ring-0',
           'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0'
         )}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
             submit();
           }
         }}
@@ -70,16 +54,17 @@ export function SidebarChatComposer() {
           <ArrowUpIcon className="size-3.5" />
         </Button>
       ) : (
-        <kbd
-          aria-label="Keyboard shortcut: Cmd+J"
+        <button
+          aria-label="Open the chat (Cmd+J)"
           className={cn(
             'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-[11px]',
             'cursor-pointer text-muted-foreground'
           )}
-          onClick={() => openNewChat()}
+          onClick={() => launch()}
+          type="button"
         >
           ⌘J
-        </kbd>
+        </button>
       )}
     </form>
   );

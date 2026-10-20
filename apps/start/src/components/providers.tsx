@@ -7,7 +7,6 @@ import {
   ChartConfigProvider,
   type ChartConfigValue,
 } from '@/components/charts/chart-config-context';
-import { ChatStateProvider } from '@/components/chat/chat-context';
 import { NotificationProvider } from '@/components/notifications/notification-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PageContextProvider } from '@/contexts/page-context';
@@ -37,12 +36,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <TooltipProvider delayDuration={200}>
             <ChartConfigProvider value={CHART_CONFIG}>
               <PageContextProvider>
-                <ChatStateProvider>
-                  {children}
-                  <NotificationProvider />
-                  <Toaster />
-                  <ModalProvider />
-                </ChatStateProvider>
+                {children}
+                <NotificationProvider />
+                <Toaster />
+                <ModalProvider />
               </PageContextProvider>
             </ChartConfigProvider>
           </TooltipProvider>

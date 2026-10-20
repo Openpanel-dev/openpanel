@@ -18,7 +18,11 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function AddDashboard() {
+export interface AddDashboardProps {
+  name?: string;
+}
+
+export default function AddDashboard({ name }: AddDashboardProps = {}) {
   const { projectId, organizationId } = useAppParams();
   const router = useRouter();
   const trpc = useTRPC();
@@ -27,7 +31,7 @@ export default function AddDashboard() {
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      name: '',
+      name: name ?? '',
     },
   });
 

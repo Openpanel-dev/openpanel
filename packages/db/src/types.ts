@@ -32,12 +32,11 @@ declare global {
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
     type IPrismaCohortDefinition = CohortDefinition;
     type IPrismaCustomEventItems = ICustomEventItem[];
-    // Each ChatMessage row stores one Better Agent `ConversationItem`
-    // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
-    // here to avoid pulling `@better-agent/core` into @openpanel/db's
-    // dependency graph; the real shape is narrowed at the API boundary
-    // in packages/core/src/modules/assistant/src/persistence.ts.
+    // One ChatMessage row is one AI SDK `UIMessage`: `parts` is its parts
+    // array. Typed loosely so `ai` stays out of @openpanel/db; the assistant
+    // module narrows it.
     type IPrismaUIMessageParts = unknown[];
+    type IPrismaChatMessageMetadata = Record<string, unknown>;
     type IPrismaSubscriptionStatus =
       | 'incomplete'
       | 'incomplete_expired'
