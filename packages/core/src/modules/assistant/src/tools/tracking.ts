@@ -3,6 +3,7 @@ import { safeFetch } from '@openpanel/shared/server';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { chQuery } from '../../../../ch-query';
+import { getMemberProjectGrants } from '../../../../shared/access-lookups';
 import { isOriginAllowed } from '../../../../shared/origin-allowed';
 import type { ChatToolContext } from '../context';
 import { dashboardUrl } from './shared';
@@ -327,6 +328,37 @@ async function lastEventAt(ctx: ChatToolContext): Promise<string | null> {
   return value && !value.startsWith('1970') ? value : null;
 }
 
+/**
+ * Client ids found on the page that are not this project's. The owning
+ * project is named only when the user may open it: a `selected`-scope
+ * member must not learn sibling projects from a client id on a web page.
+ */
+async function findForeignClients(
+  ctx: ChatToolContext,
+  clientIds: string[]
+): Promise<TrackingFacts['foreignClients']> {
+  if (clientIds.length === 0) {
+    return [];
+  }
+  const [clients, grants] = await Promise.all([
+    ctx.deps.db.client.findMany({
+      where: { id: { in: clientIds }, organizationId: ctx.organizationId },
+      select: { id: true, projectId: true },
+    }),
+    getMemberProjectGrants(ctx.deps.db, {
+      userId: ctx.userId,
+      organizationId: ctx.organizationId,
+    }),
+  ]);
+  const canOpen = (projectId: string | null) =>
+    grants?.projectScope === 'all' ||
+    (grants?.projects.some((grant) => grant.projectId === projectId) ?? false);
+  return clients.map((client) => ({
+    id: client.id,
+    projectId: canOpen(client.projectId) ? client.projectId : null,
+  }));
+}
+
 export async function gatherTrackingFacts(
   ctx: ChatToolContext,
   requestedUrl: string
@@ -355,13 +387,7 @@ export async function gatherTrackingFacts(
   const unknownIds = snippet.clientIds.filter(
     (id) => !projectClients.some((client) => client.id === id)
   );
-  const foreignClients =
-    unknownIds.length > 0
-      ? await ctx.deps.db.client.findMany({
-          where: { id: { in: unknownIds }, organizationId: ctx.organizationId },
-          select: { id: true, projectId: true },
-        })
-      : [];
+  const foreignClients = await findForeignClients(ctx, unknownIds);
   const filters = project.filters ?? [];
   return {
     requestedUrl,
