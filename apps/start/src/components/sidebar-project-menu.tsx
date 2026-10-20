@@ -157,7 +157,7 @@ export function ActionCTAButton() {
           <button
             className={cn(
               'group flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-def-200 px-2.5 text-left',
-              'font-medium text-foreground text-sm',
+              'text-foreground text-nav',
               'transition-colors hover:bg-def-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}

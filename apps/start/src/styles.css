@@ -125,7 +125,7 @@ body {
   --def-300: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --def-400: oklch(37.3% 0 0); /* hsl(0, 0%, 25.23%) -> #404040 */
 
-  --foregroundish: oklch(83.9% 0 0); /* hsl(0, 0%, 79.23%) */
+  --foregroundish: oklch(86.3% 0 0); /* #d4d4d4 */
 
   --background: oklch(23.8% 0 0); /* hsl(0, 0%, 12.02%) -> #1e1e1e */
   --foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
@@ -159,6 +159,13 @@ body {
      stat-card captions. The dashboard's default text is `sm` (14px/20px). */
   --text-2xs: 11px;
   --text-2xs--line-height: 16px;
+
+  /* Sidebar rows: a touch smaller and lighter than body text; the fractional
+     weight needs the variable font. */
+  --text-nav: 13px;
+  --text-nav--line-height: 20px;
+  --text-nav--letter-spacing: -0.06px;
+  --text-nav--font-weight: 480;
 
   /* Color variables */
   --color-background: var(--background);
