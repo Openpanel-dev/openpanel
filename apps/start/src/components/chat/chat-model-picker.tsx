@@ -57,7 +57,7 @@ export function ChatModelPicker({
         {Object.entries(grouped).map(([provider, entries], index) => (
           <div key={provider}>
             {index > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground uppercase tracking-wide">
+            <DropdownMenuLabel className="text-2xs text-muted-foreground uppercase tracking-wide">
               {PROVIDER_LABELS[provider as ChatModelEntry['provider']]}
             </DropdownMenuLabel>
             {entries.map((model) => (
@@ -69,7 +69,7 @@ export function ChatModelPicker({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate">{model.label}</span>
-                    <span className="rounded border px-1 text-[10px] text-muted-foreground uppercase">
+                    <span className="rounded border px-1 text-3xs text-muted-foreground uppercase">
                       {TIER_LABELS[model.tier]}
                     </span>
                   </div>

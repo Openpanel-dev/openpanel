@@ -92,7 +92,7 @@ function ChatMarkdownInner({
               <td
                 className={cn(
                   'max-w-[320px] truncate px-3 py-1.5',
-                  NUMERIC_CELL.test(text) && 'text-right font-mono tabular-nums'
+                  NUMERIC_CELL.test(text) && 'text-right tabular-nums'
                 )}
                 title={text}
               >

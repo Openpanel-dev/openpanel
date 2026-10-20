@@ -126,7 +126,7 @@ export function ToolActivityGroup({ parts }: { parts: ToolPart[] }) {
                     </span>
                   )}
               </summary>
-              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all border-t px-2.5 py-2 font-mono text-[11px]">
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all border-t px-2.5 py-2">
                 {detailsOf(item.part)}
               </pre>
             </details>

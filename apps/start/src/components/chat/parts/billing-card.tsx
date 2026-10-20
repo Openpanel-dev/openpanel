@@ -79,7 +79,7 @@ export function BillingCard({ output }: { output: BillingOutput }) {
       <div className="border-t px-4 py-3">
         <div className="mb-1 flex justify-between text-xs">
           <span className="text-muted-foreground">Used this period</span>
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {number.format(usage.eventsThisPeriod)}
             {usage.eventsLimit ? ` / ${number.format(usage.eventsLimit)}` : ''}
           </span>
@@ -98,7 +98,7 @@ export function BillingCard({ output }: { output: BillingOutput }) {
       {output.assistant && (
         <div className="flex justify-between border-t px-4 py-2 text-xs">
           <span className="text-muted-foreground">AI messages today</span>
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {number.format(output.assistant.messagesToday)}
             {output.assistant.messagesPerDay === null
               ? ''

@@ -91,7 +91,7 @@ export function ChatConversations({
         )}
         {groups.map((group) => (
           <div className="mb-3" key={group.label}>
-            <div className="px-2 py-1 font-medium text-[11px] text-muted-foreground uppercase tracking-wide">
+            <div className="px-2 py-1 font-medium text-2xs text-muted-foreground uppercase tracking-wide">
               {group.label}
             </div>
             {group.items.map((conversation) => {

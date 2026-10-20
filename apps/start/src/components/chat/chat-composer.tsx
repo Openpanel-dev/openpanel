@@ -69,7 +69,7 @@ export function ChatComposer({
         <textarea
           aria-label="Message"
           className={cn(
-            'block w-full resize-none bg-transparent px-4 pt-3 pb-1 text-base text-foreground leading-6 sm:text-sm',
+            'block w-full resize-none bg-transparent px-4 pt-3 pb-1 text-base text-foreground sm:text-sm',
             'placeholder:text-muted-foreground/70',
             'border-0 outline-none ring-0 focus:outline-none focus:ring-0'
           )}

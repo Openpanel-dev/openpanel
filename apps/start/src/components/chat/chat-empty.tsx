@@ -102,9 +102,8 @@ export function ChatNotConfigured() {
       <div>
         <h1 className="font-semibold text-2xl">AI chat is not configured</h1>
         <p className="mt-2 text-muted-foreground">
-          Set <code className="font-mono text-sm">OPENAI_API_KEY</code> or{' '}
-          <code className="font-mono text-sm">ANTHROPIC_API_KEY</code> on the
-          API service and restart it.
+          Set <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> on
+          the API service and restart it.
         </p>
       </div>
       <div className="flex w-full flex-col gap-2">

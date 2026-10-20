@@ -111,7 +111,7 @@ export function TableCard({
                     className={cn(
                       'max-w-[260px] truncate px-3 py-1.5',
                       typeof row[column] === 'number' &&
-                        'text-right font-mono tabular-nums'
+                        'text-right tabular-nums'
                     )}
                     key={column}
                     title={cell(row[column])}
