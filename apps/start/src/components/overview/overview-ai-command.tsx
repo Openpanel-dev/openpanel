@@ -114,7 +114,6 @@ export function OverviewAICommand({ className }: { className?: string }) {
           }
         }}
         placeholder='Try: "last 7 days, mobile only"'
-        size="default"
         value={value}
       />
     </div>

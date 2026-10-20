@@ -89,8 +89,8 @@ export function OverviewMetricCard({
       className={cn(fill && 'h-full')}
       onClick={onClick}
     >
-      <div className="px-3 pt-2.5">
-        <div className="flex items-start justify-between gap-2">
+      <div className="px-3 pt-2">
+        <div className="flex items-start justify-between gap-2 leading-none">
           <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
@@ -102,17 +102,17 @@ export function OverviewMetricCard({
             />
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+        <div className="mt-1.5 flex items-baseline gap-0.5 leading-none">
           {isLoading && <Skeleton className="h-5 w-20" />}
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
         </div>
-        <div className="mt-0.5 truncate text-2xs text-muted-foreground">
+        <div className="mt-1 truncate text-2xs text-muted-foreground leading-none">
           {isError ? METRIC_ERROR_LABEL : displayLabel}
         </div>
       </div>
 
-      <div className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}>
+      <div className={cn('mt-1', fill ? 'min-h-[36px] flex-1' : 'h-[36px]')}>
         {data.length > 0 && (
           <BarChart
             animationDuration={0}
