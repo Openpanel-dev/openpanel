@@ -124,14 +124,14 @@ services:
   op-api:
     image: lindesvard/openpanel-api:3
     restart: always
-    # Database migrations run here, before the api starts. The Prisma CLI is
+    # Prisma migrations run here, before the api starts. The Prisma CLI is
     # fetched at start (pinned to the version the image was built with), so
-    # this container needs to reach the npm registry when it boots.
+    # this container needs to reach the npm registry when it boots. The
+    # ClickHouse code migrations run inside the api once it is listening.
     command: >
       sh -c "
         echo 'Running migrations...'
         cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
-        cd /app/packages/core && bun scripts/migrate-code.ts
 
         cd /app/apps/api && bun run start
       "

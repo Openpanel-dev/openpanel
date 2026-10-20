@@ -156,6 +156,37 @@ results — use `GLOBAL IN` or a join. Never commit ClickHouse SQL you have not 
 against your worktree's database; when replacing a query, diff old and new results
 on the same data.
 
+## Migrations
+
+The api starts serving the moment its container starts. Only Prisma runs before it;
+with `AUTOMATIC_MIGRATIONS=true` (self-hosted installs set it, cloud decides per
+deploy) the api applies pending ClickHouse code migrations itself once it is listening,
+one process at a time (`startCodeMigrations` in
+`packages/core/src/modules/code-migration/`), every blocking one first, then the online
+ones. So write every change in two parts:
+
+- **Blocking** (the default): the fast breaking change the new code needs — a new
+  table or column, a metadata-only `ALTER`. Seconds, whatever the data size: until it
+  lands, the new code runs against the old schema, so keep that window short. The
+  runner warns when one takes over 30 s.
+- **Online** (`export const online = true`): anything that grows with the data —
+  rebuilding or copying a table, a backfill. It runs after the blocking ones, in the
+  background, and it must:
+  - stay correct while ingestion and the dashboard read and write the table. If the
+    write path reads the table back (the profile buffer does), copy before you swap;
+    otherwise swap first and copy after (`28-sessions-sort-key-id.ts`,
+    `29-profiles-partition-by-id.ts`);
+  - be safe to rerun from any point, since a process can die mid-way and another one
+    resumes it;
+  - never be something a blocking migration depends on.
+
+A change that needs both ships as two migrations: a blocking one that lets the new code
+work with the old data, then an online one that moves the data. Time a blocking
+migration against a large seed (`bun run seed --size xl`) before calling it fast.
+`migrate:deploy` runs only the blocking ones, so a fresh database has its schema before
+anything seeds it; set `AUTOMATIC_MIGRATIONS=true` for your api to apply the online ones,
+or run one by name (`bun ./scripts/migrate-code.ts <file>` in `packages/db`).
+
 ## Code style
 
 Formatting and linting is ultracite (Biome 2). Do not hand-format against it and do not

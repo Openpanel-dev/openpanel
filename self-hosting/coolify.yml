@@ -130,7 +130,6 @@ services:
 
         echo 'Running migrations...'
         cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
-        cd /app/packages/core && bun scripts/migrate-code.ts
 
         cd /app/apps/api && bun run start
       "
@@ -145,6 +144,7 @@ services:
       # Common
       - NODE_ENV=production
       - SELF_HOSTED=true
+      - AUTOMATIC_MIGRATIONS=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
@@ -217,6 +217,7 @@ services:
       # Common
       - NODE_ENV=production
       - SELF_HOSTED=true
+      - AUTOMATIC_MIGRATIONS=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public

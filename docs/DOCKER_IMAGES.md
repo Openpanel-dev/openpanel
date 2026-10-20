@@ -112,14 +112,20 @@ server-renders `/login`.
 
 ## Migrations
 
-Migrations run in the **api container's start command** (Carl, 2026-09-08 —
-*"I don't want to move the migration out of it"*). All three shipped compose
-files now read:
+Migrations run in the **api container** (Carl, 2026-09-08 — *"I don't want to
+move the migration out of it"*). The start command runs only Prisma before the
+api:
 
 ```sh
 cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
-cd /app/packages/core && bun scripts/migrate-code.ts
 ```
+
+and, with `AUTOMATIC_MIGRATIONS=true` (set by the shipped compose `.env` and
+the Coolify template), the api applies pending ClickHouse code migrations
+itself once it is listening (Carl, 2026-10-20: the api starts at once, fast
+breaking changes first, long data moves after; see AGENTS.md → Migrations). Installs whose
+compose file still runs `cd /app/packages/core && bun scripts/migrate-code.ts`
+first keep working; that step simply finds less to do.
 
 - The Prisma CLI is a devDependency, so the image's production-only install
   correctly omits it; `bunx` fetches it at start rather than the image carrying
@@ -129,11 +135,10 @@ cd /app/packages/core && bun scripts/migrate-code.ts
   on `prisma 6.14.0`.
 - **The code migrations moved to `@openpanel/db` in M15-204** (ADR-022, Carl's
   rulings: they run as a script with direct database access and no services).
-  The real entrypoint is now `packages/db/scripts/migrate-code.ts`, and
-  `packages/core/scripts/migrate-code.ts` is a one-line forwarder to it, kept
-  so the command above — which the three shipped compose files still spell
-  against `packages/core` — keeps working. The forwarder goes away in the task
-  that is allowed to edit `self-hosting/*` and `.github/smoke/*`.
+  The command-line entrypoint is `packages/db/scripts/migrate-code.ts`
+  (`migrate:deploy`, for development, CI and operators), and the api calls the
+  same runner in-process. `packages/core/scripts/migrate-code.ts` is a
+  one-line forwarder kept for compose files that still run it.
 - `packages/db/prisma/schema.prisma`, `packages/db/prisma/migrations`,
   `packages/db/scripts/migrate-code.ts`, `packages/db/src/code-migrations` and
   `packages/core/scripts/migrate-code.ts` are asserted at build time by a `RUN

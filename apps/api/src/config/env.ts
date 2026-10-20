@@ -373,6 +373,12 @@ const rawSchema = z.object({
    * cloud-only cron jobs.
    */
   SELF_HOSTED: trueOrOneSchema,
+  /**
+   * Lets this process apply pending code migrations once it is listening; a
+   * Redis lock makes one process do it. Self-hosted installs set it, cloud
+   * decides per deploy.
+   */
+  AUTOMATIC_MIGRATIONS: trueOrOneSchema,
   SHUTDOWN_FORCE_EXIT_MS: z.preprocess(
     blankToUndefined,
     z.coerce.number().int().positive().default(DEFAULT_SHUTDOWN_FORCE_EXIT_MS)
@@ -967,6 +973,7 @@ export interface Config {
   QUEUE_NAMESPACE: string | undefined;
   ENABLED_QUEUES: EnabledQueue[];
   DISABLE_WORKERS: boolean;
+  AUTOMATIC_MIGRATIONS: boolean;
   DISABLE_BULLBOARD: boolean;
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
@@ -1015,6 +1022,7 @@ const envSchema = rawSchema
       QUEUE_NAMESPACE: raw.QUEUE_NAMESPACE,
       ENABLED_QUEUES: raw.ENABLED_QUEUES,
       DISABLE_WORKERS: raw.DISABLE_WORKERS,
+      AUTOMATIC_MIGRATIONS: raw.AUTOMATIC_MIGRATIONS,
       DISABLE_BULLBOARD: raw.DISABLE_BULLBOARD,
       COOKIE_SECRET: raw.COOKIE_SECRET,
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
