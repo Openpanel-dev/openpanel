@@ -391,7 +391,17 @@ export const apiMigrations: Check = (install) => {
       severity: 'error',
       title: 'op-api start command runs the old migration steps',
       detail:
-        'v3 runs prisma migrate deploy under bun and the api applies code migrations; pnpm is gone from the image.',
+        'v3 runs the Prisma CLI the image ships and the api applies code migrations; pnpm is gone from the image.',
+      fix: replaceApiCommand,
+    };
+  }
+  if (command.includes('bunx prisma')) {
+    return {
+      id: 'compose/api-migrations',
+      severity: 'warn',
+      title: 'op-api downloads the Prisma CLI at every start',
+      detail:
+        'The image ships the Prisma CLI, so the api can start without reaching the npm registry.',
       fix: replaceApiCommand,
     };
   }

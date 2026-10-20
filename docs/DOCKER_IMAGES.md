@@ -104,9 +104,9 @@ Cuts deliberately **not** taken, each because M14-203 says so:
 
 Both final stages run as uid 1000 — `bun` in the api image, `node` in the
 dashboard image, both created by their base images. The api stage also sets
-`HOME=/home/bun`, because Docker does not move `HOME` with `USER` and the
-shipped start command's `bunx prisma@6.14.0` writes to bun's install cache
-under `HOME`. Verified 2026-09-11: `id` inside both running containers reports
+`HOME=/home/bun`, because Docker does not move `HOME` with `USER` and compose
+files from before the image shipped the Prisma CLI run `bunx prisma@6.14.0`,
+which writes to bun's install cache under `HOME`. Verified 2026-09-11: `id` inside both running containers reports
 uid 1000, the api answers `/healthz/ready` 200, and the dashboard
 server-renders `/login`.
 
@@ -117,7 +117,7 @@ move the migration out of it"*). The start command runs only Prisma before the
 api:
 
 ```sh
-cd /app/packages/db && bunx prisma@6.14.0 migrate deploy
+cd /app/packages/db && prisma migrate deploy
 ```
 
 and, with `AUTOMATIC_MIGRATIONS=true` (set by the shipped compose `.env` and
@@ -127,12 +127,15 @@ breaking changes first, long data moves after; see AGENTS.md → Migrations). In
 compose file still runs `cd /app/packages/core && bun scripts/migrate-code.ts`
 first keep working; that step simply finds less to do.
 
-- The Prisma CLI is a devDependency, so the image's production-only install
-  correctly omits it; `bunx` fetches it at start rather than the image carrying
-  the CLI plus `@prisma/engines` (~86 MB) for a once-per-deploy command.
-- **The version is pinned.** A bare `bunx prisma` fetches latest, which can
-  drift from the generated client and the schema the image ships. The repo is
-  on `prisma 6.14.0`.
+- **The image ships the Prisma CLI** (Carl, 2026-10-20), installed on its own in
+  `/opt/prisma` and on `PATH`, engines included, so a container start reaches
+  no registry and downloads nothing. It adds about 127 MB. The image used to
+  leave the CLI out and fetch it with `bunx` at every start; compose files
+  that still say `bunx prisma@6.14.0 migrate deploy` keep working, and
+  `openpanel doctor` rewrites them.
+- **The version is pinned** (`PRISMA_VERSION` in `apps/api/Dockerfile`) and the
+  build fails unless it matches `packages/db`'s `prisma` devDependency, the
+  version that generated the client.
 - **The code migrations moved to `@openpanel/db` in M15-204** (ADR-022, Carl's
   rulings: they run as a script with direct database access and no services).
   The command-line entrypoint is `packages/db/scripts/migrate-code.ts`
@@ -146,8 +149,6 @@ first keep working; that step simply finds less to do.
   alternative is a self-hoster finding out at container start.
 - No new apt packages: the runtime stage is `FROM base`, which already carries
   `ca-certificates`, `openssl` and `libssl3` — what Prisma's engines need.
-- Accepted consequence, recorded not re-argued: the api container needs
-  npm-registry reach at start and downloads the CLI on a cold start.
 
 Verified 2026-09-11 against a scratch local Postgres, running as uid 1000
 inside the built image: `bunx prisma@6.14.0 migrate deploy` → *"All migrations

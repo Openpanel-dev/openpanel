@@ -63,9 +63,10 @@ describe('doctor on a v1 install', () => {
     );
     expect(compose.services['op-worker'].environment).toContain('ROLE=worker');
     expect(compose.services['op-api'].command).toContain(
-      'prisma@6.14.0 migrate deploy'
+      'prisma migrate deploy'
     );
     expect(compose.services['op-api'].command).not.toContain('pnpm');
+    expect(compose.services['op-api'].command).not.toContain('bunx');
     expect(compose.services['op-api'].depends_on).toHaveProperty('op-rp');
     expect(compose.services['op-worker'].depends_on).toHaveProperty('op-rp');
     expect(JSON.stringify(compose.services['op-worker'].healthcheck)).toContain(
@@ -73,7 +74,7 @@ describe('doctor on a v1 install', () => {
     );
   });
 
-  test('a v3 start command that still runs the code migrations is rewritten', () => {
+  test('a v3 start command that downloads Prisma or runs the code migrations is rewritten', () => {
     const install = loadInstall(V1_FIXTURE);
     applyFixes(install);
     install.compose.setIn(
@@ -97,7 +98,8 @@ describe('doctor on a v1 install', () => {
       install.compose.getIn(['services', 'op-api', 'command'])
     );
     expect(command).not.toContain('migrate-code.ts');
-    expect(command).toContain('prisma@6.14.0 migrate deploy');
+    expect(command).not.toContain('bunx');
+    expect(command).toContain('prisma migrate deploy');
     expect(install.env.get('AUTOMATIC_MIGRATIONS')).toBe('true');
   });
 
