@@ -360,11 +360,9 @@ function OPAnnotationRow({
         {icon}
       </div>
       <div className="col min-w-0 flex-1 gap-0.5">
-        <div className="truncate font-medium text-sm leading-tight">
-          {title}
-        </div>
+        <div className="truncate font-medium text-sm">{title}</div>
         {description && (
-          <div className="truncate text-muted-foreground text-xs leading-snug">
+          <div className="truncate text-muted-foreground text-xs">
             {description}
           </div>
         )}

@@ -38,7 +38,7 @@ const VerifyListener = ({ events }: Props) => {
       >
         {renderIcon()}
         <div className="flex-1">
-          <div className="font-semibold text-foreground/90 text-lg leading-normal">
+          <div className="font-semibold text-foreground/90 text-lg">
             {isConnected ? 'Successfully connected' : 'Waiting for events'}
           </div>
           {isConnected ? (

@@ -12,7 +12,7 @@ const deltaChipVariants = cva(
         default: 'bg-muted text-muted-foreground',
       },
       size: {
-        xs: 'px-1.5 py-0 text-[10px] leading-none',
+        xs: 'px-1.5 py-0 text-2xs leading-none',
         sm: 'px-2 py-1 text-xs',
         md: 'px-2 py-1 text-sm',
         lg: 'px-2 py-1 text-base',

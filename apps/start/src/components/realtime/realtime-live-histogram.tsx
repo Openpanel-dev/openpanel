@@ -131,13 +131,13 @@ function Wrapper({ children, count, icons }: WrapperProps) {
   return (
     <div className="flex flex-col">
       <div className="row justify-between gap-2">
-        <div className="relative font-medium text-muted-foreground text-sm leading-normal">
+        <div className="relative font-medium text-muted-foreground text-sm">
           Unique visitors last 30 min
         </div>
         <div>{icons}</div>
       </div>
       <div className="col -mt-1 gap-2">
-        <div className="font-bold font-mono text-6xl">
+        <div className="font-bold font-mono text-5xl">
           <AnimatedNumber value={count} />
         </div>
       </div>

@@ -37,7 +37,7 @@ export default function SidebarOrganizationMenu({
       <Link
         activeOptions={{ exact: true }}
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm transition-all hover:bg-def-200'
         )}
         from="/$organizationId"
         to="/$organizationId"
@@ -48,7 +48,7 @@ export default function SidebarOrganizationMenu({
       <Link
         activeOptions={{ exact: true }}
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm transition-all hover:bg-def-200'
         )}
         from="/$organizationId"
         to="/$organizationId/settings"
@@ -60,7 +60,7 @@ export default function SidebarOrganizationMenu({
         <Link
           activeOptions={{ exact: true }}
           className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm transition-all hover:bg-def-200'
           )}
           from="/$organizationId"
           to="/$organizationId/billing"
@@ -87,7 +87,7 @@ export default function SidebarOrganizationMenu({
       {isAdmin && (
         <Link
           className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-sm transition-all hover:bg-def-200'
           )}
           from="/$organizationId"
           to="/$organizationId/members"
@@ -149,7 +149,7 @@ export function ActionCTAButton() {
           <button
             className={cn(
               'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'font-medium text-[13px] text-foreground',
+              'font-medium text-foreground text-sm',
               'transition-colors hover:bg-def-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}

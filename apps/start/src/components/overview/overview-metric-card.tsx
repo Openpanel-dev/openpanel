@@ -91,7 +91,7 @@ export function OverviewMetricCard({
     >
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="truncate font-medium text-2xs text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
           {hasValue && (
@@ -107,7 +107,7 @@ export function OverviewMetricCard({
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
         </div>
-        <div className="mt-0.5 truncate text-[11px] text-muted-foreground leading-none">
+        <div className="mt-0.5 truncate text-2xs text-muted-foreground">
           {isError ? METRIC_ERROR_LABEL : displayLabel}
         </div>
       </div>

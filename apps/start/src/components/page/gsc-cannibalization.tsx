@@ -181,7 +181,7 @@ export function GscCannibalization({
 
               {isOpen && (
                 <div className="border-t bg-muted/20 px-4 py-3">
-                  <p className="mb-3 text-muted-foreground text-xs leading-normal">
+                  <p className="mb-3 text-muted-foreground text-xs">
                     These pages all rank for{' '}
                     <span className="font-medium text-foreground">
                       "{item.query}"

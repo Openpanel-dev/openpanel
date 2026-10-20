@@ -78,7 +78,7 @@ export const EventItem = memo<EventItemProps>(
             >
               <EventIcon meta={event.meta} name={event.name} size="sm" />
             </button>
-            <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm leading-normal">
+            <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm">
               {event.name === 'screen_view' ? (
                 <>
                   <span className="mr-2 text-muted-foreground">Visit:</span>
@@ -134,7 +134,7 @@ export const EventItem = memo<EventItemProps>(
             className="border-neutral-200 border-t bg-def-100 p-4 py-2"
             data-slot="extra"
           >
-            <pre className="text-sm leading-tight">
+            <pre className="text-sm">
               {JSON.stringify(event.properties, null, 2)}
             </pre>
           </div>

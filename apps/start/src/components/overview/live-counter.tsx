@@ -25,7 +25,7 @@ export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
     <TooltipComplete
       content={`${counter.debounced} unique visitors last 5 minutes`}
     >
-      <div className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium leading-none">
+      <div className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium">
         <div className="relative">
           <div
             className={cn(

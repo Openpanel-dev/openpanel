@@ -6,7 +6,7 @@ export function FeedbackButton({ className }: { className?: string }) {
   const context = useRouteContext({ strict: false });
   return (
     <button
-      className={cn('justify-start text-left text-[13px]', className)}
+      className={cn('justify-start text-left text-sm', className)}
       onClick={() => {
         op.track('feedback_button_clicked');
         if ('uj' in window && window.uj !== undefined) {

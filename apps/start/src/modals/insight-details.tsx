@@ -134,16 +134,14 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
               <SeverityDot band={insight.severityBand} />
             )}
           </div>
-          <SheetTitle className="text-lg leading-snug">
+          <SheetTitle className="text-lg">
             {insight.displayName || insight.title}
           </SheetTitle>
         </div>
       </SheetHeader>
 
       {insight.aiSummary && (
-        <p className="text-muted-foreground leading-normal">
-          {insight.aiSummary}
-        </p>
+        <p className="text-muted-foreground">{insight.aiSummary}</p>
       )}
 
       {primary && (
@@ -196,7 +194,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
         )}
 
         {explanation && (
-          <div className="flex flex-col gap-3 text-sm leading-normal">
+          <div className="flex flex-col gap-3 text-sm">
             <p>{explanation.summary}</p>
             {explanation.drivers.length > 0 && (
               <ul className="flex flex-col gap-2">
@@ -213,7 +211,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
                 Possibly related: {explanation.relatedReference}
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            <p className="text-2xs text-muted-foreground uppercase tracking-wide">
               Confidence: {explanation.confidence}
             </p>
           </div>

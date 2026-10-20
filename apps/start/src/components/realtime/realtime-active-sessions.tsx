@@ -45,11 +45,11 @@ export function RealtimeActiveSessions({
                 >
                   <div className="col flex-1 gap-1">
                     {session.name === 'screen_view' && (
-                      <span className="text-muted-foreground text-xs leading-normal/80">
+                      <span className="text-muted-foreground text-xs">
                         {session.origin}
                       </span>
                     )}
-                    <span className="truncate font-medium text-sm leading-normal">
+                    <span className="truncate font-medium text-sm">
                       {session.name === 'screen_view'
                         ? session.path
                         : session.name}

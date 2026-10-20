@@ -211,7 +211,7 @@ const VirtualizedSessionsTable = ({
           const width = `${column.getSize()}px`;
           return (
             <div
-              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-[10px] text-foreground uppercase"
+              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-2xs text-foreground uppercase"
               key={column.id}
               style={{
                 width,

@@ -171,9 +171,7 @@ export default function ActivationBanner() {
                 {doneCount}/{steps.length}
               </span>
             </div>
-            <div className="font-medium text-lg leading-tight">
-              {headline.title}
-            </div>
+            <div className="font-medium text-lg">{headline.title}</div>
             <div className="text-muted-foreground text-sm">{headline.sub}</div>
           </div>
 

@@ -181,7 +181,7 @@ export default function OverviewWeeklyTrends({
               <div className="h-6" />
               {Array.from({ length: 24 }, (_, hour) => (
                 <div
-                  className="flex h-4 items-center justify-end text-[10px] text-muted-foreground"
+                  className="flex h-4 items-center justify-end text-2xs text-muted-foreground"
                   key={hour}
                 >
                   {hour % 3 === 0 ? `${String(hour).padStart(2, '0')}:00` : ''}
@@ -193,7 +193,7 @@ export default function OverviewWeeklyTrends({
               <div className="flex h-6">
                 {SHORT_DAY_NAMES.map((day) => (
                   <div
-                    className="flex-1 text-center text-[11px] text-muted-foreground"
+                    className="flex-1 text-center text-2xs text-muted-foreground"
                     key={day}
                   >
                     {day}

@@ -344,7 +344,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
                     {insight.metrics}
                   </span>
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed">
+                <p className="text-muted-foreground text-xs">
                   <span className="font-medium text-foreground">
                     {insight.headline}.
                   </span>{' '}

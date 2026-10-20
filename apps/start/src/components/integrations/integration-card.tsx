@@ -125,7 +125,7 @@ export function IntegrationCardContent({
       {icon}
       <div className="col gap-1">
         <h2 className="title">{name}</h2>
-        <p className="text-muted-foreground leading-tight">{description}</p>
+        <p className="text-muted-foreground">{description}</p>
       </div>
     </div>
   );

@@ -38,7 +38,7 @@ export function Stat({
 }) {
   return (
     <div className="col min-w-0 gap-1 px-4 py-3 shadow-[0_0_0_0.5px] shadow-border">
-      <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
+      <span className="truncate font-medium text-2xs text-muted-foreground uppercase tracking-wider">
         {label}
       </span>
       <span className="flex items-baseline gap-2">
@@ -48,7 +48,7 @@ export function Stat({
         {change}
       </span>
       {detail && (
-        <span className="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-2xs text-muted-foreground">
           {detail}
         </span>
       )}

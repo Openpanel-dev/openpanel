@@ -127,7 +127,7 @@ export function InsightCard({
                     : 'bg-blue-500'
               )}
             />
-            <span className="text-[11px] text-muted-foreground capitalize">
+            <span className="text-2xs text-muted-foreground capitalize">
               {insight.severityBand}
             </span>
           </div>
@@ -137,7 +137,7 @@ export function InsightCard({
         <div className="row hidden h-4 justify-between gap-2 group-hover/card:flex">
           {availableMetrics.length > 1 ? (
             <button
-              className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize"
+              className="flex items-center gap-1 text-2xs text-muted-foreground capitalize"
               onClick={() =>
                 setMetricIndex((metricIndex + 1) % availableMetrics.length)
               }
@@ -153,7 +153,7 @@ export function InsightCard({
             <div />
           )}
           <button
-            className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize"
+            className="flex items-center gap-1 text-2xs text-muted-foreground capitalize"
             onClick={onFilter}
             type="button"
           >
@@ -161,12 +161,12 @@ export function InsightCard({
           </button>
         </div>
       )}
-      <div className="mt-2 line-clamp-2 font-semibold text-sm leading-snug">
+      <div className="mt-2 line-clamp-2 font-semibold text-sm">
         {renderTitle()}
       </div>
 
       {insight.aiSummary && (
-        <p className="mt-1 line-clamp-3 text-muted-foreground text-xs leading-snug">
+        <p className="mt-1 line-clamp-3 text-muted-foreground text-xs">
           {insight.aiSummary}
         </p>
       )}
@@ -174,7 +174,7 @@ export function InsightCard({
       <div className="mt-auto pt-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-1 text-[11px] text-muted-foreground">
+            <div className="mb-1 text-2xs text-muted-foreground">
               {metricLabel}
             </div>
 

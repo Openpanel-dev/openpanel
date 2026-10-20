@@ -58,7 +58,7 @@ export function useColumns({
               )}
               <div className="min-w-0">
                 {page.title && (
-                  <div className="truncate font-medium text-sm leading-tight">
+                  <div className="truncate font-medium text-sm">
                     {page.title}
                   </div>
                 )}

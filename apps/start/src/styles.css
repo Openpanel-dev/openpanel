@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "react-grid-layout/css/styles.css";
+@import "@fontsource-variable/inter";
 
 @import "tw-animate-css";
 
@@ -9,21 +10,8 @@
 
 body {
   @apply m-0;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    sans-serif,
-    Apple Color Emoji,
-    Segoe UI Emoji,
-    Segoe UI Symbol,
-    Noto Color Emoji;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 :root {
@@ -163,33 +151,14 @@ code {
 }
 
 @theme {
-  /* Font sizes matching dashboard config */
-  --text-xs: 10px;
-  --text-xs--line-height: 10px;
-  --text-sm: 12px;
-  --text-sm--line-height: 12px;
-  --text-base: 14px;
-  --text-base--line-height: 14px;
-  --text-lg: 16px;
-  --text-lg--line-height: 16px;
-  --text-xl: 18px;
-  --text-xl--line-height: 18px;
-  --text-2xl: 20px;
-  --text-2xl--line-height: 20px;
-  --text-3xl: 24px;
-  --text-3xl--line-height: 24px;
-  --text-4xl: 30px;
-  --text-4xl--line-height: 30px;
-  --text-5xl: 36px;
-  --text-5xl--line-height: 36px;
-  --text-6xl: 48px;
-  --text-6xl--line-height: 48px;
-  --text-7xl: 64px;
-  --text-7xl--line-height: 64px;
-  --text-8xl: 72px;
-  --text-8xl--line-height: 72px;
-  --text-9xl: 96px;
-  --text-9xl--line-height: 96px;
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Tailwind's scale, with one extra step below `xs` for micro labels and
+     stat-card captions. The dashboard's default text is `sm` (14px/20px). */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
 
   /* Color variables */
   --color-background: var(--background);
@@ -262,9 +231,8 @@ code {
     @apply bg-background text-foreground;
   }
 
-  /* Typography classes from globals.css */
   .h1 {
-    @apply text-3xl font-medium;
+    @apply text-2xl font-medium;
   }
 
   .h2 {
@@ -272,7 +240,7 @@ code {
   }
 
   .h3 {
-    @apply text-lg font-medium;
+    @apply text-base font-medium;
   }
 
   .h4 {
@@ -284,15 +252,15 @@ code {
   }
 
   .heading {
-    @apply text-3xl font-semibold;
+    @apply text-2xl font-semibold;
   }
 
   .title {
-    @apply text-lg font-semibold;
+    @apply text-base font-semibold;
   }
 
   .subtitle {
-    @apply text-base font-medium;
+    @apply text-sm font-medium;
   }
 
   .card {

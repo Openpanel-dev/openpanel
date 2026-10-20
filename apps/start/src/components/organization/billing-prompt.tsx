@@ -272,7 +272,7 @@ export default function BillingPrompt({
         <div className="col gap-3 p-6 md:p-8">
           <Badge variant={copy.badge.variant}>{copy.badge.label}</Badge>
           <h1 className="font-semibold text-2xl">{copy.title}</h1>
-          <p className="text-muted-foreground leading-relaxed">{copy.lead}</p>
+          <p className="text-muted-foreground">{copy.lead}</p>
         </div>
 
         <div className="row gap-3 px-6 md:px-8">

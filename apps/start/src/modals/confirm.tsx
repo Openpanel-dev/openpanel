@@ -19,7 +19,7 @@ export default function Confirm({
   return (
     <ModalContent>
       <ModalHeader title={title} />
-      <p className="-mt-2 text-lg leading-normal">{text}</p>
+      <p className="-mt-2 text-base">{text}</p>
       <ButtonContainer>
         <Button
           onClick={() => {

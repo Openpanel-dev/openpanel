@@ -132,12 +132,7 @@ export function WidgetButtons({
     >
       {Children.map(children, (child, index) => {
         return (
-          <div
-            className={cn(
-              'flex [&_button]:leading-normal',
-              slice < index ? hidden : 'opacity-100'
-            )}
-          >
+          <div className={cn('flex', slice < index ? hidden : 'opacity-100')}>
             {child}
           </div>
         );

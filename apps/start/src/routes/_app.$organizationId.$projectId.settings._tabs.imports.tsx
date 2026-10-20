@@ -265,7 +265,7 @@ function ImportsSettings() {
                   <TableCell>
                     <Tooltiper
                       content={
-                        <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-normal">
+                        <pre className="whitespace-pre-wrap break-words font-mono text-sm">
                           {JSON.stringify(imp.config, null, 2)}
                         </pre>
                       }

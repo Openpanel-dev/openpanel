@@ -38,7 +38,7 @@ function ChatMarkdownInner({
       className={cn(
         // Reasonable readable defaults for a chat surface: 14px body,
         // 1.6 line height, list/heading rhythm.
-        'text-foreground leading-[1.6]',
+        'text-foreground',
         // Element styling via descendant selectors keeps the API tiny
         // (no per-element override props for callers).
         '[&>*+*]:mt-2',
@@ -54,8 +54,8 @@ function ChatMarkdownInner({
         '[&_strong]:font-semibold',
         '[&_em]:italic',
         '[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:no-underline',
-        '[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[12.5px]',
-        '[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:text-[12.5px]',
+        '[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs',
+        '[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:text-xs',
         '[&_pre>code]:bg-transparent [&_pre>code]:p-0',
         '[&_blockquote]:border-muted-foreground/30 [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground',
         '[&_hr]:my-3 [&_hr]:border-border',

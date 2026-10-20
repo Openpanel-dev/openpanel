@@ -27,7 +27,7 @@ export function SidebarChatComposer() {
       <SparklesIcon className="size-5 shrink-0 text-muted-foreground" />
       <input
         className={cn(
-          'min-w-0 flex-1 bg-transparent py-2 font-medium text-[13px] text-foreground',
+          'min-w-0 flex-1 bg-transparent py-2 font-medium text-foreground text-sm',
           'placeholder:font-normal placeholder:text-muted-foreground',
           'border-0 shadow-none outline-none ring-0',
           'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0'
@@ -57,7 +57,7 @@ export function SidebarChatComposer() {
         <button
           aria-label="Open the chat (Cmd+J)"
           className={cn(
-            'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-[11px]',
+            'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-2xs',
             'cursor-pointer text-muted-foreground'
           )}
           onClick={() => launch()}

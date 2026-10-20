@@ -64,10 +64,10 @@ function BadgeWidget({ visitors, isLoading, color }: BadgeWidgetProps) {
       </div>
 
       <div className="-mt-px flex min-w-0 flex-1 flex-col items-start gap-0.5">
-        <div className="font-medium text-[10px] text-white/80 uppercase tracking-wide">
+        <div className="font-medium text-2xs text-white/80 uppercase tracking-wide">
           ANALYTICS FROM
         </div>
-        <div className="font-semibold text-white leading-tight">OpenPanel</div>
+        <div className="font-semibold text-white">OpenPanel</div>
       </div>
 
       <div className="col center-center flex-shrink-0 gap-1">

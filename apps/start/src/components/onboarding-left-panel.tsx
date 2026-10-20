@@ -62,7 +62,7 @@ function TestimonialSlide({
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
       <div className="relative z-10 flex flex-col gap-4">
         <QuoteIcon className="size-10 stroke-1 text-white/40" />
-        <blockquote className="font-medium text-3xl text-white leading-relaxed">
+        <blockquote className="font-medium text-2xl text-white leading-relaxed">
           {quote}
         </blockquote>
         <figcaption className="text-sm text-white/60">

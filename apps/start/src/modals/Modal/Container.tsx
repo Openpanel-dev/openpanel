@@ -76,11 +76,7 @@ export function ModalHeader({
       <div className="row relative w-full justify-between gap-4">
         <div className="col flex-1 gap-2">
           <DialogTitle>{title}</DialogTitle>
-          {!!text && (
-            <div className="text-lg text-muted-foreground leading-normal">
-              {text}
-            </div>
-          )}
+          {!!text && <div className="text-muted-foreground">{text}</div>}
         </div>
         {onClose !== false && (
           <Button

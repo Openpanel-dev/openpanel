@@ -101,7 +101,7 @@ function OPDatePillInner({
         maxWidth,
       }}
     >
-      <div className="whitespace-nowrap rounded-full bg-foreground px-2.5 py-1 font-medium text-[11px] text-background tracking-tight shadow-md">
+      <div className="whitespace-nowrap rounded-full bg-foreground px-2.5 py-1 font-medium text-2xs text-background tracking-tight shadow-md">
         {label}
       </div>
     </motion.div>,

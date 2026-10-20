@@ -48,7 +48,7 @@ export default function SidebarProjectMenu({
   return (
     <>
       <SidebarChatComposer />
-      <div className="mb-2 font-medium text-muted-foreground text-sm">
+      <div className="mb-2 font-medium text-muted-foreground text-xs">
         Analytics
       </div>
       <SidebarLink href={'/'} icon={WallpaperIcon} label="Overview" />
@@ -70,7 +70,7 @@ export default function SidebarProjectMenu({
       <SidebarLink href={'/profiles'} icon={UserCircleIcon} label="Profiles" />
       <SidebarLink href={'/groups'} icon={Building2Icon} label="Groups" />
       <SidebarLink href={'/cohorts'} icon={TargetIcon} label="Cohorts" />
-      <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
+      <div className="mt-4 mb-2 font-medium text-muted-foreground text-xs">
         Manage
       </div>
       <SidebarLink
@@ -161,7 +161,7 @@ export function ActionCTAButton() {
           <button
             className={cn(
               'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'font-medium text-[13px] text-foreground',
+              'font-medium text-foreground text-sm',
               'transition-colors hover:bg-def-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
