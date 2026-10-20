@@ -75,7 +75,7 @@ export function OverviewLiveHistogram({
   return (
     <MetricCardShell>
       <div className="px-3 pt-1.5">
-        <div className="flex items-start justify-between gap-2 leading-none">
+        <div className="flex h-3 items-center justify-between gap-2 leading-none">
           <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             Live · 30 min
           </span>
@@ -96,8 +96,8 @@ export function OverviewLiveHistogram({
             />
           </span>
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
-          <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums tracking-tight">
+        <div className="mt-1 flex items-baseline gap-0.5">
+          <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums leading-4 tracking-tight">
             {number.short(displayCount)}
           </span>
         </div>
@@ -120,7 +120,7 @@ export function OverviewLiveHistogram({
         </div>
       </div>
 
-      <div className="mt-0.5 h-[40px]">
+      <div className="h-[40px]">
         {chartData.length > 0 && (
           <BarChart
             animationDuration={0}
@@ -128,7 +128,7 @@ export function OverviewLiveHistogram({
             barGap={0.25}
             className="h-full"
             data={chartData}
-            margin={{ top: 3, right: 0, bottom: 4, left: 0 }}
+            margin={{ top: 2, right: 0, bottom: 4, left: 0 }}
             xDataKey="time"
           >
             <OPStatHoverBridge onHoverChange={setHover} />

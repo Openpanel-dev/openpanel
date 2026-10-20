@@ -29,7 +29,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 flex flex-col gap-4 overflow-y-auto rounded-lg bg-def-100 p-6 shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:duration-300 data-[state=open]:duration-500 max-sm:w-[calc(100%-theme(spacing.8))]',
+  'fixed z-50 flex flex-col gap-4 overflow-y-auto rounded-xl bg-card p-6 shadow-2xl transition ease-in-out data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:duration-300 data-[state=open]:duration-500 max-sm:w-[calc(100%-theme(spacing.8))]',
   {
     variants: {
       side: {
@@ -67,7 +67,7 @@ const SheetContent = React.forwardRef<
       {children}
       <SheetPrimitive.Close className="hidden" id="close-sheet" />
       <SheetPrimitive.Close
-        className="absolute top-6 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-def-100"
+        className="absolute top-6 right-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-def-100"
         onClick={onClose}
       >
         <XIcon className="h-4 w-4" />
@@ -85,7 +85,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'relative -m-6 mb-0 flex justify-between rounded-t-lg border-b bg-def-100 p-6',
+      'relative -mx-6 -mt-6 mb-0 flex justify-between border-border border-b p-6 pb-5',
       className
     )}
     {...props}
@@ -103,7 +103,7 @@ const SheetFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'mt-auto flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+      '-mx-6 mt-auto -mb-6 flex flex-col-reverse gap-2 rounded-b-xl border-border border-t bg-def-100 px-6 py-4 sm:flex-row sm:justify-end',
       className
     )}
     {...props}

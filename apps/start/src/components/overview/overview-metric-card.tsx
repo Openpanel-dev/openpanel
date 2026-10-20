@@ -90,7 +90,7 @@ export function OverviewMetricCard({
       onClick={onClick}
     >
       <div className="px-3 pt-1.5">
-        <div className="flex items-start justify-between gap-2 leading-none">
+        <div className="flex h-3 items-center justify-between gap-2 leading-none">
           <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
@@ -102,7 +102,7 @@ export function OverviewMetricCard({
             />
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+        <div className="mt-1 flex items-baseline gap-0.5">
           {isLoading && <Skeleton className="h-5 w-20" />}
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
@@ -112,7 +112,7 @@ export function OverviewMetricCard({
         </div>
       </div>
 
-      <div className={cn('mt-0.5', fill ? 'min-h-[36px] flex-1' : 'h-[36px]')}>
+      <div className={cn(fill ? 'min-h-[36px] flex-1' : 'h-[36px]')}>
         {data.length > 0 && (
           <BarChart
             animationDuration={0}
@@ -120,7 +120,7 @@ export function OverviewMetricCard({
             barGap={0.25}
             className="h-full"
             data={data}
-            margin={{ top: 3, right: 0, bottom: 0, left: 0 }}
+            margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
             xDataKey="date"
           >
             <OPStatHoverBridge onHoverChange={setHover} />
@@ -179,7 +179,7 @@ export function MetricCardShell({
 }
 
 const VALUE_CLASS =
-  'truncate font-mono font-semibold text-xl text-foreground tracking-tight tabular-nums';
+  'truncate font-mono font-semibold text-foreground text-xl leading-4 tracking-tight tabular-nums';
 
 function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
   const number = useNumber();
