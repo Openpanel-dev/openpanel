@@ -14,6 +14,10 @@ import { OPSeriesDots } from '../charts/op-series-dots';
 import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
+import {
+  MARKERS_MAX_POINTS,
+  POINT_MARKER,
+} from '../report-chart/common/time-series';
 import { Skeleton } from '../skeleton';
 import { Button } from '../ui/button';
 import { OverviewLiveHistogram } from './overview-live-histogram';
@@ -338,6 +342,7 @@ function Chart({
 
   const dashFromIndex = useDashedTail({ data, range, interval });
   const primaryColor = isRevenueTab ? REVENUE_COLOR : getChartColor(0);
+  const showMarkers = chartData.length <= MARKERS_MAX_POINTS;
 
   return (
     <ComposedChart
@@ -362,6 +367,8 @@ function Chart({
         fillOpacity={0.18}
         gradientToOpacity={0}
         key={activeMetric.key}
+        markers={POINT_MARKER}
+        showMarkers={showMarkers}
         stroke={primaryColor}
         strokeWidth={2}
       />
@@ -378,6 +385,8 @@ function Chart({
         <Line
           curve={curveMonotoneX}
           dataKey="revenue_norm"
+          markers={POINT_MARKER}
+          showMarkers={showMarkers}
           stroke={REVENUE_COLOR}
           strokeWidth={1.5}
         />
