@@ -151,22 +151,46 @@ const updatePackageJsonForRelease = (
       module: './dist/index.js',
       types: './dist/index.d.ts',
       files: ['dist', 'README.md', 'LICENSE'],
-      exports: restPkgJson.exports ?? {
-        '.': {
-          import: './dist/index.js',
-          require: './dist/index.cjs',
-          types: './dist/index.d.ts',
-        },
-        ...(name === '@openpanel/nextjs'
+      exports:
+        name === '@openpanel/web'
           ? {
-              './server': {
-                import: './dist/server.js',
-                require: './dist/server.cjs',
-                types: './dist/server.d.ts',
+              '.': {
+                import: {
+                  types: './dist/index.d.ts',
+                  default: './dist/index.js',
+                },
+                require: {
+                  types: './dist/index.d.cts',
+                  default: './dist/index.cjs',
+                },
+              },
+              './replay': {
+                import: {
+                  types: './dist/src/replay.d.ts',
+                  default: './dist/src/replay.js',
+                },
+                require: {
+                  types: './dist/src/replay.d.cts',
+                  default: './dist/src/replay.cjs',
+                },
               },
             }
-          : {}),
-      },
+          : (restPkgJson.exports ?? {
+              '.': {
+                import: './dist/index.js',
+                require: './dist/index.cjs',
+                types: './dist/index.d.ts',
+              },
+              ...(name === '@openpanel/nextjs'
+                ? {
+                    './server': {
+                      import: './dist/server.js',
+                      require: './dist/server.cjs',
+                      types: './dist/server.d.ts',
+                    },
+                  }
+                : {}),
+            }),
     };
   }
 

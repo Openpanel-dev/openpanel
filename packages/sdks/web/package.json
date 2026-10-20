@@ -8,7 +8,12 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test src/resolve-replay-recorder.test.ts src/replay-bundle.test.ts src/replay-iife.test.ts"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./replay": "./src/replay/index.ts"
   },
   "dependencies": {
     "@openpanel/sdk": "workspace:1.3.1-local",
