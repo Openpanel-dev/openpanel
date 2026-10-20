@@ -82,6 +82,8 @@ export function OverviewMetricCard({
 
   const diff = getPreviousMetric(displayValue, displayPrev);
   const hasValue = !(isLoading || isError);
+  // While loading the sparkline area keeps its height so the card does not jump.
+  const hasSparkline = isLoading || data.length > 0;
 
   return (
     <MetricCardShell
@@ -112,8 +114,10 @@ export function OverviewMetricCard({
         </div>
       </div>
 
-      <div className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}>
-        {data.length > 0 && (
+      {hasSparkline ? (
+        <div
+          className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}
+        >
           <BarChart
             animationDuration={0}
             aspectRatio="auto"
@@ -132,8 +136,10 @@ export function OverviewMetricCard({
               lineCap={fill ? BAR_RADIUS : SPARKLINE_BAR_RADIUS}
             />
           </BarChart>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="h-3" />
+      )}
     </MetricCardShell>
   );
 }
