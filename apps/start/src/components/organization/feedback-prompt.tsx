@@ -42,7 +42,7 @@ export default function FeedbackPrompt() {
       // If date parsing fails, show the prompt
       return true;
     }
-  }, [isDemo, isSelfHosted, feedbackPromptSeen]);
+  }, [isDemo, isSelfHosted, onChatPage, feedbackPromptSeen]);
 
   const handleGiveFeedback = () => {
     // Open userjot widget

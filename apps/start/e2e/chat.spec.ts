@@ -23,8 +23,11 @@ test.describe('AI chat', () => {
   test('Cmd+J opens the chat from a project page', async ({ page }) => {
     await page.goto('/acme/acme-web', { waitUntil: 'networkidle' });
     await expect(page.getByPlaceholder('Ask AI anything…')).toBeVisible();
-    await page.keyboard.press('ControlOrMeta+j');
-    await expect(page).toHaveURL(/\/acme\/acme-web\/chat/);
+    // A key press before hydration is lost; press until the app answers.
+    await expect(async () => {
+      await page.keyboard.press('ControlOrMeta+j');
+      await expect(page).toHaveURL(/\/acme\/acme-web\/chat/, { timeout: 1000 });
+    }).toPass({ timeout: 30_000 });
   });
 
   test('the sidebar composer carries the question into the chat', async ({
@@ -32,8 +35,16 @@ test.describe('AI chat', () => {
   }) => {
     await page.goto('/acme/acme-web', { waitUntil: 'networkidle' });
     const composer = page.getByPlaceholder('Ask AI anything…');
-    await composer.fill('What changed this week?');
-    await composer.press('Enter');
+    // Before hydration the form submits natively; type and submit until the app answers.
+    await expect(async () => {
+      await composer.fill('What changed this week?');
+      await composer.press('Enter');
+      await expect(page).toHaveURL(/\/acme\/acme-web\/chat/, { timeout: 1000 });
+    }).toPass({ timeout: 30_000 });
+    if (await page.getByText(NOT_CONFIGURED).isVisible()) {
+      test.skip();
+      return;
+    }
     // The question is sent on arrival and the URL settles on the new conversation.
     await expect(page.getByText('What changed this week?')).toBeVisible();
     await expect(page).toHaveURL(/\/chat\?.*c=/);

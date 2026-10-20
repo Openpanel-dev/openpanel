@@ -25,7 +25,12 @@ import {
   runReportConfig,
   summarizeChartData,
 } from './charts';
-import { resolveRange, revenueToUnits, truncateRows } from './shared';
+import {
+  resolveRange,
+  revenueToUnits,
+  toDateOnly,
+  truncateRows,
+} from './shared';
 
 const TRAFFIC_COLUMNS = [
   'referrer_name',
@@ -273,7 +278,8 @@ export function analyticsTools(ctx: ChatToolContext) {
                 sum(revenue * sign) / 100 AS revenue
               FROM sessions
               WHERE project_id = ${sql.string(projectId)}
-                AND created_at BETWEEN toDateTime(${sql.string(range.startDate)}) AND toDateTime(${sql.string(range.endDate)})
+                AND created_at >= toDateTime(${sql.string(toDateOnly(range.startDate))})
+                AND created_at < toDateTime(${sql.string(toDateOnly(range.endDate))}) + INTERVAL 1 DAY
               GROUP BY ${groupBy}
               HAVING sessions > 0
               ORDER BY ${sql.id(sortBy, ['revenue', 'sessions', 'pageviews'])} DESC

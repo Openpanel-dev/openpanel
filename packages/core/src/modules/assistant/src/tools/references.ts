@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import type { ChatToolContext } from '../context';
-import { resolveRange, truncateRows } from './shared';
+import { resolveRange, toDateOnly, truncateRows } from './shared';
 
 const DEFAULT_AROUND_DAYS = 7;
 const MAX_AROUND_DAYS = 90;
@@ -56,8 +56,8 @@ export function referenceTools(ctx: ChatToolContext) {
         } else {
           const range = resolveRange(ctx, { startDate, endDate });
           window = {
-            gte: new Date(range.startDate),
-            lte: new Date(range.endDate),
+            gte: new Date(`${toDateOnly(range.startDate)}T00:00:00.000Z`),
+            lte: new Date(`${toDateOnly(range.endDate)}T23:59:59.999Z`),
           };
         }
         const rows = await deps.db.reference.findMany({

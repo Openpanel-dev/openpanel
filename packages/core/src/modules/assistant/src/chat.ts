@@ -71,7 +71,10 @@ export async function runChat(
   const config = deps.config;
   const providers = configuredProviders(config);
   const available = getAvailableChatModels(providers);
-  const requested = CHAT_MODELS.find((model) => model.id === request.modelId);
+  // Cloud runs the one vetted model; only a self-hosted install may pick another.
+  const requested = config.selfHosted
+    ? CHAT_MODELS.find((model) => model.id === request.modelId)
+    : undefined;
   const entry =
     requested && available.some((model) => model.id === requested.id)
       ? requested

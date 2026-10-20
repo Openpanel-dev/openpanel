@@ -12,7 +12,7 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
   lastAssistantMessageIsCompleteWithToolCalls,
 } from 'ai';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AssistantUIMessage } from './types';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
@@ -97,6 +97,8 @@ interface ChatHandlers {
 interface ChatEntry {
   chat: Chat<AssistantUIMessage>;
   handlers: ChatHandlers | null;
+  /** Read at request time, so a model switch or a new hint applies to the next turn. */
+  request: { modelId: string | null; hint?: ChatLaunchHint };
 }
 
 /** Newest chats stay; the page rarely touches more than a handful per visit. */
@@ -121,6 +123,7 @@ function getChatEntry(
   const entry: ChatEntry = {
     chat: null as unknown as Chat<AssistantUIMessage>,
     handlers: null,
+    request: { modelId: null },
   };
   entry.chat = new Chat<AssistantUIMessage>({
     id,
@@ -167,12 +170,6 @@ export function useChatSession(options: ChatSessionOptions) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState<string | null>(options.initialTitle);
 
-  // Read at request time so a model switch mid-conversation applies to the next turn.
-  const modelRef = useRef(options.modelId);
-  modelRef.current = options.modelId;
-  const hintRef = useRef(options.hint);
-  hintRef.current = options.hint;
-
   const transport = useMemo(
     () =>
       new DefaultChatTransport<AssistantUIMessage>({
@@ -183,11 +180,11 @@ export function useChatSession(options: ChatSessionOptions) {
             id,
             projectId,
             organizationId,
-            modelId: modelRef.current ?? undefined,
+            modelId: chats.get(id)?.request.modelId ?? undefined,
             trigger,
             messageId,
             message: messages.at(-1),
-            hint: hintRef.current,
+            hint: chats.get(id)?.request.hint,
           },
         }),
       }),
@@ -231,6 +228,7 @@ export function useChatSession(options: ChatSessionOptions) {
     transport
   );
   entry.handlers = handlers;
+  entry.request = { modelId: options.modelId, hint: options.hint };
   const chat = useChat<AssistantUIMessage>({ chat: entry.chat });
 
   useEffect(() => {

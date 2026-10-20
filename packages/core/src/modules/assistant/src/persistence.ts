@@ -55,7 +55,9 @@ export async function saveMessages(
         ...(input.title ? { title: input.title } : {}),
       },
     });
-    for (const message of input.messages) {
+    // Rows saved together must load in this order; the default timestamp can tie.
+    const baseTime = Date.now();
+    for (const [index, message] of input.messages.entries()) {
       const parts = message.parts as unknown[];
       const metadata = (message.metadata ?? {}) as Record<string, unknown>;
       await tx.chatMessage.upsert({
@@ -66,6 +68,7 @@ export async function saveMessages(
           role: message.role,
           parts,
           metadata,
+          createdAt: new Date(baseTime + index),
         },
         update: { parts, metadata },
       });

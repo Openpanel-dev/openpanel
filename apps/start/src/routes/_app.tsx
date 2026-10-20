@@ -2,11 +2,11 @@ import {
   createFileRoute,
   Outlet,
   redirect,
-  useNavigate,
   useParams,
 } from '@tanstack/react-router';
 import { ConstructionIcon } from 'lucide-react';
 import { useEffect } from 'react';
+import { useChatLaunch } from '@/components/chat/chat-launch';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
@@ -61,7 +61,7 @@ function AppLayout() {
 
 /** ⌘J / Ctrl+J opens the chat for the current project. */
 function useChatShortcut() {
-  const navigate = useNavigate();
+  const launchChat = useChatLaunch();
   const { organizationId, projectId } = useParams({ strict: false });
   useEffect(() => {
     if (!(organizationId && projectId)) {
@@ -70,13 +70,10 @@ function useChatShortcut() {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
         event.preventDefault();
-        navigate({
-          to: '/$organizationId/$projectId/chat',
-          params: { organizationId, projectId },
-        });
+        launchChat();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [navigate, organizationId, projectId]);
+  }, [launchChat, organizationId, projectId]);
 }
