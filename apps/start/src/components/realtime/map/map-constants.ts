@@ -3,8 +3,6 @@ export const MAP_MAX_ZOOM = 24;
 export const MAP_ZOOM_BUTTON_FACTOR = 1.8;
 export const MAP_ZOOM_ANIMATION_MS = 300;
 export const NIGHT_REFRESH_MS = 60_000;
-/** Overscroll never eats more than this share of the viewport per side. */
-export const MAP_MAX_OVERSCROLL_SHARE = 0.3;
 
 /** A country gets its name once it covers this many square pixels on screen. */
 export const LABEL_MIN_SCREEN_AREA = 9000;

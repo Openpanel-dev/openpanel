@@ -2,16 +2,9 @@ import type { RouterOutputs } from '@/trpc/client';
 
 export type RealtimeMapPoint = RouterOutputs['realtime']['coordinates'][number];
 
-/** Screen pixels the map may be dragged past its edges, to clear overlays. */
-export interface MapOverscroll {
-  x: number;
-  y: number;
-}
-
 export interface RealtimeMapProps {
   projectId: string;
   markers: RealtimeMapPoint[];
-  overscroll?: MapOverscroll;
 }
 
 export interface MapLocation {

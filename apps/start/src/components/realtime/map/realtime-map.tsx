@@ -7,7 +7,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LABEL_MAX_COUNT,
   LABEL_MIN_SCREEN_AREA,
-  MAP_MAX_OVERSCROLL_SHARE,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_ZOOM_ANIMATION_MS,
@@ -23,11 +22,7 @@ import {
   createNightPaths,
   loadWorldShapes,
 } from './map-geometry';
-import type {
-  MapOverscroll,
-  RealtimeMapPoint,
-  RealtimeMapProps,
-} from './map-types';
+import type { RealtimeMapPoint, RealtimeMapProps } from './map-types';
 import type { MapPlace } from './map-utils';
 import { getMarkerRadius, groupPointsByPlace } from './map-utils';
 import {
@@ -47,6 +42,8 @@ interface MapColors {
 }
 
 interface PlacedMarker {
+  /** The place plus which copy of the world it sits on. */
+  key: string;
   place: MapPlace;
   x: number;
   y: number;
@@ -184,6 +181,21 @@ function drawMap({
     pixelRatio * transform.y
   );
 
+  for (const offset of getWorldCopyOffsets(geometry, transform, canvas)) {
+    context.save();
+    context.translate(offset, 0);
+    drawWorld(context, geometry, night, colors, hairline);
+    context.restore();
+  }
+}
+
+function drawWorld(
+  context: CanvasRenderingContext2D,
+  geometry: MapGeometry,
+  night: { area: Path2D; edge: Path2D } | null,
+  colors: MapColors,
+  hairline: number
+) {
   context.globalAlpha = 0.6;
   context.strokeStyle = colors.grid;
   context.lineWidth = hairline;
@@ -211,6 +223,30 @@ function drawMap({
   }
 }
 
+/** Horizontal offsets of every copy of the world that overlaps the viewport. */
+function getWorldCopyOffsets(
+  geometry: MapGeometry,
+  transform: ZoomTransform,
+  viewport: { width: number }
+): number[] {
+  const pixelRatio = window.devicePixelRatio || 1;
+  const viewportWidth = viewport.width / pixelRatio;
+  const visibleLeft = transform.invertX(0);
+  const visibleRight = transform.invertX(viewportWidth);
+  const first = Math.floor(
+    (visibleLeft - geometry.worldLeft) / geometry.worldWidth
+  );
+  const last = Math.floor(
+    (visibleRight - geometry.worldLeft) / geometry.worldWidth
+  );
+
+  const offsets: number[] = [];
+  for (let copy = first; copy <= last; copy++) {
+    offsets.push(copy * geometry.worldWidth);
+  }
+  return offsets;
+}
+
 function placeMarkers(
   points: RealtimeMapPoint[],
   geometry: MapGeometry
@@ -222,6 +258,7 @@ function placeMarkers(
       continue;
     }
     placed.push({
+      key: place.id,
       place,
       x: projected[0],
       y: projected[1],
@@ -238,13 +275,7 @@ function placeMarkers(
   return placed.reverse();
 }
 
-const NO_OVERSCROLL: MapOverscroll = { x: 0, y: 0 };
-
-export function RealtimeMap({
-  projectId,
-  markers,
-  overscroll = NO_OVERSCROLL,
-}: RealtimeMapProps) {
+export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
   const dispatch = useDispatch();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -301,33 +332,13 @@ export function RealtimeMap({
     }
 
     let gestureStartScale: number | null = null;
-    const paddingX = Math.min(overscroll.x, width * MAP_MAX_OVERSCROLL_SHARE);
-    const paddingY = Math.min(overscroll.y, height * MAP_MAX_OVERSCROLL_SHARE);
-    const defaultConstrain = zoom().constrain();
-    // Shrinking the viewport before the default clamp lets the world's edge
-    // travel that many screen pixels inward, the same at every zoom level.
-    const constrainWithOverscroll = (
-      transform: ZoomTransform,
-      extent: [[number, number], [number, number]],
-      translateExtent: [[number, number], [number, number]]
-    ) =>
-      defaultConstrain(
-        transform,
-        [
-          [extent[0][0] + paddingX, extent[0][1] + paddingY],
-          [extent[1][0] - paddingX, extent[1][1] - paddingY],
-        ],
-        translateExtent
-      );
-
     const behavior = zoom<HTMLDivElement, unknown>()
       .scaleExtent([MAP_MIN_ZOOM, MAP_MAX_ZOOM])
       .extent([
         [0, 0],
         [width, height],
       ])
-      .translateExtent(geometry.bounds)
-      .constrain(constrainWithOverscroll)
+      .translateExtent(geometry.panBounds)
       .filter((event: MouseEvent | WheelEvent) => {
         const isWheel = event.type === 'wheel';
         if (isWheel && gestureStartScale !== null) {
@@ -381,7 +392,7 @@ export function RealtimeMap({
       element.removeEventListener('gesturechange', onGestureChange);
       element.removeEventListener('gestureend', onGestureEnd);
     };
-  }, [geometry, width, height, overscroll.x, overscroll.y, dispatch]);
+  }, [geometry, width, height, dispatch]);
 
   const zoomBy = (factor: number) => {
     const element = containerRef.current;
@@ -411,28 +422,38 @@ export function RealtimeMap({
     y >= -MARKER_VIEWPORT_MARGIN &&
     y <= height + MARKER_VIEWPORT_MARGIN;
 
+  const worldCopyOffsets = geometry
+    ? getWorldCopyOffsets(geometry, transform, { width })
+    : [];
+
   const visibleLabels = (geometry?.labels ?? [])
     .filter(
       (label) => label.area * transform.k * transform.k >= LABEL_MIN_SCREEN_AREA
     )
-    .map((label) => ({
-      ...label,
-      x: transform.applyX(label.x),
-      y: transform.applyY(label.y),
-    }))
+    .flatMap((label) =>
+      worldCopyOffsets.map((offset) => ({
+        ...label,
+        key: `${label.name}@${offset}`,
+        x: transform.applyX(label.x + offset),
+        y: transform.applyY(label.y),
+      }))
+    )
     .filter((label) => isInView(label.x, label.y))
     .slice(0, LABEL_MAX_COUNT);
 
   const visibleMarkers = placedMarkers
-    .map((marker) => ({
-      ...marker,
-      x: transform.applyX(marker.x),
-      y: transform.applyY(marker.y),
-    }))
+    .flatMap((marker) =>
+      worldCopyOffsets.map((offset) => ({
+        ...marker,
+        key: `${marker.place.id}@${offset}`,
+        x: transform.applyX(marker.x + offset),
+        y: transform.applyY(marker.y),
+      }))
+    )
     .filter((marker) => isInView(marker.x, marker.y));
 
   const hoveredMarker = visibleMarkers.find(
-    (marker) => marker.place.id === hoveredId
+    (marker) => marker.key === hoveredId
   );
 
   const openDetails = (marker: PlacedMarker) => {
@@ -477,7 +498,7 @@ export function RealtimeMap({
           {visibleLabels.map((label) => (
             <text
               dominantBaseline="middle"
-              key={label.name}
+              key={label.key}
               textAnchor="middle"
               x={label.x}
               y={label.y}
@@ -491,9 +512,9 @@ export function RealtimeMap({
           {visibleMarkers.map((marker) => (
             <VisitorMarker
               isActive={
-                marker.place.id === hoveredId || marker.place.id === selectedId
+                marker.key === hoveredId || marker.place.id === selectedId
               }
-              key={marker.place.id}
+              key={marker.key}
               marker={marker}
               onHover={setHoveredId}
               onSelect={openDetails}
@@ -587,14 +608,14 @@ function VisitorMarker({
       className="cursor-pointer outline-none"
       onBlur={() => onHover(null)}
       onClick={() => onSelect(marker)}
-      onFocus={() => onHover(marker.place.id)}
+      onFocus={() => onHover(marker.key)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           onSelect(marker);
         }
       }}
-      onPointerEnter={() => onHover(marker.place.id)}
+      onPointerEnter={() => onHover(marker.key)}
       onPointerLeave={() => onHover(null)}
       role="button"
       tabIndex={0}

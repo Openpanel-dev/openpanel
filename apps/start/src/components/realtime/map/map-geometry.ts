@@ -1,11 +1,5 @@
 import type { GeoProjection } from 'd3-geo';
-import {
-  geoArea,
-  geoCircle,
-  geoGraticule10,
-  geoMercator,
-  geoPath,
-} from 'd3-geo';
+import { geoArea, geoCircle, geoGraticule, geoMercator, geoPath } from 'd3-geo';
 import type {
   Feature,
   FeatureCollection,
@@ -21,6 +15,9 @@ import worldAtlasUrl from 'world-atlas/countries-50m.json?url';
 /** Mercator runs to infinity at the poles; this band holds every inhabited place. */
 const NORTH_LIMIT = 84;
 const SOUTH_LIMIT = -58;
+/** Where d3's Mercator clips; panning up or down stops here, so there is never an edge. */
+const PAN_LATITUDE_LIMIT = 85;
+const GRATICULE_STEP_DEGREES = 10;
 const HIDDEN_COUNTRIES = new Set(['Antarctica']);
 const COUNTRY_NAME_OVERRIDES: Record<string, string> = {
   'United States of America': 'United States',
@@ -60,8 +57,12 @@ export interface MapGeometry {
   borders: Path2D;
   graticule: Path2D;
   labels: CountryLabel[];
-  /** The world's projected box, used to stop panning past its edges. */
-  bounds: [[number, number], [number, number]];
+  /** One world's projected width; the map repeats sideways at this interval. */
+  worldWidth: number;
+  /** Where the world starts horizontally, so copies line up with it. */
+  worldLeft: number;
+  /** Infinite sideways, Mercator's own limit up and down. */
+  panBounds: [[number, number], [number, number]];
 }
 
 export async function loadWorldShapes(): Promise<WorldShapes> {
@@ -154,11 +155,17 @@ export function createMapGeometry(
 ): MapGeometry {
   const projection = createCoverProjection(size.width, size.height);
   const path = geoPath(projection);
-  const [westX, northY] = projection([-180, NORTH_LIMIT]) ?? [0, 0];
-  const [eastX, southY] = projection([180, SOUTH_LIMIT]) ?? [
-    size.width,
+  const [worldLeft, panTop] = projection([-180, PAN_LATITUDE_LIMIT]) ?? [0, 0];
+  const [, panBottom] = projection([0, -PAN_LATITUDE_LIMIT]) ?? [
+    0,
     size.height,
   ];
+  const graticule = geoGraticule()
+    .extent([
+      [-180, -PAN_LATITUDE_LIMIT],
+      [180, PAN_LATITUDE_LIMIT],
+    ])
+    .step([GRATICULE_STEP_DEGREES, GRATICULE_STEP_DEGREES]);
 
   return {
     projection,
@@ -166,11 +173,13 @@ export function createMapGeometry(
       path({ type: 'FeatureCollection', features: shapes.countries }) ?? ''
     ),
     borders: new Path2D(path(shapes.borders) ?? ''),
-    graticule: new Path2D(path(geoGraticule10()) ?? ''),
+    graticule: new Path2D(path(graticule()) ?? ''),
     labels: createCountryLabels(shapes.countries, path),
-    bounds: [
-      [westX, northY],
-      [eastX, southY],
+    worldWidth: 2 * Math.PI * projection.scale(),
+    worldLeft,
+    panBounds: [
+      [Number.NEGATIVE_INFINITY, panTop],
+      [Number.POSITIVE_INFINITY, panBottom],
     ],
   };
 }
