@@ -34,7 +34,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       className={cn(
         fieldSurface,
-        "flex w-fit items-center justify-between gap-2 whitespace-nowrap px-3 py-2 text-sm data-[size=default]:h-10 data-[size=sm]:h-8 data-[size=sm]:rounded-md data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "flex w-fit items-center justify-between gap-2 whitespace-nowrap px-3 py-2 text-sm data-[size=default]:h-9 data-[size=sm]:h-8 data-[size=sm]:rounded-md data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       data-size={size}

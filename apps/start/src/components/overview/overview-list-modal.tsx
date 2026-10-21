@@ -132,7 +132,6 @@ export function OverviewListModal<T extends OverviewListItem>({
               className="pl-9"
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              size="sm"
               type="search"
               value={searchQuery}
             />

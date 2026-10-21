@@ -80,7 +80,7 @@ function Component() {
               onValueChange={(v) => setTypeFilter(v === 'all' ? '' : v)}
               value={typeFilter || 'all'}
             >
-              <SelectTrigger size="sm" className="w-40">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>

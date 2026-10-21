@@ -75,7 +75,7 @@ export function ProjectAccessGrants({
                 }
                 value={grant.level}
               >
-                <SelectTrigger className="w-36 shrink-0" size="sm">
+                <SelectTrigger className="w-36 shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

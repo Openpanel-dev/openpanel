@@ -248,6 +248,8 @@ body {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(from var(--foreground) l c h / 0.18) transparent;
   }
   body {
     @apply bg-background text-foreground;

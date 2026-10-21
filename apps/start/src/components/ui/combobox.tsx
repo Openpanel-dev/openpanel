@@ -34,7 +34,7 @@ export interface ComboboxProps<T> {
   icon?: LucideIcon;
   size?: ButtonProps['size'];
   /** `input` makes the trigger look like a form field; use it inside forms. */
-  variant?: 'outline' | 'input';
+  variant?: ButtonProps['variant'];
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
@@ -89,7 +89,7 @@ export function Combobox<T extends string>({
             )}
             disabled={disabled}
             role="combobox"
-            size={size ?? (variant === 'input' ? 'default' : undefined)}
+            size={size}
             variant={variant}
           >
             <div className="flex min-w-0 items-center">

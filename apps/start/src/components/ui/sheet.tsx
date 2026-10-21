@@ -85,7 +85,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'relative -mx-6 -mt-6 mb-0 flex justify-between border-border border-b p-6 pb-5',
+      'sticky -top-6 z-10 -mx-6 -mt-6 mb-0 flex justify-between rounded-t-xl border-border border-b bg-card p-6 pb-5',
       className
     )}
     {...props}
@@ -103,7 +103,7 @@ const SheetFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      '-mx-6 mt-auto -mb-6 flex flex-col-reverse gap-2 rounded-b-xl border-border border-t bg-def-100 px-6 py-4 sm:flex-row sm:justify-end',
+      'sticky -bottom-6 z-10 -mx-6 mt-auto -mb-6 flex flex-col-reverse gap-2 rounded-b-xl border-border border-t bg-def-100 px-6 py-4 sm:flex-row sm:justify-end',
       className
     )}
     {...props}

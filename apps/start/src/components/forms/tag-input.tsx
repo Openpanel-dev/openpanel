@@ -103,7 +103,7 @@ const TagInput = ({
     <div
       className={cn(
         fieldSurface,
-        'inline-flex min-h-10 w-full flex-wrap items-center gap-2 px-3 py-1.5 has-[input:focus]:ring-2 has-[input:focus]:ring-ring',
+        'inline-flex min-h-9 w-full flex-wrap items-center gap-2 px-3 py-1 has-[input:focus]:ring-2 has-[input:focus]:ring-ring',
         !!error && 'ring-1 ring-destructive'
       )}
       ref={scope}

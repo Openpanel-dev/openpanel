@@ -94,7 +94,6 @@ export function SelectDashboard({
               handleCreateDashboard();
             }}
             placeholder="Enter dashboard name"
-            size="sm"
             value={newDashboardName}
           />
           <Button

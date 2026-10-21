@@ -307,7 +307,7 @@ function Component() {
         title="Insights"
       />
       <TableButtons className="mb-8">
-        <Input size="sm"
+        <Input
           className="max-w-xs"
           onChange={(e) => void setSearch(e.target.value || null)}
           placeholder="Search insights..."
@@ -319,7 +319,7 @@ function Component() {
           }
           value={windowKindFilter ?? 'all'}
         >
-          <SelectTrigger size="sm" className="w-[140px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Time Window" />
           </SelectTrigger>
           <SelectContent>
@@ -335,7 +335,7 @@ function Component() {
           }
           value={severityFilter ?? 'all'}
         >
-          <SelectTrigger size="sm" className="w-[140px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
@@ -352,7 +352,7 @@ function Component() {
           }
           value={directionFilter ?? 'all'}
         >
-          <SelectTrigger size="sm" className="w-[140px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Direction" />
           </SelectTrigger>
           <SelectContent>
@@ -366,7 +366,7 @@ function Component() {
           onValueChange={(v) => void setSortBy(v as SortOption)}
           value={sortBy ?? 'impact-desc'}
         >
-          <SelectTrigger size="sm" className="w-[160px]">
+          <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
