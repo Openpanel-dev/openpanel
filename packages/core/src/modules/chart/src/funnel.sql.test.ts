@@ -44,6 +44,7 @@ let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
 let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
 let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
 let onlyReportEvents: typeof import('../../report/src/series').onlyReportEvents;
+let rangePeriod: typeof import('./first-time').rangePeriod;
 let deps: import('../../../services').ServiceDeps;
 
 const PROJECT_ID = 'test-sql-validation';
@@ -162,6 +163,7 @@ beforeAll(async () => {
   ({ funnelChartQuery, funnelProfilesQuery, funnelStepConditions } =
     await import('./funnel.sql'));
   ({ onlyReportEvents } = await import('../../report/src/series'));
+  ({ rangePeriod } = await import('./first-time'));
   const { testServiceDeps } = await import('../../../../test/service-deps');
   deps = await testServiceDeps();
 });
@@ -477,6 +479,48 @@ describe('funnel.sql — custom event steps', () => {
 
   it('parses and resolves', async () => {
     await explain(await chartStatement({ series }));
+    await explain(await profilesStatement({ series }));
+  });
+});
+
+describe('funnel.sql / first time steps', () => {
+  const series = [
+    event({ id: 'A', firstTime: true }),
+    event({ id: 'B', name: 'sign_up' }),
+  ];
+  const stepConditions = () =>
+    funnelStepConditions(
+      onlyReportEvents(series),
+      PROJECT_ID,
+      [],
+      rangePeriod(START, END)
+    ).map(render);
+
+  it("matches the first-time step only at the user's first occurrence", () => {
+    const [firstStep, secondStep] = stepConditions().map(({ text }) => text);
+    expect(firstStep).toContain(
+      `(events.profile_id, events.created_at) GLOBAL IN (SELECT profile_id, min(created_at) AS first_seen FROM events WHERE project_id = '${PROJECT_ID}' AND name = 'screen_view' AND created_at <= toDateTime('${END}') GROUP BY profile_id HAVING first_seen >= toDateTime('${START}'))`
+    );
+    expect(secondStep).not.toContain('first_seen');
+  });
+
+  it('carries the condition into windowFunnel and the pre-filter', async () => {
+    const { sql } = render(await chartStatement({ series }));
+    const conditions = stepConditions().map((condition) => condition.sql);
+    expect(sql).toContain(
+      `(toUInt64(toUnixTimestamp64Milli(created_at)), ${conditions.join(', ')}) AS level`
+    );
+    expect(sql).toContain(` AND ((${conditions.join(') OR (')})) GROUP BY `);
+  });
+
+  it('parses and resolves, with and without a breakdown', async () => {
+    await explain(await chartStatement({ series }));
+    await explain(
+      await chartStatement({
+        series,
+        breakdowns: [breakdown('properties.experiment')],
+      })
+    );
     await explain(await profilesStatement({ series }));
   });
 });
