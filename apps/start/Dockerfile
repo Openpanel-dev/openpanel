@@ -23,6 +23,7 @@ COPY . .
 
 # The tracking script the self-hosted dashboard serves.
 COPY apps/public/public/op1.js ./apps/start/public/op1.js
+COPY apps/public/public/op1-replay.js ./apps/start/public/op1-replay.js
 
 RUN bun install --frozen-lockfile --linker=isolated
 
