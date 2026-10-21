@@ -50,6 +50,13 @@ test('activeSessions rejects an unauthenticated caller before querying ClickHous
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 });
 
+test('recentSessions rejects an unauthenticated caller before querying ClickHouse', async () => {
+  const caller = await anonCaller();
+  await expect(
+    caller.recentSessions({ projectId: 'proj_1' })
+  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+});
+
 test('paths rejects an unauthenticated caller before querying ClickHouse', async () => {
   const caller = await anonCaller();
   await expect(caller.paths({ projectId: 'proj_1' })).rejects.toMatchObject({

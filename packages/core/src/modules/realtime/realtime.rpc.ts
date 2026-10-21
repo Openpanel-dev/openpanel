@@ -15,6 +15,7 @@ import {
   getRealtimeGeo,
   getRealtimeMapBadgeDetails,
   getRealtimePaths,
+  getRealtimeRecentSessions,
   getRealtimeReferrals,
 } from './realtime.service';
 
@@ -77,6 +78,17 @@ export const realtimeRouter = createTRPCRouter({
       });
 
       return getRealtimeActiveSessions(ctx, input.projectId);
+    }),
+  recentSessions: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeRecentSessions(ctx, input.projectId);
     }),
   paths: protectedProcedure
     .input(z.object({ projectId: z.string() }))

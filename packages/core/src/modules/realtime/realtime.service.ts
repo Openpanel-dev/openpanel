@@ -19,6 +19,8 @@ import { getProfiles } from '../profile/profile.service';
 
 const REALTIME_WINDOW_MINUTES = 30;
 const ACTIVE_SESSIONS_LIMIT = 50;
+const RECENT_SESSIONS_LIMIT = 30;
+const SESSION_START_EVENT = 'session_start';
 const PATHS_LIMIT = 50;
 const REFERRALS_LIMIT = 50;
 const GEO_LIMIT = 50;
@@ -373,7 +375,7 @@ export async function getRealtimeActiveSessions(
   const rows = await chQuery<IClickhouseEvent>(
     deps,
     sql`SELECT
-      name, session_id, created_at, path, origin, referrer, referrer_name,
+      id, name, session_id, created_at, path, origin, referrer, referrer_name,
       country, city, region, os, os_version, browser, browser_version,
       device
     FROM ${sql.id(TABLE_NAMES.events)}
@@ -381,6 +383,27 @@ export async function getRealtimeActiveSessions(
       AND created_at >= ${sql.string(formatClickhouseDate(since()))}
     ORDER BY created_at DESC
     LIMIT ${sql.uint64(ACTIVE_SESSIONS_LIMIT)}`
+  );
+  return rows.map(transformEvent);
+}
+
+/** The latest sessions to start, newest first: one `session_start` row each. */
+export async function getRealtimeRecentSessions(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const rows = await chQuery<IClickhouseEvent>(
+    deps,
+    sql`SELECT
+      id, name, session_id, profile_id, created_at, path, origin, referrer,
+      referrer_name, country, city, region, os, os_version, browser,
+      browser_version, device
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND name = ${sql.string(SESSION_START_EVENT)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+    ORDER BY created_at DESC
+    LIMIT ${sql.uint64(RECENT_SESSIONS_LIMIT)}`
   );
   return rows.map(transformEvent);
 }
@@ -514,6 +537,10 @@ export function createRealtimeService(
       projectId: string
     ): ReturnType<typeof getRealtimeActiveSessions> =>
       getRealtimeActiveSessions(deps, projectId),
+    getRecentSessions: (
+      projectId: string
+    ): ReturnType<typeof getRealtimeRecentSessions> =>
+      getRealtimeRecentSessions(deps, projectId),
     getPaths: (projectId: string): ReturnType<typeof getRealtimePaths> =>
       getRealtimePaths(deps, projectId),
     getReferrals: (

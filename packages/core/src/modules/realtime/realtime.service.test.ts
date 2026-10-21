@@ -62,6 +62,7 @@ const MS_PER_MINUTE = 60_000;
 const REALTIME_WINDOW_MS = MINUTES_PER_REALTIME_WINDOW * MS_PER_MINUTE;
 const CLOCK_TOLERANCE_MS = 5000;
 const ACTIVE_SESSIONS_LIMIT = 50;
+const RECENT_SESSIONS_LIMIT = 30;
 
 const noop = () => undefined;
 const deps = {
@@ -203,4 +204,42 @@ test('getRealtimeActiveSessions scopes the query to the project and the 30-minut
   expect(query_params.p3).toBe(ACTIVE_SESSIONS_LIMIT);
   expect(result).toHaveLength(1);
   expect(result[0]?.sessionId).toBe('sess_1');
+});
+
+test('getRealtimeRecentSessions only reads session starts in the project and window', async () => {
+  nextRows = [
+    {
+      name: 'session_start',
+      session_id: 'sess_2',
+      profile_id: 'prof_2',
+      created_at: '2026-09-04 00:00:00',
+      path: '/pricing',
+      origin: 'https://example.com',
+      referrer: '',
+      referrer_name: 'Google',
+      country: 'SE',
+      city: 'Stockholm',
+      region: '',
+      os: 'macOS',
+      os_version: '',
+      browser: 'Chrome',
+      browser_version: '',
+      device: 'desktop',
+    },
+  ];
+
+  const result = await subject.getRealtimeRecentSessions(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('project_id = {p1:String}');
+  expect(query).toContain('name = {p2:String}');
+  expect(query).toContain('created_at >= {p3:String}');
+  expect(query).toContain('LIMIT {p4:UInt64}');
+  expect(query_params.p1).toBe('proj_1');
+  expect(query_params.p2).toBe('session_start');
+  expect(query_params.p4).toBe(RECENT_SESSIONS_LIMIT);
+  expect(result).toHaveLength(1);
+  expect(result[0]?.sessionId).toBe('sess_2');
+  expect(result[0]?.referrerName).toBe('Google');
 });
