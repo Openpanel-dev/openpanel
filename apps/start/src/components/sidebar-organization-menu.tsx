@@ -10,6 +10,7 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { SidebarIcon, sidebarItemClassName } from './sidebar-link';
 import { Badge } from './ui/badge';
 import {
   DropdownMenu,
@@ -36,36 +37,30 @@ export default function SidebarOrganizationMenu({
     <>
       <Link
         activeOptions={{ exact: true }}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
+        className={sidebarItemClassName}
         from="/$organizationId"
         to="/$organizationId"
       >
-        <LayoutListIcon size={20} />
+        <SidebarIcon icon={LayoutListIcon} />
         <div className="flex-1">Projects</div>
       </Link>
       <Link
         activeOptions={{ exact: true }}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
+        className={sidebarItemClassName}
         from="/$organizationId"
         to="/$organizationId/settings"
       >
-        <CogIcon size={20} />
+        <SidebarIcon icon={CogIcon} />
         <div className="flex-1">Settings</div>
       </Link>
       {isAdmin && !isSelfHosted && (
         <Link
           activeOptions={{ exact: true }}
-          className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-          )}
+          className={sidebarItemClassName}
           from="/$organizationId"
           to="/$organizationId/billing"
         >
-          <CreditCardIcon size={20} />
+          <SidebarIcon icon={CreditCardIcon} />
           <div className="flex-1">Billing</div>
           {(() => {
             if (!organization) {
@@ -86,13 +81,11 @@ export default function SidebarOrganizationMenu({
       )}
       {isAdmin && (
         <Link
-          className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-          )}
+          className={sidebarItemClassName}
           from="/$organizationId"
           to="/$organizationId/members"
         >
-          <UsersIcon size={20} />
+          <SidebarIcon icon={UsersIcon} />
           <div className="flex-1">Members</div>
         </Link>
       )}
@@ -143,19 +136,19 @@ export function ActionCTAButton() {
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'font-medium text-[13px] text-foreground',
+              'group flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-def-200 px-2.5 text-left',
+              'text-foreground text-nav',
               'transition-colors hover:bg-def-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
             type="button"
           >
-            <PlusIcon className="size-5 shrink-0" />
+            <PlusIcon className="size-4 shrink-0" strokeWidth={1.75} />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
               {/* `initial={false}` suppresses only the FIRST mount: framer writes
                   transform/opacity into the style attribute, and the SSR string

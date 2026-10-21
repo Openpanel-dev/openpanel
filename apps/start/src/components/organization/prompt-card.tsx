@@ -54,9 +54,7 @@ export function PromptCard({
                 }}
               />
               <div className="row items-center justify-between">
-                <h2 className="max-w-[200px] font-semibold text-xl leading-snug">
-                  {title}
-                </h2>
+                <h2 className="max-w-[240px] font-semibold text-lg">{title}</h2>
                 <Button
                   className="rounded-full"
                   onClick={onClose}

@@ -68,7 +68,7 @@ export function ToolDone({
         />
       </button>
       {open && (
-        <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all border-t bg-muted/20 px-2.5 py-2 font-mono text-[11px]">
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all border-t bg-muted/20 px-2.5 py-2">
           {preview}
         </pre>
       )}

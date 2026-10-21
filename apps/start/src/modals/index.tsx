@@ -26,7 +26,6 @@ import EditGroup from './edit-group';
 import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
-import EventDetails from './event-details';
 import Instructions from './Instructions';
 import InsightDetails from './insight-details';
 import MoveReport from './move-report';
@@ -59,7 +58,6 @@ const modals = {
   EditEvent,
   CustomEvent,
   EditMember,
-  EventDetails,
   InsightDetails,
   EditClient,
   AddProject,

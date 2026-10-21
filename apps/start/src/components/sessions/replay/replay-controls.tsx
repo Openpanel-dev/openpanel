@@ -11,7 +11,7 @@ export function ReplayTime() {
   const currentTime = useCurrentTime(250);
 
   return (
-    <span className="font-mono text-muted-foreground text-sm tabular-nums">
+    <span className="text-muted-foreground text-sm tabular-nums tabular-nums">
       {formatDuration(currentTime)} / {formatDuration(duration)}
     </span>
   );

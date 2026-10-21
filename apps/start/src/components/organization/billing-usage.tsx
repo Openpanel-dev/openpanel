@@ -39,7 +39,7 @@ function Card({ title, value }: { title: string; value: string }) {
   return (
     <div className="col min-w-0 flex-1 gap-2 p-4" title={`${title}: ${value}`}>
       <div className="truncate text-muted-foreground">{title}</div>
-      <div className="truncate font-bold font-mono text-xl">{value}</div>
+      <div className="truncate font-bold text-xl tabular-nums">{value}</div>
     </div>
   );
 }

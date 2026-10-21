@@ -66,7 +66,7 @@ export function SignInGoogle({
         {title()}
       </Button>
       {isLastUsed && (
-        <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
+        <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-2xs text-white leading-none">
           Used last time
         </span>
       )}

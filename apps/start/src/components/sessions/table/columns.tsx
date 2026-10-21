@@ -90,7 +90,7 @@ export function useColumns() {
         }
         return (
           <ProjectLink
-            className="font-medium font-mono"
+            className="font-medium tabular-nums"
             params={{ profileId: session.profileId }}
             to="/profiles/$profileId"
           >
@@ -107,7 +107,7 @@ export function useColumns() {
         const session = row.original;
         return (
           <div className="min-w-0">
-            <span className="font-mono">{session.entryPath || '/'}</span>
+            <span className="tabular-nums">{session.entryPath || '/'}</span>
           </div>
         );
       },
@@ -120,7 +120,7 @@ export function useColumns() {
         const session = row.original;
         return (
           <div className="min-w-0">
-            <span className="font-mono">
+            <span className="tabular-nums">
               {session.exitPath || session.entryPath || '/'}
             </span>
           </div>
@@ -290,7 +290,7 @@ export function useColumns() {
           <div className="flex flex-wrap gap-1">
             {groups.map((g) => (
               <span
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums"
                 key={g}
               >
                 {g}

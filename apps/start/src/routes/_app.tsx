@@ -7,6 +7,7 @@ import {
 import { ConstructionIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useChatLaunch } from '@/components/chat/chat-launch';
+import { EventDrawer } from '@/components/events/event-drawer';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
@@ -55,6 +56,7 @@ function AppLayout() {
         <div className="block h-16 lg:hidden" />
         <Outlet />
       </div>
+      <EventDrawer />
     </div>
   );
 }

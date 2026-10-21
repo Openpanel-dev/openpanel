@@ -166,7 +166,7 @@ export function GscCannibalization({
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
-                  <span className="whitespace-nowrap font-mono text-muted-foreground text-xs">
+                  <span className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                     {item.totalImpressions.toLocaleString()} impr ·{' '}
                     {(avgCtr * 100).toFixed(1)}% avg CTR
                   </span>
@@ -181,7 +181,7 @@ export function GscCannibalization({
 
               {isOpen && (
                 <div className="border-t bg-muted/20 px-4 py-3">
-                  <p className="mb-3 text-muted-foreground text-xs leading-normal">
+                  <p className="mb-3 text-muted-foreground text-xs">
                     These pages all rank for{' '}
                     <span className="font-medium text-foreground">
                       "{item.query}"
@@ -230,7 +230,7 @@ export function GscCannibalization({
                             }}
                             src={`${apiUrl}/misc/favicon?url=${origin}`}
                           />
-                          <span className="min-w-0 flex-1 truncate font-mono text-xs">
+                          <span className="min-w-0 flex-1 truncate text-xs tabular-nums">
                             {path || page.page}
                           </span>
                           {isWinner && (
@@ -238,7 +238,7 @@ export function GscCannibalization({
                               #1
                             </span>
                           )}
-                          <span className="shrink-0 whitespace-nowrap font-mono text-muted-foreground text-xs">
+                          <span className="shrink-0 whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                             pos {page.position.toFixed(1)} ·{' '}
                             {(page.ctr * 100).toFixed(1)}% CTR ·{' '}
                             {page.impressions.toLocaleString()} impr

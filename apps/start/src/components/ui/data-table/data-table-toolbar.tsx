@@ -208,7 +208,7 @@ export function AnimatedSearchInput({
           'absolute inset-0 h-full w-full rounded-md border-0 bg-transparent py-2 pr-7 pl-7 shadow-none',
           'focus-visible:ring-0 focus-visible:ring-offset-0',
           'transition-opacity duration-200',
-          'truncate align-baseline font-medium text-[14px]'
+          'truncate align-baseline font-medium text-sm'
         )}
         onBlur={() => setIsFocused(false)}
         onChange={(e) => onChange(e.target.value)}

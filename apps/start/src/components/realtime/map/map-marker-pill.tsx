@@ -11,7 +11,7 @@ export function MapMarkerPill({
   return (
     <button
       className={cn(
-        'inline-flex select-none items-center gap-1.5 whitespace-nowrap rounded-lg border border-border/10 bg-background px-[10px] py-[5px] font-medium text-[11px] text-foreground shadow-[0_4px_16px] shadow-background/20',
+        'inline-flex select-none items-center gap-1.5 whitespace-nowrap rounded-lg border border-border/10 bg-background px-[10px] py-[5px] font-medium text-2xs text-foreground shadow-[0_4px_16px] shadow-background/20',
         onClick ? 'cursor-pointer' : 'cursor-default'
       )}
       onClick={onClick}

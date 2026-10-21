@@ -29,8 +29,8 @@ import {
   isErrorOutput,
   isRowsOutput,
 } from './types';
+import { useEventDrawer } from '@/components/events/use-event-drawer';
 import { useAppParams } from '@/hooks/use-app-params';
-import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
 export function ChatMessage({
@@ -295,15 +295,12 @@ function RowsTable({
 }) {
   const navigate = useNavigate();
   const { organizationId, projectId } = useAppParams();
+  const { openEvent } = useEventDrawer();
   let onRowClick: ((row: Record<string, unknown>) => void) | undefined;
   if (toolName === 'query_events') {
     onRowClick = (row) => {
       if (typeof row.id === 'string' && typeof row.created_at === 'string') {
-        pushModal('EventDetails', {
-          id: row.id,
-          createdAt: new Date(row.created_at),
-          projectId,
-        });
+        openEvent({ id: row.id, createdAt: row.created_at });
       }
     };
   }

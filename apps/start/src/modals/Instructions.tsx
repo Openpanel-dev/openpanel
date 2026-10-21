@@ -22,7 +22,7 @@ const Header = ({ framework }: Pick<Props, 'framework'>) => (
 );
 
 const Footer = ({ framework }: Pick<Props, 'framework'>) => (
-  <SheetFooter className="absolute right-0 bottom-0 left-0 p-4">
+  <SheetFooter className="absolute right-0 bottom-0 left-0 mx-0 mb-0">
     <Button
       className="flex-1"
       icon={XIcon}

@@ -82,6 +82,8 @@ export function OverviewMetricCard({
 
   const diff = getPreviousMetric(displayValue, displayPrev);
   const hasValue = !(isLoading || isError);
+  // While loading the sparkline area keeps its height so the card does not jump.
+  const hasSparkline = isLoading || data.length > 0;
 
   return (
     <MetricCardShell
@@ -91,29 +93,33 @@ export function OverviewMetricCard({
     >
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {label}
           </span>
           {hasValue && (
-            <PreviousDiffIndicatorPure
-              {...diff}
-              inverted={inverted}
-              size="xs"
-            />
+            <div className="absolute top-2.5 right-3">
+              <PreviousDiffIndicatorPure
+                {...diff}
+                inverted={inverted}
+                size="xs"
+              />
+            </div>
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+        <div className="-my-0.5 flex items-baseline gap-0.5 leading-none">
           {isLoading && <Skeleton className="h-5 w-20" />}
           {isError && <span className={VALUE_CLASS}>—</span>}
           {hasValue && <MetricValue unit={unit} value={displayValue} />}
         </div>
-        <div className="mt-0.5 truncate text-[11px] text-muted-foreground leading-none">
+        <div className="mt-0.5 truncate text-2xs text-muted-foreground leading-none">
           {isError ? METRIC_ERROR_LABEL : displayLabel}
         </div>
       </div>
 
-      <div className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}>
-        {data.length > 0 && (
+      {hasSparkline ? (
+        <div
+          className={cn('mt-1.5', fill ? 'min-h-[40px] flex-1' : 'h-[40px]')}
+        >
           <BarChart
             animationDuration={0}
             aspectRatio="auto"
@@ -132,8 +138,10 @@ export function OverviewMetricCard({
               lineCap={fill ? BAR_RADIUS : SPARKLINE_BAR_RADIUS}
             />
           </BarChart>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="h-3" />
+      )}
     </MetricCardShell>
   );
 }
@@ -179,7 +187,7 @@ export function MetricCardShell({
 }
 
 const VALUE_CLASS =
-  'truncate font-mono font-semibold text-xl text-foreground tracking-tight tabular-nums';
+  'truncate font-mono font-semibold text-foreground text-xl tracking-tight tabular-nums';
 
 function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
   const number = useNumber();
@@ -219,7 +227,7 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
     return (
       <>
         <span className={VALUE_CLASS}>{number.format(value)}</span>
-        <span className="font-medium font-mono text-muted-foreground text-sm">
+        <span className="font-medium font-mono text-muted-foreground text-sm tabular-nums">
           %
         </span>
       </>

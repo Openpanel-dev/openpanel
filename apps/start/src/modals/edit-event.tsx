@@ -97,7 +97,7 @@ export default function EditEvent({ id }: Props) {
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
-                <div className="font-medium leading-none">Pick an icon</div>
+                <div className="font-medium">Pick an icon</div>
                 {
                   <button onClick={() => setStep('color')} type="button">
                     <Badge variant="outline">
@@ -147,7 +147,7 @@ export default function EditEvent({ id }: Props) {
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
-                <div className="font-medium leading-none">Pick a color</div>
+                <div className="font-medium">Pick a color</div>
                 <button onClick={() => setStep('icon')} type="button">
                   <Badge variant="outline">
                     Select icon

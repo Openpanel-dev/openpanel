@@ -74,7 +74,7 @@ export default function FeedbackPrompt() {
       title="Share Your Feedback"
     >
       <div className="col gap-4 px-6">
-        <p className="text-foreground text-sm leading-normal">
+        <p className="text-foreground text-sm">
           Your feedback helps us build features you actually need. Share your
           thoughts, report bugs, or suggest improvements
         </p>

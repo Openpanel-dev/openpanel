@@ -40,9 +40,9 @@ export const WithLabel = ({
             align="end"
             asChild
             content={error}
-            tooltipClassName="max-w-80 leading-normal"
+            tooltipClassName="max-w-80"
           >
-            <div className="flex items-center gap-1 text-destructive leading-none">
+            <div className="flex items-center gap-1 text-destructive">
               Issues
               <BanIcon size={14} />
             </div>

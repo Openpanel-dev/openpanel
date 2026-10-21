@@ -104,7 +104,7 @@ export default function GscDetails(props: Props) {
   return (
     <SheetContent className="flex flex-col gap-6 overflow-y-auto sm:max-w-xl">
       <SheetHeader>
-        <SheetTitle className="truncate pr-8 font-medium font-mono text-sm">
+        <SheetTitle className="truncate pr-8 font-medium text-sm tabular-nums">
           {value}
         </SheetTitle>
       </SheetHeader>
@@ -185,7 +185,7 @@ export default function GscDetails(props: Props) {
                   render(item) {
                     return (
                       <div className="min-w-0 overflow-hidden">
-                        <span className="block truncate font-mono text-xs">
+                        <span className="block truncate text-xs tabular-nums">
                           {String(item[breakdownKey])}
                         </span>
                       </div>
@@ -198,7 +198,7 @@ export default function GscDetails(props: Props) {
                   getSortValue: (item) => item.clicks as number,
                   render(item) {
                     return (
-                      <span className="font-mono font-semibold text-xs">
+                      <span className="font-semibold text-xs tabular-nums">
                         {(item.clicks as number).toLocaleString()}
                       </span>
                     );
@@ -210,7 +210,7 @@ export default function GscDetails(props: Props) {
                   getSortValue: (item) => item.impressions as number,
                   render(item) {
                     return (
-                      <span className="font-mono font-semibold text-xs">
+                      <span className="font-semibold text-xs tabular-nums">
                         {(item.impressions as number).toLocaleString()}
                       </span>
                     );
@@ -222,7 +222,7 @@ export default function GscDetails(props: Props) {
                   getSortValue: (item) => item.ctr as number,
                   render(item) {
                     return (
-                      <span className="font-mono font-semibold text-xs">
+                      <span className="font-semibold text-xs tabular-nums">
                         {((item.ctr as number) * 100).toFixed(1)}%
                       </span>
                     );
@@ -234,7 +234,7 @@ export default function GscDetails(props: Props) {
                   getSortValue: (item) => item.position as number,
                   render(item) {
                     return (
-                      <span className="font-mono font-semibold text-xs">
+                      <span className="font-semibold text-xs tabular-nums">
                         {(item.position as number).toFixed(1)}
                       </span>
                     );

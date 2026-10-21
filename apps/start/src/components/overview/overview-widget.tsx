@@ -123,7 +123,7 @@ export function WidgetButtons({
   return (
     <div
       className={cn(
-        '-mt-2 -mb-px flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-black [&_button.active]:border-b-2 [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
+        '-mt-2 -mb-px flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-black [&_button.active]:border-b-2 [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
         className
       )}
       ref={container}
@@ -132,12 +132,7 @@ export function WidgetButtons({
     >
       {Children.map(children, (child, index) => {
         return (
-          <div
-            className={cn(
-              'flex [&_button]:leading-normal',
-              slice < index ? hidden : 'opacity-100'
-            )}
-          >
+          <div className={cn('flex', slice < index ? hidden : 'opacity-100')}>
             {child}
           </div>
         );
@@ -252,7 +247,7 @@ export function WidgetHeadSearchable<T extends string>({
           {tabs.map((tab) => (
             <button
               className={cn(
-                'shrink-0 rounded-md px-2 py-1.5 font-medium text-sm transition-colors',
+                'shrink-0 rounded-md px-2 py-1.5 font-medium text-xs transition-colors',
                 activeTab === tab.key
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:bg-def-100 hover:text-foreground'
@@ -278,7 +273,7 @@ export function WidgetHeadSearchable<T extends string>({
         <div className="relative">
           <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="rounded-none border-0 border-y bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
+            className="rounded-none border-0 border-y bg-transparent pl-9 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
             type="search"

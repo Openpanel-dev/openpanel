@@ -5,9 +5,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { SelectDashboard } from '@/components/dashboards/select-dashboard';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
@@ -72,7 +72,7 @@ export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
             );
           }}
         />
-        <ButtonContainer>
+        <DialogFooter>
           <Button
             onClick={() => popModal()}
             size="default"
@@ -88,7 +88,7 @@ export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
           >
             Move
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

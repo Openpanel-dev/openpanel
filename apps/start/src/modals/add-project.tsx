@@ -15,12 +15,12 @@ import type { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import AnimateHeight from '@/components/animate-height';
-import { ButtonContainer } from '@/components/button-container';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
 import { ONBOARDING_SECRET_KEY } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
@@ -108,7 +108,7 @@ export default function AddProject() {
           {mutation.data.client && (
             <CreateClientSuccess {...mutation.data.client} />
           )}
-          <ButtonContainer className="justify-end">
+          <DialogFooter>
             <Button onClick={() => popModal()} variant="outline">
               Close
             </Button>
@@ -134,7 +134,7 @@ export default function AddProject() {
                 Set up tracking
               </a>
             </Button>
-          </ButtonContainer>
+          </DialogFooter>
         </>
       ) : (
         <>
@@ -248,7 +248,7 @@ export default function AddProject() {
               />
             </div>
 
-            <ButtonContainer className="justify-end">
+            <DialogFooter>
               <Button
                 icon={SaveIcon}
                 loading={mutation.isPending}
@@ -256,7 +256,7 @@ export default function AddProject() {
               >
                 Create project
               </Button>
-            </ButtonContainer>
+            </DialogFooter>
           </form>
         </>
       )}

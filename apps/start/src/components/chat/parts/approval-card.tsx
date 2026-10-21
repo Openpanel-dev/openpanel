@@ -19,7 +19,7 @@ export function ApprovalCard({
           <div className="font-medium text-sm">
             {approvalPrompt(toolName, input)}
           </div>
-          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-muted-foreground">
+          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all text-muted-foreground">
             {JSON.stringify(input, null, 2)}
           </pre>
         </div>
