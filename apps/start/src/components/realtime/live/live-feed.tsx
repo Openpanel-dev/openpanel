@@ -34,7 +34,7 @@ export function LiveFeed<T extends { id: string }>({
     <section
       aria-label={title}
       className={cn(
-        'flex min-h-0 flex-1 flex-col gap-2 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]',
+        'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]',
         className
       )}
     >

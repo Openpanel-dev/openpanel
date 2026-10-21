@@ -41,7 +41,7 @@ function Component() {
       <FullscreenClose />
       <RealtimeReloader projectId={projectId} />
 
-      <div className="relative h-svh w-full">
+      <div className="relative h-svh w-full overflow-hidden">
         <RealtimeMap
           markers={coordinatesQuery.data ?? []}
           projectId={projectId}
