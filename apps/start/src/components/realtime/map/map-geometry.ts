@@ -3,7 +3,6 @@ import { geoArea, geoCircle, geoMercator, geoPath } from 'd3-geo';
 import type {
   Feature,
   FeatureCollection,
-  LineString,
   MultiLineString,
   MultiPolygon,
   Polygon,
@@ -192,17 +191,11 @@ export function getSubsolarPoint(date: Date): [number, number] {
   return [longitude, latitude];
 }
 
-export interface NightShade {
-  /** Nested rings from the terminator inward; stacked they fade into night. */
-  bands: Path2D[];
-  /** The terminator itself. */
-  edge: Path2D;
-}
-
-export function createNightShade(
+/** Nested rings from the terminator inward; stacked they fade into night. */
+export function createNightBands(
   projection: GeoProjection,
   date: Date
-): NightShade {
+): Path2D[] {
   const [sunLongitude, sunLatitude] = getSubsolarPoint(date);
   const antipode: [number, number] = [sunLongitude + 180, -sunLatitude];
   const path = geoPath(projection);
@@ -212,10 +205,5 @@ export function createNightShade(
     const radius = 90 - (step * NIGHT_FEATHER_DEGREES) / NIGHT_FEATHER_STEPS;
     bands.push(new Path2D(path(circle.radius(radius)()) ?? ''));
   }
-  const terminator: LineString = {
-    type: 'LineString',
-    coordinates: circle.radius(90)().coordinates[0] ?? [],
-  };
-
-  return { bands, edge: new Path2D(path(terminator) ?? '') };
+  return bands;
 }

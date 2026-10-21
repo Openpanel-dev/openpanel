@@ -7,7 +7,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LABEL_MAX_COUNT,
   LABEL_MIN_SCREEN_AREA,
-  LAND_TINT_ALPHA,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_ZOOM_ANIMATION_MS,
@@ -19,12 +18,11 @@ import {
   NIGHT_MAX_ALPHA_DARK,
   NIGHT_MAX_ALPHA_LIGHT,
   NIGHT_REFRESH_MS,
-  TERMINATOR_ALPHA,
 } from './map-constants';
-import type { MapGeometry, NightShade, WorldShapes } from './map-geometry';
+import type { MapGeometry, WorldShapes } from './map-geometry';
 import {
   createMapGeometry,
-  createNightShade,
+  createNightBands,
   loadWorldShapes,
 } from './map-geometry';
 import type { RealtimeMapPoint, RealtimeMapProps } from './map-types';
@@ -40,10 +38,8 @@ import { cn } from '@/utils/cn';
 
 interface MapColors {
   land: string;
-  tint: string;
   border: string;
   night: string;
-  terminator: string;
 }
 
 interface PlacedMarker {
@@ -130,9 +126,7 @@ function readMapColors(element: HTMLElement, isDark: boolean): MapColors {
   return {
     land: read('--def-300'),
     border: read('--def-100'),
-    tint: read('--chart-0'),
     night: isDark ? '#000' : '#0f172a',
-    terminator: read('--muted-foreground'),
   };
 }
 
@@ -165,7 +159,7 @@ function drawMap({
 }: {
   canvas: HTMLCanvasElement;
   geometry: MapGeometry;
-  night: NightShade | null;
+  night: Path2D[] | null;
   nightAlpha: number;
   colors: MapColors;
   transform: ZoomTransform;
@@ -199,17 +193,13 @@ function drawMap({
 function drawWorld(
   context: CanvasRenderingContext2D,
   geometry: MapGeometry,
-  night: NightShade | null,
+  night: Path2D[] | null,
   nightAlpha: number,
   colors: MapColors,
   hairline: number
 ) {
   context.fillStyle = colors.land;
   context.fill(geometry.land);
-  context.globalAlpha = LAND_TINT_ALPHA;
-  context.fillStyle = colors.tint;
-  context.fill(geometry.land);
-  context.globalAlpha = 1;
 
   context.strokeStyle = colors.border;
   context.lineWidth = hairline;
@@ -219,16 +209,9 @@ function drawWorld(
     // Each band adds a little, so night deepens gradually past the terminator.
     context.fillStyle = colors.night;
     context.globalAlpha = nightAlpha / NIGHT_FEATHER_STEPS;
-    for (const band of night.bands) {
+    for (const band of night) {
       context.fill(band);
     }
-
-    context.globalAlpha = TERMINATOR_ALPHA;
-    context.strokeStyle = colors.terminator;
-    context.lineWidth = hairline;
-    context.setLineDash([3 * hairline, 5 * hairline]);
-    context.stroke(night.edge);
-    context.setLineDash([]);
     context.globalAlpha = 1;
   }
 }
@@ -308,7 +291,7 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     [shapes, hasSize, width, height]
   );
   const night = useMemo(
-    () => (geometry ? createNightShade(geometry.projection, now) : null),
+    () => (geometry ? createNightBands(geometry.projection, now) : null),
     [geometry, now]
   );
   const colors = useMapColors(containerRef, isDark);
