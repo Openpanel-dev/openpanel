@@ -22,7 +22,7 @@ export default function SelectBillingPlan({
   const [view, setView] = useState<'plans' | 'cancel'>('plans');
 
   return (
-    <ModalContent className="!flex !flex-col !overflow-hidden">
+    <ModalContent bodyClassName="flex flex-col overflow-hidden">
       {view === 'plans' ? (
         <>
           <ModalHeader title="Select a billing plan" />

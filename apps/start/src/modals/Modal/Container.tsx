@@ -8,6 +8,7 @@ import { cn } from '@/utils/cn';
 
 interface ModalContentProps extends DialogContentProps {
   children: React.ReactNode;
+  bodyClassName?: string;
 }
 
 export function ModalContent({ children, ...props }: ModalContentProps) {
