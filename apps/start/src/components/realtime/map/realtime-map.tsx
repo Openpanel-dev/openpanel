@@ -464,8 +464,6 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     );
   };
 
-  const isEmpty = shapes !== null && markers.length === 0;
-
   return (
     <div
       className="relative h-full w-full cursor-grab touch-none select-none overflow-hidden bg-def-100 active:cursor-grabbing"
@@ -526,15 +524,6 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
           <div className="font-medium">{hoveredMarker.place.label}</div>
           <div className="text-muted-foreground">
             {hoveredMarker.place.count.toLocaleString()} online
-          </div>
-        </div>
-      ) : null}
-
-      {isEmpty ? (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 text-center">
-          <div className="font-medium">No one is online right now</div>
-          <div className="text-muted-foreground text-sm">
-            Visitors appear here as they browse your site.
           </div>
         </div>
       ) : null}
