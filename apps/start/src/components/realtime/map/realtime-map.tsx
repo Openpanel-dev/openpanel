@@ -36,7 +36,6 @@ import { cn } from '@/utils/cn';
 interface MapColors {
   land: string;
   border: string;
-  grid: string;
   night: string;
   terminator: string;
 }
@@ -125,7 +124,6 @@ function readMapColors(element: HTMLElement, isDark: boolean): MapColors {
   return {
     land: read('--def-300'),
     border: read('--def-100'),
-    grid: read('--def-200'),
     night: isDark ? 'rgba(0, 0, 0, 0.32)' : 'rgba(15, 23, 42, 0.05)',
     terminator: read('--muted-foreground'),
   };
@@ -196,12 +194,6 @@ function drawWorld(
   colors: MapColors,
   hairline: number
 ) {
-  context.globalAlpha = 0.6;
-  context.strokeStyle = colors.grid;
-  context.lineWidth = hairline;
-  context.stroke(geometry.graticule);
-
-  context.globalAlpha = 1;
   context.fillStyle = colors.land;
   context.fill(geometry.land);
 

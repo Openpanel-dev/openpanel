@@ -1,5 +1,5 @@
 import type { GeoProjection } from 'd3-geo';
-import { geoArea, geoCircle, geoGraticule, geoMercator, geoPath } from 'd3-geo';
+import { geoArea, geoCircle, geoMercator, geoPath } from 'd3-geo';
 import type {
   Feature,
   FeatureCollection,
@@ -17,7 +17,6 @@ const NORTH_LIMIT = 84;
 const SOUTH_LIMIT = -58;
 /** Where d3's Mercator clips; panning up or down stops here, so there is never an edge. */
 const PAN_LATITUDE_LIMIT = 85;
-const GRATICULE_STEP_DEGREES = 10;
 const HIDDEN_COUNTRIES = new Set(['Antarctica']);
 const COUNTRY_NAME_OVERRIDES: Record<string, string> = {
   'United States of America': 'United States',
@@ -55,7 +54,6 @@ export interface MapGeometry {
   projection: GeoProjection;
   land: Path2D;
   borders: Path2D;
-  graticule: Path2D;
   labels: CountryLabel[];
   /** One world's projected width; the map repeats sideways at this interval. */
   worldWidth: number;
@@ -160,12 +158,6 @@ export function createMapGeometry(
     0,
     size.height,
   ];
-  const graticule = geoGraticule()
-    .extent([
-      [-180, -PAN_LATITUDE_LIMIT],
-      [180, PAN_LATITUDE_LIMIT],
-    ])
-    .step([GRATICULE_STEP_DEGREES, GRATICULE_STEP_DEGREES]);
 
   return {
     projection,
@@ -173,7 +165,6 @@ export function createMapGeometry(
       path({ type: 'FeatureCollection', features: shapes.countries }) ?? ''
     ),
     borders: new Path2D(path(shapes.borders) ?? ''),
-    graticule: new Path2D(path(graticule()) ?? ''),
     labels: createCountryLabels(shapes.countries, path),
     worldWidth: 2 * Math.PI * projection.scale(),
     worldLeft,
