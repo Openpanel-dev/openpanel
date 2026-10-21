@@ -14,7 +14,7 @@ import {
   TrendingUpIcon,
   UsersIcon,
 } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button, type ButtonProps } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +30,15 @@ import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 
 interface ReportChartTypeProps {
   className?: string;
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
   value: IChartType;
   onChange: (type: IChartType) => void;
 }
 export function ReportChartType({
   className,
+  variant = 'outline',
+  size,
   value,
   onChange,
 }: ReportChartTypeProps) {
@@ -65,7 +69,8 @@ export function ReportChartType({
         <Button
           className={cn('justify-start', className)}
           icon={Icons[value]}
-          variant="outline"
+          size={size}
+          variant={variant}
         >
           {items.find((item) => item.value === value)?.label}
         </Button>

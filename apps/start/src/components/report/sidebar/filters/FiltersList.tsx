@@ -25,8 +25,8 @@ export function FiltersList({
   }
 
   return (
-    <div>
-      <div className="flex flex-col divide-y overflow-hidden rounded-b-md bg-def-100">
+    <div className="px-3 pb-3 pl-10">
+      <div className="flex flex-col gap-3">
         {filters.map((filter) => {
           const isCohortFilter =
             filter.operator === 'inCohort' || filter.operator === 'notInCohort';

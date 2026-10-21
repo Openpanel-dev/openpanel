@@ -4,9 +4,8 @@ import {
   type IChartEventFilter,
   type IChartEventFilterOperator,
 } from '@openpanel/core/modules/report/report.constants';
-import { SlidersHorizontal, Trash } from 'lucide-react';
+import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
-import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
@@ -14,6 +13,7 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
 import { useDispatch } from '@/redux';
+import { cn } from '@/utils/cn';
 
 interface CohortFilterItemProps {
   event: IChartEvent;
@@ -83,7 +83,6 @@ export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
 
   return (
     <PureCohortFilterItem
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
       filter={filter}
       onChangeCohort={onChangeCohort}
       onChangeOperator={onChangeOperator}
@@ -137,19 +136,23 @@ export function PureCohortFilterItem({
   };
 
   return (
-    <div className={className}>
-      <div className="mb-2 flex items-center gap-2">
-        <ColorSquare className="bg-emerald-500">
-          <SlidersHorizontal size={10} />
-        </ColorSquare>
-        <div className="flex flex-1">
-          <RenderDots truncate>{cohortLabel}</RenderDots>
-        </div>
-        <Button onClick={removeFilter} size="sm" variant="ghost">
-          <Trash size={16} />
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <div className="flex min-h-6 items-center gap-1.5 text-muted-foreground text-xs">
+        <FilterIcon className="shrink-0" size={12} />
+        <RenderDots className="min-w-0 font-medium" truncate>
+          {cohortLabel}
+        </RenderDots>
+        <Button
+          aria-label="Delete filter"
+          className="ml-auto size-6 text-muted-foreground hover:text-foreground"
+          onClick={removeFilter}
+          size="icon"
+          variant="ghost"
+        >
+          <XIcon size={14} />
         </Button>
       </div>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1.5">
         <DropdownMenuComposed
           items={[
             { value: 'inCohort', label: 'In cohort' },
@@ -158,16 +161,18 @@ export function PureCohortFilterItem({
           label="Operator"
           onChange={changeFilterOperator}
         >
-          <Button className="whitespace-nowrap" variant="outline">
+          <Button className="whitespace-nowrap" size="sm" variant="input">
             {filter.operator === 'inCohort' ? 'In cohort' : 'Not in cohort'}
           </Button>
         </DropdownMenuComposed>
         <ComboboxAdvanced
-          className="flex-1"
+          className="min-w-40 flex-1"
           items={cohortsCombobox}
           onChange={changeCohort}
           placeholder="Select cohorts..."
+          size="sm"
           value={selectedIds}
+          variant="input"
         />
       </div>
     </div>

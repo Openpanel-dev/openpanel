@@ -89,7 +89,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
   if (isCohortFilter) {
     return (
       <PureCohortFilterItem
-        className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+        className="px-3 py-3"
         filter={filter}
         onChangeCohort={onChangeCohort}
         onChangeOperator={onChangeOperator}
@@ -100,7 +100,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
 
   return (
     <PureFilterItem
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+      className="px-3 py-3"
       eventName="*"
       filter={filter}
       onChangeOperator={onChangeOperator}
