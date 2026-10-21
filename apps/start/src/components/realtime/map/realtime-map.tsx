@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LABEL_MAX_COUNT,
   LABEL_MIN_SCREEN_AREA,
+  MAP_MAX_OVERSCROLL_SHARE,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_ZOOM_ANIMATION_MS,
@@ -22,7 +23,11 @@ import {
   createNightPaths,
   loadWorldShapes,
 } from './map-geometry';
-import type { RealtimeMapPoint, RealtimeMapProps } from './map-types';
+import type {
+  MapOverscroll,
+  RealtimeMapPoint,
+  RealtimeMapProps,
+} from './map-types';
 import type { MapPlace } from './map-utils';
 import { getMarkerRadius, groupPointsByPlace } from './map-utils';
 import {
@@ -233,7 +238,13 @@ function placeMarkers(
   return placed.reverse();
 }
 
-export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
+const NO_OVERSCROLL: MapOverscroll = { x: 0, y: 0 };
+
+export function RealtimeMap({
+  projectId,
+  markers,
+  overscroll = NO_OVERSCROLL,
+}: RealtimeMapProps) {
   const dispatch = useDispatch();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -290,6 +301,25 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     }
 
     let gestureStartScale: number | null = null;
+    const paddingX = Math.min(overscroll.x, width * MAP_MAX_OVERSCROLL_SHARE);
+    const paddingY = Math.min(overscroll.y, height * MAP_MAX_OVERSCROLL_SHARE);
+    const defaultConstrain = zoom().constrain();
+    // Shrinking the viewport before the default clamp lets the world's edge
+    // travel that many screen pixels inward, the same at every zoom level.
+    const constrainWithOverscroll = (
+      transform: ZoomTransform,
+      extent: [[number, number], [number, number]],
+      translateExtent: [[number, number], [number, number]]
+    ) =>
+      defaultConstrain(
+        transform,
+        [
+          [extent[0][0] + paddingX, extent[0][1] + paddingY],
+          [extent[1][0] - paddingX, extent[1][1] - paddingY],
+        ],
+        translateExtent
+      );
+
     const behavior = zoom<HTMLDivElement, unknown>()
       .scaleExtent([MAP_MIN_ZOOM, MAP_MAX_ZOOM])
       .extent([
@@ -297,6 +327,7 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
         [width, height],
       ])
       .translateExtent(geometry.bounds)
+      .constrain(constrainWithOverscroll)
       .filter((event: MouseEvent | WheelEvent) => {
         const isWheel = event.type === 'wheel';
         if (isWheel && gestureStartScale !== null) {
@@ -350,7 +381,7 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
       element.removeEventListener('gesturechange', onGestureChange);
       element.removeEventListener('gestureend', onGestureEnd);
     };
-  }, [geometry, width, height, dispatch]);
+  }, [geometry, width, height, overscroll.x, overscroll.y, dispatch]);
 
   const zoomBy = (factor: number) => {
     const element = containerRef.current;
