@@ -134,7 +134,7 @@ export function EventDrawer() {
           fallback={(error) => (
             <EventDetailsError message={error.message} onClose={closeEvent} />
           )}
-          key={eventId}
+          key={`${projectId}:${eventId}:${createdAt?.toISOString() ?? ''}`}
         >
           <Suspense fallback={<EventDetailsSkeleton onClose={closeEvent} />}>
             <EventDetailsContent
