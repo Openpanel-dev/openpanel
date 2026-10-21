@@ -4,6 +4,7 @@ import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { Suspense, useEffect, useState } from 'react';
 import { useEventDrawer } from './use-event-drawer';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { ProjectLink } from '@/components/links';
 import {
   WidgetButtons,
@@ -85,10 +86,23 @@ export function EventDrawer() {
     if (!isOpen) {
       return;
     }
+    // Radix overlays (sheets, dialogs, menus) handle Escape themselves; an
+    // Escape meant for one of them must not also close the drawer beneath.
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeEvent();
+      if (e.key !== 'Escape' || e.defaultPrevented) {
+        return;
       }
+      const target = e.target instanceof Element ? e.target : null;
+      const insideOverlay = target?.closest(
+        '[role="dialog"], [role="menu"], [role="listbox"]'
+      );
+      const overlayOpen = document.querySelector(
+        '[role="dialog"][data-state="open"]'
+      );
+      if (insideOverlay || overlayOpen) {
+        return;
+      }
+      closeEvent();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -116,15 +130,21 @@ export function EventDrawer() {
           {...dragHandleProps}
           role="separator"
         />
-        <Suspense fallback={<EventDetailsSkeleton onClose={closeEvent} />}>
-          <EventDetailsContent
-            createdAt={createdAt}
-            id={eventId}
-            key={eventId}
-            onClose={closeEvent}
-            projectId={projectId}
-          />
-        </Suspense>
+        <ErrorBoundary
+          fallback={(error) => (
+            <EventDetailsError message={error.message} onClose={closeEvent} />
+          )}
+          key={eventId}
+        >
+          <Suspense fallback={<EventDetailsSkeleton onClose={closeEvent} />}>
+            <EventDetailsContent
+              createdAt={createdAt}
+              id={eventId}
+              onClose={closeEvent}
+              projectId={projectId}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </aside>
     </>
   );
@@ -248,6 +268,7 @@ function EventDetailsContent({
         <WidgetButtons>
           {Object.values(TABS).map((item) => (
             <button
+              aria-pressed={item.id === tab.id}
               className={cn(item.id === tab.id && 'active')}
               key={item.id}
               onClick={() => setTab(item)}
@@ -409,6 +430,40 @@ function EventDetailsContent({
             </div>
           </section>
         )}
+      </WidgetBody>
+    </>
+  );
+}
+
+function EventDetailsError({
+  message,
+  onClose,
+}: {
+  message: string;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <WidgetHead className="shrink-0 rounded-none">
+        <div className="row items-center justify-between">
+          <div className="p-4 font-semibold">Event details</div>
+          <div className="row items-center gap-2 pr-2">
+            <Button
+              aria-label="Close event details"
+              onClick={onClose}
+              size="icon"
+              variant={'ghost'}
+            >
+              <XIcon className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </WidgetHead>
+      <WidgetBody className="col flex-1 gap-2 bg-def-100">
+        <div className="card p-4">
+          <div className="font-medium">This event could not be loaded</div>
+          <p className="mt-1 text-muted-foreground">{message}</p>
+        </div>
       </WidgetBody>
     </>
   );

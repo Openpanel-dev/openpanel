@@ -107,6 +107,10 @@ export function InsightCard({
       )}
       onClick={openDetails}
       onKeyDown={(event) => {
+        // The metric and filter buttons handle their own keys.
+        if (event.target !== event.currentTarget) {
+          return;
+        }
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           openDetails();
@@ -122,13 +126,13 @@ export function InsightCard({
         <div
           className={cn(
             'shrink-0 text-2xs text-muted-foreground',
-            onFilter && 'group-hover/card:hidden'
+            onFilter && 'group-focus-within/card:hidden group-hover/card:hidden'
           )}
         >
           {formatWindowKind(insight.windowKind)}
         </div>
         {onFilter && (
-          <div className="hidden shrink-0 items-center gap-2 group-hover/card:flex">
+          <div className="hidden shrink-0 items-center gap-2 group-focus-within/card:flex group-hover/card:flex">
             {availableMetrics.length > 1 && (
               <button
                 className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
