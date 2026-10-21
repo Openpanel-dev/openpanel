@@ -45,70 +45,28 @@ function Component() {
       <FullscreenClose />
       <RealtimeReloader projectId={projectId} />
 
-      <div className="flex flex-col gap-4 p-4 md:hidden">
-        <div className="card bg-background/90 p-4">
+      <div className="h-[60vh] min-h-[360px] w-full border-b md:h-[70vh]">
+        <RealtimeMap
+          markers={coordinatesQuery.data ?? []}
+          projectId={projectId}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 md:p-8 xl:grid-cols-3">
+        <div className="card p-4">
           <RealtimeLiveHistogram projectId={projectId} />
         </div>
-
-        <div className="-mx-4 aspect-square">
-          <RealtimeMap
-            markers={coordinatesQuery.data ?? []}
-            projectId={projectId}
-          />
-        </div>
-
-        <div className="min-h-[320px]">
+        <div className="h-[320px]">
           <RealtimeActiveSessions projectId={projectId} />
         </div>
-
         <div>
           <RealtimeGeo projectId={projectId} />
         </div>
-
         <div>
           <RealtimeReferrals projectId={projectId} />
         </div>
-
         <div>
           <RealtimePaths projectId={projectId} />
-        </div>
-      </div>
-
-      <div className="hidden md:block">
-        <div className="row relative">
-          <div className="aspect-[4/2] w-full">
-            <RealtimeMap
-              markers={coordinatesQuery.data ?? []}
-              projectId={projectId}
-              sidebarConfig={{
-                width: 280, // w-96 = 384px
-                position: 'left',
-              }}
-            />
-          </div>
-          <div className="col absolute top-8 bottom-4 left-8 gap-4">
-            <div className="card w-72 bg-background/90 p-4">
-              <RealtimeLiveHistogram projectId={projectId} />
-            </div>
-            <div className="relative min-h-0 w-72 flex-1">
-              <RealtimeActiveSessions
-                className="max-md:hidden"
-                projectId={projectId}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 p-4 pt-4 md:grid-cols-2 md:p-8 md:pt-0 xl:grid-cols-3">
-          <div>
-            <RealtimeGeo projectId={projectId} />
-          </div>
-          <div>
-            <RealtimeReferrals projectId={projectId} />
-          </div>
-          <div>
-            <RealtimePaths projectId={projectId} />
-          </div>
         </div>
       </div>
     </Fullscreen>

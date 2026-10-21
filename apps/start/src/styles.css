@@ -450,6 +450,24 @@ button {
   animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+/* Realtime map: a dot's ring spreading out from its own centre */
+@keyframes map-marker-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.animate-map-marker-pulse {
+  animation: map-marker-pulse 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .scrollarea {
   position: relative;
   width: 100%;
