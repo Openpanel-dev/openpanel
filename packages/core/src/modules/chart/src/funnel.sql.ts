@@ -37,6 +37,11 @@ import {
   filterReadsProfileJoin,
   getEventFiltersWhereClause,
 } from './filter-where';
+import {
+  type FirstOccurrencePeriod,
+  firstTimeCondition,
+  rangePeriod,
+} from './first-time';
 
 /** The two keys windowFunnel may be computed per — a closed set. */
 const FUNNEL_GROUPS = ['session_id', 'profile_id'] as const;
@@ -121,14 +126,16 @@ export function knownFunnelBreakdowns(
 }
 
 /**
- * One `<filters> AND <event match>` per step. Exported because each
- * step's complete condition has to appear twice — inside windowFunnel and in
- * the row-level pre-filter — and funnel.sql.test.ts counts exactly that.
+ * One `<filters> AND <event match>` per step, plus the first-occurrence
+ * condition for a "first time" step. Exported because each step's complete
+ * condition has to appear twice, inside windowFunnel and in the row-level
+ * pre-filter, and funnel.sql.test.ts counts exactly that.
  */
 export function funnelStepConditions(
   eventSeries: IChartEvent[],
   projectId: string,
-  profilePropertyKeys: string[]
+  profilePropertyKeys: string[],
+  period?: FirstOccurrencePeriod
 ): SqlFragment[] {
   return eventSeries.map((event) => {
     // Qualify with 'events' so event-level `properties[...]` becomes
@@ -141,7 +148,17 @@ export function funnelStepConditions(
       getEventFiltersWhereClause(event.filters, projectId, 'events')
     ).map((clause) => fragmentWithProfileRefs(clause, profilePropertyKeys));
     const eventMatch = eventMatchCondition(event, projectId, 'events');
-    const parts = eventMatch ? [...filters, eventMatch] : filters;
+    const firstTime = period
+      ? firstTimeCondition({
+          event,
+          projectId,
+          eventsAlias: EVENTS_ALIAS,
+          period,
+        })
+      : null;
+    const parts = [...filters, eventMatch, firstTime].filter(
+      (part): part is SqlFragment => part !== null
+    );
     return parts.length > 0 ? sql.join(parts, ' AND ') : sql`1`;
   });
 }
@@ -370,7 +387,8 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const conditions = funnelStepConditions(
     eventSeries,
     projectId,
-    profileKeys.keys
+    profileKeys.keys,
+    rangePeriod(input.startDate, input.endDate)
   );
   const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
