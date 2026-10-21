@@ -1,8 +1,9 @@
 import type { GeoProjection } from 'd3-geo';
-import { geoCircle, geoMercator, geoPath } from 'd3-geo';
+import { geoArea, geoCircle, geoMercator, geoPath } from 'd3-geo';
 import type {
   Feature,
   FeatureCollection,
+  LineString,
   MultiLineString,
   MultiPolygon,
   Polygon,
@@ -10,6 +11,7 @@ import type {
 import { feature, mesh } from 'topojson-client';
 import type { GeometryCollection, Topology } from 'topojson-specification';
 import worldAtlasUrl from 'world-atlas/countries-50m.json?url';
+import { NIGHT_FEATHER_DEGREES, NIGHT_FEATHER_STEPS } from './map-constants';
 
 /** Mercator runs to infinity at the poles; this band holds every inhabited place. */
 const NORTH_LIMIT = 84;
@@ -17,6 +19,11 @@ const SOUTH_LIMIT = -58;
 /** Where d3's Mercator clips; panning up or down stops here, so there is never an edge. */
 const PAN_LATITUDE_LIMIT = 85;
 const HIDDEN_COUNTRIES = new Set(['Antarctica']);
+const COUNTRY_NAME_OVERRIDES: Record<string, string> = {
+  'United States of America': 'United States',
+  'Dem. Rep. Congo': 'DR Congo',
+  'Central African Rep.': 'CAR',
+};
 const EARTH_AXIAL_TILT = 23.44;
 const DAYS_PER_YEAR = 365;
 const DAYS_FROM_SOLSTICE_TO_YEAR_END = 10;
@@ -36,10 +43,19 @@ export interface WorldShapes {
   borders: MultiLineString;
 }
 
+export interface CountryLabel {
+  name: string;
+  x: number;
+  y: number;
+  /** Projected area at zoom 1, so labels can appear as countries grow on screen. */
+  area: number;
+}
+
 export interface MapGeometry {
   projection: GeoProjection;
   land: Path2D;
   borders: Path2D;
+  labels: CountryLabel[];
   /** One world's projected width; the map repeats sideways at this interval. */
   worldWidth: number;
   /** Where the world starts horizontally, so copies line up with it. */
@@ -85,6 +101,53 @@ function createCoverProjection(width: number, height: number) {
     .translate([width / 2, height / 2 + middle * scale]);
 }
 
+function getLargestPolygon(country: CountryFeature): Feature<Polygon> {
+  const polygons =
+    country.geometry.type === 'Polygon'
+      ? [country.geometry.coordinates]
+      : country.geometry.coordinates;
+
+  let largest: Feature<Polygon> | null = null;
+  let largestArea = -1;
+  for (const coordinates of polygons) {
+    const candidate: Feature<Polygon> = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates },
+    };
+    const area = geoArea(candidate);
+    if (area > largestArea) {
+      largest = candidate;
+      largestArea = area;
+    }
+  }
+
+  return largest ?? (country as Feature<Polygon>);
+}
+
+function createCountryLabels(
+  countries: CountryFeature[],
+  path: ReturnType<typeof geoPath>
+): CountryLabel[] {
+  const labels: CountryLabel[] = [];
+  for (const country of countries) {
+    const mainland = getLargestPolygon(country);
+    const [x, y] = path.centroid(mainland);
+    if (!(Number.isFinite(x) && Number.isFinite(y))) {
+      continue;
+    }
+    const name = country.properties.name;
+    labels.push({
+      name: COUNTRY_NAME_OVERRIDES[name] ?? name,
+      x,
+      y,
+      area: path.area(mainland),
+    });
+  }
+
+  return labels.sort((a, b) => b.area - a.area);
+}
+
 export function createMapGeometry(
   shapes: WorldShapes,
   size: { width: number; height: number }
@@ -103,6 +166,7 @@ export function createMapGeometry(
       path({ type: 'FeatureCollection', features: shapes.countries }) ?? ''
     ),
     borders: new Path2D(path(shapes.borders) ?? ''),
+    labels: createCountryLabels(shapes.countries, path),
     worldWidth: 2 * Math.PI * projection.scale(),
     worldLeft,
     panBounds: [
@@ -128,10 +192,30 @@ export function getSubsolarPoint(date: Date): [number, number] {
   return [longitude, latitude];
 }
 
-export function createNightPath(projection: GeoProjection, date: Date) {
+export interface NightShade {
+  /** Nested rings from the terminator inward; stacked they fade into night. */
+  bands: Path2D[];
+  /** The terminator itself. */
+  edge: Path2D;
+}
+
+export function createNightShade(
+  projection: GeoProjection,
+  date: Date
+): NightShade {
   const [sunLongitude, sunLatitude] = getSubsolarPoint(date);
   const antipode: [number, number] = [sunLongitude + 180, -sunLatitude];
-  const night = geoCircle().center(antipode).radius(90)();
+  const path = geoPath(projection);
+  const circle = geoCircle().center(antipode);
+  const bands: Path2D[] = [];
+  for (let step = 0; step < NIGHT_FEATHER_STEPS; step++) {
+    const radius = 90 - (step * NIGHT_FEATHER_DEGREES) / NIGHT_FEATHER_STEPS;
+    bands.push(new Path2D(path(circle.radius(radius)()) ?? ''));
+  }
+  const terminator: LineString = {
+    type: 'LineString',
+    coordinates: circle.radius(90)().coordinates[0] ?? [],
+  };
 
-  return new Path2D(geoPath(projection)(night) ?? '');
+  return { bands, edge: new Path2D(path(terminator) ?? '') };
 }

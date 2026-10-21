@@ -6,6 +6,15 @@ export const NIGHT_REFRESH_MS = 60_000;
 
 /** How strongly land picks up the brand blue over its grey. */
 export const LAND_TINT_ALPHA = 0.1;
+/** A country gets its name once it covers this many square pixels on screen. */
+export const LABEL_MIN_SCREEN_AREA = 9000;
+export const LABEL_MAX_COUNT = 40;
+/** Twilight: the night shade fades in over this many degrees past the terminator. */
+export const NIGHT_FEATHER_DEGREES = 18;
+export const NIGHT_FEATHER_STEPS = 12;
+export const NIGHT_MAX_ALPHA_DARK = 0.22;
+export const NIGHT_MAX_ALPHA_LIGHT = 0.05;
+export const TERMINATOR_ALPHA = 0.12;
 
 export const MARKER_MIN_RADIUS = 3.5;
 export const MARKER_MAX_RADIUS = 10;
