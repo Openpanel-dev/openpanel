@@ -76,11 +76,11 @@ export default function ReportEditor({
               <ReportSaveButton />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
             <SheetTrigger asChild>
-              <ReportSummaryTrigger className="max-w-full" />
+              <ReportSummaryTrigger className="max-w-full self-start md:self-auto" />
             </SheetTrigger>
-            <div className="flex flex-wrap items-center gap-0.5 rounded-lg bg-def-200 p-0.5 sm:ml-auto dark:bg-def-300">
+            <div className="flex shrink-0 flex-wrap items-center gap-0.5 self-start rounded-lg bg-def-200 p-0.5 md:ml-auto md:self-auto dark:bg-def-300">
               <ReportChartType
                 className={TOOLBAR_TRIGGER_CLASS}
                 onChange={(type) => {

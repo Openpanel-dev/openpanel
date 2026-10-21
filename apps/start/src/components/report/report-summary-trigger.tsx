@@ -10,6 +10,33 @@ import { getChartColor } from '@/utils/theme';
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
+/** Series beyond these collapse into a "+N" chip so the control row stays on one line; narrow windows show fewer. */
+const VISIBLE_SERIES_WIDE = 2;
+const VISIBLE_SERIES_NARROW = 1;
+
+function MoreSeriesChip({
+  hidden,
+  className,
+}: {
+  hidden: IChartEventItem[];
+  className: string;
+}) {
+  if (hidden.length === 0) {
+    return null;
+  }
+  return (
+    <span
+      className={cn(
+        'h-7 shrink-0 items-center rounded-md bg-card px-2 font-medium text-muted-foreground shadow-xs',
+        className
+      )}
+      title={hidden.map(seriesLabel).join(', ')}
+    >
+      +{hidden.length}
+    </span>
+  );
+}
+
 function seriesLabel(serie: IChartEventItem): string {
   if (serie.type === 'formula') {
     return serie.displayName || serie.formula || 'Formula';
@@ -71,29 +98,43 @@ export const ReportSummaryTrigger = forwardRef<HTMLButtonElement, Props>(
       <button
         aria-label="Pick events"
         className={cn(
-          'group flex min-h-9 min-w-0 flex-wrap items-center gap-1.5 rounded-lg bg-def-200 py-1 pr-2.5 pl-1 text-left text-sm transition-colors hover:bg-def-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-def-300 dark:hover:bg-def-400/60',
+          'group flex h-9 min-w-0 items-center gap-1.5 overflow-hidden rounded-lg bg-def-200 py-1 pr-2.5 pl-1 text-left text-sm transition-colors hover:bg-def-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-def-300 dark:hover:bg-def-400/60',
           className
         )}
         ref={ref}
         type="button"
         {...props}
       >
-        {series.map((serie, index) => (
-          <span
-            className="inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md bg-card pr-2 pl-1.5 font-medium shadow-xs"
-            key={serie.id}
-          >
-            <ColorSquare
-              className="h-4 w-4 text-2xs"
-              color={getChartColor(index)}
+        {series.slice(0, VISIBLE_SERIES_WIDE).map((serie, index) => {
+          const isWideOnly = index >= VISIBLE_SERIES_NARROW;
+          return (
+            <span
+              className={cn(
+                'h-7 min-w-0 max-w-48 items-center gap-1.5 rounded-md bg-card pr-2 pl-1.5 font-medium shadow-xs',
+                isWideOnly ? 'hidden xl:inline-flex' : 'inline-flex'
+              )}
+              key={serie.id}
             >
-              {alphabetIds[index]}
-            </ColorSquare>
-            <span className="truncate">{seriesLabel(serie)}</span>
-          </span>
-        ))}
+              <ColorSquare
+                className="h-4 w-4 text-2xs"
+                color={getChartColor(index)}
+              >
+                {alphabetIds[index]}
+              </ColorSquare>
+              <span className="truncate">{seriesLabel(serie)}</span>
+            </span>
+          );
+        })}
+        <MoreSeriesChip
+          className="inline-flex xl:hidden"
+          hidden={series.slice(VISIBLE_SERIES_NARROW)}
+        />
+        <MoreSeriesChip
+          className="hidden xl:inline-flex"
+          hidden={series.slice(VISIBLE_SERIES_WIDE)}
+        />
         {details.length > 0 && (
-          <span className="px-1 text-muted-foreground">
+          <span className="hidden min-w-0 truncate whitespace-nowrap px-1 text-muted-foreground xl:inline">
             {details.join(' · ')}
           </span>
         )}
