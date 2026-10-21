@@ -9,8 +9,13 @@ import type {
 } from 'geojson';
 import { feature, mesh } from 'topojson-client';
 import type { GeometryCollection, Topology } from 'topojson-specification';
-import worldAtlasUrl from 'world-atlas/countries-50m.json?url';
-import { NIGHT_FEATHER_DEGREES, NIGHT_FEATHER_STEPS } from './map-constants';
+import fineAtlasUrl from 'world-atlas/countries-50m.json?url';
+import coarseAtlasUrl from 'world-atlas/countries-110m.json?url';
+import {
+  BORDER_BUCKET_DEGREES,
+  NIGHT_FEATHER_DEGREES,
+  NIGHT_FEATHER_STEPS,
+} from './map-constants';
 
 /** Mercator runs to infinity at the poles; this band holds every inhabited place. */
 const NORTH_LIMIT = 84;
@@ -37,9 +42,23 @@ type CountriesTopology = Topology<{
   countries: GeometryCollection<CountryProperties>;
 }>;
 
-export interface WorldShapes {
+interface AtlasShapes {
   countries: CountryFeature[];
   borders: MultiLineString;
+}
+
+/** Two levels of detail: coarse for the whole world, fine for zoomed-in views. */
+export interface WorldShapes {
+  coarse: AtlasShapes;
+  fine: AtlasShapes;
+}
+
+/** A projected box in world coordinates at zoom 1. */
+export type WorldBox = [[number, number], [number, number]];
+
+export interface BoundedPath {
+  path: Path2D;
+  bounds: WorldBox;
 }
 
 export interface CountryLabel {
@@ -52,8 +71,12 @@ export interface CountryLabel {
 
 export interface MapGeometry {
   projection: GeoProjection;
-  land: Path2D;
-  borders: Path2D;
+  /** The whole world in one path each; cheap enough to fill in a few milliseconds. */
+  coarseLand: Path2D;
+  coarseBorders: Path2D;
+  /** Per country, with bounds, so a zoomed-in view fills only what it shows. */
+  fineCountries: BoundedPath[];
+  fineBorders: BoundedPath[];
   labels: CountryLabel[];
   /** One world's projected width; the map repeats sideways at this interval. */
   worldWidth: number;
@@ -63,8 +86,8 @@ export interface MapGeometry {
   panBounds: [[number, number], [number, number]];
 }
 
-export async function loadWorldShapes(): Promise<WorldShapes> {
-  const response = await fetch(worldAtlasUrl);
+async function loadAtlas(url: string): Promise<AtlasShapes> {
+  const response = await fetch(url);
   const topology: CountriesTopology = await response.json();
   const collection = feature(
     topology,
@@ -81,6 +104,14 @@ export async function loadWorldShapes(): Promise<WorldShapes> {
       (a, b) => a !== b
     ) as MultiLineString,
   };
+}
+
+export async function loadWorldShapes(): Promise<WorldShapes> {
+  const [coarse, fine] = await Promise.all([
+    loadAtlas(coarseAtlasUrl),
+    loadAtlas(fineAtlasUrl),
+  ]);
+  return { coarse, fine };
 }
 
 function projectMercatorY(latitude: number) {
@@ -147,6 +178,29 @@ function createCountryLabels(
   return labels.sort((a, b) => b.area - a.area);
 }
 
+function toBoundedPath(
+  path: ReturnType<typeof geoPath>,
+  shape: Parameters<typeof path>[0]
+): BoundedPath {
+  return { path: new Path2D(path(shape) ?? ''), bounds: path.bounds(shape) };
+}
+
+/** Border lines grouped into lat/long cells, so zoomed-in views stroke only nearby ones. */
+function bucketBorders(
+  path: ReturnType<typeof geoPath>,
+  borders: MultiLineString
+): BoundedPath[] {
+  const cells = new Map<string, MultiLineString>();
+  for (const line of borders.coordinates) {
+    const [longitude, latitude] = line[0] ?? [0, 0];
+    const key = `${Math.floor(longitude / BORDER_BUCKET_DEGREES)}:${Math.floor(latitude / BORDER_BUCKET_DEGREES)}`;
+    const cell = cells.get(key) ?? { type: 'MultiLineString', coordinates: [] };
+    cell.coordinates.push(line);
+    cells.set(key, cell);
+  }
+  return [...cells.values()].map((cell) => toBoundedPath(path, cell));
+}
+
 export function createMapGeometry(
   shapes: WorldShapes,
   size: { width: number; height: number }
@@ -161,11 +215,16 @@ export function createMapGeometry(
 
   return {
     projection,
-    land: new Path2D(
-      path({ type: 'FeatureCollection', features: shapes.countries }) ?? ''
+    coarseLand: new Path2D(
+      path({ type: 'FeatureCollection', features: shapes.coarse.countries }) ??
+        ''
     ),
-    borders: new Path2D(path(shapes.borders) ?? ''),
-    labels: createCountryLabels(shapes.countries, path),
+    coarseBorders: new Path2D(path(shapes.coarse.borders) ?? ''),
+    fineCountries: shapes.fine.countries.map((country) =>
+      toBoundedPath(path, country)
+    ),
+    fineBorders: bucketBorders(path, shapes.fine.borders),
+    labels: createCountryLabels(shapes.coarse.countries, path),
     worldWidth: 2 * Math.PI * projection.scale(),
     worldLeft,
     panBounds: [
@@ -191,19 +250,39 @@ export function getSubsolarPoint(date: Date): [number, number] {
   return [longitude, latitude];
 }
 
-/** Nested rings from the terminator inward; stacked they fade into night. */
-export function createNightBands(
+export interface NightRing {
+  path: Path2D;
+  /** How dark this ring is, as a share of full night. */
+  strength: number;
+}
+
+/**
+ * Night as rings between concentric circles, each filled once with the
+ * even-odd rule, so the shade covers the night area about once instead of
+ * stacking a dozen overlapping fills.
+ */
+export function createNightRings(
   projection: GeoProjection,
   date: Date
-): Path2D[] {
+): NightRing[] {
   const [sunLongitude, sunLatitude] = getSubsolarPoint(date);
   const antipode: [number, number] = [sunLongitude + 180, -sunLatitude];
   const path = geoPath(projection);
   const circle = geoCircle().center(antipode);
-  const bands: Path2D[] = [];
+  const radiusAt = (step: number) =>
+    90 - (step * NIGHT_FEATHER_DEGREES) / NIGHT_FEATHER_STEPS;
+
+  const rings: NightRing[] = [];
   for (let step = 0; step < NIGHT_FEATHER_STEPS; step++) {
-    const radius = 90 - (step * NIGHT_FEATHER_DEGREES) / NIGHT_FEATHER_STEPS;
-    bands.push(new Path2D(path(circle.radius(radius)()) ?? ''));
+    const ring = new Path2D(path(circle.radius(radiusAt(step))()) ?? '');
+    ring.addPath(new Path2D(path(circle.radius(radiusAt(step + 1))()) ?? ''));
+    rings.push({ path: ring, strength: (step + 1) / NIGHT_FEATHER_STEPS });
   }
-  return bands;
+  rings.push({
+    path: new Path2D(
+      path(circle.radius(radiusAt(NIGHT_FEATHER_STEPS))()) ?? ''
+    ),
+    strength: 1,
+  });
+  return rings;
 }
