@@ -62,22 +62,20 @@ test('the login form validates before it calls the API', async ({ page }) => {
   });
   await gotoHydrated(page, '/login');
 
+  const fieldErrors = page.locator('[data-slot="field-error"]');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByText('Issues')).toHaveCount(2);
-  await page.getByText('Issues').first().hover();
-  await expect(page.getByRole('tooltip')).toContainText(
-    'Invalid email address'
-  );
+  await expect(fieldErrors).toHaveCount(2);
+  await expect(fieldErrors.first()).toHaveText('Invalid email address');
 
   await page.getByLabel('Email').fill('not-an-email');
   await page.getByLabel('Password').fill('short');
   await page.getByLabel('Password').press('Enter');
-  await expect(page.getByText('Issues')).toHaveCount(2);
+  await expect(fieldErrors).toHaveCount(2);
 
   await page.getByLabel('Email').fill('someone@example.com');
   await page.getByLabel('Password').fill('long-enough-password');
   await page.getByLabel('Email').press('Tab');
-  await expect(page.getByText('Issues')).toHaveCount(0);
+  await expect(fieldErrors).toHaveCount(0);
 
   await expect(
     page.getByRole('link', { name: 'Create one today' })

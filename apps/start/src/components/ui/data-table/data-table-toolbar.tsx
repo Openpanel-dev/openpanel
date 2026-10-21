@@ -125,6 +125,7 @@ function DataTableToolbarFilter<TData>({
                 inputMode="numeric"
                 onChange={(event) => column.setFilterValue(event.target.value)}
                 placeholder={getTitle()}
+                size="sm"
                 type="number"
                 value={(column.getFilterValue() as string) ?? ''}
               />

@@ -113,6 +113,7 @@ function SearchHeader({
         autoFocus
         onChange={(e) => onSearch(e.target.value)}
         placeholder="Search"
+        size="sm"
         value={value}
       />
     </div>

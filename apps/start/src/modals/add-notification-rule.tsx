@@ -125,6 +125,7 @@ export default function AddNotificationRule({ rule }: Props) {
             name="config.type"
             render={({ field }) => (
               <Combobox
+                variant="input"
                 {...field}
                 className="w-full"
                 // @ts-expect-error

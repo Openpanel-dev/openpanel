@@ -57,13 +57,11 @@ export function SignInEmailForm({
     >
       <InputWithLabel
         {...form.register('email')}
-        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
         error={form.formState.errors.email?.message}
         label="Email"
       />
       <InputWithLabel
         {...form.register('password')}
-        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
         error={form.formState.errors.password?.message}
         label="Password"
         type="password"

@@ -106,7 +106,7 @@ function Component() {
               name="timezone"
               render={({ field }) => (
                 <WithLabel label="Timezone">
-                  <Combobox
+                  <Combobox variant="input"
                     className="w-full"
                     items={['UTC', ...Intl.supportedValuesOf('timeZone')].map(
                       (item) => ({

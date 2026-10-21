@@ -177,6 +177,7 @@ export function DataTableSliderFilter<TData>({
                 onChange={onFromInputChange}
                 pattern="[0-9]*"
                 placeholder={min.toString()}
+                size="sm"
                 type="number"
                 value={range[0]?.toString()}
               />
@@ -201,6 +202,7 @@ export function DataTableSliderFilter<TData>({
                 onChange={onToInputChange}
                 pattern="[0-9]*"
                 placeholder={max.toString()}
+                size="sm"
                 type="number"
                 value={range[1]?.toString()}
               />

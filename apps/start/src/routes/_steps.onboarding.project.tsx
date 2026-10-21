@@ -207,6 +207,7 @@ function Component() {
                       placeholder="Select timezone"
                       searchable
                       value={field.value}
+                      variant="input"
                     />
                   </WithLabel>
                 )}
@@ -235,6 +236,7 @@ function Component() {
                         onChange={field.onChange}
                         placeholder="Select workspace"
                         value={field.value}
+                        variant="input"
                       />
                     </WithLabel>
                   );

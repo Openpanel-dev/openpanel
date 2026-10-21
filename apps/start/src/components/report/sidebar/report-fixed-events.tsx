@@ -210,6 +210,7 @@ export function ReportFixedEvents({
                       ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
                       : 'Display name'
                   }
+                  size="sm"
                 />
               )}
               <ReportEventMore onClick={handleMore(event)} />

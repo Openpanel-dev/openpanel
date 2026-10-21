@@ -70,6 +70,7 @@ export function ProjectMapper({
                   </Label>
                   <Input
                     placeholder="e.g., abc123"
+                    size="sm"
                     {...register(`projectMapper.${index}.from`)}
                     className="mt-1"
                   />

@@ -33,6 +33,8 @@ export interface ComboboxProps<T> {
   searchable?: boolean;
   icon?: LucideIcon;
   size?: ButtonProps['size'];
+  /** `input` makes the trigger look like a form field; use it inside forms. */
+  variant?: 'outline' | 'input';
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
@@ -58,6 +60,7 @@ export function Combobox<T extends string>({
   searchable,
   icon: Icon,
   size,
+  variant = 'outline',
   align = 'start',
   portal,
   error,
@@ -77,15 +80,17 @@ export function Combobox<T extends string>({
         {children ?? (
           <Button
             aria-expanded={open}
+            aria-invalid={error ? true : undefined}
             className={cn(
               'justify-between',
-              !!error && 'border-destructive',
+              !!error &&
+                'border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive',
               className
             )}
             disabled={disabled}
             role="combobox"
-            size={size}
-            variant="outline"
+            size={size ?? (variant === 'input' ? 'default' : undefined)}
+            variant={variant}
           >
             <div className="flex min-w-0 items-center">
               {Icon ? <Icon className="mr-2 shrink-0" size={16} /> : null}
