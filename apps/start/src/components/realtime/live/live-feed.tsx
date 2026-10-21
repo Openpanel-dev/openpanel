@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDownIcon } from 'lucide-react';
 import { useStoredToggle } from './use-stored-toggle';
 import { ProjectLink } from '@/components/links';
@@ -73,20 +72,11 @@ export function LiveFeed<T extends { id: string }>({
       </h2>
       {isOpen ? (
         <ul className="flex flex-col gap-1">
-          <AnimatePresence initial={false}>
-            {items.map((item) => (
-              <motion.li
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                initial={{ opacity: 0, y: -10, scale: 0.97 }}
-                key={item.id}
-                layout="position"
-                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-              >
-                {renderItem(item)}
-              </motion.li>
-            ))}
-          </AnimatePresence>
+          {items.map((item) => (
+            <li className="animate-live-feed-in" key={item.id}>
+              {renderItem(item)}
+            </li>
+          ))}
         </ul>
       ) : null}
     </section>

@@ -452,22 +452,22 @@ button {
   animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Realtime map: a dot's ring spreading out from its own centre */
-@keyframes map-marker-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.45;
-  }
-  100% {
-    transform: scale(3.2);
+/* Realtime feeds: a new row pushes the list down as it grows in, no measuring needed */
+@keyframes live-feed-in {
+  from {
+    margin-top: calc(-1 * (1.75rem + 0.25rem));
     opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    margin-top: 0;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-map-marker-pulse {
-  animation: map-marker-pulse 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
-  transform-box: fill-box;
-  transform-origin: center;
+.animate-live-feed-in {
+  animation: live-feed-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .scrollarea {
