@@ -4,9 +4,8 @@ export const MAP_ZOOM_BUTTON_FACTOR = 1.8;
 export const MAP_ZOOM_ANIMATION_MS = 300;
 export const NIGHT_REFRESH_MS = 60_000;
 
-/** A country gets its name once it covers this many square pixels on screen. */
-export const LABEL_MIN_SCREEN_AREA = 9000;
-export const LABEL_MAX_COUNT = 40;
+/** How strongly land picks up the brand blue over its grey. */
+export const LAND_TINT_ALPHA = 0.1;
 
 export const MARKER_MIN_RADIUS = 3.5;
 export const MARKER_MAX_RADIUS = 10;

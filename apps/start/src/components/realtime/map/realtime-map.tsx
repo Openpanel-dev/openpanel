@@ -5,8 +5,7 @@ import { zoom, zoomIdentity, zoomTransform } from 'd3-zoom';
 import { LocateFixedIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  LABEL_MAX_COUNT,
-  LABEL_MIN_SCREEN_AREA,
+  LAND_TINT_ALPHA,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_ZOOM_ANIMATION_MS,
@@ -19,7 +18,7 @@ import {
 import type { MapGeometry, WorldShapes } from './map-geometry';
 import {
   createMapGeometry,
-  createNightPaths,
+  createNightPath,
   loadWorldShapes,
 } from './map-geometry';
 import type { RealtimeMapPoint, RealtimeMapProps } from './map-types';
@@ -35,9 +34,9 @@ import { cn } from '@/utils/cn';
 
 interface MapColors {
   land: string;
+  tint: string;
   border: string;
   night: string;
-  terminator: string;
 }
 
 interface PlacedMarker {
@@ -124,8 +123,8 @@ function readMapColors(element: HTMLElement, isDark: boolean): MapColors {
   return {
     land: read('--def-300'),
     border: read('--def-100'),
-    night: isDark ? 'rgba(0, 0, 0, 0.32)' : 'rgba(15, 23, 42, 0.05)',
-    terminator: read('--muted-foreground'),
+    tint: read('--chart-0'),
+    night: isDark ? 'rgba(0, 0, 0, 0.28)' : 'rgba(15, 23, 42, 0.05)',
   };
 }
 
@@ -157,7 +156,7 @@ function drawMap({
 }: {
   canvas: HTMLCanvasElement;
   geometry: MapGeometry;
-  night: { area: Path2D; edge: Path2D } | null;
+  night: Path2D | null;
   colors: MapColors;
   transform: ZoomTransform;
 }) {
@@ -190,12 +189,16 @@ function drawMap({
 function drawWorld(
   context: CanvasRenderingContext2D,
   geometry: MapGeometry,
-  night: { area: Path2D; edge: Path2D } | null,
+  night: Path2D | null,
   colors: MapColors,
   hairline: number
 ) {
   context.fillStyle = colors.land;
   context.fill(geometry.land);
+  context.globalAlpha = LAND_TINT_ALPHA;
+  context.fillStyle = colors.tint;
+  context.fill(geometry.land);
+  context.globalAlpha = 1;
 
   context.strokeStyle = colors.border;
   context.lineWidth = hairline;
@@ -203,15 +206,7 @@ function drawWorld(
 
   if (night) {
     context.fillStyle = colors.night;
-    context.fill(night.area);
-
-    context.globalAlpha = 0.35;
-    context.strokeStyle = colors.terminator;
-    context.lineWidth = hairline;
-    context.setLineDash([4 * hairline, 4 * hairline]);
-    context.stroke(night.edge);
-    context.setLineDash([]);
-    context.globalAlpha = 1;
+    context.fill(night);
   }
 }
 
@@ -290,7 +285,7 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     [shapes, hasSize, width, height]
   );
   const night = useMemo(
-    () => (geometry ? createNightPaths(geometry.projection, now) : null),
+    () => (geometry ? createNightPath(geometry.projection, now) : null),
     [geometry, now]
   );
   const colors = useMapColors(containerRef, isDark);
@@ -418,21 +413,6 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     ? getWorldCopyOffsets(geometry, transform, { width })
     : [];
 
-  const visibleLabels = (geometry?.labels ?? [])
-    .filter(
-      (label) => label.area * transform.k * transform.k >= LABEL_MIN_SCREEN_AREA
-    )
-    .flatMap((label) =>
-      worldCopyOffsets.map((offset) => ({
-        ...label,
-        key: `${label.name}@${offset}`,
-        x: transform.applyX(label.x + offset),
-        y: transform.applyY(label.y),
-      }))
-    )
-    .filter((label) => isInView(label.x, label.y))
-    .slice(0, LABEL_MAX_COUNT);
-
   const visibleMarkers = placedMarkers
     .flatMap((marker) =>
       worldCopyOffsets.map((offset) => ({
@@ -484,20 +464,6 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
         role="img"
         width={width}
       >
-        <g className="fill-muted-foreground/60 font-medium text-2xs uppercase tracking-widest">
-          {visibleLabels.map((label) => (
-            <text
-              dominantBaseline="middle"
-              key={label.key}
-              textAnchor="middle"
-              x={label.x}
-              y={label.y}
-            >
-              {label.name}
-            </text>
-          ))}
-        </g>
-
         <g className="pointer-events-auto">
           {visibleMarkers.map((marker) => (
             <VisitorMarker
