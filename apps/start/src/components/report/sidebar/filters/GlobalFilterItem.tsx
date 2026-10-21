@@ -8,6 +8,7 @@ import { getOperatorsForType } from '@openpanel/core/modules/report/report.const
 import { changeGlobalFilter, removeGlobalFilter } from '../../reportSlice';
 import { PureCohortFilterItem } from './CohortFilterItem';
 import { PureFilterItem } from './FilterItem';
+import { FILTER_CARD_CLASS } from '@/components/report/sidebar/sidebar-section';
 import { useDispatch } from '@/redux';
 
 interface GlobalFilterItemProps {
@@ -89,7 +90,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
   if (isCohortFilter) {
     return (
       <PureCohortFilterItem
-        className="px-3 py-3"
+        className={FILTER_CARD_CLASS}
         filter={filter}
         onChangeCohort={onChangeCohort}
         onChangeOperator={onChangeOperator}
@@ -100,7 +101,7 @@ export function GlobalFilterItem({ filter }: GlobalFilterItemProps) {
 
   return (
     <PureFilterItem
-      className="px-3 py-3"
+      className={FILTER_CARD_CLASS}
       eventName="*"
       filter={filter}
       onChangeOperator={onChangeOperator}

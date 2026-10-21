@@ -53,6 +53,29 @@ export const BuilderChip = forwardRef<
 ));
 BuilderChip.displayName = 'BuilderChip';
 
+/** One filter as a self-contained card: label, controls and delete button together. */
+export const FILTER_CARD_CLASS = 'rounded-lg border bg-card p-2.5';
+
+/** Full-width dashed action that invites the first item of a section and adds more after it. */
+export const BuilderAddButton = forwardRef<
+  HTMLButtonElement,
+  { icon: LucideIcon } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ icon: Icon, children, className, ...props }, ref) => (
+  <button
+    className={cn(
+      'flex h-10 w-full items-center gap-2 rounded-xl border border-def-400/70 border-dashed px-3 font-medium text-muted-foreground text-sm transition-colors hover:border-solid hover:bg-def-100 hover:text-foreground dark:border-def-400 dark:hover:bg-def-200',
+      className
+    )}
+    ref={ref}
+    type="button"
+    {...props}
+  >
+    <Icon className="shrink-0" size={15} />
+    <span className="truncate">{children}</span>
+  </button>
+));
+BuilderAddButton.displayName = 'BuilderAddButton';
+
 /** Bordered list that holds the series, breakdown and global filter rows. */
 export function BuilderList({
   className,

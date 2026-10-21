@@ -3,7 +3,7 @@ import { FilterIcon } from 'lucide-react';
 import { addGlobalFilter } from '../reportSlice';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';
 import { PropertiesCombobox } from './PropertiesCombobox';
-import { BuilderChip, BuilderList, SidebarSection } from './sidebar-section';
+import { BuilderAddButton, SidebarSection } from './sidebar-section';
 import { useDispatch, useSelector } from '@/redux';
 
 export function ReportGlobalFilters() {
@@ -45,26 +45,22 @@ export function ReportGlobalFilters() {
       }}
     >
       {(setOpen) => (
-        <BuilderChip icon={FilterIcon} onClick={() => setOpen((p) => !p)}>
+        <BuilderAddButton icon={FilterIcon} onClick={() => setOpen((p) => !p)}>
           Add filter
-        </BuilderChip>
+        </BuilderAddButton>
       )}
     </PropertiesCombobox>
   );
 
   return (
     <SidebarSection
-      action={addFilter}
       description="Applied to every series in this report."
       title="Global filters"
     >
-      {globalFilters.length > 0 && (
-        <BuilderList>
-          {globalFilters.map((filter) => (
-            <GlobalFilterItem filter={filter} key={filter.id ?? filter.name} />
-          ))}
-        </BuilderList>
-      )}
+      {globalFilters.map((filter) => (
+        <GlobalFilterItem filter={filter} key={filter.id ?? filter.name} />
+      ))}
+      {addFilter}
     </SidebarSection>
   );
 }

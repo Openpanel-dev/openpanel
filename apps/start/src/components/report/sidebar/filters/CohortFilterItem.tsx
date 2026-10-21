@@ -6,6 +6,7 @@ import {
 } from '@openpanel/core/modules/report/report.constants';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
+import { FILTER_CARD_CLASS } from '@/components/report/sidebar/sidebar-section';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
@@ -83,6 +84,7 @@ export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
 
   return (
     <PureCohortFilterItem
+      className={FILTER_CARD_CLASS}
       filter={filter}
       onChangeCohort={onChangeCohort}
       onChangeOperator={onChangeOperator}

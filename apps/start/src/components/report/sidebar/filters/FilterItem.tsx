@@ -10,6 +10,7 @@ import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
 import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
 import { FilterTypeSelect } from '@/components/report/sidebar/filters/FilterTypeSelect';
+import { FILTER_CARD_CLASS } from '@/components/report/sidebar/sidebar-section';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
@@ -173,6 +174,7 @@ export function FilterItem({ filter, event }: FilterProps) {
   const dispatch = useDispatch();
   return (
     <PureFilterItem
+      className={FILTER_CARD_CLASS}
       eventName={event.name}
       filter={filter}
       onChangeOperator={onChangeOperator}
@@ -339,9 +341,7 @@ export function PureFilterItem({
         />
         <div className="min-w-40 flex-1">{renderValueControl()}</div>
       </div>
-      {valueError && (
-        <p className="text-destructive text-xs">{valueError}</p>
-      )}
+      {valueError && <p className="text-destructive text-xs">{valueError}</p>}
     </div>
   );
 }

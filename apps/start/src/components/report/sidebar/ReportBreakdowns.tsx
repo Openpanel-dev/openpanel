@@ -4,7 +4,11 @@ import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
-import { BuilderChip, BuilderList, SidebarSection } from './sidebar-section';
+import {
+  BuilderAddButton,
+  BuilderList,
+  SidebarSection,
+} from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -47,15 +51,18 @@ export function ReportBreakdowns() {
       }}
     >
       {(setOpen) => (
-        <BuilderChip icon={PlusIcon} onClick={() => setOpen((prev) => !prev)}>
+        <BuilderAddButton
+          icon={PlusIcon}
+          onClick={() => setOpen((prev) => !prev)}
+        >
           Add breakdown
-        </BuilderChip>
+        </BuilderAddButton>
       )}
     </PropertiesCombobox>
   );
 
   return (
-    <SidebarSection action={addBreakdownAction} title="Breakdown">
+    <SidebarSection title="Breakdown">
       {selectedBreakdowns.length > 0 && (
         <BuilderList>
           {selectedBreakdowns.map((item, index) => {
@@ -126,6 +133,7 @@ export function ReportBreakdowns() {
           })}
         </BuilderList>
       )}
+      {addBreakdownAction}
     </SidebarSection>
   );
 }
