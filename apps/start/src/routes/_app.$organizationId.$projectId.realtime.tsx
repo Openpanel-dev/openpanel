@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Fullscreen, FullscreenClose } from '@/components/fullscreen-toggle';
+import { RealtimeLiveOverlays } from '@/components/realtime/live/realtime-live-overlays';
 import RealtimeMap from '@/components/realtime/map';
 import RealtimeReloader from '@/components/realtime/realtime-reloader';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -40,11 +41,12 @@ function Component() {
       <FullscreenClose />
       <RealtimeReloader projectId={projectId} />
 
-      <div className="h-svh w-full">
+      <div className="relative h-svh w-full">
         <RealtimeMap
           markers={coordinatesQuery.data ?? []}
           projectId={projectId}
         />
+        <RealtimeLiveOverlays key={projectId} projectId={projectId} />
       </div>
     </Fullscreen>
   );
