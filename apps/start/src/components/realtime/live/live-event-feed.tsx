@@ -44,6 +44,7 @@ export function LiveEventFeed({ projectId }: { projectId: string }) {
           />
         );
       }}
+      storageKey="events"
       title="Events"
     />
   );

@@ -41,6 +41,7 @@ export function LiveSessionFeed({ projectId }: { projectId: string }) {
           }
         />
       )}
+      storageKey="sessions"
       title="New sessions"
     />
   );

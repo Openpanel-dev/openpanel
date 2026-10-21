@@ -1,4 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDownIcon } from 'lucide-react';
+import { useStoredToggle } from './use-stored-toggle';
 import { ProjectLink } from '@/components/links';
 import { cn } from '@/utils/cn';
 
@@ -21,42 +23,72 @@ export function formatAge(date: Date, now: number) {
 
 export function LiveFeed<T extends { id: string }>({
   title,
+  storageKey,
   items,
   renderItem,
   className,
 }: {
   title: string;
+  /** Remembers per browser whether this feed is shown. */
+  storageKey: string;
   items: T[];
   renderItem: (item: T) => React.ReactNode;
   className?: string;
 }) {
+  const [isOpen, toggleOpen] = useStoredToggle(
+    `realtime-feed-${storageKey}-open`,
+    true
+  );
+
   return (
     <section
       aria-label={title}
       className={cn(
-        'flex min-h-0 flex-1 flex-col gap-2 overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]',
+        'flex min-h-0 flex-col gap-2 overflow-hidden',
+        isOpen &&
+          'flex-1 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]',
         className
       )}
     >
-      <h2 className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">
-        {title}
+      <h2>
+        <button
+          aria-expanded={isOpen}
+          className="pointer-events-auto flex items-center gap-1 font-medium text-2xs text-muted-foreground uppercase tracking-widest transition-colors hover:text-foreground"
+          onClick={toggleOpen}
+          title={
+            isOpen
+              ? `Hide ${title.toLowerCase()}`
+              : `Show ${title.toLowerCase()}`
+          }
+          type="button"
+        >
+          {title}
+          <ChevronDownIcon
+            className={cn(
+              'size-3 transition-transform',
+              isOpen ? 'rotate-0' : '-rotate-90'
+            )}
+          />
+        </button>
       </h2>
-      <ul className="flex flex-col gap-1">
-        <AnimatePresence initial={false}>
-          {items.map((item) => (
-            <motion.li
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              initial={{ opacity: 0, y: -10, scale: 0.97 }}
-              key={item.id}
-              layout="position"
-              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-            >
-              {renderItem(item)}
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
+      {isOpen ? (
+        <ul className="flex flex-col gap-1">
+          <AnimatePresence initial={false}>
+            {items.map((item) => (
+              <motion.li
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                initial={{ opacity: 0, y: -10, scale: 0.97 }}
+                key={item.id}
+                layout="position"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              >
+                {renderItem(item)}
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      ) : null}
     </section>
   );
 }
