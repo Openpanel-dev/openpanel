@@ -43,7 +43,6 @@ interface MapColors {
   tint: string;
   border: string;
   night: string;
-  nightAlpha: number;
   terminator: string;
 }
 
@@ -133,7 +132,6 @@ function readMapColors(element: HTMLElement, isDark: boolean): MapColors {
     border: read('--def-100'),
     tint: read('--chart-0'),
     night: isDark ? '#000' : '#0f172a',
-    nightAlpha: isDark ? NIGHT_MAX_ALPHA_DARK : NIGHT_MAX_ALPHA_LIGHT,
     terminator: read('--muted-foreground'),
   };
 }
@@ -161,12 +159,14 @@ function drawMap({
   canvas,
   geometry,
   night,
+  nightAlpha,
   colors,
   transform,
 }: {
   canvas: HTMLCanvasElement;
   geometry: MapGeometry;
   night: NightShade | null;
+  nightAlpha: number;
   colors: MapColors;
   transform: ZoomTransform;
 }) {
@@ -191,7 +191,7 @@ function drawMap({
   for (const offset of getWorldCopyOffsets(geometry, transform, canvas)) {
     context.save();
     context.translate(offset, 0);
-    drawWorld(context, geometry, night, colors, hairline);
+    drawWorld(context, geometry, night, nightAlpha, colors, hairline);
     context.restore();
   }
 }
@@ -200,6 +200,7 @@ function drawWorld(
   context: CanvasRenderingContext2D,
   geometry: MapGeometry,
   night: NightShade | null,
+  nightAlpha: number,
   colors: MapColors,
   hairline: number
 ) {
@@ -217,7 +218,7 @@ function drawWorld(
   if (night) {
     // Each band adds a little, so night deepens gradually past the terminator.
     context.fillStyle = colors.night;
-    context.globalAlpha = colors.nightAlpha / NIGHT_FEATHER_STEPS;
+    context.globalAlpha = nightAlpha / NIGHT_FEATHER_STEPS;
     for (const band of night.bands) {
       context.fill(band);
     }
@@ -331,8 +332,15 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     if (!(canvas && geometry && colors)) {
       return;
     }
-    drawMap({ canvas, geometry, night, colors, transform });
-  }, [geometry, night, colors, transform]);
+    drawMap({
+      canvas,
+      geometry,
+      night,
+      nightAlpha: isDark ? NIGHT_MAX_ALPHA_DARK : NIGHT_MAX_ALPHA_LIGHT,
+      colors,
+      transform,
+    });
+  }, [geometry, night, colors, transform, isDark]);
 
   useEffect(() => {
     const element = containerRef.current;
