@@ -22,25 +22,24 @@ const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:23123';
 const DEAD_NODE_URL = 'http://127.0.0.1:1';
 const CLICKHOUSE_TEST_REQUEST_TIMEOUT_MS = 120_000;
 
-function liveNodeUrl(): { withDatabase: string } {
+function liveNodeUrl(): { base: string; withDatabase: string } {
   const configured = (process.env.CLICKHOUSE_URL ?? '').split(',')[0]?.trim();
   const url = new URL(configured || DEFAULT_CLICKHOUSE_BASE_URL);
+  url.pathname = '/';
+  const base = url.toString();
   url.pathname = `/${CLICKHOUSE_TEST_DATABASE}`;
-  return { withDatabase: url.toString() };
+  return { base, withDatabase: url.toString() };
 }
 
-const { withDatabase: LIVE_NODE_URL } = liveNodeUrl();
+const { base: LIVE_BASE_URL, withDatabase: LIVE_NODE_URL } = liveNodeUrl();
 
-// The shared bootstrap also applies the schema, which `ch.insert` below
-// needs; this file may be the first in its shard to touch ClickHouse. It
-// addresses the live node directly, so the dead node set below never sees it.
-async function bootstrapTestDatabase(): Promise<boolean> {
+async function liveNodeReachable(): Promise<boolean> {
   try {
-    const { bootstrapTestDatabases } = await import(
-      '../../../../test/bootstrap-databases'
-    );
-    await bootstrapTestDatabases();
-    return true;
+    const response = await fetch(LIVE_BASE_URL, {
+      method: 'POST',
+      body: 'SELECT 1',
+    });
+    return response.ok;
   } catch {
     return false;
   }
@@ -91,10 +90,20 @@ process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS = String(
 // cases never exercise the retry at all.
 process.env.CLICKHOUSE_UNHEALTHY_MARK_MS = '0';
 
-// After the env is pinned: the bootstrap evaluates the client module, and
-// that evaluation is what reads the two-node list.
-const clickhouseReachable = await bootstrapTestDatabase();
+const clickhouseReachable = await liveNodeReachable();
 const failoverIsReal = await deadNodeIsRefused();
+
+// This file may be the first in its shard to touch ClickHouse, and
+// `ch.insert` below needs the schema. Only reachability decides the skip
+// above; a broken bootstrap throws here instead of silently skipping. Runs
+// after the env is pinned because importing the bootstrap evaluates the
+// client module, and that evaluation is what reads the two-node list.
+if (clickhouseReachable) {
+  const { bootstrapTestDatabases } = await import(
+    '../../../../test/bootstrap-databases'
+  );
+  await bootstrapTestDatabases();
+}
 
 afterAll(() => {
   restoreClickhouseEnv();
