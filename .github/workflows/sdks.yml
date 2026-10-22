@@ -8,9 +8,8 @@ name: SDKs
 #   publish  a manual run on main releases one SDK and its dependents to npm
 #            with tooling/publish, then commits the bumped `-local` versions
 #            and the new op1.js back to main. npm trusts this workflow file
-#            (trusted publishing, no token); by default it only stages the
-#            versions and a maintainer approves them with
-#            `npm stage approve <stage-id>` and 2FA.
+#            (trusted publishing, no token). `mode: stage` instead parks the
+#            versions for a maintainer's `npm stage approve <stage-id>` + 2FA.
 on:
   push:
     branches:
@@ -44,13 +43,13 @@ on:
           - major
           - prerelease
       mode:
-        description: Stage for 2FA approval, or publish directly (the trusted publisher must allow it)
+        description: Publish directly, or stage for a maintainer's 2FA approval
         type: choice
         required: true
-        default: stage
+        default: publish
         options:
-          - stage
           - publish
+          - stage
 
 permissions:
   contents: read
