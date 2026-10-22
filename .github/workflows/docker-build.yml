@@ -229,7 +229,10 @@ jobs:
       # The layer cache lives in the registry, next to the image, not in the
       # Actions cache: the install layers alone are ~1 GB per build, which
       # kept the 10 GB Actions cache full and evicting, and exporting them
-      # there took longer than the build itself.
+      # there took longer than the build itself. zstd because that 1 GB is
+      # compressed on every export and decompressed on every import, and
+      # with gzip that took over a minute each way; the image itself keeps
+      # its default layers.
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v7
@@ -238,7 +241,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
           cache-from: type=registry,ref=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:buildcache-${{ env.PLATFORM_PAIR }}
-          cache-to: type=registry,ref=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:buildcache-${{ env.PLATFORM_PAIR }},mode=max,image-manifest=true,oci-mediatypes=true
+          cache-to: type=registry,ref=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:buildcache-${{ env.PLATFORM_PAIR }},mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd
           outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }},push-by-digest=true,name-canonical=true,push=true
           build-args: ${{ matrix.build_args }}
 
