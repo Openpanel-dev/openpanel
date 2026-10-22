@@ -35,7 +35,12 @@ interface PublishConfig {
   // Stage for a maintainer's 2FA approval (`npm stage approve`) instead of
   // publishing outright; what CI does under a stage-only trusted publisher.
   stage: boolean;
+  // Prereleases go under their own dist-tag so `latest` keeps pointing at a
+  // stable version.
+  distTag?: string;
 }
+
+const PRERELEASE_DIST_TAG = 'rc';
 
 const workspacePath = (relativePath: string) =>
   resolve(__dirname, '../../', relativePath);
@@ -393,6 +398,9 @@ function main() {
         : 'http://localhost:4873',
       clear: args['--clear'] ?? false,
       stage: args['--stage'] ?? false,
+      distTag: args['--type']!.startsWith('pre')
+        ? PRERELEASE_DIST_TAG
+        : undefined,
     };
 
     publishPackages(packages, dependents, config);
