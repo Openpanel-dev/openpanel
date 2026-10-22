@@ -14,7 +14,7 @@ const SLOW_DEV_SERVER_TIMEOUT_MS = 150_000;
 test.setTimeout(SLOW_DEV_SERVER_TIMEOUT_MS);
 
 // Plan rows start a real checkout when there is no current plan, so none is clicked.
-test('billing renders plans, usage and the FAQ without errors', async ({
+test('billing renders plans, the usage breakdown and the FAQ without errors', async ({
   page,
   seed,
 }) => {
@@ -40,8 +40,16 @@ test('billing renders plans, usage and the FAQ without errors', async ({
   await page.getByRole('button', { name: 'Yearly' }).click();
   await expect(yearlyPlan).toBeVisible();
 
-  await expect(page.getByText('Usage', { exact: true })).toBeVisible();
-  await expect(page.getByText('Limit', { exact: true })).toBeVisible();
+  // The usage breakdown: one stacked bar per day split by project, and the
+  // event-name donut, each with a share table listing the seeded projects
+  // and the most frequent names.
+  await expect(page.getByText('Events per project')).toBeVisible();
+  await expect(page.getByText('Events by name')).toBeVisible();
+  for (const project of seed.projects) {
+    await expect(page.getByText(project.name, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByText('screen_view', { exact: true })).toBeVisible();
+  await expect(page.getByText('Other', { exact: true })).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
 
   const question = page.getByRole('button', {

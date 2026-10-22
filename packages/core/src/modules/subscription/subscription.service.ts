@@ -18,11 +18,13 @@ import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { formatClickhouseDate } from '../../shared/ch-dates';
 import { getAccessChecks } from '../auth/auth.service';
 import {
-  getOrganizationBillingEventsCountSerieCached,
+  getOrganizationBillingUsageCached,
   getOrganizationById,
   getOrganizationByProjectIdCached,
+  type IOrganizationBillingUsage,
 } from '../organization/organization.service';
 import {
   type ICancellationReason,
@@ -34,7 +36,11 @@ import {
 
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
-const DEFAULT_USAGE_WINDOW_DAYS = 30;
+const USAGE_WINDOW_DAYS = 30;
+
+export type IOrganizationUsage = IOrganizationBillingUsage & {
+  projects: { id: string; name: string }[];
+};
 
 async function requireOrgAdmin(
   userId: string,
@@ -143,40 +149,25 @@ export async function listProducts(deps: ServiceDeps, organizationId: string) {
   });
 }
 
-export async function getUsage(deps: ServiceDeps, organizationId: string) {
-  const organization = await deps.db.organization.findUniqueOrThrow({
-    where: { id: organizationId },
-    include: { projects: { select: { id: true } } },
+export async function getUsage(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<IOrganizationUsage> {
+  const projects = await deps.db.project.findMany({
+    where: { organizationId },
+    select: { id: true, name: true },
+    orderBy: { createdAt: 'asc' },
   });
-
-  if (
-    organization.hasSubscription &&
-    organization.subscriptionStartsAt &&
-    organization.subscriptionEndsAt
-  ) {
-    // The CURRENT billing period, not the whole subscription term. The usage
-    // counter this chart sits beside resets each period, and
-    // `subscriptionStartsAt` is overwritten with each period start on renewal,
-    // so one interval from it is the period the counter belongs to. A term
-    // running years out — a seeded org, or a long commitment — would otherwise
-    // bucket thousands of days and repeat week numbers along the axis.
-    const periodEnd = addMonths(
-      organization.subscriptionStartsAt,
-      organization.subscriptionInterval === 'year' ? 12 : 1
-    );
-    return getOrganizationBillingEventsCountSerieCached(deps, organization, {
-      startDate: organization.subscriptionStartsAt,
-      endDate:
-        periodEnd < organization.subscriptionEndsAt
-          ? periodEnd
-          : organization.subscriptionEndsAt,
-    });
-  }
-
-  return getOrganizationBillingEventsCountSerieCached(deps, organization, {
-    startDate: subDays(new Date(), DEFAULT_USAGE_WINDOW_DAYS),
-    endDate: new Date(),
+  // A fixed trailing window rather than the billing period: a yearly period
+  // would smear 52 weeks across the chart, and the question this answers —
+  // which project and which events eat the quota — is about recent traffic.
+  const today = new Date();
+  const usage = await getOrganizationBillingUsageCached(deps, {
+    projectIds: projects.map((project) => project.id),
+    from: formatClickhouseDate(subDays(today, USAGE_WINDOW_DAYS - 1), true),
+    to: formatClickhouseDate(today, true),
   });
+  return { ...usage, projects };
 }
 
 export async function cancelSubscription(
