@@ -88,13 +88,19 @@ export class OpenPanel extends OpenPanelBase {
   }
 
   private async setDefaultProperties() {
+    let referrer: string | undefined;
+    if (Platform.OS === 'android') {
+      try {
+        referrer = await Application.getInstallReferrerAsync();
+      } catch {
+        // Install attribution is optional when the native service is unavailable.
+      }
+    }
+
     this.setGlobalProperties({
       __version: Application.nativeApplicationVersion,
       __buildNumber: Application.nativeBuildVersion,
-      __referrer:
-        Platform.OS === 'android'
-          ? await Application.getInstallReferrerAsync()
-          : undefined,
+      ...(referrer === undefined ? {} : { __referrer: referrer }),
     });
   }
 
