@@ -411,8 +411,14 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
     },
     [style, hasSize, placedMarkers, activeId, viewport]
   );
+  // The zoom behaviour calls the painters through refs, so a hover or a data
+  // refetch changes what gets painted without rebuilding the behaviour.
+  const paintWorldRef = useRef(paintWorld);
   const paintMarkersRef = useRef(paintMarkers);
-  paintMarkersRef.current = paintMarkers;
+  useLayoutEffect(() => {
+    paintWorldRef.current = paintWorld;
+    paintMarkersRef.current = paintMarkers;
+  });
 
   // The pan and zoom go straight to the DOM and canvases every frame; React
   // only hears about them once the gesture settles.
@@ -434,8 +440,8 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
           setCopyOffsets(offsets);
         }
       }
-      paintWorld();
-      paintMarkers();
+      paintWorldRef.current();
+      paintMarkersRef.current();
       if (settleTimerRef.current) {
         clearTimeout(settleTimerRef.current);
       }
@@ -444,7 +450,7 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
         setSettledZoom(transform.k);
       }, RASTER_SETTLE_MS);
     },
-    [geometry, width, paintWorld, paintMarkers]
+    [geometry, width]
   );
 
   useLayoutEffect(() => {

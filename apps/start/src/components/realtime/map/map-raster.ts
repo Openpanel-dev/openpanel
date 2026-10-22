@@ -143,8 +143,13 @@ export class WorldRaster {
   }
 
   private visibleCopies(transform: ZoomTransform, viewport: Viewport) {
-    const { worldLeft, worldWidth } = this.geometry;
     const [[left], [right]] = this.visibleWorldBox(transform, viewport);
+    return this.copiesInRange(left, right);
+  }
+
+  /** Offsets of every world copy overlapping a horizontal range in world coordinates. */
+  private copiesInRange(left: number, right: number) {
+    const { worldLeft, worldWidth } = this.geometry;
     const first = Math.floor((left - worldLeft) / worldWidth);
     const last = Math.floor((right - worldLeft) / worldWidth);
     const offsets: number[] = [];
@@ -235,14 +240,11 @@ export class WorldRaster {
       -left * pixelRatio * k,
       -top * pixelRatio * k
     );
-    const copies = this.visibleCopies(transform, {
-      ...viewport,
-      width: screenWidth,
-    });
     const area: WorldBox = [
       [left, top],
       [left + screenWidth / k, top + screenHeight / k],
     ];
+    const copies = this.copiesInRange(area[0][0], area[1][0]);
     this.drawWorld(context, k, copies, area);
 
     this.detail = {

@@ -44,7 +44,7 @@ export function LiveVisitorBars({ projectId }: { projectId: string }) {
         <span className="font-semibold text-sm tabular-nums">
           {number.format(data?.totalSessions ?? 0)}
           <span className="ml-1 font-normal text-muted-foreground text-xs">
-            visitors
+            sessions
           </span>
         </span>
       </div>

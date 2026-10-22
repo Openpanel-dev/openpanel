@@ -96,7 +96,6 @@ export const ReportSummaryTrigger = forwardRef<HTMLButtonElement, Props>(
 
     return (
       <button
-        aria-label="Pick events"
         className={cn(
           'group flex h-9 min-w-0 items-center gap-1.5 overflow-hidden rounded-lg bg-def-200 py-1 pr-2.5 pl-1 text-left text-sm transition-colors hover:bg-def-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-def-300 dark:hover:bg-def-400/60',
           className

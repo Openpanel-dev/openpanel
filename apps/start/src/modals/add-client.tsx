@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';
+import { useId } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -8,7 +9,11 @@ import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import {
+  fieldMessageId,
+  InputWithLabel,
+  WithLabel,
+} from '@/components/forms/input-with-label';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -43,6 +48,7 @@ export interface AddClientProps {
 }
 
 export default function AddClient({ name, type }: AddClientProps = {}) {
+  const clientTypeId = useId();
   const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
@@ -117,11 +123,14 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
               render={({ field }) => (
                 <WithLabel
                   hint={CLIENT_TYPE_HINTS[field.value]}
+                  id={clientTypeId}
                   label="Type of client"
                 >
                   <Combobox
                     {...field}
+                    aria-describedby={fieldMessageId(clientTypeId)}
                     className="w-full"
+                    id={clientTypeId}
                     items={CLIENT_TYPE_ITEMS}
                     onChange={field.onChange}
                     placeholder="Select a client type"

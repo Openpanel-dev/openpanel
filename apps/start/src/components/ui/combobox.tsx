@@ -40,6 +40,9 @@ export interface ComboboxProps<T> {
   portal?: boolean;
   error?: string;
   disabled?: boolean;
+  /** Lets a label and a hint point at the trigger. */
+  id?: string;
+  'aria-describedby'?: string;
 }
 
 export type ExtendedComboboxProps<T> = Omit<
@@ -65,6 +68,8 @@ export function Combobox<T extends string>({
   portal,
   error,
   disabled,
+  id,
+  'aria-describedby': describedBy,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -79,6 +84,7 @@ export function Combobox<T extends string>({
       <PopoverTrigger asChild>
         {children ?? (
           <Button
+            aria-describedby={describedBy}
             aria-expanded={open}
             aria-invalid={error ? true : undefined}
             className={cn(
@@ -88,6 +94,7 @@ export function Combobox<T extends string>({
               className
             )}
             disabled={disabled}
+            id={id}
             role="combobox"
             size={size}
             variant={variant}
