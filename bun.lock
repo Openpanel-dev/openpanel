@@ -467,7 +467,7 @@
       "name": "@openpanel/astro",
       "version": "1.4.2-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.1-local",
+        "@openpanel/web": "workspace:1.4.2-local",
       },
       "devDependencies": {
         "astro": "6.4.2",
@@ -480,7 +480,7 @@
       "name": "@openpanel/express",
       "version": "1.3.2-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.1-local",
+        "@openpanel/sdk": "workspace:1.3.2-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -497,7 +497,7 @@
       "name": "@openpanel/nextjs",
       "version": "1.5.2-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.1-local",
+        "@openpanel/web": "workspace:1.4.2-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -518,7 +518,7 @@
       "name": "@openpanel/nuxt",
       "version": "0.4.2-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.1-local",
+        "@openpanel/web": "workspace:1.4.2-local",
       },
       "devDependencies": {
         "@nuxt/kit": "3.20.2",
@@ -539,7 +539,7 @@
       "name": "@openpanel/react-native",
       "version": "1.4.2-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.1-local",
+        "@openpanel/sdk": "workspace:1.3.2-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -6267,6 +6267,8 @@
     "@openpanel/nextjs/react": ["react@19.1.1", "", {}, "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ=="],
 
     "@openpanel/nextjs/react-dom": ["react-dom@19.1.1", "", { "dependencies": { "scheduler": "^0.26.0" }, "peerDependencies": { "react": "^19.1.1" } }, "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw=="],
+
+    "@openpanel/web/bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "@opentelemetry/core/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.28.0", "", {}, "sha512-lp4qAiMTD4sNWW4DbKLBkfiMZ4jbAboJIGOQr5DvciMRI494OapieI9qiODpOt0XBr1LjIDy1xAGAnVs5supTA=="],
 
