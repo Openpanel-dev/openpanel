@@ -22,24 +22,25 @@ const DEFAULT_CLICKHOUSE_BASE_URL = 'http://localhost:23123';
 const DEAD_NODE_URL = 'http://127.0.0.1:1';
 const CLICKHOUSE_TEST_REQUEST_TIMEOUT_MS = 120_000;
 
-function liveNodeUrl(): { base: string; withDatabase: string } {
+function liveNodeUrl(): { withDatabase: string } {
   const configured = (process.env.CLICKHOUSE_URL ?? '').split(',')[0]?.trim();
   const url = new URL(configured || DEFAULT_CLICKHOUSE_BASE_URL);
-  url.pathname = '/';
-  const base = url.toString();
   url.pathname = `/${CLICKHOUSE_TEST_DATABASE}`;
-  return { base, withDatabase: url.toString() };
+  return { withDatabase: url.toString() };
 }
 
-const { base: LIVE_BASE_URL, withDatabase: LIVE_NODE_URL } = liveNodeUrl();
+const { withDatabase: LIVE_NODE_URL } = liveNodeUrl();
 
+// The shared bootstrap also applies the schema, which `ch.insert` below
+// needs; this file may be the first in its shard to touch ClickHouse. It
+// addresses the live node directly, so the dead node set below never sees it.
 async function bootstrapTestDatabase(): Promise<boolean> {
   try {
-    const response = await fetch(LIVE_BASE_URL, {
-      method: 'POST',
-      body: `CREATE DATABASE IF NOT EXISTS ${CLICKHOUSE_TEST_DATABASE}`,
-    });
-    return response.ok;
+    const { bootstrapTestDatabases } = await import(
+      '../../../../test/bootstrap-databases'
+    );
+    await bootstrapTestDatabases();
+    return true;
   } catch {
     return false;
   }
@@ -55,9 +56,6 @@ async function deadNodeIsRefused(): Promise<boolean> {
     return true;
   }
 }
-
-const clickhouseReachable = await bootstrapTestDatabase();
-const failoverIsReal = await deadNodeIsRefused();
 
 // `bun test` shares one process and one `process.env` across every file in
 // the run, unlike vitest's per-file env reset. Whichever file first calls
@@ -92,6 +90,11 @@ process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS = String(
 // Without this the dead node is sin-binned after the first failure and later
 // cases never exercise the retry at all.
 process.env.CLICKHOUSE_UNHEALTHY_MARK_MS = '0';
+
+// After the env is pinned: the bootstrap evaluates the client module, and
+// that evaluation is what reads the two-node list.
+const clickhouseReachable = await bootstrapTestDatabase();
+const failoverIsReal = await deadNodeIsRefused();
 
 afterAll(() => {
   restoreClickhouseEnv();
