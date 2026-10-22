@@ -36,10 +36,12 @@ import {
 
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
-const USAGE_WINDOW_DAYS = 30;
+const TRAILING_USAGE_WINDOW_DAYS = 30;
 
 export type IOrganizationUsage = IOrganizationBillingUsage & {
   projects: { id: string; name: string }[];
+  /** `billing_period` runs from the current period's start to today. */
+  window: 'billing_period' | 'trailing';
 };
 
 async function requireOrgAdmin(
@@ -153,21 +155,39 @@ export async function getUsage(
   deps: ServiceDeps,
   organizationId: string
 ): Promise<IOrganizationUsage> {
-  const projects = await deps.db.project.findMany({
-    where: { organizationId },
-    select: { id: true, name: true },
-    orderBy: { createdAt: 'asc' },
+  const organization = await deps.db.organization.findUniqueOrThrow({
+    where: { id: organizationId },
+    include: {
+      projects: {
+        select: { id: true, name: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
   });
-  // A fixed trailing window rather than the billing period: a yearly period
-  // would smear 52 weeks across the chart, and the question this answers —
-  // which project and which events eat the quota — is about recent traffic.
+  // The period the usage counter belongs to, so the breakdown adds up to the
+  // number on the plan card. `subscriptionCurrentPeriodStart` is already the
+  // monthly cycle for yearly plans, since limits are per month. Gated on the
+  // product too, as the plan card is: without one there is no counter to match.
   const today = new Date();
+  const hasPlan =
+    organization.hasSubscription && organization.subscriptionProductId !== null;
+  const periodStart = hasPlan
+    ? organization.subscriptionCurrentPeriodStart
+    : null;
+  const isBillingPeriod = periodStart !== null && periodStart <= today;
+  const from = isBillingPeriod
+    ? periodStart
+    : subDays(today, TRAILING_USAGE_WINDOW_DAYS - 1);
   const usage = await getOrganizationBillingUsageCached(deps, {
-    projectIds: projects.map((project) => project.id),
-    from: formatClickhouseDate(subDays(today, USAGE_WINDOW_DAYS - 1), true),
+    projectIds: organization.projects.map((project) => project.id),
+    from: formatClickhouseDate(from, true),
     to: formatClickhouseDate(today, true),
   });
-  return { ...usage, projects };
+  return {
+    ...usage,
+    projects: organization.projects,
+    window: isBillingPeriod ? 'billing_period' : 'trailing',
+  };
 }
 
 export async function cancelSubscription(

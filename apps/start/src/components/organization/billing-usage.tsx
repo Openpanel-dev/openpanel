@@ -129,20 +129,22 @@ function SliceLegend({
 
 function UsageWidget({
   title,
-  aside,
+  subtitle,
   className,
   children,
 }: {
   title: string;
-  aside?: React.ReactNode;
+  subtitle?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <Widget className={cn('w-full', className)}>
-      <WidgetHead className="flex items-center justify-between gap-4">
+      <WidgetHead className="col gap-0.5">
         <span className="title">{title}</span>
-        {aside}
+        {subtitle && (
+          <span className="text-muted-foreground text-sm">{subtitle}</span>
+        )}
       </WidgetHead>
       <WidgetBody>{children}</WidgetBody>
     </Widget>
@@ -213,14 +215,17 @@ export default function BillingUsage({ organization }: Props) {
     );
   }, [usage, total]);
 
-  const window = usage
-    ? `${formatDate(new Date(`${usage.from}T00:00:00`))} – ${formatDate(new Date(`${usage.to}T00:00:00`))}`
-    : null;
-  const aside = window ? (
-    <span className="truncate text-muted-foreground text-sm">
-      Last 30 days · {window}
-    </span>
-  ) : null;
+  const windowLabel = (() => {
+    if (!usage) {
+      return undefined;
+    }
+    const range = `${formatDate(new Date(`${usage.from}T00:00:00`))} – ${formatDate(new Date(`${usage.to}T00:00:00`))}`;
+    const kind =
+      usage.window === 'billing_period'
+        ? 'Current billing period'
+        : 'Last 30 days';
+    return `${kind} · ${range}`;
+  })();
 
   const renderState = () => {
     if (usageQuery.isLoading) {
@@ -234,7 +239,7 @@ export default function BillingUsage({ organization }: Props) {
       return <Message>Issues loading usage data</Message>;
     }
     if (total === 0) {
-      return <Message>No events in the last 30 days</Message>;
+      return <Message>No events in this period</Message>;
     }
     return null;
   };
@@ -249,8 +254,8 @@ export default function BillingUsage({ organization }: Props) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <UsageWidget
-        aside={aside}
         className="lg:col-span-2"
+        subtitle={windowLabel}
         title="Events per project"
       >
         <ComposedChart
@@ -305,7 +310,7 @@ export default function BillingUsage({ organization }: Props) {
         </div>
       </UsageWidget>
 
-      <UsageWidget title="Events by name">
+      <UsageWidget subtitle={windowLabel} title="Events by name">
         <div className="col items-center gap-4">
           <PieChart
             cornerRadius={CORNER_RADIUS}

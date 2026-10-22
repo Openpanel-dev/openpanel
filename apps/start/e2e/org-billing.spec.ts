@@ -45,6 +45,8 @@ test('billing renders plans, the usage breakdown and the FAQ without errors', as
   // and the most frequent names.
   await expect(page.getByText('Events per project')).toBeVisible();
   await expect(page.getByText('Events by name')).toBeVisible();
+  // No plan yet, so both widgets fall back to a trailing window.
+  await expect(page.getByText(/^Last 30 days ·/)).toHaveCount(2);
   for (const project of seed.projects) {
     await expect(page.getByText(project.name, { exact: true })).toBeVisible();
   }
@@ -65,8 +67,12 @@ test('billing renders plans, the usage breakdown and the FAQ without errors', as
   expect(apiFailures(problems)).toEqual([]);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
+  // The charts re-measure asynchronously after a resize.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth
+      )
+    )
+    .toBeLessThanOrEqual(0);
 });
