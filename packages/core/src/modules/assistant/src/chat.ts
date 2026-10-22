@@ -5,6 +5,7 @@ import {
   createUIMessageStreamResponse,
   isStepCount,
   streamText,
+  type Tool,
   toUIMessageStream,
 } from 'ai';
 import type { HttpCtx } from '../../../context';
@@ -17,6 +18,7 @@ import {
 } from '../assistant.constants';
 import { createChatActions } from './actions';
 import type { ChatToolContext } from './context';
+import { failInterruptedToolParts } from './interrupted-tools';
 import type { AssistantUIMessage } from './message';
 import { deleteMessagesFrom, loadMessages, saveMessages } from './persistence';
 import { buildSystemPrompt } from './prompt';
@@ -99,6 +101,16 @@ export async function runChat(
       await deleteMessagesFrom(deps, request.id, request.messageId);
     }
   }
+  // A turn cut off mid tool call stores calls without results, and the model
+  // refuses such a history outright. Repaired rows are written back on finish.
+  const repaired = new Map<string, AssistantUIMessage>();
+  history = history.map((message) => {
+    const fixed = failInterruptedToolParts(message);
+    if (fixed !== message && message.id !== incoming?.id) {
+      repaired.set(message.id, fixed);
+    }
+    return fixed;
+  });
   if (incoming) {
     const existing = history.findIndex((message) => message.id === incoming.id);
     history =
@@ -125,6 +137,8 @@ export async function runChat(
     actions: await createChatActions(httpCtx),
   };
   const tools = createChatTools(toolContext);
+  const runsInBrowser = (toolName: string) =>
+    (tools as Record<string, Tool | undefined>)[toolName]?.execute == null;
   const modelMessages = await convertToModelMessages(history, { tools });
   const startedAt = Date.now();
   let title: string | null = null;
@@ -210,14 +224,22 @@ export async function runChat(
     },
     onError: describeError,
     onEnd: async ({ responseMessage }) => {
-      const toSave: AssistantUIMessage[] = [];
+      const toSave: AssistantUIMessage[] = [...repaired.values()];
       if (incoming?.role === 'user') {
         toSave.push({
           ...incoming,
           metadata: { ...incoming.metadata, createdAt: startedAt },
         });
       }
-      toSave.push(responseMessage);
+      // An aborted turn ends with server tools still running; a client tool
+      // is meant to end the stream and wait for the browser.
+      const response = failInterruptedToolParts(responseMessage, runsInBrowser);
+      if (response.parts.length > 0) {
+        toSave.push(response);
+      }
+      if (toSave.length === 0) {
+        return;
+      }
       await saveMessages(deps, {
         conversationId: request.id,
         projectId: request.projectId,

@@ -1,6 +1,26 @@
 import type { ServiceDeps } from '../../../services';
 import type { AssistantUIMessage } from './message';
 
+const NULL_CHARACTER = '\u0000';
+
+/** Postgres json cannot hold NUL, and tool outputs echo raw event data. */
+export function stripNullCharacters<T>(value: T): T {
+  if (typeof value === 'string') {
+    return value.replaceAll(NULL_CHARACTER, '') as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map(stripNullCharacters) as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value)) {
+      cleaned[stripNullCharacters(key)] = stripNullCharacters(entry);
+    }
+    return cleaned as T;
+  }
+  return value;
+}
+
 /** Rows are one UI message each; `parts` is the message's parts array. */
 export async function loadMessages(
   deps: ServiceDeps,
@@ -58,8 +78,10 @@ export async function saveMessages(
     // Rows saved together must load in this order; the default timestamp can tie.
     const baseTime = Date.now();
     for (const [index, message] of input.messages.entries()) {
-      const parts = message.parts as unknown[];
-      const metadata = (message.metadata ?? {}) as Record<string, unknown>;
+      const parts = stripNullCharacters(message.parts as unknown[]);
+      const metadata = stripNullCharacters(
+        (message.metadata ?? {}) as Record<string, unknown>
+      );
       await tx.chatMessage.upsert({
         where: { id: message.id },
         create: {
