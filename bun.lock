@@ -292,6 +292,8 @@
         "react-router-dom": "7.13.1",
       },
       "devDependencies": {
+        "@playwright/test": "1.63.0",
+        "@types/node": "catalog:",
         "@types/react": "19.2.7",
         "@types/react-dom": "19.2.3",
         "@vitejs/plugin-react": "5.2.0",
