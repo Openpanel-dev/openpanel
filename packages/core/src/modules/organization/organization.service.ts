@@ -469,6 +469,8 @@ export interface IOrganizationBillingUsage {
   projectTotals: Record<string, number>;
   /** The most frequent billable event names over the window, descending. */
   eventNames: { name: string; count: number }[];
+  /** The same per project, keyed by project id. */
+  eventNamesByProject: Record<string, { name: string; count: number }[]>;
 }
 
 // Enough slices for a legible pie; the dashboard folds the rest into "Other".
@@ -498,6 +500,7 @@ export async function getOrganizationBillingUsage(
     days: listUtcDays(from, to).map((day) => ({ day, counts: {} })),
     projectTotals: {},
     eventNames: [],
+    eventNamesByProject: {},
   };
   if (projectIds.length === 0) {
     return empty;
@@ -510,7 +513,7 @@ export async function getOrganizationBillingUsage(
       AND toDate(created_at) BETWEEN toDate(${sql.string(from)}) AND toDate(${sql.string(to)})
       AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
   `;
-  const [perProjectDay, perName] = await Promise.all([
+  const [perProjectDay, perName, perProjectName] = await Promise.all([
     chQuery<{ project_id: string; day: string; count: number }>(
       deps,
       sql`
@@ -531,6 +534,17 @@ export async function getOrganizationBillingUsage(
         LIMIT ${sql.uint64(BILLING_USAGE_EVENT_NAMES_LIMIT)}
       `
     ),
+    chQuery<{ project_id: string; name: string; count: number }>(
+      deps,
+      sql`
+        SELECT project_id, name, COUNT(*) AS count
+        FROM ${sql.id(TABLE_NAMES.events)}
+        WHERE ${billable}
+        GROUP BY project_id, name
+        ORDER BY project_id, count DESC
+        LIMIT ${sql.uint64(BILLING_USAGE_EVENT_NAMES_LIMIT)} BY project_id
+      `
+    ),
   ]);
 
   const countsByDay = new Map(empty.days.map((row) => [row.day, row.counts]));
@@ -544,6 +558,11 @@ export async function getOrganizationBillingUsage(
     name: row.name,
     count: Number(row.count),
   }));
+  for (const row of perProjectName) {
+    const names = empty.eventNamesByProject[row.project_id] ?? [];
+    names.push({ name: row.name, count: Number(row.count) });
+    empty.eventNamesByProject[row.project_id] = names;
+  }
   return empty;
 }
 

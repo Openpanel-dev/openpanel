@@ -1,7 +1,7 @@
 import type { IServiceOrganization } from '@openpanel/core';
 import { round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, XIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ComposedChart } from '@/components/charts/composed-chart';
 import { Grid } from '@/components/charts/grid';
@@ -12,6 +12,7 @@ import { PieSlice } from '@/components/charts/pie-slice';
 import { SeriesBar } from '@/components/charts/series-bar';
 import { XAxis } from '@/components/charts/x-axis';
 import { YAxis } from '@/components/charts/y-axis';
+import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -43,6 +44,7 @@ interface UsagePoint {
 }
 
 interface Slice {
+  id?: string;
   label: string;
   value: number;
   share: number;
@@ -54,7 +56,7 @@ function formatDayLabel(date: Date) {
 }
 
 function toSlices(
-  rows: { label: string; value: number; color: string }[],
+  rows: { id?: string; label: string; value: number; color: string }[],
   total: number
 ): Slice[] {
   return rows
@@ -84,45 +86,51 @@ function SliceRow({ slice }: { slice: Slice }) {
   );
 }
 
-const SLICE_ROW_CLASS = 'flex w-full items-center gap-2 rounded px-1.5 py-1';
+const SLICE_ROW_CLASS =
+  'flex w-full items-center gap-2 rounded px-1.5 py-1 text-left';
 
-// Hover wiring is only offered where the chart can answer it (the donut);
-// the bar legend is a plain breakdown table.
+// The donut's legend highlights slices on hover; the project legend selects
+// a project to filter the donut by.
 function SliceLegend({
   slices,
   hoveredIndex = null,
   onHover,
+  selectedIndex = null,
+  onSelect,
 }: {
   slices: Slice[];
   hoveredIndex?: number | null;
   onHover?: (index: number | null) => void;
+  selectedIndex?: number | null;
+  onSelect?: (index: number | null) => void;
 }) {
   return (
     <ul className="col gap-0.5">
-      {slices.map((slice, index) => (
-        <li key={slice.label}>
-          {onHover ? (
+      {slices.map((slice, index) => {
+        const isSelected = selectedIndex === index;
+        const isFaded = hoveredIndex !== null && hoveredIndex !== index;
+        return (
+          <li key={slice.label}>
             <button
+              aria-pressed={onSelect ? isSelected : undefined}
               className={cn(
                 SLICE_ROW_CLASS,
-                'text-left transition-opacity',
-                hoveredIndex !== null && hoveredIndex !== index && 'opacity-50'
+                'transition-opacity hover:bg-def-100',
+                isFaded && 'opacity-50',
+                isSelected && 'bg-def-100 font-medium'
               )}
-              onBlur={() => onHover(null)}
-              onFocus={() => onHover(index)}
-              onMouseEnter={() => onHover(index)}
-              onMouseLeave={() => onHover(null)}
+              onBlur={() => onHover?.(null)}
+              onClick={() => onSelect?.(isSelected ? null : index)}
+              onFocus={() => onHover?.(index)}
+              onMouseEnter={() => onHover?.(index)}
+              onMouseLeave={() => onHover?.(null)}
               type="button"
             >
               <SliceRow slice={slice} />
             </button>
-          ) : (
-            <div className={SLICE_ROW_CLASS}>
-              <SliceRow slice={slice} />
-            </div>
-          )}
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -130,21 +138,26 @@ function SliceLegend({
 function UsageWidget({
   title,
   subtitle,
+  aside,
   className,
   children,
 }: {
   title: string;
   subtitle?: string;
+  aside?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <Widget className={cn('w-full', className)}>
-      <WidgetHead className="col gap-0.5">
-        <span className="title">{title}</span>
-        {subtitle && (
-          <span className="text-muted-foreground text-sm">{subtitle}</span>
-        )}
+      <WidgetHead className="row items-start justify-between gap-4">
+        <div className="col min-w-0 gap-0.5">
+          <span className="title">{title}</span>
+          {subtitle && (
+            <span className="text-muted-foreground text-sm">{subtitle}</span>
+          )}
+        </div>
+        {aside}
       </WidgetHead>
       <WidgetBody>{children}</WidgetBody>
     </Widget>
@@ -164,6 +177,13 @@ export default function BillingUsage({ organization }: Props) {
   const usage = usageQuery.data;
 
   const [hoveredName, setHoveredName] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
+  const selectProject = (projectId: string | null) => {
+    setSelectedProjectId(projectId);
+    setHoveredName(null);
+  };
 
   const projects = useMemo(
     () =>
@@ -190,6 +210,7 @@ export default function BillingUsage({ organization }: Props) {
     () =>
       toSlices(
         projects.map((project) => ({
+          id: project.id,
           label: project.name,
           value: project.total,
           color: project.color,
@@ -199,8 +220,14 @@ export default function BillingUsage({ organization }: Props) {
     [projects, total]
   );
 
+  const selectedProject =
+    projects.find((project) => project.id === selectedProjectId) ?? null;
+  const namesTotal = selectedProject ? selectedProject.total : total;
   const nameSlices = useMemo(() => {
-    const named = (usage?.eventNames ?? []).map((row, index) => ({
+    const rows = selectedProject
+      ? (usage?.eventNamesByProject[selectedProject.id] ?? [])
+      : (usage?.eventNames ?? []);
+    const named = rows.map((row, index) => ({
       label: row.name,
       value: row.count,
       color: getChartColor(index),
@@ -209,11 +236,15 @@ export default function BillingUsage({ organization }: Props) {
     return toSlices(
       [
         ...named,
-        { label: OTHER_LABEL, value: total - namedTotal, color: OTHER_COLOR },
+        {
+          label: OTHER_LABEL,
+          value: namesTotal - namedTotal,
+          color: OTHER_COLOR,
+        },
       ],
-      total
+      namesTotal
     );
-  }, [usage, total]);
+  }, [usage, selectedProject, namesTotal]);
 
   const windowLabel = (() => {
     if (!usage) {
@@ -306,11 +337,43 @@ export default function BillingUsage({ organization }: Props) {
           />
         </ComposedChart>
         <div className="mt-4 border-t pt-4">
-          <SliceLegend slices={projectSlices} />
+          <SliceLegend
+            onSelect={(index) =>
+              selectProject(
+                index === null ? null : (projectSlices[index]?.id ?? null)
+              )
+            }
+            selectedIndex={
+              selectedProject
+                ? projectSlices.findIndex(
+                    (slice) => slice.id === selectedProject.id
+                  )
+                : null
+            }
+            slices={projectSlices}
+          />
         </div>
       </UsageWidget>
 
-      <UsageWidget subtitle={windowLabel} title="Events by name">
+      <UsageWidget
+        aside={
+          selectedProject && (
+            <Button
+              onClick={() => selectProject(null)}
+              size="sm"
+              variant="outline"
+            >
+              All projects
+              <XIcon className="ml-1 size-3.5" />
+            </Button>
+          )
+        }
+        subtitle={
+          windowLabel &&
+          `${selectedProject?.name ?? 'All projects'} · ${windowLabel}`
+        }
+        title="Events by name"
+      >
         <div className="col items-center gap-4">
           <PieChart
             cornerRadius={CORNER_RADIUS}

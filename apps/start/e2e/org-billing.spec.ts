@@ -46,12 +46,21 @@ test('billing renders plans, the usage breakdown and the FAQ without errors', as
   await expect(page.getByText('Events per project')).toBeVisible();
   await expect(page.getByText('Events by name')).toBeVisible();
   // No plan yet, so both widgets fall back to a trailing window.
-  await expect(page.getByText(/^Last 30 days ·/)).toHaveCount(2);
+  await expect(page.getByText(/Last 30 days ·/)).toHaveCount(2);
   for (const project of seed.projects) {
     await expect(page.getByText(project.name, { exact: true })).toBeVisible();
   }
   await expect(page.getByText('screen_view', { exact: true })).toBeVisible();
   await expect(page.getByText('Other', { exact: true })).toBeVisible();
+
+  // Selecting a project narrows the donut to that project's names.
+  const firstProject = seed.projects[0]!;
+  await page.getByRole('button', { name: firstProject.name }).click();
+  await expect(
+    page.getByText(new RegExp(`^${firstProject.name} · Last 30 days`))
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'All projects' }).click();
+  await expect(page.getByText(/^All projects · Last 30 days/)).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
 
   const question = page.getByRole('button', {
