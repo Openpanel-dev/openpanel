@@ -12,11 +12,13 @@ export function stripNullCharacters<T>(value: T): T {
     return value.map(stripNullCharacters) as T;
   }
   if (value !== null && typeof value === 'object') {
-    const cleaned: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(value)) {
-      cleaned[stripNullCharacters(key)] = stripNullCharacters(entry);
-    }
-    return cleaned as T;
+    // fromEntries defines own properties, so a "__proto__" key survives.
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        stripNullCharacters(key),
+        stripNullCharacters(entry),
+      ])
+    ) as T;
   }
   return value;
 }

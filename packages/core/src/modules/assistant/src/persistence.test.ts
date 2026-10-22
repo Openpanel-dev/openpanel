@@ -24,3 +24,13 @@ test('stripNullCharacters keeps a clean value as is', () => {
   const value = { text: 'clean', list: [1, 'two', { three: 3 }] };
   expect(stripNullCharacters(value)).toEqual(value);
 });
+
+test('stripNullCharacters keeps a __proto__ key as a plain entry', () => {
+  const value: unknown = JSON.parse(
+    '{"__proto__": {"polluted": true}, "__pr\\u0000oto__": 1}'
+  );
+  const cleaned = stripNullCharacters(value) as Record<string, unknown>;
+  expect(Object.getPrototypeOf(cleaned)).toBe(Object.prototype);
+  expect(Object.hasOwn(cleaned, '__proto__')).toBe(true);
+  expect(JSON.stringify(cleaned)).toBe('{"__proto__":1}');
+});
