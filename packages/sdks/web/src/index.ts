@@ -212,7 +212,7 @@ export class OpenPanel extends OpenPanelBase {
             const linkUrl = new URL(href);
             const currentHostname = window.location.hostname;
             if (linkUrl.hostname !== currentHostname) {
-              super.track('link_out', {
+              this.track('link_out', {
                 href,
                 text:
                   link.innerText ||
@@ -287,12 +287,14 @@ export class OpenPanel extends OpenPanelBase {
         }
         const name = element.getAttribute('data-track');
         if (name) {
-          super.track(name, properties);
+          this.track(name, properties);
         }
       }
     });
   }
 
+  // The automatic click trackers must call this, not super.track(), or their
+  // events lose the page they happened on.
   track(name: string, properties?: TrackProperties) {
     return super.track(name, { ...properties, __path: this.lastPath });
   }

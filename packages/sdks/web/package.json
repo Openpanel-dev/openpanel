@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -17,7 +18,10 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
+    "@types/jsdom": "30.0.0",
     "@types/node": "catalog:",
+    "bun-types": "1.4.0",
+    "jsdom": "26.1.0",
     "tsup": "7.3.0",
     "typescript": "catalog:"
   }
