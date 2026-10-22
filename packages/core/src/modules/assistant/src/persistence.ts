@@ -63,6 +63,7 @@ export async function saveMessages(
     if (foreign) {
       throw new Error(`Message ${foreign.id} belongs to another conversation`);
     }
+    const title = stripNullCharacters(input.title ?? undefined);
     await tx.conversation.upsert({
       where: { id: input.conversationId },
       create: {
@@ -70,11 +71,11 @@ export async function saveMessages(
         projectId: input.projectId,
         organizationId: input.organizationId,
         userId: input.userId,
-        title: input.title ?? undefined,
+        title,
       },
       update: {
         updatedAt: new Date(),
-        ...(input.title ? { title: input.title } : {}),
+        ...(title ? { title } : {}),
       },
     });
     // Rows saved together must load in this order; the default timestamp can tie.

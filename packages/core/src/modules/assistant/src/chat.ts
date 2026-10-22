@@ -234,7 +234,11 @@ export async function runChat(
       // An aborted turn ends with server tools still running; a client tool
       // is meant to end the stream and wait for the browser.
       const response = failInterruptedToolParts(responseMessage, runsInBrowser);
-      if (response.parts.length > 0) {
+      // An abort right after the model started leaves only a step marker.
+      const hasContent = response.parts.some(
+        (part) => part.type !== 'step-start'
+      );
+      if (hasContent) {
         toSave.push(response);
       }
       if (toSave.length === 0) {
