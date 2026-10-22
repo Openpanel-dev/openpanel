@@ -64,6 +64,17 @@ function describeError(error: unknown): string {
   return 'Something went wrong.';
 }
 
+/** An abort right after the model started leaves only a step marker or an empty text part. */
+function isSubstantive(part: AssistantUIMessage['parts'][number]): boolean {
+  if (part.type === 'step-start') {
+    return false;
+  }
+  if (part.type === 'text' || part.type === 'reasoning') {
+    return part.text.trim().length > 0;
+  }
+  return true;
+}
+
 /** One chat turn: load history, run the model with tools, stream UI parts, persist on finish. */
 export async function runChat(
   deps: ServiceDeps,
@@ -234,11 +245,7 @@ export async function runChat(
       // An aborted turn ends with server tools still running; a client tool
       // is meant to end the stream and wait for the browser.
       const response = failInterruptedToolParts(responseMessage, runsInBrowser);
-      // An abort right after the model started leaves only a step marker.
-      const hasContent = response.parts.some(
-        (part) => part.type !== 'step-start'
-      );
-      if (hasContent) {
+      if (response.parts.some(isSubstantive)) {
         toSave.push(response);
       }
       if (toSave.length === 0) {
