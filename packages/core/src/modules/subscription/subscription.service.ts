@@ -18,11 +18,13 @@ import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+import { formatClickhouseDate } from '../../shared/ch-dates';
 import { getAccessChecks } from '../auth/auth.service';
 import {
-  getOrganizationBillingEventsCountSerieCached,
+  getOrganizationBillingUsageCached,
   getOrganizationById,
   getOrganizationByProjectIdCached,
+  type IOrganizationBillingUsage,
 } from '../organization/organization.service';
 import {
   type ICancellationReason,
@@ -34,7 +36,13 @@ import {
 
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
-const DEFAULT_USAGE_WINDOW_DAYS = 30;
+const TRAILING_USAGE_WINDOW_DAYS = 30;
+
+export type IOrganizationUsage = IOrganizationBillingUsage & {
+  projects: { id: string; name: string }[];
+  /** `billing_period` runs from the current period's start to today. */
+  window: 'billing_period' | 'trailing';
+};
 
 async function requireOrgAdmin(
   userId: string,
@@ -143,40 +151,46 @@ export async function listProducts(deps: ServiceDeps, organizationId: string) {
   });
 }
 
-export async function getUsage(deps: ServiceDeps, organizationId: string) {
+export async function getUsage(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<IOrganizationUsage> {
   const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
-    include: { projects: { select: { id: true } } },
+    include: {
+      projects: {
+        select: { id: true, name: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
   });
-
-  if (
-    organization.hasSubscription &&
-    organization.subscriptionStartsAt &&
-    organization.subscriptionEndsAt
-  ) {
-    // The CURRENT billing period, not the whole subscription term. The usage
-    // counter this chart sits beside resets each period, and
-    // `subscriptionStartsAt` is overwritten with each period start on renewal,
-    // so one interval from it is the period the counter belongs to. A term
-    // running years out — a seeded org, or a long commitment — would otherwise
-    // bucket thousands of days and repeat week numbers along the axis.
-    const periodEnd = addMonths(
-      organization.subscriptionStartsAt,
-      organization.subscriptionInterval === 'year' ? 12 : 1
-    );
-    return getOrganizationBillingEventsCountSerieCached(deps, organization, {
-      startDate: organization.subscriptionStartsAt,
-      endDate:
-        periodEnd < organization.subscriptionEndsAt
-          ? periodEnd
-          : organization.subscriptionEndsAt,
-    });
-  }
-
-  return getOrganizationBillingEventsCountSerieCached(deps, organization, {
-    startDate: subDays(new Date(), DEFAULT_USAGE_WINDOW_DAYS),
-    endDate: new Date(),
+  // The period the usage counter belongs to, so the breakdown adds up to the
+  // number on the plan card. `subscriptionCurrentPeriodStart` is already the
+  // monthly cycle for yearly plans, since limits are per month. Gated on the
+  // product too, as the plan card is: without one there is no counter to match.
+  const today = new Date();
+  const hasPlan =
+    organization.hasSubscription && organization.subscriptionProductId !== null;
+  const periodStart = hasPlan
+    ? organization.subscriptionCurrentPeriodStart
+    : null;
+  const isBillingPeriod = periodStart !== null && periodStart <= today;
+  const from = isBillingPeriod
+    ? periodStart
+    : subDays(today, TRAILING_USAGE_WINDOW_DAYS - 1);
+  // The counter starts at the exact period start, so the first day only
+  // counts from that moment.
+  const usage = await getOrganizationBillingUsageCached(deps, {
+    projectIds: organization.projects.map((project) => project.id),
+    from: formatClickhouseDate(from, true),
+    to: formatClickhouseDate(today, true),
+    since: isBillingPeriod ? formatClickhouseDate(from) : undefined,
   });
+  return {
+    ...usage,
+    projects: organization.projects,
+    window: isBillingPeriod ? 'billing_period' : 'trailing',
+  };
 }
 
 export async function cancelSubscription(
