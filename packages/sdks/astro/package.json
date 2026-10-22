@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/astro",
-  "version": "1.4.1-local",
+  "version": "1.4.2-local",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     "astro-component"
   ],
   "dependencies": {
-    "@openpanel/web": "workspace:1.4.1-local"
+    "@openpanel/web": "workspace:1.4.2-local"
   },
   "devDependencies": {
     "astro": "6.4.2"
