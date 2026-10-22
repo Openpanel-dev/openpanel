@@ -32,7 +32,15 @@ export interface PackageInfo extends PackageJson {
 interface PublishConfig {
   registry: string;
   clear: boolean;
+  // Stage for a maintainer's 2FA approval (`npm stage approve`) instead of
+  // publishing outright; what CI does under a stage-only trusted publisher.
+  stage: boolean;
+  // Prereleases go under their own dist-tag so `latest` keeps pointing at a
+  // stable version.
+  distTag?: string;
 }
+
+const PRERELEASE_DIST_TAG = 'rc';
 
 const workspacePath = (relativePath: string) =>
   resolve(__dirname, '../../', relativePath);
@@ -239,7 +247,7 @@ const buildPackages = (
       continue;
     }
     console.log(`🔨 Building ${dep}`);
-    const cmd = `pnpm build ${versionEnvs.join(' ')}`;
+    const cmd = `bun run build ${versionEnvs.join(' ')}`;
     console.log(`  Running: ${cmd}`);
     execSync(cmd, {
       cwd: workspacePath(packages[dep]!.localPath),
@@ -256,14 +264,17 @@ const publishPackages = (
     execSync('rm -rf ~/.local/share/verdaccio/storage/@openpanel');
   }
 
+  const publishCommand = config.stage ? 'npm stage publish' : 'npm publish';
   for (const dep of dependents) {
-    console.log(`🚀 Publishing ${dep} to ${config.registry}`);
     console.log(
-      `📦 Install: pnpm install ${dep} --registry ${config.registry}`
+      `🚀 ${config.stage ? 'Staging' : 'Publishing'} ${dep} to ${config.registry}`
     );
-    execSync(`npm publish --access=public --registry ${config.registry}`, {
-      cwd: workspacePath(packages[dep]!.localPath),
-    });
+    execSync(
+      `${publishCommand} --access=public --registry ${config.registry}`,
+      {
+        cwd: workspacePath(packages[dep]!.localPath),
+      }
+    );
 
     if (dep === '@openpanel/web') {
       execSync(
@@ -340,6 +351,7 @@ function main() {
     '--skip-git': Boolean,
     '--type': String,
     '--clear': Boolean,
+    '--stage': Boolean,
   });
 
   if (!args['--skip-git']) {
@@ -385,6 +397,10 @@ function main() {
         ? 'https://registry.npmjs.org'
         : 'http://localhost:4873',
       clear: args['--clear'] ?? false,
+      stage: args['--stage'] ?? false,
+      distTag: args['--type']!.startsWith('pre')
+        ? PRERELEASE_DIST_TAG
+        : undefined,
     };
 
     publishPackages(packages, dependents, config);

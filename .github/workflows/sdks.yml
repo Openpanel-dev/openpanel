@@ -1,0 +1,181 @@
+name: SDKs
+
+# The SDKs ship to npm, not in the Docker images, so docker-build.yml ignores
+# packages/sdks entirely. This workflow is their pipeline:
+#   verify   every push that touches an SDK typechecks, tests and builds all
+#            of them through the real release script (dry run, nothing
+#            published), so a broken build is caught before release day.
+#   publish  a manual run on main releases one SDK and its dependents to npm
+#            with tooling/publish, then commits the bumped `-local` versions
+#            and the new op1.js back to main. npm trusts this workflow file
+#            (trusted publishing, no token). `mode: stage` instead parks the
+#            versions for a maintainer's `npm stage approve <stage-id>` + 2FA.
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "packages/sdks/**"
+      - "tooling/publish/**"
+      - ".github/workflows/sdks.yml"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: SDK to release (its dependents are released with it)
+        type: choice
+        required: true
+        options:
+          - "@openpanel/sdk"
+          - "@openpanel/web"
+          - "@openpanel/nextjs"
+          - "@openpanel/astro"
+          - "@openpanel/nuxt"
+          - "@openpanel/express"
+          - "@openpanel/react-native"
+      type:
+        description: Version bump
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      mode:
+        description: Publish directly, or stage for a maintainer's 2FA approval
+        type: choice
+        required: true
+        default: publish
+        options:
+          - publish
+          - stage
+
+permissions:
+  contents: read
+
+# Pushes to one ref supersede each other; releases never get cancelled and
+# run one at a time, in their own group, so a push to main during a release
+# cannot stop it between the npm publish and the version commit.
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && 'sdks-release' || format('sdks-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - name: Typecheck the SDKs
+        run: bun run --filter './packages/sdks/*' typecheck
+
+      - name: Test the SDKs
+        run: bun run --filter @openpanel/web test
+
+      # Releasing @openpanel/sdk takes every other SDK with it, so this one
+      # dry run builds all of them exactly as a release would. The version
+      # edits it makes are thrown away with the runner.
+      - name: Build every SDK through the release script
+        run: bun tooling/publish/publish.ts --name @openpanel/sdk --type patch --skip-git
+
+      - name: Check what each package would publish
+        run: |
+          set -euo pipefail
+          for dir in packages/sdks/*/; do
+            if [ "$(jq -r '.private // false' "$dir/package.json")" = "true" ]; then
+              continue
+            fi
+            echo "::group::$dir"
+            (cd "$dir" && npm pack --dry-run)
+            echo "::endgroup::"
+          done
+
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      # GitHub mints the OIDC token npm exchanges for publish rights.
+      id-token: write
+    steps:
+      - name: Releases come from main only
+        if: github.ref != 'refs/heads/main'
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          echo "::error::Run this workflow on main; $BRANCH is not released."
+          exit 1
+
+      # Full history: the release commit is rebased onto main before the push.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      # Trusted publishing needs npm 11.5; staging needs 11.15. Node's bundled
+      # npm lags both.
+      - name: Update npm
+        run: npm install -g npm@latest && npm --version
+
+      - name: ${{ inputs.mode == 'stage' && 'Stage' || 'Publish' }} ${{ inputs.package }} (${{ inputs.type }})
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BUMP: ${{ inputs.type }}
+          STAGE_FLAG: ${{ inputs.mode == 'stage' && '--stage' || '' }}
+        run: bun tooling/publish/publish.ts --name "$PACKAGE" --type "$BUMP" --publish --npm --skip-git $STAGE_FLAG
+
+      - name: How to approve
+        if: inputs.mode == 'stage'
+        run: |
+          echo "::notice::The versions are staged, not public. A maintainer approves each with 2FA: npm stage list <package>, then npm stage approve <stage-id> (npm 11.15+)."
+
+      # The script leaves the released packages at `<version>-local` and, for
+      # @openpanel/web, the new tracker in apps/public/public. That is the
+      # state main has to carry so the next release bumps from here. A staged
+      # version that is later rejected simply leaves a gap in the numbering.
+      - name: Commit the released versions
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BUMP: ${{ inputs.type }}
+        run: |
+          set -euo pipefail
+          dir="$(bun -e 'const fs = require("fs"); for (const d of fs.readdirSync("packages/sdks")) { const p = `packages/sdks/${d}/package.json`; if (fs.existsSync(p) && require(`./${p}`).name === process.argv[1]) console.log(d) }' "$PACKAGE")"
+          version="$(jq -r '.version | sub("-local$"; "")' "packages/sdks/$dir/package.json")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
+          git commit -m "chore(sdk): release $PACKAGE $version" \
+            -m "Released from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
+          git format-patch -1 --stdout > /tmp/sdk-release.patch
+          echo "RELEASE_TAG=$PACKAGE@$version" >> "$GITHUB_ENV"
+          echo "Released $PACKAGE $version"
+
+      # The packages are on npm by now, so this commit must land whatever
+      # happened on main meanwhile: rebase onto the current tip, never force.
+      - name: Push the release commit to main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git rebase origin/main; then
+            echo "::error::main moved during the release and the version commit conflicts with it. The packages are published; apply the sdk-release-commit artifact to main by hand."
+            exit 1
+          fi
+          git tag "$RELEASE_TAG"
+          git push --atomic origin HEAD:main "refs/tags/$RELEASE_TAG"
+
+      - name: Keep the release commit if it could not be pushed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-release-commit
+          path: /tmp/sdk-release.patch
+          if-no-files-found: ignore

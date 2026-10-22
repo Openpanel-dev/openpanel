@@ -2,6 +2,11 @@
   "name": "@openpanel/nextjs",
   "version": "1.5.1-local",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "directory": "packages/sdks/nextjs"
+  },
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/nextjs.mdx"

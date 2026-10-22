@@ -2,3 +2,5 @@ node_modules
 dist
 public/op1.js
 .env
+test-results
+playwright-report
