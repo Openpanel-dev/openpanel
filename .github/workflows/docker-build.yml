@@ -28,12 +28,73 @@ on:
       - "**/.eslintignore"
       - "**/.prettierignore"
 
+# A newer push to a branch supersedes the run still in flight. Main is left
+# out: its runs must overlap so `settle` below can debounce them.
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && github.run_id || format('build-{0}', github.ref) }}
+  cancel-in-progress: true
+
 env:
   repo_owner: "openpanel-dev"
 
+# Shape of a run: `check`, `test` and `build` start together; `smoke` boots
+# what `build` produced. On a branch that is the whole run. On main, `merge`
+# tags the images once everything is green and `version` turns the run into a
+# release build.
 jobs:
-  lint-and-test:
+  check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      # Formatting and import order only. `bun run lint` (the full rule set) still reports errors that need a human
+      # decision, so it is not a gate yet; this half is green and catches drift today.
+      - name: Check formatting
+        run: bun run lint:format
+
+      - name: Run TypeScript checks
+        run: bun run typecheck
+
+      # dependency-cruiser keeps the dissolved validation/constants/common/json packages from growing back. Run standalone,
+      # not via `bun run check`, so a lint error cannot mask a dependency-boundary break.
+      - name: Check dependency boundaries
+        run: bun run check:deps
+
+      # The self-hosting CLI keeps its own lockfile (it ships as a binary, not
+      # as a workspace package), so it installs and tests on its own.
+      - name: Test the self-hosting CLI
+        working-directory: self-hosting/cli
+        run: |
+          bun install --frozen-lockfile
+          bun test
+
+  # packages/core is 200+ files run one process each (`--isolate`), which is
+  # most of the suite's time, so it is split across runners with `--shard`;
+  # every other workspace fits in one job. Each job has its own databases.
+  test:
+    name: test (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: core 1/3
+            directory: packages/core
+            command: bun run test --shard=1/3
+          - suite: core 2/3
+            directory: packages/core
+            command: bun run test --shard=2/3
+          - suite: core 3/3
+            directory: packages/core
+            command: bun run test --shard=3/3
+          - suite: everything else
+            directory: .
+            command: bun run test:rest
+            migrate: true
     services:
       postgres:
         image: postgres:16-alpine
@@ -73,56 +134,16 @@ jobs:
           --health-timeout 3s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          # .nvmrc is the source of truth; keep ARG NODE_VERSION in
-          # apps/*/Dockerfile in sync with it. Must stay >=22.19.0:
-          # undici@8 fails at import on older Node with
-          # "webidl.util.markAsUncloneable is not a function".
-          node-version-file: ".nvmrc"
-
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          # .bun-version is the pin's home and apps/api/src/config/bun-version.test.ts asserts an exact match, so read it
-          # rather than keeping a second copy here.
-          bun-version-file: ".bun-version"
-
-      - name: Setup bun cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Codegen
-        run: bun run codegen
-
-      # Formatting and import order only. `bun run lint` (the full rule set) still reports errors that need a human
-      # decision, so it is not a gate yet; this half is green and catches drift today.
-      - name: Check formatting
-        run: bun run lint:format
-
-      - name: Run TypeScript checks
-        run: bun run typecheck
-
-      # dependency-cruiser keeps the dissolved validation/constants/common/json packages from growing back. Run standalone,
-      # not via `bun run check`, so a lint error cannot mask a dependency-boundary break.
-      - name: Check dependency boundaries
-        run: bun run check:deps
+      - uses: ./.github/actions/setup
 
       # Exercises the real migration runners, which the suite does not: tests apply
       # the flat test/clickhouse-schema.sql, so `migrate:deploy` is the only place
       # Prisma's migrate and the ClickHouse code-migrations actually run. Uses its
       # own databases, never the suite's `openpanel_test`.
       - name: Migrate database
+        if: matrix.migrate
         run: bun run migrate:deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:23432/postgres?schema=public
@@ -134,15 +155,8 @@ jobs:
       # creates and migrates the isolated `openpanel_test` databases (test/bun-preload.ts, packages/core/test/preload.ts).
       # Env set here would be silently overwritten.
       - name: Run tests
-        run: bun run test
-
-      # The self-hosting CLI keeps its own lockfile (it ships as a binary, not
-      # as a workspace package), so it installs and tests on its own.
-      - name: Test the self-hosting CLI
-        working-directory: self-hosting/cli
-        run: |
-          bun install --frozen-lockfile
-          bun test
+        working-directory: ${{ matrix.directory }}
+        run: ${{ matrix.command }}
 
   # Debounce for main: a push within a minute of the previous one cancels its
   # wait, so a burst of merges is built and versioned once, as its newest
@@ -150,6 +164,7 @@ jobs:
   settle:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     concurrency:
       group: main-settle
       cancel-in-progress: true
@@ -158,22 +173,30 @@ jobs:
         if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[release now]')
         run: sleep 60
 
-  build-api:
+  # Pushes by digest only; nothing gets a pullable tag until `merge`. That is
+  # why it can start alongside `check` and `test` instead of after them.
+  # Branches build amd64 alone, which is all `smoke` boots; main builds both
+  # platforms because its images are the ones that ship.
+  build:
     permissions:
       packages: write
       contents: read
-    needs: [lint-and-test, settle]
+    needs: [settle]
     # settle is skipped on other branches; a cancelled settle (debounced) stops the run.
-    if: ${{ !cancelled() && needs.lint-and-test.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.settle.result) }}
+    if: ${{ !cancelled() && contains(fromJSON('["success","skipped"]'), needs.settle.result) }}
     strategy:
       fail-fast: false
       matrix:
+        app: [api, dashboard]
+        platform: ${{ github.ref == 'refs/heads/main' && fromJSON('["linux/amd64", "linux/arm64"]') || fromJSON('["linux/amd64"]') }}
         include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
+          - app: api
+            dockerfile: apps/api/Dockerfile
+            build_args: DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+          - app: dashboard
+            dockerfile: apps/start/Dockerfile
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    timeout-minutes: 30
     steps:
       - name: Prepare platform pair
         run: |
@@ -181,30 +204,33 @@ jobs:
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The layer cache lives in the registry, next to the image, not in the
+      # Actions cache: the install layers alone are ~1 GB per build, which
+      # kept the 10 GB Actions cache full and evicting, and exporting them
+      # there took longer than the build itself.
       - name: Build and push by digest
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: apps/api/Dockerfile
+          file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=api-${{ env.PLATFORM_PAIR }}
-          cache-to: type=gha,mode=max,scope=api-${{ env.PLATFORM_PAIR }}
-          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/api,push-by-digest=true,name-canonical=true,push=true
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+          cache-from: type=registry,ref=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:buildcache-${{ env.PLATFORM_PAIR }}
+          cache-to: type=registry,ref=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:buildcache-${{ env.PLATFORM_PAIR }},mode=max,image-manifest=true,oci-mediatypes=true
+          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/${{ matrix.app }},push-by-digest=true,name-canonical=true,push=true
+          build-args: ${{ matrix.build_args }}
 
       - name: Export digest
         run: |
@@ -213,38 +239,39 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: digests-api-${{ env.PLATFORM_PAIR }}
+          name: digests-${{ matrix.app }}-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
 
   # Boots the images this run produced and asserts they actually serve traffic.
-  # Gates every merge-* job below, so a broken image never gets a pullable tag.
+  # Gates `merge`, so a broken image never gets a pullable tag.
   smoke:
     permissions:
       packages: read
       contents: read
-    needs: [build-api, build-dashboard]
+    needs: [build]
     # Explicit, because a skipped settle earlier in the chain would otherwise skip this.
-    if: ${{ !cancelled() && needs.build-api.result == 'success' && needs.build-dashboard.result == 'success' }}
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # build-* pushed by digest but has not tagged anything yet, so pull the
+      # build pushed by digest but has not tagged anything yet, so pull the
       # exact amd64 digests this run produced.
       - name: Download amd64 digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/smoke-digests
           pattern: digests-*-linux-amd64
@@ -271,126 +298,25 @@ jobs:
         if: always()
         run: docker compose -f .github/smoke/docker-compose.yml down -v || true
 
-  merge-api:
+  # Main only: a branch's images are smoke-tested and then left untagged.
+  merge:
     permissions:
       packages: write
       contents: read
-    needs: [build-api, smoke]
-    if: ${{ !cancelled() && needs.build-api.result == 'success' && needs.smoke.result == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download digests
-        uses: actions/download-artifact@v4
-        with:
-          path: /tmp/digests
-          pattern: digests-api-*
-          merge-multiple: true
-
-      - name: Generate tags
-        id: tags
-        run: |
-          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create manifest list and push
-        working-directory: /tmp/digests
-        run: |
-          docker buildx imagetools create \
-            -t ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
-            $(printf 'ghcr.io/${{ env.repo_owner }}/api@sha256:%s ' *)
-
-  build-dashboard:
-    permissions:
-      packages: write
-      contents: read
-    needs: [lint-and-test, settle]
-    if: ${{ !cancelled() && needs.lint-and-test.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.settle.result) }}
+    needs: [check, test, build, smoke]
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && needs.check.result == 'success' && needs.test.result == 'success' && needs.smoke.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Prepare platform pair
-        run: |
-          platform=${{ matrix.platform }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/start/Dockerfile
-          platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=dashboard-${{ env.PLATFORM_PAIR }}
-          cache-to: type=gha,mode=max,scope=dashboard-${{ env.PLATFORM_PAIR }}
-          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/dashboard,push-by-digest=true,name-canonical=true,push=true
-          build-args: |
-            NO_CLOUDFLARE=1
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-dashboard-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
-  merge-dashboard:
-    permissions:
-      packages: write
-      contents: read
-    needs: [build-dashboard, smoke]
-    if: ${{ !cancelled() && needs.build-dashboard.result == 'success' && needs.smoke.result == 'success' }}
+        app: [api, dashboard]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
-          pattern: digests-dashboard-*
+          pattern: digests-${{ matrix.app }}-*
           merge-multiple: true
 
       - name: Generate tags
@@ -402,10 +328,10 @@ jobs:
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -415,16 +341,17 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
-            $(printf 'ghcr.io/${{ env.repo_owner }}/dashboard@sha256:%s ' *)
+            -t ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
+            $(printf 'ghcr.io/${{ env.repo_owner }}/${{ matrix.app }}@sha256:%s ' *)
 
   # Every build on main gets the next version: the git tag vX.Y.Z and the image
   # tags X.Y.Z, X.Y and X, taken from this run's own digests. One run at a time,
   # so two versions are never computed from the same last tag.
   version:
-    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && needs.merge-api.result == 'success' && needs.merge-dashboard.result == 'success' }}
-    needs: [merge-api, merge-dashboard]
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && needs.merge.result == 'success' }}
+    needs: [merge]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     concurrency:
       group: main-version
       cancel-in-progress: false
@@ -432,7 +359,7 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -449,15 +376,15 @@ jobs:
 
       - name: Download digests
         if: steps.next.outputs.skip != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digests-*
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
         if: steps.next.outputs.skip != 'true'
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         if: steps.next.outputs.skip != 'true'
         with:
           registry: ghcr.io
