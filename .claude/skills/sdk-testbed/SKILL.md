@@ -64,14 +64,16 @@ directly. Filter on `origin`, which is the testbed URL, so seeded and other
 traffic stay out of the way:
 
 ```bash
-TESTBED_PORT=$((WEB_PORT + 9)) VITE_OPENPANEL_API_URL=$API_URL_SSR \
+# Same default as playwright.config.ts: WEB_PORT + 9 in a worktree, 3100 elsewhere.
+port=${TESTBED_PORT:-$(( ${WEB_PORT:-3091} + 9 ))}
+TESTBED_PORT=$port VITE_OPENPANEL_API_URL=${API_URL_SSR:-http://localhost:3333} \
 VITE_OPENPANEL_CLIENT_ID=<website clientId from .seed.json> \
 bun run --filter @openpanel/testbed dev > /tmp/testbed.log 2>&1 &
 
 curl -s "${CLICKHOUSE_URL%/*}/?database=${CLICKHOUSE_URL##*/}" --data-binary "
   SELECT name, path, properties, session_id, toString(created_at) AS at
   FROM events
-  WHERE origin = 'http://localhost:$((WEB_PORT + 9))'
+  WHERE origin = 'http://localhost:$port'
   ORDER BY created_at DESC LIMIT 20
   FORMAT PrettyCompactMonoBlock"
 ```

@@ -57,6 +57,19 @@ afterEach(() => {
 });
 
 describe('automatic click events', () => {
+  test('fall back to the browser location when no screen view was tracked', () => {
+    createSdk({ trackAttributes: true });
+
+    const button = dom.window.document.createElement('button');
+    button.setAttribute('data-track', 'cta');
+    dom.window.document.body.appendChild(button);
+    click(button);
+
+    const [cta] = sentTrackEvents();
+    expect(cta?.name).toBe('cta');
+    expect(cta?.properties).toMatchObject({ __path: PAGE_URL });
+  });
+
   test('outgoing link clicks carry the current page', () => {
     const sdk = createSdk({ trackOutgoingLinks: true });
     sdk.screenView(PAGE_URL);

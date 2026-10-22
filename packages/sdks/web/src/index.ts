@@ -296,7 +296,16 @@ export class OpenPanel extends OpenPanelBase {
   // The automatic click trackers must call this, not super.track(), or their
   // events lose the page they happened on.
   track(name: string, properties?: TrackProperties) {
-    return super.track(name, { ...properties, __path: this.lastPath });
+    return super.track(name, { ...properties, __path: this.currentPath() });
+  }
+
+  // Without screen view tracking nothing sets lastPath, so fall back to the
+  // page the browser is on.
+  private currentPath() {
+    if (this.lastPath) {
+      return this.lastPath;
+    }
+    return this.isServer() ? '' : window.location.href;
   }
 
   screenView(properties?: TrackProperties): void;

@@ -44,8 +44,11 @@ on:
 permissions:
   contents: read
 
+# Pushes to one ref supersede each other; releases never get cancelled and
+# run one at a time, in their own group, so a push to main during a release
+# cannot stop it between the npm publish and the version commit.
 concurrency:
-  group: sdks-${{ github.ref }}
+  group: ${{ github.event_name == 'workflow_dispatch' && 'sdks-release' || format('sdks-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
@@ -90,17 +93,19 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
-    concurrency:
-      group: sdks-publish
-      cancel-in-progress: false
     steps:
       - name: Releases come from main only
         if: github.ref != 'refs/heads/main'
+        env:
+          BRANCH: ${{ github.ref_name }}
         run: |
-          echo "::error::Run this workflow on main; ${{ github.ref_name }} is not released."
+          echo "::error::Run this workflow on main; $BRANCH is not released."
           exit 1
 
+      # Full history: the release commit is rebased onto main before the push.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: ./.github/actions/setup
 
@@ -115,21 +120,48 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
 
       - name: Publish ${{ inputs.package }} (${{ inputs.type }})
-        run: bun tooling/publish/publish.ts --name "${{ inputs.package }}" --type "${{ inputs.type }}" --publish --npm --skip-git
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BUMP: ${{ inputs.type }}
+        run: bun tooling/publish/publish.ts --name "$PACKAGE" --type "$BUMP" --publish --npm --skip-git
 
       # The script leaves the released packages at `<version>-local` and, for
       # @openpanel/web, the new tracker in apps/public/public. That is the
       # state main has to carry so the next release bumps from here.
       - name: Commit the released versions
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BUMP: ${{ inputs.type }}
         run: |
           set -euo pipefail
-          dir="$(bun -e 'const n=process.argv[1]; for (const d of require("fs").readdirSync("packages/sdks")) { const p=`packages/sdks/${d}/package.json`; if (require("fs").existsSync(p) && require(`./${p}`).name===n) console.log(d) }' "${{ inputs.package }}")"
+          dir="$(bun -e 'const fs = require("fs"); for (const d of fs.readdirSync("packages/sdks")) { const p = `packages/sdks/${d}/package.json`; if (fs.existsSync(p) && require(`./${p}`).name === process.argv[1]) console.log(d) }' "$PACKAGE")"
           version="$(jq -r '.version | sub("-local$"; "")' "packages/sdks/$dir/package.json")"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
-          git commit -m "chore(sdk): release ${{ inputs.package }} $version" \
-            -m "Published from the SDKs workflow (${{ inputs.type }} bump). Dependent SDKs were released with it; see the package versions in this commit."
-          git tag "${{ inputs.package }}@$version"
-          git push origin HEAD:main --tags
-          echo "Released ${{ inputs.package }} $version"
+          git commit -m "chore(sdk): release $PACKAGE $version" \
+            -m "Published from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
+          git format-patch -1 --stdout > /tmp/sdk-release.patch
+          echo "RELEASE_TAG=$PACKAGE@$version" >> "$GITHUB_ENV"
+          echo "Released $PACKAGE $version"
+
+      # The packages are on npm by now, so this commit must land whatever
+      # happened on main meanwhile: rebase onto the current tip, never force.
+      - name: Push the release commit to main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git rebase origin/main; then
+            echo "::error::main moved during the release and the version commit conflicts with it. The packages are published; apply the sdk-release-commit artifact to main by hand."
+            exit 1
+          fi
+          git tag "$RELEASE_TAG"
+          git push origin HEAD:main "refs/tags/$RELEASE_TAG"
+
+      - name: Keep the release commit if it could not be pushed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-release-commit
+          path: /tmp/sdk-release.patch
+          if-no-files-found: ignore
