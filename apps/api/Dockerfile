@@ -21,14 +21,26 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# MANIFESTS — only what `bun install` reads: every `package.json` (a workspace install has to see every member's),
+# the lockfile, `bunfig.toml` and the patches. Cut out of the whole tree with `find` rather than COPYed from a list,
+# because Docker's COPY cannot glob a directory level and a hand-maintained list failed SILENTLY when it drifted (a
+# missing manifest surfaced as a runtime "Cannot find module").
+#
+# The stage itself re-runs on every build, but its output is byte-identical until a manifest changes, so the install
+# layer in `toolchain` stays cached across source-only changes instead of re-downloading the workspace each build.
+FROM base AS manifests
+
+WORKDIR /app
+
+COPY . .
+
+RUN find . \( -type f -o -type l \) ! -name package.json ! -name bun.lock ! -name bunfig.toml ! -path './patches/*' -delete && \
+    find . -type d -empty -delete
+
 # TOOLCHAIN — the full workspace, installed once WITH devDependencies, because codegen needs them (core's `tar` for
 # scripts/download-geo.ts, db's `prisma` CLI for schema generation). Neither this stage nor `build` ships.
 #
-# The whole tree is copied rather than a list of manifests: a workspace install has to see every member's
-# `package.json`, Docker's COPY cannot glob a directory level, and a hand-maintained list failed SILENTLY when it
-# drifted (a missing manifest surfaced as a runtime "Cannot find module").
-#
-# `bunfig.toml` is copied with the tree on purpose: it carries `[install] ignoreScripts = true` and
+# `bunfig.toml` rides along with the manifests on purpose: it carries `[install] ignoreScripts = true` and
 # `linker = "isolated"`. Both install lines name `--linker=isolated` too, so the layout is a property of the command.
 #
 # No python3/make/g++: with `ignoreScripts` nothing compiles at install time, and the native addons this image needs
@@ -37,9 +49,11 @@ FROM base AS toolchain
 
 WORKDIR /app
 
-COPY . .
+COPY --from=manifests /app ./
 
 RUN bun install --frozen-lockfile --linker=isolated
+
+COPY . .
 
 # BUILD — the Prisma client and core's geo/ASN data. There is no JS build step: the only output is generated
 # *source* under packages/, which `prod-deps` inherits.
