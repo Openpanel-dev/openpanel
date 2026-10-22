@@ -6,13 +6,13 @@
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
   "engines": {
-    "bun": ">=1.4.0",
-    "node": ">=24.19.0"
+    "bun": ">=1.4.4",
+    "node": ">=24.22.1"
   },
   "devEngines": {
     "packageManager": {
       "name": "bun",
-      "version": ">=1.4.0",
+      "version": ">=1.4.4",
       "onFail": "warn"
     }
   },
