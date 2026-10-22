@@ -23,6 +23,25 @@ describe('InputWithLabel', () => {
     expect(message?.id).not.toMatch(/\s/);
   });
 
+  test('keeps a caller-supplied id and description and adds the message to them', () => {
+    const { container } = render(
+      <InputWithLabel
+        aria-describedby="outside-note"
+        error="Required"
+        id="client-name"
+        label="Client name"
+      />
+    );
+    const input = container.querySelector('input');
+    expect(input?.id).toBe('client-name');
+    expect(container.querySelector('label')?.getAttribute('for')).toBe(
+      'client-name'
+    );
+    expect(input?.getAttribute('aria-describedby')).toBe(
+      'outside-note client-name-message'
+    );
+  });
+
   test('omits aria-describedby when there is nothing to describe', () => {
     const { container } = render(<InputWithLabel label="Client name" />);
     expect(

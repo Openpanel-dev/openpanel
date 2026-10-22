@@ -40,7 +40,10 @@ export interface ComboboxProps<T> {
   portal?: boolean;
   error?: string;
   disabled?: boolean;
-  /** Lets a label and a hint point at the trigger. */
+  /**
+   * Let a label and a hint point at the built-in trigger. A custom trigger
+   * passed as `children` carries its own id and description.
+   */
   id?: string;
   'aria-describedby'?: string;
 }

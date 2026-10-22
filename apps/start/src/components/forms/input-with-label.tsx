@@ -66,7 +66,13 @@ export const WithLabel = ({
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
   ({ className, label, hint, info, error, ...inputProps }, ref) => {
     const hasMessage = Boolean(error ?? hint);
-    const fieldId = useId();
+    const generatedId = useId();
+    // A caller's own id and description are kept; the message is added to them.
+    const fieldId = inputProps.id ?? generatedId;
+    const describedBy =
+      [inputProps['aria-describedby'], hasMessage && fieldMessageId(fieldId)]
+        .filter(Boolean)
+        .join(' ') || undefined;
     return (
       <WithLabel
         className={className}
@@ -77,11 +83,11 @@ export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
         label={label}
       >
         <Input
-          aria-describedby={hasMessage ? fieldMessageId(fieldId) : undefined}
           error={error}
-          id={fieldId}
           ref={ref}
           {...inputProps}
+          aria-describedby={describedBy}
+          id={fieldId}
         />
       </WithLabel>
     );
