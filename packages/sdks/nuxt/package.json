@@ -19,9 +19,9 @@
     "docPath": "apps/public/content/docs/(tracking)/sdks/nuxt.mdx"
   },
   "scripts": {
-    "build": "npx nuxt-module-build build",
-    "dev:prepare": "npx nuxt-module-build build --stub",
-    "prepack": "npx nuxt-module-build build",
+    "build": "nuxt-module-build build",
+    "dev:prepare": "nuxt-module-build build --stub",
+    "prepack": "nuxt-module-build build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -156,7 +156,7 @@ jobs:
             exit 1
           fi
           git tag "$RELEASE_TAG"
-          git push origin HEAD:main "refs/tags/$RELEASE_TAG"
+          git push --atomic origin HEAD:main "refs/tags/$RELEASE_TAG"
 
       - name: Keep the release commit if it could not be pushed
         if: failure()
