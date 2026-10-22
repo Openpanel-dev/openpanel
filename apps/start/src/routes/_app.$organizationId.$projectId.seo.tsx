@@ -646,6 +646,7 @@ function GscTable({
               className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder ?? 'Search'}
+              size="sm"
               type="search"
               value={searchValue ?? ''}
             />

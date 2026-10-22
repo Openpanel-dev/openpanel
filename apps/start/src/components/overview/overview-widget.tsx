@@ -276,6 +276,7 @@ export function WidgetHeadSearchable<T extends string>({
             className="rounded-none border-0 border-y bg-transparent pl-9 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
+            size="sm"
             type="search"
             value={searchValue ?? ''}
           />

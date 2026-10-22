@@ -52,6 +52,7 @@ const EditReportName = ({ name }: Props) => {
             }
           }}
           ref={inputRef}
+          size="sm"
           type="text"
           value={newName}
         />

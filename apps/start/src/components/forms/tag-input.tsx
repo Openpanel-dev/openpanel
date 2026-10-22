@@ -5,6 +5,7 @@ import { XIcon } from 'lucide-react';
 import type { ElementRef } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { fieldSurface } from '@/components/ui/input';
 import { cn } from '@/utils/cn';
 
 interface Props {
@@ -101,8 +102,9 @@ const TagInput = ({
   return (
     <div
       className={cn(
-        'inline-flex w-full flex-wrap items-center gap-2 rounded-md border border-input bg-card p-1 px-3 ring-offset-background has-[input:focus]:ring-2 has-[input:focus]:ring-ring has-[input:focus]:ring-offset-1',
-        !!error && 'border-destructive'
+        fieldSurface,
+        'inline-flex min-h-9 w-full flex-wrap items-center gap-2 px-3 py-1 has-[input:focus]:ring-2 has-[input:focus]:ring-ring',
+        !!error && 'ring-1 ring-destructive'
       )}
       ref={scope}
     >
@@ -112,7 +114,7 @@ const TagInput = ({
         return (
           <span
             className={cn(
-              'inline-flex items-center gap-2 rounded bg-def-200 px-2 py-1',
+              'inline-flex items-center gap-2 rounded bg-card px-2 py-1 shadow-xs',
               isMarkedForDeletion &&
                 i === value.length - 1 &&
                 'bg-destructive/15 ring-2 ring-destructive ring-offset-2 ring-offset-card',
@@ -136,7 +138,7 @@ const TagInput = ({
       })}
 
       <input
-        className="min-w-20 flex-1 bg-card py-1 focus-visible:outline-none"
+        className="min-w-20 flex-1 bg-transparent py-1 focus-visible:outline-none"
         id={id}
         onBlur={handleBlur}
         onChange={(e) => setInputValue(e.target.value)}

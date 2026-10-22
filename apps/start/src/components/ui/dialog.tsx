@@ -43,12 +43,20 @@ function DialogOverlay({
   );
 }
 
+/**
+ * Two layers: a tinted shell that carries the footer, and an inset card for
+ * the content. The footer stays in the markup where each modal renders it
+ * (often inside a form so submit buttons keep working) and is pinned to the
+ * bottom of the shell, which reserves the footer's height while one exists.
+ */
 function DialogContent({
   className,
+  bodyClassName,
   children,
   showCloseButton = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  bodyClassName?: string;
   showCloseButton?: boolean;
 }) {
   // Not using DialogPortal because it's breaking useRef's for some reason
@@ -57,20 +65,29 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'max-h-screen overflow-y-auto overflow-x-hidden', // Ensure the dialog is scrollable if it exceeds the screen height
-          'mt-auto', // Add margin-top: auto for all screen sizes
+          'fixed top-[50%] left-[50%] z-50 flex w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col sm:max-w-lg',
+          'max-h-[calc(100vh-2rem)] md:max-h-[90vh]',
           'transition-none focus:outline-none focus:ring-0',
-          'border bg-card shadow-2xl sm:rounded-xl md:max-h-[90vh]',
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-card p-6 shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg [&>*]:min-w-0',
+          'rounded-2xl border bg-def-100 p-1.5 shadow-2xl [--dialog-footer-height:3.5rem]',
+          'has-[[data-slot=dialog-footer]]:pb-[calc(var(--dialog-footer-height)_+_--spacing(1.5))]',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in',
           className
         )}
         data-slot="dialog-content"
         {...props}
       >
-        {children}
+        <div
+          className={cn(
+            'grid min-h-0 flex-1 gap-4 overflow-y-auto overflow-x-hidden rounded-[10px] border bg-card p-6 [&>*]:min-w-0',
+            bodyClassName
+          )}
+          data-slot="dialog-body"
+        >
+          {children}
+        </div>
         {showCloseButton && (
           <DialogPrimitive.Close
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+            className="absolute top-5 right-5 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
             data-slot="dialog-close"
           >
             <XIcon />
@@ -96,7 +113,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        '-mx-6 mt-2 -mb-6 flex flex-col-reverse gap-2 rounded-b-xl border-border border-t bg-def-100 px-6 py-4 sm:flex-row sm:justify-end',
+        'absolute inset-x-0 bottom-0 flex h-(--dialog-footer-height) items-center justify-end gap-2 px-3',
         className
       )}
       data-slot="dialog-footer"

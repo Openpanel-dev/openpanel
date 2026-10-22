@@ -8,7 +8,7 @@ import {
   ServerIcon,
   SmartphoneIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import {
   Controller,
   type SubmitHandler,
@@ -18,7 +18,11 @@ import {
 import { z } from 'zod';
 import AnimateHeight from '@/components/animate-height';
 import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import {
+  fieldMessageId,
+  InputWithLabel,
+  WithLabel,
+} from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
@@ -65,6 +69,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
+  const workspaceId = useId();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -207,6 +212,7 @@ function Component() {
                       placeholder="Select timezone"
                       searchable
                       value={field.value}
+                      variant="input"
                     />
                   </WithLabel>
                 )}
@@ -219,11 +225,21 @@ function Component() {
                 name="organizationId"
                 render={({ field, formState }) => {
                   return (
-                    <WithLabel label="Workspace">
+                    <WithLabel
+                      error={formState.errors.organizationId?.message}
+                      id={workspaceId}
+                      label="Workspace"
+                    >
                       <Combobox
+                        aria-describedby={
+                          formState.errors.organizationId
+                            ? fieldMessageId(workspaceId)
+                            : undefined
+                        }
                         className="w-full"
                         error={formState.errors.organizationId?.message}
                         icon={BuildingIcon}
+                        id={workspaceId}
                         items={
                           organizations
                             .filter((item) => item.id)
@@ -235,6 +251,7 @@ function Component() {
                         onChange={field.onChange}
                         placeholder="Select workspace"
                         value={field.value}
+                        variant="input"
                       />
                     </WithLabel>
                   );

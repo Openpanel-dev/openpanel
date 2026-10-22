@@ -281,6 +281,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
               setPage(0);
             }}
             placeholder="Search pages"
+            size="sm"
             type="search"
             value={search}
           />

@@ -5,6 +5,7 @@ import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -164,26 +165,20 @@ export default function DateTimePicker({
             <ScrollBar orientation="vertical" />
           </ScrollArea>
         </div>
-
-        <div className="flex gap-3 pt-2">
-          <Button
-            className="flex-1"
-            onClick={() => popModal()}
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={() => {
-              popModal();
-              onChange(selectedDate);
-            }}
-          >
-            Confirm Selection
-          </Button>
-        </div>
       </div>
+      <DialogFooter>
+        <Button onClick={() => popModal()} variant="outline">
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            popModal();
+            onChange(selectedDate);
+          }}
+        >
+          Confirm selection
+        </Button>
+      </DialogFooter>
     </ModalContent>
   );
 }

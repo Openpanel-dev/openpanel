@@ -117,7 +117,10 @@ export function OverviewListModal<T extends OverviewListItem>({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0 sm:max-w-2xl">
+    <ModalContent
+      bodyClassName="flex flex-col gap-0 p-0"
+      className="sm:max-w-2xl"
+    >
       <div className="flex-shrink-0 border-border border-b">
         <div className="p-6 pb-4">
           <DialogTitle className="mb-4 font-semibold text-lg">

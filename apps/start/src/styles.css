@@ -248,6 +248,8 @@ body {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(from var(--foreground) l c h / 0.18) transparent;
   }
   body {
     @apply bg-background text-foreground;
@@ -448,6 +450,24 @@ button {
 
 .animate-ping-slow {
   animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Realtime feeds: a new row pushes the list down as it grows in, no measuring needed */
+@keyframes live-feed-in {
+  from {
+    margin-top: calc(-1 * (1.75rem + 0.25rem));
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    margin-top: 0;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-live-feed-in {
+  animation: live-feed-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .scrollarea {

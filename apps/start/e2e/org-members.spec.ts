@@ -191,11 +191,12 @@ test('invite validation: bad email, existing member, duplicate', async ({
   await gotoHydrated(page, `/${seed.organizationId}/members/invitations`);
   const sheet = await openInviteSheet(page);
 
+  const emailError = sheet.locator('[data-slot="field-error"]');
   await sendInvite(sheet);
-  await expect(sheet.getByText('Issues')).toBeVisible();
+  await expect(emailError).toBeVisible();
   await sheet.getByLabel('Email').fill('not-an-email');
   await sendInvite(sheet);
-  await expect(sheet.getByText('Issues')).toBeVisible();
+  await expect(emailError).toBeVisible();
 
   await sheet.getByLabel('Email').fill(seed.user.email.toUpperCase());
   await sendInvite(sheet);

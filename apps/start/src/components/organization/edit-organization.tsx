@@ -79,6 +79,7 @@ export default function EditOrganization({
                   onChange={field.onChange}
                   placeholder="Select timezone"
                   value={field.value}
+                  variant="input"
                 />
               </WithLabel>
             )}

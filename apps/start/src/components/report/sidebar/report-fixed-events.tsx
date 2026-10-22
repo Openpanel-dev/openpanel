@@ -13,6 +13,7 @@ import {
 import type { ReportEventMoreProps } from './ReportEventMore';
 import { ReportEventMore } from './ReportEventMore';
 import { ReportSeriesItem } from './ReportSeriesItem';
+import { BuilderList, SidebarSection } from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
@@ -74,9 +75,8 @@ export function ReportFixedEvents({
     chartType !== 'sankey';
 
   return (
-    <div>
-      <h3 className="mb-2 font-medium">Metrics</h3>
-      <div className="flex flex-col gap-4">
+    <SidebarSection title="Metrics">
+      <BuilderList>
         {Array.from({ length: numberOfEvents }, (_, index) => ({
           slotId: `fixed-event-slot-${index}`,
           index,
@@ -86,8 +86,8 @@ export function ReportFixedEvents({
           // If no event exists at this index, render an empty slot
           if (!event) {
             return (
-              <div className="rounded-lg border bg-def-100" key={slotId}>
-                <div className="flex items-center gap-2 p-2">
+              <div key={slotId}>
+                <div className="flex items-center gap-2 px-3 py-2.5">
                   <ColorSquare>
                     <span className="block">{alphabetIds[index]}</span>
                   </ColorSquare>
@@ -125,6 +125,7 @@ export function ReportFixedEvents({
                     placeholder="Select event"
                     searchable
                     value={''}
+                    variant="input"
                   />
                 </div>
               </div>
@@ -138,7 +139,6 @@ export function ReportFixedEvents({
 
           return (
             <ReportSeriesItem
-              className="rounded-lg border bg-def-100"
               event={event}
               index={index}
               isSelectManyEvents={isSelectManyEvents}
@@ -191,9 +191,11 @@ export function ReportFixedEvents({
                         }
                       ).name) as any
                 }
+                variant="input"
               />
               {showDisplayNameInput && (
                 <Input
+                  className="w-36 shrink-0"
                   defaultValue={
                     (event as IChartEventItem & { type: 'event' }).displayName
                   }
@@ -216,7 +218,7 @@ export function ReportFixedEvents({
             </ReportSeriesItem>
           );
         })}
-      </div>
-    </div>
+      </BuilderList>
+    </SidebarSection>
   );
 }

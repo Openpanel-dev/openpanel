@@ -126,6 +126,7 @@ export function GscCannibalization({
               setPage(0);
             }}
             placeholder="Search keywords"
+            size="sm"
             type="search"
             value={search}
           />

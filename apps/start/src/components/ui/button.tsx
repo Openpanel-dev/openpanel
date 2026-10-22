@@ -19,19 +19,21 @@ const buttonVariants = cva(
         outline:
           'border border-input bg-card hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-def-100 text-secondary-foreground hover:bg-def-100/80',
+        input:
+          'rounded-lg bg-def-200 font-normal text-foreground hover:translate-y-0 hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 rounded-md px-2',
-        lg: 'h-11 rounded-md px-8',
+        default: 'h-9 px-3.5',
+        sm: 'h-8 rounded-md px-2.5',
+        lg: 'h-10 rounded-md px-6',
         icon: 'h-8 w-8',
       },
     },
     defaultVariants: {
       variant: 'default',
-      size: 'sm',
+      size: 'default',
     },
   }
 );
@@ -59,13 +61,13 @@ function fixHeight({
   if (autoHeight) {
     switch (size) {
       case 'lg':
-        return 'h-auto min-h-11 py-2';
+        return 'h-auto min-h-10 py-2';
       case 'icon':
         return 'h-auto min-h-8 py-1';
-      case 'default':
-        return 'h-auto min-h-10 py-2';
-      default:
+      case 'sm':
         return 'h-auto min-h-8 py-1';
+      default:
+        return 'h-auto min-h-9 py-1.5';
     }
   }
   return '';
