@@ -9,6 +9,7 @@ import { Progress } from '../ui/progress';
 import { Widget, WidgetBody, WidgetHead } from '../widget';
 import { BillingFaq } from './billing-faq';
 import BillingPlanPicker from './billing-plan-picker';
+import { projectUsage } from './billing-projection';
 import BillingUsage from './billing-usage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -174,11 +175,54 @@ export default function Billing({ organization }: Props) {
       0,
       eventsLimit - organization.subscriptionPeriodEventsCount
     );
+    const periodStart = organization.subscriptionCurrentPeriodStart;
+    const periodEnd = organization.subscriptionCurrentPeriodEnd;
     const periodLabel =
-      organization.subscriptionCurrentPeriodStart &&
-      organization.subscriptionCurrentPeriodEnd
-        ? `${formatDate(organization.subscriptionCurrentPeriodStart)} – ${formatDate(organization.subscriptionCurrentPeriodEnd)}`
+      periodStart && periodEnd
+        ? `${formatDate(periodStart)} – ${formatDate(periodEnd)}`
         : null;
+    const projection =
+      periodStart && periodEnd
+        ? projectUsage({
+            used: organization.subscriptionPeriodEventsCount,
+            limit: eventsLimit,
+            periodStart,
+            periodEnd,
+            now: new Date(),
+          })
+        : null;
+    const isOverLimit =
+      eventsLimit > 0 &&
+      organization.subscriptionPeriodEventsCount >= eventsLimit;
+    const renderProjection = () => {
+      if (isOverLimit) {
+        return (
+          <p className="text-destructive">
+            Limit reached for this period. New events are not shown until the
+            next period starts.
+          </p>
+        );
+      }
+      if (!projection) {
+        return null;
+      }
+      const pace = `${number.format(Math.round(projection.perDay))} events a day`;
+      if (projection.limitReachedAt) {
+        return (
+          <p className="text-destructive">
+            At {pace} the limit is reached around{' '}
+            {formatDate(projection.limitReachedAt)}, with about{' '}
+            {number.format(projection.projectedTotal)} events by period end.
+          </p>
+        );
+      }
+      return (
+        <p className="text-muted-foreground">
+          At {pace} this period ends at about{' '}
+          {number.format(projection.projectedTotal)} events.
+        </p>
+      );
+    };
     return (
       <div className="col gap-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -225,11 +269,14 @@ export default function Billing({ organization }: Props) {
                       : 0
                   }
                 />
-                {periodLabel && (
-                  <div className="mt-2 text-muted-foreground">
-                    Current period {periodLabel}
-                  </div>
-                )}
+                <div className="col mt-2 gap-1">
+                  {periodLabel && (
+                    <p className="text-muted-foreground">
+                      Current period {periodLabel}
+                    </p>
+                  )}
+                  {renderProjection()}
+                </div>
                 <div className="row mt-4 justify-between">
                   <Button
                     loading={portalMutation.isPending}
