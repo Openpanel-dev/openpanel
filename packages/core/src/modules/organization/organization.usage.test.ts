@@ -133,6 +133,29 @@ test('every statement excludes session bookkeeping and the names are capped', as
   ).toContain('GROUP BY project_id, name');
 });
 
+test('an exact period start narrows the first day, and is absent otherwise', async () => {
+  await getOrganizationBillingUsage(deps, {
+    projectIds: ['web'],
+    from: '2026-10-01',
+    to: '2026-10-02',
+    since: '2026-10-01 19:46:17',
+  });
+  for (const call of calls) {
+    expect(call.query).toContain('created_at >=');
+    expect(Object.values(call.query_params)).toContain('2026-10-01 19:46:17');
+  }
+
+  calls.length = 0;
+  await getOrganizationBillingUsage(deps, {
+    projectIds: ['web'],
+    from: '2026-10-01',
+    to: '2026-10-02',
+  });
+  for (const call of calls) {
+    expect(call.query).not.toContain('created_at >=');
+  }
+});
+
 test('an organization without projects gets the empty window without a query', async () => {
   const usage = await getOrganizationBillingUsage(deps, {
     projectIds: [],

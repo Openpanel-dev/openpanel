@@ -110,7 +110,7 @@ function SliceLegend({
         const isSelected = selectedIndex === index;
         const isFaded = hoveredIndex !== null && hoveredIndex !== index;
         return (
-          <li key={slice.label}>
+          <li key={slice.id ?? `${index}-${slice.label}`}>
             <button
               aria-pressed={onSelect ? isSelected : undefined}
               className={cn(
@@ -385,7 +385,11 @@ export default function BillingUsage({ organization }: Props) {
             size={PIE_SIZE}
           >
             {nameSlices.map((slice, index) => (
-              <PieSlice animate={false} index={index} key={slice.label} />
+              <PieSlice
+                animate={false}
+                index={index}
+                key={`${index}-${slice.label}`}
+              />
             ))}
             <PieCenter>
               {({ value, isHovered }) => {

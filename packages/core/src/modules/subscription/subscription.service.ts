@@ -178,10 +178,13 @@ export async function getUsage(
   const from = isBillingPeriod
     ? periodStart
     : subDays(today, TRAILING_USAGE_WINDOW_DAYS - 1);
+  // The counter starts at the exact period start, so the first day only
+  // counts from that moment.
   const usage = await getOrganizationBillingUsageCached(deps, {
     projectIds: organization.projects.map((project) => project.id),
     from: formatClickhouseDate(from, true),
     to: formatClickhouseDate(today, true),
+    since: isBillingPeriod ? formatClickhouseDate(from) : undefined,
   });
   return {
     ...usage,

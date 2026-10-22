@@ -458,6 +458,8 @@ export interface IOrganizationBillingUsageInput {
   from: string;
   /** Inclusive UTC day, `YYYY-MM-DD`. */
   to: string;
+  /** Exact lower bound within `from`, `YYYY-MM-DD HH:mm:ss` UTC, when the window starts mid-day. */
+  since?: string;
 }
 
 export interface IOrganizationBillingUsage {
@@ -492,7 +494,7 @@ function listUtcDays(from: string, to: string): string[] {
 
 export async function getOrganizationBillingUsage(
   deps: ServiceDeps,
-  { projectIds, from, to }: IOrganizationBillingUsageInput
+  { projectIds, from, to, since }: IOrganizationBillingUsageInput
 ): Promise<IOrganizationBillingUsage> {
   const empty: IOrganizationBillingUsage = {
     from,
@@ -511,6 +513,7 @@ export async function getOrganizationBillingUsage(
   const billable = sql`
     project_id IN ${sql.array('String', projectIds)}
       AND toDate(created_at) BETWEEN toDate(${sql.string(from)}) AND toDate(${sql.string(to)})
+      ${since ? sql`AND created_at >= ${sql.string(since)}` : sql.empty}
       AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
   `;
   const [perProjectDay, perName, perProjectName] = await Promise.all([
