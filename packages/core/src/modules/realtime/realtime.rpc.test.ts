@@ -57,23 +57,16 @@ test('recentSessions rejects an unauthenticated caller before querying ClickHous
   ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 });
 
-test('paths rejects an unauthenticated caller before querying ClickHouse', async () => {
+test('topSources rejects an unauthenticated caller before querying ClickHouse', async () => {
   const caller = await anonCaller();
-  await expect(caller.paths({ projectId: 'proj_1' })).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
+  await expect(
+    caller.topSources({ projectId: 'proj_1' })
+  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 });
 
-test('referrals rejects an unauthenticated caller before querying ClickHouse', async () => {
+test('histogram rejects an unauthenticated caller before querying ClickHouse', async () => {
   const caller = await anonCaller();
-  await expect(caller.referrals({ projectId: 'proj_1' })).rejects.toMatchObject(
+  await expect(caller.histogram({ projectId: 'proj_1' })).rejects.toMatchObject(
     { code: 'UNAUTHORIZED' }
   );
-});
-
-test('geo rejects an unauthenticated caller before querying ClickHouse', async () => {
-  const caller = await anonCaller();
-  await expect(caller.geo({ projectId: 'proj_1' })).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
 });

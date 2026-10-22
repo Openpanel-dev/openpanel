@@ -12,47 +12,28 @@ interface IslandItem {
   count: number;
 }
 
-function sumSessionsByCountry(
-  rows: Array<{ country: string; unique_sessions: number }>
-): IslandItem[] {
-  const totals = new Map<string, number>();
-  for (const row of rows) {
-    if (!row.country) {
-      continue;
-    }
-    totals.set(
-      row.country,
-      (totals.get(row.country) ?? 0) + row.unique_sessions
-    );
-  }
-  return [...totals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, ISLAND_TOP_COUNT)
-    .map(([country, count]) => ({
-      key: country,
-      icon: country,
-      label: getCountry(country) ?? country,
-      count,
-    }));
-}
-
 export function LiveTopIsland({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
-  const referrals = useQuery(
-    trpc.realtime.referrals.queryOptions({ projectId })
+  const { data } = useQuery(
+    trpc.realtime.topSources.queryOptions({ projectId })
   );
-  const geo = useQuery(trpc.realtime.geo.queryOptions({ projectId }));
 
-  const referrers: IslandItem[] = (referrals.data ?? [])
-    .filter((row) => row.referrer_name)
+  const referrers: IslandItem[] = (data?.referrers ?? [])
     .slice(0, ISLAND_TOP_COUNT)
     .map((row) => ({
-      key: row.referrer_name,
-      icon: row.referrer_name,
-      label: row.referrer_name,
-      count: row.unique_sessions,
+      key: row.name,
+      icon: row.name,
+      label: row.name,
+      count: row.sessions,
     }));
-  const countries = sumSessionsByCountry(geo.data ?? []);
+  const countries: IslandItem[] = (data?.countries ?? [])
+    .slice(0, ISLAND_TOP_COUNT)
+    .map((row) => ({
+      key: row.country,
+      icon: row.country,
+      label: getCountry(row.country) ?? row.country,
+      count: row.sessions,
+    }));
 
   if (referrers.length === 0 && countries.length === 0) {
     return null;

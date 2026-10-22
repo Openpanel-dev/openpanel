@@ -243,3 +243,73 @@ test('getRealtimeRecentSessions only reads session starts in the project and win
   expect(result[0]?.sessionId).toBe('sess_2');
   expect(result[0]?.referrerName).toBe('Google');
 });
+
+test('getRealtimeTopSources splits one grouping-sets scan into referrers and countries', async () => {
+  nextRows = [
+    {
+      referrer_name: 'Google',
+      country: '',
+      sessions: 12,
+      is_referrer_row: 1,
+      is_country_row: 0,
+    },
+    {
+      referrer_name: '',
+      country: 'SE',
+      sessions: 9,
+      is_referrer_row: 0,
+      is_country_row: 1,
+    },
+    {
+      referrer_name: 'Reddit',
+      country: '',
+      sessions: 3,
+      is_referrer_row: 1,
+      is_country_row: 0,
+    },
+  ];
+
+  const result = await subject.getRealtimeTopSources(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('GROUPING SETS ((referrer_name), (country))');
+  expect(query).toContain('project_id = {p1:String}');
+  expect(query_params.p1).toBe('proj_1');
+  expect(result).toEqual({
+    referrers: [
+      { name: 'Google', sessions: 12 },
+      { name: 'Reddit', sessions: 3 },
+    ],
+    countries: [{ country: 'SE', sessions: 9 }],
+  });
+});
+
+test('getRealtimeHistogram fills every minute of the window and takes the total from the same scan', async () => {
+  const minuteAgo = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
+  const minuteKey = minuteAgo.toISOString().slice(0, 19).replace('T', ' ');
+  nextRows = [
+    { minute: '1970-01-01 00:00:00', sessions: 40, visitors: 15, is_total: 1 },
+    { minute: minuteKey, sessions: 4, visitors: 2, is_total: 0 },
+  ];
+
+  const result = await subject.getRealtimeHistogram(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  expect(chQuery.mock.calls[0]![0].query).toContain(
+    'GROUPING SETS ((minute), ())'
+  );
+  expect(result.totalSessions).toBe(40);
+  expect(result.minutes).toHaveLength(MINUTES_PER_REALTIME_WINDOW + 1);
+  const filled = result.minutes.find(
+    (entry) => entry.minute === minuteAgo.toISOString()
+  );
+  expect(filled).toEqual({
+    minute: minuteAgo.toISOString(),
+    sessions: 4,
+    visitors: 2,
+  });
+  expect(result.minutes.filter((entry) => entry.sessions === 0)).toHaveLength(
+    MINUTES_PER_REALTIME_WINDOW
+  );
+});

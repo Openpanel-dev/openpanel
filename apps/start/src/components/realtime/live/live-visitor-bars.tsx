@@ -12,17 +12,27 @@ const BAR_RADIUS = 1;
 const BAR_GAP = 0.25;
 const NO_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 };
 
-type MinutePoint =
-  RouterOutputs['overview']['liveData']['minuteCounts'][number] & {
-    [key: string]: unknown;
-  };
+type MinutePoint = RouterOutputs['realtime']['histogram']['minutes'][number] & {
+  time: string;
+  [key: string]: unknown;
+};
+
+function formatMinute(minute: string) {
+  return new Date(minute).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export function LiveVisitorBars({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const number = useNumber();
-  const { data } = useQuery(trpc.overview.liveData.queryOptions({ projectId }));
-  const points: MinutePoint[] = (data?.minuteCounts ?? []).map((point) => ({
+  const { data } = useQuery(
+    trpc.realtime.histogram.queryOptions({ projectId })
+  );
+  const points: MinutePoint[] = (data?.minutes ?? []).map((point) => ({
     ...point,
+    time: formatMinute(point.minute),
   }));
 
   return (
@@ -51,7 +61,7 @@ export function LiveVisitorBars({ projectId }: { projectId: string }) {
           >
             <Bar
               animate={false}
-              dataKey="visitorCount"
+              dataKey="visitors"
               fill={BAR_COLOR}
               lineCap={BAR_RADIUS}
             />
@@ -61,7 +71,7 @@ export function LiveVisitorBars({ projectId }: { projectId: string }) {
                 {
                   color: BAR_COLOR,
                   label: 'Visitors',
-                  value: point.visitorCount,
+                  value: point.visitors,
                   format: number.format,
                 },
               ]}
