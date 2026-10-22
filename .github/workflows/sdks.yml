@@ -153,8 +153,9 @@ jobs:
           # The lockfile records the workspace versions, so main's frozen
           # install breaks without this.
           bun install
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Authored by whoever pressed the button, not the bot.
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR_ID+$GITHUB_ACTOR@users.noreply.github.com"
           git add bun.lock packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
           git commit -m "chore(sdk): release $PACKAGE $version" \
             -m "Released from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
