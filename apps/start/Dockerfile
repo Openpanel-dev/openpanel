@@ -7,7 +7,7 @@
 # `@openpanel/core/modules/*.constants`, and `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
 # `"extends": "@openpanel/tsconfig/base.json"` cannot resolve unless `tooling/typescript` is installed as a workspace member.
 ARG BUN_VERSION=1.4.0
-ARG NODE_VERSION=24.19.0
+ARG NODE_VERSION=24.22.1
 
 # MANIFESTS — only what `bun install` reads (every `package.json`, the lockfile, `bunfig.toml`, the patches), cut out
 # of the whole tree with `find` so the list cannot drift. Its output only changes when a manifest does, which keeps
