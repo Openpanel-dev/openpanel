@@ -2,6 +2,11 @@
   "name": "@openpanel/nuxt",
   "version": "0.4.1-local",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "directory": "packages/sdks/nuxt"
+  },
   "type": "module",
   "main": "./dist/module.mjs",
   "exports": {

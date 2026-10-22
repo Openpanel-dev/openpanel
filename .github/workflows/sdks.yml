@@ -7,7 +7,10 @@ name: SDKs
 #            published), so a broken build is caught before release day.
 #   publish  a manual run on main releases one SDK and its dependents to npm
 #            with tooling/publish, then commits the bumped `-local` versions
-#            and the new op1.js back to main.
+#            and the new op1.js back to main. npm trusts this workflow file
+#            (trusted publishing, no token); by default it only stages the
+#            versions and a maintainer approves them with
+#            `npm stage approve <stage-id>` and 2FA.
 on:
   push:
     branches:
@@ -40,6 +43,14 @@ on:
           - minor
           - major
           - prerelease
+      mode:
+        description: Stage for 2FA approval, or publish directly (the trusted publisher must allow it)
+        type: choice
+        required: true
+        default: stage
+        options:
+          - stage
+          - publish
 
 permissions:
   contents: read
@@ -93,6 +104,8 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      # GitHub mints the OIDC token npm exchanges for publish rights.
+      id-token: write
     steps:
       - name: Releases come from main only
         if: github.ref != 'refs/heads/main'
@@ -109,25 +122,27 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Authenticate with npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::The NPM_TOKEN repository secret is not set."
-            exit 1
-          fi
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+      # Trusted publishing needs npm 11.5; staging needs 11.15. Node's bundled
+      # npm lags both.
+      - name: Update npm
+        run: npm install -g npm@latest && npm --version
 
-      - name: Publish ${{ inputs.package }} (${{ inputs.type }})
+      - name: ${{ inputs.mode == 'stage' && 'Stage' || 'Publish' }} ${{ inputs.package }} (${{ inputs.type }})
         env:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.type }}
-        run: bun tooling/publish/publish.ts --name "$PACKAGE" --type "$BUMP" --publish --npm --skip-git
+          STAGE_FLAG: ${{ inputs.mode == 'stage' && '--stage' || '' }}
+        run: bun tooling/publish/publish.ts --name "$PACKAGE" --type "$BUMP" --publish --npm --skip-git $STAGE_FLAG
+
+      - name: How to approve
+        if: inputs.mode == 'stage'
+        run: |
+          echo "::notice::The versions are staged, not public. A maintainer approves each with 2FA: npm stage list <package>, then npm stage approve <stage-id> (npm 11.15+)."
 
       # The script leaves the released packages at `<version>-local` and, for
       # @openpanel/web, the new tracker in apps/public/public. That is the
-      # state main has to carry so the next release bumps from here.
+      # state main has to carry so the next release bumps from here. A staged
+      # version that is later rejected simply leaves a gap in the numbering.
       - name: Commit the released versions
         env:
           PACKAGE: ${{ inputs.package }}
@@ -140,7 +155,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
           git commit -m "chore(sdk): release $PACKAGE $version" \
-            -m "Published from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
+            -m "Released from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
           git format-patch -1 --stdout > /tmp/sdk-release.patch
           echo "RELEASE_TAG=$PACKAGE@$version" >> "$GITHUB_ENV"
           echo "Released $PACKAGE $version"

@@ -32,6 +32,9 @@ export interface PackageInfo extends PackageJson {
 interface PublishConfig {
   registry: string;
   clear: boolean;
+  // Stage for a maintainer's 2FA approval (`npm stage approve`) instead of
+  // publishing outright; what CI does under a stage-only trusted publisher.
+  stage: boolean;
 }
 
 const workspacePath = (relativePath: string) =>
@@ -256,14 +259,17 @@ const publishPackages = (
     execSync('rm -rf ~/.local/share/verdaccio/storage/@openpanel');
   }
 
+  const publishCommand = config.stage ? 'npm stage publish' : 'npm publish';
   for (const dep of dependents) {
-    console.log(`🚀 Publishing ${dep} to ${config.registry}`);
     console.log(
-      `📦 Install: pnpm install ${dep} --registry ${config.registry}`
+      `🚀 ${config.stage ? 'Staging' : 'Publishing'} ${dep} to ${config.registry}`
     );
-    execSync(`npm publish --access=public --registry ${config.registry}`, {
-      cwd: workspacePath(packages[dep]!.localPath),
-    });
+    execSync(
+      `${publishCommand} --access=public --registry ${config.registry}`,
+      {
+        cwd: workspacePath(packages[dep]!.localPath),
+      }
+    );
 
     if (dep === '@openpanel/web') {
       execSync(
@@ -340,6 +346,7 @@ function main() {
     '--skip-git': Boolean,
     '--type': String,
     '--clear': Boolean,
+    '--stage': Boolean,
   });
 
   if (!args['--skip-git']) {
@@ -385,6 +392,7 @@ function main() {
         ? 'https://registry.npmjs.org'
         : 'http://localhost:4873',
       clear: args['--clear'] ?? false,
+      stage: args['--stage'] ?? false,
     };
 
     publishPackages(packages, dependents, config);
