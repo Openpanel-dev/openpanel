@@ -642,10 +642,11 @@ function GscTable({
         {onSearchChange != null && (
           <div className="relative">
             <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input size="sm"
+            <Input
               className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder ?? 'Search'}
+              size="sm"
               type="search"
               value={searchValue ?? ''}
             />

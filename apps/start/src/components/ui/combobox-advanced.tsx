@@ -10,8 +10,8 @@ import {
   PopoverTrigger,
 } from './popover';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/utils/cn';
 import { Command, CommandInput, CommandItem } from '@/components/ui/command';
+import { cn } from '@/utils/cn';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
