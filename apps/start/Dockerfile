@@ -6,7 +6,7 @@
 # The install is ONE FULL WORKSPACE INSTALL, not a list of member manifests: `apps/start` imports
 # `@openpanel/core/modules/*.constants`, and `vite-tsconfig-paths` then reads `packages/core/tsconfig.json`, whose
 # `"extends": "@openpanel/tsconfig/base.json"` cannot resolve unless `tooling/typescript` is installed as a workspace member.
-ARG BUN_VERSION=1.4.0
+ARG BUN_VERSION=1.4.4
 ARG NODE_VERSION=24.22.1
 
 # MANIFESTS — only what `bun install` reads (every `package.json`, the lockfile, `bunfig.toml`, the patches), cut out

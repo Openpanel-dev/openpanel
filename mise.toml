@@ -15,5 +15,5 @@
 # matter to a developer; keep the rest in step when bumping.
 
 [tools]
-bun = "1.4.0"
+bun = "1.4.4"
 node = "24.22.1"

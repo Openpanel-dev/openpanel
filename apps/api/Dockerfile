@@ -1,7 +1,7 @@
 # API image — one image, two roles (ROLE=api, worker or all).
 #
 # Bun is pinned exactly; keep this ARG in sync with `.bun-version`.
-ARG BUN_VERSION=1.4.0
+ARG BUN_VERSION=1.4.4
 
 # BASE — oven/bun:${BUN_VERSION}-slim. Not distroless (no shell, and the compose files start this image with
 # `sh -c "…"`) and not alpine (musl against a `debian-openssl-3.0.x` Prisma engine).
