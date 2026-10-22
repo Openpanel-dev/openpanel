@@ -47,7 +47,7 @@ const workspacePath = (relativePath: string) =>
 
 const savePackageJson = (absPath: string, data: PackageJson) => {
   fs.writeFileSync(absPath, JSON.stringify(data, null, 2), 'utf-8');
-  execSync(`npx biome format ${absPath} --fix`);
+  execSync(`bunx biome format ${absPath} --fix`);
 };
 
 const exit = (message: string, error?: unknown) => {
