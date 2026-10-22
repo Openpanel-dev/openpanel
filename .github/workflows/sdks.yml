@@ -150,9 +150,13 @@ jobs:
           set -euo pipefail
           dir="$(bun -e 'const fs = require("fs"); for (const d of fs.readdirSync("packages/sdks")) { const p = `packages/sdks/${d}/package.json`; if (fs.existsSync(p) && require(`./${p}`).name === process.argv[1]) console.log(d) }' "$PACKAGE")"
           version="$(jq -r '.version | sub("-local$"; "")' "packages/sdks/$dir/package.json")"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
+          # The lockfile records the workspace versions, so main's frozen
+          # install breaks without this.
+          bun install
+          # Authored by whoever pressed the button, not the bot.
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR_ID+$GITHUB_ACTOR@users.noreply.github.com"
+          git add bun.lock packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
           git commit -m "chore(sdk): release $PACKAGE $version" \
             -m "Released from the SDKs workflow ($BUMP bump). Dependent SDKs were released with it; see the package versions in this commit."
           git format-patch -1 --stdout > /tmp/sdk-release.patch
@@ -161,11 +165,13 @@ jobs:
 
       # The packages are on npm by now, so this commit must land whatever
       # happened on main meanwhile: rebase onto the current tip, never force.
+      # --autostash: the setup action's codegen rewrites a tracked file from a
+      # live source, and that stray change must not block the rebase.
       - name: Push the release commit to main
         run: |
           set -euo pipefail
           git fetch origin main
-          if ! git rebase origin/main; then
+          if ! git rebase --autostash origin/main; then
             echo "::error::main moved during the release and the version commit conflicts with it. The packages are published; apply the sdk-release-commit artifact to main by hand."
             exit 1
           fi

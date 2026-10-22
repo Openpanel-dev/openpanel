@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/nuxt",
-  "version": "0.4.1-local",
+  "version": "0.4.2-local",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/web": "workspace:1.4.1-local"
+    "@openpanel/web": "workspace:1.4.2-local"
   },
   "peerDependencies": {
     "h3": "^1.0.0",
