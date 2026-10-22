@@ -1,0 +1,37 @@
+name: Set up the workspace
+description: Node, bun, the bun install cache, dependencies and codegen — what every job that runs our code needs.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        # .nvmrc is the source of truth; keep ARG NODE_VERSION in
+        # apps/*/Dockerfile in sync with it. Must stay >=22.19.0:
+        # undici@8 fails at import on older Node with
+        # "webidl.util.markAsUncloneable is not a function".
+        node-version-file: ".nvmrc"
+
+    - name: Install bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        # .bun-version is the pin's home and apps/api/src/config/bun-version.test.ts asserts an exact match, so read it
+        # rather than keeping a second copy here.
+        bun-version-file: ".bun-version"
+
+    - name: Setup bun cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Codegen
+      shell: bash
+      run: bun run codegen

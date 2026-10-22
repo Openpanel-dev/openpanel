@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClient } from '@openpanel/db/src/clickhouse/client';
+import { bootstrapTestDatabases } from '../../../../../test/bootstrap-databases';
 import { TEST_CLICKHOUSE_URL } from '../../../../../test/databases';
 import { buildEvent } from '../../../../../test/fixtures';
 import { testServiceDeps } from '../../../test/service-deps';
@@ -111,6 +112,8 @@ async function withClient(
 
 describe('funnel breakdown by a property of one step', () => {
   beforeAll(async () => {
+    // The file may be the first to touch ClickHouse in its shard.
+    await bootstrapTestDatabases();
     deps = await testServiceDeps();
     await withClient(async (client) => {
       await client.command({
@@ -122,7 +125,7 @@ describe('funnel breakdown by a property of one step', () => {
         format: 'JSONEachRow',
       });
     });
-  });
+  }, 30_000);
 
   afterAll(async () => {
     await withClient((client) =>

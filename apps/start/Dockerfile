@@ -9,9 +9,21 @@
 ARG BUN_VERSION=1.4.0
 ARG NODE_VERSION=24.19.0
 
+# MANIFESTS — only what `bun install` reads (every `package.json`, the lockfile, `bunfig.toml`, the patches), cut out
+# of the whole tree with `find` so the list cannot drift. Its output only changes when a manifest does, which keeps
+# the install layer below cached across source-only changes. Same stage as apps/api/Dockerfile's.
+FROM oven/bun:${BUN_VERSION}-slim AS manifests
+
+WORKDIR /app
+
+COPY . .
+
+RUN find . \( -type f -o -type l \) ! -name package.json ! -name bun.lock ! -name bunfig.toml ! -path './patches/*' -delete && \
+    find . -type d -empty -delete
+
 # INSTALL — one full workspace install, exactly what bun.lock was resolved against. `bunfig.toml` rides along with the
-# tree and carries `[install] ignoreScripts = true` and `linker = "isolated"`; `--linker=isolated` is named here too so
-# the layout is a property of the command, not only of a file.
+# manifests and carries `[install] ignoreScripts = true` and `linker = "isolated"`; `--linker=isolated` is named here
+# too so the layout is a property of the command, not only of a file.
 #
 # No apt block: the runner starts `FROM node:${NODE_VERSION}-slim` and copies only `.output`, so an apt block here
 # shipped nothing. `bun install` needs TLS and `oven/bun:${BUN_VERSION}-slim` already ships `ca-certificates`.
@@ -19,13 +31,15 @@ FROM oven/bun:${BUN_VERSION}-slim AS install
 
 WORKDIR /app
 
+COPY --from=manifests /app ./
+
+RUN bun install --frozen-lockfile --linker=isolated
+
 COPY . .
 
 # The tracking script the self-hosted dashboard serves.
 COPY apps/public/public/op1.js ./apps/start/public/op1.js
 COPY apps/public/public/op1-replay.js ./apps/start/public/op1-replay.js
-
-RUN bun install --frozen-lockfile --linker=isolated
 
 # BUILD — Nitro's standalone server output. NITRO=1 selects the node-server
 # preset over the Cloudflare one; SELF_HOSTED=1 is read at build time.
