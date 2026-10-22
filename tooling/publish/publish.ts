@@ -239,7 +239,7 @@ const buildPackages = (
       continue;
     }
     console.log(`🔨 Building ${dep}`);
-    const cmd = `pnpm build ${versionEnvs.join(' ')}`;
+    const cmd = `bun run build ${versionEnvs.join(' ')}`;
     console.log(`  Running: ${cmd}`);
     execSync(cmd, {
       cwd: workspacePath(packages[dep]!.localPath),

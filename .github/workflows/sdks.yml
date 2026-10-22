@@ -1,0 +1,135 @@
+name: SDKs
+
+# The SDKs ship to npm, not in the Docker images, so docker-build.yml ignores
+# packages/sdks entirely. This workflow is their pipeline:
+#   verify   every push that touches an SDK typechecks, tests and builds all
+#            of them through the real release script (dry run, nothing
+#            published), so a broken build is caught before release day.
+#   publish  a manual run on main releases one SDK and its dependents to npm
+#            with tooling/publish, then commits the bumped `-local` versions
+#            and the new op1.js back to main.
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "packages/sdks/**"
+      - "tooling/publish/**"
+      - ".github/workflows/sdks.yml"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: SDK to release (its dependents are released with it)
+        type: choice
+        required: true
+        options:
+          - "@openpanel/sdk"
+          - "@openpanel/web"
+          - "@openpanel/nextjs"
+          - "@openpanel/astro"
+          - "@openpanel/nuxt"
+          - "@openpanel/express"
+          - "@openpanel/react-native"
+      type:
+        description: Version bump
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - name: Typecheck the SDKs
+        run: bun run --filter './packages/sdks/*' typecheck
+
+      - name: Test the SDKs
+        run: bun run --filter @openpanel/web test
+
+      # Releasing @openpanel/sdk takes every other SDK with it, so this one
+      # dry run builds all of them exactly as a release would. The version
+      # edits it makes are thrown away with the runner.
+      - name: Build every SDK through the release script
+        run: bun tooling/publish/publish.ts --name @openpanel/sdk --type patch --skip-git
+
+      - name: Check what each package would publish
+        run: |
+          set -euo pipefail
+          for dir in packages/sdks/*/; do
+            if [ "$(jq -r '.private // false' "$dir/package.json")" = "true" ]; then
+              continue
+            fi
+            echo "::group::$dir"
+            (cd "$dir" && npm pack --dry-run)
+            echo "::endgroup::"
+          done
+
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: sdks-publish
+      cancel-in-progress: false
+    steps:
+      - name: Releases come from main only
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run this workflow on main; ${{ github.ref_name }} is not released."
+          exit 1
+
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Authenticate with npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::The NPM_TOKEN repository secret is not set."
+            exit 1
+          fi
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+      - name: Publish ${{ inputs.package }} (${{ inputs.type }})
+        run: bun tooling/publish/publish.ts --name "${{ inputs.package }}" --type "${{ inputs.type }}" --publish --npm --skip-git
+
+      # The script leaves the released packages at `<version>-local` and, for
+      # @openpanel/web, the new tracker in apps/public/public. That is the
+      # state main has to carry so the next release bumps from here.
+      - name: Commit the released versions
+        run: |
+          set -euo pipefail
+          dir="$(bun -e 'const n=process.argv[1]; for (const d of require("fs").readdirSync("packages/sdks")) { const p=`packages/sdks/${d}/package.json`; if (require("fs").existsSync(p) && require(`./${p}`).name===n) console.log(d) }' "${{ inputs.package }}")"
+          version="$(jq -r '.version | sub("-local$"; "")' "packages/sdks/$dir/package.json")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/sdks apps/public/public/op1.js apps/public/public/op1-replay.js
+          git commit -m "chore(sdk): release ${{ inputs.package }} $version" \
+            -m "Published from the SDKs workflow (${{ inputs.type }} bump). Dependent SDKs were released with it; see the package versions in this commit."
+          git tag "${{ inputs.package }}@$version"
+          git push origin HEAD:main --tags
+          echo "Released ${{ inputs.package }} $version"
