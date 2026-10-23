@@ -1,5 +1,17 @@
+import {
+  type ChatModelEntry,
+  MODEL_STORAGE_KEY,
+} from '@openpanel/core/modules/assistant/assistant.constants';
 import { expect as baseExpect, test } from './fixtures';
-import { shot } from './org-helpers';
+import { shot, trpcQuery } from './org-helpers';
+
+/** The model list the API offers the dashboard, and whether a self-hoster may pick one. */
+async function chatModels(page: Parameters<typeof trpcQuery>[0]) {
+  return trpcQuery<{
+    models: ChatModelEntry[];
+    canChooseModel: boolean;
+  }>(page, 'chat.models');
+}
 
 // A real model answers the question, so the budget is generous.
 const expect = baseExpect.configure({ timeout: 60_000 });
@@ -83,13 +95,35 @@ test.describe('AI chat', () => {
 
   // The history of a turn that ran tools is replayed to the model on the next
   // turn; it has to come back from storage exactly as the model produced it.
+  // Claude rejects a replayed turn whose stored parts differ from what it
+  // produced, so the test runs on Claude whenever the API offers it and on the
+  // default model otherwise (the storage round trip matters to both).
   test('a follow-up after a tool-using answer gets an answer', async ({
     page,
   }) => {
+    const { models, canChooseModel } = await chatModels(page);
+    const claude = canChooseModel
+      ? models.find((model) => model.provider === 'anthropic')
+      : undefined;
+    test.info().annotations.push({
+      type: 'model',
+      description: claude?.id ?? 'default',
+    });
+    if (claude) {
+      await page.addInitScript(
+        ([key, id]) => window.localStorage.setItem(key, id),
+        [MODEL_STORAGE_KEY, claude.id]
+      );
+    }
     await page.goto(CHAT);
     if (await page.getByText(NOT_CONFIGURED).isVisible()) {
       test.skip();
       return;
+    }
+    if (claude) {
+      await expect(
+        page.getByRole('button', { name: 'Select model' })
+      ).toHaveText(new RegExp(claude.label));
     }
     const input = page.getByRole('textbox', { name: 'Message' });
     const send = page.getByRole('button', { name: 'Send message' });
