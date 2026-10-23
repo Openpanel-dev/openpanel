@@ -1,5 +1,10 @@
 import { ArrowUpIcon, SparklesIcon } from 'lucide-react';
-import { useReducedMotion } from 'motion/react';
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useReducedMotion,
+} from 'motion/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/utils/cn';
 
@@ -36,6 +41,14 @@ const THINKING_MS = 900;
 const AFTER_USER_MS = 500;
 const AFTER_ASSISTANT_MS = 2600;
 const RESTART_MS = 5000;
+
+// Messages slide up together as a new one arrives, like the real chat.
+const ENTER_TRANSITION = {
+  type: 'spring',
+  stiffness: 260,
+  damping: 28,
+} as const;
+const INSTANT = { duration: 0 } as const;
 
 const TREND = [96, 132, 148, 212, 240, 226, 230];
 const BREAKDOWN = [
@@ -101,37 +114,53 @@ export function ChatPreview({ className }: { className?: string }) {
     <div
       aria-hidden="true"
       className={cn(
-        'flex max-h-[34rem] min-h-[20rem] flex-col overflow-hidden rounded-xl border bg-background shadow-sm',
+        'flex max-h-[38rem] flex-col overflow-hidden rounded-xl border bg-background shadow-sm',
         className
       )}
     >
-      <div className="flex flex-1 flex-col justify-end gap-3 overflow-hidden p-4 [mask-image:linear-gradient(to_bottom,transparent,black_3rem)]">
-        {turns.map((turn, index) =>
-          turn.role === 'user' ? (
-            <div
-              className="fade-in slide-in-from-bottom-2 flex animate-in justify-end duration-300 motion-reduce:animate-none"
-              key={`${index}-${turn.text}`}
-            >
-              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground text-sm">
-                {turn.text}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="fade-in slide-in-from-bottom-2 col animate-in gap-2 duration-300 motion-reduce:animate-none"
-              key={`${index}-${turn.text}`}
-            >
-              <p className="text-sm">{turn.text}</p>
-              {turn.chart && <ChartCard kind={turn.chart} />}
-            </div>
-          )
-        )}
-        {thinking && (
-          <div className="op-shimmer fade-in animate-in font-medium text-muted-foreground text-sm duration-300">
-            Thinking…
-          </div>
-        )}
-      </div>
+      <LayoutGroup>
+        <div className="flex flex-1 flex-col justify-end gap-3 overflow-hidden p-4 [mask-image:linear-gradient(to_bottom,transparent,black_3rem)]">
+          <AnimatePresence initial={false}>
+            {turns.map((turn, index) => (
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className={
+                  turn.role === 'user' ? 'flex justify-end' : 'col gap-2'
+                }
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                initial={{ opacity: 0, y: 16 }}
+                key={`${index}-${turn.text}`}
+                layout="position"
+                transition={reducedMotion ? INSTANT : ENTER_TRANSITION}
+              >
+                {turn.role === 'user' ? (
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground text-sm">
+                    {turn.text}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm">{turn.text}</p>
+                    {turn.chart && <ChartCard kind={turn.chart} />}
+                  </>
+                )}
+              </motion.div>
+            ))}
+            {thinking && (
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="op-shimmer font-medium text-muted-foreground text-sm"
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                initial={{ opacity: 0, y: 8 }}
+                key="thinking"
+                layout="position"
+                transition={reducedMotion ? INSTANT : ENTER_TRANSITION}
+              >
+                Thinking…
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </LayoutGroup>
       <div className="row m-3 mt-0 items-center gap-3 rounded-2xl border bg-card px-4 py-2.5">
         <SparklesIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="flex-1 truncate text-muted-foreground/70 text-sm">

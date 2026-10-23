@@ -53,23 +53,28 @@ export function AuthShowcase() {
   const testimonial = TESTIMONIALS[index] ?? TESTIMONIALS[0]!;
 
   return (
-    <aside className="relative hidden overflow-hidden lg:m-3 lg:flex lg:flex-col lg:justify-between lg:rounded-2xl lg:bg-def-200 lg:p-12 xl:p-16">
+    // Pinned to the viewport so the page height never follows the chat
+    // replay; the replay takes whatever height is left between the headline
+    // and the testimonial, which always sits at the bottom.
+    <aside className="relative hidden overflow-hidden lg:sticky lg:top-3 lg:m-3 lg:flex lg:h-[calc(100vh-1.5rem)] lg:flex-col lg:self-start lg:rounded-2xl lg:bg-def-200 lg:p-12 xl:p-16">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-40 -right-40 size-[32rem] rounded-full bg-highlight/10 blur-3xl"
       />
-      <div className="col relative min-h-0 max-w-lg flex-1 gap-6">
+      <div className="col relative max-w-lg shrink-0 gap-4">
         <h2 className="font-semibold text-3xl leading-tight tracking-tight">
           Ask your analytics a question. Get the chart back.
         </h2>
-        <p className="text-base text-muted-foreground">
+        <p className="text-base text-muted-foreground [@media(max-height:820px)]:hidden">
           Web and product analytics in one place, open source, and a chat that
           answers with charts.
         </p>
-        <ChatPreview className="min-h-0 flex-1" />
+      </div>
+      <div className="relative mt-6 min-h-0 max-w-lg flex-1">
+        <ChatPreview className="h-full" />
       </div>
 
-      <figure className="col relative mt-8 max-w-lg shrink-0 gap-5 rounded-xl bg-background p-6 shadow-sm">
+      <figure className="col relative mt-6 max-w-lg shrink-0 gap-5 rounded-xl bg-background p-6 shadow-sm">
         <blockquote
           className="fade-in animate-in text-base leading-relaxed duration-500 motion-reduce:animate-none"
           key={testimonial.author}

@@ -38,7 +38,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </header>
-        <main className="flex flex-1 items-center justify-center px-6 py-10 lg:px-10">
+        <main className="flex flex-1 items-center justify-center px-6 py-6 lg:px-10">
           <div className="w-full max-w-[400px]">{children}</div>
         </main>
         <footer className="p-6 text-center text-muted-foreground text-xs lg:px-10">
