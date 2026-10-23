@@ -6,7 +6,7 @@ import type { Organization } from '@openpanel/db/src/prisma-client';
 import { cacheablePerDeps } from '../../../cacheable-per-deps';
 import { sendEmail } from '../../../clients/email';
 import type { ServiceDeps } from '../../../services';
-import { STORED_ADMIN_ROLES } from '../../organization/organization.constants';
+import { ORGANIZATION_ADMIN_ROLES } from '../../organization/organization.constants';
 import { getOrganizationBillingEventsCount } from '../../organization/organization.service';
 import { getProjectEventsCount } from '../../project/project.service';
 
@@ -149,7 +149,7 @@ async function sendUsageAlerts(
     const admins = await db.member.findMany({
       where: {
         organizationId: organization.id,
-        role: { in: [...STORED_ADMIN_ROLES] },
+        role: { in: [...ORGANIZATION_ADMIN_ROLES] },
         user: { deletedAt: null },
       },
       include: { user: { select: { email: true, firstName: true } } },

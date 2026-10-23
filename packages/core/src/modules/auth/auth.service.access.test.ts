@@ -12,7 +12,6 @@ let projectAccess: FakeProjectAccess | null = null;
 interface FakeOrganizationAccess {
   role: string;
   userId: string;
-  organization: { createdByUserId: string | null };
 }
 
 let organizationAccess: FakeOrganizationAccess | null = null;
@@ -20,7 +19,6 @@ let organizationAccess: FakeOrganizationAccess | null = null;
 const memberAccess = (role: string): FakeOrganizationAccess => ({
   role,
   userId: 'user_1',
-  organization: { createdByUserId: null },
 });
 let projectById: { organizationId: string | null } | null = null;
 
@@ -110,7 +108,7 @@ test('requireProjectAccess allows write and admin levels to write', async () => 
 });
 
 test('requireOrganizationAdmin rejects a non-admin with the default message', async () => {
-  organizationAccess = memberAccess('org:member');
+  organizationAccess = memberAccess('member');
   await expect(
     authService().requireOrganizationAdmin({
       userId: 'user_1',
@@ -141,14 +139,14 @@ test('requireProjectAdmin fails closed when the project has no organization', as
 
 test('requireProjectAdmin defers to the organization-admin gate once resolved', async () => {
   projectById = { organizationId: 'org_1' };
-  organizationAccess = memberAccess('org:admin');
+  organizationAccess = memberAccess('admin');
   await expect(
     authService().requireProjectAdmin({ userId: 'user_1', projectId: 'proj_1' })
-  ).resolves.toMatchObject({ role: 'org:admin' });
+  ).resolves.toMatchObject({ role: 'admin' });
 });
 
-test('requireOrganizationAdmin accepts the stored and the new admin spellings, and refuses a viewer', async () => {
-  for (const role of ['org:admin', 'admin', 'owner']) {
+test('requireOrganizationAdmin accepts owner and admin, and refuses member and viewer', async () => {
+  for (const role of ['admin', 'owner']) {
     organizationAccess = memberAccess(role);
     await expect(
       authService().requireOrganizationAdmin({
@@ -157,29 +155,29 @@ test('requireOrganizationAdmin accepts the stored and the new admin spellings, a
       })
     ).resolves.toBeDefined();
   }
-  organizationAccess = memberAccess('viewer');
-  await expect(
-    authService().requireOrganizationAdmin({
-      userId: 'user_1',
-      organizationId: 'org_1',
-    })
-  ).rejects.toThrow('Only organization admins can do this');
+  for (const role of ['member', 'viewer']) {
+    organizationAccess = memberAccess(role);
+    await expect(
+      authService().requireOrganizationAdmin({
+        userId: 'user_1',
+        organizationId: 'org_1',
+      })
+    ).rejects.toThrow('Only organization admins can do this');
+  }
 });
 
-test('getOrganizationAccess reports the creator as owner and maps the stored spellings', async () => {
-  organizationAccess = {
-    role: 'org:admin',
-    userId: 'user_1',
-    organization: { createdByUserId: 'user_1' },
-  };
-  await expect(
-    authService().getOrganizationAccess({
-      userId: 'user_1',
-      organizationId: 'org_1',
-    })
-  ).resolves.toMatchObject({ role: 'owner' });
+test('getOrganizationAccess reports the stored role, and an unknown one as member', async () => {
+  for (const role of ['owner', 'admin', 'member', 'viewer']) {
+    organizationAccess = memberAccess(role);
+    await expect(
+      authService().getOrganizationAccess({
+        userId: 'user_1',
+        organizationId: 'org_1',
+      })
+    ).resolves.toMatchObject({ role });
+  }
 
-  organizationAccess = memberAccess('org:member');
+  organizationAccess = memberAccess('org:admin');
   await expect(
     authService().getOrganizationAccess({
       userId: 'user_1',
@@ -190,7 +188,7 @@ test('getOrganizationAccess reports the creator as owner and maps the stored spe
 
 test('getProjectAccess / getOrganizationAccess reach the same fake lookups', async () => {
   projectAccess = { level: 'admin' };
-  organizationAccess = memberAccess('org:admin');
+  organizationAccess = memberAccess('admin');
   await expect(
     authService().getProjectAccess({ userId: 'user_1', projectId: 'proj_1' })
   ).resolves.toEqual({ level: 'admin' });

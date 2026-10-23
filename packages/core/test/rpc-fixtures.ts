@@ -53,14 +53,20 @@ const TEST_EPOCH = new Date('2026-09-03T00:00:00.000Z');
 export const TEST_SESSION: Session = {
   session: {
     id: 'sess_1',
+    token: null,
     userId: 'user_1',
     createdAt: TEST_EPOCH,
     updatedAt: TEST_EPOCH,
     expiresAt: TEST_EPOCH,
+    ipAddress: null,
+    userAgent: null,
   },
   user: {
     id: 'user_1',
     email: 'carl@openpanel.dev',
+    name: null,
+    emailVerified: false,
+    image: null,
     firstName: null,
     lastName: null,
     createdAt: TEST_EPOCH,
@@ -87,6 +93,7 @@ export function stubHttpCtx(
   const stub = { sessionCalls: 0 };
 
   const deps: AppDeps = {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -143,7 +150,7 @@ export function servicesWithProjectAccess(): Services {
   return {
     auth: {
       requireProjectAccess: () => Promise.resolve({ level: 'write' }),
-      getOrganizationAccess: () => Promise.resolve({ role: 'org:admin' }),
+      getOrganizationAccess: () => Promise.resolve({ role: 'admin' }),
     },
   } as unknown as Services;
 }

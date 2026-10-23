@@ -124,21 +124,21 @@ const member = {
   findMany: mock(async () => [
     {
       userId: 'u_all',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'all',
       projects: [],
       user: { email: 'all@example.com' },
     },
     {
       userId: 'u_other',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       projects: [{ projectId: 'proj_other', level: null }],
       user: { email: 'other@example.com' },
     },
     {
       userId: 'u_this',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       projects: [{ projectId: 'proj_1', level: null }],
       user: { email: 'this@example.com' },

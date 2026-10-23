@@ -1,3 +1,4 @@
+import type { Session } from '@openpanel/db/src/prisma-client';
 import { z } from 'zod';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
@@ -13,10 +14,16 @@ import {
 import type { ISetCookie } from '../../shared/cookie';
 import {
   isOrganizationAdminRole,
+  normalizeOrganizationRole,
   type OrganizationRole,
-  resolveOrganizationRole,
 } from '../organization/organization.constants';
 import { type AccessChecks, createAccessChecks } from './src/access';
+import {
+  type AuthSessionResult,
+  deleteAuthSessionCookie,
+  getAuthSession,
+  upgradeLegacySession,
+} from './src/better-auth';
 import {
   deleteSessionTokenCookie,
   setLastAuthProviderCookie,
@@ -94,7 +101,8 @@ export function getAccessChecks(): Promise<ProjectAccessChecks> {
         canWriteProject,
         getOrganizationAccess: getOrganizationAccessLookup,
         isOrganizationAdmin: (access) =>
-          !!access && isOrganizationAdminRole(resolveOrganizationRole(access)),
+          !!access &&
+          isOrganizationAdminRole(normalizeOrganizationRole(access.role)),
         getProjectById,
       })
     );
@@ -164,7 +172,7 @@ export function createAuthService(
     if (!access) {
       return null;
     }
-    return { ...access, role: resolveOrganizationRole(access) };
+    return { ...access, role: normalizeOrganizationRole(access.role) };
   }
 
   function getClientAccess(
@@ -198,6 +206,32 @@ export function createAuthService(
     deleteSessionTokenCookie(deps.config, setCookie);
   }
 
+  function getSession(
+    headers: Headers,
+    setCookie: ISetCookie
+  ): Promise<AuthSessionResult | null> {
+    if (!deps.auth) {
+      return Promise.resolve(null);
+    }
+    return getAuthSession(deps.auth, deps.config, headers, setCookie);
+  }
+
+  async function upgradeSession(
+    session: Session,
+    token: string,
+    setCookie: ISetCookie
+  ): Promise<void> {
+    if (!(deps.auth && deps.config.auth.secret)) {
+      return;
+    }
+    await upgradeLegacySession(
+      deps,
+      deps.config.auth.secret,
+      { session, token },
+      setCookie
+    );
+  }
+
   function cookieDomainForUrl(
     url: string
   ): ReturnType<typeof parseCookieDomain> {
@@ -210,6 +244,8 @@ export function createAuthService(
     requireProjectAdmin,
     requireLogin,
     validateSessionToken: checkSessionToken,
+    getAuthSession: getSession,
+    upgradeLegacySession: upgradeSession,
     getProjectAccess,
     getOrganizationAccess,
     getClientAccess,
@@ -248,7 +284,7 @@ import {
   shareAccessCookieName,
 } from '../../shared/share-access';
 import { connectUserToOrganization } from '../organization/organization.service';
-import { getUserAccount } from '../user/user.service';
+import { getUserAccount, toDisplayName } from '../user/user.service';
 import {
   createSession,
   invalidateSession,
@@ -261,6 +297,8 @@ const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
 const INVITE_COOKIE = 'inviteId';
 const RESET_PASSWORD_TTL_MS = 1000 * 60 * 10;
+/** better-auth's provider id for email and password accounts. */
+const CREDENTIAL_PROVIDER = 'credential';
 
 export type AuthProvider = 'email' | 'google' | 'github';
 
@@ -298,6 +336,7 @@ export async function signOutUser(
   sessionId: string | null | undefined
 ): Promise<void> {
   deleteSessionTokenCookie(deps.config, setCookie);
+  deleteAuthSessionCookie(deps.config, setCookie);
   if (sessionId) {
     await invalidateSession(deps, sessionId);
   }
@@ -433,21 +472,26 @@ export async function signUpWithEmail(
     throw new TRPCForbiddenError('Registrations are not allowed');
   }
 
-  const provider = 'email';
-  const existing = await getUserAccount(deps, { email: input.email, provider });
+  const existing = await getUserAccount(deps, {
+    email: input.email,
+    provider: CREDENTIAL_PROVIDER,
+  });
   if (existing) {
     throw new TRPCNotFoundError('User already exists');
   }
 
+  const userId = generateSecureId('user');
   const createdUser = await deps.db.user.create({
     data: {
-      id: generateSecureId('user'),
+      id: userId,
       email: input.email,
       firstName: input.firstName,
       lastName: input.lastName,
+      name: toDisplayName(input.firstName, input.lastName),
       accounts: {
         create: {
-          provider,
+          provider: CREDENTIAL_PROVIDER,
+          accountId: userId,
           password: await hashPassword(input.password),
         },
       },
@@ -483,7 +527,7 @@ export async function signInWithEmail(
 ): Promise<SignInEmailResult> {
   const user = await getUserAccount(deps, {
     email: input.email,
-    provider: 'email',
+    provider: CREDENTIAL_PROVIDER,
   });
 
   if (!user) {
@@ -628,7 +672,7 @@ export async function getTotpStatus(deps: ServiceDeps, userId: string) {
   const [totp, emailAccount] = await Promise.all([
     deps.db.userTotp.findUnique({ where: { userId } }),
     deps.db.account.findFirst({
-      where: { userId, provider: 'email' },
+      where: { userId, provider: CREDENTIAL_PROVIDER },
       select: { id: true },
     }),
   ]);
@@ -642,7 +686,7 @@ export async function getTotpStatus(deps: ServiceDeps, userId: string) {
 
 export async function setupTotp(deps: ServiceDeps, userId: string) {
   const emailAccount = await deps.db.account.findFirst({
-    where: { userId, provider: 'email' },
+    where: { userId, provider: CREDENTIAL_PROVIDER },
     select: { id: true },
   });
   if (!emailAccount) {
@@ -797,7 +841,7 @@ export async function requestPasswordReset(
 ): Promise<true> {
   const user = await getUserAccount(deps, {
     email: input.email,
-    provider: 'email',
+    provider: CREDENTIAL_PROVIDER,
   });
   // Deliberately not found-vs-found: always `true`, so the endpoint cannot be
   // used to enumerate registered emails.
@@ -1119,7 +1163,12 @@ async function completeExistingOAuthUser(
 
   await deps.db.account.update({
     where: { id: account.id },
-    data: { provider, providerId: oauthUser.id, email: oauthUser.email },
+    data: {
+      provider,
+      providerId: oauthUser.id,
+      accountId: oauthUser.id,
+      email: oauthUser.email,
+    },
   });
 
   if (inviteId) {
@@ -1178,8 +1227,14 @@ async function completeNewOAuthUser(
       email: oauthUser.email,
       firstName: oauthUser.firstName,
       lastName: oauthUser.lastName,
+      name: toDisplayName(oauthUser.firstName, oauthUser.lastName),
+      emailVerified: true,
       accounts: {
-        create: { provider, providerId: oauthUser.id },
+        create: {
+          provider,
+          providerId: oauthUser.id,
+          accountId: oauthUser.id,
+        },
       },
     },
   });

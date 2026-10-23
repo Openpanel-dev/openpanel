@@ -84,16 +84,6 @@ const projectStore = new Map<string, FakeProject>();
 const memberStore = new Map<string, FakeMember>();
 const inviteStore = new Map<string, FakeInvite>();
 const userStore = new Map<string, FakeUser>();
-const projectAccessStore = new Map<
-  string,
-  {
-    id: string;
-    userId: string;
-    organizationId: string;
-    projectId: string;
-    level: string;
-  }
->();
 const memberProjectStore: FakeMemberProject[] = [];
 
 function resetStores() {
@@ -102,7 +92,6 @@ function resetStores() {
   memberStore.clear();
   inviteStore.clear();
   userStore.clear();
-  projectAccessStore.clear();
   memberProjectStore.length = 0;
 }
 
@@ -131,7 +120,9 @@ const organization = {
           const scheduledForDeletion =
             org.deleteAt && org.deleteAt <= new Date();
           const noAdmin = ![...memberStore.values()].some(
-            (m) => m.organizationId === org.id && m.role === 'org:admin'
+            (m) =>
+              m.organizationId === org.id &&
+              (m.role === 'owner' || m.role === 'admin')
           );
           return scheduledForDeletion || noAdmin;
         });
@@ -272,10 +263,6 @@ const member = {
           ...m,
           user: userStore.get(m.userId as string),
           projects: memberProjectStore.filter((row) => row.memberId === m.id),
-          organization: {
-            createdByUserId:
-              organizationStore.get(m.organizationId)?.createdByUserId ?? null,
-          },
         }))
   ),
   update: mock(
@@ -388,68 +375,6 @@ const user = {
   ),
 };
 
-const projectAccess = {
-  findMany: mock(async ({ where }: { where: { organizationId: string } }) =>
-    [...projectAccessStore.values()].filter(
-      (a) => a.organizationId === where.organizationId
-    )
-  ),
-  create: mock(
-    async ({
-      data,
-    }: {
-      data: {
-        projectId: string;
-        userId: string;
-        organizationId: string;
-        level: string;
-      };
-    }) => {
-      const id = `access_${projectAccessStore.size + 1}`;
-      const row = { id, ...data };
-      projectAccessStore.set(id, row);
-      return row;
-    }
-  ),
-  createMany: mock(
-    async ({
-      data,
-    }: {
-      data: {
-        projectId: string;
-        userId: string;
-        organizationId: string;
-        level: string;
-      }[];
-    }) => {
-      for (const grant of data) {
-        const id = `access_${projectAccessStore.size + 1}`;
-        projectAccessStore.set(id, { id, ...grant });
-      }
-      return { count: data.length };
-    }
-  ),
-  deleteMany: mock(
-    async ({
-      where,
-    }: {
-      where: { userId: string; organizationId: string };
-    }) => {
-      let count = 0;
-      for (const [id, row] of projectAccessStore.entries()) {
-        if (
-          row.userId === where.userId &&
-          row.organizationId === where.organizationId
-        ) {
-          projectAccessStore.delete(id);
-          count++;
-        }
-      }
-      return { count };
-    }
-  ),
-};
-
 const memberProject = {
   deleteMany: mock(async ({ where }: { where: { memberId: string } }) => {
     const remaining = memberProjectStore.filter(
@@ -479,7 +404,6 @@ const deps = {
     member,
     invite,
     user,
-    projectAccess,
     memberProject,
     $transaction,
   },
@@ -515,7 +439,7 @@ function seedMemberWithTwoProjects() {
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
   });
   for (const id of ['proj_1', 'proj_2']) {
@@ -524,7 +448,7 @@ function seedMemberWithTwoProjects() {
 }
 
 const EXPECTED_CLEARED_ACCESS_KEYS = [
-  'getOrganizationAccessV2:{"userId":"user_1","organizationId":"org_1"}',
+  'getOrganizationAccessV3:{"userId":"user_1","organizationId":"org_1"}',
   'getProjectAccessV3:{"userId":"user_1","projectId":"proj_1"}',
   'getProjectAccessV3:{"userId":"user_1","projectId":"proj_2"}',
 ];
@@ -647,7 +571,7 @@ test('removeOrganizationMember refuses a user removing themself as the last memb
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:admin',
+    role: 'admin',
     email: 'a@example.com',
   });
 
@@ -662,22 +586,14 @@ test('removeOrganizationMember refuses a user removing themself as the last memb
   expect(memberStore.has('member_1')).toBe(true);
 });
 
-test('removeOrganizationMember deletes the member and their project access', async () => {
+test('removeOrganizationMember deletes the member', async () => {
   memberStore.set('member_1', {
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
   });
-  projectAccessStore.set('access_1', {
-    id: 'access_1',
-    userId: 'user_1',
-    organizationId: 'org_1',
-    projectId: 'proj_1',
-    level: 'write',
-  });
-
   await subject.removeOrganizationMember(deps, {
     organizationId: 'org_1',
     memberId: 'member_1',
@@ -686,7 +602,6 @@ test('removeOrganizationMember deletes the member and their project access', asy
   });
 
   expect(memberStore.has('member_1')).toBe(false);
-  expect(projectAccessStore.has('access_1')).toBe(false);
 });
 
 // The lookups cache a granted answer for minutes; without these clears a
@@ -724,7 +639,7 @@ test('connectUserToOrganization drops the cached access for every project of the
     id: 'invite_1',
     email: 'a@example.com',
     organizationId: 'org_1',
-    role: 'org:member',
+    role: 'member',
     createdById: 'user_admin',
     projectScope: 'selected',
     projectAccess: [{ projectId: 'proj_1', level: 'read' }],
@@ -745,7 +660,7 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
   });
   projectStore.set('proj_new', {
@@ -753,10 +668,8 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
     organizationId: 'org_1',
     deleteAt: null,
   });
-  projectAccessStore.set('access_old', {
-    id: 'access_old',
-    userId: 'user_1',
-    organizationId: 'org_1',
+  memberProjectStore.push({
+    memberId: 'member_1',
     projectId: 'proj_old',
     level: 'read',
   });
@@ -768,21 +681,18 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
     access: [{ projectId: 'proj_new', level: 'write' }],
   });
 
-  const remaining = [...projectAccessStore.values()];
-  expect(remaining).toHaveLength(1);
-  expect(remaining[0]).toMatchObject({ projectId: 'proj_new', level: 'write' });
   expect(memberProjectStore).toEqual([
     { memberId: 'member_1', projectId: 'proj_new', level: null },
   ]);
   expect(memberStore.get('member_1')?.projectScope).toBe('selected');
 });
 
-test('updateOrganizationMemberAccess with scope all clears both tables', async () => {
+test('updateOrganizationMemberAccess with scope all clears the selected projects', async () => {
   memberStore.set('member_1', {
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
     projectScope: 'selected',
   });
@@ -791,14 +701,6 @@ test('updateOrganizationMemberAccess with scope all clears both tables', async (
     projectId: 'proj_old',
     level: 'read',
   });
-  projectAccessStore.set('access_old', {
-    id: 'access_old',
-    userId: 'user_1',
-    organizationId: 'org_1',
-    projectId: 'proj_old',
-    level: 'read',
-  });
-
   await subject.updateOrganizationMemberAccess(deps, {
     organizationId: 'org_1',
     targetUserId: 'user_1',
@@ -807,33 +709,7 @@ test('updateOrganizationMemberAccess with scope all clears both tables', async (
   });
 
   expect(memberProjectStore).toHaveLength(0);
-  expect(projectAccessStore.size).toBe(0);
   expect(memberStore.get('member_1')?.projectScope).toBe('all');
-});
-
-// An old pod accepting a restricted invite mid-deploy leaves the member on the
-// default `all` with only legacy rows; the list must not show "All projects".
-test("getMembers reports legacy grants as the member's selection", async () => {
-  memberStore.set('member_1', {
-    id: 'member_1',
-    organizationId: 'org_1',
-    userId: 'user_1',
-    role: 'org:member',
-    email: 'a@example.com',
-    projectScope: 'all',
-  });
-  projectAccessStore.set('access_1', {
-    id: 'access_1',
-    userId: 'user_1',
-    organizationId: 'org_1',
-    projectId: 'proj_1',
-    level: 'read',
-  });
-
-  const [member] = await subject.getMembers(deps, 'org_1');
-
-  expect(member?.projectScope).toBe('selected');
-  expect(member?.projects).toEqual([{ projectId: 'proj_1', level: 'read' }]);
 });
 
 test("connectUserToOrganization keeps an existing member's scope and grants", async () => {
@@ -841,7 +717,7 @@ test("connectUserToOrganization keeps an existing member's scope and grants", as
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
     projectScope: 'all',
   });
@@ -849,7 +725,7 @@ test("connectUserToOrganization keeps an existing member's scope and grants", as
     id: 'invite_1',
     email: 'a@example.com',
     organizationId: 'org_1',
-    role: 'org:member',
+    role: 'member',
     createdById: 'user_admin',
     projectScope: 'selected',
     projectAccess: [],
@@ -867,38 +743,7 @@ test("connectUserToOrganization keeps an existing member's scope and grants", as
   expect(inviteStore.has('invite_1')).toBe(false);
 });
 
-// Invites from before the scope column, or from the previous image during a
-// rolling deploy, default to `all` and carry the restriction only in grants.
-test('connectUserToOrganization treats an invite with grants as selected whatever its stored scope', async () => {
-  projectStore.set('proj_1', {
-    id: 'proj_1',
-    organizationId: 'org_1',
-    deleteAt: null,
-  });
-  inviteStore.set('invite_1', {
-    id: 'invite_1',
-    email: 'a@example.com',
-    organizationId: 'org_1',
-    role: 'org:member',
-    createdById: 'user_admin',
-    projectScope: 'all',
-    projectAccess: [{ projectId: 'proj_1', level: 'write' }],
-    expiresAt: new Date(Date.now() + 60_000),
-    createdAt: EPOCH,
-  });
-
-  const created = await subject.connectUserToOrganization(deps, {
-    user: { id: 'user_1', email: 'a@example.com' } as never,
-    inviteId: 'invite_1',
-  });
-
-  expect(memberStore.get(created.id)?.projectScope).toBe('selected');
-  expect(memberProjectStore).toEqual([
-    { memberId: created.id, projectId: 'proj_1', level: null },
-  ]);
-});
-
-test('connectUserToOrganization writes the invite grants to both tables, keeping only read as a level', async () => {
+test('connectUserToOrganization writes the invite grants, keeping only read as a level', async () => {
   projectStore.set('proj_1', {
     id: 'proj_1',
     organizationId: 'org_1',
@@ -913,7 +758,7 @@ test('connectUserToOrganization writes the invite grants to both tables, keeping
     id: 'invite_1',
     email: 'a@example.com',
     organizationId: 'org_1',
-    role: 'org:member',
+    role: 'member',
     createdById: 'user_admin',
     projectScope: 'selected',
     projectAccess: [
@@ -933,12 +778,6 @@ test('connectUserToOrganization writes the invite grants to both tables, keeping
   expect(memberProjectStore).toEqual([
     { memberId: member.id, projectId: 'proj_1', level: 'read' },
     { memberId: member.id, projectId: 'proj_2', level: null },
-  ]);
-  expect(
-    [...projectAccessStore.values()].map((row) => [row.projectId, row.level])
-  ).toEqual([
-    ['proj_1', 'read'],
-    ['proj_2', 'write'],
   ]);
 });
 
@@ -960,7 +799,7 @@ test('updateOrganizationMemberAccess refuses a user who is not a member', async 
     })
   ).rejects.toThrow(/not a member/i);
 
-  expect([...projectAccessStore.values()]).toHaveLength(0);
+  expect(memberProjectStore).toHaveLength(0);
 });
 
 test('updateOrganizationMemberAccess refuses a project from another organization', async () => {
@@ -968,7 +807,7 @@ test('updateOrganizationMemberAccess refuses a project from another organization
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
   });
   projectStore.set('proj_elsewhere', {
@@ -986,7 +825,7 @@ test('updateOrganizationMemberAccess refuses a project from another organization
     })
   ).rejects.toThrow(/not in this organization/i);
 
-  expect([...projectAccessStore.values()]).toHaveLength(0);
+  expect(memberProjectStore).toHaveLength(0);
 });
 
 test('inviteUserToOrganization refuses when the email is already a member', async () => {
@@ -995,7 +834,7 @@ test('inviteUserToOrganization refuses when the email is already a member', asyn
     id: 'member_1',
     organizationId: 'org_1',
     userId: 'user_1',
-    role: 'org:member',
+    role: 'member',
     email: 'a@example.com',
   });
 
@@ -1016,7 +855,7 @@ test('inviteUserToOrganization refuses a duplicate pending invite', async () => 
     id: 'invite_1',
     email: 'b@example.com',
     organizationId: 'org_1',
-    role: 'org:member',
+    role: 'member',
     createdById: 'user_admin',
     projectAccess: [],
     expiresAt: new Date(Date.now() + 1000),
@@ -1074,7 +913,7 @@ test('revokeInvite deletes the invite row', async () => {
     id: 'invite_1',
     email: 'b@example.com',
     organizationId: 'org_1',
-    role: 'org:member',
+    role: 'member',
     createdById: 'user_admin',
     projectAccess: [],
     expiresAt: new Date(Date.now() + 1000),
@@ -1102,7 +941,7 @@ test('runDeleteCron sweeps orphaned and scheduled-for-deletion organizations and
     id: 'member_paying_admin',
     organizationId: 'org_paying',
     userId: 'user_1',
-    role: 'org:admin',
+    role: 'admin',
     email: 'a@example.com',
   });
   projectStore.set('proj_orphaned', {
@@ -1132,7 +971,7 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
     id: 'member_1',
     organizationId: 'org_healthy',
     userId: 'user_1',
-    role: 'org:admin',
+    role: 'admin',
     email: 'a@example.com',
   });
 

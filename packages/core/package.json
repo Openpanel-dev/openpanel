@@ -45,6 +45,7 @@
     "@trpc/server": "11.6.0",
     "ai": "7.0.144",
     "arctic": "2.3.0",
+    "better-auth": "1.7.10",
     "bullmq": "6.3.3",
     "cheerio": "1.1.2",
     "csv-parse": "6.1.0",

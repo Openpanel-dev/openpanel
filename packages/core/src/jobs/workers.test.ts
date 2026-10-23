@@ -25,6 +25,7 @@ function stubLogger(): Logger {
 
 function stubDeps(): AppDeps {
   return {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],

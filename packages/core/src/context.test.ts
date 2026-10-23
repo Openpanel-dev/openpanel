@@ -65,6 +65,7 @@ function stubDeps(): {
     scopes,
     scoped,
     deps: {
+      auth: null,
       db: {} as AppDeps['db'],
       prisma: {} as AppDeps['prisma'],
       ch: {} as AppDeps['ch'],

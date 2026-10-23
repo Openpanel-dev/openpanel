@@ -19,7 +19,6 @@ import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import {
-  effectiveProjectGrants,
   getOrganizationAccess,
   getProjectAccess,
 } from '../../shared/access-lookups';
@@ -31,11 +30,9 @@ import {
   type IProjectAccessGrant,
   isValidTimezone,
   normalizeOrganizationRole,
+  ORGANIZATION_ADMIN_ROLES,
   type OrganizationRole,
   type ProjectScope,
-  resolveOrganizationRole,
-  STORED_ADMIN_ROLES,
-  toStoredOrganizationRole,
 } from './organization.constants';
 
 export type IServiceOrganization = Awaited<
@@ -175,49 +172,27 @@ export async function getMembers(
   organizationId: string
 ): Promise<IServiceMember[]> {
   const db = deps.db;
-  const [members, legacyGrants] = await Promise.all([
-    db.member.findMany({
-      where: {
-        organizationId,
-        userId: {
-          not: null,
-        },
+  const members = await db.member.findMany({
+    where: {
+      organizationId,
+      userId: {
+        not: null,
       },
-      include: {
-        user: true,
-        projects: { select: { projectId: true, level: true } },
-        organization: { select: { createdByUserId: true } },
-      },
-    }),
-    db.projectAccess.findMany({
-      where: { organizationId },
-      select: { userId: true, projectId: true, level: true },
-    }),
-  ]);
-
-  // The same projection the access lookup applies, so the edit modal never
-  // starts from "all projects" for a member an old pod restricted.
-  return members.map(({ organization, ...member }) => ({
+    },
+    include: {
+      user: true,
+      projects: { select: { projectId: true, level: true } },
+    },
+  });
+  return members.map((member) => ({
     ...member,
-    ...effectiveProjectGrants({
-      projectScope: member.projectScope,
-      projects: member.projects,
-      legacyGrants: legacyGrants.filter(
-        (grant) => grant.userId === member.userId
-      ),
-    }),
-    role: resolveOrganizationRole({ ...member, organization }),
+    role: normalizeOrganizationRole(member.role),
   }));
 }
 
-/**
- * Write a member's project grants to both tables. `project_access` is the
- * previous build's source of truth and is kept in step for one more build so
- * a rollback changes nobody's access; the next build drops it.
- */
 function writeMemberProjects(
   deps: ServiceDeps,
-  member: { id: string; userId: string; organizationId: string },
+  memberId: string,
   projectScope: ProjectScope,
   grants: IProjectAccessGrant[]
 ) {
@@ -225,27 +200,16 @@ function writeMemberProjects(
   const selected = projectScope === 'all' ? [] : grants;
   return [
     db.member.update({
-      where: { id: member.id },
+      where: { id: memberId },
       data: { projectScope },
     }),
-    db.memberProject.deleteMany({ where: { memberId: member.id } }),
+    db.memberProject.deleteMany({ where: { memberId } }),
     db.memberProject.createMany({
       data: selected.map((grant) => ({
-        memberId: member.id,
+        memberId,
         projectId: grant.projectId,
         // Write is what the role gives; only a restriction is worth storing.
         level: grant.level === 'read' ? 'read' : null,
-      })),
-    }),
-    db.projectAccess.deleteMany({
-      where: { userId: member.userId, organizationId: member.organizationId },
-    }),
-    db.projectAccess.createMany({
-      data: selected.map((grant) => ({
-        userId: member.userId,
-        organizationId: member.organizationId,
-        projectId: grant.projectId,
-        level: grant.level,
       })),
     }),
   ];
@@ -306,10 +270,7 @@ export async function connectUserToOrganization(
     throw new Error('Invite expired');
   }
 
-  // Invites written before the scope column, or by the previous image during
-  // a rolling deploy, carry their restriction only in `projectAccess`.
-  const projectScope: ProjectScope =
-    invite.projectAccess.length > 0 ? 'selected' : invite.projectScope;
+  const { projectScope } = invite;
 
   const existing = await db.member.findUnique({
     where: {
@@ -345,16 +306,7 @@ export async function connectUserToOrganization(
 
   if (!existing) {
     await db.$transaction(
-      writeMemberProjects(
-        deps,
-        {
-          id: member.id,
-          userId: user.id,
-          organizationId: invite.organizationId,
-        },
-        projectScope,
-        invite.projectAccess
-      )
+      writeMemberProjects(deps, member.id, projectScope, invite.projectAccess)
     );
   }
 
@@ -752,7 +704,7 @@ export async function runDeleteCron(
     where: {
       OR: [
         { deleteAt: { lte: now } },
-        { members: { none: { role: { in: [...STORED_ADMIN_ROLES] } } } },
+        { members: { none: { role: { in: [...ORGANIZATION_ADMIN_ROLES] } } } },
       ],
     },
     include: { projects: { select: { id: true } } },
@@ -947,7 +899,7 @@ export async function inviteUserToOrganization(
       id: generateSecureId('invite'),
       email,
       organizationId: input.organizationId,
-      role: toStoredOrganizationRole(input.role),
+      role: input.role,
       createdById: input.invitedById,
       projectScope: input.projectScope,
       projectAccess: access,
@@ -1033,21 +985,13 @@ export async function removeOrganizationMember(
     throw new Error('You cannot remove yourself from the organization');
   }
 
-  await db.$transaction([
-    db.member.delete({
-      where: {
-        id: input.memberId,
-        userId: input.targetUserId,
-        organizationId: input.organizationId,
-      },
-    }),
-    db.projectAccess.deleteMany({
-      where: {
-        userId: input.targetUserId,
-        organizationId: input.organizationId,
-      },
-    }),
-  ]);
+  await db.member.delete({
+    where: {
+      id: input.memberId,
+      userId: input.targetUserId,
+      organizationId: input.organizationId,
+    },
+  });
   await clearMemberAccessCache(deps, {
     userId: input.targetUserId,
     organizationId: input.organizationId,
@@ -1056,8 +1000,8 @@ export async function removeOrganizationMember(
 
 /**
  * A grant may only name a project inside the organization it is granted in.
- * Without this an admin of one organization could write projectAccess rows
- * pointing at another organization's projects.
+ * Without this an admin of one organization could grant access to another
+ * organization's projects.
  */
 async function assertProjectsInOrganization(
   deps: ServiceDeps,
@@ -1108,16 +1052,7 @@ export async function updateOrganizationMemberAccess(
   await assertProjectsInOrganization(deps, input.organizationId, access);
 
   await db.$transaction(
-    writeMemberProjects(
-      deps,
-      {
-        id: member.id,
-        userId: input.targetUserId,
-        organizationId: input.organizationId,
-      },
-      input.projectScope,
-      access
-    )
+    writeMemberProjects(deps, member.id, input.projectScope, access)
   );
   await clearMemberAccessCache(deps, {
     userId: input.targetUserId,

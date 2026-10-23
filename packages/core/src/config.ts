@@ -26,6 +26,11 @@ export interface OAuthClientConfig {
 
 export interface AuthConfig {
   /**
+   * AUTH_SECRET, else COOKIE_SECRET. Signs better-auth's session cookie;
+   * changing it signs everyone out. Unset leaves only legacy sessions.
+   */
+  secret: string | undefined;
+  /**
    * `undefined` means the variable is unset, which is what cloud runs and what
    * makes registration unconditionally open — distinct from an explicit
    * `ALLOW_REGISTRATION=false`.

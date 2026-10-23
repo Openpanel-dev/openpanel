@@ -28,6 +28,7 @@ export function testCoreConfig(
       interceptProcessOutput: false,
     },
     auth: {
+      secret: undefined,
       allowRegistration: undefined,
       allowInvitation: undefined,
       github: { clientId: '', clientSecret: '', redirectUri: '' },

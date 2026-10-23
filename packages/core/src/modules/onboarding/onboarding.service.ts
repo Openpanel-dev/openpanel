@@ -11,7 +11,6 @@ import {
   type SequenceSubject,
   step,
 } from '../email/src/sequence';
-import { toStoredOrganizationRole } from '../organization/organization.constants';
 import {
   getOrganizationById,
   getOrganizationEventsCount,
@@ -32,18 +31,8 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
-  // Sequential, not Promise.all: the early return below skips the projectAccess query
-  // for any user with a membership, which a parallel fetch would give up.
-  const db = deps.db;
-  const members = await db.member.count({ where: { userId } });
-  if (members > 0) {
-    return { canSkip: true };
-  }
-
-  // Rows without a membership never granted access, but they did let the user
-  // past onboarding; kept until `project_access` is dropped.
-  const projectAccess = await db.projectAccess.count({ where: { userId } });
-  return { canSkip: projectAccess > 0 };
+  const members = await deps.db.member.count({ where: { userId } });
+  return { canSkip: members > 0 };
 }
 
 async function createOrGetOnboardingOrganization(
@@ -86,7 +75,7 @@ async function createOrGetOnboardingOrganization(
       data: {
         email: (await getUserById(deps, userId)).email,
         organizationId,
-        role: toStoredOrganizationRole('owner'),
+        role: 'owner',
         userId,
       },
     }),

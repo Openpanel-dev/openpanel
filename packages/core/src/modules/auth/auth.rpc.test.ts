@@ -2,7 +2,7 @@
 
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
-import { stubHttpCtx } from '../../../test/rpc-fixtures';
+import { stubHttpCtx, TEST_SESSION } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
 import { authRouter } from './auth.rpc';
@@ -124,4 +124,18 @@ test('totpRegenerateRecoveryCodes rejects an unauthenticated caller', async () =
 test('session returns the caller session unauthenticated (no login required)', async () => {
   const caller = await anonCaller();
   await expect(caller.session()).resolves.toEqual(EMPTY_SESSION);
+});
+
+test('session never hands the session token to the browser', async () => {
+  const signedIn = {
+    ...TEST_SESSION,
+    session: { ...TEST_SESSION.session, token: 'cookie-value' },
+  };
+  const { ctx } = stubHttpCtx({}, signedIn);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  const result = await authRouter.createCaller(trpcCtx).session();
+  expect(result.userId).toBe(TEST_SESSION.userId);
+  expect(JSON.stringify(result)).not.toContain('cookie-value');
 });

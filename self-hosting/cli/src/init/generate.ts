@@ -16,7 +16,12 @@ const OPENPANEL_IMAGE_SERVICES = [
 ] as const;
 
 const BCRYPT_COST = 10;
-const SECRET_BYTES = { cookie: 16, encryption: 32, admin: 12 } as const;
+const SECRET_BYTES = {
+  cookie: 16,
+  auth: 32,
+  encryption: 32,
+  admin: 12,
+} as const;
 
 export const BUNDLED_URLS = {
   clickhouse: 'http://op-ch:8123/openpanel',
@@ -47,6 +52,7 @@ export interface InitAnswers {
 
 export interface Secrets {
   cookieSecret: string;
+  authSecret: string;
   encryptionKey: string;
   adminPassword: string;
 }
@@ -56,6 +62,10 @@ export const generateSecrets = (existing: EnvFile | null = null): Secrets => ({
   cookieSecret:
     existing?.get('COOKIE_SECRET') ??
     randomBytes(SECRET_BYTES.cookie).toString('hex'),
+  authSecret:
+    existing?.get('AUTH_SECRET') ??
+    existing?.get('COOKIE_SECRET') ??
+    randomBytes(SECRET_BYTES.auth).toString('hex'),
   encryptionKey:
     existing?.get('ENCRYPTION_KEY') ??
     randomBytes(SECRET_BYTES.encryption).toString('hex'),
@@ -87,6 +97,7 @@ const renderEnv = (answers: InitAnswers, secrets: Secrets): string => {
     DASHBOARD_URL: answers.domain,
     API_URL: `${answers.domain}/api`,
     COOKIE_SECRET: secrets.cookieSecret,
+    AUTH_SECRET: secrets.authSecret,
     ADMIN_USERNAME: 'admin',
     ADMIN_PASSWORD: secrets.adminPassword,
     ENCRYPTION_KEY: secrets.encryptionKey,

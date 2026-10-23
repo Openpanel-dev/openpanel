@@ -2,6 +2,7 @@
 // anything resolved from another id needs its own explicit check in the handler.
 
 import { z } from 'zod';
+import type { Session } from '../../context';
 import {
   createRateLimitMiddleware,
   createTRPCRouter,
@@ -40,6 +41,15 @@ import {
 } from './auth.service';
 
 const rateLimit = createRateLimitMiddleware(enforceRateLimit);
+
+// The token is the cookie's value; the cookie is httpOnly so scripts never see it.
+function withoutSessionToken(result: Session) {
+  if (!result.session) {
+    return result;
+  }
+  const { token: _token, ...session } = result.session;
+  return { ...result, session };
+}
 
 export const authRouter = createTRPCRouter({
   /**
@@ -125,7 +135,7 @@ export const authRouter = createTRPCRouter({
     .input(zRequestResetPassword)
     .mutation(({ input, ctx }) => requestPasswordReset(ctx, input)),
 
-  session: publicProcedure.query(({ ctx }) => ctx.session),
+  session: publicProcedure.query(({ ctx }) => withoutSessionToken(ctx.session)),
 
   extendSession: publicProcedure.mutation(({ ctx }) =>
     extendSessionCookie(

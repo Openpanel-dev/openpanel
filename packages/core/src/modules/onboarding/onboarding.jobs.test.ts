@@ -69,6 +69,7 @@ function stubJobCtx(
     mcp: {} as Services['mcp'],
   };
   return {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],

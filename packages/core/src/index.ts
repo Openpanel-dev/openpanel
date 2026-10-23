@@ -114,6 +114,7 @@ export {
 } from './modules/auth/auth.service';
 export type { AccessLookups } from './modules/auth/src/access';
 export { createAccessChecks } from './modules/auth/src/access';
+export { createAuth } from './modules/auth/src/better-auth';
 export { validateSessionToken } from './modules/auth/src/login-session';
 export { getIsRegistrationAllowed } from './modules/auth/src/registration';
 export type {

@@ -10,7 +10,7 @@ import type { Archetype } from './archetypes/archetype';
 import { deterministicUuid, projectIdFor } from './ids';
 import type { Rng } from './rng';
 import {
-  ORGANIZATION_ADMIN_ROLE,
+  ORGANIZATION_OWNER_ROLE,
   SEED_ORGANIZATION,
   SEED_USER,
   SUBSCRIPTION_EVENTS_LIMIT,
@@ -129,9 +129,9 @@ async function upsertOrganization(
       organizationId: organization.id,
       userId,
       email: SEED_USER.email,
-      role: ORGANIZATION_ADMIN_ROLE,
+      role: ORGANIZATION_OWNER_ROLE,
     },
-    update: { role: ORGANIZATION_ADMIN_ROLE },
+    update: { role: ORGANIZATION_OWNER_ROLE },
   });
   return organization.id;
 }

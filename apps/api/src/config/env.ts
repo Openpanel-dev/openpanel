@@ -418,6 +418,8 @@ const rawSchema = z.object({
     blankToUndefined,
     z.string().optional().default('')
   ),
+  /** Signs better-auth's session cookie. Falls back to COOKIE_SECRET. */
+  AUTH_SECRET: optionalString,
   /** Set on the demo deployment only. `validateSessionToken` short-circuits on
    *  it, and `enforceAccess` bans mutations for it. */
   DEMO_USER_ID: optionalString,
@@ -848,6 +850,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         raw.LOG_EXPORTER !== undefined,
     },
     auth: {
+      secret: raw.AUTH_SECRET ?? (raw.COOKIE_SECRET || undefined),
       allowRegistration:
         raw.ALLOW_REGISTRATION === undefined
           ? undefined

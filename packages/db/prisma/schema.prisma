@@ -77,7 +77,6 @@ model Organization {
   members         Member[]
   createdByUserId String?
   createdBy       User?            @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  ProjectAccess   ProjectAccess[]
   Client          Client[]
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
@@ -150,6 +149,10 @@ model User {
   email                String               @unique
   firstName            String?
   lastName             String?
+  // better-auth's user fields, backfilled from the ones above and the IdP.
+  name                 String?
+  emailVerified        Boolean              @default(false)
+  image                String?
   createdOrganizations Organization[]       @relation("organizationCreatedBy")
   subscriptions        Organization[]       @relation("subscriptionCreatedBy")
   membership           Member[]
@@ -157,7 +160,6 @@ model User {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @default(now()) @updatedAt
   deletedAt            DateTime?
-  ProjectAccess        ProjectAccess[]
   sessions             Session[]
   accounts             Account[]
   invites              Invite[]
@@ -197,8 +199,12 @@ model Account {
   userId                String
   user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   email                 String?
+  // better-auth's `providerId` ('credential', 'google', 'github').
   provider              String
+  // The IdP's user id, read by the legacy OAuth callback. better-auth reads `accountId`.
   providerId            String?
+  accountId             String?
+  idToken               String?
   accessToken           String?
   refreshToken          String?
   accessTokenExpiresAt  DateTime?
@@ -214,13 +220,30 @@ model Account {
 
 model Session {
   id        String   @id
+  // What better-auth looks a session up by. A legacy row is keyed by the hash of
+  // its cookie and gets one when its first request upgrades it.
+  token     String?  @unique
   userId    String
   expiresAt DateTime
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
   user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
 }
 
 model Member {
@@ -315,7 +338,6 @@ model Project {
   meta              EventMeta[]
   customEvents      CustomEvent[]
   references        Reference[]
-  access            ProjectAccess[]
   memberProjects    MemberProject[]
   notificationRules NotificationRule[]
   notifications     Notification[]
@@ -357,21 +379,6 @@ enum AccessLevel {
   read
   write
   admin
-}
-
-model ProjectAccess {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId      String
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level          AccessLevel
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-
-  @@map("project_access")
 }
 
 model Salt {
@@ -597,12 +604,12 @@ model EventMeta {
 }
 
 model CustomEvent {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   /// [IPrismaCustomEventItems]
   items     Json
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

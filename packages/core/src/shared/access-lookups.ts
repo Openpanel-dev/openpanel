@@ -74,36 +74,8 @@ interface MemberGrant {
   level: AccessLevel | null;
 }
 
-/**
- * The scope and grants to apply for a member while `project_access` is still
- * written. New code keeps that table identical to `member_projects` (empty for
- * `all`), so legacy rows only differ when the previous image wrote them during
- * a rolling deploy; they then win, or an old pod restricting a member would
- * leave them on `all`. Remove with `project_access`.
- */
-export function effectiveProjectGrants(member: {
-  projectScope: ProjectScope;
-  projects: MemberGrant[];
-  legacyGrants: { projectId: string; level: AccessLevel }[];
-}): { projectScope: ProjectScope; projects: MemberGrant[] } {
-  if (member.legacyGrants.length === 0) {
-    return { projectScope: member.projectScope, projects: member.projects };
-  }
-  // project_access has no unique key; a read row among duplicates wins.
-  const levels = new Map<string, AccessLevel | null>();
-  for (const grant of member.legacyGrants) {
-    const isRead =
-      grant.level === 'read' || levels.get(grant.projectId) === 'read';
-    levels.set(grant.projectId, isRead ? 'read' : null);
-  }
-  return {
-    projectScope: 'selected',
-    projects: [...levels].map(([projectId, level]) => ({ projectId, level })),
-  };
-}
-
-/** Loads what `effectiveProjectGrants` needs for one membership, or null when there is none. */
-export async function getMemberProjectGrants(
+/** One membership's role, scope and selected projects, or null when there is none. */
+export function getMemberProjectGrants(
   db: Db,
   { userId, organizationId }: { userId: string; organizationId: string }
 ): Promise<{
@@ -111,27 +83,14 @@ export async function getMemberProjectGrants(
   projectScope: ProjectScope;
   projects: MemberGrant[];
 } | null> {
-  const [member, legacyGrants] = await Promise.all([
-    db.member.findFirst({
-      where: { organizationId, userId },
-      select: {
-        role: true,
-        projectScope: true,
-        projects: { select: { projectId: true, level: true } },
-      },
-    }),
-    db.projectAccess.findMany({
-      where: { organizationId, userId },
-      select: { projectId: true, level: true },
-    }),
-  ]);
-  if (!member) {
-    return null;
-  }
-  return {
-    role: member.role,
-    ...effectiveProjectGrants({ ...member, legacyGrants }),
-  };
+  return db.member.findFirst({
+    where: { organizationId, userId },
+    select: {
+      role: true,
+      projectScope: true,
+      projects: { select: { projectId: true, level: true } },
+    },
+  });
 }
 
 /**
@@ -144,32 +103,15 @@ export async function listProjectMemberEmails(
   db: Db,
   { organizationId, projectId }: { organizationId: string; projectId: string }
 ): Promise<string[]> {
-  const [members, legacyGrants] = await Promise.all([
-    db.member.findMany({
-      where: { organizationId, user: { deletedAt: null } },
-      select: {
-        userId: true,
-        role: true,
-        projectScope: true,
-        projects: { select: { projectId: true, level: true } },
-        user: { select: { email: true } },
-      },
-    }),
-    db.projectAccess.findMany({
-      where: { organizationId },
-      select: { userId: true, projectId: true, level: true },
-    }),
-  ]);
-
-  const legacyByUser = new Map<
-    string,
-    { projectId: string; level: AccessLevel }[]
-  >();
-  for (const grant of legacyGrants) {
-    const grants = legacyByUser.get(grant.userId) ?? [];
-    grants.push(grant);
-    legacyByUser.set(grant.userId, grants);
-  }
+  const members = await db.member.findMany({
+    where: { organizationId, user: { deletedAt: null } },
+    select: {
+      role: true,
+      projectScope: true,
+      projects: { select: { projectId: true, level: true } },
+      user: { select: { email: true } },
+    },
+  });
 
   const emails = new Set<string>();
   for (const member of members) {
@@ -177,16 +119,10 @@ export async function listProjectMemberEmails(
     if (!email) {
       continue;
     }
-    const grants = effectiveProjectGrants({
-      ...member,
-      legacyGrants: member.userId
-        ? (legacyByUser.get(member.userId) ?? [])
-        : [],
-    });
     const access = resolveProjectAccess({
       role: member.role,
-      projectScope: grants.projectScope,
-      grant: grants.projects.find((row) => row.projectId === projectId) ?? null,
+      projectScope: member.projectScope,
+      grant: member.projects.find((row) => row.projectId === projectId) ?? null,
     });
     if (access) {
       emails.add(email);
@@ -244,13 +180,11 @@ export const getProjectAccess = cacheable(
   60 * 5
 );
 
-/** The membership row plus what the auth module needs to derive the owner role. */
-export type IOrganizationAccess = Member & {
-  organization: { createdByUserId: string | null };
-};
+export type IOrganizationAccess = Member;
 
+// V3: roles are stored under their new names, and V2 entries carry the old ones.
 export const getOrganizationAccess = cacheable(
-  'getOrganizationAccessV2',
+  'getOrganizationAccessV3',
   async ({
     userId,
     organizationId,
@@ -264,7 +198,6 @@ export const getOrganizationAccess = cacheable(
         userId,
         organizationId,
       },
-      include: { organization: { select: { createdByUserId: true } } },
     });
   },
   60 * 5

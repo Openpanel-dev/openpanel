@@ -3,6 +3,7 @@ import { bindReadsToSignal } from './ch-abortable';
 import type { CoreConfig } from './config';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
+import type { Auth } from './modules/auth/src/better-auth';
 import type { SessionValidationResult } from './modules/auth/src/login-session';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
@@ -62,6 +63,8 @@ export interface AppDeps {
   producers: QueueProducerHandle;
   logger: Logger;
   config: CoreConfig;
+  /** Null when no secret is configured; see `createAuth`. */
+  auth: Auth | null;
 }
 
 /** Work scope. One per HTTP request, RPC call, job run or Kafka batch. */
@@ -75,6 +78,7 @@ export interface Ctx {
   logger: Logger;
   queues: QueueProducers;
   config: CoreConfig;
+  auth: Auth | null;
   services: Services;
   requestId: string;
 }
@@ -119,6 +123,7 @@ export function createCtx(deps: AppDeps, scope: ScopeMeta): Ctx {
     logger: scope.logger,
     queues: deps.producers.scope({ requestId: scope.requestId }),
     config: deps.config,
+    auth: deps.auth,
     requestId: scope.requestId,
     services: undefined as unknown as Services,
   };
@@ -155,6 +160,7 @@ function installLazyServices(ctx: Ctx): void {
         logger: ctx.logger,
         queues: ctx.queues,
         config: ctx.config,
+        auth: ctx.auth,
       });
       return built;
     },

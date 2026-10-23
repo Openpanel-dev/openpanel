@@ -488,6 +488,22 @@ export const cookieSecret: Check = (install) => {
   };
 };
 
+export const authSecret: Check = (install) => {
+  const cookie = install.env.get('COOKIE_SECRET');
+  if (install.env.get('AUTH_SECRET') || !cookie) {
+    return null;
+  }
+  return {
+    id: 'env/auth-secret',
+    severity: 'warn',
+    title: 'AUTH_SECRET is not set',
+    detail:
+      'Sign-in sessions are signed with COOKIE_SECRET until it is. Set it so rotating COOKIE_SECRET does not sign everyone out.',
+    // The current value, so nobody signed in under the fallback is signed out.
+    fix: (target) => target.env.set('AUTH_SECRET', cookie),
+  };
+};
+
 export const renamedEnvVars: Check = (install) => {
   const present = RENAMED_ENV_VARS.filter(([oldName]) =>
     install.env.has(oldName)
@@ -734,6 +750,7 @@ export const checks: Check[] = [
   kafkaPartitions,
   encryptionKey,
   cookieSecret,
+  authSecret,
   renamedEnvVars,
   dashboardUrl,
   apiUrl,

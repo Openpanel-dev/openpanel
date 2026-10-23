@@ -24,8 +24,11 @@ export async function createSession(
 ): Promise<Session> {
   const session: Session = {
     id: hashSessionToken(token),
+    token: null,
     userId,
     expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+    ipAddress: null,
+    userAgent: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -50,8 +53,11 @@ export async function createDemoSession(
     userId: user.id,
     session: {
       id: DEMO_SESSION_ID,
+      token: null,
       userId: user.id,
       expiresAt: new Date(Date.now() + DEMO_SESSION_TTL_MS),
+      ipAddress: null,
+      userAgent: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
