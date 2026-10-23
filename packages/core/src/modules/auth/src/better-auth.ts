@@ -14,6 +14,7 @@ import type { Logger } from '../../../logger';
 import type { ISetCookie } from '../../../shared/cookie';
 import { cookieOptions } from './constants';
 import { hashPassword, verifyPasswordHash } from './password';
+import { generateSessionToken } from './token';
 
 export const AUTH_BASE_PATH = '/api/auth';
 const COOKIE_PREFIX = 'openpanel';
@@ -187,28 +188,45 @@ export async function getAuthSession(
 }
 
 /**
- * Gives a legacy session better-auth's cookie. The row is reused, its token
- * set to the legacy cookie's value, so the session keeps its id and expiry
- * and signing out either way ends both.
+ * The token better-auth knows this session by. It is its own random value, never
+ * the legacy cookie's: that cookie is unsigned, so storing it would let a
+ * database read sign in.
+ */
+async function claimAuthToken(db: Db, session: Session): Promise<string> {
+  if (session.token) {
+    return session.token;
+  }
+  const token = generateSessionToken();
+  const claimed = await db.session.updateMany({
+    where: { id: session.id, token: null },
+    data: { token },
+  });
+  if (claimed.count > 0) {
+    return token;
+  }
+  // A concurrent request upgraded it first.
+  const row = await db.session.findUniqueOrThrow({
+    where: { id: session.id },
+    select: { token: true },
+  });
+  return row.token ?? token;
+}
+
+/**
+ * Gives a legacy session better-auth's cookie on the same row, so the session
+ * keeps its id and expiry and signing out either way ends both.
  */
 export async function upgradeLegacySession(
   { db, config }: Pick<AuthDeps, 'db' | 'config'>,
   secret: string,
-  legacy: { session: Session; token: string },
+  session: Session,
   setCookie: ISetCookie
 ): Promise<void> {
-  if (legacy.session.token === null) {
-    await db.session.updateMany({
-      where: { id: legacy.session.id, token: null },
-      data: { token: legacy.token },
-    });
-  }
-  const signature = await makeSignature(legacy.token, secret);
-  setCookie(AUTH_SESSION_COOKIE, `${legacy.token}.${signature}`, {
+  const token = await claimAuthToken(db, session);
+  const signature = await makeSignature(token, secret);
+  setCookie(AUTH_SESSION_COOKIE, `${token}.${signature}`, {
     ...cookieOptions(config),
-    maxAge: Math.floor(
-      (legacy.session.expiresAt.getTime() - Date.now()) / 1000
-    ),
+    maxAge: Math.floor((session.expiresAt.getTime() - Date.now()) / 1000),
   });
 }
 

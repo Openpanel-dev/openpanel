@@ -218,7 +218,6 @@ export function createAuthService(
 
   async function upgradeSession(
     session: Session,
-    token: string,
     setCookie: ISetCookie
   ): Promise<void> {
     if (!(deps.auth && deps.config.auth.secret)) {
@@ -227,7 +226,7 @@ export function createAuthService(
     await upgradeLegacySession(
       deps,
       deps.config.auth.secret,
-      { session, token },
+      session,
       setCookie
     );
   }

@@ -95,6 +95,19 @@ function resetStores() {
   memberProjectStore.length = 0;
 }
 
+type OrphanFilter =
+  | { deleteAt: { lte: Date } }
+  | { members: { none: { role: { in: string[] } } } };
+
+function adminRolesIn(filters: OrphanFilter[]): string[] {
+  for (const filter of filters) {
+    if ('members' in filter) {
+      return filter.members.none.role.in;
+    }
+  }
+  return [];
+}
+
 const organization = {
   findMany: mock(
     async ({
@@ -102,7 +115,7 @@ const organization = {
     }: {
       where?: {
         members?: { some: { userId: string } };
-        OR?: unknown[];
+        OR?: OrphanFilter[];
         deleteAt?: { lte: Date };
       };
     } = {}) => {
@@ -116,13 +129,12 @@ const organization = {
         );
       }
       if (where?.OR) {
+        const adminRoles = adminRolesIn(where.OR);
         rows = rows.filter((org) => {
           const scheduledForDeletion =
             org.deleteAt && org.deleteAt <= new Date();
           const noAdmin = ![...memberStore.values()].some(
-            (m) =>
-              m.organizationId === org.id &&
-              (m.role === 'owner' || m.role === 'admin')
+            (m) => m.organizationId === org.id && adminRoles.includes(m.role)
           );
           return scheduledForDeletion || noAdmin;
         });
@@ -978,6 +990,22 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
   const result = await subject.runDeleteCron(deps);
   expect(result).toEqual({ organizations: 0, projects: 0 });
   expect(organizationStore.has('org_healthy')).toBe(true);
+});
+
+// The previous build still writes `org:admin` while a rollout replaces it.
+test('runDeleteCron keeps an organization whose only admin has the old role spelling', async () => {
+  organizationStore.set('org_rollout', makeOrganization({ id: 'org_rollout' }));
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_rollout',
+    userId: 'user_1',
+    role: 'org:admin',
+    email: 'a@example.com',
+  });
+
+  const result = await subject.runDeleteCron(deps);
+  expect(result).toEqual({ organizations: 0, projects: 0 });
+  expect(organizationStore.has('org_rollout')).toBe(true);
 });
 
 test('getSettingsForOrganization falls back to UTC when the stored timezone is unknown', async () => {

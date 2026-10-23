@@ -157,10 +157,19 @@ test("better-auth's cookie resolves the session without the legacy lookup", asyn
   expect(resolved?.session?.id).toBe('sess_ba');
 });
 
-test("a legacy session is resolved and handed better-auth's cookie on its row", async () => {
-  const token = 'legacy-token';
-  const id = hashSessionToken(token);
-  const tokenWrites: unknown[] = [];
+interface TokenWrite {
+  where: { id: string; token: null };
+  data: { token: string };
+}
+
+function legacyRow(id: string, token: string | null) {
+  return { id, token, userId: USER.id, expiresAt: FUTURE(), user: USER };
+}
+
+test("a legacy session gets better-auth's cookie under its own token, never the legacy one", async () => {
+  const legacyToken = 'legacy-token';
+  const id = hashSessionToken(legacyToken);
+  const tokenWrites: TokenWrite[] = [];
   const auth = {
     api: {
       getSession: () => Promise.reject(new Error('no better-auth cookie sent')),
@@ -168,15 +177,8 @@ test("a legacy session is resolved and handed better-auth's cookie on its row", 
   };
   const db = {
     session: {
-      findUnique: () =>
-        Promise.resolve({
-          id,
-          token: null,
-          userId: USER.id,
-          expiresAt: FUTURE(),
-          user: USER,
-        }),
-      updateMany: (args: unknown) => {
+      findUnique: () => Promise.resolve(legacyRow(id, null)),
+      updateMany: (args: TokenWrite) => {
         tokenWrites.push(args);
         return Promise.resolve({ count: 1 });
       },
@@ -184,46 +186,71 @@ test("a legacy session is resolved and handed better-auth's cookie on its row", 
   };
   const ctx = ctxWithAuth({ auth, db });
   const { request, written } = capturingRequest(
-    `session=${encodeURIComponent(token)}`,
-    token
+    `session=${encodeURIComponent(legacyToken)}`,
+    legacyToken
   );
 
   const resolved = await resolveSession(ctx, request);
 
   expect(resolved?.userId).toBe(USER.id);
-  expect(tokenWrites).toEqual([
-    { where: { id, token: null }, data: { token } },
-  ]);
+  expect(tokenWrites).toHaveLength(1);
+  const stored = tokenWrites[0]?.data.token;
+  expect(tokenWrites[0]?.where).toEqual({ id, token: null });
+  expect(stored).toBeString();
+  expect(stored).not.toBe(legacyToken);
   const upgraded = written.find(
     (cookie) => cookie.name === AUTH_SESSION_COOKIE
   );
-  expect(upgraded?.value.startsWith(`${token}.`)).toBe(true);
+  expect(upgraded?.value.startsWith(`${stored}.`)).toBe(true);
+  expect(upgraded?.value).not.toContain(legacyToken);
+});
+
+test('a session another request upgraded first reuses that token', async () => {
+  const legacyToken = 'legacy-token';
+  const id = hashSessionToken(legacyToken);
+  const auth = { api: { getSession: () => Promise.resolve(null) } };
+  const db = {
+    session: {
+      findUnique: () => Promise.resolve(legacyRow(id, null)),
+      updateMany: () => Promise.resolve({ count: 0 }),
+      findUniqueOrThrow: () => Promise.resolve({ token: 'won-the-race' }),
+    },
+  };
+  const ctx = ctxWithAuth({ auth, db });
+  const { request, written } = capturingRequest(
+    `session=${encodeURIComponent(legacyToken)}`,
+    legacyToken
+  );
+
+  await resolveSession(ctx, request);
+
+  const upgraded = written.find(
+    (cookie) => cookie.name === AUTH_SESSION_COOKIE
+  );
+  expect(upgraded?.value.startsWith('won-the-race.')).toBe(true);
 });
 
 test('an already upgraded legacy row is not written again', async () => {
-  const token = 'legacy-token';
+  const legacyToken = 'legacy-token';
   const auth = { api: { getSession: () => Promise.resolve(null) } };
   const db = {
     session: {
       findUnique: () =>
-        Promise.resolve({
-          id: hashSessionToken(token),
-          token,
-          userId: USER.id,
-          expiresAt: FUTURE(),
-          user: USER,
-        }),
+        Promise.resolve(legacyRow(hashSessionToken(legacyToken), 'stored')),
       updateMany: () => Promise.reject(new Error('should not be called')),
     },
   };
   const ctx = ctxWithAuth({ auth, db });
   const { request, written } = capturingRequest(
-    `session=${encodeURIComponent(token)}`,
-    token
+    `session=${encodeURIComponent(legacyToken)}`,
+    legacyToken
   );
 
   expect((await resolveSession(ctx, request))?.userId).toBe(USER.id);
-  expect(written.map((cookie) => cookie.name)).toEqual([AUTH_SESSION_COOKIE]);
+  const upgraded = written.find(
+    (cookie) => cookie.name === AUTH_SESSION_COOKIE
+  );
+  expect(upgraded?.value.startsWith('stored.')).toBe(true);
 });
 
 test('the demo user wins over any cookie', async () => {

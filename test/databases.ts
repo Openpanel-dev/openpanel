@@ -19,7 +19,10 @@ function testDatabaseName(appDatabaseUrl: string | undefined): string {
   const appDatabase = appDatabaseUrl
     ? new URL(appDatabaseUrl).pathname.slice(1)
     : '';
-  if (appDatabase.startsWith(SHARED_TEST_DATABASE)) {
+  const isTestDatabase =
+    appDatabase === SHARED_TEST_DATABASE ||
+    appDatabase.startsWith(`${SHARED_TEST_DATABASE}_`);
+  if (isTestDatabase) {
     return appDatabase;
   }
   const worktree = WORKTREE_APP_DATABASE.exec(appDatabase)?.[1];

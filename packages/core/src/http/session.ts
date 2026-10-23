@@ -74,7 +74,7 @@ export async function resolveSession(
       auth.validateSessionToken(token)
     );
     if (result.userId !== null) {
-      await auth.upgradeLegacySession(result.session, token, setCookie);
+      await auth.upgradeLegacySession(result.session, setCookie);
       return result;
     }
   }

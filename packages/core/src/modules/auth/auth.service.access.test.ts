@@ -166,7 +166,7 @@ test('requireOrganizationAdmin accepts owner and admin, and refuses member and v
   }
 });
 
-test('getOrganizationAccess reports the stored role, and an unknown one as member', async () => {
+test('getOrganizationAccess reports the stored role, the old spellings by their new names, and an unknown one as member', async () => {
   for (const role of ['owner', 'admin', 'member', 'viewer']) {
     organizationAccess = memberAccess(role);
     await expect(
@@ -177,13 +177,20 @@ test('getOrganizationAccess reports the stored role, and an unknown one as membe
     ).resolves.toMatchObject({ role });
   }
 
-  organizationAccess = memberAccess('org:admin');
-  await expect(
-    authService().getOrganizationAccess({
-      userId: 'user_1',
-      organizationId: 'org_1',
-    })
-  ).resolves.toMatchObject({ role: 'member' });
+  const readAs: [stored: string, role: string][] = [
+    ['org:admin', 'admin'],
+    ['org:member', 'member'],
+    ['superuser', 'member'],
+  ];
+  for (const [stored, role] of readAs) {
+    organizationAccess = memberAccess(stored);
+    await expect(
+      authService().getOrganizationAccess({
+        userId: 'user_1',
+        organizationId: 'org_1',
+      })
+    ).resolves.toMatchObject({ role });
+  }
 });
 
 test('getProjectAccess / getOrganizationAccess reach the same fake lookups', async () => {
