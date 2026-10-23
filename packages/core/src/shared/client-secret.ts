@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { verify as verifyArgon2 } from '@node-rs/argon2';
 import {
   hashPassword as hashScrypt,
@@ -29,3 +30,7 @@ export async function verifyClientSecret(
     return false;
   }
 }
+
+/** A fresh client secret in the `sec_` format every service hands out. */
+export const newClientSecret = () =>
+  `sec_${crypto.randomBytes(10).toString('hex')}`;

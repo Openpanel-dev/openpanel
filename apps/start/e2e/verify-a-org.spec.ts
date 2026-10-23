@@ -27,7 +27,6 @@ test('cancelling an organization deletion keeps a project that was already sched
     lastName: 'VerifyA',
     email: `e2e-verify-a-${stamp}@example.com`,
     password: PASSWORD,
-    confirmPassword: PASSWORD,
   });
   const project = {
     domain: null,

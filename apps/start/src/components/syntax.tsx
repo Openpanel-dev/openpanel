@@ -19,6 +19,7 @@ interface SyntaxProps {
   language?: 'typescript' | 'bash' | 'json' | 'markdown';
   wrapLines?: boolean;
   copyable?: boolean;
+  onCopy?: () => void;
 }
 
 export default function Syntax({
@@ -27,6 +28,7 @@ export default function Syntax({
   language = 'typescript',
   wrapLines = false,
   copyable = true,
+  onCopy,
 }: SyntaxProps) {
   return (
     <div className={cn('group relative rounded-lg', className)}>
@@ -35,6 +37,7 @@ export default function Syntax({
           className="row absolute top-1 right-1 items-center gap-2 rounded bg-card p-2 opacity-0 transition-opacity group-hover:opacity-100"
           onClick={() => {
             clipboard(code, null);
+            onCopy?.();
           }}
           type="button"
         >

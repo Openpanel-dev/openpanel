@@ -1,23 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { CopyIcon, DownloadIcon, LockIcon, XIcon } from 'lucide-react';
-import { ButtonContainer } from '@/components/button-container';
-import CopyInput from '@/components/forms/copy-input';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import { XIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import ConnectWeb from '@/components/onboarding/connect-web';
-import { Button, LinkButton } from '@/components/ui/button';
-import { isRealClientSecret, useClientSecret } from '@/hooks/use-client-secret';
+import { ClientCredentials } from '@/components/onboarding/client-credentials';
+import {
+  FirstEventStatus,
+  useFirstEvents,
+} from '@/components/onboarding/first-event-status';
+import { InstallGuide } from '@/components/onboarding/install-guide';
+import type { SnippetContext } from '@/components/onboarding/install-snippets';
+import { InstallTroubleshootingDialog } from '@/components/onboarding/install-troubleshooting';
+import { McpConnect } from '@/components/onboarding/mcp-connect';
+import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
+import { LinkButton } from '@/components/ui/button';
+import { useAppContext } from '@/hooks/use-app-context';
+import {
+  isRealClientSecret,
+  useClientSecret,
+  useMcpToken,
+} from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
-import { clipboard } from '@/utils/clipboard';
+import { trackFunnel, useSecondsOnStep } from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
   head: () => ({
-    meta: [
-      { title: createEntityTitle('Connect data', PAGE_TITLES.ONBOARDING) },
-    ],
+    meta: [{ title: createEntityTitle('Install', PAGE_TITLES.ONBOARDING) }],
   }),
   beforeLoad: async ({ context }) => {
     if (!(await isSignedIn(context))) {
@@ -38,13 +49,45 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
+  const { apiUrl, isSelfHosted } = useAppContext();
   const { data: project } = useQuery(
     trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
-  const client = project?.clients[0];
-  const [secret] = useClientSecret();
+  const client = project?.clients.find(
+    (candidate) => candidate.type === 'write'
+  );
+  const [secret, secretReady] = useClientSecret(projectId);
+  const [mcpToken, mcpTokenReady] = useMcpToken(projectId);
+  const keysReady = secretReady && mcpTokenReady;
+  const secondsOnStep = useSecondsOnStep();
+  const { events, isVerified } = useFirstEvents(projectId, secondsOnStep);
+  const hasSecret = isRealClientSecret(secret);
 
-  if (!client) {
+  // Once per visit, after session storage has been read so the key flags
+  // are real; the keys do not change while the page is open.
+  const viewedProjectId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!keysReady || viewedProjectId.current === projectId) {
+      return;
+    }
+    viewedProjectId.current = projectId;
+    trackFunnel('onboarding_connect_viewed', {
+      projectId,
+      types: project?.types ?? [],
+      hasSecret,
+      hasMcpToken: Boolean(mcpToken),
+    });
+  }, [keysReady, projectId, project?.types, hasSecret, mcpToken]);
+
+  const openDashboard = (from: 'status' | 'footer') =>
+    trackFunnel('onboarding_dashboard_opened', {
+      projectId,
+      verified: isVerified,
+      from,
+      secondsOnStep: secondsOnStep(),
+    });
+
+  if (!(project && client)) {
     return (
       <FullPageEmptyState
         description="The project you are looking for does not exist. Please reload the page."
@@ -54,90 +97,103 @@ function Component() {
     );
   }
 
-  // The secret only exists in this browser session right after creation (we
-  // store a hash server-side). Never derive the MCP token — or print secret
-  // lines — from the placeholder: that produces valid-looking broken values.
-  const hasSecret = isRealClientSecret(secret);
-  const mcpToken = hasSecret ? btoa(`${client.id}:${secret}`) : null;
-  const credentials = [
-    `CLIENT_ID=${client.id}`,
-    hasSecret && `CLIENT_SECRET=${secret}`,
-    mcpToken && `MCP_TOKEN=${mcpToken}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-  const download = () => {
-    const blob = new Blob([credentials], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'credentials.txt';
-    a.click();
+  // Secrets only exist in the browser session right after creation (the
+  // server stores hashes). Snippets fall back to a placeholder without them.
+  const context: SnippetContext = {
+    clientId: client.id,
+    clientSecret: hasSecret ? secret : null,
+    apiUrl: isSelfHosted ? apiUrl : null,
   };
+  const dashboard = {
+    to: '/$organizationId/$projectId',
+    params: { organizationId: project.organizationId, projectId: project.id },
+  } as const;
+
+  // One DOM copy of the sidebar: under the heading on small screens, the
+  // right column on large ones. The second grid row is 1fr so the sidebar's
+  // extra height lands below the left stack instead of between its blocks.
+  const sidebarPlacement =
+    'col gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1';
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="scrollbar-thin flex-1 overflow-y-auto">
-        <div className="col gap-4 p-4">
-          <div className="col gap-2">
-            <div className="row items-center justify-between gap-4">
-              <div className="flex items-center gap-2 font-bold text-xl capitalize">
-                <LockIcon className="size-4" />
-                Client credentials
-              </div>
-              <div className="row gap-2">
-                <Button
-                  icon={CopyIcon}
-                  onClick={() => clipboard(credentials)}
-                  variant="outline"
-                >
-                  Copy all
-                </Button>
-                <Button
-                  icon={DownloadIcon}
-                  onClick={() => download()}
-                  variant="outline"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-            <div className="col gap-3">
-              <CopyInput label="Client ID" value={client.id} />
-              {hasSecret && <CopyInput label="Client secret" value={secret} />}
-              {mcpToken && (
-                <div className="w-full min-w-0">
-                  <CopyInput label="MCP token" value={mcpToken} />
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    Authenticates the MCP server (base64-encoded client ID and
-                    secret).
-                  </p>
-                </div>
-              )}
-              {!hasSecret && (
-                <p className="text-muted-foreground text-sm">
-                  Your client secret (and the MCP token derived from it) is only
-                  shown once, right after the client is created. If you need it
-                  again, create a new client under Settings → Clients.
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="-mx-4 h-px bg-muted" />
-          <ConnectWeb client={client} />
+    <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-12">
+      <OnboardingHeading
+        className="lg:col-start-1"
+        description={
+          <>
+            Add the snippet to{' '}
+            <strong className="text-foreground">{project.name}</strong> and we
+            confirm the first event right here. Your keys stay on the side; you
+            can also do this later from the dashboard.
+          </>
+        }
+        title="Install OpenPanel"
+      />
+      <aside className={sidebarPlacement}>
+        <FirstEventStatus
+          events={events}
+          help={
+            <InstallTroubleshootingDialog context={context} project={project} />
+          }
+        >
+          {isVerified && (
+            <LinkButton
+              className="w-full"
+              onClick={() => openDashboard('status')}
+              size="lg"
+              {...dashboard}
+            >
+              Open dashboard
+            </LinkButton>
+          )}
+        </FirstEventStatus>
+        <ClientCredentials
+          clientId={client.id}
+          clientSecret={context.clientSecret}
+          mcpToken={mcpToken}
+          projectId={project.id}
+        />
+        <McpConnect
+          apiUrl={apiUrl}
+          mcpToken={mcpToken}
+          organizationId={project.organizationId}
+          projectId={project.id}
+        />
+      </aside>
+      <div className="col gap-10 lg:col-start-1">
+        <InstallGuide
+          context={context}
+          projectId={project.id}
+          projectName={project.name}
+          projectTypes={project.types}
+        />
+        <div className="row items-center justify-between gap-4 border-t pt-8">
+          {isVerified ? (
+            <span className="text-muted-foreground">You are all set.</span>
+          ) : (
+            <Link
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              onClick={() =>
+                trackFunnel('onboarding_skipped', {
+                  projectId,
+                  secondsOnStep: secondsOnStep(),
+                })
+              }
+              {...dashboard}
+            >
+              Skip for now, I will install later
+            </Link>
+          )}
+          <LinkButton
+            onClick={() => openDashboard('footer')}
+            size="xl"
+            variant={isVerified ? 'default' : 'outline'}
+            {...dashboard}
+          >
+            Open dashboard
+          </LinkButton>
         </div>
       </div>
-      <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">
-        <div />
-        <LinkButton
-          className="min-w-28 self-start"
-          href={'/onboarding/$projectId/verify'}
-          params={{ projectId }}
-          size="lg"
-        >
-          Next
-        </LinkButton>
-      </ButtonContainer>
     </div>
   );
 }

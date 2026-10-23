@@ -118,12 +118,11 @@ const signUpThroughInvite = async (
   const guest = await context.newPage();
   await dismissFeedbackPrompt(guest);
   await gotoHydrated(guest, `/onboarding?inviteId=${inviteId}`);
-  await expect(guest.getByText('Invitation to Acme')).toBeVisible();
+  await expect(guest.getByText('You are invited to Acme')).toBeVisible();
   await guest.getByLabel('First name').fill('E2E');
   await guest.getByLabel('Last name').fill('OrgMember');
   await guest.getByLabel('Email').fill(email);
   await guest.getByLabel('Password', { exact: true }).fill(GUEST_PASSWORD);
-  await guest.getByLabel('Confirm password').fill(GUEST_PASSWORD);
   await guest.getByRole('button', { name: 'Create account' }).click();
   await guest.waitForURL(/\/acme$/, { timeout: 60_000 });
   return { context, guest };

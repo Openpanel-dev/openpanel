@@ -5,8 +5,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { AuthHeading } from './auth-shell';
+import { PasswordInput } from './password-input';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const validator = zResetPassword;
@@ -43,26 +44,30 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <div className="col gap-8">
-      <div>
-        <h1 className="mb-2 font-bold text-3xl text-foreground">
-          Reset your password
-        </h1>
-        <p className="text-muted-foreground">
-          Already have an account?{' '}
-          <a className="underline" href="/login">
-            Sign in
-          </a>
-        </p>
-      </div>
-      <form className="col gap-6" method="post" onSubmit={onSubmit}>
-        <InputWithLabel
+      <AuthHeading
+        description="Choose a new password for your account."
+        title="Reset your password"
+      />
+      <form className="col gap-5" method="post" onSubmit={onSubmit}>
+        <PasswordInput
+          autoComplete="new-password"
+          error={form.formState.errors.password?.message}
+          hint="At least 8 characters"
           label="New password"
           placeholder="New password"
-          type="password"
+          size="xl"
           {...form.register('password')}
         />
-        <Button type="submit">Reset password</Button>
+        <Button loading={mutation.isPending} size="xl" type="submit">
+          Reset password
+        </Button>
       </form>
+      <p className="text-center text-muted-foreground text-sm">
+        Remembered it after all?{' '}
+        <a className="font-medium text-foreground underline" href="/login">
+          Sign in
+        </a>
+      </p>
     </div>
   );
 }

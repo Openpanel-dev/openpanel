@@ -28,6 +28,7 @@ const buttonVariants = cva(
         default: 'h-9 px-3.5',
         sm: 'h-8 rounded-md px-2.5',
         lg: 'h-10 rounded-md px-6',
+        xl: 'h-11 rounded-lg px-6 text-base',
         icon: 'h-8 w-8',
       },
     },
@@ -62,6 +63,8 @@ function fixHeight({
     switch (size) {
       case 'lg':
         return 'h-auto min-h-10 py-2';
+      case 'xl':
+        return 'h-auto min-h-11 py-2';
       case 'icon':
         return 'h-auto min-h-8 py-1';
       case 'sm':
@@ -98,7 +101,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Icon = loading ? null : (icon ?? null);
 
     // Determine spinner size based on button size
-    const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+    const spinnerSize = size === 'lg' || size === 'xl' ? 'md' : 'sm';
 
     // With `asChild`, Radix's <Slot> merges props onto a single child element
     // and calls React.Children.only. Injecting a spinner/icon as extra siblings
@@ -198,7 +201,7 @@ const LinkButton = ({
   const Icon = loading ? null : (icon ?? null);
 
   // Determine spinner size based on button size
-  const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+  const spinnerSize = size === 'lg' || size === 'xl' ? 'md' : 'sm';
 
   return (
     <Link

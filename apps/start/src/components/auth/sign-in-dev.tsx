@@ -24,12 +24,12 @@ export function SignInDev({ inviteId }: { inviteId?: string }) {
   return (
     <Button
       className="w-full"
+      icon={TerminalIcon}
       loading={mutation.isPending}
       onClick={() => mutation.mutate({ inviteId })}
-      size="lg"
-      variant="outline"
+      size="xl"
+      variant="secondary"
     >
-      <TerminalIcon className="mr-2 size-4" />
       Dev login
     </Button>
   );

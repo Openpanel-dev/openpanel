@@ -39,7 +39,9 @@ test('signed-out visitors are sent to /login from every protected route', async 
     await page.goto(path);
     await expect(page, `from ${path}`).toHaveURL(/\/login$/);
   }
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back' })
+  ).toBeVisible();
 
   // The onboarding steps send a signed-out visitor to the sign-up page instead.
   await page.goto('/onboarding/project');
@@ -68,17 +70,19 @@ test('the login form validates before it calls the API', async ({ page }) => {
   await expect(fieldErrors.first()).toHaveText('Invalid email address');
 
   await page.getByLabel('Email').fill('not-an-email');
-  await page.getByLabel('Password').fill('short');
-  await page.getByLabel('Password').press('Enter');
+  await page.getByLabel('Password', { exact: true }).fill('short');
+  await page.getByLabel('Password', { exact: true }).press('Enter');
   await expect(fieldErrors).toHaveCount(2);
 
   await page.getByLabel('Email').fill('someone@example.com');
-  await page.getByLabel('Password').fill('long-enough-password');
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill('long-enough-password');
   await page.getByLabel('Email').press('Tab');
   await expect(fieldErrors).toHaveCount(0);
 
   await expect(
-    page.getByRole('link', { name: 'Create one today' })
+    page.getByRole('link', { name: 'Create an account' })
   ).toHaveAttribute('href', '/onboarding');
   expect(signInRequests).toBe(0);
   await expect(page).toHaveURL(/\/login$/);
@@ -212,7 +216,9 @@ test('a submit before hydration never puts the password in the URL', async ({
   );
   await page.goto('/login');
   await page.getByLabel('Email').fill('someone@example.com');
-  await page.getByLabel('Password').fill('super-secret-password');
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill('super-secret-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForLoadState('load');
   expect(page.url()).not.toContain('super-secret-password');

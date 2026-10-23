@@ -15,7 +15,10 @@ export const zProvider = z.enum(['email', 'google', 'github']);
  * a person types; anyone who set a longer one before this existed resets by
  * email, which asks only for an address.
  */
-export const zPassword = z.string().min(8).max(MAX_PASSWORD);
+export const zPassword = z
+  .string()
+  .min(8, 'Use at least 8 characters')
+  .max(MAX_PASSWORD);
 
 /** Length first, so a huge string fails before the address is parsed. */
 const zEmail = z.string().max(MAX_EMAIL).email();
@@ -35,19 +38,13 @@ export type ISignInEmail = z.infer<typeof zSignInEmail>;
 
 export const zSignInDev = z.object({ inviteId: zShortId.nullish() });
 
-export const zSignUpEmail = z
-  .object({
-    firstName: zPersonName,
-    lastName: zPersonName,
-    email: zEmail,
-    password: zPassword,
-    confirmPassword: zPassword,
-    inviteId: zShortId.nullish(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Passwords do not match',
-  });
+export const zSignUpEmail = z.object({
+  firstName: zPersonName,
+  lastName: zPersonName,
+  email: zEmail,
+  password: zPassword,
+  inviteId: zShortId.nullish(),
+});
 export type ISignUpEmail = z.infer<typeof zSignUpEmail>;
 
 export const zResetPassword = z.object({
