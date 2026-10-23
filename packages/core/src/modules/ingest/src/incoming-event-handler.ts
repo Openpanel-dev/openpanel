@@ -298,12 +298,15 @@ async function ingestIncomingEvent(
     ? null
     : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
+  // A client may send its own `__query` (for example first-touch utm tags it
+  // persisted); the URL's query wins over it so a tagged landing is never lost.
+  const clientQuery = properties.__query as Record<string, unknown> | undefined;
   // Typed as a plain record so `omit`'s key set is `string`, not the two
   // literal keys the spread would otherwise infer.
   const eventProperties: Record<string, unknown> = {
     ...properties,
     __hash: hash,
-    __query: query,
+    __query: clientQuery || query ? { ...clientQuery, ...query } : undefined,
   };
   const sdkName = headers['openpanel-sdk-name'];
   const sdkVersion = headers['openpanel-sdk-version'];
