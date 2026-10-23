@@ -65,11 +65,15 @@ const FUNNEL = [
 
 /** How many turns are on screen, and whether the assistant is "thinking" about the next one. */
 function useScriptedReplay(length: number, reducedMotion: boolean) {
-  const [shown, setShown] = useState(reducedMotion ? length : 1);
+  // Starts at one turn on server and client alike; reduced motion reveals
+  // the rest in the effect, so hydration never sees a different list.
+  const [shown, setShown] = useState(1);
   const [thinking, setThinking] = useState(false);
 
   useEffect(() => {
     if (reducedMotion) {
+      setThinking(false);
+      setShown(length);
       return;
     }
     if (shown >= length) {

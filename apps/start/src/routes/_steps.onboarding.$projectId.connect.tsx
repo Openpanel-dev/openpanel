@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { XIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { ClientCredentials } from '@/components/onboarding/client-credentials';
@@ -56,21 +56,28 @@ function Component() {
   const client = project?.clients.find(
     (candidate) => candidate.type === 'write'
   );
-  const [secret] = useClientSecret();
-  const [mcpToken] = useMcpToken();
+  const [secret, , secretReady] = useClientSecret();
+  const [mcpToken, , mcpTokenReady] = useMcpToken();
+  const keysReady = secretReady && mcpTokenReady;
   const secondsOnStep = useSecondsOnStep();
   const { events, isVerified } = useFirstEvents(projectId, secondsOnStep);
   const hasSecret = isRealClientSecret(secret);
 
+  // Once per visit, after session storage has been read so the key flags
+  // are real; the keys do not change while the page is open.
+  const viewedProjectId = useRef<string | null>(null);
   useEffect(() => {
+    if (!keysReady || viewedProjectId.current === projectId) {
+      return;
+    }
+    viewedProjectId.current = projectId;
     trackFunnel('onboarding_connect_viewed', {
       projectId,
       types: project?.types ?? [],
       hasSecret,
       hasMcpToken: Boolean(mcpToken),
     });
-    // Once per visit: the keys do not change while the page is open.
-  }, [projectId]);
+  }, [keysReady, projectId, project?.types, hasSecret, mcpToken]);
 
   const openDashboard = (from: 'status' | 'footer') =>
     trackFunnel('onboarding_dashboard_opened', {

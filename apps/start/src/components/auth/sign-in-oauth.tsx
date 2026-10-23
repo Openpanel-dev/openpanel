@@ -1,8 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { useTRPC } from '@/integrations/trpc/react';
-import { trackFunnel } from '@/utils/funnel-tracking';
+import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 export type OAuthProvider = 'google' | 'github';
 
@@ -71,6 +72,13 @@ export function SignInOAuth({
         if (res.url) {
           window.location.href = res.url;
         }
+      },
+      onError(error) {
+        trackFunnel(
+          type === 'sign-in' ? 'auth_signin_failed' : 'auth_signup_failed',
+          { provider, reason: failureReason(error) }
+        );
+        toast.error(error.message);
       },
     })
   );

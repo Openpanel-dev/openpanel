@@ -32,6 +32,9 @@ const safeWrite = (key: string, value: string) => {
 
 function useSessionSecret(key: string, fallback: string) {
   const [value, setValue] = useState<string>(fallback);
+  // False until storage has been read, so a first-render consumer does not
+  // mistake the fallback for "no secret".
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (value && value !== fallback) {
@@ -44,9 +47,10 @@ function useSessionSecret(key: string, fallback: string) {
     if (stored) {
       setValue(stored);
     }
+    setReady(true);
   }, [key]);
 
-  return [value, setValue] as const;
+  return [value, setValue, ready] as const;
 }
 
 export function useClientSecret() {
@@ -55,6 +59,9 @@ export function useClientSecret() {
 
 /** The read-only MCP client's token, known only in the session that created the project. */
 export function useMcpToken() {
-  const [token, setToken] = useSessionSecret(ONBOARDING_MCP_TOKEN_KEY, '');
-  return [token || null, setToken] as const;
+  const [token, setToken, ready] = useSessionSecret(
+    ONBOARDING_MCP_TOKEN_KEY,
+    ''
+  );
+  return [token || null, setToken, ready] as const;
 }

@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   Prisma,
@@ -13,7 +12,7 @@ import type { ServiceDeps, Services } from '../../services';
 import { getMemberProjectGrants } from '../../shared/access-lookups';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
 import { getClientByIdCached } from '../client/client.service';
 import type { IProjectFilters } from './project.constants';
@@ -309,7 +308,7 @@ export function createProjectService(
     project: IServiceProject;
     client: CreatedProjectClient | null;
   }> {
-    const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    const secret = newClientSecret();
     const project = await deps.db.project.create({
       data: {
         id: await getId(deps, 'project', input.name),

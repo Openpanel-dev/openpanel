@@ -78,7 +78,7 @@ function LoginPage() {
                 Reference: {correlationId}.{' '}
                 <a
                   className="font-medium underline"
-                  href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
+                  href={`mailto:hello@openpanel.dev?subject=${encodeURIComponent(`Login Issue - Correlation ID: ${correlationId}`)}`}
                 >
                   Email us
                 </a>{' '}

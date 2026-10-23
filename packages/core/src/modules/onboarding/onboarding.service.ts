@@ -1,10 +1,9 @@
-import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
 import {
   runSequence,
@@ -106,8 +105,6 @@ export interface CreateOnboardingProjectResult {
   /** Token for the read-only MCP client created alongside; only ever returned here. */
   mcpToken: string;
 }
-
-const newClientSecret = () => `sec_${crypto.randomBytes(10).toString('hex')}`;
 
 const toMcpToken = (clientId: string, secret: string) =>
   Buffer.from(`${clientId}:${secret}`).toString('base64');
