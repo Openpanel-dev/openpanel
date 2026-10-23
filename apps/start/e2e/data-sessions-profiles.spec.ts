@@ -107,7 +107,7 @@ test.describe('sessions', () => {
     }
 
     await page.getByPlaceholder(/Search/).fill('zzz-no-such-session');
-    await expect(page.getByText('No sessions found')).toBeVisible();
+    await expect(page.getByText('No sessions', { exact: true })).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/sessions-empty.png` });
     expect(problems).toEqual([]);
   });

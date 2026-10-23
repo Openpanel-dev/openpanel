@@ -1,22 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BoxSelectIcon } from 'lucide-react';
+import { PlugIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { PingBadge } from '../ping';
-import { Button } from '../ui/button';
+import { Button, LinkButton } from '../ui/button';
 import {
   IntegrationCard,
   IntegrationCardFooter,
-  IntegrationCardLogo,
   IntegrationCardSkeleton,
 } from './integration-card';
 import { INTEGRATIONS } from './integrations';
+import { EmptyState } from '@/components/empty-state';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 
 export function ActiveIntegrations() {
-  const { projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.integration.list.queryOptions({
@@ -62,15 +62,19 @@ export function ActiveIntegrations() {
         </>
       )}
       {!isLoading && data.length === 0 && (
-        <IntegrationCard
-          description="Integrations allow you to connect your systems to OpenPanel. You can add them in the available integrations section."
-          icon={
-            <IntegrationCardLogo className="bg-def-200 text-foreground">
-              <BoxSelectIcon className="size-10" strokeWidth={1} />
-            </IntegrationCardLogo>
-          }
-          name="No integrations yet"
-        />
+        <EmptyState
+          className="md:col-span-2"
+          description="Connect Slack, Discord or a webhook to send notifications and data to the tools you already use."
+          icon={PlugIcon}
+          title="No integrations yet"
+        >
+          <LinkButton
+            params={{ organizationId, projectId }}
+            to="/$organizationId/$projectId/integrations/available"
+          >
+            Browse integrations
+          </LinkButton>
+        </EmptyState>
       )}
       <AnimatePresence mode="popLayout">
         {data.map((item) => {

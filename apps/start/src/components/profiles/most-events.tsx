@@ -1,10 +1,11 @@
 import { ZapIcon } from 'lucide-react';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
-import { Widget, WidgetEmptyState } from '@/components/widget';
+import { EmptyState } from '@/components/empty-state';
+import { Widget } from '@/components/widget';
 
-type Props = {
+interface Props {
   data: { count: number; name: string }[];
-};
+}
 
 export const MostEvents = ({ data }: Props) => {
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
@@ -14,7 +15,7 @@ export const MostEvents = ({ data }: Props) => {
         <WidgetTitle>Popular events</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
-        <WidgetEmptyState icon={ZapIcon} text="No events yet" />
+        <EmptyState icon={ZapIcon} title="No events yet" variant="inline" />
       ) : (
         <div className="flex flex-col gap-1 p-1">
           {data.slice(0, 5).map((item) => (

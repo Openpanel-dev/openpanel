@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OPLineChart } from '@/components/charts/op-line-chart';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -155,23 +155,29 @@ function SeoPage() {
 
   if (!isConnected) {
     return (
-      <FullPageEmptyState
-        className="pt-[20vh]"
-        description="Connect Google Search Console to track your search impressions, clicks, and keyword rankings."
-        icon={SearchIcon}
-        title="No SEO data yet"
-      >
-        <Button
-          onClick={() =>
-            navigate({
-              to: '/$organizationId/$projectId/settings/gsc',
-              params: { organizationId, projectId },
-            })
-          }
+      <PageContainer>
+        <PageHeader
+          className="mb-8"
+          description="Google Search Console data"
+          title="SEO"
+        />
+        <EmptyState
+          description="See which queries and pages bring you search traffic, with clicks, impressions and positions next to the rest of your analytics."
+          icon={SearchIcon}
+          title="Connect Google Search Console"
         >
-          Connect Google Search Console
-        </Button>
-      </FullPageEmptyState>
+          <Button
+            onClick={() =>
+              navigate({
+                to: '/$organizationId/$projectId/settings/gsc',
+                params: { organizationId, projectId },
+              })
+            }
+          >
+            Connect Google Search Console
+          </Button>
+        </EmptyState>
+      </PageContainer>
     );
   }
 

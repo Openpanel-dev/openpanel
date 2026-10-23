@@ -1,6 +1,8 @@
 import type { IServiceEvent, IServiceSession } from '@openpanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { ZapIcon } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import { EventIcon } from '@/components/events/event-icon';
 import { useEventDrawer } from '@/components/events/use-event-drawer';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -405,9 +407,12 @@ function Component() {
                 </button>
               ))}
               {events.length === 0 && (
-                <div className="py-8 text-center text-muted-foreground text-sm">
-                  No events found
-                </div>
+                <EmptyState
+                  description="This session has no events in it."
+                  icon={ZapIcon}
+                  title="No events"
+                  variant="inline"
+                />
               )}
             </div>
           </Widget>

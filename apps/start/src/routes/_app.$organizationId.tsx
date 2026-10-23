@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { Building2Icon } from 'lucide-react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
@@ -73,14 +73,14 @@ export const Route = createFileRoute('/_app/$organizationId')({
   },
   pendingComponent: FullPageLoadingState,
   notFoundComponent: () => (
-    <FullPageEmptyState
-      className="min-h-[calc(100vh-4rem)]"
+    <EmptyState
       description="This workspace doesn't exist or you don't have access to it."
       icon={Building2Icon}
       title="Workspace not found"
+      variant="page"
     >
       <LinkButton href="/">Go to home</LinkButton>
-    </FullPageEmptyState>
+    </EmptyState>
   ),
 });
 

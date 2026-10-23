@@ -6,6 +6,7 @@ import { Grid } from '@/components/charts/grid';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { XAxis } from '@/components/charts/x-axis';
 import { YAxis } from '@/components/charts/y-axis';
+import { EmptyState } from '@/components/empty-state';
 import { Widget, WidgetBody } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -41,9 +42,13 @@ export function CohortEventsChart({ data }: Props) {
       </WidgetHead>
       <WidgetBody>
         {total === 0 ? (
-          <p className="py-4 text-center text-muted-foreground text-sm">
-            No events yet
-          </p>
+          <EmptyState
+            className="h-[200px]"
+            description="Events from people in this cohort will be charted here."
+            icon={ActivityIcon}
+            title="No events in the last 30 days"
+            variant="inline"
+          />
         ) : (
           <AreaChart
             animationDuration={0}

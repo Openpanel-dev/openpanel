@@ -5,6 +5,7 @@ import {
   type VirtualItem,
 } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
+import { SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Table,
@@ -16,6 +17,7 @@ import {
 } from '../table';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { getCommonPinningStyles } from './data-table-helpers';
+import { EmptyState } from '@/components/empty-state';
 import { Skeleton } from '@/components/skeleton';
 import { cn } from '@/utils/cn';
 
@@ -162,13 +164,17 @@ export function VirtualizedDataTable<TData>({
             {visibleRows.length ? (
               visibleRows.map((row) => renderTableRow(rows[row.index]!, row))
             ) : (
-              <TableRow style={{ display: 'flex', height: '96px' }}>
+              <TableRow style={{ display: 'flex' }}>
                 <TableCell
-                  className="flex h-24 items-center justify-center text-center"
                   colSpan={table.getAllColumns().length}
                   style={{ width: '100%' }}
                 >
-                  No results.
+                  <EmptyState
+                    description="Nothing matches the current filters."
+                    icon={SearchIcon}
+                    title="No results"
+                    variant="inline"
+                  />
                 </TableCell>
               </TableRow>
             )}

@@ -1,9 +1,9 @@
-import { ServerCrashIcon } from 'lucide-react';
-import { FullPageEmptyState } from './full-page-empty-state';
+import { TriangleAlertIcon } from 'lucide-react';
+import { EmptyState } from './empty-state';
 
 export const FullPageErrorState = ({
-  title = 'Error...',
-  description = 'Something went wrong...',
+  title = 'Something went wrong',
+  description = 'Try again in a moment. If it keeps happening, let us know.',
   children,
 }: {
   title?: string;
@@ -11,13 +11,13 @@ export const FullPageErrorState = ({
   children?: React.ReactNode;
 }) => {
   return (
-    <FullPageEmptyState
-      className="min-h-[calc(100vh-theme(spacing.16))]"
-      icon={ServerCrashIcon}
+    <EmptyState
+      description={description}
+      icon={TriangleAlertIcon}
       title={title}
+      variant="page"
     >
-      {description}
-      {children && <div className="mt-4">{children}</div>}
-    </FullPageEmptyState>
+      {children}
+    </EmptyState>
   );
 };
