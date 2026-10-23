@@ -6,13 +6,11 @@
 //   bun run --filter @openpanel/db access-snapshot --evaluator current > after.json
 //   bun run --filter @openpanel/db access-snapshot --diff before.json after.json [--expect keys.json]
 //
-// `legacy` is the rule the previous build applied, spelled out here from its
-// tables (`project_access`, `members.role`), so it keeps answering after the
-// app has moved on. `current` goes through core's public lookups, the same
-// code every procedure calls, with each cache entry cleared first.
-//
-// Both tables are kept in step for one build, so both evaluators can run on
-// the same database and must agree.
+// `legacy` is the rule the previous build applied, spelled out here so it
+// keeps answering after the app has moved on: both role spellings, scope and
+// `member_projects`. Run it before a migration and `current` after. `current`
+// goes through core's public lookups, the same code every procedure calls,
+// with each cache entry cleared first.
 
 import {
   canWriteProject,
@@ -21,7 +19,7 @@ import {
 } from '@openpanel/core';
 import {
   isOrganizationAdminRole,
-  resolveOrganizationRole,
+  normalizeOrganizationRole,
 } from '@openpanel/core/modules/organization/organization.constants';
 import { db } from '../src/prisma-client';
 
@@ -34,8 +32,8 @@ interface AccessLine {
   orgAdmin: boolean;
 }
 
-const LEGACY_ADMIN_ROLE = 'org:admin';
-const LEGACY_WRITE_LEVELS = new Set(['write', 'admin']);
+const LEGACY_ADMIN_ROLES = new Set(['org:admin', 'admin', 'owner']);
+const LEGACY_READ_ONLY_ROLE = 'viewer';
 
 function lineKey(line: AccessLine): string {
   return `${line.organizationId}|${line.userId}|${line.projectId}`;
@@ -52,6 +50,8 @@ async function loadMembers() {
       userId: true,
       organizationId: true,
       role: true,
+      projectScope: true,
+      projects: { select: { projectId: true, level: true } },
       organization: {
         select: { projects: { select: { id: true } } },
       },
@@ -60,37 +60,20 @@ async function loadMembers() {
 }
 
 async function legacySnapshot(): Promise<AccessLine[]> {
-  const [members, grants] = await Promise.all([
-    loadMembers(),
-    db.projectAccess.findMany({
-      select: {
-        userId: true,
-        organizationId: true,
-        projectId: true,
-        level: true,
-      },
-    }),
-  ]);
-  const grantsByMember = new Map<string, typeof grants>();
-  for (const grant of grants) {
-    const key = `${grant.organizationId}|${grant.userId}`;
-    grantsByMember.set(key, [...(grantsByMember.get(key) ?? []), grant]);
-  }
-
+  const members = await loadMembers();
   const lines: AccessLine[] = [];
   for (const member of members) {
-    const userId = member.userId as string;
-    const rows = grantsByMember.get(`${member.organizationId}|${userId}`) ?? [];
-    const orgAdmin = member.role === LEGACY_ADMIN_ROLE;
+    const isReadOnly = member.role === LEGACY_READ_ONLY_ROLE;
+    const orgAdmin = LEGACY_ADMIN_ROLES.has(member.role);
     for (const project of member.organization.projects) {
-      const row = rows.find((grant) => grant.projectId === project.id);
-      const level = rows.length === 0 ? 'write' : row?.level;
+      const grant = member.projects.find((row) => row.projectId === project.id);
+      const read = member.projectScope === 'all' || grant !== undefined;
       lines.push({
         organizationId: member.organizationId,
-        userId,
+        userId: member.userId as string,
         projectId: project.id,
-        read: level !== undefined,
-        write: level !== undefined && LEGACY_WRITE_LEVELS.has(level),
+        read,
+        write: read && !isReadOnly && grant?.level !== 'read',
         orgAdmin,
       });
     }
@@ -111,7 +94,9 @@ async function currentSnapshot(): Promise<AccessLine[]> {
     });
     const orgAdmin =
       !!organizationAccess &&
-      isOrganizationAdminRole(resolveOrganizationRole(organizationAccess));
+      isOrganizationAdminRole(
+        normalizeOrganizationRole(organizationAccess.role)
+      );
     for (const project of member.organization.projects) {
       await getProjectAccess.clear({ userId, projectId: project.id });
       const access = await getProjectAccess({ userId, projectId: project.id });

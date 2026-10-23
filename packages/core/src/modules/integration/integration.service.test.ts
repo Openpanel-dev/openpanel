@@ -27,7 +27,7 @@ mock.module('../../shared/access-lookups', () => ({
   getProjectAccess: mock(async () =>
     projectAccessLevel ? { level: projectAccessLevel } : null
   ),
-  getOrganizationAccess: mock(async () => ({ role: 'org:member' })),
+  getOrganizationAccess: mock(async () => ({ role: 'member' })),
   canWriteProject: (access: { level: string } | null) =>
     !!access && (access.level === 'write' || access.level === 'admin'),
   getProjectById: mock(async () => ({ organizationId: 'org_1' })),

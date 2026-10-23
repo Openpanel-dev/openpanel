@@ -143,6 +143,7 @@ test('ImportService.enqueue adds the import job onto the import queue', async ()
   const producers = createRecordingProducers(queues);
   const service = createImportService(
     {
+      auth: null,
       db: {} as AppDeps['db'],
       prisma: {} as AppDeps['prisma'],
       ch: {} as AppDeps['ch'],

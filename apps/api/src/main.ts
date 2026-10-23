@@ -17,6 +17,7 @@ import {
   checkNotificationRulesForEvent,
   cookieOptions,
   corsDelegator,
+  createAuth,
   createBuffers,
   createClients,
   createIncomingEventHandler,
@@ -186,6 +187,7 @@ function buildDeps(): AppDeps {
     producers,
     logger,
     config: config.core,
+    auth: createAuth({ db, config: config.core, logger }),
   };
 }
 

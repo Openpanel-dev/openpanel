@@ -49,6 +49,7 @@ export type ServiceDeps = Pick<
   | 'logger'
   | 'queues'
   | 'config'
+  | 'auth'
 >;
 
 // `Services` must stay an INTERFACE: a type alias over

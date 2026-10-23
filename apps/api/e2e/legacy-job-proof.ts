@@ -284,6 +284,7 @@ async function main() {
   });
 
   const deps: AppDeps = {
+    auth: null,
     db: undefined as unknown as AppDeps['db'],
     prisma: undefined as unknown as AppDeps['prisma'],
     ch: undefined as unknown as AppDeps['ch'],

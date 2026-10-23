@@ -46,6 +46,7 @@ export default function CreateInvite() {
       },
     });
   const projectScope = watch('projectScope');
+  const isViewer = watch('role') === 'viewer';
 
   const mutation = useMutation(
     trpc.organization.inviteUser.mutationOptions({
@@ -139,6 +140,12 @@ export default function CreateInvite() {
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
+                      <RadioGroupItem id="viewer" value="viewer" />
+                      <Label className="mb-0" htmlFor="viewer">
+                        Viewer
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem id="admin" value="admin" />
                       <Label className="mb-0" htmlFor="admin">
                         Admin
@@ -149,7 +156,7 @@ export default function CreateInvite() {
               />
               <p className="mt-1 text-muted-foreground text-sm">
                 Admins manage members and projects. Members can edit the
-                projects they have access to.
+                projects they have access to, viewers can only look at them.
               </p>
             </div>
             <Controller
@@ -164,6 +171,7 @@ export default function CreateInvite() {
                     render={({ field: scopeField }) => (
                       <ProjectScopePicker
                         access={field.value}
+                        isReadOnly={isViewer}
                         onAccessChange={field.onChange}
                         onScopeChange={scopeField.onChange}
                         projectScope={projectScope}

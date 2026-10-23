@@ -147,6 +147,7 @@ function stubDeps() {
   const lines: CapturedLine[] = [];
 
   const deps: AppDeps = {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -321,6 +322,7 @@ function chartDeps() {
   const lines: ChartLine[] = [];
   const producers = createRecordingProducers({});
   const deps: AppDeps = {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: chartClickHouse(),
@@ -506,6 +508,7 @@ function ingestDeps() {
   } as unknown as Buffers;
 
   const deps: AppDeps = {
+    auth: null,
     prisma: {} as AppDeps['prisma'],
     db: {
       project: {
@@ -709,6 +712,7 @@ function chainDeps() {
   } as unknown as AppDeps['ch'];
 
   const deps: AppDeps = {
+    auth: null,
     db: {
       cohort: {
         findUnique: () =>

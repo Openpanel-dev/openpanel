@@ -57,6 +57,7 @@ export async function testServiceDeps(
     redis,
     logger: recordingLogger(),
     config: testCoreConfig(),
+    auth: null,
     get clients(): never {
       return unavailable('ServiceDeps.clients');
     },

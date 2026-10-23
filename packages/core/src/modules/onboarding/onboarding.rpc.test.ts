@@ -57,7 +57,7 @@ test('project refuses an organization member who is not an admin', async () => {
   );
   const services = {
     auth: {
-      getOrganizationAccess: () => Promise.resolve({ role: 'org:member' }),
+      getOrganizationAccess: () => Promise.resolve({ role: 'member' }),
       requireOrganizationAdmin,
     },
   } as unknown as Services;

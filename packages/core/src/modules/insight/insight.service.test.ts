@@ -49,21 +49,21 @@ const member = {
   findMany: mock(async () => [
     {
       userId: 'u_all',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'all',
       projects: [],
       user: { email: 'all@example.com' },
     },
     {
       userId: 'u_this',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       projects: [{ projectId: 'p1', level: null }],
       user: { email: 'this@example.com' },
     },
     {
       userId: 'u_other',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       projects: [{ projectId: 'p_other', level: null }],
       user: { email: 'other@example.com' },
@@ -214,6 +214,7 @@ test('createInsightService binds every InsightService method', () => {
   };
   const service = subject.createInsightService(
     {
+      auth: null,
       db: undefined as unknown as AppDeps['db'],
       prisma: undefined as unknown as AppDeps['prisma'],
       ch: undefined as unknown as AppDeps['ch'],

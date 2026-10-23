@@ -24,6 +24,10 @@ import { getIsDry, printBoxMessage } from './helpers';
  * restricted and becomes `selected`. `project_access` rows with no membership
  * are reported and left alone: they never granted access, so making them
  * memberships would.
+ *
+ * An install that upgrades past the next build gets `project_access` folded in
+ * and dropped by that build's Prisma migration before this runs, so only the
+ * invite and slug steps are left to do.
  */
 
 interface Count {
@@ -103,6 +107,20 @@ async function countGrantsWithoutMembership(): Promise<number> {
   return Number(rows[0]?.count ?? 0);
 }
 
+async function hasProjectAccessTable(): Promise<boolean> {
+  const rows = await db.$queryRaw<{ exists: boolean }[]>`
+    SELECT to_regclass('public.project_access') IS NOT NULL AS exists
+  `;
+  return rows[0]?.exists ?? false;
+}
+
+async function countGrants(): Promise<number> {
+  const rows = await db.$queryRaw<Count[]>`
+    SELECT COUNT(*) AS count FROM project_access
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
 async function countOrganizationsWithoutSlug(): Promise<number> {
   return db.organization.count({ where: { slug: null } });
 }
@@ -115,13 +133,14 @@ function backfillSlugs() {
 
 export async function up() {
   const isDry = getIsDry();
+  const hasGrants = await hasProjectAccessTable();
 
   const [membersToScope, grantsToCopy, invitesToScope, orphanGrants] =
     await Promise.all([
-      countMembersToScope(),
-      db.projectAccess.count(),
+      hasGrants ? countMembersToScope() : 0,
+      hasGrants ? countGrants() : 0,
       countInvitesToScope(),
-      countGrantsWithoutMembership(),
+      hasGrants ? countGrantsWithoutMembership() : 0,
     ]);
   const orphanLine = `project_access rows without a membership, left as is: ${orphanGrants}`;
 
@@ -137,11 +156,10 @@ export async function up() {
     return;
   }
 
-  const [scoped, copied, invitesScoped] = await db.$transaction([
-    scopeMembers(),
-    copyGrants(),
-    scopeInvites(),
-  ]);
+  const [scoped, copied] = hasGrants
+    ? await db.$transaction([scopeMembers(), copyGrants()])
+    : [0, 0];
+  const invitesScoped = await scopeInvites();
   const slugs = await backfillSlugs();
 
   printBoxMessage('✅ Member project scope', [

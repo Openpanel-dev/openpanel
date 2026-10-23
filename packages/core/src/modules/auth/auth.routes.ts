@@ -9,6 +9,7 @@ import {
   fetchGoogleOAuthUser,
   OAuthCallbackError,
 } from './auth.service';
+import { AUTH_BASE_PATH } from './src/better-auth';
 
 // Anyone can call this URL directly, so both values are attacker-controlled.
 const callbackQuery = z.object({
@@ -30,8 +31,15 @@ function loginErrorRedirect(
   return redirect(url.toString());
 }
 
-export const authRoutes = defineRoutes((app) =>
+export const authRoutes = defineRoutes((app, deps) =>
   app
+    .all(
+      `${AUTH_BASE_PATH}/*`,
+      ({ request }) =>
+        deps.auth?.handler(request) ??
+        new Response('Not Found', { status: 404 }),
+      { parse: 'none', detail: { hide: true } }
+    )
     .get(
       '/oauth/github/callback',
       async ({ query, ctx }) => {

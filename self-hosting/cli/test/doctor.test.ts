@@ -36,6 +36,7 @@ describe('doctor on a v1 install', () => {
       'compose/api-migrations',
       'env/kafka-brokers',
       'env/kafka-partitions',
+      'env/auth-secret',
       'env/automatic-migrations',
       'env/enabled-queues',
       'env/removed-vars',
@@ -110,6 +111,7 @@ describe('doctor on a v1 install', () => {
 
     expect(env.get('ENCRYPTION_KEY')).toBe('0123456789abcdef'.repeat(4));
     expect(env.get('COOKIE_SECRET')).toBe('0123456789abcdef'.repeat(2));
+    expect(env.get('AUTH_SECRET')).toBe(env.get('COOKIE_SECRET'));
     expect(env.get('KAFKA_BROKERS')).toBe('op-rp:9092');
     expect(env.get('ENABLED_QUEUES')).toBe('events,sessions,cron');
     expect(env.has('WORKER_PORT')).toBe(false);

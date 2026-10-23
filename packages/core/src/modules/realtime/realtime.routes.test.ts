@@ -294,7 +294,7 @@ test('wsOrganizationEvents: session but no org access -> "No access" then close'
 test('wsOrganizationEvents: subscribes scoped to the organization the caller is a member of', async () => {
   session = { userId: 'user_1' };
   organizationAccess = {
-    role: 'org:member',
+    role: 'member',
     userId: 'user_1',
     organization: { createdByUserId: null },
   };

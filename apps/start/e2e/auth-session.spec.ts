@@ -16,6 +16,7 @@ test.use({ storageState: FRESH_CONTEXT });
 test.describe.configure({ timeout: 90_000 });
 
 const STALE_SESSION_TOKEN = 'stalestalestalestalestalestale12';
+const BETTER_AUTH_COOKIE = 'openpanel.session_token';
 
 test('an invalid session cookie is treated as signed out, not as an error', async ({
   page,
@@ -97,4 +98,42 @@ test('a password with a trailing space signs in after signing up with it', async
     });
     expect(cleanup.status()).toBe(200);
   }
+});
+
+// Sign-in still issues the legacy `session` cookie; the first request after it
+// hands out better-auth's, which must keep the user signed in on its own.
+test("a signed-in browser gets better-auth's cookie and stays signed in on it alone", async ({
+  page,
+  context,
+  seed,
+}) => {
+  await gotoHydrated(page, '/login');
+  const response = await submitSignIn(page, seed.user);
+  expect(response.status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`), {
+    timeout: 15_000,
+  });
+
+  await expect
+    .poll(async () =>
+      (await context.cookies()).some(
+        (cookie) => cookie.name === BETTER_AUTH_COOKIE
+      )
+    )
+    .toBe(true);
+  const upgraded = (await context.cookies()).find(
+    (cookie) => cookie.name === BETTER_AUTH_COOKIE
+  );
+  expect(upgraded?.httpOnly).toBe(true);
+
+  await context.clearCookies({ name: 'session' });
+  await gotoHydrated(page, `/${seed.organizationId}`);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`));
+  await expect(page.getByText('Acme Web').first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS_DIR}/session-better-auth-only.png` });
+
+  const session = await page.request.get(`${apiUrl()}/trpc/auth.session`);
+  const body = await session.json();
+  expect(body.result.data.json.user.email).toBe(seed.user.email);
+  expect(body.result.data.json.session.token).toBeUndefined();
 });
