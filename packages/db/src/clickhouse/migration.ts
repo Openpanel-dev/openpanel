@@ -194,6 +194,35 @@ export async function getExistingTables() {
   }
 }
 
+export interface TableKeys {
+  sortingKey: string[];
+  partitionKey: string;
+}
+
+/** Sort and partition key of every table in the migration database, by name. */
+export async function getTableKeys() {
+  const response = await chMigrationClient.query({
+    query:
+      'SELECT name, sorting_key, partition_key FROM system.tables WHERE database = {database:String}',
+    query_params: { database: migrationDatabase() },
+    format: 'JSONEachRow',
+  });
+  const rows = await response.json<{
+    name: string;
+    sorting_key: string;
+    partition_key: string;
+  }>();
+  return new Map<string, TableKeys>(
+    rows.map((row) => [
+      row.name,
+      {
+        sortingKey: row.sorting_key.split(', '),
+        partitionKey: row.partition_key,
+      },
+    ])
+  );
+}
+
 export function renameTable({
   from,
   to,
