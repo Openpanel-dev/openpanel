@@ -257,6 +257,8 @@ export async function getProjectActivationStatus(
 export interface CreatedProjectClient {
   id: string;
   secret: string;
+  /** Always a write client: the dashboard shows an MCP token only for read and root. */
+  type: 'write';
 }
 
 export async function listProjectsForOrganization(
@@ -346,7 +348,9 @@ export function createProjectService(
 
     return {
       project,
-      client: project.clients[0] ? { id: project.clients[0].id, secret } : null,
+      client: project.clients[0]
+        ? { id: project.clients[0].id, secret, type: 'write' }
+        : null,
     };
   }
 
