@@ -8,6 +8,7 @@
 
 import { getTime, isSameDomain, parsePath } from '@openpanel/shared';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
+import { v5 as uuidV5 } from 'uuid';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
 import type { Ctx } from '../../../context';
 import type { Logger } from '../../../logger';
@@ -241,6 +242,10 @@ const parseRevenue = (revenue: unknown): number | undefined => {
   return undefined;
 };
 
+/**
+ * Attach delivery coordinates to diagnostics before handling an envelope, so
+ * repeated business rows can be traced to the Kafka record that produced them.
+ */
 export async function incomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,
@@ -259,6 +264,10 @@ export async function incomingEvent(
   return await ingestIncomingEvent(jobPayload, deps, logger);
 }
 
+/**
+ * Project an envelope into business and session rows. Keep derived row ids
+ * distinct from the triggering event so redelivery deduplication preserves both.
+ */
 async function ingestIncomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,
@@ -273,8 +282,8 @@ async function ingestIncomingEvent(
     sessionId,
     uaInfo,
     // Producer-minted; a redelivered message re-creates the same row id.
-    // Absent on messages produced before the field existed — createEvent then
-    // falls back to a fresh uuid.
+    // The consumer also derives one for legacy messages from their coordinates.
+    // Direct callers without an id still get a fresh uuid from createEvent.
     id: eventId,
   } = jobPayload;
   const properties: Record<string, unknown> = body.properties ?? {};
@@ -426,12 +435,18 @@ async function ingestIncomingEvent(
 
   if (session?.kind === 'new' || session?.kind === 'boundary') {
     deps.metrics.sessionStarted(session.kind);
-    // No `id` here: session_start is a second, derived row and must not share
-    // the producer-minted id of the event that triggered it.
+    // A derived row needs its own stable id, so concurrent redeliveries can
+    // deduplicate it without suppressing the business event that opened it.
     await createEventAndNotify(
       {
         ...baseEvent,
         name: 'session_start',
+        id: eventId
+          ? uuidV5(
+              JSON.stringify(['session_start', eventId, session.current.id]),
+              uuidV5.URL
+            )
+          : undefined,
         createdAt: new Date(
           getTime(baseEvent.createdAt) - SESSION_START_OFFSET_MS
         ),

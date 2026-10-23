@@ -9,6 +9,7 @@ import type {
   IHeaders,
   KafkaMessage,
 } from 'kafkajs';
+import { v5 as uuidV5 } from 'uuid';
 import type { IncomingEventPayload } from './incoming-event';
 
 export interface KafkaConsumerHandle {
@@ -147,8 +148,8 @@ export interface EventsBatchHandler {
  * has been handled, dead-lettered, or deliberately skipped — never merely
  * because it failed. A dead-letter always counts as finished, because the
  * message is dropped either way; the one place an unresolved offset is still
- * correct is a failed DURABILITY flush, which leaves the whole batch for
- * redelivery.
+ * correct includes an interrupted batch or a failed DURABILITY flush, which
+ * leaves the batch for redelivery.
  */
 export function createEventsBatchHandler(
   deps: EventsBatchHandlerDeps
@@ -254,6 +255,10 @@ export function createEventsBatchHandler(
    * or it is dead-lettered and dropped — there is no third outcome, which is
    * why the batch loop below has no unresolvable-message branch.
    */
+  /**
+   * Give legacy envelopes a repeatable identity before handler retries; poison
+   * records keep the existing dead-letter-and-drop delivery contract.
+   */
   const processMessage = async (
     message: KafkaMessage,
     partition: number
@@ -264,6 +269,12 @@ export function createEventsBatchHandler(
         throw new Error('kafka message has no value');
       }
       payload = JSON.parse(message.value.toString()) as IncomingEventPayload;
+      // Old producers omitted ids. Coordinates keep those backlog events stable
+      // across retries, restarts and workers without changing the wire format.
+      payload.id ??= uuidV5(
+        JSON.stringify([deps.topic, partition, message.offset]),
+        uuidV5.URL
+      );
     } catch (err) {
       deps.logger.error(
         { err, partition, offset: message.offset },
@@ -334,6 +345,10 @@ export function createEventsBatchHandler(
     await sleep(delayMs);
   };
 
+  /**
+   * Drain keyed handlers and their durability window before returning control
+   * to KafkaJS, including when a heartbeat interrupts the batch for rebalance.
+   */
   const eachBatch = async ({
     batch,
     resolveOffset,
@@ -353,7 +368,7 @@ export function createEventsBatchHandler(
 
     // Group by partition key (= deviceId or `${projectId}:${profileId}`).
     // Same-key messages stay serial so sessionBuffer/session-end-job state
-    // can't race; different keys run in parallel via Promise.all.
+    // can't race; different keys run in parallel and settle before returning.
     // Keyless messages get their own singleton group.
     const groups = new Map<string, KafkaMessage[]>();
     for (const m of batch.messages) {
@@ -379,37 +394,53 @@ export function createEventsBatchHandler(
     const processed = new Set<string>();
     let processedCount = 0;
 
-    await Promise.all(
-      [...groups.values()].map(async (msgs) => {
-        for (const m of msgs) {
-          if (!isRunning() || isStale()) {
-            return;
-          }
+    let interrupted = false;
+    const results = await Promise.allSettled(
+      [...groups.values()]
+        .map(async (msgs) => {
+          for (const m of msgs) {
+            if (interrupted || !isRunning() || isStale()) {
+              return;
+            }
 
-          // No "unresolvable" branch: a message is handled or dropped, and a
-          // dropped one is still finished. The only gap this walk can now stop
-          // at is the isRunning/isStale early return above, and the only
-          // offsets left uncommitted are a whole batch whose durability flush
-          // failed — see below.
-          await processMessage(m, batch.partition);
+            // No "unresolvable" branch: a message is handled or dropped, and a
+            // dropped one is still finished. An interruption or a failed
+            // durability gate leaves offsets for redelivery.
+            await processMessage(m, batch.partition);
 
-          processed.add(m.offset);
-          processedCount += 1;
-          if (processedCount % HEARTBEAT_EVERY === 0) {
-            await heartbeat();
+            processed.add(m.offset);
+            processedCount += 1;
+            if (processedCount % HEARTBEAT_EVERY === 0) {
+              await heartbeat();
+            }
           }
-        }
-      })
+        })
+        .map((group) =>
+          group.catch((error: unknown) => {
+            interrupted = true;
+            throw error;
+          })
+        )
     );
+
+    // A failed heartbeat must not leave sibling handlers running after this
+    // callback returns to KafkaJS and rejoins the group. Drain their writes,
+    // including the durability gate, before propagating the original error.
+    const durable = await bufferedEventsAreDurable(
+      batch.partition,
+      closeDurabilityWindow
+    );
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure?.status === 'rejected') {
+      throw failure.reason;
+    }
 
     // Durability before commit. Handled is not the same as safe: the events
     // are in an in-process array until they are pushed to Redis, and every
     // offset resolved below is committed the instant this handler returns. If
     // that push will not land, resolve NOTHING and let the broker redeliver
     // the whole batch — a duplicate is recoverable, a loss is not.
-    if (
-      await bufferedEventsAreDurable(batch.partition, closeDurabilityWindow)
-    ) {
+    if (durable) {
       durabilityFailures.delete(pk);
       // Resolve in strict ascending offset order, stopping at the first offset
       // that did not finish (e.g. an isStale/isRunning early-return mid-batch).
@@ -451,6 +482,10 @@ export interface EventsConsumerDeps {
   batch: Omit<EventsBatchHandlerDeps, 'topic'>;
 }
 
+/**
+ * Start consumption with explicit batch offset resolution. Separate stop and
+ * disconnect hooks let shutdown flush rows buffered outside Kafka batches.
+ */
 export async function startKafkaEventsConsumer(
   deps: EventsConsumerDeps
 ): Promise<KafkaConsumerHandle> {

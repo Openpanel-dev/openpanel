@@ -524,7 +524,24 @@ describe('incomingEvent', () => {
       (a) => a.name === 'session_start'
     );
     expect(sessionStartCalls).toHaveLength(1);
-    expect(sessionStartCalls[0]!.id).toBeUndefined();
+    expect(sessionStartCalls[0]!.id).toBeString();
+    expect(sessionStartCalls[0]!.id).not.toBe(producedEventId);
+  });
+
+  test('keeps derived session_start ids stable across concurrent new-session deliveries', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValue({
+      kind: 'new',
+      current: makeSession({ id: newSessionId }),
+    });
+    const job = buildJobData({ id: producedEventId });
+    await Promise.all([incomingEvent(job, deps), incomingEvent(job, deps)]);
+    const starts = createdEvents(createEvent).filter(
+      (event) => event.name === 'session_start'
+    );
+    expect(starts).toHaveLength(2);
+    expect(starts[0]!.id).toBe(starts[1]!.id);
+    expect(starts[0]!.id).not.toBe(producedEventId);
   });
 
   test('carries the producer-minted id on server-side events', async () => {

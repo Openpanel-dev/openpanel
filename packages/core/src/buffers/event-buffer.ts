@@ -2,6 +2,7 @@ import { sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, publishEvent } from '@openpanel/redis';
 import type { IClickhouseEvent } from '../modules/event/event.service';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { defineRedisScript } from './redis-script';
 
 const PROJECT_ID_NEEDLE = '"project_id":"';
 
@@ -47,6 +48,32 @@ const DEFAULT_BATCH_SIZE = 4000;
 const DEFAULT_CHUNK_SIZE = 1000;
 const DEFAULT_MICRO_BATCH_MS = 10;
 const DEFAULT_MICRO_BATCH_SIZE = 100;
+
+// Covers rebalance/restart redeliveries without retaining one Redis key per
+// ingested event forever. Replays outside this window remain at-least-once.
+const REDELIVERY_DEDUP_SECONDS = 60 * 60;
+
+const enqueueOnceScript = defineRedisScript(`
+local queueType = redis.call('TYPE', KEYS[1]).ok
+if queueType ~= 'none' and queueType ~= 'list' then
+  return redis.error_reply('WRONGTYPE event queue must be a list')
+end
+-- Check every marker before any write: Lua errors do not roll back commands.
+for i = 2, #KEYS do
+  redis.call('GET', KEYS[i])
+end
+for i = 2, #ARGV, 2 do
+  local markerIndex = tonumber(ARGV[i])
+  if markerIndex == 0 or redis.call('EXISTS', KEYS[markerIndex]) == 0 then
+    redis.call('RPUSH', KEYS[1], ARGV[i + 1])
+    if markerIndex ~= 0 then
+      -- Never claim an event before it is queued. Both become visible together.
+      redis.call('SET', KEYS[markerIndex], '1', 'EX', ARGV[1])
+    end
+  end
+end
+return 1
+`);
 
 export class EventBuffer extends BaseBuffer {
   private readonly batchSize =
@@ -109,8 +136,9 @@ export class EventBuffer extends BaseBuffer {
   /** Built once, on first use; see `asRedeliverable`. */
   private redeliverableView: EventBuffer | null = null;
 
-  private queueKey = 'event_buffer:queue';
+  private readonly queueKey = 'event_buffer:queue';
 
+  /** Keep ClickHouse insertion and queue trimming inside the base flush lock. */
   constructor(deps: BufferDeps) {
     super(deps, {
       name: 'event',
@@ -317,19 +345,17 @@ export class EventBuffer extends BaseBuffer {
     return done;
   }
 
-  /** @returns the failure the rpush ended with, or `null` on success. */
+  /**
+   * Advance the durability watermark only after Redis accepts the micro-batch.
+   * On failure, retain rows whose retry is not already owned by Kafka.
+   * @returns the enqueue failure, or `null` on success.
+   */
   private async writeToRedis(
     eventsToFlush: IClickhouseEvent[],
     coversSeq: number
   ): Promise<unknown> {
     try {
-      // One RPUSH for the whole batch: atomic on its own, and it rejects on
-      // WRONGTYPE or out-of-memory, which the batch handler relies on before
-      // resolving Kafka offsets.
-      await getRedisCache().rpush(
-        this.queueKey,
-        ...eventsToFlush.map((event) => JSON.stringify(event))
-      );
+      await this.enqueueEvents(eventsToFlush);
 
       // The durability boundary: past this point the events survive any
       // process death, so everyone waiting on a sequence in this write is done.
@@ -367,6 +393,38 @@ export class EventBuffer extends BaseBuffer {
       );
       return error;
     }
+  }
+
+  /**
+   * Atomically enqueue consumer rows with expiring delivery markers. A row
+   * already marked is durable too, so its redelivery can pass the flush gate.
+   * Other producers keep the unconditional RPUSH path.
+   */
+  private async enqueueEvents(events: IClickhouseEvent[]): Promise<void> {
+    const redis = getRedisCache();
+    const hasRedeliverableEvents = events.some(
+      (event) => this.redeliverableEvents.has(event) && event.id
+    );
+    if (!hasRedeliverableEvents) {
+      await redis.rpush(
+        this.queueKey,
+        ...events.map((event) => JSON.stringify(event))
+      );
+      return;
+    }
+    const keys = [this.queueKey];
+    const args = [String(REDELIVERY_DEDUP_SECONDS)];
+    for (const event of events) {
+      let markerIndex = 0;
+      if (this.redeliverableEvents.has(event) && event.id) {
+        // A producer id identifies a business event across consumer generations.
+        // Project scope also keeps imported/custom ids independent across tenants.
+        keys.push(`event_buffer:dedup:${event.project_id}:${event.id}`);
+        markerIndex = keys.length;
+      }
+      args.push(String(markerIndex), JSON.stringify(event));
+    }
+    await enqueueOnceScript(redis, keys, args);
   }
 
   /** Events may arrive while a write is running; they get the next micro-batch. */
