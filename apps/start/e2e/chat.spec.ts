@@ -99,6 +99,10 @@ test.describe('AI chat', () => {
     await input.press('Enter');
     await expect(page).toHaveURL(/\/chat\?.*c=/);
     await expect(send).toBeVisible({ timeout: 120_000 });
+    // The first answer must have run the chart tool, or the follow-up proves nothing.
+    await expect(
+      page.getByRole('button', { name: 'Expand chart' }).first()
+    ).toBeVisible();
 
     await input.fill('And which countries do those views come from?');
     await input.press('Enter');
