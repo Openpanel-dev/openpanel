@@ -73,9 +73,8 @@ test('a request with no matching events explains what is tracked instead', async
   await promptBox.fill('unicorn sightings by moon phase');
   await page.keyboard.press('Enter');
   const notice = page.getByRole('status').filter({ hasText: /./ }).last();
-  await expect(notice).not.toHaveText(/Reading|Drafting|Almost/, {
-    timeout: DRAFT_TIMEOUT,
-  });
+  await expect(notice).toBeVisible({ timeout: DRAFT_TIMEOUT });
+  await expect(notice).not.toHaveText(/Reading|Drafting|Almost/);
   await expect(promptBox).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
 });

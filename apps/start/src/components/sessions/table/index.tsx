@@ -341,6 +341,7 @@ export const SessionsTable = ({ query }: Props) => {
         <FullPageErrorState
           description="We could not load this data. Try again in a moment."
           title="Something went wrong"
+          variant="inline"
         >
           <Button
             icon={RotateCwIcon}

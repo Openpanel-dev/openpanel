@@ -63,6 +63,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   const ringSizes = RING_SIZES[variant];
   const ringCanvas = ringSizes.at(-1);
+  const Heading = variant === 'page' ? 'h1' : 'h2';
 
   return (
     <div
@@ -103,9 +104,9 @@ export function EmptyState({
         </div>
       </div>
 
-      <h2 className={cn('relative font-semibold', TITLE_CLASS[variant])}>
+      <Heading className={cn('relative font-semibold', TITLE_CLASS[variant])}>
         {title}
-      </h2>
+      </Heading>
       {description && (
         <p
           className={cn(

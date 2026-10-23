@@ -85,13 +85,11 @@ export function DataTable<TData>({
           <TableBody>
             {error ? (
               <TableRow>
-                <TableCell
-                  className="h-24 text-center"
-                  colSpan={table.getAllColumns().length}
-                >
+                <TableCell colSpan={table.getAllColumns().length}>
                   <FullPageErrorState
                     description="We could not load this data. Try again in a moment."
                     title="Something went wrong"
+                    variant="inline"
                   />
                 </TableCell>
               </TableRow>
