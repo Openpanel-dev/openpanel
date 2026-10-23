@@ -54,6 +54,7 @@ import {
   type SessionMetricsRedis,
   setBooting,
   setShuttingDown,
+  startCodeMigrations,
   startKafkaEventsConsumer,
   startSchedulers,
   startWorkers,
@@ -61,6 +62,15 @@ import {
   type WorkerHandle,
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
+import {
+  abortMigrationCommands,
+  allowMigrationCommands,
+  MigrationQueryStillRunningError,
+} from '@openpanel/db/src/clickhouse/migration';
+import {
+  getPendingMigrations,
+  runMigration,
+} from '@openpanel/db/src/code-migrations/migrate';
 import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import {
   configureRedisCache,
@@ -407,6 +417,22 @@ async function buildHttpApp(deps: AppDeps) {
   return app;
 }
 
+/** Without AUTOMATIC_MIGRATIONS someone applies them by hand; say what is waiting. */
+function warnAboutPendingMigrations(): void {
+  getPendingMigrations()
+    .then((pending) => {
+      if (pending.length > 0) {
+        logger.warn(
+          { pending },
+          'code migrations pending; set AUTOMATIC_MIGRATIONS=true or run them with migrate-code.ts'
+        );
+      }
+    })
+    .catch((error) => {
+      logger.warn({ err: error }, 'could not list pending code migrations');
+    });
+}
+
 /**
  * uncaughtException / unhandledRejection: the process state is corrupt, so log and exit fast.
  * Fatals are mirrored to the REAL stderr, bypassing the output interceptor: the OTLP flush window is often lost
@@ -465,6 +491,32 @@ async function main() {
     );
   });
 
+  // Right after listening, so the api serves from the start and the fast
+  // blocking migrations land within seconds; see AGENTS.md → Migrations.
+  const codeMigrations = config.AUTOMATIC_MIGRATIONS
+    ? startCodeMigrations({
+        redis: deps.redis,
+        logger,
+        migrations: {
+          getPending: getPendingMigrations,
+          run: (file) =>
+            runMigration(file, {
+              clickhouseCluster: Boolean(config.core.clickhouseClustered),
+              selfHosted: Boolean(config.core.selfHosted),
+              databaseUrl: undefined,
+              clickhouseUrl: undefined,
+            }),
+          abort: abortMigrationCommands,
+          allow: allowMigrationCommands,
+          isQueryStillRunning: (error) =>
+            error instanceof MigrationQueryStillRunningError,
+        },
+      })
+    : undefined;
+  if (!codeMigrations) {
+    warnAboutPendingMigrations();
+  }
+
   let workers: WorkerHandle | undefined;
   let consumer: KafkaConsumerHandle | undefined;
 
@@ -520,11 +572,15 @@ async function main() {
     setShuttingDown(true);
     logger.info({ signal }, 'Starting graceful shutdown');
 
+    // Armed first, so stopping a migration that hangs is bounded too.
     const forceExit = setTimeout(() => {
       logger.error({ signal }, 'Graceful shutdown timed out — forcing exit');
       process.exit(1);
     }, config.SHUTDOWN_FORCE_EXIT_MS);
     forceExit.unref();
+
+    // Interrupting is safe: the next process resumes where this one stopped.
+    await codeMigrations?.stop();
 
     const exitCode = await runShutdownSequence(
       {

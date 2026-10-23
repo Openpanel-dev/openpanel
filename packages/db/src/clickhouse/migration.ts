@@ -409,6 +409,41 @@ export function countRows(tableName: string) {
   return `SELECT count() FROM ${tableName}`;
 }
 
+// KILL QUERY ... SYNC returns once the query stopped; past this, assume it
+// did not.
+const KILL_QUERY_TIMEOUT_MS = 60_000;
+
+/**
+ * An aborted statement that ClickHouse did not confirm stopping. It may still
+ * be writing, so nothing may start the same work until it is known to be gone.
+ */
+export class MigrationQueryStillRunningError extends Error {
+  constructor(queryId: string, cause: unknown) {
+    super(`Could not confirm migration query ${queryId} stopped`, { cause });
+    this.name = 'MigrationQueryStillRunningError';
+  }
+}
+
+let isAbortRequested = false;
+const inFlight = new Set<AbortController>();
+
+/**
+ * Stops runClickhouseMigrationCommands: the statement in flight is killed and
+ * no further one starts, in this call or a later one, until
+ * allowMigrationCommands(). Sticky because a migration may issue several
+ * calls, and an abort between two of them must not let the second start.
+ */
+export function abortMigrationCommands() {
+  isAbortRequested = true;
+  for (const controller of inFlight) {
+    controller.abort();
+  }
+}
+
+export function allowMigrationCommands() {
+  isAbortRequested = false;
+}
+
 export async function runClickhouseMigrationCommands(sqls: string[]) {
   let abort: AbortController | undefined;
   let activeQueryId: string | undefined;
@@ -431,7 +466,14 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
   try {
     for (const sql of sqls) {
+      if (isAbortRequested) {
+        throw new Error('Migration commands aborted');
+      }
+      if (abort) {
+        inFlight.delete(abort);
+      }
       abort = new AbortController();
+      inFlight.add(abort);
       let timer: NodeJS.Timeout | undefined;
       let resolve: ((value: unknown) => void) | undefined;
       activeQueryId = crypto.createHash('sha256').update(sql).digest('hex');
@@ -524,18 +566,25 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
     }
 
     if (activeQueryId) {
+      // An INSERT ... SELECT keeps running on the server after the client
+      // goes away, so the abort is only done once ClickHouse says it stopped.
       try {
         await chMigrationClient.command({
-          query: `KILL QUERY WHERE query_id = '${activeQueryId}'`,
+          query: `KILL QUERY WHERE query_id = '${activeQueryId}' SYNC`,
+          abort_signal: AbortSignal.timeout(KILL_QUERY_TIMEOUT_MS),
         });
         console.log(`Successfully killed query ${activeQueryId}`);
       } catch (err) {
         console.error(`Failed to kill query ${activeQueryId}:`, err);
+        throw new MigrationQueryStillRunningError(activeQueryId, err);
       }
     }
 
     throw e;
   } finally {
+    if (abort) {
+      inFlight.delete(abort);
+    }
     // Clean up event listeners. bun-types' `Process.off` override declares
     // only its own "memoryPressure" overload and wins over the @types/node
     // Signals overload, so the cast is what keeps this compiling (dropping it

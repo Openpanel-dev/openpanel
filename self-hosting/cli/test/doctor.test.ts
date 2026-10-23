@@ -36,6 +36,7 @@ describe('doctor on a v1 install', () => {
       'compose/api-migrations',
       'env/kafka-brokers',
       'env/kafka-partitions',
+      'env/automatic-migrations',
       'env/enabled-queues',
       'env/removed-vars',
       'caddy/bullboard-redirect',
@@ -62,13 +63,44 @@ describe('doctor on a v1 install', () => {
     );
     expect(compose.services['op-worker'].environment).toContain('ROLE=worker');
     expect(compose.services['op-api'].command).toContain(
-      'scripts/migrate-code.ts'
+      'prisma migrate deploy'
     );
+    expect(compose.services['op-api'].command).not.toContain('pnpm');
+    expect(compose.services['op-api'].command).not.toContain('bunx');
     expect(compose.services['op-api'].depends_on).toHaveProperty('op-rp');
     expect(compose.services['op-worker'].depends_on).toHaveProperty('op-rp');
     expect(JSON.stringify(compose.services['op-worker'].healthcheck)).toContain(
       '/healthz/ready'
     );
+  });
+
+  test('a v3 start command that downloads Prisma or runs the code migrations is rewritten', () => {
+    const install = loadInstall(V1_FIXTURE);
+    applyFixes(install);
+    install.compose.setIn(
+      ['services', 'op-api', 'command'],
+      [
+        'sh -c "',
+        '  cd /app/packages/db && bunx prisma@6.14.0 migrate deploy',
+        '  cd /app/packages/core && bun scripts/migrate-code.ts',
+        '  cd /app/apps/api && bun run start',
+        '"',
+      ].join('\n')
+    );
+
+    const finding = runDoctor(install).find(
+      (candidate) => candidate.id === 'compose/api-migrations'
+    );
+    expect(finding?.severity).toBe('warn');
+
+    applyFixes(install);
+    const command = String(
+      install.compose.getIn(['services', 'op-api', 'command'])
+    );
+    expect(command).not.toContain('migrate-code.ts');
+    expect(command).not.toContain('bunx');
+    expect(command).toContain('prisma migrate deploy');
+    expect(install.env.get('AUTOMATIC_MIGRATIONS')).toBe('true');
   });
 
   test('env keeps user values and only touches what is stale', () => {
