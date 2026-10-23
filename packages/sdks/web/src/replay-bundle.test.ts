@@ -12,6 +12,7 @@ const replayEntry = fileURLToPath(
   new URL('./replay/index.ts', import.meta.url)
 );
 
+/** Bundle a consumer fixture and return its inputs to check the replay boundary. */
 function bundleInputs(source: string): string[] {
   const directory = mkdtempSync(join(tmpdir(), 'openpanel-replay-bundle-'));
   try {

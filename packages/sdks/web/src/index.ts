@@ -84,10 +84,10 @@ function toCamelCase(str: string) {
   );
 }
 
-interface PendingRevenue {
+type PendingRevenue = {
   amount: number;
   properties?: Record<string, unknown>;
-}
+};
 
 export class OpenPanel extends OpenPanelBase {
   private lastPath = '';

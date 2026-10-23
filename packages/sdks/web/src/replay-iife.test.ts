@@ -40,9 +40,11 @@ test('the script-tag bundle loads its recorder and queues replay payloads', asyn
         referrer: '',
         createElement: () => ({ src: '', onload: () => undefined }),
         head: {
+          /** Simulate loading the recorder script requested by the tracker. */
           appendChild(script: { src: string; onload: () => void }) {
             requested.push(script.src);
             window.__openpanel_replay = {
+              /** Emit a replay chunk to verify it reaches the SDK queue. */
               startReplayRecorder(
                 config: unknown,
                 send: (chunk: unknown) => void
