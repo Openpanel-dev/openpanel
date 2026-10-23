@@ -38,6 +38,7 @@ function toPersistedInsight(row: InsightRow): PersistedInsight {
   };
 }
 
+/** Keep insight persistence and candidate queries on the caller's dependency scope. */
 export function createInsightStore(deps: ServiceDeps): InsightStore {
   const db = deps.db;
   // `Prisma.DbNull` lives in the same module as the constructed client, so it
